@@ -66,4 +66,5 @@ services/feed-service/uploads/
 
 # V1 migration export data
 scripts/migrate-v1-to-v2/data/export-*/
+scripts/admin/data/subject-reconcile-*.json
 cloudbuild.tmp.yaml

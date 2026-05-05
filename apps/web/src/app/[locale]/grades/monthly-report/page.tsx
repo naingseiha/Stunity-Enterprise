@@ -10,11 +10,9 @@ import {
   Loader2,
   Printer,
   RefreshCw,
-  Settings2,
   Users,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
-import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import MonthlyReportPrint from '@/components/reports/MonthlyReportPrint';
@@ -287,211 +285,174 @@ export default function KhmerMonthlyReportPage() {
       <div className="lg:ml-64 min-h-screen print:hidden">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
-              <CompactHeroCard
-                eyebrow={t('eyebrow')}
-                title={t('title')}
-                description={t('description', { model: educationModelLabel })}
-                icon={FileText}
-                chips={
-                  <div className="grid gap-2">
-                    <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                      {reportFormat === 'semester-1' ? t('formatSemester1') : selectedMonthDisplay}
-                    </span>
-                    <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                      {report ? `${report.students.length} ${t('students').toLowerCase()}` : t('metricReady')}
-                    </span>
-                  </div>
-                }
-                actions={
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate(false)}
-                      disabled={!canGenerate || loadingReport}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {loadingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                      {t('generate')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate(true)}
-                      disabled={!canGenerate || loadingReport}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      {t('refresh')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      disabled={!report}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Printer className="h-4 w-4" />
-                      {t('print')}
-                    </button>
-                  </div>
-                }
-              />
+            <section className="overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-[0_18px_45px_-22px_rgba(15,23,42,0.35)]">
+              <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="p-5 sm:p-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
+                      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/15">
+                        <FileText className="h-7 w-7" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-500">{t('eyebrow')}</p>
+                        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{t('title')}</h1>
+                        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                          {t('description', { model: educationModelLabel })}
+                        </p>
+                      </div>
+                    </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                {metricCards.map((card) => (
-                  <div key={card.label} className={`rounded-xl border p-4 shadow-sm ${card.tone}`}>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.label}</div>
-                    <div className="mt-2 text-2xl font-bold text-slate-950">{card.value}</div>
-                    <div className="mt-1 text-sm text-slate-600">{card.note}</div>
+                    <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        {reportFormat === 'semester-1' ? t('formatSemester1') : selectedMonthDisplay}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        {report ? `${report.students.length} ${t('students').toLowerCase()}` : t('metricReady')}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="mt-6 grid gap-5 xl:grid-cols-[390px_minmax(0,1fr)]">
-              <section className="rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
-                  <Settings2 className="h-5 w-5 text-blue-600" />
-                  <h2 className="text-lg font-semibold text-slate-950">{t('reportSetup')}</h2>
-                </div>
+                  <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr_0.9fr]">
+                    <div>
+                      <span className="text-sm font-semibold text-slate-700">{t('formatLabel')}</span>
+                      <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+                        {(['summary', 'detailed', 'semester-1'] as const).map((fmt) => (
+                          <button
+                            key={fmt}
+                            type="button"
+                            onClick={() => setReportFormat(fmt)}
+                            className={`rounded-lg px-2 py-2 text-xs font-semibold transition sm:text-sm ${
+                              reportFormat === fmt ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                            }`}
+                          >
+                            {fmt === 'summary' ? t('formatSummary') : fmt === 'detailed' ? t('formatDetailed') : t('formatSemester1')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <div className="space-y-4">
-                  <label className="block">
-                    <span className="text-sm font-medium text-slate-700">{t('formatLabel')}</span>
-                    <div className="mt-2 grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
-                      {(['summary', 'detailed', 'semester-1'] as const).map((fmt) => (
-                        <button
-                          key={fmt}
-                          type="button"
-                          onClick={() => setReportFormat(fmt)}
-                          className={`rounded-md px-2 py-2 text-xs font-semibold transition sm:text-sm ${
-                            reportFormat === fmt ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-                          }`}
+                    <div>
+                      <span className="text-sm font-semibold text-slate-700">{t('reportSetup')}</span>
+                      <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+                        {(['class', 'grade'] as ReportScope[]).map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => setScope(item)}
+                            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                              scope === item ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                            }`}
+                          >
+                            {item === 'class' ? t('scopeByClass') : t('scopeByGrade')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <label className="block">
+                      <span className="text-sm font-semibold text-slate-700">{t('systemTemplate')}</span>
+                      <select
+                        className="mt-2 h-[42px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600"
+                        value={school?.educationModel || 'KHM_MOEYS'}
+                        disabled
+                      >
+                        <option value="KHM_MOEYS">{t('templateMoeys')}</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-slate-700">{t('academicYear')}</span>
+                      <select
+                        className="mt-2 h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900"
+                        value={selectedYear}
+                        onChange={(event) => setSelectedYear(event.target.value)}
+                      >
+                        {allYears.map((year) => (
+                          <option key={year.id} value={year.id}>
+                            {year.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {scope === 'class' ? (
+                      <label className="block">
+                        <span className="text-sm font-semibold text-slate-700">{t('class')}</span>
+                        <select
+                          className="mt-2 h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900"
+                          value={selectedClass}
+                          onChange={(event) => setSelectedClass(event.target.value)}
+                          disabled={loadingClasses}
                         >
-                          {fmt === 'summary' ? t('formatSummary') : fmt === 'detailed' ? t('formatDetailed') : t('formatSemester1')}
-                        </button>
-                      ))}
-                    </div>
-                  </label>
+                          {classes.map((classItem) => (
+                            <option key={classItem.id} value={classItem.id}>
+                              {classItem.name} ({classItem._count?.students || 0})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="block">
+                        <span className="text-sm font-semibold text-slate-700">{t('grade')}</span>
+                        <select
+                          className="mt-2 h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900"
+                          value={selectedGrade}
+                          onChange={(event) => setSelectedGrade(event.target.value)}
+                        >
+                          {grades.map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
 
-                  <label className="block">
-                    <span className="text-sm font-medium text-slate-700">{t('systemTemplate')}</span>
-                    <select
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                      value={school?.educationModel || 'KHM_MOEYS'}
-                      disabled
-                    >
-                      <option value="KHM_MOEYS">{t('templateMoeys')}</option>
-                    </select>
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
-                    {(['class', 'grade'] as ReportScope[]).map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => setScope(item)}
-                        className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
-                          scope === item ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-                        }`}
-                      >
-                        {item === 'class' ? t('scopeByClass') : t('scopeByGrade')}
-                      </button>
-                    ))}
+                    {reportFormat !== 'semester-1' ? (
+                      <label className="block">
+                        <span className="text-sm font-semibold text-slate-700">{t('monthLabel')}</span>
+                        <select
+                          className="mt-2 h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900"
+                          value={selectedMonthNumber}
+                          onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
+                        >
+                          {KHMER_MONTHS.map((month) => (
+                            <option key={month.number} value={month.number}>
+                              {getKhmerMonthDisplayName(month.number, month.label)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <div className="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+                        <p className="font-semibold">{t('formatSemester1')}</p>
+                        <p className="mt-1 text-xs text-blue-700">
+                          {t('monthsIncluded')}: {semesterMonthLabels.join(' · ')}
+                        </p>
+                      </div>
+                    )}
                   </div>
-
-                  <label className="block">
-                    <span className="text-sm font-medium text-slate-700">{t('academicYear')}</span>
-                    <select
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                      value={selectedYear}
-                      onChange={(event) => setSelectedYear(event.target.value)}
-                    >
-                      {allYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          {year.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  {scope === 'class' ? (
-                    <label className="block">
-                      <span className="text-sm font-medium text-slate-700">{t('class')}</span>
-                      <select
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                        value={selectedClass}
-                        onChange={(event) => setSelectedClass(event.target.value)}
-                        disabled={loadingClasses}
-                      >
-                        {classes.map((classItem) => (
-                          <option key={classItem.id} value={classItem.id}>
-                            {classItem.name} ({classItem._count?.students || 0})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <label className="block">
-                      <span className="text-sm font-medium text-slate-700">{t('grade')}</span>
-                      <select
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                        value={selectedGrade}
-                        onChange={(event) => setSelectedGrade(event.target.value)}
-                      >
-                        {grades.map((g) => (
-                          <option key={g} value={g}>
-                            {g}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-
-                  {reportFormat !== 'semester-1' ? (
-                    <label className="block">
-                      <span className="text-sm font-medium text-slate-700">{t('monthLabel')}</span>
-                      <select
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                        value={selectedMonthNumber}
-                        onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
-                      >
-                        {KHMER_MONTHS.map((month) => (
-                          <option key={month.number} value={month.number}>
-                            {getKhmerMonthDisplayName(month.number, month.label)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <div className="rounded-lg border border-blue-100 bg-blue-50/80 p-3 text-sm text-blue-900">
-                      <p className="font-semibold">{t('formatSemester1')}</p>
-                      <p className="mt-1 text-blue-800">{t('semesterNote')}</p>
-                      <p className="mt-2 text-xs text-blue-700">
-                        {t('monthsIncluded')}: {semesterMonthLabels.join(' · ')}
-                      </p>
-                    </div>
-                  )}
 
                   {report && sortedSubjects.length > 0 && (
-                    <div>
-                      <span className="text-sm font-medium text-slate-700">{t('subjectColumns')}</span>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-blue-600 hover:underline"
-                          onClick={() => setHiddenSubjects(new Set())}
-                        >
-                          {t('showAllSubjects')}
-                        </button>
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-slate-600 hover:underline"
-                          onClick={() => setHiddenSubjects(new Set(sortedSubjects.map((s) => s.id)))}
-                        >
-                          {t('hideAllSubjects')}
-                        </button>
+                    <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-slate-700">{t('subjectColumns')}</span>
+                        <div className="flex gap-3">
+                          <button type="button" className="text-xs font-semibold text-blue-600 hover:underline" onClick={() => setHiddenSubjects(new Set())}>
+                            {t('showAllSubjects')}
+                          </button>
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-slate-600 hover:underline"
+                            onClick={() => setHiddenSubjects(new Set(sortedSubjects.map((s) => s.id)))}
+                          >
+                            {t('hideAllSubjects')}
+                          </button>
+                        </div>
                       </div>
-                      <div className="mt-2 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+                      <div className="mt-3 flex max-h-24 flex-wrap gap-2 overflow-y-auto">
                         {sortedSubjects.map((subject) => (
                           <button
                             key={subject.id}
@@ -499,7 +460,7 @@ export default function KhmerMonthlyReportPage() {
                             onClick={() => toggleSubject(subject.id)}
                             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                               hiddenSubjects.has(subject.id)
-                                ? 'border border-slate-200 bg-slate-100 text-slate-500 line-through'
+                                ? 'border border-slate-200 bg-white text-slate-500 line-through'
                                 : 'border border-emerald-200 bg-emerald-50 text-emerald-900'
                             }`}
                           >
@@ -511,14 +472,56 @@ export default function KhmerMonthlyReportPage() {
                   )}
 
                   {error && (
-                    <div className="flex gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+                    <div className="mt-4 flex gap-2 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
                       <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                       <span>{error}</span>
                     </div>
                   )}
-                </div>
-              </section>
 
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(false)}
+                      disabled={!canGenerate || loadingReport}
+                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {loadingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                      {t('generate')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(true)}
+                      disabled={!canGenerate || loadingReport}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      {t('refresh')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      disabled={!report}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Printer className="h-4 w-4" />
+                      {t('print')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 border-t border-slate-100 bg-slate-50/80 p-5 sm:grid-cols-2 xl:border-l xl:border-t-0 xl:grid-cols-1">
+                  {metricCards.map((card) => (
+                    <div key={card.label} className={`rounded-xl border p-4 shadow-sm ${card.tone}`}>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.label}</div>
+                      <div className="mt-2 text-2xl font-bold text-slate-950">{card.value}</div>
+                      <div className="mt-1 text-sm text-slate-600">{card.note}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <div className="mt-6 grid gap-5">
               <section className="rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
