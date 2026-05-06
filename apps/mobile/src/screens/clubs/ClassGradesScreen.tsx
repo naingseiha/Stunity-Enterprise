@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { classesApi, gradeApi } from '@/api';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -156,7 +157,12 @@ export default function ClassGradesScreen() {
   }, [classId, initialCachedReport, initialCachedStudents, initialCachedTimetable, isTeacher, linkedTeacherId]);
 
   const loadGrades = useCallback(async (force = false) => {
-    if (!isTeacher || !selectedSubject) return;
+    if (!isTeacher) return;
+    if (!selectedSubject) {
+      setExistingGrades([]);
+      setScores({});
+      return;
+    }
 
     try {
       const cachedGrades = !force ? getCachedGradeRows(classId, selectedMonth, selectedSubject.id) : null;
@@ -167,6 +173,9 @@ export default function ClassGradesScreen() {
           cachedScoreMap[grade.studentId] = String(grade.score);
         });
         setScores(cachedScoreMap);
+      } else {
+        setExistingGrades([]);
+        setScores({});
       }
 
       const response = await gradeApi.get(`/grades/class/${classId}`, {
@@ -190,6 +199,8 @@ export default function ClassGradesScreen() {
       setScores(scoreMap);
     } catch (error: any) {
       console.error('Failed to load grades:', error);
+      setExistingGrades([]);
+      setScores({});
     }
   }, [classId, isTeacher, selectedSubject, selectedMonth]);
 
@@ -417,6 +428,8 @@ export default function ClassGradesScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.bgOrbPrimary} />
+      <View style={styles.bgOrbSecondary} />
       <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
@@ -427,8 +440,8 @@ export default function ClassGradesScreen() {
           {isTeacher ? (
             <TouchableOpacity 
               onPress={handleSave} 
-              disabled={saving}
-              style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+              disabled={saving || !selectedSubject}
+              style={[styles.saveBtn, (saving || !selectedSubject) && { opacity: 0.6 }]}
             >
               {saving ? (
                 <ActivityIndicator size="small" color="#FFF" />
@@ -443,6 +456,23 @@ export default function ClassGradesScreen() {
 
         {isTeacher && (
           <View style={styles.filterSection}>
+            <View style={styles.scoreHero}>
+              <LinearGradient
+                colors={['#0F172A', '#0E7490']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.scoreHeroGlow} />
+              <View style={styles.scoreHeroIcon}>
+                <Ionicons name="bar-chart" size={22} color="#FFFFFF" />
+              </View>
+              <View style={styles.scoreHeroCopy}>
+                <Text style={styles.scoreHeroLabel}>{className || t('classScreens.grades.classScores')}</Text>
+                <Text style={styles.scoreHeroTitle}>{selectedSubject?.name || t('classScreens.grades.selectSubject')}</Text>
+                <Text style={styles.scoreHeroMeta}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
+              </View>
+            </View>
             <Text style={styles.sectionLabel}>{t('classScreens.grades.selectSubject')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {subjects.map(subject => (
@@ -491,7 +521,7 @@ export default function ClassGradesScreen() {
           <Text style={styles.loadingText}>{t('classScreens.grades.loading')}</Text>
         </View>
       ) : !isTeacher ? (
-        <View style={{ flex: 1 }}>
+        <View style={styles.screenBody}>
           <View style={styles.readOnlySummaryRow}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>{t('classScreens.grades.classAvg')}</Text>
@@ -525,8 +555,13 @@ export default function ClassGradesScreen() {
             }
           />
         </View>
+      ) : isTeacher && subjects.length === 0 ? (
+        <View style={styles.center}>
+          <Ionicons name="book-outline" size={48} color={COLORS.border} />
+          <Text style={styles.emptyText}>{t('classScreens.grades.noSubjects')}</Text>
+        </View>
       ) : (
-        <View style={{ flex: 1 }}>
+        <View style={styles.screenBody}>
           <View style={styles.listHeader}>
             <Text style={styles.listHeaderTitle}>{t('classScreens.grades.studentListCount', { count: students.length })}</Text>
             <Text style={styles.listHeaderSubtitle}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
@@ -552,10 +587,30 @@ export default function ClassGradesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  bgOrbPrimary: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: '#DFF7FF',
+    opacity: 0.78,
+    top: 118,
+    right: -120,
+  },
+  bgOrbSecondary: {
+    position: 'absolute',
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: '#EDE9FE',
+    opacity: 0.7,
+    top: 460,
+    left: -100,
+  },
   header: { 
-    backgroundColor: COLORS.surface, 
+    backgroundColor: 'rgba(255,255,255,0.96)',
     borderBottomWidth: 1, 
-    borderBottomColor: COLORS.border,
+    borderBottomColor: 'rgba(226,232,240,0.85)',
     paddingBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -571,13 +626,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, 
     paddingVertical: 12 
   },
-  backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.8)',
+    paddingLeft: 7,
+  },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800', color: COLORS.textPrimary },
   saveBtn: { 
     backgroundColor: COLORS.primaryDark, 
     paddingHorizontal: 20, 
     paddingVertical: 10, 
-    borderRadius: 20,
+    borderRadius: 999,
     minWidth: 70,
     alignItems: 'center',
     shadowColor: COLORS.primaryDark,
@@ -588,6 +652,66 @@ const styles = StyleSheet.create({
   },
   saveBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
   filterSection: { paddingVertical: 4 },
+  scoreHero: {
+    minHeight: 128,
+    borderRadius: 28,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 18,
+    padding: 18,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#0E7490',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  scoreHeroGlow: {
+    position: 'absolute',
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.1,
+    right: -50,
+    top: -70,
+  },
+  scoreHeroIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+    marginRight: 14,
+  },
+  scoreHeroCopy: {
+    flex: 1,
+  },
+  scoreHeroLabel: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  scoreHeroTitle: {
+    marginTop: 5,
+    color: '#FFFFFF',
+    fontSize: 23,
+    fontWeight: '900',
+    letterSpacing: -0.6,
+  },
+  scoreHeroMeta: {
+    marginTop: 5,
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   sectionLabel: { 
     fontSize: 13, 
     fontWeight: '700', 
@@ -604,10 +728,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16, 
     paddingVertical: 10, 
-    borderRadius: 12, 
-    backgroundColor: COLORS.inputBg,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(226,232,240,0.95)',
   },
   chipActive: { 
     backgroundColor: COLORS.primaryDark, 
@@ -624,7 +748,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, 
     paddingVertical: 8, 
     borderRadius: 20, 
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -643,10 +767,15 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
+    borderRadius: 22,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(226,232,240,0.95)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 3,
   },
   summaryLabel: {
     fontSize: 12,
@@ -669,7 +798,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 8,
   },
-  listHeaderTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  screenBody: { flex: 1 },
+  listHeaderTitle: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
   listHeaderSubtitle: { fontSize: 13, fontWeight: '600', color: COLORS.primaryDark },
   
   list: { padding: 16, paddingTop: 4, gap: 12, paddingBottom: 40 },
@@ -679,14 +809,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     backgroundColor: COLORS.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    borderColor: 'rgba(226,232,240,0.95)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.055,
+    shadowRadius: 16,
+    elevation: 3,
   },
   studentCardHighlight: {
     borderColor: COLORS.primaryDark,
@@ -695,7 +825,7 @@ const styles = StyleSheet.create({
   studentRankBadge: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 999,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -705,9 +835,9 @@ const styles = StyleSheet.create({
   
   studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   avatar: { 
-    width: 44, 
-    height: 44, 
-    borderRadius: 22, 
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center', 
     alignItems: 'center', 
     marginRight: 12 
@@ -725,9 +855,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.inputBg,
     borderWidth: 1.5,
     borderColor: COLORS.border,
-    borderRadius: 12,
-    height: 44,
-    width: 64,
+    borderRadius: 16,
+    height: 48,
+    width: 70,
     paddingHorizontal: 4,
   },
   scoreInputWrapperModified: {
@@ -756,7 +886,7 @@ const styles = StyleSheet.create({
     borderRadius: 3, 
     backgroundColor: COLORS.primary 
   },
-  maxScore: { fontSize: 13, color: COLORS.textMuted, marginLeft: 8, fontWeight: '600', width: 40 },
+  maxScore: { fontSize: 13, color: COLORS.textMuted, marginLeft: 8, fontWeight: '700', width: 40 },
   readOnlyScoreWrap: {
     alignItems: 'flex-end',
     gap: 6,
@@ -783,7 +913,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: { marginTop: 12, color: COLORS.textSecondary, fontWeight: '600' },
   emptyText: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 16, fontSize: 15, fontWeight: '500' },
 });

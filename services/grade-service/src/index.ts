@@ -84,6 +84,7 @@ app.use(express.json({ limit: '1mb' }));
 interface AuthRequest extends Request {
   user?: {
     id: string;
+    userId?: string;
     email: string;
     role: string;
     schoolId?: string;
@@ -112,6 +113,120 @@ const authenticateToken = (req: AuthRequest, res: Response, next: Function) => {
 
 const getSchoolId = (req: AuthRequest): string | null => {
   return req.user?.schoolId || req.user?.school?.id || null;
+};
+
+const GRADE_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+
+type ScopedUserRecord = {
+  id: string;
+  role: string;
+  studentId: string | null;
+  teacherId: string | null;
+  parentId: string | null;
+};
+
+const getAuthUserId = (req: AuthRequest): string | null => req.user?.userId || req.user?.id || null;
+
+const getScopedUserRecord = async (req: AuthRequest, schoolId: string): Promise<ScopedUserRecord | null> => {
+  const userId = getAuthUserId(req);
+  if (!userId) return null;
+
+  return prisma.user.findFirst({
+    where: {
+      id: userId,
+      schoolId,
+    },
+    select: {
+      id: true,
+      role: true,
+      studentId: true,
+      teacherId: true,
+      parentId: true,
+    },
+  });
+};
+
+type GradeAccessResult =
+  | { allowed: true; classData: { id: string; schoolId: string; academicYearId: string }; teacherId?: string | null }
+  | { allowed: false; status: number; message: string };
+
+const resolveGradeAccess = async (
+  req: AuthRequest,
+  classId: string,
+  subjectId?: string | null
+): Promise<GradeAccessResult> => {
+  const schoolId = getSchoolId(req);
+  if (!schoolId) {
+    return { allowed: false, status: 400, message: 'School context is required' };
+  }
+
+  const classData = await prisma.class.findFirst({
+    where: { id: classId, schoolId },
+    select: {
+      id: true,
+      schoolId: true,
+      academicYearId: true,
+    },
+  });
+
+  if (!classData) {
+    return { allowed: false, status: 404, message: 'Class not found in your school' };
+  }
+
+  const role = req.user?.role;
+  if (role && GRADE_ADMIN_ROLES.has(role)) {
+    return { allowed: true, classData };
+  }
+
+  const userRecord = await getScopedUserRecord(req, schoolId);
+  if (!userRecord) {
+    return { allowed: false, status: 403, message: 'Access denied' };
+  }
+
+  if (role !== 'TEACHER') {
+    return { allowed: false, status: 403, message: 'Only assigned teachers can access class grade entry' };
+  }
+
+  const teacherId = userRecord.teacherId;
+  if (!teacherId) {
+    return { allowed: false, status: 403, message: 'Teacher profile is not linked to this account' };
+  }
+
+  const teacherClassAccess = await prisma.class.findFirst({
+    where: {
+      id: classId,
+      schoolId,
+      OR: [
+        { homeroomTeacherId: teacherId },
+        { teacherClasses: { some: { teacherId } } },
+        { timetableEntries: { some: { teacherId } } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (!teacherClassAccess) {
+    return { allowed: false, status: 403, message: 'Teacher is not assigned to this class' };
+  }
+
+  if (subjectId) {
+    const teacherSubjectAccess = await prisma.timetableEntry.findFirst({
+      where: {
+        classId,
+        subjectId,
+        teacherId,
+        schoolId,
+        academicYearId: classData.academicYearId,
+      },
+      select: { id: true },
+    });
+
+    if (!teacherSubjectAccess) {
+      return { allowed: false, status: 403, message: 'Teacher is not assigned to this subject for this class' };
+    }
+  }
+
+  return { allowed: true, classData, teacherId };
 };
 
 const gradeGridCache = new Map<string, { data: any; timestamp: number }>();
@@ -723,20 +838,17 @@ app.get('/grades/class/:classId', authenticateToken, async (req: AuthRequest, re
   try {
     const { classId } = req.params;
     const { month, subjectId } = req.query;
-    const schoolId = getSchoolId(req);
+    const subjectIdParam = typeof subjectId === 'string' ? subjectId : null;
+    const access = await resolveGradeAccess(req, classId, subjectIdParam);
 
-    // Multi-tenant: verify class belongs to requesting school
-    if (schoolId) {
-      const classData = await prisma.class.findFirst({ where: { id: classId, schoolId } });
-      if (!classData) {
-        return res.status(404).json({ message: 'Class not found in your school' });
-      }
+    if (!access.allowed) {
+      return res.status(access.status).json({ message: access.message });
     }
 
     const where: any = { classId };
 
     if (month) where.month = month as string;
-    if (subjectId) where.subjectId = subjectId as string;
+    if (subjectIdParam) where.subjectId = subjectIdParam;
 
     const grades = await prisma.grade.findMany({
       where,
@@ -792,6 +904,12 @@ app.get(
       const { classId, subjectId, month } = req.params;
       const schoolId = getSchoolId(req);
       const cacheKey = `${schoolId || 'unknown'}:${classId}:${subjectId}:${month}`;
+      const access = await resolveGradeAccess(req, classId, subjectId);
+
+      if (!access.allowed) {
+        return res.status(access.status).json({ message: access.message });
+      }
+
       const cachedResponse = readGradeGridCache(cacheKey);
 
       if (cachedResponse) {
@@ -912,6 +1030,30 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
 
     if (!Array.isArray(grades) || grades.length === 0) {
       return res.status(400).json({ message: 'Grades array is required' });
+    }
+
+    const classSubjectPairs = new Map<string, { classId: string; subjectId: string }>();
+    for (const grade of grades) {
+      if (!grade?.classId || !grade?.subjectId) {
+        return res.status(400).json({ message: 'Each grade requires classId and subjectId' });
+      }
+
+      classSubjectPairs.set(`${grade.classId}:${grade.subjectId}`, {
+        classId: grade.classId,
+        subjectId: grade.subjectId,
+      });
+    }
+
+    for (const pair of classSubjectPairs.values()) {
+      const access = await resolveGradeAccess(req, pair.classId, pair.subjectId);
+
+      if (!access.allowed) {
+        return res.status(access.status).json({
+          message: access.message,
+          classId: pair.classId,
+          subjectId: pair.subjectId,
+        });
+      }
     }
 
     const results = {
@@ -1266,6 +1408,23 @@ app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: Auth
   try {
     const { studentId, month } = req.params;
     const currentYear = new Date().getFullYear();
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const studentRecord = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId,
+      },
+      select: { id: true },
+    });
+
+    if (!studentRecord) {
+      return res.status(404).json({ message: 'Student not found in your school' });
+    }
+
     const summaryInclude = {
       student: {
         select: {
@@ -1802,6 +1961,10 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
     const { classId } = req.params;
     const { semester = '1', year } = req.query;
     const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
     const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
     const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
     const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
@@ -1812,11 +1975,22 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       return res.json(cachedResponse);
     }
 
-    const [studentClasses, grades, classInfo] = await Promise.all([
+    const classInfo = await prisma.class.findFirst({
+      where: { id: classId, schoolId },
+    });
+
+    if (!classInfo) {
+      return res.status(404).json({ message: 'Class not found in your school' });
+    }
+
+    const [studentClasses, grades] = await Promise.all([
       prisma.studentClass.findMany({
         where: {
           classId,
           status: 'ACTIVE',
+          student: {
+            schoolId,
+          },
         },
         include: {
           student: true,
@@ -1839,9 +2013,6 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
             },
           },
         },
-      }),
-      prisma.class.findUnique({
-        where: { id: classId },
       }),
     ]);
 

@@ -16,7 +16,6 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-import StunityLogo from '../../../assets/Stunity.svg';
 import { Avatar } from '@/components/common';
 import { clubsApi } from '@/api';
 import type { Club, ClubMember } from '@/api/clubs';
@@ -24,6 +23,7 @@ import type { ClubsStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/stores';
 import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
+import { KHMER_FONT_FAMILIES } from '@/lib/khmerTypography';
 
 const HERO_GRADIENT: [string, string] = ['#FB7185', '#E11D8A'];
 
@@ -48,8 +48,9 @@ const COLORS = {
 } as const;
 
 export default function ClubDetailsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
+  const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { clubId, initialClub } = route.params as ClubsStackParamList['ClubDetails'];
@@ -257,7 +258,7 @@ export default function ClubDetailsScreen() {
   );
   const canOpenCommunityTools = Boolean(isJoined || isJoinedFromClub);
   const canOpenAcademicTools = Boolean((isJoined || isJoinedFromClub) && club?.type === 'STRUCTURED_CLASS');
-  const heroRole = myMembership ? getRoleLabel(myMembership.role) : t('clubScreens.details.guest');
+  const heroRole = myMembership ? getRoleLabel(myMembership.role) : 'Guest';
 
   const toolItems = useMemo(() => {
     const rows: Array<{
@@ -343,7 +344,11 @@ export default function ClubDetailsScreen() {
           <Ionicons name="chevron-back" size={24} color={COLORS.textSecondary} />
         </TouchableOpacity>
 
-        <StunityLogo width={108} height={30} />
+        <View style={styles.topBarTitleWrap} pointerEvents="none">
+          <Text style={[styles.topBarTitle, isKhmer && styles.khmerHeadingText]} numberOfLines={2}>
+            {club?.name || t('clubScreens.details.clubHubTools')}
+          </Text>
+        </View>
 
         <TouchableOpacity onPress={handleRefresh} style={styles.iconButton}>
           {refreshing ? (
@@ -436,8 +441,11 @@ export default function ClubDetailsScreen() {
           </View>
 
           <View style={styles.heroTitleRow}>
-            <Text style={styles.heroTitleText} numberOfLines={1}>
+            <Text style={[styles.heroTitleText, isKhmer && styles.khmerHeadingText]} numberOfLines={2}>
               {club.name}
+            </Text>
+            <Text style={[styles.heroSubtitleText, isKhmer && styles.khmerBodyText]} numberOfLines={1}>
+              {club.description || t('clubScreens.details.noDescription')}
             </Text>
           </View>
 
@@ -472,12 +480,49 @@ export default function ClubDetailsScreen() {
           </View>
         </View>
 
+        <View style={styles.insightsRow}>
+          <View style={styles.insightCard}>
+            <View style={styles.insightTopRow}>
+              <Ionicons name="people-outline" size={16} color="#0EA5E9" />
+              <Text style={[styles.insightLabel, isKhmer && styles.khmerBodyText]}>
+                {t('clubScreens.details.totalMembers')}
+              </Text>
+            </View>
+            <Text style={[styles.insightValue, isKhmer && styles.khmerBodyText]}>
+              {visibleMemberCount}
+            </Text>
+          </View>
+          <View style={styles.insightCard}>
+            <View style={styles.insightTopRow}>
+              <Ionicons name={modeMeta.icon} size={16} color="#EC4899" />
+              <Text style={[styles.insightLabel, isKhmer && styles.khmerBodyText]}>
+                {t('clubScreens.details.mode.public')}
+              </Text>
+            </View>
+            <Text style={[styles.insightValue, isKhmer && styles.khmerBodyText]} numberOfLines={1}>
+              {modeMeta.label}
+            </Text>
+          </View>
+          <View style={styles.insightCard}>
+            <View style={styles.insightTopRow}>
+              <Ionicons name="person-circle-outline" size={16} color="#6366F1" />
+              <Text style={[styles.insightLabel, isKhmer && styles.khmerBodyText]}>
+                {t('clubScreens.roles.member')}
+              </Text>
+            </View>
+            <Text style={[styles.insightValue, isKhmer && styles.khmerBodyText]} numberOfLines={1}>
+              {heroRole}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.sectionWrap}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeader}>{t('clubScreens.details.clubHubTools')}</Text>
+            <Text style={[styles.sectionHeader, isKhmer && styles.khmerHeadingText]}>{t('clubScreens.details.clubHubTools')}</Text>
           </View>
 
-          <View style={styles.toolsGrid}>
+          <View style={styles.sectionSurface}>
+            <View style={styles.toolsGrid}>
             {toolItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -489,13 +534,15 @@ export default function ClubDetailsScreen() {
                 <View style={[styles.toolIconWrap, { backgroundColor: item.iconBg }]}>
                   <Ionicons name={item.icon} size={22} color={item.iconColor} />
                 </View>
-                <Text style={styles.toolLabel} numberOfLines={1}>{item.label}</Text>
+                <Text style={[styles.toolLabel, isKhmer && styles.khmerBodyText]} numberOfLines={1}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} style={styles.toolChevron} />
               </TouchableOpacity>
             ))}
           </View>
+          </View>
 
           {!canOpenCommunityTools ? (
-            <Text style={styles.sectionHint}>{t('clubScreens.details.unlockHint')}</Text>
+            <Text style={[styles.sectionHint, isKhmer && styles.khmerBodyText]}>{t('clubScreens.details.unlockHint')}</Text>
           ) : null}
         </View>
 
@@ -504,9 +551,9 @@ export default function ClubDetailsScreen() {
             <View style={styles.sectionIconWrap}>
               <Ionicons name="information-circle-outline" size={14} color={COLORS.primary} />
             </View>
-            <Text style={styles.sectionTitle}>{t('clubScreens.details.about')}</Text>
+            <Text style={[styles.sectionTitle, isKhmer && styles.khmerHeadingText]}>{t('clubScreens.details.about')}</Text>
           </View>
-          <Text style={styles.sectionBody}>{club.description || t('clubScreens.details.noDescription')}</Text>
+          <Text style={[styles.sectionBody, isKhmer && styles.khmerBodyText]}>{club.description || t('clubScreens.details.noDescription')}</Text>
         </View>
 
         {club.tags?.length ? (
@@ -515,12 +562,12 @@ export default function ClubDetailsScreen() {
               <View style={styles.sectionIconWrap}>
                 <Ionicons name="pricetags-outline" size={14} color={COLORS.primary} />
               </View>
-              <Text style={styles.sectionTitle}>{t('clubScreens.details.topics')}</Text>
+              <Text style={[styles.sectionTitle, isKhmer && styles.khmerHeadingText]}>{t('clubScreens.details.topics')}</Text>
             </View>
             <View style={styles.tagsRow}>
               {club.tags.map((tag) => (
                 <View key={tag} style={styles.tagChip}>
-                  <Text style={styles.tagText}>#{tag}</Text>
+                  <Text style={[styles.tagText, isKhmer && styles.khmerBodyText]}>#{tag}</Text>
                 </View>
               ))}
             </View>
@@ -533,13 +580,13 @@ export default function ClubDetailsScreen() {
               <View style={styles.sectionIconWrap}>
                 <Ionicons name="people-outline" size={14} color={COLORS.primary} />
               </View>
-              <Text style={styles.sectionTitle}>{t('clubScreens.details.tools.members')}</Text>
+              <Text style={[styles.sectionTitle, isKhmer && styles.khmerHeadingText]}>{t('clubScreens.details.tools.members')}</Text>
             </View>
-            <Text style={styles.sectionMetaText}>{t('clubScreens.details.activeCount', { count: activeMembers.length })}</Text>
+            <Text style={[styles.sectionMetaText, isKhmer && styles.khmerBodyText]}>{t('clubScreens.details.activeCount', { count: activeMembers.length })}</Text>
           </View>
 
           {activeMembers.length === 0 ? (
-            <Text style={styles.emptyMembersText}>{t('clubScreens.details.noActiveMembers')}</Text>
+            <Text style={[styles.emptyMembersText, isKhmer && styles.khmerBodyText]}>{t('clubScreens.details.noActiveMembers')}</Text>
           ) : (
             <View style={styles.membersList}>
               {activeMembers.slice(0, 6).map((member) => (
@@ -554,7 +601,7 @@ export default function ClubDetailsScreen() {
                     <Text style={styles.memberName} numberOfLines={1}>
                       {`${member.user.firstName} ${member.user.lastName}`}
                     </Text>
-                    <Text style={styles.memberRole}>{getRoleLabel(member.role)}</Text>
+                    <Text style={[styles.memberRole, isKhmer && styles.khmerBodyText]}>{getRoleLabel(member.role)}</Text>
                   </View>
                 </View>
               ))}
@@ -593,6 +640,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     backgroundColor: COLORS.surface,
+    gap: 10,
+  },
+  topBarTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topBarTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   iconButton: {
     width: 38,
@@ -609,9 +670,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 12,
     paddingBottom: 28,
-    gap: 18,
+    gap: 14,
   },
   stateContainer: {
     flex: 1,
@@ -669,7 +730,7 @@ const styles = StyleSheet.create({
   heroCard: {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 28,
+    borderRadius: 24,
     paddingHorizontal: 18,
     paddingTop: 16,
     paddingBottom: 16,
@@ -693,7 +754,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginBottom: 14,
+    marginBottom: 10,
     zIndex: 2,
   },
   heroModePill: {
@@ -716,7 +777,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 8,
     zIndex: 2,
   },
   heroMetricBlock: {
@@ -724,8 +785,8 @@ const styles = StyleSheet.create({
   },
   heroMetric: {
     color: '#FFFFFF',
-    fontSize: 58,
-    lineHeight: 60,
+    fontSize: 52,
+    lineHeight: 56,
     fontWeight: '800',
     letterSpacing: -1.2,
   },
@@ -738,22 +799,29 @@ const styles = StyleSheet.create({
   },
   heroTitleRow: {
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 8,
     zIndex: 2,
   },
   heroTitleText: {
     color: '#FFFFFF',
-    fontSize: 24,
-    lineHeight: 29,
-    fontWeight: '700',
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: '800',
     letterSpacing: -0.4,
+  },
+  heroSubtitleText: {
+    marginTop: 6,
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 13,
+    fontWeight: '600',
   },
   heroMetaRow: {
     marginTop: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     zIndex: 2,
+    flexWrap: 'wrap',
   },
   heroMetaPill: {
     height: 30,
@@ -771,7 +839,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   heroJoinButton: {
-    minWidth: 96,
+    minWidth: 110,
     height: 30,
     paddingHorizontal: 12,
     borderRadius: 999,
@@ -793,8 +861,58 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.1,
   },
+  insightsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  insightCard: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
+    minHeight: 98,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  insightTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  insightValue: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    lineHeight: 21,
+  },
+  insightLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+  },
   sectionWrap: {
     marginTop: 2,
+  },
+  sectionSurface: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -804,7 +922,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   sectionHeader: {
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: '800',
     color: COLORS.textPrimary,
     letterSpacing: -0.5,
@@ -816,20 +934,20 @@ const styles = StyleSheet.create({
   },
   toolCard: {
     width: '48%',
-    minHeight: 88,
-    borderRadius: 18,
+    minHeight: 96,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.035,
+    shadowRadius: 8,
+    elevation: 1,
   },
   toolCardDisabled: {
     opacity: 0.45,
@@ -840,13 +958,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 9,
   },
   toolLabel: {
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: 'left',
+  },
+  toolChevron: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
   },
   sectionHint: {
     marginTop: 10,
@@ -859,7 +982,12 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 16,
+    padding: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   sectionHeaderRowCompact: {
     flexDirection: 'row',
@@ -923,7 +1051,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
   },
   memberTextWrap: {
     flex: 1,
@@ -943,5 +1074,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: COLORS.textMuted,
+  },
+  khmerHeadingText: {
+    fontFamily: KHMER_FONT_FAMILIES.heading,
+    includeFontPadding: true,
+    lineHeight: 30,
+  },
+  khmerBodyText: {
+    fontFamily: KHMER_FONT_FAMILIES.body,
+    includeFontPadding: true,
+    lineHeight: 28,
   },
 });

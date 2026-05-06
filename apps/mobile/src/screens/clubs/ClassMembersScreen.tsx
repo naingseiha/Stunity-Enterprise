@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { classesApi } from '@/api';
 import { useAuthStore, useMessagingStore } from '@/stores';
@@ -102,7 +103,7 @@ export default function ClassMembersScreen() {
       setLoading(true);
       const conversation = await startConversation([participantId]);
       if (conversation) {
-        navigation.navigate('MessagesStack', {
+        navigation.navigate('Messages', {
           screen: 'Chat',
           params: {
             conversationId: conversation.id,
@@ -151,6 +152,27 @@ export default function ClassMembersScreen() {
 
   const renderHeader = () => (
     <View style={styles.listHeader}>
+      <View style={styles.membersHero}>
+        <LinearGradient
+          colors={['#0EA5E9', '#06B6D4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.heroBubble} />
+        <View style={styles.heroIconWrap}>
+          <Ionicons name="people" size={24} color="#FFFFFF" />
+        </View>
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroEyebrow}>{t('classScreens.members.header')}</Text>
+          <Text style={styles.heroCount}>{stats.total}</Text>
+        </View>
+        <View style={styles.heroSplit}>
+          <Text style={styles.heroSplitText}>{stats.male} {t('classScreens.members.male')}</Text>
+          <Text style={styles.heroSplitText}>{stats.female} {t('classScreens.members.female')}</Text>
+        </View>
+      </View>
+
       {user?.role === 'PARENT' && homeroomTeacherId && (
         <TouchableOpacity 
           style={styles.msgTeacherBanner} 
@@ -170,17 +192,17 @@ export default function ClassMembersScreen() {
 
       {/* Statistics Cards */}
       <View style={styles.statsRow}>
-        <View style={[styles.statBox, { backgroundColor: COLORS.totalBg }]}>
+        <View style={[styles.statBox, { backgroundColor: COLORS.totalBg, borderColor: '#E9D5FF' }]}>
           <Ionicons name="people" size={20} color={COLORS.totalText} />
           <Text style={[styles.statValue, { color: COLORS.totalText }]}>{stats.total}</Text>
           <Text style={[styles.statLabel, { color: COLORS.totalText }]}>{t('classScreens.members.total')}</Text>
         </View>
-        <View style={[styles.statBox, { backgroundColor: COLORS.maleBg }]}>
+        <View style={[styles.statBox, { backgroundColor: COLORS.maleBg, borderColor: '#BAE6FD' }]}>
           <Ionicons name="man" size={20} color={COLORS.maleText} />
           <Text style={[styles.statValue, { color: COLORS.maleText }]}>{stats.male}</Text>
           <Text style={[styles.statLabel, { color: COLORS.maleText }]}>{t('classScreens.members.male')}</Text>
         </View>
-        <View style={[styles.statBox, { backgroundColor: COLORS.femaleBg }]}>
+        <View style={[styles.statBox, { backgroundColor: COLORS.femaleBg, borderColor: '#FBCFE8' }]}>
           <Ionicons name="woman" size={20} color={COLORS.femaleText} />
           <Text style={[styles.statValue, { color: COLORS.femaleText }]}>{stats.female}</Text>
           <Text style={[styles.statLabel, { color: COLORS.femaleText }]}>{t('classScreens.members.female')}</Text>
@@ -304,9 +326,9 @@ export default function ClassMembersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { 
-    backgroundColor: COLORS.surface, 
+    backgroundColor: 'rgba(255,255,255,0.96)',
     borderBottomWidth: 1, 
-    borderBottomColor: COLORS.border,
+    borderBottomColor: 'rgba(226,232,240,0.85)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -315,12 +337,87 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  backBtn: { width: 40, height: 40, justifyContent: 'center' },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.8)',
+    paddingLeft: 7,
+  },
   headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
-  list: { padding: 16, paddingBottom: 40 },
-  listHeader: { marginBottom: 16 },
+  list: { padding: 16, paddingBottom: 48 },
+  listHeader: { marginBottom: 18 },
+  membersHero: {
+    minHeight: 132,
+    borderRadius: 28,
+    overflow: 'hidden',
+    padding: 18,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  heroBubble: {
+    position: 'absolute',
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.12,
+    right: -48,
+    top: -58,
+  },
+  heroIconWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  heroCopy: {
+    flex: 1,
+  },
+  heroEyebrow: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  heroCount: {
+    marginTop: 4,
+    color: '#FFFFFF',
+    fontSize: 42,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+  },
+  heroSplit: {
+    gap: 8,
+  },
+  heroSplitText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    overflow: 'hidden',
+    textAlign: 'center',
+  },
   
   statsRow: {
     flexDirection: 'row',
@@ -329,10 +426,16 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 2,
   },
   statValue: {
     fontSize: 22,
@@ -350,10 +453,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 48,
+    borderColor: 'rgba(226,232,240,0.95)',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    height: 52,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
@@ -364,36 +472,36 @@ const styles = StyleSheet.create({
 
   card: { 
     backgroundColor: COLORS.surface, 
-    borderRadius: 16, 
-    padding: 12, 
-    marginBottom: 10,
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1, 
     borderColor: COLORS.border, 
     flexDirection: 'row', 
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOpacity: 0.055,
+    shadowRadius: 14,
+    elevation: 3,
   },
   avatar: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     marginRight: 12 
   },
   avatarFallback: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     justifyContent: 'center', 
     alignItems: 'center', 
     marginRight: 12 
   },
   avatarText: { fontSize: 18, fontWeight: '800' },
   info: { flex: 1, justifyContent: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
+  name: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
   
   metaRow: {
     flexDirection: 'row',
@@ -419,7 +527,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   badgeText: {
     fontSize: 11,
@@ -430,8 +538,10 @@ const styles = StyleSheet.create({
   actionBtn: { 
     width: 40, 
     height: 40, 
-    borderRadius: 20, 
-    backgroundColor: '#F0FBFF', 
+    borderRadius: 18,
+    backgroundColor: '#E0F2FE',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
     justifyContent: 'center', 
     alignItems: 'center',
     marginLeft: 10,

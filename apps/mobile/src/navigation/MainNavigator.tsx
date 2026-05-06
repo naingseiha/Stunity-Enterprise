@@ -420,6 +420,9 @@ const MainNavigatorContent = () => {
             if ([
               'ClassGrades',
               'ClassDetails',
+              'ClassReport',
+              'ClassAttendance',
+              'ClassQuizzes',
               'CreateClub',
               'ClubAcademics',
               'ClubAnnouncements',

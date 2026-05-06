@@ -11,6 +11,8 @@ export interface MyClassSummary {
   studentCount: number;
   myRole: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
   isHomeroom: boolean;
+  /** Teacher: class has at least one timetable row for this teacher in this academic year (subject teaching). */
+  hasTimetableAssignment?: boolean;
   linkedStudentId?: string;
   linkedStudentIds?: string[];
   linkedTeacherId?: string;
@@ -171,8 +173,21 @@ interface MyClassesResponse {
   data?: MyClassSummary[];
 }
 
+type ClassesLightweightRow = {
+  id: string;
+  classId?: string;
+  name: string;
+  grade: string;
+  section?: string | null;
+  track?: string | null;
+  capacity?: number | null;
+  academicYear?: { id: string; name: string; isCurrent: boolean };
+  homeroomTeacher?: MyClassSummary['homeroomTeacher'];
+  _count?: { studentClasses?: number };
+};
+
 const CLASSES_CACHE_TTL = 30_000;
-let _myClassesCache: { data: MyClassSummary[]; ts: number; academicYearId?: string } | null = null;
+let _myClassesCache: { data: MyClassSummary[]; ts: number; cacheKey: string } | null = null;
 const _myClassesInFlight = new Map<string, Promise<MyClassSummary[]>>();
 const CLASS_DETAIL_CACHE_TTL = 60_000;
 const _classDetailCache = new Map<string, { data: ClassDetailBundle; ts: number }>();
@@ -200,7 +215,8 @@ const EMPTY_CLASS_DETAIL_BUNDLE: ClassDetailBundle = {
   teacherInfo: null,
 };
 
-const getMyClassesCacheKey = (academicYearId?: string) => academicYearId || 'current';
+const getMyClassesCacheKey = (academicYearId?: string, scopeKey?: string) =>
+  `${scopeKey || 'current-user'}:${academicYearId || 'current'}`;
 const getCachedResource = <T>(
   map: Map<string, { data: T; ts: number }>,
   key: string,
@@ -222,7 +238,7 @@ const getDailyAttendanceCacheKey = (classId: string, date: string) => `${classId
 const getGradesReportCacheKey = (classId: string, options?: { semester?: number; year?: number }) =>
   `${classId}:${options?.semester ?? 1}:${options?.year ?? 'current'}`;
 
-export const getCachedMyClasses = (options?: { academicYearId?: string }): MyClassSummary[] | null => {
+export const getCachedMyClasses = (options?: { academicYearId?: string; scopeKey?: string }): MyClassSummary[] | null => {
   if (!_myClassesCache) return null;
 
   if (Date.now() - _myClassesCache.ts >= CLASSES_CACHE_TTL) {
@@ -230,7 +246,7 @@ export const getCachedMyClasses = (options?: { academicYearId?: string }): MyCla
     return null;
   }
 
-  if ((_myClassesCache.academicYearId || 'current') !== getMyClassesCacheKey(options?.academicYearId)) {
+  if (_myClassesCache.cacheKey !== getMyClassesCacheKey(options?.academicYearId, options?.scopeKey)) {
     return null;
   }
 
@@ -248,14 +264,15 @@ export const getCachedAcademicYears = (): any[] | null => {
   return _academicYearsCache.data;
 };
 
-export const getMyClasses = async (options?: { force?: boolean; academicYearId?: string }): Promise<MyClassSummary[]> => {
+export const getMyClasses = async (options?: { force?: boolean; academicYearId?: string; scopeKey?: string }): Promise<MyClassSummary[]> => {
   const force = options?.force ?? false;
   const academicYearId = options?.academicYearId;
+  const scopeKey = options?.scopeKey;
 
-  const cacheKey = getMyClassesCacheKey(academicYearId);
+  const cacheKey = getMyClassesCacheKey(academicYearId, scopeKey);
 
   if (!force) {
-    const cached = getCachedMyClasses({ academicYearId });
+    const cached = getCachedMyClasses({ academicYearId, scopeKey });
     if (cached) {
       return cached;
     }
@@ -270,7 +287,7 @@ export const getMyClasses = async (options?: { force?: boolean; academicYearId?:
     params: { academicYearId }
   }).then((response) => {
     const data = Array.isArray(response.data?.data) ? response.data.data : [];
-    _myClassesCache = { data, ts: Date.now(), academicYearId } as any;
+    _myClassesCache = { data, ts: Date.now(), cacheKey };
     return data;
   }).finally(() => {
     _myClassesInFlight.delete(cacheKey);
@@ -306,6 +323,44 @@ export const getAcademicYears = async (): Promise<any[]> => {
 export const getClasses = async (params?: Record<string, any>): Promise<MyClassSummary[]> => {
   const response = await classApi.get<{ success: boolean; data: MyClassSummary[] }>('/classes', { params });
   return response.data?.data || [];
+};
+
+/**
+ * Fetches the school's class directory with a minimal payload.
+ * This endpoint is intentionally available to non-admin roles (read-only listing).
+ */
+export const getClassesLightweight = async (options?: {
+  academicYearId?: string;
+  grade?: string;
+  search?: string;
+  limit?: number;
+  asRole?: MyClassSummary['myRole'];
+}): Promise<MyClassSummary[]> => {
+  const response = await classApi.get<{ success?: boolean; data?: ClassesLightweightRow[] }>('/classes/lightweight', {
+    params: {
+      academicYearId: options?.academicYearId,
+      grade: options?.grade,
+      search: options?.search,
+      limit: options?.limit,
+    },
+  });
+
+  const role = options?.asRole || 'STUDENT';
+  const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+  return rows.map((row) => ({
+    id: row.id,
+    classId: row.classId,
+    name: row.name,
+    grade: row.grade,
+    section: row.section || undefined,
+    track: row.track ?? null,
+    capacity: row.capacity ?? null,
+    studentCount: row._count?.studentClasses ?? 0,
+    myRole: role,
+    isHomeroom: false,
+    homeroomTeacher: row.homeroomTeacher || null,
+    academicYear: row.academicYear || { id: '', name: '', isCurrent: false },
+  }));
 };
 
 export const invalidateMyClassesCache = (): void => {

@@ -340,7 +340,7 @@
       "invalidProjectMessage": "សូមបន្ថែមគោលដៅយ៉ាងហោចណាស់មួយទៅគម្រោង។",
       "failedCreatePost": "បង្កើតការបង្ហោះមិនបានសម្រេច។ សូមព្យាយាមម្តងទៀត។",
       "visibility": {
-        "public": "សាធារណៈ",
+        "public": "ស្ថានភាព",
         "school": "សាលា",
         "class": "ថ្នាក់",
         "private": "ឯកជន"
@@ -1606,10 +1606,10 @@
       "examPrep": "ត្រៀមប្រឡង"
     },
     "screen": {
-      "schoolClasses": "ថ្នាក់សាលា",
+      "schoolClasses": "ថ្នាក់រៀន",
       "schoolClassesSubtitle": {
         "admin": "គ្រប់គ្រង និងស្វែងរកថ្នាក់ទាំងអស់",
-        "teacher": "ថ្នាក់ដែលអ្នកបង្រៀនក្នុងឆ្នាំនេះ",
+        "teacher": "ថ្នាក់របស់អ្នកក្នុងឆ្នាំនេះ (ដែលបានចាត់ឱ្យគណនីអ្នក—មិនមែនថ្នាក់ទាំងអស់នៃសាលាទេ)",
         "parent": "ថ្នាក់កូនរបស់អ្នកក្នុងឆ្នាំនេះ",
         "student": "ថ្នាក់ដែលអ្នកកំពុងសិក្សាក្នុងឆ្នាំនេះ"
       },
@@ -1627,7 +1627,13 @@
       "noLinkedChildClasses": "រកមិនឃើញថ្នាក់កូនដែលបានភ្ជាប់សម្រាប់ឆ្នាំសិក្សានេះ",
       "noClassesYear": "រកមិនឃើញថ្នាក់សម្រាប់ឆ្នាំសិក្សានេះ",
       "seeAllCount": "មើលទាំងអស់ ({{count}})",
-      "communityClubs": "ក្លឹបសហគមន៍",
+      "seeAllMyClassesCount": "មើលថ្នាក់របស់ខ្ញុំទាំងអស់ ({{count}})",
+      "seeAllTeachingCount": "មើលថ្នាក់បង្រៀនទាំងអស់ ({{count}})",
+      "seeAllOtherCount": "មើលថ្នាក់ផ្សេងទៀតទាំងអស់ ({{count}})",
+      "teacherSectionTeaching": "ថ្នាក់ដែលខ្ញុំបង្រៀន",
+      "teacherSectionOther": "ថ្នាក់ផ្សេងទៀតដែលភ្ជាប់",
+      "myClassesSection": "ថ្នាក់របស់ខ្ញុំ",
+      "communityClubs": "ក្លឹបសិក្សា",
       "todaysClubs": "ក្លឹបថ្ងៃនេះ",
       "searchPlaceholder": "ស្វែងរកមេរៀន និងក្លឹប...",
       "noJoined": "មិនទាន់បានចូលរួមក្លឹប",
@@ -1653,7 +1659,9 @@
       "section": "ផ្នែក {{section}}",
       "studentCount": "សិស្ស {{count}} នាក់",
       "gradeShort": "ថ្នាក់ {{grade}}",
-      "studentCountShort": "{{count}}"
+      "studentCountShort": "{{count}}",
+      "sectionAll": "ថ្នាក់ទាំងអស់",
+      "footnoteTeacher": "បញ្ជីនេះបង្ហាញថ្នាក់ដែលភ្ជាប់ទៅគណនីអ្នកក្នុងឆ្នាំនេះ—មិនមែនថ្នាក់ទាំងអស់នៃសាលាទេ។"
     }
   },
   "classDetails": {
@@ -1663,6 +1671,8 @@
     "loading": "កំពុងផ្ទុកព័ត៌មានលម្អិតថ្នាក់...",
     "retry": "ព្យាយាមម្ដងទៀត",
     "classHubTools": "ឧបករណ៍មជ្ឈមណ្ឌលថ្នាក់",
+    "classHubSubtitle": "អ្វីៗទាំងអស់សម្រាប់ថ្នាក់នេះនៅកន្លែងតែមួយ",
+    "teacherLinkedClassHint": "ថ្នាក់នេះភ្ជាប់ទៅកម្រងព័ត៌មានរបស់អ្នក ប៉ុន្តែអ្នកមិនមានក្នុងកាលវិភាគនៅថ្នាក់នេះ—ការបញ្ចូលពិន្ទុអាចធ្វើបានតែចំណុចដែលអ្នកបង្រៀនតាមកាលវិភាគប៉ុណ្ណោះ។",
     "classSchedule": "កាលវិភាគថ្នាក់",
     "classTeachers": "គ្រូថ្នាក់",
     "teacher": "គ្រូ",
@@ -1701,7 +1711,8 @@
       "wednesday": "ពុធ",
       "thursday": "ព្រហស្បតិ៍",
       "friday": "សុក្រ",
-      "saturday": "សៅរ៍"
+      "saturday": "សៅរ៍",
+      "sunday": "អាទិត្យ"
     },
     "daysShort": {
       "monday": "ចន្ទ",
@@ -1709,7 +1720,8 @@
       "wednesday": "ពុធ",
       "thursday": "ព្រហ",
       "friday": "សុក្រ",
-      "saturday": "សៅរ៍"
+      "saturday": "សៅរ៍",
+      "sunday": "អាទិ"
     },
     "quickImport": {
       "title": "បញ្ចូលពិន្ទុលឿន",
@@ -2080,8 +2092,8 @@
       "leave": "ចាកចេញ",
       "guest": "ភ្ញៀវ",
       "mode": {
-        "public": "សាធារណៈ",
-        "inviteOnly": "ដោយការអញ្ជើញ",
+        "public": "ស្ថានភាព",
+        "inviteOnly": "invite only",
         "approvalRequired": "ត្រូវការអនុម័ត"
       },
       "tools": {
@@ -2094,7 +2106,7 @@
       },
       "totalMembers": "សមាជិកសរុប",
       "activeCount": "សកម្ម {{count}}",
-      "clubHubTools": "ឧបករណ៍មជ្ឈមណ្ឌលក្លឹប",
+      "clubHubTools": "ព័ត៌មានក្លឹបសិក្សា",
       "unlockHint": "ចូលរួមក្លឹបនេះដើម្បីដោះសោឧបករណ៍សហគមន៍។",
       "about": "អំពី",
       "noDescription": "មិនទាន់មានការពិពណ៌នា។",

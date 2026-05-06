@@ -167,7 +167,7 @@ export type ClubsStackParamList = {
     clubName?: string;
   };
   ClubInvites: undefined;
-  ClassDirectory: undefined;
+  ClassDirectory: { teacherSectionFilter?: 'teaching' | 'other' };
   ClassDetails: {
     classId: string;
     className?: string;
@@ -175,6 +175,8 @@ export type ClubsStackParamList = {
     linkedStudentId?: string;
     linkedTeacherId?: string;
     homeroomTeacherId?: string;
+    /** Teacher hub sections: timetable-linked vs other school links (homeroom, etc.) */
+    teacherClassAccess?: 'teaching' | 'other';
     initialSummary?: Pick<
       MyClassSummary,
       'id' | 'name' | 'grade' | 'section' | 'track' | 'studentCount' | 'myRole' | 'linkedStudentId' | 'linkedTeacherId' | 'homeroomTeacher'

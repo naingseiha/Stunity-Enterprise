@@ -66,25 +66,18 @@ type RouteParams = {
   linkedStudentId?: string;
   linkedTeacherId?: string;
   homeroomTeacherId?: string;
+  teacherClassAccess?: 'teaching' | 'other';
   initialSummary?: ClubsStackParamList['ClassDetails']['initialSummary'];
 };
 
 type TeacherSubject = {
   id: string;
   name: string;
-};
-
-type TeacherInfo = {
-  data?: {
-    subjects?: TeacherSubject[];
-    subjectTeachers?: Array<{ subject: TeacherSubject }>;
-  };
-  subjects?: TeacherSubject[];
+  maxScore?: number;
 };
 
 const getCurrentMonthLabel = (): string => {
-  const now = new Date();
-  return `Month ${now.getMonth() + 1}`;
+  return new Date().toLocaleString('default', { month: 'long' });
 };
 
 const getCurrentRange = (): { startDate: string; endDate: string } => {
@@ -95,21 +88,23 @@ const getCurrentRange = (): { startDate: string; endDate: string } => {
   return { startDate: format(start), endDate: format(end) };
 };
 
-const extractTeacherSubjects = (teacherPayload: TeacherInfo | null): TeacherSubject[] => {
-  if (!teacherPayload) return [];
+const extractTeacherSubjects = (
+  timetable: classesApi.TimetableResponse | null | undefined,
+  linkedTeacherId?: string
+): TeacherSubject[] => {
+  if (!linkedTeacherId) return [];
 
-  const direct = Array.isArray(teacherPayload.subjects) ? teacherPayload.subjects : [];
-  const nestedDirect = Array.isArray(teacherPayload.data?.subjects) ? teacherPayload.data!.subjects! : [];
-  const fromAssignments = Array.isArray(teacherPayload.data?.subjectTeachers)
-    ? teacherPayload.data!.subjectTeachers!
-        .map((st) => st.subject)
-        .filter(Boolean)
-    : [];
-
-  const merged = [...direct, ...nestedDirect, ...fromAssignments];
   const map = new Map<string, TeacherSubject>();
-  merged.forEach((subject) => {
-    if (subject?.id) map.set(subject.id, subject);
+  (timetable?.entries || []).forEach((entry: any) => {
+    const teacherId = entry.teacherId || entry.teacher?.id;
+    const subject = entry.subject;
+    if (teacherId === linkedTeacherId && subject?.id) {
+      map.set(subject.id, {
+        id: subject.id,
+        name: subject.name || subject.nameKh || 'Subject',
+        maxScore: subject.maxScore,
+      });
+    }
   });
 
   return Array.from(map.values());
@@ -190,11 +185,11 @@ export default function ClassDetailsScreen() {
   const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialVisibleBundle?.attendanceSummary || null);
   const [classGradesReport, setClassGradesReport] = useState<classesApi.ClassGradesReport | null>(initialVisibleBundle?.classGradesReport || null);
   const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialVisibleBundle?.monthlySummary || null);
-  const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>((initialVisibleBundle?.teacherInfo as TeacherInfo | null) || null);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [subjectSearch, setSubjectSearch] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
+  const [selectedQuickSubjectId, setSelectedQuickSubjectId] = useState<string | null>(null);
   const [scoreByStudent, setScoreByStudent] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const hasVisibleDataRef = useRef(Boolean(initialVisibleBundle || params.className || params.initialSummary));
@@ -209,9 +204,20 @@ export default function ClassDetailsScreen() {
     setAttendanceSummary(normalizedBundle.attendanceSummary || null);
     setClassGradesReport(normalizedBundle.classGradesReport || null);
     setMonthlySummary(normalizedBundle.monthlySummary || null);
-    setTeacherInfo((normalizedBundle.teacherInfo as TeacherInfo | null) || null);
     hasVisibleDataRef.current = true;
   }, [bundleOptions]);
+
+  const resetVisibleClassData = useCallback(() => {
+    currentBundleRef.current = EMPTY_CLASS_DETAIL_BUNDLE;
+    setStudents([]);
+    setTimetable(null);
+    setAttendanceSummary(null);
+    setClassGradesReport(null);
+    setMonthlySummary(null);
+    setScoreByStudent({});
+    setStudentSearch('');
+    setSelectedQuickSubjectId(null);
+  }, []);
 
   const mergeBundlePatch = useCallback((patch: Partial<classesApi.ClassDetailBundle>) => {
     applyBundle({
@@ -260,11 +266,6 @@ export default function ClassDetailsScreen() {
           (myRole === 'STUDENT' || myRole === 'PARENT') && params.linkedStudentId && monthLabel
             ? classesApi.getStudentMonthlySummary(params.linkedStudentId, monthLabel)
             : Promise.resolve(null);
-        const teacherInfoPromise =
-          myRole === 'TEACHER' && params.linkedTeacherId
-            ? classesApi.getTeacherById(params.linkedTeacherId)
-            : Promise.resolve(null);
-
         const [studentsResult, timetableResult] = await Promise.allSettled([
           studentsPromise,
           timetablePromise,
@@ -286,11 +287,10 @@ export default function ClassDetailsScreen() {
           setLoading(false);
         }
 
-        const [attendanceResult, gradesResult, monthlyResult, teacherResult] = await Promise.allSettled([
+        const [attendanceResult, gradesResult, monthlyResult] = await Promise.allSettled([
           attendancePromise,
           gradesPromise,
           monthlySummaryPromise,
-          teacherInfoPromise,
         ]);
 
         if (activeRequestRef.current !== requestId) return;
@@ -305,9 +305,6 @@ export default function ClassDetailsScreen() {
         }
         if (monthlyResult.status === 'fulfilled') {
           finalPatch.monthlySummary = monthlyResult.value || null;
-        }
-        if (teacherResult.status === 'fulfilled') {
-          finalPatch.teacherInfo = teacherResult.value || null;
         }
 
         if (Object.keys(finalPatch).length > 0) {
@@ -327,7 +324,6 @@ export default function ClassDetailsScreen() {
             attendanceResult,
             gradesResult,
             monthlyResult,
-            teacherResult,
           ].find((result): result is PromiseRejectedResult => result.status === 'rejected');
           setError(firstError?.reason?.message || t('classDetails.loadFailed'));
         }
@@ -361,14 +357,15 @@ export default function ClassDetailsScreen() {
 
   useEffect(() => {
     hasVisibleDataRef.current = Boolean(initialVisibleBundle || params.className || params.initialSummary);
-    currentBundleRef.current = initialVisibleBundle || EMPTY_CLASS_DETAIL_BUNDLE;
 
     if (initialVisibleBundle) {
       applyBundle(initialVisibleBundle);
+    } else {
+      resetVisibleClassData();
     }
 
     loadData({ preserveVisibleContent: Boolean(initialVisibleBundle || params.className || params.initialSummary) });
-  }, [applyBundle, initialVisibleBundle, loadData, params.className, params.initialSummary]);
+  }, [applyBundle, classId, initialVisibleBundle, loadData, params.className, params.initialSummary, resetVisibleClassData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -400,23 +397,38 @@ export default function ClassDetailsScreen() {
     const map = new Map();
     timetable.entries.forEach((e: any) => {
       if (e.teacher && e.teacher.id) {
-        map.set(e.teacher.id, { ...e.teacher, subject: e.subject });
+        const existing = map.get(e.teacher.id);
+        const subjectName = e.subject?.name || e.subject?.nameKh;
+        if (existing) {
+          if (subjectName && !existing.subjectNames.includes(subjectName)) {
+            existing.subjectNames.push(subjectName);
+          }
+          return;
+        }
+
+        map.set(e.teacher.id, {
+          ...e.teacher,
+          subject: e.subject,
+          subjectNames: subjectName ? [subjectName] : [],
+        });
       }
     });
     return Array.from(map.values());
   }, [timetable]);
 
-  const scheduleDays = useMemo(() => {
-    return [
-      t('classDetails.days.monday'),
-      t('classDetails.days.tuesday'),
-      t('classDetails.days.wednesday'),
-      t('classDetails.days.thursday'),
-      t('classDetails.days.friday'),
-      t('classDetails.days.saturday'),
-    ];
-  }, [t]);
-  const scheduleDayApiMap = useMemo(() => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], []);
+  const scheduleDayApiMap = useMemo(() => {
+    const baseDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const hasSunday = (timetable?.entries || []).some((entry: any) => {
+      const day = String(entry.day || entry.dayOfWeek || '').toLowerCase();
+      return day === 'sunday';
+    });
+
+    return hasSunday ? [...baseDays, 'sunday'] : baseDays;
+  }, [timetable]);
+  const scheduleDays = useMemo(
+    () => scheduleDayApiMap.map((day) => t(`classDetails.days.${day}`)),
+    [scheduleDayApiMap, t]
+  );
 
   useEffect(() => {
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -441,17 +453,44 @@ export default function ClassDetailsScreen() {
   const activeScheduleDayTheme = SCHEDULE_DAY_THEMES[activeScheduleDayKey] || SCHEDULE_DAY_THEMES.MONDAY;
 
   const teacherSubjects = useMemo(() => {
-    const subjects = extractTeacherSubjects(teacherInfo);
-    if (!subjectSearch.trim()) return subjects;
-    const query = subjectSearch.trim().toLowerCase();
-    return subjects.filter((s) => (s.name || '').toLowerCase().includes(query));
-  }, [teacherInfo, subjectSearch]);
+    return extractTeacherSubjects(timetable, params.linkedTeacherId);
+  }, [params.linkedTeacherId, timetable]);
 
-  const canSubmitScores = myRole === 'TEACHER' && Boolean(params.linkedTeacherId) && teacherSubjects.length > 0;
+  const selectedQuickSubject = useMemo(
+    () => teacherSubjects.find((subject) => subject.id === selectedQuickSubjectId) || null,
+    [selectedQuickSubjectId, teacherSubjects]
+  );
+
+  useEffect(() => {
+    if (!selectedQuickSubjectId) return;
+    if (!teacherSubjects.some((subject) => subject.id === selectedQuickSubjectId)) {
+      setSelectedQuickSubjectId(null);
+    }
+  }, [selectedQuickSubjectId, teacherSubjects]);
+
+  const quickImportStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return students.slice(0, 5);
+
+    return students
+      .filter((student) => {
+        const name = formatName(student.firstName, student.lastName).toLowerCase();
+        const studentId = (student.studentId || '').toLowerCase();
+        return name.includes(query) || studentId.includes(query);
+      })
+      .slice(0, 5);
+  }, [studentSearch, students]);
+
+  const canSubmitScores = myRole === 'TEACHER' && Boolean(params.linkedTeacherId) && Boolean(selectedQuickSubject);
 
   const handleScoreChange = useCallback((studentId: string, value: string) => {
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+
+    const maxScore = selectedQuickSubject?.maxScore || 100;
+    if (value !== '' && Number(value) > maxScore) return;
+
     setScoreByStudent((prev) => ({ ...prev, [studentId]: value }));
-  }, []);
+  }, [selectedQuickSubject]);
 
   const handleSubmitScores = useCallback(async () => {
     if (!canSubmitScores) {
@@ -459,7 +498,6 @@ export default function ClassDetailsScreen() {
       return false;
     }
 
-    const selectedSubject = teacherSubjects[0];
     const payload = students
       .map((student) => ({
         student,
@@ -470,15 +508,18 @@ export default function ClassDetailsScreen() {
         const score = Number(row.raw);
         return {
           studentId: row.student.id,
-          subjectId: selectedSubject.id,
+          subjectId: selectedQuickSubject!.id,
           classId,
           score,
-          maxScore: 100,
+          maxScore: selectedQuickSubject!.maxScore || 100,
           month: getCurrentMonthLabel(),
           monthNumber: new Date().getMonth() + 1,
         };
       })
-      .filter((row) => Number.isFinite(row.score) && row.score >= 0 && row.score <= 100);
+      .filter((row) => {
+        const maxScore = selectedQuickSubject!.maxScore || 100;
+        return Number.isFinite(row.score) && row.score >= 0 && row.score <= maxScore;
+      });
 
     if (payload.length === 0) {
       Alert.alert(t('classDetails.alerts.scoresTitle'), t('classDetails.alerts.enterValidScore'));
@@ -498,7 +539,7 @@ export default function ClassDetailsScreen() {
     } finally {
       setUploading(false);
     }
-  }, [canSubmitScores, classId, loadData, scoreByStudent, students, t, teacherSubjects]);
+  }, [canSubmitScores, classId, loadData, scoreByStudent, selectedQuickSubject, students, t]);
 
   const hasUnsavedQuickScores = Object.values(scoreByStudent).some(score => score !== '');
   const canMessageTeacher = user?.role === 'PARENT' && Boolean(params.homeroomTeacherId);
@@ -563,7 +604,7 @@ export default function ClassDetailsScreen() {
     try {
       const conversation = await startConversation([participantId]);
       if (conversation) {
-        navigation.navigate('MessagesStack', {
+        navigation.navigate('Messages', {
           screen: 'Chat',
           params: {
             conversationId: conversation.id,
@@ -611,6 +652,8 @@ export default function ClassDetailsScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.bgOrbPrimary} />
+      <View style={styles.bgOrbSecondary} />
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
@@ -724,9 +767,21 @@ export default function ClassDetailsScreen() {
             </View>
           </View>
 
+          {myRole === 'TEACHER' && params.teacherClassAccess === 'other' && (
+            <View style={styles.viewOnlyHint}>
+              <Ionicons name="information-circle-outline" size={20} color={Colors.primaryDark} style={{ marginRight: 10 }} />
+              <Text style={[styles.viewOnlyHintText, isKhmer && styles.khmerInlineText]}>
+                {t('classDetails.teacherLinkedClassHint')}
+              </Text>
+            </View>
+          )}
+
           {/* BENTO-BOX SHORTCUT GRID */}
           <View style={styles.sectionHeaderRow}>
-             <Text style={styles.sectionHeader}>{t('classDetails.classHubTools')}</Text>
+             <View>
+               <Text style={styles.sectionHeader}>{t('classDetails.classHubTools')}</Text>
+               <Text style={styles.sectionSubheader}>{t('classDetails.classHubSubtitle')}</Text>
+             </View>
           </View>
           <View style={styles.bentoGrid}>
             <TouchableOpacity 
@@ -866,7 +921,7 @@ export default function ClassDetailsScreen() {
               >
                 {scheduleDays.map((day, ix) => (
                   (() => {
-                    const dayKey = day.toUpperCase();
+                    const dayKey = (scheduleDayApiMap[ix] || 'monday').toUpperCase();
                     const dayTheme = SCHEDULE_DAY_THEMES[dayKey] || SCHEDULE_DAY_THEMES.MONDAY;
                     const isActive = selectedDayIndex === ix;
                     return (
@@ -885,7 +940,7 @@ export default function ClassDetailsScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.dayTextShort, isKhmer && styles.khmerInlineText, { color: isActive ? '#FFF' : dayTheme.text }, isActive && styles.dayTextActive]}>
-                      {t(`classDetails.daysShort.${scheduleDayApiMap[ix]}`)}
+                      {t(`classDetails.daysShort.${scheduleDayApiMap[ix] || 'monday'}`)}
                     </Text>
                     {isActive && <View style={[styles.dayDot, { backgroundColor: '#FFF' }]} />}
                   </TouchableOpacity>
@@ -985,7 +1040,9 @@ export default function ClassDetailsScreen() {
                       </View>
                     )}
                     <Text style={styles.teacherName} numberOfLines={1}>{formatName(teacher.firstName, teacher.lastName)}</Text>
-                    <Text style={styles.teacherSubject} numberOfLines={1}>{teacher.subject?.name || t('classDetails.teacher')}</Text>
+                    <Text style={styles.teacherSubject} numberOfLines={1}>
+                      {teacher.subjectNames?.length > 0 ? teacher.subjectNames.join(', ') : teacher.subject?.name || t('classDetails.teacher')}
+                    </Text>
                     {canManageRecords && teacher.id ? (
                       <View style={styles.teacherEditPill}>
                         <Ionicons name="create-outline" size={12} color={Colors.primaryDark} />
@@ -1004,17 +1061,39 @@ export default function ClassDetailsScreen() {
                <View style={styles.sectionCard}>
                  <Text style={styles.sectionTitle}>{t('classDetails.quickImport.title')}</Text>
                  <Text style={styles.sectionHint}>
-                   {t('classDetails.quickImport.hint', { subject: teacherSubjects[0]?.name })}
+                   {t('classDetails.quickImport.hint', { subject: selectedQuickSubject?.name || t('classDetails.subject') })}
                  </Text>
+                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickSubjectScroll}>
+                   {teacherSubjects.map((subject) => {
+                     const active = selectedQuickSubjectId === subject.id;
+                     return (
+                       <TouchableOpacity
+                         key={subject.id}
+                         style={[styles.quickSubjectChip, active && styles.quickSubjectChipActive]}
+                         onPress={() => setSelectedQuickSubjectId(subject.id)}
+                         activeOpacity={0.8}
+                       >
+                         <Ionicons
+                           name={active ? 'book' : 'book-outline'}
+                           size={14}
+                           color={active ? '#FFFFFF' : Colors.textSecondary}
+                         />
+                         <Text style={[styles.quickSubjectChipText, active && styles.quickSubjectChipTextActive]}>
+                           {subject.name}
+                         </Text>
+                       </TouchableOpacity>
+                     );
+                   })}
+                 </ScrollView>
                  <TextInput
-                   value={subjectSearch}
-                   onChangeText={setSubjectSearch}
+                   value={studentSearch}
+                   onChangeText={setStudentSearch}
                    placeholder={t('classDetails.quickImport.searchStudents')}
                    placeholderTextColor={Colors.textMuted}
                    style={styles.input}
                  />
                  <View style={styles.scoreTable}>
-                   {students.slice(0, 5).map((student) => (
+                   {quickImportStudents.map((student) => (
                      <View key={student.id} style={styles.scoreRow}>
                        <Text style={styles.scoreName} numberOfLines={1}>
                          {formatName(student.firstName, student.lastName)}
@@ -1022,7 +1101,7 @@ export default function ClassDetailsScreen() {
                        <TextInput
                          value={scoreByStudent[student.id] || ''}
                          onChangeText={(val) => handleScoreChange(student.id, val)}
-                         placeholder={t('classDetails.quickImport.scorePlaceholder')}
+                        placeholder={`0-${selectedQuickSubject?.maxScore || 100}`}
                          keyboardType="numeric"
                          placeholderTextColor={Colors.textMuted}
                          style={styles.scoreInput}
@@ -1031,9 +1110,9 @@ export default function ClassDetailsScreen() {
                    ))}
                  </View>
                  <TouchableOpacity
-                   style={[styles.submitBtn, uploading && styles.submitBtnDisabled]}
+                   style={[styles.submitBtn, (uploading || !selectedQuickSubject) && styles.submitBtnDisabled]}
                    onPress={handleSubmitScores}
-                   disabled={uploading}
+                   disabled={uploading || !selectedQuickSubject}
                  >
                    {uploading ? (
                      <ActivityIndicator size="small" color="#FFF" />
@@ -1055,8 +1134,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  bgOrbPrimary: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: '#DFF7FF',
+    opacity: 0.72,
+    top: 86,
+    right: -120,
+  },
+  bgOrbSecondary: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: '#F3E8FF',
+    opacity: 0.72,
+    top: 430,
+    left: -110,
+  },
   headerSafe: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   topBar: {
     flexDirection: 'row',
@@ -1065,8 +1164,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderBottomColor: 'rgba(226,232,240,0.75)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   iconButton: {
     width: 38,
@@ -1075,6 +1174,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.8)',
   },
   loadingWrap: {
     flex: 1,
@@ -1123,19 +1224,35 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    gap: 24,
-    paddingBottom: 40,
+    gap: 26,
+    paddingBottom: 44,
+  },
+  viewOnlyHint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 16,
+    padding: 14,
+  },
+  viewOnlyHintText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    lineHeight: 19,
   },
   
   // ─── PREMIUM HERO CARD ───────────────────────────────────────
   heroCard: {
-    borderRadius: 28,
+    borderRadius: 32,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowColor: '#0891B2',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.26,
+    shadowRadius: 28,
+    elevation: 10,
   },
   heroGlowBlob: {
     position: 'absolute',
@@ -1158,7 +1275,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     paddingHorizontal: 10,
@@ -1172,7 +1289,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   heroGradePill: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 12,
@@ -1208,9 +1325,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.07)',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(0,0,0,0.15)',
+    backgroundColor: 'rgba(2,132,199,0.18)',
   },
   heroStatItem: {
     flex: 1,
@@ -1252,34 +1369,40 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
+  sectionSubheader: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textMuted,
+  },
 
   // -- BENTO GRID --
   bentoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 13,
     paddingHorizontal: 4,
   },
   bentoItem: {
-    width: '22.5%', 
-    aspectRatio: 0.85,
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
+    width: '22.25%',
+    aspectRatio: 0.88,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: 'rgba(226,232,240,0.75)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   bentoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -1287,7 +1410,7 @@ const styles = StyleSheet.create({
   bentoLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
     textAlign: 'center',
   },
 
@@ -1524,17 +1647,17 @@ const styles = StyleSheet.create({
 
   // -- QUICK INPUT --
   sectionCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.98)',
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 24,
-    padding: 20,
+    borderColor: 'rgba(226,232,240,0.9)',
+    borderRadius: 28,
+    padding: 22,
     gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 1,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
   },
   sectionTitle: {
     fontSize: 18,
@@ -1548,10 +1671,37 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '500',
   },
+  quickSubjectScroll: {
+    gap: 10,
+    paddingRight: 4,
+  },
+  quickSubjectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  quickSubjectChipActive: {
+    backgroundColor: Colors.primaryDark,
+    borderColor: Colors.primaryDark,
+  },
+  quickSubjectChipText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  quickSubjectChipTextActive: {
+    color: '#FFFFFF',
+  },
   input: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     height: 48,
     paddingHorizontal: 16,
     color: Colors.textPrimary,
@@ -1567,6 +1717,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 52,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
   },
   scoreName: {
     flex: 1,
@@ -1578,18 +1732,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 44,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
+    borderColor: '#DCEAF3',
+    borderRadius: 14,
     textAlign: 'center',
     color: Colors.textPrimary,
     fontWeight: '800',
     fontSize: 15,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   submitBtn: {
     marginTop: 8,
-    height: 52,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.primaryDark,

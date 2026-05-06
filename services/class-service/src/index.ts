@@ -600,9 +600,18 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
 // ===========================
 app.get('/classes', async (req: AuthRequest, res: Response) => {
   try {
+    const role = req.user!.role;
     const schoolId = req.user!.schoolId;
     const academicYearId = req.query.academicYearId as string | undefined;
     const search = (req.query.search as string | undefined)?.trim();
+
+    if (!CLASS_ADMIN_ROLES.has(role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only school administrators can view the full class directory. Use /classes/my for scoped class access.',
+      });
+    }
+
     console.log(`📚 [School ${schoolId}] Fetching all classes (full data)...`);
     if (academicYearId) {
       console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
@@ -1006,6 +1015,21 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         orderBy: [{ grade: 'asc' }, { section: 'asc' }],
       });
 
+      const classIds = teacherClasses.map((c) => c.id);
+      const timetableRows =
+        classIds.length === 0
+          ? []
+          : await prisma.timetableEntry.findMany({
+              where: {
+                teacherId: userRecord.teacherId,
+                academicYearId: selectedYear.id,
+                classId: { in: classIds },
+              },
+              select: { classId: true },
+              distinct: ['classId'],
+            });
+      const timetableClassIdSet = new Set(timetableRows.map((r) => r.classId));
+
       const classes = teacherClasses.map((c) => ({
         id: c.id,
         classId: c.classId,
@@ -1020,6 +1044,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         myRole: 'TEACHER',
         isHomeroom: c.homeroomTeacherId === userRecord.teacherId,
         linkedTeacherId: userRecord.teacherId,
+        hasTimetableAssignment: timetableClassIdSet.has(c.id),
       }));
 
       return res.json({
@@ -1980,9 +2005,44 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
       }
     });
 
+    const directClassStudents = await prisma.student.findMany({
+      where: {
+        classId: id,
+        schoolId,
+        isAccountActive: true,
+      },
+      select: {
+        id: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
+        gender: true,
+        dateOfBirth: true,
+        photoUrl: true,
+        customFields: true,
+      },
+      orderBy: {
+        firstName: 'asc',
+      },
+    });
+
+    directClassStudents.forEach(student => {
+      if (!uniqueStudentsMap.has(student.id)) {
+        uniqueStudentsMap.set(student.id, {
+          ...student,
+          nameKh: student.customFields
+            ? (student.customFields as any)?.regional?.khmerName || (student.customFields as any)?.khmerName
+            : undefined,
+          status: 'ACTIVE',
+        });
+      }
+    });
+
     const students = Array.from(uniqueStudentsMap.values());
 
-    console.log(`✅ [School ${schoolId}] Found ${students.length} unique students in class (from ${studentClasses.length} records)`);
+    console.log(`✅ [School ${schoolId}] Found ${students.length} unique students in class (from ${studentClasses.length} enrollments + ${directClassStudents.length} direct links)`);
 
     res.json({
       success: true,

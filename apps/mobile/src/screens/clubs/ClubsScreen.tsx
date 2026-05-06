@@ -62,8 +62,7 @@ const CLASS_COLORS = [
 ];
 
 const getCurrentMonthLabel = (): string => {
-  const now = new Date();
-  return `Month ${now.getMonth() + 1}`;
+  return new Date().toLocaleString('default', { month: 'long' });
 };
 
 const getCurrentRange = (): { startDate: string; endDate: string } => {
@@ -77,22 +76,49 @@ const getCurrentRange = (): { startDate: string; endDate: string } => {
 const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
   Boolean(user?.schoolId && (user.role === 'STUDENT' || user.role === 'TEACHER' || user.role === 'PARENT'));
 
+const getClassCacheScopeKey = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
+  user?.id || `${user?.role || 'anonymous'}:${user?.schoolId || 'no-school'}`;
+
 const SchoolClassCard = React.memo(
-  ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
+  ({
+    item,
+    index,
+    onPress,
+    orderNumber,
+    accent,
+  }: {
+    item: MyClassSummary;
+    index: number;
+    onPress: (item: MyClassSummary) => void;
+    orderNumber?: number;
+    accent?: 'teaching' | 'other';
+  }) => {
     const { t, i18n } = useTranslation();
     const { colors, isDark } = useThemeContext();
     const isKhmer = i18n.language?.startsWith('km');
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
-    
+    const borderAccent =
+      accent === 'teaching'
+        ? '#22C55E'
+        : accent === 'other'
+          ? '#F59E0B'
+          : undefined;
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
           styles.schoolClassCard,
-          { backgroundColor: colors.card, borderColor: colors.border },
+          { backgroundColor: colors.card, borderColor: borderAccent || colors.border },
+          borderAccent && { borderWidth: 1.5 },
         ]}
-        onPress={() => onPress(item)} 
+        onPress={() => onPress(item)}
         activeOpacity={0.8}
       >
+        {orderNumber != null ? (
+          <View style={styles.schoolClassOrderBadgeInline}>
+            <Text style={[styles.schoolClassOrderText, isKhmer && styles.khmerInlineText]}>{orderNumber}</Text>
+          </View>
+        ) : null}
         <View style={styles.schoolClassContent}>
           <Text style={[styles.schoolClassName, { color: colors.text }]} numberOfLines={1}>
             {item.name}
@@ -123,8 +149,9 @@ export default function ClubsScreen() {
   const initialClubsPage = clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE });
   const initialAcademicYears = classesApi.getCachedAcademicYears() || [];
   const initialSelectedYearId = initialAcademicYears.find((year) => year.isCurrent)?.id || null;
+  const classCacheScopeKey = getClassCacheScopeKey(user);
   const initialSchoolClasses = canUseInitialSchoolClasses(user)
-    ? (classesApi.getCachedMyClasses({ academicYearId: initialSelectedYearId || undefined }) || [])
+    ? (classesApi.getCachedMyClasses({ academicYearId: initialSelectedYearId || undefined, scopeKey: classCacheScopeKey }) || [])
     : [];
   const hasInitialVisibleContent = Boolean(initialClubsPage || initialSchoolClasses.length > 0);
 
@@ -147,6 +174,9 @@ export default function ClubsScreen() {
     canUseInitialSchoolClasses(user) ? initialSchoolClasses.length === 0 : false
   );
   const [schoolClassesError, setSchoolClassesError] = useState<string | null>(null);
+  const [allSchoolClasses, setAllSchoolClasses] = useState<MyClassSummary[]>([]);
+  const [loadingAllSchoolClasses, setLoadingAllSchoolClasses] = useState(false);
+  const [allSchoolClassesError, setAllSchoolClassesError] = useState<string | null>(null);
   const [academicYears, setAcademicYears]       = useState<any[]>(initialAcademicYears);
   const [selectedYearId, setSelectedYearId]     = useState<string | null>(initialSelectedYearId);
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
@@ -169,6 +199,21 @@ export default function ClubsScreen() {
   const isAdminOrStaff = Boolean(
     user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
   );
+
+  const teacherClassSplit = useMemo(() => {
+    if (user?.role !== 'TEACHER' || isAdminOrStaff) {
+      return { teaching: [] as MyClassSummary[], other: [] as MyClassSummary[] };
+    }
+    const teaching = schoolClasses.filter((c) => c.hasTimetableAssignment === true);
+    return { teaching, other: [] as MyClassSummary[] };
+  }, [isAdminOrStaff, schoolClasses, user?.role]);
+
+  const teacherOtherClasses = useMemo(() => {
+    if (user?.role !== 'TEACHER' || isAdminOrStaff) return [] as MyClassSummary[];
+    if (!Array.isArray(allSchoolClasses) || allSchoolClasses.length === 0) return [] as MyClassSummary[];
+    const teachingIds = new Set(teacherClassSplit.teaching.map((c) => c.id));
+    return allSchoolClasses.filter((c) => !teachingIds.has(c.id));
+  }, [allSchoolClasses, isAdminOrStaff, teacherClassSplit.teaching, user?.role]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -266,7 +311,11 @@ export default function ClubsScreen() {
       try {
         setLoadingSchoolClasses(true);
         setSchoolClassesError(null);
-        const data = await classesApi.getMyClasses({ force, academicYearId: selectedYearId || undefined });
+        const data = await classesApi.getMyClasses({
+          force,
+          academicYearId: selectedYearId || undefined,
+          scopeKey: classCacheScopeKey,
+        });
         setSchoolClasses(Array.isArray(data) ? data : []);
       } catch (err: any) {
         setSchoolClassesError(err?.message || t('clubs.screen.loadSchoolClassesFailed'));
@@ -274,8 +323,27 @@ export default function ClubsScreen() {
         setLoadingSchoolClasses(false);
       }
     },
-    [canViewSchoolClasses, selectedYearId, t]
+    [canViewSchoolClasses, classCacheScopeKey, selectedYearId, t]
   );
+
+  const loadAllSchoolClasses = useCallback(async () => {
+    if (!user?.schoolId) return;
+    if (user?.role !== 'TEACHER' || isAdminOrStaff) return;
+    try {
+      setLoadingAllSchoolClasses(true);
+      setAllSchoolClassesError(null);
+      const data = await classesApi.getClassesLightweight({
+        academicYearId: selectedYearId || undefined,
+        asRole: 'TEACHER',
+      });
+      setAllSchoolClasses(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setAllSchoolClassesError(err?.message || t('clubs.screen.loadSchoolClassesFailed'));
+      setAllSchoolClasses([]);
+    } finally {
+      setLoadingAllSchoolClasses(false);
+    }
+  }, [isAdminOrStaff, selectedYearId, t, user?.role, user?.schoolId]);
 
   const loadAdminClasses = useCallback(async (query = '') => {
     if (!isAdminOrStaff) return;
@@ -370,7 +438,8 @@ export default function ClubsScreen() {
 
   useEffect(() => {
     loadSchoolClasses();
-  }, [loadSchoolClasses]);
+    loadAllSchoolClasses();
+  }, [loadAllSchoolClasses, loadSchoolClasses]);
 
   useEffect(() => {
     if (isAdminOrStaff) {
@@ -439,9 +508,10 @@ export default function ClubsScreen() {
     Promise.all([
       loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current }),
       isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true),
+      user?.role === 'TEACHER' && !isAdminOrStaff ? loadAllSchoolClasses() : Promise.resolve(),
       loadInvites(),
     ]).finally(() => setRefreshing(false));
-  }, [adminSearchQuery, isAdminOrStaff, loadAdminClasses, loadClubs, loadInvites, loadSchoolClasses]);
+  }, [adminSearchQuery, isAdminOrStaff, loadAdminClasses, loadAllSchoolClasses, loadClubs, loadInvites, loadSchoolClasses, user?.role]);
 
   const loadMoreClubs = useCallback(() => {
     if (
@@ -529,7 +599,7 @@ export default function ClubsScreen() {
   );
 
   const handleClassPress = useCallback(
-    (classItem: MyClassSummary) => {
+    (classItem: MyClassSummary, teacherAccess?: 'teaching' | 'other') => {
       prefetchClassDetails(classItem);
 
       navigation.navigate('ClassDetails', {
@@ -539,6 +609,8 @@ export default function ClubsScreen() {
         linkedStudentId: classItem.linkedStudentId,
         linkedTeacherId: classItem.linkedTeacherId,
         homeroomTeacherId: classItem.homeroomTeacher?.id,
+        teacherClassAccess:
+          user?.role === 'TEACHER' && !isAdminOrStaff ? teacherAccess : undefined,
         initialSummary: {
           id: classItem.id,
           name: classItem.name,
@@ -553,7 +625,7 @@ export default function ClubsScreen() {
         },
       });
     },
-    [navigation, prefetchClassDetails]
+    [navigation, prefetchClassDetails, user?.role, isAdminOrStaff]
   );
 
   const handleCreateClub = useCallback(
@@ -591,14 +663,6 @@ export default function ClubsScreen() {
 
   // ── Header ────────────────────────────────────────────────────────────────
   const renderHeader = useCallback(() => {
-    const schoolClassesSubtitle = isAdminOrStaff
-      ? t('clubs.screen.schoolClassesSubtitle.admin')
-      : user?.role === 'TEACHER'
-        ? t('clubs.screen.schoolClassesSubtitle.teacher')
-        : user?.role === 'PARENT'
-          ? t('clubs.screen.schoolClassesSubtitle.parent')
-          : t('clubs.screen.schoolClassesSubtitle.student');
-
     const shortcuts = [
       { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
       { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: isDark ? '#3A1720' : '#FFF1F2' },
@@ -633,9 +697,6 @@ export default function ClubsScreen() {
               <View style={styles.schoolClassesHeaderInfo}>
                 <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
                   {isAdminOrStaff ? t('classes.directory.title') : t('clubs.screen.schoolClasses')}
-                </Text>
-                <Text style={[styles.schoolClassesSubtitle, { color: colors.textSecondary }]}>
-                  {schoolClassesSubtitle}
                 </Text>
               </View>
 
@@ -692,17 +753,24 @@ export default function ClubsScreen() {
               </View>
             )}
 
-            {loadingSchoolClasses || loadingAdminClasses ? (
+            {loadingSchoolClasses || loadingAdminClasses || loadingAllSchoolClasses ? (
               <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <ActivityIndicator size="small" color={COLORS.primaryDark} />
                 <Text style={[styles.schoolClassesLoadingText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.updatingClasses')}</Text>
               </View>
-            ) : schoolClassesError ? (
+            ) : schoolClassesError || allSchoolClassesError ? (
               <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={styles.schoolClassesErrorText}>{schoolClassesError}</Text>
+                <Text style={styles.schoolClassesErrorText}>{schoolClassesError || allSchoolClassesError}</Text>
                 <TouchableOpacity
                   style={styles.schoolRetryBtn}
-                  onPress={() => isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true)}
+                  onPress={() => {
+                    if (isAdminOrStaff) {
+                      loadAdminClasses(adminSearchQuery);
+                      return;
+                    }
+                    loadSchoolClasses(true);
+                    loadAllSchoolClasses();
+                  }}
                 >
                   <Text style={[styles.schoolRetryText, isKhmer && styles.khmerInlineText]}>{t('common.tryAgain')}</Text>
                 </TouchableOpacity>
@@ -719,33 +787,122 @@ export default function ClubsScreen() {
                 </Text>
               </View>
             ) : (
-              <View style={styles.schoolClassesGrid}>
-                {(isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 6).map((item, idx) => (
-                  <View key={item.id} style={styles.gridItemWrapper}>
-                    <SchoolClassCard item={item} index={idx} onPress={handleClassPress} />
+              <>
+                {user?.role === 'TEACHER' && !isAdminOrStaff ? (
+                  <View>
+                    {teacherClassSplit.teaching.length > 0 ? (
+                      <View style={styles.schoolClassesSubsection}>
+                        <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                          {t('clubs.screen.teacherSectionTeaching')}
+                        </Text>
+                        <View style={styles.schoolClassesGridTight}>
+                          {teacherClassSplit.teaching.slice(0, 4).map((item, idx) => (
+                            <View key={`teach-${item.id}`} style={styles.gridItemWrapper}>
+                              <SchoolClassCard
+                                item={item}
+                                index={idx}
+                                orderNumber={idx + 1}
+                                accent="teaching"
+                                onPress={(i) => handleClassPress(i, 'teaching')}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                        {teacherClassSplit.teaching.length > 4 ? (
+                          <TouchableOpacity
+                            style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                            onPress={() =>
+                              navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })
+                            }
+                            activeOpacity={0.85}
+                          >
+                            <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
+                              {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
+                            </Text>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    ) : null}
+
+                    {teacherOtherClasses.length > 0 ? (
+                      <View
+                        style={[
+                          styles.schoolClassesSubsection,
+                          teacherClassSplit.teaching.length > 0 && { marginTop: 14 },
+                        ]}
+                      >
+                        <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                          {t('clubs.screen.teacherSectionOther')}
+                        </Text>
+                        <View style={styles.schoolClassesGridTight}>
+                          {teacherOtherClasses.slice(0, 4).map((item, idx) => (
+                            <View key={`oth-${item.id}`} style={styles.gridItemWrapper}>
+                              <SchoolClassCard
+                                item={item}
+                                index={idx}
+                                orderNumber={idx + 1}
+                                accent="other"
+                                onPress={(i) => handleClassPress(i, 'other')}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                        {teacherOtherClasses.length > 4 ? (
+                          <TouchableOpacity
+                            style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                            onPress={() =>
+                              navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })
+                            }
+                            activeOpacity={0.85}
+                          >
+                            <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
+                              {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
+                            </Text>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    ) : null}
+
                   </View>
-                ))}
-                
-                {(isAdminOrStaff ? adminClasses : schoolClasses).length > 6 && (
-                  <TouchableOpacity 
-                    style={[styles.seeAllGridBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
-                    onPress={() => {
-                        navigation.navigate('ClassDirectory');
-                    }}
-                  >
-                    <Text style={[styles.seeAllGridText, { color: colors.textSecondary }]}>
-                      {t('clubs.screen.seeAllCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })}
-                    </Text>
-                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.schoolClassesGrid}>
+                    {(isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 6).map((item, idx) => (
+                      <View key={item.id} style={styles.gridItemWrapper}>
+                        <SchoolClassCard
+                          item={item}
+                          index={idx}
+                          orderNumber={idx + 1}
+                          onPress={handleClassPress}
+                        />
+                      </View>
+                    ))}
+
+                    {(isAdminOrStaff ? adminClasses : schoolClasses).length > 6 && (
+                      <TouchableOpacity
+                        style={[styles.seeAllGridBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                        onPress={() => {
+                          navigation.navigate('ClassDirectory');
+                        }}
+                      >
+                        <Text style={[styles.seeAllGridText, { color: colors.textSecondary }]}>
+                          {isAdminOrStaff
+                            ? t('clubs.screen.seeAllCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })
+                            : t('clubs.screen.seeAllMyClassesCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
-              </View>
+              </>
             )}
           </View>
         )}
 
         {/* Section heading + search */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }, isKhmer && styles.khmerInlineText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
           <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
             <Text style={[styles.viewAllText, isKhmer && styles.khmerInlineText]}>{t('learn.viewAll')}</Text>
           </TouchableOpacity>
@@ -792,6 +949,7 @@ export default function ClubsScreen() {
     isKhmer,
     t,
     user?.role,
+    teacherClassSplit,
   ]);
 
   // ── Render item (memoized card) ───────────────────────────────────────────
@@ -1209,6 +1367,15 @@ const styles = StyleSheet.create({
   schoolClassesSection: {
     paddingBottom: 24,
   },
+  schoolClassesSubsection: {
+    paddingHorizontal: 16,
+  },
+  classSubsectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    marginBottom: 10,
+  },
   schoolClassesHeader: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -1341,6 +1508,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 8,
   },
+  schoolClassesGridTight: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
   gridItemWrapper: {
     width: '48.5%',
     marginBottom: 12,
@@ -1354,8 +1527,23 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     minHeight: 76,
+    gap: 8,
+  },
+  schoolClassOrderBadgeInline: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  schoolClassOrderText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
   },
   schoolClassContent: {
     flex: 1,
@@ -1378,6 +1566,30 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  seeAllFullRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+  },
+  seeAllSectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
   },
   seeAllGridBtn: {
     width: '48.5%',
@@ -1548,6 +1760,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
     lineHeight: 20,
+  },
+  khmerHeadingText: {
+    includeFontPadding: true,
+    textAlignVertical: 'center',
+    lineHeight: 30,
   },
   footerLoading: {
     flexDirection: 'row',

@@ -1609,7 +1609,7 @@
       "schoolClasses": "School Classes",
       "schoolClassesSubtitle": {
         "admin": "Manage and search all classes",
-        "teacher": "Classes you teach this year",
+        "teacher": "Your classes this year (assigned to your account—not the whole school)",
         "parent": "Your child's classes this year",
         "student": "Classes you study this year"
       },
@@ -1627,6 +1627,12 @@
       "noLinkedChildClasses": "No linked child classes found for this academic year",
       "noClassesYear": "No classes found for this academic year",
       "seeAllCount": "See all ({{count}})",
+      "seeAllMyClassesCount": "See all my classes ({{count}})",
+      "seeAllTeachingCount": "See all teaching classes ({{count}})",
+      "seeAllOtherCount": "See all other classes ({{count}})",
+      "teacherSectionTeaching": "My teaching classes",
+      "teacherSectionOther": "Other linked classes",
+      "myClassesSection": "My classes",
       "communityClubs": "Community Clubs",
       "todaysClubs": "Today's Clubs",
       "searchPlaceholder": "Search lessons & clubs...",
@@ -1653,7 +1659,9 @@
       "section": "Section {{section}}",
       "studentCount": "{{count}} Students",
       "gradeShort": "G{{grade}}",
-      "studentCountShort": "{{count}}"
+      "studentCountShort": "{{count}}",
+      "sectionAll": "All classes",
+      "footnoteTeacher": "This list shows classes linked to your account for this year—not every class in the school."
     }
   },
   "classDetails": {
@@ -1663,6 +1671,8 @@
     "loading": "Loading class details...",
     "retry": "Retry",
     "classHubTools": "Class Hub Tools",
+    "classHubSubtitle": "Everything for this class in one place",
+    "teacherLinkedClassHint": "This class is linked to your profile but you are not on its timetable here—grade entry applies only where you teach on the schedule.",
     "classSchedule": "Class Schedule",
     "classTeachers": "Class Teachers",
     "teacher": "Teacher",
@@ -1701,7 +1711,8 @@
       "wednesday": "Wednesday",
       "thursday": "Thursday",
       "friday": "Friday",
-      "saturday": "Saturday"
+      "saturday": "Saturday",
+      "sunday": "Sunday"
     },
     "daysShort": {
       "monday": "MON",
@@ -1709,7 +1720,8 @@
       "wednesday": "WED",
       "thursday": "THU",
       "friday": "FRI",
-      "saturday": "SAT"
+      "saturday": "SAT",
+      "sunday": "SUN"
     },
     "quickImport": {
       "title": "Quick Score Import",

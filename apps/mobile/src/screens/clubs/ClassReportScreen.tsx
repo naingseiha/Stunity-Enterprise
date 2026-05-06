@@ -44,8 +44,7 @@ type RouteParams = {
 };
 
 const getCurrentMonthLabel = (): string => {
-  const now = new Date();
-  return `Month ${now.getMonth() + 1}`;
+  return new Date().toLocaleString('default', { month: 'long' });
 };
 
 const getCurrentRange = (): { startDate: string; endDate: string } => {
