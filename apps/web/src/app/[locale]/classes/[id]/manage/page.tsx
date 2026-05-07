@@ -54,6 +54,13 @@ interface ClassData {
   capacity?: number | null;
   academicYearId: string;
   academicYearName?: string;
+  homeroomTeacher?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    englishFirstName?: string | null;
+    englishLastName?: string | null;
+  } | null;
 }
 
 interface OtherClass {
@@ -109,7 +116,21 @@ function normalizeClassData(raw: any): ClassData {
     capacity: raw.capacity ?? null,
     academicYearId: raw.academicYearId || raw.academicYear?.id || '',
     academicYearName: raw.academicYear?.name || raw.academicYearName || '',
+    homeroomTeacher: raw.homeroomTeacher || null,
   };
+}
+
+function formatClassTeacherName(classData: ClassData) {
+  const teacher = classData.homeroomTeacher;
+  if (!teacher) return 'Not assigned';
+
+  return [
+    teacher.englishFirstName || teacher.firstName,
+    teacher.englishLastName || teacher.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || 'Not assigned';
 }
 
 function normalizeOtherClass(raw: any): OtherClass {
@@ -793,6 +814,10 @@ export default function ClassManagePage() {
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-none dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
                       <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_a08acd73" /> {classData.grade}{classData.section ? ` · Section ${classData.section}` : ''}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                      <UserRound className="h-3.5 w-3.5" />
+                      គ្រូប្រចាំថ្នាក់: {formatClassTeacherName(classData)}
                     </span>
                     {classData.academicYearName ? (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">

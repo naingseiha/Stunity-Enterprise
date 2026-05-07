@@ -73,6 +73,18 @@ const getCurrentRange = (): { startDate: string; endDate: string } => {
   return { startDate: format(start), endDate: format(end) };
 };
 
+const formatTeacherDisplayName = (
+  teacher?: MyClassSummary['homeroomTeacher'] | null,
+  preferEnglish = false
+): string => {
+  if (!teacher) return '';
+
+  const nativeName = [teacher.firstName, teacher.lastName].filter(Boolean).join(' ').trim();
+  const englishName = [teacher.englishFirstName, teacher.englishLastName].filter(Boolean).join(' ').trim();
+
+  return (preferEnglish ? englishName || nativeName : nativeName || englishName) || '';
+};
+
 const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
   Boolean(user?.schoolId && (user.role === 'STUDENT' || user.role === 'TEACHER' || user.role === 'PARENT'));
 
@@ -85,31 +97,26 @@ const SchoolClassCard = React.memo(
     index,
     onPress,
     orderNumber,
-    accent,
   }: {
     item: MyClassSummary;
     index: number;
     onPress: (item: MyClassSummary) => void;
     orderNumber?: number;
-    accent?: 'teaching' | 'other';
   }) => {
     const { t, i18n } = useTranslation();
     const { colors, isDark } = useThemeContext();
     const isKhmer = i18n.language?.startsWith('km');
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
-    const borderAccent =
-      accent === 'teaching'
-        ? '#22C55E'
-        : accent === 'other'
-          ? '#F59E0B'
-          : undefined;
 
     return (
       <TouchableOpacity
         style={[
           styles.schoolClassCard,
-          { backgroundColor: colors.card, borderColor: borderAccent || colors.border },
-          borderAccent && { borderWidth: 1.5 },
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            shadowColor: '#0F172A',
+          },
         ]}
         onPress={() => onPress(item)}
         activeOpacity={0.8}
@@ -118,15 +125,28 @@ const SchoolClassCard = React.memo(
           <View style={styles.schoolClassOrderBadgeInline}>
             <Text style={[styles.schoolClassOrderText, isKhmer && styles.khmerInlineText]}>{orderNumber}</Text>
           </View>
-        ) : null}
+        ) : (
+          <View style={styles.schoolClassOrderBadgeInline}>
+            <Ionicons name="albums-outline" size={15} color="#FFFFFF" />
+          </View>
+        )}
+
         <View style={styles.schoolClassContent}>
           <Text style={[styles.schoolClassName, { color: colors.text }]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={[styles.schoolClassMeta, { color: colors.textSecondary }]} numberOfLines={1}>
-            {t('classes.directory.gradeShort', { grade: item.grade })}
-            {item.section ? `•${item.section}` : ''} • {t('classes.directory.studentCountShort', { count: item.studentCount })}
+
+          <Text style={[styles.schoolClassMeta, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]} numberOfLines={1}>
+            {t('classes.directory.studentCount', { count: item.studentCount })}
           </Text>
+
+          <View style={styles.schoolClassTeacherRow}>
+            <Ionicons name="person-outline" size={11} color={colorStyle.text} />
+            <Text style={[styles.schoolClassTeacher, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]} numberOfLines={1}>
+              {t('classes.directory.homeroomTeacher')}: {item.homeroomTeacher ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer) : t('classes.directory.notAssigned')}
+            </Text>
+          </View>
+
         </View>
 
         <View style={[styles.schoolClassIconWrap, { backgroundColor: isDark ? `${colorStyle.accent}24` : colorStyle.iconBg }]}>
@@ -669,6 +689,19 @@ export default function ClubsScreen() {
       { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: isDark ? '#3B2B09' : '#FEF3C7' },
       { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
     ];
+    const isTeacherClassPreview = user?.role === 'TEACHER' && !isAdminOrStaff;
+    const teacherTeachingIds = new Set(teacherClassSplit.teaching.map((classItem) => classItem.id));
+    const teacherPreviewClasses = isTeacherClassPreview
+      ? [
+          ...teacherClassSplit.teaching,
+          ...teacherOtherClasses.filter((classItem) => !teacherTeachingIds.has(classItem.id)),
+        ]
+      : [];
+    const previewClasses = isAdminOrStaff
+      ? adminClasses
+      : isTeacherClassPreview
+        ? teacherPreviewClasses
+        : schoolClasses;
 
     return (
       <View style={styles.listHeader}>
@@ -775,7 +808,7 @@ export default function ClubsScreen() {
                   <Text style={[styles.schoolRetryText, isKhmer && styles.khmerInlineText]}>{t('common.tryAgain')}</Text>
                 </TouchableOpacity>
               </View>
-            ) : (isAdminOrStaff ? adminClasses : schoolClasses).length === 0 ? (
+            ) : previewClasses.length === 0 ? (
               <View style={[styles.schoolClassesEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="information-circle-outline" size={20} color={colors.textTertiary} />
                 <Text style={[styles.schoolClassesEmptyText, { color: colors.textSecondary }]}>
@@ -786,116 +819,105 @@ export default function ClubsScreen() {
                       : t('clubs.screen.noClassesYear')}
                 </Text>
               </View>
-            ) : (
-              <>
-                {user?.role === 'TEACHER' && !isAdminOrStaff ? (
-                  <View>
-                    {teacherClassSplit.teaching.length > 0 ? (
-                      <View style={styles.schoolClassesSubsection}>
-                        <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
-                          {t('clubs.screen.teacherSectionTeaching')}
-                        </Text>
-                        <View style={styles.schoolClassesGridTight}>
-                          {teacherClassSplit.teaching.slice(0, 4).map((item, idx) => (
-                            <View key={`teach-${item.id}`} style={styles.gridItemWrapper}>
-                              <SchoolClassCard
-                                item={item}
-                                index={idx}
-                                orderNumber={idx + 1}
-                                accent="teaching"
-                                onPress={(i) => handleClassPress(i, 'teaching')}
-                              />
-                            </View>
-                          ))}
+            ) : isTeacherClassPreview ? (
+              <View>
+                {teacherClassSplit.teaching.length > 0 ? (
+                  <View style={styles.schoolClassesSubsection}>
+                    <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                      {t('clubs.screen.teacherSectionTeaching')}
+                    </Text>
+                    <View style={styles.schoolClassesGridTight}>
+                      {teacherClassSplit.teaching.slice(0, 3).map((item, idx) => (
+                        <View key={`teach-${item.id}`} style={styles.gridItemWrapper}>
+                          <SchoolClassCard
+                            item={item}
+                            index={idx}
+                            orderNumber={idx + 1}
+                            onPress={(classItem) => handleClassPress(classItem, 'teaching')}
+                          />
                         </View>
-                        {teacherClassSplit.teaching.length > 4 ? (
-                          <TouchableOpacity
-                            style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
-                            onPress={() =>
-                              navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })
-                            }
-                            activeOpacity={0.85}
-                          >
-                            <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
-                              {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
-                            </Text>
-                            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                          </TouchableOpacity>
-                        ) : null}
-                      </View>
-                    ) : null}
-
-                    {teacherOtherClasses.length > 0 ? (
-                      <View
-                        style={[
-                          styles.schoolClassesSubsection,
-                          teacherClassSplit.teaching.length > 0 && { marginTop: 14 },
-                        ]}
-                      >
-                        <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
-                          {t('clubs.screen.teacherSectionOther')}
-                        </Text>
-                        <View style={styles.schoolClassesGridTight}>
-                          {teacherOtherClasses.slice(0, 4).map((item, idx) => (
-                            <View key={`oth-${item.id}`} style={styles.gridItemWrapper}>
-                              <SchoolClassCard
-                                item={item}
-                                index={idx}
-                                orderNumber={idx + 1}
-                                accent="other"
-                                onPress={(i) => handleClassPress(i, 'other')}
-                              />
-                            </View>
-                          ))}
-                        </View>
-                        {teacherOtherClasses.length > 4 ? (
-                          <TouchableOpacity
-                            style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
-                            onPress={() =>
-                              navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })
-                            }
-                            activeOpacity={0.85}
-                          >
-                            <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
-                              {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
-                            </Text>
-                            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                          </TouchableOpacity>
-                        ) : null}
-                      </View>
-                    ) : null}
-
-                  </View>
-                ) : (
-                  <View style={styles.schoolClassesGrid}>
-                    {(isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 6).map((item, idx) => (
-                      <View key={item.id} style={styles.gridItemWrapper}>
-                        <SchoolClassCard
-                          item={item}
-                          index={idx}
-                          orderNumber={idx + 1}
-                          onPress={handleClassPress}
-                        />
-                      </View>
-                    ))}
-
-                    {(isAdminOrStaff ? adminClasses : schoolClasses).length > 6 && (
+                      ))}
+                    </View>
+                    {teacherClassSplit.teaching.length > 3 ? (
                       <TouchableOpacity
-                        style={[styles.seeAllGridBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
-                        onPress={() => {
-                          navigation.navigate('ClassDirectory');
-                        }}
+                        style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })}
+                        activeOpacity={0.85}
                       >
-                        <Text style={[styles.seeAllGridText, { color: colors.textSecondary }]}>
-                          {isAdminOrStaff
-                            ? t('clubs.screen.seeAllCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })
-                            : t('clubs.screen.seeAllMyClassesCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })}
+                        <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
+                          {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
                         </Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                       </TouchableOpacity>
-                    )}
+                    ) : null}
                   </View>
+                ) : null}
+
+                {teacherOtherClasses.length > 0 ? (
+                  <View
+                    style={[
+                      styles.schoolClassesSubsection,
+                      teacherClassSplit.teaching.length > 0 && { marginTop: 14 },
+                    ]}
+                  >
+                    <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                      {t('clubs.screen.teacherSectionOther')}
+                    </Text>
+                    <View style={styles.schoolClassesGridTight}>
+                      {teacherOtherClasses.slice(0, 3).map((item, idx) => (
+                        <View key={`oth-${item.id}`} style={styles.gridItemWrapper}>
+                          <SchoolClassCard
+                            item={item}
+                            index={idx}
+                            orderNumber={idx + 1}
+                            onPress={(classItem) => handleClassPress(classItem, 'other')}
+                          />
+                        </View>
+                      ))}
+                    </View>
+                    {teacherOtherClasses.length > 3 ? (
+                      <TouchableOpacity
+                        style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
+                          {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.schoolClassesGrid}>
+                {previewClasses.slice(0, 6).map((item, idx) => (
+                  <View key={item.id} style={styles.gridItemWrapper}>
+                    <SchoolClassCard
+                      item={item}
+                      index={idx}
+                      orderNumber={idx + 1}
+                      onPress={handleClassPress}
+                    />
+                  </View>
+                ))}
+
+                {previewClasses.length > 6 && (
+                  <TouchableOpacity
+                    style={[styles.seeAllGridBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    onPress={() => {
+                      navigation.navigate('ClassDirectory');
+                    }}
+                  >
+                    <Text style={[styles.seeAllGridText, { color: colors.textSecondary }]}>
+                      {isAdminOrStaff
+                        ? t('clubs.screen.seeAllCount', { count: previewClasses.length })
+                        : t('clubs.screen.seeAllMyClassesCount', { count: previewClasses.length })}
+                    </Text>
+                  </TouchableOpacity>
                 )}
-              </>
+              </View>
             )}
           </View>
         )}
@@ -950,6 +972,7 @@ export default function ClubsScreen() {
     t,
     user?.role,
     teacherClassSplit,
+    teacherOtherClasses,
   ]);
 
   // ── Render item (memoized card) ───────────────────────────────────────────
@@ -1371,10 +1394,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   classSubsectionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-    marginBottom: 10,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '900',
+    letterSpacing: 0,
+    marginBottom: 8,
   },
   schoolClassesHeader: {
     paddingHorizontal: 16,
@@ -1388,7 +1412,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: -0.5,
+    letterSpacing: 0,
   },
   schoolClassesSubtitle: {
     fontSize: 14,
@@ -1509,61 +1533,78 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   schoolClassesGridTight: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     marginTop: 4,
   },
   gridItemWrapper: {
-    width: '48.5%',
-    marginBottom: 12,
+    width: '100%',
+    marginBottom: 10,
   },
   schoolClassCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: '#E2E8F0',
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    minHeight: 76,
-    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    minHeight: 84,
+    gap: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 8,
+    elevation: 1,
   },
   schoolClassOrderBadgeInline: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 10,
+    minWidth: 34,
+    height: 34,
+    borderRadius: 12,
     backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
   },
   schoolClassOrderText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '900',
   },
   schoolClassContent: {
     flex: 1,
-    marginRight: 8,
+    minWidth: 0,
   },
   schoolClassName: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '900',
     color: '#1E293B',
   },
   schoolClassMeta: {
-    marginTop: 4,
+    marginTop: 3,
     fontSize: 11,
+    lineHeight: 15,
     color: '#6B7280',
     fontWeight: '700',
   },
+  schoolClassTeacherRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+    minWidth: 0,
+  },
+  schoolClassTeacher: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '800',
+  },
   schoolClassIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1584,18 +1625,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
-    paddingVertical: 12,
+    marginTop: 8,
+    paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 18,
     borderWidth: 1.5,
     borderStyle: 'dashed',
   },
   seeAllGridBtn: {
-    width: '48.5%',
-    height: 76,
-    borderRadius: 20,
-    borderWidth: 1.5,
+    width: '100%',
+    minHeight: 54,
+    borderRadius: 16,
+    borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: '#CBD5E1',
     alignItems: 'center',

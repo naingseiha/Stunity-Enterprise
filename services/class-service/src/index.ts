@@ -288,6 +288,105 @@ type ClassAccessResolution = {
   reason?: string;
 };
 
+const syncHomeroomTeacherAssignment = async (
+  tx: any,
+  {
+    classId,
+    schoolId,
+    homeroomTeacherId,
+  }: {
+    classId: string;
+    schoolId: string;
+    homeroomTeacherId?: string | null;
+  }
+) => {
+  await tx.teacher.updateMany({
+    where: {
+      schoolId,
+      homeroomClassId: classId,
+      ...(homeroomTeacherId ? { id: { not: homeroomTeacherId } } : {}),
+    },
+    data: { homeroomClassId: null },
+  });
+
+  if (!homeroomTeacherId) {
+    return;
+  }
+
+  const existingTeacherAssignment = await tx.teacher.findFirst({
+    where: {
+      id: homeroomTeacherId,
+      schoolId,
+    },
+    select: {
+      homeroomClassId: true,
+      homeroomClass: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (
+    existingTeacherAssignment?.homeroomClassId &&
+    existingTeacherAssignment.homeroomClassId !== classId
+  ) {
+    throw new Error(
+      `Teacher is already homeroom teacher for class ${existingTeacherAssignment.homeroomClass?.name || 'another class'}`
+    );
+  }
+
+  await tx.teacher.update({
+    where: { id: homeroomTeacherId },
+    data: { homeroomClassId: classId },
+  });
+};
+
+const hydrateHomeroomTeachers = async <T extends { homeroomTeacherId?: string | null; homeroomTeacher?: any }>(
+  classes: T[],
+  schoolId: string
+) => {
+  const missingTeacherIds = Array.from(
+    new Set(
+      classes
+        .filter((classItem) => classItem.homeroomTeacherId && !classItem.homeroomTeacher)
+        .map((classItem) => classItem.homeroomTeacherId as string)
+    )
+  );
+
+  if (missingTeacherIds.length === 0) {
+    return classes;
+  }
+
+  const teachers = await prisma.teacher.findMany({
+    where: {
+      id: { in: missingTeacherIds },
+      schoolId,
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      englishFirstName: true,
+      englishLastName: true,
+      email: true,
+      phone: true,
+      role: true,
+      customFields: true,
+    },
+  });
+  const teacherById = new Map(teachers.map((teacher) => [teacher.id, teacher]));
+
+  return classes.map((classItem) => ({
+    ...classItem,
+    homeroomTeacher:
+      classItem.homeroomTeacher ||
+      (classItem.homeroomTeacherId ? teacherById.get(classItem.homeroomTeacherId) || null : null),
+  }));
+};
+
 const getScopedUserRecord = async (userId: string, schoolId: string): Promise<ScopedUserRecord | null> =>
   prisma.user.findFirst({
     where: {
@@ -517,6 +616,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
         section: true,
         track: true,
         capacity: true,
+        homeroomTeacherId: true,
         academicYear: {
           select: {
             id: true,
@@ -552,7 +652,8 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const classIds = classes.map((cls) => cls.id);
+    const hydratedClasses = await hydrateHomeroomTeachers(classes, schoolId);
+    const classIds = hydratedClasses.map((cls) => cls.id);
     const activeEnrollmentCounts = classIds.length
       ? await prisma.studentClass.groupBy({
           by: ['classId'],
@@ -566,7 +667,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     const activeEnrollmentMap = new Map<string, number>(
       activeEnrollmentCounts.map((entry) => [entry.classId, entry._count._all])
     );
-    const classesWithCounts = classes.map((cls) => ({
+    const classesWithCounts = hydratedClasses.map((cls) => ({
       ...cls,
       _count: {
         studentClasses: activeEnrollmentMap.get(cls.id) || 0,
@@ -647,6 +748,8 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
             email: true,
             role: true,
             customFields: true,
@@ -686,11 +789,13 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
       orderBy: [{ grade: 'asc' }, { section: 'asc' }],
     });
 
-    console.log(`✅ [School ${schoolId}] Found ${classes.length} classes`);
+    const hydratedClasses = await hydrateHomeroomTeachers(classes, schoolId);
+
+    console.log(`✅ [School ${schoolId}] Found ${hydratedClasses.length} classes`);
 
     res.json({
       success: true,
-      data: classes,
+      data: hydratedClasses,
     });
   } catch (error: any) {
     console.error('❌ Error getting classes:', error);
@@ -925,21 +1030,31 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         orderBy: [{ class: { grade: 'asc' } }, { class: { section: 'asc' } }],
       });
 
-      const classes = studentClasses.map((sc) => ({
-        id: sc.class.id,
-        classId: sc.class.classId,
-        name: sc.class.name,
-        grade: sc.class.grade,
-        section: sc.class.section,
-        track: sc.class.track,
-        capacity: sc.class.capacity,
-        academicYear: sc.class.academicYear,
-        homeroomTeacher: sc.class.homeroomTeacher,
-        studentCount: sc.class._count.studentClasses,
-        myRole: 'STUDENT',
-        isHomeroom: false,
-        linkedStudentId: userRecord.studentId,
-      }));
+      const hydratedStudentClassMap = new Map(
+        (await hydrateHomeroomTeachers(studentClasses.map((sc) => sc.class), schoolId)).map((classItem) => [
+          classItem.id,
+          classItem,
+        ])
+      );
+
+      const classes = studentClasses.map((sc) => {
+        const classRecord = hydratedStudentClassMap.get(sc.class.id) || sc.class;
+        return {
+          id: classRecord.id,
+          classId: classRecord.classId,
+          name: classRecord.name,
+          grade: classRecord.grade,
+          section: classRecord.section,
+          track: classRecord.track,
+          capacity: classRecord.capacity,
+          academicYear: classRecord.academicYear,
+          homeroomTeacher: classRecord.homeroomTeacher,
+          studentCount: classRecord._count.studentClasses,
+          myRole: 'STUDENT',
+          isHomeroom: false,
+          linkedStudentId: userRecord.studentId,
+        };
+      });
 
       return res.json({
         success: true,
@@ -1015,7 +1130,8 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         orderBy: [{ grade: 'asc' }, { section: 'asc' }],
       });
 
-      const classIds = teacherClasses.map((c) => c.id);
+      const hydratedTeacherClasses = await hydrateHomeroomTeachers(teacherClasses, schoolId);
+      const classIds = hydratedTeacherClasses.map((c) => c.id);
       const timetableRows =
         classIds.length === 0
           ? []
@@ -1030,7 +1146,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
             });
       const timetableClassIdSet = new Set(timetableRows.map((r) => r.classId));
 
-      const classes = teacherClasses.map((c) => ({
+      const classes = hydratedTeacherClasses.map((c) => ({
         id: c.id,
         classId: c.classId,
         name: c.name,
@@ -1160,6 +1276,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
               section: studentClass.class.section,
               track: studentClass.class.track,
               capacity: studentClass.class.capacity,
+              homeroomTeacherId: studentClass.class.homeroomTeacherId,
               academicYear: studentClass.class.academicYear,
               homeroomTeacher: studentClass.class.homeroomTeacher,
               studentCount: studentClass.class._count.studentClasses,
@@ -1182,7 +1299,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         });
       });
 
-      const classes = Array.from(parentClassesMap.values()).sort((a, b) => {
+      const classes = (await hydrateHomeroomTeachers(Array.from(parentClassesMap.values()), schoolId)).sort((a, b) => {
         const gradeCompare = String(a.grade).localeCompare(String(b.grade), undefined, { numeric: true });
         if (gradeCompare !== 0) return gradeCompare;
         return String(a.section || '').localeCompare(String(b.section || ''));
@@ -1245,9 +1362,11 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         orderBy: [{ grade: 'asc' }, { section: 'asc' }],
       });
 
+      const hydratedClasses = await hydrateHomeroomTeachers(classes, schoolId);
+
       return res.json({
         success: true,
-        data: classes.map((c) => ({
+        data: hydratedClasses.map((c) => ({
           id: c.id,
           classId: c.classId,
           name: c.name,
@@ -1415,6 +1534,8 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
             email: true,
             phone: true,
             role: true,
@@ -1480,11 +1601,13 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    console.log(`✅ [School ${schoolId}] Found class: ${classData.name} (${classData.academicYear.name})`);
+    const [hydratedClassData] = await hydrateHomeroomTeachers([classData], schoolId);
+
+    console.log(`✅ [School ${schoolId}] Found class: ${hydratedClassData.name} (${hydratedClassData.academicYear.name})`);
 
     res.json({
       success: true,
-      data: classData,
+      data: hydratedClassData,
     });
   } catch (error: any) {
     console.error('❌ Error fetching class:', error);
@@ -1515,6 +1638,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
       homeroomTeacherId,
       capacity,
     } = req.body;
+    const requestedHomeroomTeacherId = homeroomTeacherId || null;
 
     // Validation
     if (!name || !grade || !academicYearId) {
@@ -1556,11 +1680,19 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
     }
 
     // Verify homeroom teacher belongs to school (if provided)
-    if (homeroomTeacherId) {
+    if (requestedHomeroomTeacherId) {
       const teacher = await prisma.teacher.findFirst({
         where: {
-          id: homeroomTeacherId,
+          id: requestedHomeroomTeacherId,
           schoolId: schoolId,
+        },
+        include: {
+          homeroomClass: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -1571,53 +1703,73 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
         });
       }
 
-      // Check if teacher is already a homeroom teacher for another class in this academic year
+      if (teacher.homeroomClassId) {
+        return res.status(400).json({
+          success: false,
+          message: `Teacher is already homeroom teacher for class ${teacher.homeroomClass?.name || 'another class'}`,
+        });
+      }
+
+      // Check if teacher is already a homeroom teacher for another class.
       const existingHomeroom = await prisma.class.findFirst({
         where: {
-          homeroomTeacherId: homeroomTeacherId,
+          homeroomTeacherId: requestedHomeroomTeacherId,
           schoolId: schoolId,
-          academicYearId,
         },
       });
 
       if (existingHomeroom) {
         return res.status(400).json({
           success: false,
-          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name} in this academic year`,
+          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name}`,
         });
       }
     }
 
-    // Create class
-    const newClass = await prisma.class.create({
-      data: {
-        classId,
-        name,
-        grade,
-        section,
-        track,
-        academicYearId,
-        homeroomTeacherId,
-        capacity,
-        schoolId: schoolId, // ✅ Multi-tenant
-      },
-      include: {
-        homeroomTeacher: {
-          select: {
-            id: true,
-            customFields: true,
-            firstName: true,
-            lastName: true,
+    // Create class and keep both homeroom assignment columns in sync.
+    const newClass = await prisma.$transaction(async (tx) => {
+      const createdClass = await tx.class.create({
+        data: {
+          classId,
+          name,
+          grade,
+          section,
+          track,
+          academicYearId,
+          homeroomTeacherId: requestedHomeroomTeacherId,
+          capacity,
+          schoolId: schoolId, // ✅ Multi-tenant
+        },
+      });
+
+      await syncHomeroomTeacherAssignment(tx, {
+        classId: createdClass.id,
+        schoolId,
+        homeroomTeacherId: requestedHomeroomTeacherId,
+      });
+
+      return tx.class.findUnique({
+        where: { id: createdClass.id },
+        include: {
+          homeroomTeacher: {
+            select: {
+              id: true,
+              customFields: true,
+              firstName: true,
+              lastName: true,
+              englishFirstName: true,
+              englishLastName: true,
+            },
+          },
+          academicYear: {
+            select: {
+              id: true,
+              name: true,
+              isCurrent: true,
+            },
           },
         },
-        academicYear: {
-          select: {
-            id: true,
-            name: true,
-            isCurrent: true,
-          },
-        },
-      },
+      });
     });
 
     console.log(`✅ [School ${schoolId}] Created class: ${newClass.name}`);
@@ -1673,6 +1825,8 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       homeroomTeacherId,
       capacity,
     } = req.body;
+    const requestedHomeroomTeacherId =
+      homeroomTeacherId === '' ? null : homeroomTeacherId;
 
     // If changing academic year, verify new year exists and belongs to school
     if (academicYearId && academicYearId !== existingClass.academicYearId) {
@@ -1692,11 +1846,19 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
     }
 
     // Verify new homeroom teacher belongs to school (if provided)
-    if (homeroomTeacherId && homeroomTeacherId !== existingClass.homeroomTeacherId) {
+    if (requestedHomeroomTeacherId && requestedHomeroomTeacherId !== existingClass.homeroomTeacherId) {
       const teacher = await prisma.teacher.findFirst({
         where: {
-          id: homeroomTeacherId,
+          id: requestedHomeroomTeacherId,
           schoolId: schoolId,
+        },
+        include: {
+          homeroomClass: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -1707,13 +1869,18 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
         });
       }
 
-      // Check if teacher is already a homeroom teacher for another class in this academic year
-      const finalAcademicYearId = academicYearId || existingClass.academicYearId;
+      if (teacher.homeroomClassId && teacher.homeroomClassId !== id) {
+        return res.status(400).json({
+          success: false,
+          message: `Teacher is already homeroom teacher for class ${teacher.homeroomClass?.name || 'another class'}`,
+        });
+      }
+
+      // Check if teacher is already a homeroom teacher for another class.
       const existingHomeroom = await prisma.class.findFirst({
         where: {
-          homeroomTeacherId: homeroomTeacherId,
+          homeroomTeacherId: requestedHomeroomTeacherId,
           schoolId: schoolId,
-          academicYearId: finalAcademicYearId,
           id: { not: id }, // Exclude current class
         },
       });
@@ -1721,46 +1888,62 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       if (existingHomeroom) {
         return res.status(400).json({
           success: false,
-          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name} in this academic year`,
+          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name}`,
         });
       }
     }
 
-    // Update class
-    const updatedClass = await prisma.class.update({
-      where: { id },
-      data: {
-        ...(classId !== undefined && { classId }),
-        ...(name !== undefined && { name }),
-        ...(grade !== undefined && { grade }),
-        ...(section !== undefined && { section }),
-        ...(track !== undefined && { track }),
-        ...(academicYearId !== undefined && { academicYearId }),
-        ...(homeroomTeacherId !== undefined && { homeroomTeacherId }),
-        ...(capacity !== undefined && { capacity }),
-      },
-      include: {
-        homeroomTeacher: {
-          select: {
-            id: true,
-            customFields: true,
-            firstName: true,
-            lastName: true,
+    // Update class and keep both homeroom assignment columns in sync.
+    const updatedClass = await prisma.$transaction(async (tx) => {
+      const savedClass = await tx.class.update({
+        where: { id },
+        data: {
+          ...(classId !== undefined && { classId }),
+          ...(name !== undefined && { name }),
+          ...(grade !== undefined && { grade }),
+          ...(section !== undefined && { section }),
+          ...(track !== undefined && { track }),
+          ...(academicYearId !== undefined && { academicYearId }),
+          ...(requestedHomeroomTeacherId !== undefined && { homeroomTeacherId: requestedHomeroomTeacherId }),
+          ...(capacity !== undefined && { capacity }),
+        },
+      });
+
+      if (requestedHomeroomTeacherId !== undefined) {
+        await syncHomeroomTeacherAssignment(tx, {
+          classId: id,
+          schoolId,
+          homeroomTeacherId: requestedHomeroomTeacherId,
+        });
+      }
+
+      return tx.class.findUnique({
+        where: { id: savedClass.id },
+        include: {
+          homeroomTeacher: {
+            select: {
+              id: true,
+              customFields: true,
+              firstName: true,
+              lastName: true,
+              englishFirstName: true,
+              englishLastName: true,
+            },
+          },
+          academicYear: {
+            select: {
+              id: true,
+              name: true,
+              isCurrent: true,
+            },
+          },
+          _count: {
+            select: {
+              studentClasses: true,
+            },
           },
         },
-        academicYear: {
-          select: {
-            id: true,
-            name: true,
-            isCurrent: true,
-          },
-        },
-        _count: {
-          select: {
-            studentClasses: true,
-          },
-        },
-      },
+      });
     });
 
     console.log(`✅ [School ${schoolId}] Updated class: ${updatedClass.name}`);

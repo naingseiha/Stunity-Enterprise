@@ -46,9 +46,18 @@ function transformClasses(data: any[]): Class[] {
       students: cls._count?.studentClasses || cls._count?.students || 0,
     },
     homeroomTeacher: cls.homeroomTeacher ? {
+      ...cls.homeroomTeacher,
       id: cls.homeroomTeacher.id,
-      firstNameLatin: cls.homeroomTeacher.firstName || cls.homeroomTeacher.firstNameLatin || '',
-      lastNameLatin: cls.homeroomTeacher.lastName || cls.homeroomTeacher.lastNameLatin || '',
+      firstNameLatin:
+        cls.homeroomTeacher.englishFirstName ||
+        cls.homeroomTeacher.firstNameLatin ||
+        cls.homeroomTeacher.firstName ||
+        '',
+      lastNameLatin:
+        cls.homeroomTeacher.englishLastName ||
+        cls.homeroomTeacher.lastNameLatin ||
+        cls.homeroomTeacher.lastName ||
+        '',
     } : null,
   }));
 }

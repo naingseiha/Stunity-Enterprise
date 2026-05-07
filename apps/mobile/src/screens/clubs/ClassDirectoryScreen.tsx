@@ -57,6 +57,18 @@ const getCurrentMonthLabel = (): string => {
   return new Date().toLocaleString('default', { month: 'long' });
 };
 
+const formatTeacherDisplayName = (
+  teacher?: MyClassSummary['homeroomTeacher'] | null,
+  preferEnglish = false
+): string => {
+  if (!teacher) return '';
+
+  const nativeName = [teacher.firstName, teacher.lastName].filter(Boolean).join(' ').trim();
+  const englishName = [teacher.englishFirstName, teacher.englishLastName].filter(Boolean).join(' ').trim();
+
+  return (preferEnglish ? englishName || nativeName : nativeName || englishName) || '';
+};
+
 type ClassDirSection = {
   title: string;
   data: MyClassSummary[];
@@ -122,10 +134,10 @@ const SchoolClassCard = React.memo(
             </Text>
           </View>
           {item.homeroomTeacher ? (
-            <View style={styles.statPill}>
+            <View style={[styles.statPill, styles.teacherStatPill]}>
               <Ionicons name="person-outline" size={13} color={COLORS.textSecondary} />
               <Text style={[styles.statText, isKhmer && styles.khmerInlineText]} numberOfLines={1}>
-                {item.homeroomTeacher.firstName}
+                {t('classes.directory.homeroomTeacher')}: {formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)}
               </Text>
             </View>
           ) : null}
@@ -182,8 +194,8 @@ export default function ClassDirectoryScreen() {
             item.grade,
             item.section,
             item.track,
-            item.homeroomTeacher?.firstName,
-            item.homeroomTeacher?.lastName,
+            formatTeacherDisplayName(item.homeroomTeacher),
+            formatTeacherDisplayName(item.homeroomTeacher, true),
           ]
             .filter(Boolean)
             .join(' ')
@@ -289,8 +301,8 @@ export default function ClassDirectoryScreen() {
               item.grade,
               item.section,
               item.track,
-              item.homeroomTeacher?.firstName,
-              item.homeroomTeacher?.lastName,
+              formatTeacherDisplayName(item.homeroomTeacher),
+              formatTeacherDisplayName(item.homeroomTeacher, true),
             ]
               .filter(Boolean)
               .join(' ')
@@ -663,6 +675,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     gap: 5,
     maxWidth: '44%',
+  },
+  teacherStatPill: {
+    flex: 1,
+    maxWidth: undefined,
   },
   statText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
   classIconWrap: {

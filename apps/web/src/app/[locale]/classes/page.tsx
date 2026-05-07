@@ -87,7 +87,17 @@ function getGradeTheme(grade: number) {
 
 function formatTeacherName(classItem: Class, t: any) {
   if (!classItem.homeroomTeacher) return t('unassigned');
-  return `${classItem.homeroomTeacher.firstNameLatin} ${classItem.homeroomTeacher.lastNameLatin}`.trim();
+  return [
+    classItem.homeroomTeacher.firstNameLatin ||
+      classItem.homeroomTeacher.englishFirstName ||
+      classItem.homeroomTeacher.firstName,
+    classItem.homeroomTeacher.lastNameLatin ||
+      classItem.homeroomTeacher.englishLastName ||
+      classItem.homeroomTeacher.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || t('unassigned');
 }
 
 function formatTrackLabel(track?: string | null) {
@@ -268,7 +278,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
   const { locale } = params;
   const t = useTranslations('classes');
   const router = useRouter();
-  const { selectedYear } = useAcademicYear();
+  const { currentYear, selectedYear, setSelectedYear } = useAcademicYear();
 
   const [selectedGrade, setSelectedGrade] = useState<number | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
@@ -290,6 +300,12 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
       router.replace(`/${locale}/auth/login`);
     }
   }, [locale, router]);
+
+  useEffect(() => {
+    if (!currentYear) return;
+    if (selectedYear?.id === currentYear.id) return;
+    setSelectedYear(currentYear);
+  }, [currentYear, selectedYear?.id, setSelectedYear]);
 
   const filteredClasses = useMemo(() => {
     const query = debouncedSearch.toLowerCase();

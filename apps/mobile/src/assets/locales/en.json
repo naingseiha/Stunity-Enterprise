@@ -1658,6 +1658,8 @@
       "grade": "Grade {{grade}}",
       "section": "Section {{section}}",
       "studentCount": "{{count}} Students",
+      "homeroomTeacher": "Class teacher",
+      "notAssigned": "Not assigned",
       "gradeShort": "G{{grade}}",
       "studentCountShort": "{{count}}",
       "sectionAll": "All classes",

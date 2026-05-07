@@ -1658,6 +1658,8 @@
       "grade": "ថ្នាក់ទី {{grade}}",
       "section": "ផ្នែក {{section}}",
       "studentCount": "សិស្ស {{count}} នាក់",
+      "homeroomTeacher": "គ្រូប្រចាំថ្នាក់",
+      "notAssigned": "មិនទាន់កំណត់",
       "gradeShort": "ថ្នាក់ {{grade}}",
       "studentCountShort": "{{count}}",
       "sectionAll": "ថ្នាក់ទាំងអស់",

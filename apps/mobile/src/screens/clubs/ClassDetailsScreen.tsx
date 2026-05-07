@@ -123,6 +123,11 @@ const extractTeacherSubjects = (
 };
 
 const formatName = (firstName?: string, lastName?: string) => `${firstName || ''} ${lastName || ''}`.trim();
+const formatTeacherDisplayName = (teacher: any, preferEnglish = false) => {
+  const nativeName = formatName(teacher?.firstName, teacher?.lastName);
+  const englishName = formatName(teacher?.englishFirstName, teacher?.englishLastName);
+  return (preferEnglish ? englishName || nativeName : nativeName || englishName) || 'Teacher';
+};
 const EMPTY_CLASS_DETAIL_BUNDLE: classesApi.ClassDetailBundle = {
   students: [],
   timetable: null,
@@ -422,8 +427,18 @@ export default function ClassDetailsScreen() {
   }, [params.initialSummary?.studentCount, students]);
 
   const uniqueTeachers = useMemo(() => {
-    if (!timetable?.entries) return [];
     const map = new Map();
+    const homeroomTeacher = params.initialSummary?.homeroomTeacher;
+
+    if (homeroomTeacher?.id) {
+      map.set(homeroomTeacher.id, {
+        ...homeroomTeacher,
+        subjectNames: [t('classDetails.homeroomTeacher')],
+        isHomeroom: true,
+      });
+    }
+
+    if (!timetable?.entries) return Array.from(map.values());
     timetable.entries.forEach((e: any) => {
       if (e.teacher && e.teacher.id) {
         const existing = map.get(e.teacher.id);
@@ -443,7 +458,7 @@ export default function ClassDetailsScreen() {
       }
     });
     return Array.from(map.values());
-  }, [timetable]);
+  }, [params.initialSummary?.homeroomTeacher, t, timetable]);
 
   const scheduleDayApiMap = useMemo(() => {
     const baseDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -1078,7 +1093,7 @@ export default function ClassDetailsScreen() {
                         <Text style={styles.teacherAvatarText}>{teacher.firstName?.[0] || 'T'}</Text>
                       </View>
                     )}
-                    <Text style={styles.teacherName} numberOfLines={1}>{formatName(teacher.firstName, teacher.lastName)}</Text>
+                    <Text style={styles.teacherName} numberOfLines={1}>{formatTeacherDisplayName(teacher, !isKhmer)}</Text>
                     <Text style={styles.teacherSubject} numberOfLines={1}>
                       {teacher.subjectNames?.length > 0 ? teacher.subjectNames.join(', ') : teacher.subject?.name || t('classDetails.teacher')}
                     </Text>

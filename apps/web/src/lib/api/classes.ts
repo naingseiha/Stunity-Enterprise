@@ -15,10 +15,17 @@ export interface Class {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  homeroomTeacherId?: string | null;
   homeroomTeacher?: {
     id: string;
+    firstName?: string;
+    lastName?: string;
+    englishFirstName?: string | null;
+    englishLastName?: string | null;
     firstNameLatin: string;
     lastNameLatin: string;
+    email?: string | null;
+    customFields?: Record<string, unknown> | null;
   } | null;
   _count?: {
     students: number;
@@ -33,7 +40,7 @@ export interface CreateClassInput {
   academicYearId: string;
   capacity?: number;
   room?: string;
-  homeroomTeacherId?: string;
+  homeroomTeacherId?: string | null;
 }
 
 export interface ClassesResponse {
@@ -88,6 +95,11 @@ export async function getClasses(params?: {
     ...c,
     grade: typeof c.grade === 'string' ? parseInt(c.grade, 10) : c.grade,
     academicYearId: c.academicYear?.id || c.academicYearId,
+    homeroomTeacher: c.homeroomTeacher ? {
+      ...c.homeroomTeacher,
+      firstNameLatin: c.homeroomTeacher.englishFirstName || c.homeroomTeacher.firstName || c.homeroomTeacher.firstNameLatin || '',
+      lastNameLatin: c.homeroomTeacher.englishLastName || c.homeroomTeacher.lastName || c.homeroomTeacher.lastNameLatin || '',
+    } : null,
     _count: c._count ? {
       students: c._count.studentClasses ?? c._count.students ?? 0
     } : undefined
