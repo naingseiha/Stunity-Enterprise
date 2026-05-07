@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { PrismaClient } from '@prisma/client';
+import { MonthlyGradeSheetStatus, PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import ExcelJS from 'exceljs';
 import dotenv from 'dotenv';
@@ -380,6 +380,30 @@ const resolveMonthNumber = (month: string, providedMonthNumber?: number): number
   }
 
   return 1;
+};
+
+const resolveAcademicYearForMonth = (monthNumber: number, now = new Date()): number => {
+  const currentMonthNumber = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const academicStartYear = currentMonthNumber >= 11 ? currentYear : currentYear - 1;
+  return monthNumber >= 11 ? academicStartYear : academicStartYear + 1;
+};
+
+const normalizeGradePayloadMonthContext = (month: unknown, monthNumber: unknown, year: unknown) => {
+  const normalizedMonth = typeof month === 'string' && month.trim().length > 0 ? month : 'Month 1';
+  const parsedProvidedMonthNumber =
+    typeof monthNumber === 'number' ? monthNumber : parseInt(String(monthNumber || ''), 10);
+  const normalizedMonthNumber = resolveMonthNumber(
+    normalizedMonth,
+    Number.isFinite(parsedProvidedMonthNumber) ? parsedProvidedMonthNumber : undefined,
+  );
+
+  const parsedYear =
+    typeof year === 'number' ? year : parseInt(String(year || ''), 10);
+  const normalizedYear =
+    Number.isFinite(parsedYear) && parsedYear > 0 ? parsedYear : resolveAcademicYearForMonth(normalizedMonthNumber);
+
+  return { normalizedMonth, normalizedMonthNumber, normalizedYear };
 };
 
 const upsertStudentMonthlySummary = async (
@@ -837,17 +861,36 @@ async function getStudentsForClassGradeGrid(classId: string, schoolId: string | 
 app.get('/grades/class/:classId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { classId } = req.params;
-    const { month, subjectId } = req.query;
+    const { month, monthNumber, year, subjectId } = req.query;
     const subjectIdParam = typeof subjectId === 'string' ? subjectId : null;
     const access = await resolveGradeAccess(req, classId, subjectIdParam);
 
     if (!access.allowed) {
+      if (!('status' in access)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
       return res.status(access.status).json({ message: access.message });
     }
 
     const where: any = { classId };
+    const monthParam = typeof month === 'string' ? month : null;
+    const monthNumberParam = Number(monthNumber);
+    const yearParam = Number(year);
 
-    if (month) where.month = month as string;
+    if (Number.isFinite(yearParam) && yearParam > 0) {
+      where.year = yearParam;
+    }
+
+    if (monthParam || (Number.isFinite(monthNumberParam) && monthNumberParam >= 1 && monthNumberParam <= 12)) {
+      if (monthParam && Number.isFinite(monthNumberParam) && monthNumberParam >= 1 && monthNumberParam <= 12) {
+        where.OR = [{ month: monthParam }, { monthNumber: monthNumberParam }];
+      } else if (monthParam) {
+        where.month = monthParam;
+      } else if (Number.isFinite(monthNumberParam)) {
+        where.monthNumber = monthNumberParam;
+      }
+    }
+
     if (subjectIdParam) where.subjectId = subjectIdParam;
 
     const grades = await prisma.grade.findMany({
@@ -907,6 +950,9 @@ app.get(
       const access = await resolveGradeAccess(req, classId, subjectId);
 
       if (!access.allowed) {
+        if (!('status' in access)) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
         return res.status(access.status).json({ message: access.message });
       }
 
@@ -1014,6 +1060,302 @@ app.get('/grades/student/:studentId', authenticateToken, async (req: AuthRequest
 });
 
 /**
+ * GET /grades/monthly-sheet/status
+ * Monthly grade sheet lifecycle: DRAFT -> SUBMITTED -> LOCKED (admin).
+ */
+app.get('/grades/monthly-sheet/status', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const { classId, subjectId, month, monthNumber, year } = req.query;
+    if (!classId || !subjectId || !month || year === undefined) {
+      return res.status(400).json({ message: 'classId, subjectId, month, and year are required' });
+    }
+
+    const { normalizedMonth, normalizedMonthNumber, normalizedYear } = normalizeGradePayloadMonthContext(
+      month,
+      typeof monthNumber === 'string' ? Number(monthNumber) : monthNumber,
+      typeof year === 'string' ? Number(year) : year,
+    );
+
+    const access = await resolveGradeAccess(req, String(classId), String(subjectId));
+    if (!access.allowed) {
+      if (!('status' in access)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    const sheet = await prisma.gradeConfirmation.findUnique({
+      where: {
+        classId_subjectId_month_year: {
+          classId: String(classId),
+          subjectId: String(subjectId),
+          month: normalizedMonth,
+          year: normalizedYear,
+        },
+      },
+    });
+
+    const status = sheet?.status ?? MonthlyGradeSheetStatus.DRAFT;
+    const role = req.user?.role || '';
+    const isAdmin = GRADE_ADMIN_ROLES.has(role);
+    const writableByTeacher = isAdmin || status === MonthlyGradeSheetStatus.DRAFT;
+
+    return res.json({
+      status,
+      submittedAt: sheet?.submittedAt || null,
+      lockedAt: sheet?.lockedAt || null,
+      submittedByUserId: sheet?.confirmedBy || null,
+      lockedByUserId: sheet?.lockedBy || null,
+      month: normalizedMonth,
+      monthNumber: normalizedMonthNumber,
+      year: normalizedYear,
+      writableByTeacher,
+    });
+  } catch (error: any) {
+    console.error('❌ Error reading monthly sheet status:', error);
+    return res.status(500).json({ message: 'Error reading monthly sheet status', error: error.message });
+  }
+});
+
+/**
+ * POST /grades/monthly-sheet/submit
+ * Teachers finalize a month/subject roster; admins can finalize on behalf after review.
+ */
+app.post('/grades/monthly-sheet/submit', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const { classId, subjectId, month, monthNumber, year } = req.body || {};
+    if (!classId || !subjectId || !month || year === undefined) {
+      return res.status(400).json({ message: 'classId, subjectId, month, and year are required' });
+    }
+
+    const authUserId = getAuthUserId(req);
+    const { normalizedMonth, normalizedMonthNumber, normalizedYear } = normalizeGradePayloadMonthContext(
+      month,
+      monthNumber,
+      year,
+    );
+
+    const access = await resolveGradeAccess(req, classId, subjectId);
+    if (!access.allowed) {
+      if (!('status' in access)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    const existing = await prisma.gradeConfirmation.findUnique({
+      where: {
+        classId_subjectId_month_year: {
+          classId,
+          subjectId,
+          month: normalizedMonth,
+          year: normalizedYear,
+        },
+      },
+    });
+
+    if (existing?.status === MonthlyGradeSheetStatus.LOCKED) {
+      return res.status(423).json({
+        message: 'Monthly grade sheet is locked. Reopen it before submitting changes.',
+        code: 'MONTHLY_GRADE_SHEET_LOCKED',
+        status: existing.status,
+      });
+    }
+
+    if (existing?.status === MonthlyGradeSheetStatus.SUBMITTED) {
+      return res.json({
+        ok: true,
+        alreadySubmitted: true,
+        status: MonthlyGradeSheetStatus.SUBMITTED,
+      });
+    }
+
+    const now = new Date();
+    await prisma.gradeConfirmation.upsert({
+      where: {
+        classId_subjectId_month_year: {
+          classId,
+          subjectId,
+          month: normalizedMonth,
+          year: normalizedYear,
+        },
+      },
+      create: {
+        classId,
+        subjectId,
+        month: normalizedMonth,
+        monthNumber: normalizedMonthNumber,
+        year: normalizedYear,
+        status: MonthlyGradeSheetStatus.SUBMITTED,
+        isConfirmed: true,
+        ...(authUserId ? { confirmedBy: authUserId, confirmedAt: now } : {}),
+        submittedAt: now,
+      },
+      update: {
+        status: MonthlyGradeSheetStatus.SUBMITTED,
+        isConfirmed: true,
+        monthNumber: normalizedMonthNumber,
+        ...(authUserId ? { confirmedBy: authUserId, confirmedAt: now } : {}),
+        submittedAt: now,
+        lockedAt: null,
+        lockedBy: null,
+      },
+    });
+
+    clearGradeCaches(schoolId);
+    return res.json({ ok: true, status: MonthlyGradeSheetStatus.SUBMITTED });
+  } catch (error: any) {
+    console.error('❌ Error submitting monthly sheet:', error);
+    return res.status(500).json({ message: 'Error submitting monthly sheet', error: error.message });
+  }
+});
+
+/**
+ * POST /grades/monthly-sheet/lock
+ * School admins lock a month roster to prevent edits.
+ */
+app.post('/grades/monthly-sheet/lock', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const role = req.user?.role || '';
+    if (!GRADE_ADMIN_ROLES.has(role)) {
+      return res.status(403).json({ message: 'Insufficient permissions to lock monthly grade sheets' });
+    }
+
+    const { classId, subjectId, month, monthNumber, year } = req.body || {};
+    if (!classId || !subjectId || !month || year === undefined) {
+      return res.status(400).json({ message: 'classId, subjectId, month, and year are required' });
+    }
+
+    const adminId = getAuthUserId(req);
+    const { normalizedMonth, normalizedMonthNumber, normalizedYear } = normalizeGradePayloadMonthContext(
+      month,
+      monthNumber,
+      year,
+    );
+
+    const access = await resolveGradeAccess(req, classId, subjectId);
+    if (!access.allowed) {
+      if (!('status' in access)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    const now = new Date();
+    await prisma.gradeConfirmation.upsert({
+      where: {
+        classId_subjectId_month_year: {
+          classId,
+          subjectId,
+          month: normalizedMonth,
+          year: normalizedYear,
+        },
+      },
+      create: {
+        classId,
+        subjectId,
+        month: normalizedMonth,
+        monthNumber: normalizedMonthNumber,
+        year: normalizedYear,
+        status: MonthlyGradeSheetStatus.LOCKED,
+        isConfirmed: false,
+        ...(adminId ? { lockedBy: adminId } : {}),
+        lockedAt: now,
+      },
+      update: {
+        status: MonthlyGradeSheetStatus.LOCKED,
+        monthNumber: normalizedMonthNumber,
+        ...(adminId ? { lockedBy: adminId } : {}),
+        lockedAt: now,
+      },
+    });
+
+    clearGradeCaches(schoolId);
+    return res.json({ ok: true, status: MonthlyGradeSheetStatus.LOCKED });
+  } catch (error: any) {
+    console.error('❌ Error locking monthly sheet:', error);
+    return res.status(500).json({ message: 'Error locking monthly sheet', error: error.message });
+  }
+});
+
+/**
+ * POST /grades/monthly-sheet/reopen
+ * School admins return a roster to editable draft mode.
+ */
+app.post('/grades/monthly-sheet/reopen', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const role = req.user?.role || '';
+    if (!GRADE_ADMIN_ROLES.has(role)) {
+      return res.status(403).json({ message: 'Insufficient permissions to reopen monthly grade sheets' });
+    }
+
+    const { classId, subjectId, month, monthNumber, year } = req.body || {};
+    if (!classId || !subjectId || !month || year === undefined) {
+      return res.status(400).json({ message: 'classId, subjectId, month, and year are required' });
+    }
+
+    const { normalizedMonth, normalizedMonthNumber, normalizedYear } = normalizeGradePayloadMonthContext(
+      month,
+      monthNumber,
+      year,
+    );
+
+    const access = await resolveGradeAccess(req, classId, subjectId);
+    if (!access.allowed) {
+      if (!('status' in access)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    await prisma.gradeConfirmation.updateMany({
+      where: {
+        classId,
+        subjectId,
+        month: normalizedMonth,
+        year: normalizedYear,
+      },
+      data: {
+        status: MonthlyGradeSheetStatus.DRAFT,
+        isConfirmed: false,
+        submittedAt: null,
+        confirmedAt: null,
+        confirmedBy: null,
+        lockedAt: null,
+        lockedBy: null,
+        monthNumber: normalizedMonthNumber,
+      },
+    });
+
+    clearGradeCaches(schoolId);
+    return res.json({ ok: true, status: MonthlyGradeSheetStatus.DRAFT });
+  } catch (error: any) {
+    console.error('❌ Error reopening monthly sheet:', error);
+    return res.status(500).json({ message: 'Error reopening monthly sheet', error: error.message });
+  }
+});
+
+/**
  * POST /grades/batch - Batch create/update grades
  * Body: { grades: [{ studentId, subjectId, classId, score, month, ... }] }
  */
@@ -1026,6 +1368,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
       classId: string;
       month: string;
       monthNumber: number;
+      year: number;
     }>();
 
     if (!Array.isArray(grades) || grades.length === 0) {
@@ -1048,6 +1391,9 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
       const access = await resolveGradeAccess(req, pair.classId, pair.subjectId);
 
       if (!access.allowed) {
+        if (!('status' in access)) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
         return res.status(access.status).json({
           message: access.message,
           classId: pair.classId,
@@ -1056,14 +1402,67 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
       }
     }
 
+    const comboContexts = new Map<string, {
+      classId: string;
+      subjectId: string;
+      month: string;
+      monthNumber: number;
+      year: number;
+    }>();
+
+    for (const grade of grades) {
+      if (!grade?.classId || !grade?.subjectId) {
+        continue;
+      }
+
+      const ctx = normalizeGradePayloadMonthContext(grade.month, grade.monthNumber, grade.year);
+      const key = `${grade.classId}:${grade.subjectId}:${ctx.normalizedMonth}:${ctx.normalizedYear}`;
+      if (!comboContexts.has(key)) {
+        comboContexts.set(key, {
+          classId: grade.classId,
+          subjectId: grade.subjectId,
+          month: ctx.normalizedMonth,
+          monthNumber: ctx.normalizedMonthNumber,
+          year: ctx.normalizedYear,
+        });
+      }
+    }
+
+    const roleForMonthlySheet = req.user?.role || '';
+    if (!GRADE_ADMIN_ROLES.has(roleForMonthlySheet)) {
+      for (const combo of comboContexts.values()) {
+        const sheetRow = await prisma.gradeConfirmation.findUnique({
+          where: {
+            classId_subjectId_month_year: {
+              classId: combo.classId,
+              subjectId: combo.subjectId,
+              month: combo.month,
+              year: combo.year,
+            },
+          },
+        });
+
+        const st = sheetRow?.status;
+        if (st === MonthlyGradeSheetStatus.SUBMITTED || st === MonthlyGradeSheetStatus.LOCKED) {
+          return res.status(423).json({
+            message:
+              'This monthly grade sheet is submitted or locked. Ask a school administrator to reopen it.',
+            code: 'MONTHLY_GRADE_SHEET_LOCKED',
+            status: st,
+            classId: combo.classId,
+            subjectId: combo.subjectId,
+            month: combo.month,
+            year: combo.year,
+          });
+        }
+      }
+    }
+
     const results = {
       created: 0,
       updated: 0,
       errors: [] as any[],
     };
-
-    // Get current year
-    const currentYear = new Date().getFullYear();
 
     // Process each grade sequentially
     for (const gradeData of grades) {
@@ -1074,13 +1473,17 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
         score,
         month,
         monthNumber,
+        year,
         maxScore = 100,
         remarks,
       } = gradeData;
 
       try {
-        const normalizedMonth = month || 'Month 1';
-        const normalizedMonthNumber = resolveMonthNumber(normalizedMonth, monthNumber);
+        const { normalizedMonth, normalizedMonthNumber, normalizedYear } = normalizeGradePayloadMonthContext(
+          month,
+          monthNumber,
+          year,
+        );
         const percentage = calculatePercentage(score, maxScore);
 
         // Get subject to calculate weighted score
@@ -1099,8 +1502,11 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
             studentId,
             subjectId,
             classId,
-            month: normalizedMonth,
-            year: currentYear,
+            year: normalizedYear,
+            OR: [
+              { month: normalizedMonth },
+              { monthNumber: normalizedMonthNumber },
+            ],
           },
         });
 
@@ -1115,6 +1521,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
               weightedScore,
               remarks,
               monthNumber: normalizedMonthNumber || existing.monthNumber,
+              year: normalizedYear,
             },
           });
           results.updated++;
@@ -1129,7 +1536,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
               maxScore,
               month: normalizedMonth,
               monthNumber: normalizedMonthNumber,
-              year: currentYear,
+              year: normalizedYear,
               percentage,
               weightedScore,
               remarks,
@@ -1155,12 +1562,13 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
           );
         }
 
-        const summaryKey = `${studentId}:${classId}:${normalizedMonth}`;
+        const summaryKey = `${studentId}:${classId}:${normalizedMonth}:${normalizedYear}`;
         affectedSummaries.set(summaryKey, {
           studentId,
           classId,
           month: normalizedMonth,
           monthNumber: normalizedMonthNumber,
+          year: normalizedYear,
         });
       } catch (gradeError: any) {
         results.errors.push({ studentId, error: gradeError.message });
@@ -1177,15 +1585,15 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
           item.classId,
           item.month,
           item.monthNumber,
-          currentYear
+          item.year
         );
         if (summary) {
           syncedSummaries++;
         }
-        affectedClassMonths.set(`${item.classId}:${item.month}:${currentYear}`, {
+        affectedClassMonths.set(`${item.classId}:${item.month}:${item.year}`, {
           classId: item.classId,
           month: item.month,
-          year: currentYear,
+          year: item.year,
         });
       } catch (summaryError: any) {
         results.errors.push({
@@ -2467,6 +2875,10 @@ app.listen(PORT, () => {
   console.log(`📊 Grade Service running on port ${PORT}`);
   console.log(`📝 Endpoints:`);
   console.log(`   GET    /grades/class/:classId - Get class grades`);
+  console.log(`   GET    /grades/monthly-sheet/status - Monthly sheet lifecycle status`);
+  console.log(`   POST   /grades/monthly-sheet/submit - Submit monthly roster`);
+  console.log(`   POST   /grades/monthly-sheet/lock - Lock monthly roster (admins)`);
+  console.log(`   POST   /grades/monthly-sheet/reopen - Reopen roster to drafts (admins)`);
   console.log(`   GET    /grades/class/:classId/subject/:subjectId/month/:month - Grid view`);
   console.log(`   GET    /grades/student/:studentId - Get student grades`);
   console.log(`   GET    /grades/monthly-report - Khmer monthly report`);

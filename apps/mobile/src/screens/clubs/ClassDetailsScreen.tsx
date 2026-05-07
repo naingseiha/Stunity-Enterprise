@@ -76,6 +76,18 @@ type TeacherSubject = {
   maxScore?: number;
 };
 
+const CALENDAR_MONTH_ENGLISH = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
+const resolveAcademicYearForCalendarMonth = (monthNumber: number, now = new Date()): number => {
+  const currentMonthNumber = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const academicStartYear = currentMonthNumber >= 11 ? currentYear : currentYear - 1;
+  return monthNumber >= 11 ? academicStartYear : academicStartYear + 1;
+};
+
 const getCurrentMonthLabel = (): string => {
   return new Date().toLocaleString('default', { month: 'long' });
 };
@@ -506,14 +518,18 @@ export default function ClassDetailsScreen() {
       .filter((row) => row.raw !== undefined && row.raw !== '')
       .map((row) => {
         const score = Number(row.raw);
+        const calendarMonthNum = new Date().getMonth() + 1;
+        const monthEnglish = CALENDAR_MONTH_ENGLISH[calendarMonthNum - 1] ?? 'January';
+        const academicYear = resolveAcademicYearForCalendarMonth(calendarMonthNum);
         return {
           studentId: row.student.id,
           subjectId: selectedQuickSubject!.id,
           classId,
           score,
           maxScore: selectedQuickSubject!.maxScore || 100,
-          month: getCurrentMonthLabel(),
-          monthNumber: new Date().getMonth() + 1,
+          month: monthEnglish,
+          monthNumber: calendarMonthNum,
+          year: academicYear,
         };
       })
       .filter((row) => {
@@ -534,7 +550,13 @@ export default function ClassDetailsScreen() {
       await loadData({ force: true, preserveVisibleContent: true });
       return true;
     } catch (err: any) {
-      Alert.alert(t('classDetails.alerts.scoresTitle'), err?.message || t('classDetails.alerts.importFailed'));
+      const payloadMessage = err?.response?.data?.message;
+      const statusCode = err?.response?.status;
+      const message =
+        payloadMessage ||
+        err?.message ||
+        (statusCode === 423 ? t('classScreens.grades.sheet.lockedSheetSave') : t('classDetails.alerts.importFailed'));
+      Alert.alert(t('classDetails.alerts.scoresTitle'), message);
       return false;
     } finally {
       setUploading(false);

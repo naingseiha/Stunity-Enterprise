@@ -1778,6 +1778,18 @@
       "level": "Level",
       "attendanceBreakdown": "Attendance Breakdown",
       "topPerformance": "Top Performance",
+      "gradeDistribution": "Grade Distribution",
+      "gradeLabel": "Grade {{level}}",
+      "interventionQueue": "Intervention Queue",
+      "noHighRiskStudents": "No high-risk students for this report period.",
+      "shareTitle": "Class report summary",
+      "exportTitle": "Export class report CSV",
+      "exportFailed": "Failed to export report",
+      "exportUnavailable": "File sharing is not available on this device.",
+      "actions": {
+        "share": "Share",
+        "exportCsv": "Export CSV"
+      },
       "noRankedResults": "No ranked results are available yet.",
       "noId": "No ID",
       "na": "N/A",
@@ -1837,7 +1849,31 @@
       "emptyReport": "No score report is available for this class yet.",
       "studentListCount": "Student List ({{count}})",
       "maxPts": "Max: {{max}} pts",
-      "emptyStudents": "No students found in this class."
+      "emptyStudents": "No students found in this class.",
+      "sheet": {
+        "currentStatus": "Monthly sheet:",
+        "readOnlyHint": "This month's sheet has been submitted or locked. Score entry is restricted until an admin reopens it.",
+        "submitAction": "Submit sheet",
+        "lockAction": "Lock sheet",
+        "reopenAction": "Reopen to draft",
+        "submitTitle": "Submit monthly sheet",
+        "submitMessage": "After submission, you will no longer be able to edit scores for this subject and month until an admin reopens the sheet.",
+        "submitSuccess": "Monthly sheet submitted.",
+        "submitFailed": "Submit failed",
+        "lockTitle": "Lock monthly sheet",
+        "lockMessage": "Locking prevents teachers from editing scores until the sheet is reopened.",
+        "lockSuccess": "Monthly sheet locked.",
+        "reopenTitle": "Reopen monthly sheet",
+        "reopenMessage": "Reopening returns the sheet to draft so teachers can edit scores again.",
+        "reopenSuccess": "Monthly sheet reopened to draft.",
+        "lockedSheetSave": "This monthly sheet cannot be edited right now.",
+        "status": {
+          "draft": "Draft",
+          "submitted": "Submitted",
+          "locked": "Locked",
+          "unknown": "Status unavailable"
+        }
+      }
     },
     "assignments": {
       "header": "Assignments",

@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   ScrollView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -15,7 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
-import { classesApi } from '@/api';
+import { classesApi, gradeApi } from '@/api';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -43,8 +45,33 @@ type RouteParams = {
   linkedStudentId?: string;
 };
 
+const MONTHS = [
+  'November', 'December', 'January', 'February', 'March', 'April',
+  'May', 'June', 'July', 'August', 'September', 'October'
+];
+const MONTH_TO_NUMBER: Record<string, number> = {
+  January: 1,
+  February: 2,
+  March: 3,
+  April: 4,
+  May: 5,
+  June: 6,
+  July: 7,
+  August: 8,
+  September: 9,
+  October: 10,
+  November: 11,
+  December: 12,
+};
+
 const getCurrentMonthLabel = (): string => {
   return new Date().toLocaleString('default', { month: 'long' });
+};
+const resolveAcademicYearForMonth = (monthNumber: number, now = new Date()): number => {
+  const currentMonthNumber = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const academicStartYear = currentMonthNumber >= 11 ? currentYear : currentYear - 1;
+  return monthNumber >= 11 ? academicStartYear : academicStartYear + 1;
 };
 
 const getCurrentRange = (): { startDate: string; endDate: string } => {
@@ -66,6 +93,9 @@ export default function ClassReportScreen() {
   const route = useRoute<any>();
   const { classId, className, myRole, linkedStudentId } = (route.params || {}) as RouteParams;
   const monthLabel = useMemo(() => getCurrentMonthLabel(), []);
+  const [selectedMonth, setSelectedMonth] = useState(monthLabel);
+  const selectedMonthNumber = useMemo(() => MONTH_TO_NUMBER[selectedMonth] || 1, [selectedMonth]);
+  const selectedAcademicYear = useMemo(() => resolveAcademicYearForMonth(selectedMonthNumber), [selectedMonthNumber]);
   const currentRange = useMemo(() => getCurrentRange(), []);
   const initialCachedAttendance = useMemo(
     () => (
@@ -92,6 +122,7 @@ export default function ClassReportScreen() {
   const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialCachedAttendance || null);
   const [gradesReport, setGradesReport] = useState<classesApi.ClassGradesReport | null>(initialCachedGrades || null);
   const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialCachedBundle?.monthlySummary || null);
+  const [studentMonthlyGrades, setStudentMonthlyGrades] = useState<any[]>([]);
 
   const loadData = useCallback(async (force = false) => {
     if (!classId) {
@@ -126,7 +157,7 @@ export default function ClassReportScreen() {
         classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate, force),
         classesApi.getClassGradesReport(classId, { semester: 1 }, force),
         (myRole === 'STUDENT' || myRole === 'PARENT') && linkedStudentId
-          ? classesApi.getStudentMonthlySummary(linkedStudentId, monthLabel)
+          ? classesApi.getStudentMonthlySummary(linkedStudentId, selectedMonth)
           : Promise.resolve(null),
       ]);
 
@@ -139,11 +170,35 @@ export default function ClassReportScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [classId, currentRange.endDate, currentRange.startDate, linkedStudentId, monthLabel, myRole, refreshing, t]);
+  }, [classId, currentRange.endDate, currentRange.startDate, linkedStudentId, myRole, refreshing, selectedMonth, t]);
+
+  const loadStudentMonthlyGrades = useCallback(async () => {
+    if (!linkedStudentId || (myRole !== 'STUDENT' && myRole !== 'PARENT')) {
+      setStudentMonthlyGrades([]);
+      return;
+    }
+    try {
+      const response = await gradeApi.get(`/grades/student/${linkedStudentId}`, {
+        params: {
+          month: selectedMonth,
+          year: selectedAcademicYear,
+        },
+      });
+      const rows = Array.isArray(response.data) ? response.data : [];
+      const classRows = classId ? rows.filter((row: any) => row.classId === classId || row.class?.id === classId) : rows;
+      classRows.sort((a: any, b: any) => String(a.subject?.name || '').localeCompare(String(b.subject?.name || '')));
+      setStudentMonthlyGrades(classRows);
+    } catch {
+      setStudentMonthlyGrades([]);
+    }
+  }, [classId, linkedStudentId, myRole, selectedAcademicYear, selectedMonth]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+  useEffect(() => {
+    loadStudentMonthlyGrades();
+  }, [loadStudentMonthlyGrades]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -155,6 +210,28 @@ export default function ClassReportScreen() {
       .sort((a, b) => (a.rank || Number.MAX_SAFE_INTEGER) - (b.rank || Number.MAX_SAFE_INTEGER))
       .slice(0, 5);
   }, [gradesReport?.students]);
+  const atRiskStudents = useMemo(() => {
+    return [...(gradesReport?.students || [])]
+      .filter((student) => Number(student.average || 0) < 50)
+      .sort((a, b) => Number(a.average || 0) - Number(b.average || 0))
+      .slice(0, 6);
+  }, [gradesReport?.students]);
+  const gradeDistribution = useMemo(() => {
+    const buckets = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+    (gradesReport?.students || []).forEach((student) => {
+      const level = String(student.gradeLevel || 'F').toUpperCase();
+      if (level in buckets) {
+        buckets[level as keyof typeof buckets] += 1;
+      } else {
+        buckets.F += 1;
+      }
+    });
+    return buckets;
+  }, [gradesReport?.students]);
+  const studentSubjectAverage = useMemo(() => {
+    if (studentMonthlyGrades.length === 0) return 0;
+    return studentMonthlyGrades.reduce((sum, row) => sum + Number(row.score || 0), 0) / studentMonthlyGrades.length;
+  }, [studentMonthlyGrades]);
 
   const attendanceRate = Number(attendanceSummary?.summary?.averageAttendanceRate || 0);
   const classAverage = Number(gradesReport?.statistics?.classAverage || 0);
@@ -165,6 +242,109 @@ export default function ClassReportScreen() {
   const reportTitle = className || gradesReport?.class?.name || attendanceSummary?.class?.name || t('classScreens.report.defaultTitle');
 
   const roleLabel = myRole === 'PARENT' ? t('classScreens.report.role.parent') : myRole === 'STUDENT' ? t('classScreens.report.role.student') : t('classScreens.report.role.default');
+
+  const handleShareReport = useCallback(async () => {
+    const lines = [
+      `${t('classScreens.report.header')} - ${reportTitle}`,
+      `${t('classScreens.grades.academicMonth')}: ${selectedMonth} ${selectedAcademicYear}`,
+      `${t('classScreens.report.metrics.attendanceRate')}: ${metricValue(attendanceRate, '%')}`,
+      `${t('classScreens.report.metrics.classAverage')}: ${metricValue(classAverage)}`,
+      `${t('classScreens.report.metrics.passRate')}: ${metricValue(passRate, '%')}`,
+    ];
+
+    if (myRole === 'STUDENT' || myRole === 'PARENT') {
+      lines.push(`${t('classScreens.report.average')}: ${metricValue(studentMonthlyGrades.length ? studentSubjectAverage : studentAverage)}`);
+      lines.push(`${t('classScreens.report.classRank')}: ${studentRank || '--'}`);
+    }
+
+    try {
+      await Share.share({
+        title: t('classScreens.report.shareTitle'),
+        message: lines.join('\n'),
+      });
+    } catch {
+      // User cancelled share intent.
+    }
+  }, [
+    attendanceRate,
+    classAverage,
+    myRole,
+    passRate,
+    reportTitle,
+    selectedAcademicYear,
+    selectedMonth,
+    studentAverage,
+    studentMonthlyGrades.length,
+    studentRank,
+    studentSubjectAverage,
+    t,
+  ]);
+
+  const handleExportCsv = useCallback(async () => {
+    try {
+      const csvLines: string[] = [];
+      csvLines.push('metric,value');
+      csvLines.push(`month,${selectedMonth} ${selectedAcademicYear}`);
+      csvLines.push(`attendance_rate,${metricValue(attendanceRate, '%')}`);
+      csvLines.push(`class_average,${metricValue(classAverage)}`);
+      csvLines.push(`pass_rate,${metricValue(passRate, '%')}`);
+      csvLines.push('');
+
+      if (myRole === 'STUDENT' || myRole === 'PARENT') {
+        csvLines.push('subject,code,score,max_score,percent');
+        if (studentMonthlyGrades.length === 0) {
+          csvLines.push('N/A,N/A,0,0,0');
+        } else {
+          studentMonthlyGrades.forEach((row) => {
+            const subjectName = String(row.subject?.name || 'N/A').replace(/,/g, ' ');
+            const code = String(row.subject?.code || 'N/A').replace(/,/g, ' ');
+            const max = Number(row.maxScore || row.subject?.maxScore || 100);
+            const score = Number(row.score || 0);
+            const percent = max > 0 ? Math.round((score / max) * 100) : 0;
+            csvLines.push(`${subjectName},${code},${score.toFixed(1)},${max},${percent}`);
+          });
+        }
+      } else {
+        csvLines.push('student_id,student_name,rank,average,grade_level');
+        (gradesReport?.students || []).forEach((student) => {
+          const name = `${student.student.firstName || ''} ${student.student.lastName || ''}`.trim().replace(/,/g, ' ');
+          csvLines.push(`${student.student.studentId || 'N/A'},${name},${student.rank || ''},${Number(student.average || 0).toFixed(1)},${student.gradeLevel || 'N/A'}`);
+        });
+      }
+
+      const FileSystem = await import('expo-file-system');
+      const Sharing = await import('expo-sharing');
+      const fileName = `class-report-${classId}-${selectedAcademicYear}-${selectedMonthNumber}.csv`;
+      const fileUri = `${FileSystem.cacheDirectory || ''}${fileName}`;
+      await FileSystem.writeAsStringAsync(fileUri, csvLines.join('\n'), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: t('classScreens.report.exportTitle'),
+          UTI: 'public.comma-separated-values-text',
+        });
+      } else {
+        Alert.alert(t('common.info'), t('classScreens.report.exportUnavailable'));
+      }
+    } catch (error: any) {
+      Alert.alert(t('common.error'), error?.message || t('classScreens.report.exportFailed'));
+    }
+  }, [
+    attendanceRate,
+    classAverage,
+    classId,
+    gradesReport?.students,
+    myRole,
+    passRate,
+    selectedAcademicYear,
+    selectedMonth,
+    selectedMonthNumber,
+    studentMonthlyGrades,
+    t,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -223,10 +403,41 @@ export default function ClassReportScreen() {
                 <Ionicons name="analytics-outline" size={12} color="#FFF" />
                 <Text style={styles.heroPillText}>{t('classScreens.report.liveReport')}</Text>
               </View>
-              <Text style={styles.heroPeriod}>{t('classScreens.report.thisMonth')}</Text>
+              <Text style={styles.heroPeriod}>{selectedMonth}</Text>
             </View>
             <Text style={styles.heroTitle}>{reportTitle}</Text>
             <Text style={styles.heroSubtitle}>{roleLabel}</Text>
+          </View>
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleShareReport}>
+              <Ionicons name="share-social-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.actionButtonText}>{t('classScreens.report.actions.share')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleExportCsv}>
+              <Ionicons name="download-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.actionButtonText}>{t('classScreens.report.actions.exportCsv')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('classScreens.grades.academicMonth')}</Text>
+              <Ionicons name="calendar-clear-outline" size={20} color={COLORS.textMuted} />
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.monthScroll}>
+              {MONTHS.map((month) => (
+                <TouchableOpacity
+                  key={month}
+                  style={[styles.monthChip, selectedMonth === month && styles.monthChipActive]}
+                  onPress={() => setSelectedMonth(month)}
+                >
+                  <Text style={[styles.monthChipText, selectedMonth === month && styles.monthChipTextActive]}>
+                    {month}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
 
           <View style={styles.metricsGrid}>
@@ -263,7 +474,7 @@ export default function ClassReportScreen() {
               </View>
               <View style={styles.studentSnapshotRow}>
                 <View style={styles.snapshotCard}>
-                  <Text style={styles.snapshotValue}>{metricValue(studentAverage)}</Text>
+                  <Text style={styles.snapshotValue}>{metricValue(studentMonthlyGrades.length ? studentSubjectAverage : studentAverage)}</Text>
                   <Text style={styles.snapshotLabel}>{t('classScreens.report.average')}</Text>
                 </View>
                 <View style={styles.snapshotCard}>
@@ -271,9 +482,34 @@ export default function ClassReportScreen() {
                   <Text style={styles.snapshotLabel}>{t('classScreens.report.classRank')}</Text>
                 </View>
                 <View style={styles.snapshotCard}>
-                  <Text style={styles.snapshotValue}>{studentGradeLevel}</Text>
+                  <Text style={styles.snapshotValue}>{studentMonthlyGrades.length || studentGradeLevel}</Text>
                   <Text style={styles.snapshotLabel}>{t('classScreens.report.level')}</Text>
                 </View>
+              </View>
+
+              <View style={styles.listCard}>
+                {studentMonthlyGrades.length === 0 ? (
+                  <Text style={styles.emptyText}>{t('classScreens.report.noRankedResults')}</Text>
+                ) : (
+                  studentMonthlyGrades.map((row) => {
+                    const max = Number(row.maxScore || row.subject?.maxScore || 100);
+                    const score = Number(row.score || 0);
+                    const percent = max > 0 ? Math.round((score / max) * 100) : 0;
+                    return (
+                      <View key={row.id} style={styles.rankRow}>
+                        <View style={styles.rankBadge}>
+                          <Ionicons name="book-outline" size={14} color={COLORS.primary} />
+                        </View>
+                        <View style={styles.rankInfo}>
+                          <Text style={styles.rankName}>{row.subject?.name || t('classScreens.grades.na')}</Text>
+                          <Text style={styles.rankMeta}>{row.subject?.code || t('classScreens.grades.na')}</Text>
+                        </View>
+                        <Text style={styles.rankScore}>{score.toFixed(1)} / {max}</Text>
+                        <Text style={[styles.rankMeta, { minWidth: 42, textAlign: 'right' }]}>{percent}%</Text>
+                      </View>
+                    );
+                  })
+                )}
               </View>
             </View>
           )}
@@ -329,6 +565,51 @@ export default function ClassReportScreen() {
               )}
             </View>
           </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('classScreens.report.gradeDistribution')}</Text>
+              <Ionicons name="stats-chart-outline" size={20} color={COLORS.textMuted} />
+            </View>
+            <View style={styles.listCard}>
+              {Object.entries(gradeDistribution).map(([level, count]) => (
+                <View key={level} style={styles.listRow}>
+                  <View style={styles.listRowLeft}>
+                    <View style={[styles.listDot, { backgroundColor: level === 'F' ? COLORS.danger : COLORS.success }]} />
+                    <Text style={styles.listLabel}>{t('classScreens.report.gradeLabel', { level })}</Text>
+                  </View>
+                  <Text style={styles.listValue}>{count}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('classScreens.report.interventionQueue')}</Text>
+              <Ionicons name="medkit-outline" size={20} color={COLORS.textMuted} />
+            </View>
+            <View style={styles.listCard}>
+              {atRiskStudents.length === 0 ? (
+                <Text style={styles.emptyText}>{t('classScreens.report.noHighRiskStudents')}</Text>
+              ) : (
+                atRiskStudents.map((student) => (
+                  <View key={student.student.id} style={styles.rankRow}>
+                    <View style={[styles.rankBadge, { backgroundColor: COLORS.dangerLight }]}>
+                      <Ionicons name="alert-circle-outline" size={14} color={COLORS.danger} />
+                    </View>
+                    <View style={styles.rankInfo}>
+                      <Text style={styles.rankName}>
+                        {student.student.firstName} {student.student.lastName}
+                      </Text>
+                      <Text style={styles.rankMeta}>{student.student.studentId || t('classScreens.report.noId')}</Text>
+                    </View>
+                    <Text style={[styles.rankScore, { color: COLORS.danger }]}>{metricValue(student.average)}</Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
         </ScrollView>
       )}
     </View>
@@ -372,6 +653,52 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 28,
     gap: 18,
+  },
+  monthScroll: {
+    gap: 10,
+    paddingBottom: 4,
+  },
+  monthChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+  },
+  monthChipActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  monthChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  monthChipTextActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   heroCard: {
     minHeight: 172,

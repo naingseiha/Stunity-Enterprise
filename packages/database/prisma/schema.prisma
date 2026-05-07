@@ -212,21 +212,33 @@ model Grade {
   @@map("grades")
 }
 
+enum MonthlyGradeSheetStatus {
+  DRAFT
+  SUBMITTED
+  LOCKED
+}
+
 model GradeConfirmation {
-  id          String   @id @default(cuid())
+  id          String                    @id @default(cuid())
   classId     String
   subjectId   String
   month       String
+  monthNumber Int?
   year        Int
-  isConfirmed Boolean  @default(false)
-  confirmedBy String
-  confirmedAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [confirmedBy], references: [id], onDelete: Cascade)
+  status      MonthlyGradeSheetStatus   @default(DRAFT)
+  isConfirmed Boolean                   @default(false)
+  confirmedBy String?
+  confirmedAt DateTime?
+  submittedAt DateTime?
+  lockedBy    String?
+  lockedAt    DateTime?
+  updatedAt   DateTime                  @updatedAt
+  user        User?                     @relation(fields: [confirmedBy], references: [id], onDelete: SetNull)
 
   @@unique([classId, subjectId, month, year])
   @@index([classId, month, year])
   @@index([confirmedBy])
+  @@index([status])
   @@map("grade_confirmations")
 }
 
