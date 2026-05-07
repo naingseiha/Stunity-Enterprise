@@ -88,8 +88,9 @@ const formatTeacherDisplayName = (
 ): string => {
   if (!teacher) return '';
 
-  const nativeName = [teacher.firstName, teacher.lastName].filter(Boolean).join(' ').trim();
-  const englishName = [teacher.englishFirstName, teacher.englishLastName].filter(Boolean).join(' ').trim();
+  // Standardize to Last Name + First Name for enterprise consistency
+  const nativeName = [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim();
+  const englishName = [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ').trim();
 
   return (preferEnglish ? englishName || nativeName : nativeName || englishName) || '';
 };
@@ -1719,13 +1720,13 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   schoolClassChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 4,
     borderRadius: 10,
     gap: 4,

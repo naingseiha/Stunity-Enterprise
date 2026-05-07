@@ -122,7 +122,7 @@ const extractTeacherSubjects = (
   return Array.from(map.values());
 };
 
-const formatName = (firstName?: string, lastName?: string) => `${firstName || ''} ${lastName || ''}`.trim();
+const formatName = (firstName?: string, lastName?: string) => `${lastName || ''} ${firstName || ''}`.trim();
 const formatTeacherDisplayName = (teacher: any, preferEnglish = false) => {
   const nativeName = formatName(teacher?.firstName, teacher?.lastName);
   const englishName = formatName(teacher?.englishFirstName, teacher?.englishLastName);
