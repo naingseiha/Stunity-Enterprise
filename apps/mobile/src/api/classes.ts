@@ -157,6 +157,7 @@ export interface GetClassDetailBundleOptions {
   semester?: number;
   year?: number;
   monthLabel?: string;
+  monthNumber?: number;
 }
 
 export interface ClassDetailBundle {
@@ -206,6 +207,8 @@ const _classDailyAttendanceCache = new Map<string, { data: ClassDailyAttendanceR
 const _classDailyAttendanceInFlight = new Map<string, Promise<ClassDailyAttendanceResponse>>();
 const _classGradesReportCache = new Map<string, { data: ClassGradesReport; ts: number }>();
 const _classGradesReportInFlight = new Map<string, Promise<ClassGradesReport>>();
+const _studentMonthlySummaryCache = new Map<string, { data: Record<string, unknown> | null; ts: number }>();
+const _studentMonthlySummaryInFlight = new Map<string, Promise<Record<string, unknown> | null>>();
 const EMPTY_CLASS_DETAIL_BUNDLE: ClassDetailBundle = {
   students: [],
   timetable: null,
@@ -235,8 +238,18 @@ const getCachedResource = <T>(
 const getAttendanceSummaryCacheKey = (classId: string, startDate: string, endDate: string) =>
   `${classId}:${startDate}:${endDate}`;
 const getDailyAttendanceCacheKey = (classId: string, date: string) => `${classId}:${date}`;
-const getGradesReportCacheKey = (classId: string, options?: { semester?: number; year?: number }) =>
-  `${classId}:${options?.semester ?? 1}:${options?.year ?? 'current'}`;
+const getGradesReportCacheKey = (
+  classId: string,
+  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number }
+) =>
+  `${classId}:${options?.semester ?? 1}:${options?.year ?? 'current'}:${options?.gradeYear ?? ''}:${options?.monthNumber ?? ''}:${options?.month ?? ''}`;
+const getStudentMonthlySummaryCacheKey = (
+  studentId: string,
+  monthLabel: string,
+  year?: number,
+  monthNumber?: number,
+  classId?: string
+) => `${studentId}:${classId || 'any'}:${year ?? 'current'}:${monthNumber ?? ''}:${monthLabel}`;
 
 export const getCachedMyClasses = (options?: { academicYearId?: string; scopeKey?: string }): MyClassSummary[] | null => {
   if (!_myClassesCache) return null;
@@ -503,13 +516,13 @@ export const prefetchClassDailyAttendance = async (classId: string, date: string
 
 export const getCachedClassGradesReport = (
   classId: string,
-  options?: { semester?: number; year?: number }
+  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number }
 ): ClassGradesReport | null =>
   getCachedResource(_classGradesReportCache, getGradesReportCacheKey(classId, options));
 
 export const getClassGradesReport = async (
   classId: string,
-  options?: { semester?: number; year?: number },
+  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number },
   force = false
 ): Promise<ClassGradesReport> => {
   const cacheKey = getGradesReportCacheKey(classId, options);
@@ -523,7 +536,10 @@ export const getClassGradesReport = async (
 
   const params: Record<string, string | number> = {};
   if (options?.semester) params.semester = options.semester;
-  if (options?.year) params.year = options.year;
+  if (options?.year !== undefined && options?.year !== null) params.year = options.year;
+  if (options?.monthNumber !== undefined && options?.monthNumber !== null) params.monthNumber = options.monthNumber;
+  if (options?.gradeYear !== undefined && options?.gradeYear !== null) params.gradeYear = options.gradeYear;
+  if (options?.month) params.month = options.month;
 
   const request = gradeApi.get<ClassGradesReport>(`/grades/class-report/${classId}`, { params })
     .then((response) => {
@@ -541,17 +557,50 @@ export const getClassGradesReport = async (
 
 export const getStudentMonthlySummary = async (
   studentId: string,
-  monthLabel: string
+  monthLabel: string,
+  year?: number,
+  monthNumber?: number,
+  classId?: string,
+  force = false
 ): Promise<Record<string, unknown> | null> => {
-  try {
-    const response = await gradeApi.get(`/grades/summary/${studentId}/${encodeURIComponent(monthLabel)}`);
-    return response.data || null;
-  } catch (error: any) {
-    if (error?.code === 'NOT_FOUND' || error?.response?.status === 404) {
-      return null;
+  const cacheKey = getStudentMonthlySummaryCacheKey(studentId, monthLabel, year, monthNumber, classId);
+
+  if (!force) {
+    const cached = _studentMonthlySummaryCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CLASS_RESOURCE_CACHE_TTL) {
+      return cached.data;
     }
-    throw error;
+
+    const inFlight = _studentMonthlySummaryInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
   }
+
+  const request = (async () => {
+    try {
+      const params: Record<string, number | string> = {};
+      if (year !== undefined && year !== null) params.year = year;
+      if (monthNumber !== undefined && monthNumber !== null) params.monthNumber = monthNumber;
+      if (classId) params.classId = classId;
+
+      const response = await gradeApi.get(`/grades/summary/${studentId}/${encodeURIComponent(monthLabel)}`, {
+        params: Object.keys(params).length > 0 ? params : undefined,
+      });
+      const data = response.data || null;
+      _studentMonthlySummaryCache.set(cacheKey, { data, ts: Date.now() });
+      return data;
+    } catch (error: any) {
+      if (error?.code === 'NOT_FOUND' || error?.response?.status === 404) {
+        _studentMonthlySummaryCache.set(cacheKey, { data: null, ts: Date.now() });
+        return null;
+      }
+      throw error;
+    }
+  })().finally(() => {
+    _studentMonthlySummaryInFlight.delete(cacheKey);
+  });
+
+  _studentMonthlySummaryInFlight.set(cacheKey, request);
+  return request;
 };
 
 export const getTeacherById = async (teacherId: string): Promise<Record<string, unknown> | null> => {
@@ -577,6 +626,7 @@ const getClassDetailCacheKey = (options: GetClassDetailBundleOptions): string =>
     semester: options.semester ?? 1,
     year: options.year ?? null,
     monthLabel: options.monthLabel || null,
+    monthNumber: options.monthNumber ?? null,
   });
 
 export const getLatestCachedClassDetailBundle = (
@@ -695,7 +745,13 @@ export const getClassDetailBundle = async (
       year: options.year,
     }, force),
     (options.myRole === 'STUDENT' || options.myRole === 'PARENT') && options.linkedStudentId && options.monthLabel
-      ? getStudentMonthlySummary(options.linkedStudentId, options.monthLabel)
+      ? getStudentMonthlySummary(
+          options.linkedStudentId,
+          options.monthLabel,
+          options.year,
+          options.monthNumber,
+          options.classId
+        )
       : Promise.resolve(null),
     options.myRole === 'TEACHER' && options.linkedTeacherId
       ? getTeacherById(options.linkedTeacherId)

@@ -30,7 +30,7 @@ const BRAND_TEAL_DARK = '#00B8DB';
 const BRAND_YELLOW = '#FFA600';
 
 const StatCard = ({ label, value, color, icon, helper }: any) => {
-    const gradientColors = [`${color}08`, `${color}15`];
+    const gradientColors = [`${color}08`, `${color}15`] as const;
     return (
         <Animated.View style={[styles.statCard, { borderColor: `${color}25` }]}>
             <LinearGradient

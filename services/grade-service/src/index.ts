@@ -369,9 +369,53 @@ const calculateWeightedScore = (score: number, coefficient: number): number => {
   return score * coefficient;
 };
 
+const MONTH_NAME_TO_NUMBER: Record<string, number> = {
+  january: 1,
+  jan: 1,
+  'មករា': 1,
+  february: 2,
+  feb: 2,
+  'កុម្ភៈ': 2,
+  march: 3,
+  mar: 3,
+  'មីនា': 3,
+  april: 4,
+  apr: 4,
+  'មេសា': 4,
+  may: 5,
+  'ឧសភា': 5,
+  june: 6,
+  jun: 6,
+  'មិថុនា': 6,
+  july: 7,
+  jul: 7,
+  'កក្កដា': 7,
+  august: 8,
+  aug: 8,
+  'សីហា': 8,
+  september: 9,
+  sep: 9,
+  sept: 9,
+  'កញ្ញា': 9,
+  october: 10,
+  oct: 10,
+  'តុលា': 10,
+  november: 11,
+  nov: 11,
+  'វិច្ឆិកា': 11,
+  december: 12,
+  dec: 12,
+  'ធ្នូ': 12,
+};
+
 const resolveMonthNumber = (month: string, providedMonthNumber?: number): number => {
   if (typeof providedMonthNumber === 'number' && Number.isFinite(providedMonthNumber)) {
     return providedMonthNumber;
+  }
+
+  const mapped = MONTH_NAME_TO_NUMBER[month.trim().toLowerCase()];
+  if (mapped) {
+    return mapped;
   }
 
   const parsed = parseInt(month.replace(/[^\d]/g, ''), 10);
@@ -1013,12 +1057,81 @@ app.get(
 app.get('/grades/student/:studentId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { studentId } = req.params;
-    const { month, year } = req.query;
+    const { classId, month, monthNumber, year } = req.query;
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const studentRecord = await prisma.student.findFirst({
+      where: { id: studentId, schoolId },
+      select: { id: true },
+    });
+
+    if (!studentRecord) {
+      return res.status(404).json({ message: 'Student not found in your school' });
+    }
+
+    const role = req.user?.role || '';
+    const classIdParam = typeof classId === 'string' ? classId : null;
+    if (!GRADE_ADMIN_ROLES.has(role)) {
+      const userRecord = await getScopedUserRecord(req, schoolId);
+      if (!userRecord) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      if (role === 'STUDENT') {
+        if (userRecord.studentId !== studentId) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+      } else if (role === 'PARENT') {
+        if (!userRecord.parentId) {
+          return res.status(403).json({ message: 'Parent profile is not linked to this account' });
+        }
+
+        const parentLink = await prisma.studentParent.findFirst({
+          where: {
+            studentId,
+            parentId: userRecord.parentId,
+          },
+          select: { id: true },
+        });
+
+        if (!parentLink) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+      } else if (role === 'TEACHER' && classIdParam) {
+        const access = await resolveGradeAccess(req, classIdParam, null);
+        if (!access.allowed) {
+          if ('status' in access) {
+            return res.status(access.status).json({ message: access.message });
+          }
+          return res.status(403).json({ message: 'Access denied' });
+        }
+      } else {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
 
     const where: any = { studentId };
+    if (classIdParam) where.classId = classIdParam;
 
-    if (month) where.month = month as string;
-    if (year) where.year = parseInt(year as string);
+    const yearParam = Number(year);
+    if (Number.isFinite(yearParam) && yearParam > 0) {
+      where.year = yearParam;
+    }
+
+    const monthParam = typeof month === 'string' ? month : null;
+    const monthNumberParam = Number(monthNumber);
+    if (monthParam || (Number.isFinite(monthNumberParam) && monthNumberParam >= 1 && monthNumberParam <= 12)) {
+      if (monthParam && Number.isFinite(monthNumberParam) && monthNumberParam >= 1 && monthNumberParam <= 12) {
+        where.OR = [{ month: monthParam }, { monthNumber: monthNumberParam }];
+      } else if (monthParam) {
+        where.month = monthParam;
+      } else if (Number.isFinite(monthNumberParam)) {
+        where.monthNumber = monthNumberParam;
+      }
+    }
 
     const grades = await prisma.grade.findMany({
       where,
@@ -1815,7 +1928,18 @@ app.post('/grades/calculate/average', authenticateToken, async (req: AuthRequest
 app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { studentId, month } = req.params;
-    const currentYear = new Date().getFullYear();
+    const classIdFromQuery = typeof req.query.classId === 'string' ? req.query.classId : undefined;
+    const yearFromQuery = req.query.year;
+    const requestedMonthNumber = resolveMonthNumber(
+      month,
+      req.query.monthNumber !== undefined && req.query.monthNumber !== ''
+        ? Number(req.query.monthNumber)
+        : undefined,
+    );
+    const summaryYear =
+      yearFromQuery !== undefined && yearFromQuery !== '' && !Number.isNaN(Number(yearFromQuery))
+        ? Number(yearFromQuery)
+        : new Date().getFullYear();
     const schoolId = getSchoolId(req);
     if (!schoolId) {
       return res.status(400).json({ message: 'School context is required' });
@@ -1855,8 +1979,9 @@ app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: Auth
     let summary = await prisma.studentMonthlySummary.findFirst({
       where: {
         studentId,
-        month,
-        year: currentYear,
+        ...(classIdFromQuery ? { classId: classIdFromQuery } : {}),
+        OR: [{ month }, { monthNumber: requestedMonthNumber }],
+        year: summaryYear,
       },
       include: summaryInclude,
     });
@@ -1865,26 +1990,30 @@ app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: Auth
       const gradeForMonth = await prisma.grade.findFirst({
         where: {
           studentId,
-          month,
-          year: currentYear,
+          ...(classIdFromQuery ? { classId: classIdFromQuery } : {}),
+          OR: [{ month }, { monthNumber: requestedMonthNumber }],
+          year: summaryYear,
         },
         select: {
           classId: true,
+          month: true,
           monthNumber: true,
         },
       });
 
       if (gradeForMonth) {
+        const summaryMonth = gradeForMonth.month || month;
+        const summaryMonthNumber = resolveMonthNumber(summaryMonth, gradeForMonth.monthNumber || requestedMonthNumber);
         const regenerated = await upsertStudentMonthlySummary(
           studentId,
           gradeForMonth.classId,
-          month,
-          resolveMonthNumber(month, gradeForMonth.monthNumber || undefined),
-          currentYear
+          summaryMonth,
+          summaryMonthNumber,
+          summaryYear
         );
 
         if (regenerated) {
-          await refreshMonthlySummaryRanks(gradeForMonth.classId, month, currentYear);
+          await refreshMonthlySummaryRanks(gradeForMonth.classId, summaryMonth, summaryYear);
           summary = await prisma.studentMonthlySummary.findUnique({
             where: { id: regenerated.id },
             include: summaryInclude,
@@ -2362,21 +2491,64 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
 
 /**
  * GET /grades/class-report/:classId - Get all report cards for a class
- * Query params: semester, year
+ * Query params: semester, year (academic-start context for term reports)
+ * Optional monthly scope: gradeYear + monthNumber, and optionally month (label),
+ * replaces term-wide aggregation with grades for that calendar month/year row.
  */
 app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { classId } = req.params;
     const { semester = '1', year } = req.query;
+    const { monthNumber: monthNumberQ, gradeYear: gradeYearQ, month: monthLabelQ } = req.query;
     const schoolId = getSchoolId(req);
     if (!schoolId) {
       return res.status(400).json({ message: 'School context is required' });
     }
 
+    const monthNumParsed = Number(monthNumberQ);
+    const gradeYearParsed = Number(gradeYearQ);
+    const monthlyMode =
+      Number.isFinite(monthNumParsed) &&
+      monthNumParsed >= 1 &&
+      monthNumParsed <= 12 &&
+      Number.isFinite(gradeYearParsed) &&
+      gradeYearParsed > 1900;
+    const monthLabelForWhere = typeof monthLabelQ === 'string' ? monthLabelQ.trim() || null : null;
+
     const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
-    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
-    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
-    const cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
+    let termContext: ReportTermContext;
+    let gradeWhere: Record<string, unknown>;
+    let cacheKey: string;
+
+    if (monthlyMode) {
+      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+      if (monthLabelForWhere) {
+        gradeWhere = {
+          classId,
+          year: gradeYearParsed,
+          OR: [{ monthNumber: monthNumParsed }, { month: monthLabelForWhere }],
+        };
+      } else {
+        gradeWhere = {
+          classId,
+          year: gradeYearParsed,
+          monthNumber: monthNumParsed,
+        };
+      }
+      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
+        semester
+      )}:${currentYear}:monthly:${gradeYearParsed}:${monthNumParsed}:${monthLabelForWhere || 'noname'}`;
+    } else {
+      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+      gradeWhere = {
+        classId,
+        ...buildGradePeriodWhere(termContext.periods),
+      };
+      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
+        semester
+      )}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
+    }
+
     const cachedResponse = readGradeReportCache(cacheKey);
 
     if (cachedResponse) {
@@ -2385,6 +2557,13 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
 
     const classInfo = await prisma.class.findFirst({
       where: { id: classId, schoolId },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+        section: true,
+        track: true,
+      },
     });
 
     if (!classInfo) {
@@ -2400,8 +2579,17 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
             schoolId,
           },
         },
-        include: {
-          student: true,
+        select: {
+          student: {
+            select: {
+              id: true,
+              studentId: true,
+              firstName: true,
+              lastName: true,
+              customFields: true,
+              photoUrl: true,
+            },
+          },
         },
         orderBy: {
           student: {
@@ -2410,10 +2598,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
         },
       }),
       prisma.grade.findMany({
-        where: {
-          classId,
-          ...gradePeriodWhere,
-        },
+        where: gradeWhere as any,
         include: {
           subject: {
             select: {
@@ -2448,16 +2633,26 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       isPassing: s.average >= 50,
     }));
 
+    const termPayload = monthlyMode
+      ? {
+          name: monthLabelForWhere || `Month ${monthNumParsed}`,
+          startDate: new Date(Date.UTC(gradeYearParsed, monthNumParsed - 1, 1)).toISOString(),
+          endDate: new Date(Date.UTC(gradeYearParsed, monthNumParsed, 0, 23, 59, 59, 999)).toISOString(),
+          months: [{ year: gradeYearParsed, monthNumber: monthNumParsed }],
+        }
+      : {
+          name: termContext.termName,
+          startDate: termContext.startDate.toISOString(),
+          endDate: termContext.endDate.toISOString(),
+          months: termContext.periods,
+        };
+
     const result = {
       class: classInfo,
       semester: parseInt(semester as string),
-      year: currentYear,
-      term: {
-        name: termContext.termName,
-        startDate: termContext.startDate.toISOString(),
-        endDate: termContext.endDate.toISOString(),
-        months: termContext.periods,
-      },
+      year: monthlyMode ? gradeYearParsed : currentYear,
+      monthlyScope: monthlyMode ? { gradeYear: gradeYearParsed, monthNumber: monthNumParsed } : undefined,
+      term: termPayload,
       totalStudents: rankedStudentsWithMetadata.length,
       students: rankedStudentsWithMetadata,
       statistics: {

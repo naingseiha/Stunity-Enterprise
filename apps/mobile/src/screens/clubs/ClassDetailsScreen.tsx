@@ -154,6 +154,11 @@ export default function ClassDetailsScreen() {
   );
   const startConversation = useMessagingStore((state) => state.startConversation);
   const monthLabel = useMemo(() => getCurrentMonthLabel(), []);
+  const currentMonthNumber = useMemo(() => new Date().getMonth() + 1, []);
+  const currentAcademicYear = useMemo(
+    () => resolveAcademicYearForCalendarMonth(currentMonthNumber),
+    [currentMonthNumber]
+  );
   const currentRange = useMemo(() => getCurrentRange(), []);
   const bundleOptions = useMemo<classesApi.GetClassDetailBundleOptions>(() => ({
     classId,
@@ -163,9 +168,13 @@ export default function ClassDetailsScreen() {
     startDate: currentRange.startDate,
     endDate: currentRange.endDate,
     semester: 1,
+    year: currentAcademicYear,
     monthLabel: myRole === 'STUDENT' || myRole === 'PARENT' ? monthLabel : undefined,
+    monthNumber: myRole === 'STUDENT' || myRole === 'PARENT' ? currentMonthNumber : undefined,
   }), [
     classId,
+    currentAcademicYear,
+    currentMonthNumber,
     currentRange.endDate,
     currentRange.startDate,
     monthLabel,
@@ -276,7 +285,13 @@ export default function ClassDetailsScreen() {
         });
         const monthlySummaryPromise =
           (myRole === 'STUDENT' || myRole === 'PARENT') && params.linkedStudentId && monthLabel
-            ? classesApi.getStudentMonthlySummary(params.linkedStudentId, monthLabel)
+            ? classesApi.getStudentMonthlySummary(
+                params.linkedStudentId,
+                monthLabel,
+                currentAcademicYear,
+                currentMonthNumber,
+                classId
+              )
             : Promise.resolve(null);
         const [studentsResult, timetableResult] = await Promise.allSettled([
           studentsPromise,
@@ -356,6 +371,8 @@ export default function ClassDetailsScreen() {
       classId,
       currentRange.endDate,
       currentRange.startDate,
+      currentAcademicYear,
+      currentMonthNumber,
       mergeBundlePatch,
       monthLabel,
       myRole,

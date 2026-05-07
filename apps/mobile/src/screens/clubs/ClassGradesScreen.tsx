@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -66,10 +66,24 @@ const resolveAcademicYearForMonth = (monthNumber: number, now = new Date()): num
 
 const GRADE_ROWS_CACHE_TTL = 60_000;
 const gradeRowsCache = new Map<string, { data: any[]; ts: number }>();
-const getGradeRowsCacheKey = (classId: string, month: string, subjectId: string) =>
-  `${classId}:${month}:${subjectId}`;
-const getCachedGradeRows = (classId: string, month: string, subjectId: string) => {
-  const cacheKey = getGradeRowsCacheKey(classId, month, subjectId);
+const gradeRowsInFlight = new Map<string, Promise<any[]>>();
+const studentScoreRowsCache = new Map<string, { data: any[]; ts: number }>();
+const studentScoreRowsInFlight = new Map<string, Promise<any[]>>();
+const getGradeRowsCacheKey = (
+  classId: string,
+  month: string,
+  subjectId: string,
+  year?: number,
+  monthNumber?: number,
+) => `${classId}:${year ?? 'current'}:${monthNumber ?? ''}:${month}:${subjectId}`;
+const getCachedGradeRows = (
+  classId: string,
+  month: string,
+  subjectId: string,
+  year?: number,
+  monthNumber?: number,
+) => {
+  const cacheKey = getGradeRowsCacheKey(classId, month, subjectId, year, monthNumber);
   const cached = gradeRowsCache.get(cacheKey);
   if (!cached) return null;
 
@@ -79,6 +93,125 @@ const getCachedGradeRows = (classId: string, month: string, subjectId: string) =
   }
 
   return cached.data;
+};
+const buildScoreMap = (grades: any[]) =>
+  grades.reduce<Record<string, string>>((acc, grade) => {
+    acc[grade.studentId] = String(grade.score);
+    return acc;
+  }, {});
+
+const fetchTeacherGradeRows = (
+  classId: string,
+  month: string,
+  subjectId: string,
+  year: number,
+  monthNumber: number,
+  force = false,
+) => {
+  const cacheKey = getGradeRowsCacheKey(classId, month, subjectId, year, monthNumber);
+
+  if (!force) {
+    const cached = getCachedGradeRows(classId, month, subjectId, year, monthNumber);
+    if (cached) return Promise.resolve(cached);
+
+    const inFlight = gradeRowsInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const request = gradeApi
+    .get(`/grades/class/${classId}`, {
+      params: {
+        classId,
+        month,
+        monthNumber,
+        year,
+        subjectId,
+      },
+    })
+    .then((response) => {
+      const grades = response.data || [];
+      gradeRowsCache.set(cacheKey, { data: grades, ts: Date.now() });
+      return grades;
+    })
+    .finally(() => {
+      gradeRowsInFlight.delete(cacheKey);
+    });
+
+  gradeRowsInFlight.set(cacheKey, request);
+  return request;
+};
+
+const getStudentScoreRowsCacheKey = (
+  classId: string | undefined,
+  studentId: string,
+  month: string,
+  year: number,
+  monthNumber: number,
+) => `${classId ?? 'all'}:${studentId}:${year}:${monthNumber}:${month}`;
+
+const getCachedStudentScoreRows = (
+  classId: string | undefined,
+  studentId: string,
+  month: string,
+  year: number,
+  monthNumber: number,
+) => {
+  const cacheKey = getStudentScoreRowsCacheKey(classId, studentId, month, year, monthNumber);
+  const cached = studentScoreRowsCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= GRADE_ROWS_CACHE_TTL) {
+    studentScoreRowsCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+};
+
+const fetchStudentScoreRows = (
+  classId: string | undefined,
+  studentId: string,
+  month: string,
+  year: number,
+  monthNumber: number,
+  force = false,
+) => {
+  const cacheKey = getStudentScoreRowsCacheKey(classId, studentId, month, year, monthNumber);
+
+  if (!force) {
+    const cached = getCachedStudentScoreRows(classId, studentId, month, year, monthNumber);
+    if (cached) return Promise.resolve(cached);
+
+    const inFlight = studentScoreRowsInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const request = gradeApi
+    .get(`/grades/student/${studentId}`, {
+      params: {
+        classId,
+        month,
+        monthNumber,
+        year,
+      },
+    })
+    .then((response) => {
+      const rows = Array.isArray(response.data) ? response.data : [];
+      const filtered = classId ? rows.filter((row: any) => row.class?.id === classId || row.classId === classId) : rows;
+      filtered.sort((a: any, b: any) => {
+        const nameA = String(a.subject?.name || '');
+        const nameB = String(b.subject?.name || '');
+        return nameA.localeCompare(nameB);
+      });
+      studentScoreRowsCache.set(cacheKey, { data: filtered, ts: Date.now() });
+      return filtered;
+    })
+    .finally(() => {
+      studentScoreRowsInFlight.delete(cacheKey);
+    });
+
+  studentScoreRowsInFlight.set(cacheKey, request);
+  return request;
 };
 const extractTeacherSubjects = (timetable: classesApi.TimetableResponse | null | undefined, linkedTeacherId?: string) => {
   const entries = timetable?.entries || [];
@@ -139,11 +272,18 @@ export default function ClassGradesScreen() {
   const [scores, setScores] = useState<Record<string, string>>({});
   const [existingGrades, setExistingGrades] = useState<any[]>([]);
   const [studentMonthlyGrades, setStudentMonthlyGrades] = useState<any[]>([]);
+  const [scoreRowsLoading, setScoreRowsLoading] = useState(false);
+  const [studentScoreRowsLoading, setStudentScoreRowsLoading] = useState(false);
+  const [sheetStatusLoading, setSheetStatusLoading] = useState(false);
   const [monthlySheetMeta, setMonthlySheetMeta] = useState<{
     status: string;
     writableByTeacher: boolean;
   } | null>(null);
   const [sheetBusy, setSheetBusy] = useState(false);
+  const teacherScoreRequestRef = useRef(0);
+  const studentScoreRequestRef = useRef(0);
+  const sheetStatusRequestRef = useRef(0);
+  const visibleTeacherSubjectRef = useRef<string | null>(null);
 
   const isTeacher = myRole === 'TEACHER';
   const effectiveStudentId = linkedStudentId || (myRole === 'STUDENT' ? user?.id : undefined);
@@ -161,6 +301,7 @@ export default function ClassGradesScreen() {
 
     return monthlySheetMeta.writableByTeacher === true;
   }, [isTeacher, monthlySheetMeta]);
+  const scoreDataLoading = isTeacher ? scoreRowsLoading : studentScoreRowsLoading;
 
   const sheetStatusLabelKey = useMemo(() => {
     const raw = monthlySheetMeta?.status ? monthlySheetMeta.status.toLowerCase() : 'draft';
@@ -217,85 +358,111 @@ export default function ClassGradesScreen() {
     if (!selectedSubject) {
       setExistingGrades([]);
       setScores({});
+      setScoreRowsLoading(false);
       return;
     }
 
+    const requestId = teacherScoreRequestRef.current + 1;
+    teacherScoreRequestRef.current = requestId;
+
     try {
-      const cachedGrades = !force ? getCachedGradeRows(classId, selectedMonth, selectedSubject.id) : null;
+      const cachedGrades = !force
+        ? getCachedGradeRows(classId, selectedMonth, selectedSubject.id, selectedAcademicYear, selectedMonthNumber)
+        : null;
       if (cachedGrades) {
         setExistingGrades(cachedGrades);
-        const cachedScoreMap: Record<string, string> = {};
-        cachedGrades.forEach((grade: any) => {
-          cachedScoreMap[grade.studentId] = String(grade.score);
-        });
-        setScores(cachedScoreMap);
-      } else {
+        setScores(buildScoreMap(cachedGrades));
+        visibleTeacherSubjectRef.current = selectedSubject.id;
+      } else if (visibleTeacherSubjectRef.current !== selectedSubject.id) {
         setExistingGrades([]);
         setScores({});
       }
+      setScoreRowsLoading(true);
 
-      const response = await gradeApi.get(`/grades/class/${classId}`, {
-        params: {
-          month: selectedMonth,
-          monthNumber: selectedMonthNumber,
-          year: selectedAcademicYear,
-          subjectId: selectedSubject.id,
-        }
-      });
+      const grades = await fetchTeacherGradeRows(
+        classId,
+        selectedMonth,
+        selectedSubject.id,
+        selectedAcademicYear,
+        selectedMonthNumber,
+        force,
+      );
 
-      const grades = response.data || [];
-      gradeRowsCache.set(getGradeRowsCacheKey(classId, selectedMonth, selectedSubject.id), {
-        data: grades,
-        ts: Date.now(),
-      });
+      if (teacherScoreRequestRef.current !== requestId) {
+        return;
+      }
       setExistingGrades(grades);
-      
-      const scoreMap: Record<string, string> = {};
-      grades.forEach((g: any) => {
-        scoreMap[g.studentId] = String(g.score);
-      });
-      setScores(scoreMap);
+      setScores(buildScoreMap(grades));
+      visibleTeacherSubjectRef.current = selectedSubject.id;
     } catch (error: any) {
       console.error('Failed to load grades:', error);
-      setExistingGrades([]);
-      setScores({});
+    } finally {
+      if (teacherScoreRequestRef.current === requestId) {
+        setScoreRowsLoading(false);
+      }
     }
   }, [classId, isTeacher, selectedAcademicYear, selectedMonth, selectedMonthNumber, selectedSubject]);
 
-  const loadStudentGrades = useCallback(async () => {
+  const loadStudentGrades = useCallback(async (force = false) => {
     if (isTeacher) return;
     if (!effectiveStudentId) {
       setStudentMonthlyGrades([]);
+      setStudentScoreRowsLoading(false);
       return;
     }
 
+    const requestId = studentScoreRequestRef.current + 1;
+    studentScoreRequestRef.current = requestId;
+
     try {
-      const response = await gradeApi.get(`/grades/student/${effectiveStudentId}`, {
-        params: {
-          month: selectedMonth,
-          year: selectedAcademicYear,
-        },
-      });
-      const rows = Array.isArray(response.data) ? response.data : [];
-      const filtered = classId ? rows.filter((row: any) => row.class?.id === classId || row.classId === classId) : rows;
-      filtered.sort((a: any, b: any) => {
-        const nameA = String(a.subject?.name || '');
-        const nameB = String(b.subject?.name || '');
-        return nameA.localeCompare(nameB);
-      });
+      const cachedRows = !force
+        ? getCachedStudentScoreRows(classId, effectiveStudentId, selectedMonth, selectedAcademicYear, selectedMonthNumber)
+        : null;
+      if (cachedRows) {
+        setStudentMonthlyGrades(cachedRows);
+      }
+      setStudentScoreRowsLoading(true);
+
+      const filtered = await fetchStudentScoreRows(
+        classId,
+        effectiveStudentId,
+        selectedMonth,
+        selectedAcademicYear,
+        selectedMonthNumber,
+        force,
+      );
+
+      if (studentScoreRequestRef.current !== requestId) {
+        return;
+      }
       setStudentMonthlyGrades(filtered);
     } catch (error) {
-      setStudentMonthlyGrades([]);
+    } finally {
+      if (studentScoreRequestRef.current === requestId) {
+        setStudentScoreRowsLoading(false);
+      }
     }
-  }, [classId, effectiveStudentId, isTeacher, selectedAcademicYear, selectedMonth]);
+  }, [
+    classId,
+    effectiveStudentId,
+    isTeacher,
+    selectedAcademicYear,
+    selectedMonth,
+    selectedMonthNumber,
+  ]);
 
   const loadMonthlySheetStatus = useCallback(async () => {
     if (!isTeacher || !selectedSubject || !classId) {
       setMonthlySheetMeta(null);
+      setSheetStatusLoading(false);
       return;
     }
 
+    const requestId = sheetStatusRequestRef.current + 1;
+    sheetStatusRequestRef.current = requestId;
+
     try {
+      setSheetStatusLoading(true);
       const response = await gradeApi.get(`/grades/monthly-sheet/status`, {
         params: {
           classId,
@@ -306,12 +473,21 @@ export default function ClassGradesScreen() {
         },
       });
       const data = response?.data || {};
+      if (sheetStatusRequestRef.current !== requestId) {
+        return;
+      }
       setMonthlySheetMeta({
         status: String(data.status ?? 'DRAFT'),
         writableByTeacher: data.writableByTeacher !== false,
       });
     } catch {
-      setMonthlySheetMeta(null);
+      if (sheetStatusRequestRef.current === requestId) {
+        setMonthlySheetMeta(null);
+      }
+    } finally {
+      if (sheetStatusRequestRef.current === requestId) {
+        setSheetStatusLoading(false);
+      }
     }
   }, [classId, isTeacher, selectedAcademicYear, selectedMonth, selectedMonthNumber, selectedSubject]);
 
@@ -626,7 +802,7 @@ export default function ClassGradesScreen() {
               placeholder="-"
               placeholderTextColor={COLORS.textMuted}
               maxLength={5}
-              editable={isTeacher && scoreEditingEnabled && !saving}
+              editable={isTeacher && scoreEditingEnabled && !saving && !scoreRowsLoading}
               selectTextOnFocus
             />
             {isSaved && (
@@ -689,8 +865,8 @@ export default function ClassGradesScreen() {
           {isTeacher ? (
             <TouchableOpacity 
               onPress={handleSave} 
-              disabled={saving || !selectedSubject || !scoreEditingEnabled}
-              style={[styles.saveBtn, (saving || !selectedSubject || !scoreEditingEnabled) && { opacity: 0.6 }]}
+              disabled={saving || scoreRowsLoading || !selectedSubject || !scoreEditingEnabled}
+              style={[styles.saveBtn, (saving || scoreRowsLoading || !selectedSubject || !scoreEditingEnabled) && { opacity: 0.6 }]}
             >
               {saving ? (
                 <ActivityIndicator size="small" color="#FFF" />
@@ -719,7 +895,12 @@ export default function ClassGradesScreen() {
               <View style={styles.scoreHeroCopy}>
                 <Text style={styles.scoreHeroLabel}>{className || t('classScreens.grades.classScores')}</Text>
                 <Text style={styles.scoreHeroTitle}>{selectedSubject?.name || t('classScreens.grades.selectSubject')}</Text>
-                <Text style={styles.scoreHeroMeta}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
+                <View style={styles.scoreHeroMetaRow}>
+                  <Text style={styles.scoreHeroMeta}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
+                  {scoreRowsLoading ? (
+                    <ActivityIndicator size="small" color="rgba(255,255,255,0.78)" />
+                  ) : null}
+                </View>
               </View>
             </View>
             <Text style={styles.sectionLabel}>{t('classScreens.grades.selectSubject')}</Text>
@@ -746,7 +927,14 @@ export default function ClassGradesScreen() {
               )}
             </ScrollView>
 
-            <Text style={[styles.sectionLabel, { marginTop: 8 }]}>{t('classScreens.grades.academicMonth')}</Text>
+            <View style={[styles.sectionLabelRow, { marginTop: 8 }]}>
+              <Text style={styles.sectionLabelInline}>{t('classScreens.grades.academicMonth')}</Text>
+              {scoreRowsLoading ? (
+                <View style={styles.inlineLoadingBadge}>
+                  <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                </View>
+              ) : null}
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {MONTHS.map(month => (
                 <TouchableOpacity
@@ -769,6 +957,9 @@ export default function ClassGradesScreen() {
                     {`${t('classScreens.grades.sheet.currentStatus')} `}
                     <Text style={styles.sheetStatusValue}>{t(sheetStatusLabelKey)}</Text>
                   </Text>
+                  {sheetStatusLoading ? (
+                    <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                  ) : null}
                 </View>
 
                 {!scoreEditingEnabled ? (
@@ -805,7 +996,7 @@ export default function ClassGradesScreen() {
                         disabled={sheetBusy}
                         activeOpacity={0.85}
                       >
-                        <Ionicons name="unlock-outline" size={16} color={COLORS.primaryDark} />
+                        <Ionicons name="lock-open-outline" size={16} color={COLORS.primaryDark} />
                         <Text style={styles.sheetGhostBtnText}>{t('classScreens.grades.sheet.reopenAction')}</Text>
                       </TouchableOpacity>
                     </>
@@ -825,7 +1016,14 @@ export default function ClassGradesScreen() {
         )}
         {!isTeacher && (
           <View style={styles.filterSection}>
-            <Text style={[styles.sectionLabel, { marginTop: 8 }]}>{t('classScreens.grades.academicMonth')}</Text>
+            <View style={[styles.sectionLabelRow, { marginTop: 8 }]}>
+              <Text style={styles.sectionLabelInline}>{t('classScreens.grades.academicMonth')}</Text>
+              {studentScoreRowsLoading ? (
+                <View style={styles.inlineLoadingBadge}>
+                  <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                </View>
+              ) : null}
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {MONTHS.map(month => (
                 <TouchableOpacity
@@ -849,10 +1047,10 @@ export default function ClassGradesScreen() {
           <Text style={styles.loadingText}>{t('classScreens.grades.loading')}</Text>
         </View>
       ) : !isTeacher ? (
-        <View style={styles.screenBody}>
+        <View style={[styles.screenBody, scoreDataLoading && styles.screenBodyRefreshing]}>
           <View style={styles.readOnlySummaryRow}>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>{t('classScreens.grades.classAvg')}</Text>
+              <Text style={styles.summaryLabel}>{t('classScreens.report.average')}</Text>
               <Text style={styles.summaryValue}>
                 {studentMonthlyGrades.length > 0
                   ? (
@@ -877,14 +1075,19 @@ export default function ClassGradesScreen() {
               </Text>
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>{t('classScreens.grades.students')}</Text>
+              <Text style={styles.summaryLabel}>{t('classScreens.grades.subjects')}</Text>
               <Text style={styles.summaryValue}>{studentMonthlyGrades.length || reportStudents.length}</Text>
             </View>
           </View>
 
           <View style={styles.listHeader}>
             <Text style={styles.listHeaderTitle}>{t('classScreens.grades.performanceOverview')}</Text>
-            <Text style={styles.listHeaderSubtitle}>{selectedMonth}</Text>
+            <View style={styles.listHeaderStatus}>
+              {studentScoreRowsLoading ? (
+                <ActivityIndicator size="small" color={COLORS.primaryDark} />
+              ) : null}
+              <Text style={styles.listHeaderSubtitle}>{selectedMonth}</Text>
+            </View>
           </View>
           <FlatList
             data={studentMonthlyGrades}
@@ -894,8 +1097,14 @@ export default function ClassGradesScreen() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.center}>
-                <Ionicons name="bar-chart-outline" size={48} color={COLORS.border} />
-                <Text style={styles.emptyText}>{t('classScreens.grades.emptyReport')}</Text>
+                {studentScoreRowsLoading ? (
+                  <ActivityIndicator size="large" color={COLORS.primaryDark} />
+                ) : (
+                  <Ionicons name="bar-chart-outline" size={48} color={COLORS.border} />
+                )}
+                <Text style={styles.emptyText}>
+                  {studentScoreRowsLoading ? t('classScreens.grades.loading') : t('classScreens.grades.emptyReport')}
+                </Text>
               </View>
             }
           />
@@ -906,10 +1115,15 @@ export default function ClassGradesScreen() {
           <Text style={styles.emptyText}>{t('classScreens.grades.noSubjects')}</Text>
         </View>
       ) : (
-        <View style={styles.screenBody}>
+        <View style={[styles.screenBody, scoreDataLoading && styles.screenBodyRefreshing]}>
           <View style={styles.listHeader}>
             <Text style={styles.listHeaderTitle}>{t('classScreens.grades.studentListCount', { count: students.length })}</Text>
-            <Text style={styles.listHeaderSubtitle}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
+            <View style={styles.listHeaderStatus}>
+              {scoreRowsLoading ? (
+                <ActivityIndicator size="small" color={COLORS.primaryDark} />
+              ) : null}
+              <Text style={styles.listHeaderSubtitle}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
+            </View>
           </View>
           <FlatList
             data={students}
@@ -919,8 +1133,14 @@ export default function ClassGradesScreen() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.center}>
-                <Ionicons name="people-outline" size={48} color={COLORS.border} />
-                <Text style={styles.emptyText}>{t('classScreens.grades.emptyStudents')}</Text>
+                {scoreRowsLoading ? (
+                  <ActivityIndicator size="large" color={COLORS.primaryDark} />
+                ) : (
+                  <Ionicons name="people-outline" size={48} color={COLORS.border} />
+                )}
+                <Text style={styles.emptyText}>
+                  {scoreRowsLoading ? t('classScreens.grades.loading') : t('classScreens.grades.emptyStudents')}
+                </Text>
               </View>
             }
           />
@@ -1052,10 +1272,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   scoreHeroMeta: {
-    marginTop: 5,
     color: 'rgba(255,255,255,0.72)',
     fontSize: 13,
     fontWeight: '700',
+  },
+  scoreHeroMetaRow: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   sectionLabel: { 
     fontSize: 13, 
@@ -1065,6 +1290,30 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  sectionLabelRow: {
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionLabelInline: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inlineLoadingBadge: {
+    minWidth: 24,
+    minHeight: 24,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E0F7FE',
+    borderWidth: 1,
+    borderColor: 'rgba(6,168,204,0.18)',
   },
   filterScroll: { paddingHorizontal: 16, gap: 10, paddingBottom: 12 },
   noSubjectsText: { color: COLORS.textMuted, fontSize: 14, fontStyle: 'italic', alignSelf: 'center' },
@@ -1185,8 +1434,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   screenBody: { flex: 1 },
+  screenBodyRefreshing: { opacity: 0.92 },
   listHeaderTitle: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
   listHeaderSubtitle: { fontSize: 13, fontWeight: '600', color: COLORS.primaryDark },
+  listHeaderStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   
   list: { padding: 16, paddingTop: 4, gap: 12, paddingBottom: 40 },
   studentCard: { 

@@ -1770,7 +1770,7 @@
       "loadFailed": "Failed to load class report",
       "loading": "Loading report...",
       "retry": "Retry",
-      "liveReport": "Live report",
+      "liveReport": "Report",
       "thisMonth": "This month",
       "studentSnapshot": "Student Snapshot",
       "average": "Average",
@@ -1795,8 +1795,8 @@
       "na": "N/A",
       "metrics": {
         "attendanceRate": "Attendance Rate",
-        "classAverage": "Class Average",
-        "passRate": "Pass Rate"
+        "failureRate": "Failure rate",
+        "passRate": "Pass rate"
       },
       "attendance": {
         "present": "Present",
@@ -1807,7 +1807,7 @@
       "role": {
         "parent": "Child progress report",
         "student": "Your performance snapshot",
-        "default": "Class performance overview"
+        "default": "Monthly results"
       }
     },
     "members": {
@@ -1844,6 +1844,7 @@
       "classAvg": "Class Avg",
       "passRate": "Pass Rate",
       "students": "Students",
+      "subjects": "Subjects",
       "performanceOverview": "Performance Overview",
       "semesterSnapshot": "Semester snapshot",
       "emptyReport": "No score report is available for this class yet.",

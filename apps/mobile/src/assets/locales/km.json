@@ -1770,7 +1770,7 @@
       "loadFailed": "ផ្ទុករបាយការណ៍ថ្នាក់មិនបានសម្រេច",
       "loading": "កំពុងផ្ទុករបាយការណ៍...",
       "retry": "ព្យាយាមម្ដងទៀត",
-      "liveReport": "របាយការណ៍បន្តផ្ទាល់",
+      "liveReport": "របាយការណ៍",
       "thisMonth": "ខែនេះ",
       "studentSnapshot": "ទិដ្ឋភាពសិស្ស",
       "average": "មធ្យម",
@@ -1795,7 +1795,7 @@
       "na": "N/A",
       "metrics": {
         "attendanceRate": "អត្រាវត្តមាន",
-        "classAverage": "មធ្យមភាគថ្នាក់",
+        "failureRate": "អត្រាធ្លាក់",
         "passRate": "អត្រាជាប់"
       },
       "attendance": {
@@ -1807,7 +1807,7 @@
       "role": {
         "parent": "របាយការណ៍វឌ្ឍនភាពកូន",
         "student": "ទិដ្ឋភាពលទ្ធផលរបស់អ្នក",
-        "default": "ទិដ្ឋភាពលទ្ធផលថ្នាក់"
+        "default": "លទ្ធផលប្រចាំខែ"
       }
     },
     "members": {
@@ -1844,6 +1844,7 @@
       "classAvg": "មធ្យមថ្នាក់",
       "passRate": "អត្រាជាប់",
       "students": "សិស្ស",
+      "subjects": "មុខវិជ្ជា",
       "performanceOverview": "ទិដ្ឋភាពលទ្ធផល",
       "semesterSnapshot": "សង្ខេបឆមាស",
       "emptyReport": "មិនទាន់មានរបាយការណ៍ពិន្ទុសម្រាប់ថ្នាក់នេះទេ។",

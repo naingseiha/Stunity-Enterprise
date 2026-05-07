@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   RefreshControl,
   ScrollView,
   Share,
@@ -64,9 +65,12 @@ const MONTH_TO_NUMBER: Record<string, number> = {
   December: 12,
 };
 
-const getCurrentMonthLabel = (): string => {
-  return new Date().toLocaleString('default', { month: 'long' });
-};
+/** English month names (calendar order) — must match MONTHS labeling for API payloads. */
+const CALENDAR_MONTHS_ENGLISH = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
 const resolveAcademicYearForMonth = (monthNumber: number, now = new Date()): number => {
   const currentMonthNumber = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -74,12 +78,14 @@ const resolveAcademicYearForMonth = (monthNumber: number, now = new Date()): num
   return monthNumber >= 11 ? academicStartYear : academicStartYear + 1;
 };
 
-const getCurrentRange = (): { startDate: string; endDate: string } => {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const format = (date: Date) => date.toISOString().split('T')[0];
-  return { startDate: format(start), endDate: format(end) };
+const formatLocalDateYmd = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+/** Gregorian bounds for attendance summary; `calendarYear` is the Grade.year / academic alignment year for that month. */
+const attendanceRangeForMonth = (monthNumber: number, calendarYear: number) => {
+  const start = new Date(calendarYear, monthNumber - 1, 1);
+  const end = new Date(calendarYear, monthNumber, 0);
+  return { startDate: formatLocalDateYmd(start), endDate: formatLocalDateYmd(end) };
 };
 
 const metricValue = (value?: number | null, suffix = ''): string => {
@@ -87,27 +93,141 @@ const metricValue = (value?: number | null, suffix = ''): string => {
   return `${Number(value).toFixed(Number.isInteger(value) ? 0 : 1)}${suffix}`;
 };
 
+type ReportMonthContext = {
+  month: string;
+  monthNumber: number;
+  academicYear: number;
+  attendanceRange: { startDate: string; endDate: string };
+  gradesReportOpts: { semester: 1; month: string; monthNumber: number; gradeYear: number };
+  cacheKey: string;
+};
+
+const getReportMonthContext = (month: string): ReportMonthContext => {
+  const monthNumber = MONTH_TO_NUMBER[month] || 1;
+  const academicYear = resolveAcademicYearForMonth(monthNumber);
+
+  return {
+    month,
+    monthNumber,
+    academicYear,
+    attendanceRange: attendanceRangeForMonth(monthNumber, academicYear),
+    gradesReportOpts: {
+      semester: 1,
+      month,
+      monthNumber,
+      gradeYear: academicYear,
+    },
+    cacheKey: `${academicYear}:${monthNumber}:${month}`,
+  };
+};
+
+const STUDENT_MONTHLY_GRADES_CACHE_TTL = 60_000;
+const studentMonthlyGradesCache = new Map<string, { data: any[]; ts: number }>();
+const studentMonthlyGradesInFlight = new Map<string, Promise<any[]>>();
+
+const getStudentMonthlyGradesCacheKey = (
+  classId: string,
+  studentId: string,
+  month: string,
+  monthNumber: number,
+  academicYear: number
+) => `${classId}:${studentId}:${academicYear}:${monthNumber}:${month}`;
+
+const getCachedStudentMonthlyGrades = (
+  classId: string,
+  studentId: string,
+  month: string,
+  monthNumber: number,
+  academicYear: number
+) => {
+  const cached = studentMonthlyGradesCache.get(
+    getStudentMonthlyGradesCacheKey(classId, studentId, month, monthNumber, academicYear)
+  );
+
+  if (!cached) return null;
+  if (Date.now() - cached.ts >= STUDENT_MONTHLY_GRADES_CACHE_TTL) {
+    studentMonthlyGradesCache.delete(
+      getStudentMonthlyGradesCacheKey(classId, studentId, month, monthNumber, academicYear)
+    );
+    return null;
+  }
+
+  return cached.data;
+};
+
+const fetchStudentMonthlyGrades = async (
+  classId: string,
+  studentId: string,
+  month: string,
+  monthNumber: number,
+  academicYear: number,
+  force = false
+): Promise<any[]> => {
+  const cacheKey = getStudentMonthlyGradesCacheKey(classId, studentId, month, monthNumber, academicYear);
+
+  if (!force) {
+    const cached = getCachedStudentMonthlyGrades(classId, studentId, month, monthNumber, academicYear);
+    if (cached) return cached;
+
+    const inFlight = studentMonthlyGradesInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const request = gradeApi.get(`/grades/student/${studentId}`, {
+    params: {
+      classId,
+      month,
+      monthNumber,
+      year: academicYear,
+    },
+  }).then((response) => {
+    const rows = Array.isArray(response.data) ? response.data : [];
+    const classRows = rows
+      .filter((row: any) => row.classId === classId || row.class?.id === classId)
+      .sort((a: any, b: any) => String(a.subject?.name || '').localeCompare(String(b.subject?.name || '')));
+
+    studentMonthlyGradesCache.set(cacheKey, {
+      data: classRows,
+      ts: Date.now(),
+    });
+
+    return classRows;
+  }).finally(() => {
+    studentMonthlyGradesInFlight.delete(cacheKey);
+  });
+
+  studentMonthlyGradesInFlight.set(cacheKey, request);
+  return request;
+};
+
 export default function ClassReportScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { classId, className, myRole, linkedStudentId } = (route.params || {}) as RouteParams;
-  const monthLabel = useMemo(() => getCurrentMonthLabel(), []);
-  const [selectedMonth, setSelectedMonth] = useState(monthLabel);
-  const selectedMonthNumber = useMemo(() => MONTH_TO_NUMBER[selectedMonth] || 1, [selectedMonth]);
-  const selectedAcademicYear = useMemo(() => resolveAcademicYearForMonth(selectedMonthNumber), [selectedMonthNumber]);
-  const currentRange = useMemo(() => getCurrentRange(), []);
+  const calendarMonthEnglish = CALENDAR_MONTHS_ENGLISH[new Date().getMonth()];
+  const initialMonthChip = MONTHS.includes(calendarMonthEnglish) ? calendarMonthEnglish : MONTHS[0];
+  const [selectedMonth, setSelectedMonth] = useState(initialMonthChip);
+  const selectedMonthContext = useMemo(() => getReportMonthContext(selectedMonth), [selectedMonth]);
+  const selectedMonthNumber = selectedMonthContext.monthNumber;
+  const selectedAcademicYear = selectedMonthContext.academicYear;
+  const gradesReportOpts = selectedMonthContext.gradesReportOpts;
+  const selectedAttendanceRange = selectedMonthContext.attendanceRange;
   const initialCachedAttendance = useMemo(
     () => (
       classId
-        ? classesApi.getCachedClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate)
+        ? classesApi.getCachedClassAttendanceSummary(
+            classId,
+            selectedAttendanceRange.startDate,
+            selectedAttendanceRange.endDate
+          )
         : null
     ),
-    [classId, currentRange.endDate, currentRange.startDate]
+    [classId, selectedAttendanceRange.endDate, selectedAttendanceRange.startDate]
   );
   const initialCachedGrades = useMemo(
-    () => (classId ? classesApi.getCachedClassGradesReport(classId, { semester: 1 }) : null),
-    [classId]
+    () => (classId ? classesApi.getCachedClassGradesReport(classId, gradesReportOpts) : null),
+    [classId, gradesReportOpts]
   );
   const initialCachedBundle = useMemo(
     () => (classId ? classesApi.getLatestCachedClassDetailBundle(classId, { allowStale: true }) : null),
@@ -118,80 +238,226 @@ export default function ClassReportScreen() {
     !(initialCachedAttendance || initialCachedGrades || initialCachedBundle?.monthlySummary)
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [studentGradesLoading, setStudentGradesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialCachedAttendance || null);
   const [gradesReport, setGradesReport] = useState<classesApi.ClassGradesReport | null>(initialCachedGrades || null);
   const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialCachedBundle?.monthlySummary || null);
   const [studentMonthlyGrades, setStudentMonthlyGrades] = useState<any[]>([]);
+  const activeReportRequestRef = useRef(0);
+  const activeStudentGradesRequestRef = useRef(0);
+  const prefetchedMonthKeysRef = useRef(new Set<string>());
+  const hasVisibleReportRef = useRef(
+    Boolean(initialCachedAttendance || initialCachedGrades || initialCachedBundle?.monthlySummary)
+  );
+
+  const prefetchNearbyMonths = useCallback((baseMonth: string) => {
+    if (!classId) return;
+
+    const baseIndex = MONTHS.indexOf(baseMonth);
+    if (baseIndex === -1) return;
+
+    const candidateMonths = [
+      MONTHS[baseIndex - 1],
+      MONTHS[baseIndex + 1],
+    ].filter(Boolean);
+
+    candidateMonths.forEach((month) => {
+      const context = getReportMonthContext(month);
+      const prefetchKey = `${classId}:${context.cacheKey}:${linkedStudentId || 'class'}`;
+      if (prefetchedMonthKeysRef.current.has(prefetchKey)) return;
+
+      prefetchedMonthKeysRef.current.add(prefetchKey);
+
+      setTimeout(() => {
+        const tasks: Promise<unknown>[] = [
+          classesApi.getClassAttendanceSummary(
+            classId,
+            context.attendanceRange.startDate,
+            context.attendanceRange.endDate,
+            false
+          ),
+          classesApi.getClassGradesReport(classId, context.gradesReportOpts, false),
+        ];
+
+        if ((myRole === 'STUDENT' || myRole === 'PARENT') && linkedStudentId) {
+          tasks.push(
+            classesApi.getStudentMonthlySummary(
+              linkedStudentId,
+              context.month,
+              context.academicYear,
+              context.monthNumber,
+              classId
+            ),
+            fetchStudentMonthlyGrades(
+              classId,
+              linkedStudentId,
+              context.month,
+              context.monthNumber,
+              context.academicYear,
+              false
+            )
+          );
+        }
+
+        void Promise.allSettled(tasks);
+      }, 250);
+    });
+  }, [classId, linkedStudentId, myRole]);
 
   const loadData = useCallback(async (force = false) => {
     if (!classId) {
       setError(t('classScreens.report.notFound'));
       setLoading(false);
       setRefreshing(false);
+      setPeriodLoading(false);
       return;
     }
 
-    try {
-      if (!force) {
-        const cachedAttendance = classesApi.getCachedClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate);
-        const cachedGrades = classesApi.getCachedClassGradesReport(classId, { semester: 1 });
-        const cachedBundle = classesApi.getLatestCachedClassDetailBundle(classId, { allowStale: true });
+    const requestId = activeReportRequestRef.current + 1;
+    activeReportRequestRef.current = requestId;
 
+    try {
+      const canRenderStaleReport = hasVisibleReportRef.current;
+
+      if (!force) {
+        const cachedAttendance = classesApi.getCachedClassAttendanceSummary(
+          classId,
+          selectedAttendanceRange.startDate,
+          selectedAttendanceRange.endDate
+        );
+        const cachedGrades = classesApi.getCachedClassGradesReport(classId, gradesReportOpts);
+        const hasCompleteCachedPeriodData = Boolean(cachedAttendance && cachedGrades);
+
+        if (!cachedGrades && !canRenderStaleReport) {
+          setGradesReport(null);
+        }
         if (cachedAttendance) setAttendanceSummary(cachedAttendance);
         if (cachedGrades) setGradesReport(cachedGrades);
-        if (cachedBundle?.monthlySummary) setMonthlySummary(cachedBundle.monthlySummary);
 
-        if (cachedAttendance || cachedGrades || cachedBundle?.monthlySummary) {
+        if (hasCompleteCachedPeriodData) {
+          hasVisibleReportRef.current = true;
           setLoading(false);
-        } else if (!refreshing) {
+          setPeriodLoading(false);
+        } else if (canRenderStaleReport) {
+          setLoading(false);
+          setPeriodLoading(true);
+        } else {
           setLoading(true);
+          setPeriodLoading(false);
         }
-      } else if (!refreshing) {
+      } else if (canRenderStaleReport) {
+        setLoading(false);
+        setPeriodLoading(true);
+      } else {
         setLoading(true);
+        setPeriodLoading(false);
       }
 
       setError(null);
 
       const [attendance, grades, monthly] = await Promise.all([
-        classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate, force),
-        classesApi.getClassGradesReport(classId, { semester: 1 }, force),
+        classesApi.getClassAttendanceSummary(
+          classId,
+          selectedAttendanceRange.startDate,
+          selectedAttendanceRange.endDate,
+          force
+        ),
+        classesApi.getClassGradesReport(classId, gradesReportOpts, force),
         (myRole === 'STUDENT' || myRole === 'PARENT') && linkedStudentId
-          ? classesApi.getStudentMonthlySummary(linkedStudentId, selectedMonth)
+          ? classesApi.getStudentMonthlySummary(
+              linkedStudentId,
+              selectedMonth,
+              selectedAcademicYear,
+              selectedMonthNumber,
+              classId,
+              force
+            )
           : Promise.resolve(null),
       ]);
+
+      if (activeReportRequestRef.current !== requestId) return;
 
       setAttendanceSummary(attendance || null);
       setGradesReport(grades || null);
       setMonthlySummary(monthly || null);
+      hasVisibleReportRef.current = true;
+      prefetchNearbyMonths(selectedMonth);
     } catch (err: any) {
-      setError(err?.message || t('classScreens.report.loadFailed'));
+      if (activeReportRequestRef.current === requestId && !hasVisibleReportRef.current) {
+        setError(err?.message || t('classScreens.report.loadFailed'));
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (activeReportRequestRef.current === requestId) {
+        setLoading(false);
+        setRefreshing(false);
+        setPeriodLoading(false);
+      }
     }
-  }, [classId, currentRange.endDate, currentRange.startDate, linkedStudentId, myRole, refreshing, selectedMonth, t]);
+  }, [
+    classId,
+    gradesReportOpts,
+    linkedStudentId,
+    myRole,
+    prefetchNearbyMonths,
+    selectedAcademicYear,
+    selectedAttendanceRange.endDate,
+    selectedAttendanceRange.startDate,
+    selectedMonth,
+    selectedMonthNumber,
+    t,
+  ]);
 
-  const loadStudentMonthlyGrades = useCallback(async () => {
+  const loadStudentMonthlyGrades = useCallback(async (force = false) => {
     if (!linkedStudentId || (myRole !== 'STUDENT' && myRole !== 'PARENT')) {
       setStudentMonthlyGrades([]);
+      setStudentGradesLoading(false);
       return;
     }
+
+    const requestId = activeStudentGradesRequestRef.current + 1;
+    activeStudentGradesRequestRef.current = requestId;
+
     try {
-      const response = await gradeApi.get(`/grades/student/${linkedStudentId}`, {
-        params: {
-          month: selectedMonth,
-          year: selectedAcademicYear,
-        },
-      });
-      const rows = Array.isArray(response.data) ? response.data : [];
-      const classRows = classId ? rows.filter((row: any) => row.classId === classId || row.class?.id === classId) : rows;
-      classRows.sort((a: any, b: any) => String(a.subject?.name || '').localeCompare(String(b.subject?.name || '')));
+      const cachedRows = getCachedStudentMonthlyGrades(
+        classId,
+        linkedStudentId,
+        selectedMonth,
+        selectedMonthNumber,
+        selectedAcademicYear
+      );
+
+      if (cachedRows) {
+        setStudentMonthlyGrades(cachedRows);
+        setStudentGradesLoading(false);
+      } else if (hasVisibleReportRef.current) {
+        setStudentGradesLoading(true);
+      }
+
+      const classRows = await fetchStudentMonthlyGrades(
+        classId,
+        linkedStudentId,
+        selectedMonth,
+        selectedMonthNumber,
+        selectedAcademicYear,
+        force
+      );
+
+      if (activeStudentGradesRequestRef.current !== requestId) return;
+
       setStudentMonthlyGrades(classRows);
+      hasVisibleReportRef.current = true;
     } catch {
-      setStudentMonthlyGrades([]);
+      if (activeStudentGradesRequestRef.current === requestId && !hasVisibleReportRef.current) {
+        setStudentMonthlyGrades([]);
+      }
+    } finally {
+      if (activeStudentGradesRequestRef.current === requestId) {
+        setStudentGradesLoading(false);
+      }
     }
-  }, [classId, linkedStudentId, myRole, selectedAcademicYear, selectedMonth]);
+  }, [classId, linkedStudentId, myRole, selectedAcademicYear, selectedMonth, selectedMonthNumber]);
 
   useEffect(() => {
     loadData();
@@ -202,8 +468,11 @@ export default function ClassReportScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadData(true);
-  }, [loadData]);
+    void Promise.allSettled([
+      loadData(true),
+      loadStudentMonthlyGrades(true),
+    ]).finally(() => setRefreshing(false));
+  }, [loadData, loadStudentMonthlyGrades]);
 
   const topStudents = useMemo(() => {
     return [...(gradesReport?.students || [])]
@@ -234,12 +503,21 @@ export default function ClassReportScreen() {
   }, [studentMonthlyGrades]);
 
   const attendanceRate = Number(attendanceSummary?.summary?.averageAttendanceRate || 0);
-  const classAverage = Number(gradesReport?.statistics?.classAverage || 0);
-  const passRate = Number(gradesReport?.statistics?.passRate || 0);
+  const passingStudentCount = Math.max(0, Number(gradesReport?.statistics?.passingCount ?? 0));
+  const failingStudentCount = Math.max(0, Number(gradesReport?.statistics?.failingCount ?? 0));
+  const gradedHeadcount = passingStudentCount + failingStudentCount;
+  const rankingBasis =
+    typeof gradesReport?.totalStudents === 'number' && gradesReport.totalStudents > 0
+      ? gradesReport.totalStudents
+      : gradedHeadcount;
+  const failureRatePct = rankingBasis > 0 ? Math.round((failingStudentCount / rankingBasis) * 100) : null;
+  const passRatePct = rankingBasis > 0 ? Math.round((passingStudentCount / rankingBasis) * 100) : null;
   const studentAverage = Number(monthlySummary?.average || 0);
   const studentRank = Number(monthlySummary?.classRank || 0);
   const studentGradeLevel = String(monthlySummary?.gradeLevel || '--');
   const reportTitle = className || gradesReport?.class?.name || attendanceSummary?.class?.name || t('classScreens.report.defaultTitle');
+  const hasRenderableReport = Boolean(attendanceSummary || gradesReport || monthlySummary || studentMonthlyGrades.length > 0);
+  const isPeriodUpdating = periodLoading || studentGradesLoading;
 
   const roleLabel = myRole === 'PARENT' ? t('classScreens.report.role.parent') : myRole === 'STUDENT' ? t('classScreens.report.role.student') : t('classScreens.report.role.default');
 
@@ -248,8 +526,12 @@ export default function ClassReportScreen() {
       `${t('classScreens.report.header')} - ${reportTitle}`,
       `${t('classScreens.grades.academicMonth')}: ${selectedMonth} ${selectedAcademicYear}`,
       `${t('classScreens.report.metrics.attendanceRate')}: ${metricValue(attendanceRate, '%')}`,
-      `${t('classScreens.report.metrics.classAverage')}: ${metricValue(classAverage)}`,
-      `${t('classScreens.report.metrics.passRate')}: ${metricValue(passRate, '%')}`,
+      `${t('classScreens.report.metrics.failureRate')}: ${metricValue(failingStudentCount)}${
+        failureRatePct !== null ? ` (${failureRatePct}%)` : ''
+      }`,
+      `${t('classScreens.report.metrics.passRate')}: ${metricValue(passingStudentCount)}${
+        passRatePct !== null ? ` (${passRatePct}%)` : ''
+      }`,
     ];
 
     if (myRole === 'STUDENT' || myRole === 'PARENT') {
@@ -267,9 +549,11 @@ export default function ClassReportScreen() {
     }
   }, [
     attendanceRate,
-    classAverage,
+    failureRatePct,
+    failingStudentCount,
     myRole,
-    passRate,
+    passRatePct,
+    passingStudentCount,
     reportTitle,
     selectedAcademicYear,
     selectedMonth,
@@ -286,8 +570,10 @@ export default function ClassReportScreen() {
       csvLines.push('metric,value');
       csvLines.push(`month,${selectedMonth} ${selectedAcademicYear}`);
       csvLines.push(`attendance_rate,${metricValue(attendanceRate, '%')}`);
-      csvLines.push(`class_average,${metricValue(classAverage)}`);
-      csvLines.push(`pass_rate,${metricValue(passRate, '%')}`);
+      csvLines.push(`failed_student_count,${metricValue(failingStudentCount)}`);
+      csvLines.push(`failure_rate_percent,${failureRatePct !== null ? String(failureRatePct) : ''}`);
+      csvLines.push(`passing_student_count,${metricValue(passingStudentCount)}`);
+      csvLines.push(`pass_rate_percent,${passRatePct !== null ? String(passRatePct) : ''}`);
       csvLines.push('');
 
       if (myRole === 'STUDENT' || myRole === 'PARENT') {
@@ -334,11 +620,13 @@ export default function ClassReportScreen() {
     }
   }, [
     attendanceRate,
-    classAverage,
+    failingStudentCount,
+    failureRatePct,
     classId,
     gradesReport?.students,
     myRole,
-    passRate,
+    passRatePct,
+    passingStudentCount,
     selectedAcademicYear,
     selectedMonth,
     selectedMonthNumber,
@@ -356,7 +644,7 @@ export default function ClassReportScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.report.header')}</Text>
           <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-            {refreshing ? (
+            {refreshing || isPeriodUpdating ? (
               <ActivityIndicator size="small" color={COLORS.primary} />
             ) : (
               <Ionicons name="refresh-outline" size={20} color={COLORS.textPrimary} />
@@ -370,7 +658,7 @@ export default function ClassReportScreen() {
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>{t('classScreens.report.loading')}</Text>
         </View>
-      ) : error ? (
+      ) : error && !hasRenderableReport ? (
         <View style={styles.center}>
           <Ionicons name="alert-circle-outline" size={44} color={COLORS.danger} />
           <Text style={styles.errorText}>{error}</Text>
@@ -391,22 +679,65 @@ export default function ClassReportScreen() {
             />
           }
         >
-          <View style={styles.heroCard}>
-            <LinearGradient
-              colors={['#0EA5E9', '#06B6D4']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.heroTop}>
-              <View style={styles.heroPill}>
-                <Ionicons name="analytics-outline" size={12} color="#FFF" />
-                <Text style={styles.heroPillText}>{t('classScreens.report.liveReport')}</Text>
+          <View style={styles.heroCardWrap}>
+            <View style={styles.heroCard}>
+              <LinearGradient
+                colors={['#172554', '#0c4c6f', '#0d9488']}
+                locations={[0, 0.48, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.02)', 'rgba(15,23,42,0.25)']}
+                locations={[0, 0.35, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.6, y: 1 }}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+              <View style={styles.heroOrbLayer} pointerEvents="none">
+                <LinearGradient
+                  colors={['rgba(56,189,248,0.45)', 'rgba(56,189,248,0)']}
+                  style={styles.heroOrbTop}
+                />
+                <LinearGradient
+                  colors={['rgba(167,139,250,0.35)', 'rgba(167,139,250,0)']}
+                  style={styles.heroOrbBottom}
+                />
               </View>
-              <Text style={styles.heroPeriod}>{selectedMonth}</Text>
+
+              <View style={styles.heroContent}>
+                <View style={styles.heroTop}>
+                  <View style={styles.heroPill}>
+                    <Ionicons name="sparkles-outline" size={14} color="#E0F2FE" />
+                    <Text style={styles.heroPillText}>{t('classScreens.report.liveReport')}</Text>
+                  </View>
+                  <View style={styles.heroMonthChip}>
+                    {isPeriodUpdating ? (
+                      <ActivityIndicator size="small" color="rgba(255,255,255,0.95)" />
+                    ) : (
+                      <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.95)" />
+                    )}
+                    <Text style={styles.heroPeriod}>{selectedMonth}</Text>
+                  </View>
+                </View>
+                <Text
+                  style={styles.heroTitle}
+                  {...(Platform.OS === 'android'
+                    ? { includeFontPadding: false, textBreakStrategy: 'simple' }
+                    : {})}
+                >
+                  {reportTitle}
+                </Text>
+                <Text
+                  style={styles.heroSubtitle}
+                  {...(Platform.OS === 'android' ? { includeFontPadding: false } : {})}
+                >
+                  {roleLabel}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.heroTitle}>{reportTitle}</Text>
-            <Text style={styles.heroSubtitle}>{roleLabel}</Text>
           </View>
 
           <View style={styles.actionRow}>
@@ -423,7 +754,13 @@ export default function ClassReportScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('classScreens.grades.academicMonth')}</Text>
-              <Ionicons name="calendar-clear-outline" size={20} color={COLORS.textMuted} />
+              {isPeriodUpdating ? (
+                <View style={styles.updatingBadge}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              ) : (
+                <Ionicons name="calendar-clear-outline" size={20} color={COLORS.textMuted} />
+              )}
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.monthScroll}>
               {MONTHS.map((month) => (
@@ -441,28 +778,48 @@ export default function ClassReportScreen() {
           </View>
 
           <View style={styles.metricsGrid}>
-            <View style={styles.metricCard}>
-              <View style={[styles.metricIcon, { backgroundColor: COLORS.primaryLight }]}>
-                <Ionicons name="checkmark-done-outline" size={18} color={COLORS.primary} />
+            <View style={[styles.metricCard, styles.metricCardAttendance]}>
+              <View style={[styles.metricIconCompact, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="checkmark-done-outline" size={15} color={COLORS.primary} />
               </View>
-              <Text style={styles.metricValue}>{metricValue(attendanceRate, '%')}</Text>
-              <Text style={styles.metricLabel}>{t('classScreens.report.metrics.attendanceRate')}</Text>
+              <View style={styles.metricCardCopy}>
+                <Text style={styles.metricValueCompact}>{metricValue(attendanceRate, '%')}</Text>
+                <Text style={styles.metricLabelCompact}>{t('classScreens.report.metrics.attendanceRate')}</Text>
+              </View>
             </View>
 
-            <View style={styles.metricCard}>
-              <View style={[styles.metricIcon, { backgroundColor: COLORS.successLight }]}>
-                <Ionicons name="bar-chart-outline" size={18} color={COLORS.success} />
+            <View style={[styles.metricCard, styles.metricCardDanger]}>
+              <View style={[styles.metricIconCompact, { backgroundColor: COLORS.dangerLight }]}>
+                <Ionicons name="person-remove-outline" size={15} color={COLORS.danger} />
               </View>
-              <Text style={styles.metricValue}>{metricValue(classAverage)}</Text>
-              <Text style={styles.metricLabel}>{t('classScreens.report.metrics.classAverage')}</Text>
+              <View style={styles.metricCardCopy}>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValueCompact}>{metricValue(failingStudentCount)}</Text>
+                  {failureRatePct !== null ? (
+                    <Text style={styles.metricPctCompact}> · {failureRatePct}%</Text>
+                  ) : (
+                    <Text style={styles.metricPctCompactMuted}> · --</Text>
+                  )}
+                </View>
+                <Text style={styles.metricLabelCompact}>{t('classScreens.report.metrics.failureRate')}</Text>
+              </View>
             </View>
 
-            <View style={styles.metricCard}>
-              <View style={[styles.metricIcon, { backgroundColor: COLORS.warningLight }]}>
-                <Ionicons name="ribbon-outline" size={18} color={COLORS.warning} />
+            <View style={[styles.metricCard, styles.metricCardSuccess]}>
+              <View style={[styles.metricIconCompact, { backgroundColor: COLORS.successLight }]}>
+                <Ionicons name="ribbon-outline" size={15} color={COLORS.success} />
               </View>
-              <Text style={styles.metricValue}>{metricValue(passRate, '%')}</Text>
-              <Text style={styles.metricLabel}>{t('classScreens.report.metrics.passRate')}</Text>
+              <View style={styles.metricCardCopy}>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValueCompact}>{metricValue(passingStudentCount)}</Text>
+                  {passRatePct !== null ? (
+                    <Text style={styles.metricPctCompact}> · {passRatePct}%</Text>
+                  ) : (
+                    <Text style={styles.metricPctCompactMuted}> · --</Text>
+                  )}
+                </View>
+                <Text style={styles.metricLabelCompact}>{t('classScreens.report.metrics.passRate')}</Text>
+              </View>
             </View>
           </View>
 
@@ -700,82 +1057,179 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
+  heroCardWrap: {
+    borderRadius: 24,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    elevation: 14,
+  },
   heroCard: {
-    minHeight: 172,
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: 'hidden',
-    padding: 22,
-    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  heroOrbLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroOrbTop: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    top: -90,
+    right: -70,
+  },
+  heroOrbBottom: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    bottom: -100,
+    left: -80,
+  },
+  heroContent: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+    zIndex: 2,
   },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 14,
   },
   heroPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(15,23,42,0.22)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.38)',
+    flexShrink: 1,
   },
   heroPillText: {
-    color: '#FFF',
+    color: '#F8FAFC',
     fontSize: 12,
     fontWeight: '700',
+    letterSpacing: 0.15,
+    flexShrink: 1,
+  },
+  heroMonthChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.28)',
+    flexShrink: 0,
   },
   heroPeriod: {
-    color: 'rgba(255,255,255,0.86)',
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   heroTitle: {
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 24,
+    // Khmer / complex scripts need extra line-box height so ascenders are not clipped when the card uses overflow:hidden
+    lineHeight: 40,
     fontWeight: '900',
-    color: '#FFF',
-    marginTop: 24,
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+    paddingTop: Platform.OS === 'ios' ? 2 : 0,
+    paddingBottom: 2,
+    textShadowColor: 'rgba(15,23,42,0.35)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   heroSubtitle: {
-    marginTop: 8,
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
-    fontWeight: '500',
+    marginTop: 6,
+    color: 'rgba(241,245,249,0.92)',
+    fontSize: 13,
+    lineHeight: 21,
+    fontWeight: '600',
+    letterSpacing: 0.05,
+    paddingTop: Platform.OS === 'ios' ? 1 : 0,
   },
   metricsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
+    alignItems: 'stretch',
   },
   metricCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
+    borderColor: 'rgba(226, 232, 240, 0.85)',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    minHeight: 0,
   },
-  metricIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+  metricCardAttendance: {
+    backgroundColor: '#F8FCFF',
+  },
+  metricCardDanger: {
+    backgroundColor: '#FFFBFB',
+  },
+  metricCardSuccess: {
+    backgroundColor: '#FAFFFC',
+  },
+  metricIconCompact: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginRight: 10,
+    flexShrink: 0,
   },
-  metricValue: {
-    fontSize: 22,
-    fontWeight: '900',
+  metricCardCopy: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  metricValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'nowrap',
+  },
+  metricValueCompact: {
+    fontSize: 17,
+    fontWeight: '800',
     color: COLORS.textPrimary,
+    letterSpacing: -0.4,
   },
-  metricLabel: {
-    marginTop: 6,
-    fontSize: 12,
+  metricPctCompact: {
+    fontSize: 14,
     fontWeight: '700',
+    color: COLORS.textSecondary,
+    letterSpacing: -0.2,
+  },
+  metricPctCompactMuted: {
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.textMuted,
-    textTransform: 'uppercase',
+  },
+  metricLabelCompact: {
+    marginTop: 3,
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    lineHeight: 14,
+    letterSpacing: 0.15,
   },
   section: {
     gap: 12,
@@ -784,6 +1238,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  updatingBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primaryLight,
   },
   sectionTitle: {
     fontSize: 18,
