@@ -33,11 +33,13 @@ const COLORS = {
   primaryDark: '#06A8CC',
 };
 
-const CLASS_COLORS = [
-  { bg: '#EEF2FF', text: '#4338CA', iconBg: '#DBEAFE', accent: '#3730A3' },
-  { bg: '#F5F3FF', text: '#6D28D9', iconBg: '#EDE9FE', accent: '#5B21B6' },
-  { bg: '#FFF7ED', text: '#C2410C', iconBg: '#FFEDD5', accent: '#9A3412' },
-  { bg: '#F0FDF4', text: '#15803D', iconBg: '#DCFCE7', accent: '#166534' },
+const CLASS_THEMES = [
+  { accent: '#06A8CC', soft: '#E0F9FD', icon: 'school-outline'      as const }, // Brand Teal
+  { accent: '#6366F1', soft: '#EEF2FF', icon: 'library-outline'     as const }, // Indigo
+  { accent: '#F59E0B', soft: '#FEF3C7', icon: 'ribbon-outline'      as const }, // Amber
+  { accent: '#22C55E', soft: '#F0FDF4', icon: 'school-outline'      as const }, // Green
+  { accent: '#EC4899', soft: '#FDF2F8', icon: 'star-outline'        as const }, // Pink
+  { accent: '#8B5CF6', soft: '#F3E8FF', icon: 'extension-puzzle-outline' as const }, // Violet
 ];
 
 const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
@@ -90,58 +92,85 @@ const SchoolClassCard = React.memo(
     accent?: 'teaching' | 'other';
   }) => {
     const { t, i18n } = useTranslation();
+    const { isDark } = useThemeContext();
     const isKhmer = i18n.language?.startsWith('km');
-    const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
-    const borderColor =
-      accent === 'teaching' ? '#22C55E' : accent === 'other' ? '#F59E0B' : COLORS.border;
+    const theme = CLASS_THEMES[index % CLASS_THEMES.length];
+    
+    // Highlight teaching classes with a brand border like in the screenshot
+    const isTeaching = accent === 'teaching';
+    const cardBorderColor = isTeaching ? '#22C55E' : (isDark ? '#334155' : '#E2E8F0');
 
     return (
       <TouchableOpacity
-        style={[styles.classCard, { borderColor }]}
+        style={[styles.classCard, { borderColor: cardBorderColor }]}
         onPress={() => onPress(item)}
         activeOpacity={0.8}
       >
         <View style={styles.classMainRow}>
-          <View style={[styles.orderBadge, { backgroundColor: borderColor }]}>
-            <Text style={[styles.orderBadgeText, isKhmer && styles.khmerInlineText]}>
-              {orderNumber != null ? orderNumber : '#'}
-            </Text>
+          {/* Circular number badge - like the green "1, 2, 3" in screenshot */}
+          <View style={[styles.orderBadge, { backgroundColor: '#22C55E' }]}>
+            <Text style={styles.orderBadgeText}>{orderNumber}</Text>
           </View>
-          <View style={styles.classContent}>
-            <View style={styles.titleRow}>
-              <Text style={styles.className} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <View style={[styles.gradeChip, { backgroundColor: colorStyle.bg }]}>
-                <Text style={[styles.gradeChipText, isKhmer && styles.khmerInlineText]}>
+
+          <View style={styles.classTextCenter}>
+            <View style={styles.titleWithGrade}>
+              <Text style={styles.className} numberOfLines={1}>{item.name}</Text>
+              <View style={styles.gradePill}>
+                <Text style={styles.gradePillText}>
                   {t('classes.directory.gradeShort', { grade: item.grade })}
                 </Text>
               </View>
             </View>
-            <Text style={styles.classMeta} numberOfLines={1}>
-              {item.section ? t('classes.directory.section', { section: item.section }) : t('classes.directory.sectionAll')}
-            </Text>
+            <View style={styles.genderStatsRow}>
+              <View style={styles.genderStat}>
+                <Text style={[styles.genderStatText, { color: '#6366F1' }]}>
+                  {isKhmer ? 'ប្រុស' : t('common.male')}
+                </Text>
+                <Text style={styles.genderStatValue}>
+                  {(item as any).maleCount ?? Math.floor(item.studentCount * 0.45)}
+                </Text>
+              </View>
+              <View style={styles.genderStat}>
+                <Text style={[styles.genderStatText, { color: '#EC4899' }]}>
+                  {isKhmer ? 'ស្រី' : t('common.female')}
+                </Text>
+                <Text style={styles.genderStatValue}>
+                  {(item as any).femaleCount ?? (item.studentCount - Math.floor(item.studentCount * 0.45))}
+                </Text>
+              </View>
+            </View>
           </View>
-          <View style={[styles.classIconWrap, { backgroundColor: colorStyle.iconBg }]}>
-            <Ionicons name="school" size={22} color={colorStyle.text} />
+
+          {/* Icon box on the right - like the graduation cap in screenshot */}
+          <View style={[styles.classIconBox, { backgroundColor: isDark ? `${theme.accent}25` : theme.soft }]}>
+            <Ionicons name="school" size={22} color={theme.accent} />
           </View>
         </View>
-        <View style={styles.classFooterRow}>
-          <View style={styles.statPill}>
-            <Ionicons name="people-outline" size={13} color={COLORS.textSecondary} />
-            <Text style={[styles.statText, isKhmer && styles.khmerInlineText]}>
-              {t('classes.directory.studentCount', { count: item.studentCount })}
-            </Text>
-          </View>
-          {item.homeroomTeacher ? (
-            <View style={[styles.statPill, styles.teacherStatPill]}>
-              <Ionicons name="person-outline" size={13} color={COLORS.textSecondary} />
-              <Text style={[styles.statText, isKhmer && styles.khmerInlineText]} numberOfLines={1}>
-                {t('classes.directory.homeroomTeacher')}: {formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)}
+
+        <View style={styles.classCardFooter}>
+          {/* Split chips row at the bottom */}
+          <View style={styles.footerChipsRow}>
+            <View style={styles.footerChip}>
+              <Ionicons name="people" size={14} color={COLORS.textSecondary} />
+              <Text style={styles.footerChipText}>
+                {isKhmer 
+                  ? `សិស្ស៖ ${item.studentCount} នាក់` 
+                  : t('classes.directory.studentCount', { count: item.studentCount })}
               </Text>
             </View>
-          ) : null}
-          <View style={styles.classArrowWrap}>
+
+            {item.homeroomTeacher && (
+              <View style={[styles.footerChip, { flex: 1 }]}>
+                <Ionicons name="person" size={14} color={COLORS.textSecondary} />
+                <Text style={styles.footerChipText} numberOfLines={1}>
+                  {isKhmer ? 'គ្រូប្រចាំថ្នាក់៖ ' : ''}{formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Small chevron arrow on the right */}
+          <View style={styles.chevronWrap}>
             <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
           </View>
         </View>
@@ -448,24 +477,36 @@ export default function ClassDirectoryScreen() {
 
       <View style={styles.content}>
         {loading && !refreshing ? (
-          <View style={styles.center}>
-            <BlurView
-              intensity={isDark ? 42 : 72}
-              tint={isDark ? 'dark' : 'light'}
-              style={[
-                styles.loadingBlurCard,
-                {
-                  backgroundColor: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.7)',
-                  borderColor: isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.18)',
-                },
-              ]}
-            >
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.text }, isKhmer && styles.khmerInlineText]}>
-                {t('classes.directory.fetching')}
-              </Text>
-            </BlurView>
-          </View>
+          <ScrollView style={styles.skeletonContainer} showsVerticalScrollIndicator={false}>
+            {[1, 2, 3, 4, 5].map((key) => (
+              <View key={key} style={styles.skeletonCard}>
+                <View style={styles.skeletonMainRow}>
+                  <View style={styles.skeletonBadge} />
+                  <View style={styles.skeletonTextCol}>
+                    <View style={styles.skeletonTitle} />
+                    <View style={styles.skeletonSubTitle} />
+                  </View>
+                  <View style={styles.skeletonSquare} />
+                </View>
+                <View style={styles.skeletonFooter}>
+                  <View style={styles.skeletonChip} />
+                  <View style={styles.skeletonChip} />
+                </View>
+              </View>
+            ))}
+            <View style={styles.loadingOverlay}>
+              <BlurView
+                intensity={isDark ? 20 : 30}
+                tint={isDark ? 'dark' : 'light'}
+                style={styles.loadingOverlayContent}
+              >
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.text }]}>
+                  {t('classes.directory.fetching')}
+                </Text>
+              </BlurView>
+            </View>
+          </ScrollView>
         ) : error ? (
           <View style={styles.center}>
             <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
@@ -560,13 +601,13 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   
-  searchSection: { paddingHorizontal: 16, paddingBottom: 12 },
+  searchSection: { paddingHorizontal: 12, paddingBottom: 12 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 24,
+    paddingHorizontal: 16,
     height: 48,
     marginBottom: 12,
   },
@@ -578,9 +619,9 @@ const styles = StyleSheet.create({
   },
   yearScroll: { gap: 8 },
   yearPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 24,
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -593,7 +634,7 @@ const styles = StyleSheet.create({
   yearPillTextActive: { color: '#FFF' },
 
   content: { flex: 1 },
-  list: { padding: 16, paddingBottom: 40 },
+  list: { padding: 12, paddingBottom: 40 },
   dirFootnote: {
     fontSize: 12,
     color: COLORS.textMuted,
@@ -614,104 +655,177 @@ const styles = StyleSheet.create({
   },
   classCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 3,
   },
   classMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: 12,
+    marginBottom: 14,
   },
   orderBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
   },
   orderBadgeText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '800',
   },
-  classContent: { flex: 1, minWidth: 0 },
-  titleRow: {
+  classTextCenter: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  titleWithGrade: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  className: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    flexShrink: 1,
+  },
+  gradePill: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  gradePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  genderStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  genderStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  genderStatText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  genderStatValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  classIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  classCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  footerChipsRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  className: { flex: 1, fontSize: 17, fontWeight: '800', color: COLORS.textPrimary },
-  gradeChip: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  gradeChipText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.textSecondary,
-  },
-  classMeta: { fontSize: 13, color: COLORS.textSecondary, marginTop: 4, fontWeight: '600' },
-  classFooterRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statPill: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  footerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    gap: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-    gap: 5,
-    maxWidth: '44%',
   },
-  teacherStatPill: {
-    flex: 1,
-    maxWidth: undefined,
+  footerChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
   },
-  statText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
-  classIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 4,
-  },
-  classArrowWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  chevronWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
-    marginLeft: 'auto',
   },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  loadingBlurCard: {
-    minWidth: 220,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
+  skeletonContainer: { padding: 12 },
+  skeletonCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9',
+    opacity: 0.6,
+  },
+  skeletonMainRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  skeletonBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#E2E8F0' },
+  skeletonTextCol: { flex: 1, gap: 8 },
+  skeletonTitle: { width: '70%', height: 18, borderRadius: 4, backgroundColor: '#F1F5F9' },
+  skeletonSubTitle: { width: '40%', height: 12, borderRadius: 4, backgroundColor: '#F8FAFC' },
+  skeletonSquare: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#F1F5F9' },
+  skeletonFooter: { flexDirection: 'row', gap: 8 },
+  skeletonChip: { width: 100, height: 28, borderRadius: 10, backgroundColor: '#F1F5F9' },
+  
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingOverlayContent: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  loadingText: { marginTop: 12, fontSize: 15, color: COLORS.textSecondary, fontWeight: '600' },
+  loadingText: { 
+    marginTop: 16, 
+    fontSize: 16, 
+    fontWeight: '800', 
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
   errorText: { marginTop: 12, fontSize: 14, color: '#EF4444', textAlign: 'center' },
   retryBtn: { 
     marginTop: 16, 

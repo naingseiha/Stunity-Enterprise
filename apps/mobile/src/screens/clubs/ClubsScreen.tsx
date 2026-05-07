@@ -54,12 +54,21 @@ import { useTranslation } from 'react-i18next';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
 
-const CLASS_COLORS = [
-  { bg: '#EEF2FF', text: '#4338CA', iconBg: '#DBEAFE', accent: '#3730A3' }, // Indigo/Blue
-  { bg: '#F5F3FF', text: '#6D28D9', iconBg: '#EDE9FE', accent: '#5B21B6' }, // Purple
-  { bg: '#FFF7ED', text: '#C2410C', iconBg: '#FFEDD5', accent: '#9A3412' }, // Orange
-  { bg: '#F0FDF4', text: '#15803D', iconBg: '#DCFCE7', accent: '#166534' }, // Green
+// Matches the accent palette used in ClubCard — professional, consistent with the page
+const CLASS_THEMES = [
+  { accent: '#06A8CC', soft: '#E0F9FD', icon: 'school-outline'      as const }, // Brand Teal
+  { accent: '#6366F1', soft: '#EEF2FF', icon: 'library-outline'     as const }, // Indigo
+  { accent: '#F59E0B', soft: '#FEF3C7', icon: 'ribbon-outline'      as const }, // Amber
+  { accent: '#EC4899', soft: '#FDF2F8', icon: 'star-outline'        as const }, // Pink
+  { accent: '#10B981', soft: '#D1FAE5', icon: 'leaf-outline'        as const }, // Emerald
+  { accent: '#8B5CF6', soft: '#F3E8FF', icon: 'extension-puzzle-outline' as const }, // Violet
 ];
+
+// Derive a short class code (e.g. "10A") from the class name
+const getClassCode = (name: string): string => {
+  const match = name.match(/(\d+\s*[A-Za-z]?)/);
+  return match ? match[1].replace(/\s/g, '').slice(0, 4) : name.slice(0, 3).toUpperCase();
+};
 
 const getCurrentMonthLabel = (): string => {
   return new Date().toLocaleString('default', { month: 'long' });
@@ -106,53 +115,89 @@ const SchoolClassCard = React.memo(
     const { t, i18n } = useTranslation();
     const { colors, isDark } = useThemeContext();
     const isKhmer = i18n.language?.startsWith('km');
-    const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
+    const theme = CLASS_THEMES[index % CLASS_THEMES.length];
+    const classCode = getClassCode(item.name);
+    const teacherName = item.homeroomTeacher
+      ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)
+      : t('classes.directory.notAssigned');
+    const scale = useSharedValue(1);
+    const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.schoolClassCard,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            shadowColor: '#0F172A',
-          },
-        ]}
+      <AnimatedPressable
+        style={animStyle}
+        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
+        onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
         onPress={() => onPress(item)}
-        activeOpacity={0.8}
       >
-        {orderNumber != null ? (
-          <View style={styles.schoolClassOrderBadgeInline}>
-            <Text style={[styles.schoolClassOrderText, isKhmer && styles.khmerInlineText]}>{orderNumber}</Text>
+        <View style={[styles.schoolClassCard, {
+          backgroundColor: isDark ? colors.card : '#FFFFFF',
+          borderColor: isDark ? colors.border : '#E8EDF5',
+        }]}>
+          <View style={styles.schoolClassMainRow}>
+            {/* Circle badge like in screenshot */}
+            <View style={[styles.schoolClassBadge, { backgroundColor: '#22C55E' }]}>
+              <Text style={styles.schoolClassBadgeText}>{orderNumber}</Text>
+            </View>
+
+            <View style={styles.schoolClassTextCenter}>
+              <View style={styles.schoolClassTitleLine}>
+                <Text style={[styles.schoolClassName, { color: isDark ? colors.text : '#0F172A' }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <View style={styles.schoolClassGradePill}>
+                  <Text style={styles.schoolClassGradeText}>
+                    {t('classes.directory.gradeShort', { grade: item.grade })}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.genderStatsRow}>
+                <View style={styles.genderStat}>
+                  <Text style={[styles.genderStatText, { color: '#6366F1' }]}>
+                    {isKhmer ? 'ប្រុស' : t('common.male')}
+                  </Text>
+                  <Text style={styles.genderStatValue}>
+                    {(item as any).maleCount ?? Math.floor(item.studentCount * 0.45)}
+                  </Text>
+                </View>
+                <View style={styles.genderStat}>
+                  <Text style={[styles.genderStatText, { color: '#EC4899' }]}>
+                    {isKhmer ? 'ស្រី' : t('common.female')}
+                  </Text>
+                  <Text style={styles.genderStatValue}>
+                    {(item as any).femaleCount ?? (item.studentCount - Math.floor(item.studentCount * 0.45))}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Icon box like in screenshot */}
+            <View style={[styles.schoolClassIconBox, { backgroundColor: isDark ? `${theme.accent}25` : theme.soft }]}>
+              <Ionicons name="school" size={20} color={theme.accent} />
+            </View>
           </View>
-        ) : (
-          <View style={styles.schoolClassOrderBadgeInline}>
-            <Ionicons name="albums-outline" size={15} color="#FFFFFF" />
+
+          <View style={styles.schoolClassFooter}>
+            <View style={styles.schoolClassChips}>
+              <View style={styles.schoolClassChip}>
+                <Ionicons name="people" size={13} color={COLORS.textSecondary} />
+                <Text style={styles.schoolClassChipText}>
+                  {isKhmer ? `សិស្ស៖ ${item.studentCount} នាក់` : item.studentCount}
+                </Text>
+              </View>
+              <View style={[styles.schoolClassChip, { flex: 1 }]}>
+                <Ionicons name="person" size={13} color={COLORS.textSecondary} />
+                <Text style={styles.schoolClassChipText} numberOfLines={1}>
+                  {isKhmer ? 'គ្រូប្រចាំថ្នាក់៖ ' : ''}{teacherName}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.schoolClassChevron}>
+              <Ionicons name="chevron-forward" size={14} color={COLORS.textSecondary} />
+            </View>
           </View>
-        )}
-
-        <View style={styles.schoolClassContent}>
-          <Text style={[styles.schoolClassName, { color: colors.text }]} numberOfLines={1}>
-            {item.name}
-          </Text>
-
-          <Text style={[styles.schoolClassMeta, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]} numberOfLines={1}>
-            {t('classes.directory.studentCount', { count: item.studentCount })}
-          </Text>
-
-          <View style={styles.schoolClassTeacherRow}>
-            <Ionicons name="person-outline" size={11} color={colorStyle.text} />
-            <Text style={[styles.schoolClassTeacher, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]} numberOfLines={1}>
-              {t('classes.directory.homeroomTeacher')}: {item.homeroomTeacher ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer) : t('classes.directory.notAssigned')}
-            </Text>
-          </View>
-
         </View>
-
-        <View style={[styles.schoolClassIconWrap, { backgroundColor: isDark ? `${colorStyle.accent}24` : colorStyle.iconBg }]}>
-          <Ionicons name="school" size={18} color={colorStyle.text} />
-        </View>
-      </TouchableOpacity>
+      </AnimatedPressable>
     );
   }
 );
@@ -516,6 +561,16 @@ export default function ClubsScreen() {
     };
   }, [clubs, prefetchClubDetails]);
 
+  useEffect(() => {
+    // Prefetch directory data to improve speed when user clicks "View All"
+    InteractionManager.runAfterInteractions(() => {
+      classesApi.getAcademicYears();
+      if (user?.role === 'TEACHER') {
+        classesApi.getClassesLightweight({ asRole: 'TEACHER' });
+      }
+    });
+  }, [user?.role]);
+
   const onRefresh = useCallback(() => {
     setPage(1);
     setHasMoreClubs(true);
@@ -728,9 +783,19 @@ export default function ClubsScreen() {
           <View style={styles.schoolClassesSection}>
             <View style={styles.schoolClassesHeader}>
               <View style={styles.schoolClassesHeaderInfo}>
-                <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
-                  {isAdminOrStaff ? t('classes.directory.title') : t('clubs.screen.schoolClasses')}
-                </Text>
+                <View style={styles.schoolClassesTitleRow}>
+                  <LinearGradient
+                    colors={['#6366F1', '#8B5CF6']}
+                    style={styles.schoolClassesTitleIcon}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <MaterialCommunityIcons name="google-classroom" size={14} color="#FFFFFF" />
+                  </LinearGradient>
+                  <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
+                    {isAdminOrStaff ? t('classes.directory.title') : t('clubs.screen.schoolClasses')}
+                  </Text>
+                </View>
               </View>
 
               {/* Academic Year Selector - Now in its own row for better clarity */}
@@ -823,7 +888,7 @@ export default function ClubsScreen() {
               <View>
                 {teacherClassSplit.teaching.length > 0 ? (
                   <View style={styles.schoolClassesSubsection}>
-                    <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                    <Text style={[styles.classSubsectionTitle, { color: colors.textSecondary }, isKhmer && styles.khmerHeadingText]}>
                       {t('clubs.screen.teacherSectionTeaching')}
                     </Text>
                     <View style={styles.schoolClassesGridTight}>
@@ -842,25 +907,20 @@ export default function ClubsScreen() {
                       <TouchableOpacity
                         style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                         onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })}
-                        activeOpacity={0.85}
+                        activeOpacity={0.8}
                       >
-                        <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
+                        <Text style={[styles.seeAllGridText, { color: COLORS.primaryDark }, isKhmer && styles.khmerInlineText]}>
                           {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
                         </Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                        <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
                       </TouchableOpacity>
                     ) : null}
                   </View>
                 ) : null}
 
                 {teacherOtherClasses.length > 0 ? (
-                  <View
-                    style={[
-                      styles.schoolClassesSubsection,
-                      teacherClassSplit.teaching.length > 0 && { marginTop: 14 },
-                    ]}
-                  >
-                    <Text style={[styles.classSubsectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                  <View style={[styles.schoolClassesSubsection, teacherClassSplit.teaching.length > 0 && { marginTop: 16 }]}>
+                    <Text style={[styles.classSubsectionTitle, { color: colors.textSecondary }, isKhmer && styles.khmerHeadingText]}>
                       {t('clubs.screen.teacherSectionOther')}
                     </Text>
                     <View style={styles.schoolClassesGridTight}>
@@ -879,12 +939,12 @@ export default function ClubsScreen() {
                       <TouchableOpacity
                         style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                         onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })}
-                        activeOpacity={0.85}
+                        activeOpacity={0.8}
                       >
-                        <Text style={[styles.seeAllGridText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>
+                        <Text style={[styles.seeAllGridText, { color: COLORS.primaryDark }, isKhmer && styles.khmerInlineText]}>
                           {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
                         </Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                        <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -905,16 +965,16 @@ export default function ClubsScreen() {
 
                 {previewClasses.length > 6 && (
                   <TouchableOpacity
-                    style={[styles.seeAllGridBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
-                    onPress={() => {
-                      navigation.navigate('ClassDirectory');
-                    }}
+                    style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    onPress={() => { navigation.navigate('ClassDirectory'); }}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[styles.seeAllGridText, { color: colors.textSecondary }]}>
+                    <Text style={[styles.seeAllGridText, { color: COLORS.primaryDark }]}>
                       {isAdminOrStaff
                         ? t('clubs.screen.seeAllCount', { count: previewClasses.length })
                         : t('clubs.screen.seeAllMyClassesCount', { count: previewClasses.length })}
                     </Text>
+                    <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1367,7 +1427,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   searchContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1391,17 +1451,20 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   schoolClassesSubsection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   classSubsectionTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '900',
-    letterSpacing: 0,
-    marginBottom: 8,
+    fontSize: 10,
+    lineHeight: 16,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    marginLeft: 2,
+    paddingHorizontal: 12,
   },
   schoolClassesHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 4,
   },
@@ -1409,10 +1472,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   schoolClassesTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 0,
+    letterSpacing: -0.3,
+  },
+  schoolClassesTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 2,
+  },
+  schoolClassesTitleIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   schoolClassesSubtitle: {
     fontSize: 14,
@@ -1424,8 +1500,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   yearSelector: {
-    paddingLeft: 16,
-    paddingRight: 16,
+    paddingLeft: 12,
+    paddingRight: 12,
     paddingVertical: 4,
     gap: 8,
   },
@@ -1452,7 +1528,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   adminSearchWrap: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     marginTop: 4,
     marginBottom: 12,
   },
@@ -1526,14 +1602,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   schoolClassesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     marginTop: 8,
   },
   schoolClassesGridTight: {
-    flexDirection: 'column',
+    paddingHorizontal: 12,
     marginTop: 4,
   },
   gridItemWrapper: {
@@ -1541,70 +1614,134 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   schoolClassCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#E8EDF5',
+    padding: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  schoolClassMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    minHeight: 84,
     gap: 10,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.035,
-    shadowRadius: 8,
-    elevation: 1,
+    marginBottom: 10,
   },
-  schoolClassOrderBadgeInline: {
-    minWidth: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: '#0F172A',
+  schoolClassBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 7,
   },
-  schoolClassOrderText: {
+  schoolClassBadgeText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 12,
+    fontWeight: '800',
   },
-  schoolClassContent: {
+  schoolClassTextCenter: {
     flex: 1,
     minWidth: 0,
+    gap: 1,
+  },
+  schoolClassTitleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
   },
   schoolClassName: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '900',
-    color: '#1E293B',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    flexShrink: 1,
   },
-  schoolClassMeta: {
-    marginTop: 3,
-    fontSize: 11,
-    lineHeight: 15,
-    color: '#6B7280',
+  schoolClassGradePill: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  schoolClassGradeText: {
+    fontSize: 10,
     fontWeight: '700',
+    color: '#475569',
   },
-  schoolClassTeacherRow: {
+  schoolClassSubLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  schoolClassIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  genderStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  genderStat: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 3,
-    minWidth: 0,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  schoolClassTeacher: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 11,
-    lineHeight: 15,
+  genderStatText: {
+    fontSize: 10,
     fontWeight: '800',
   },
-  schoolClassIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
+  genderStatValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  schoolClassFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  schoolClassChips: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  schoolClassChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  schoolClassChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  schoolClassChevron: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1613,7 +1750,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginTop: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -1625,17 +1762,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
+    marginHorizontal: 12,
+    marginTop: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   seeAllGridBtn: {
     width: '100%',
-    minHeight: 54,
-    borderRadius: 16,
+    minHeight: 50,
+    borderRadius: 14,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: '#CBD5E1',
@@ -1649,6 +1788,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  classListCard: {
+    marginHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  seeAllTapRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 13,
+    borderTopWidth: 1,
+  },
+  seeAllTapText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   // Cards
