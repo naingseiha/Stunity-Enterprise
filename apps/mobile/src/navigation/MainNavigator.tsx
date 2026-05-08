@@ -21,6 +21,7 @@ import {
   QuizStackParamList,
   MessagesStackParamList,
   ProfileStackParamList,
+  ClubsStackParamList,
 } from './types';
 import { Colors, Typography, Shadows } from '@/config';
 import { Sidebar } from '@/components/navigation';
@@ -51,6 +52,7 @@ import {
   EditTeacherScreen,
   ClassGradesScreen,
   ClassAttendanceScreen,
+  DisciplineWorkbenchScreen,
   ClassDirectoryScreen,
   ClassAssignmentDetailScreen,
 } from '@/screens/clubs';
@@ -102,7 +104,7 @@ const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 // Clubs Stack
-const ClubsStack = createNativeStackNavigator();
+const ClubsStack = createNativeStackNavigator<ClubsStackParamList>();
 
 const ClubsStackNavigator = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
@@ -124,6 +126,7 @@ const ClubsStackNavigator = () => (
     <ClubsStack.Screen name="EditTeacher" component={EditTeacherScreen} />
     <ClubsStack.Screen name="ClassGrades" component={ClassGradesScreen} />
     <ClubsStack.Screen name="ClassAttendance" component={ClassAttendanceScreen} />
+    <ClubsStack.Screen name="DisciplineWorkbench" component={DisciplineWorkbenchScreen} />
     <ClubsStack.Screen name="ClassQuizzes" component={BrowseQuizzesScreen} />
     <ClubsStack.Screen name="ClassAssignmentDetail" component={ClassAssignmentDetailScreen} />
     <ClubsStack.Screen name="CreateClub" component={CreateClubScreen} />

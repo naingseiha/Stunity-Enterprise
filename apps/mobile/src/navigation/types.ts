@@ -179,9 +179,20 @@ export type ClubsStackParamList = {
     teacherClassAccess?: 'teaching' | 'other';
     initialSummary?: Pick<
       MyClassSummary,
-      'id' | 'name' | 'grade' | 'section' | 'track' | 'studentCount' | 'myRole' | 'linkedStudentId' | 'linkedTeacherId' | 'homeroomTeacher'
+      'id' | 'name' | 'grade' | 'section' | 'track' | 'studentCount' | 'myRole' | 'linkedStudentId' | 'linkedTeacherId' | 'homeroomTeacher' | 'isHomeroom'
     >;
   };
+  ClassAttendance: {
+    classId: string;
+    className?: string;
+    isHomeroom?: boolean;
+    homeroomTeacherId?: string;
+    date?: string; // Optional initial date
+  };
+  DisciplineWorkbench: {
+    classId?: string;
+    date?: string;
+  } | undefined;
   ClassAnnouncements: { classId: string };
   ClassReport: {
     classId: string;

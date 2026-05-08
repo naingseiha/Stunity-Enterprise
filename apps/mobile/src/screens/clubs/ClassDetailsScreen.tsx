@@ -651,8 +651,16 @@ export default function ClassDetailsScreen() {
   }, [navigation, hasUnsavedQuickScores, uploading, handleSubmitScores, t]);
 
   const navigateToAttendance = useCallback(() => {
-    navigation.navigate('ClassAttendance', { classId, className: title });
-  }, [navigation, classId, title]);
+    const isTeacherHomeroom = user?.teacher?.id && (user.teacher.id === params.homeroomTeacherId || user.teacher.id === params.initialSummary?.homeroomTeacher?.id);
+    const isUserHomeroom = user?.id && (user.id === params.homeroomTeacherId || user.id === params.initialSummary?.homeroomTeacher?.id);
+    
+    navigation.navigate('ClassAttendance', {
+      classId,
+      className: title,
+      isHomeroom: params.initialSummary?.isHomeroom || isTeacherHomeroom || isUserHomeroom,
+      homeroomTeacherId: params.homeroomTeacherId || params.initialSummary?.homeroomTeacher?.id
+    });
+  }, [navigation, classId, title, params.initialSummary, user?.id, user?.teacher?.id, params.homeroomTeacherId]);
 
   const handleStartConversation = useCallback(async (participantId: string, displayName: string) => {
     try {

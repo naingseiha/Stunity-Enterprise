@@ -135,6 +135,7 @@ export interface ClassGradesReport {
 
 export interface ClassDailyTimetableContext {
   teacherTeachingThisClassToday: boolean;
+  isHomeroomTeacher?: boolean;
   patternSource: 'timetable' | 'fallback';
   academicYearId: string | null;
   date: string;
@@ -145,6 +146,22 @@ export interface ClassDailyAttendanceResponse {
   date: string;
   students: any[];
   timetableContext?: ClassDailyTimetableContext;
+}
+
+export interface DelegationEffectivePermission {
+  classId: string;
+  className?: string;
+  grade?: string;
+  date: string;
+  canWrite: boolean;
+  source: 'admin' | 'homeroom' | 'delegation' | 'none';
+  allowedStatuses: string[];
+}
+
+export interface DisciplinePolicy {
+  allowedExcusedReasonTemplates?: string[];
+  mandatoryExcusedReasonMinLength?: number;
+  requireEscalationForExcused?: boolean;
 }
 
 export interface GetClassDetailBundleOptions {
@@ -512,6 +529,69 @@ export const prefetchClassDailyAttendance = async (classId: string, date: string
   } catch {
     // Ignore prefetch failures.
   }
+};
+
+export const getDelegationEffectivePermission = async (
+  classId: string,
+  date: string
+): Promise<DelegationEffectivePermission> => {
+  const response = await attendanceApi.get<{ success?: boolean; data?: DelegationEffectivePermission }>(
+    '/attendance/delegations/effective',
+    { params: { classId, date } }
+  );
+  return response.data?.data || {
+    classId,
+    date,
+    canWrite: false,
+    source: 'none',
+    allowedStatuses: [],
+  };
+};
+
+export const getDisciplinePolicy = async (): Promise<DisciplinePolicy | null> => {
+  const response = await attendanceApi.get<{ success?: boolean; data?: DisciplinePolicy | null }>(
+    '/attendance/discipline-policy'
+  );
+  return response.data?.data || null;
+};
+
+/**
+ * Bulk mark student attendance for a class.
+ */
+export const bulkMarkAttendance = async (
+  classId: string,
+  date: string,
+  session: 'MORNING' | 'AFTERNOON',
+  attendance: Array<{ studentId: string; status: string; remarks?: string }>
+): Promise<{ message: string; savedCount: number }> => {
+  const response = await attendanceApi.post<{ message: string; savedCount: number }>(
+    '/attendance/bulk',
+    { classId, date, session, attendance }
+  );
+  const cacheKey = getDailyAttendanceCacheKey(classId, date);
+  const cached = _classDailyAttendanceCache.get(cacheKey);
+  if (cached?.data?.students && attendance.length > 0) {
+    const sessionKey = session === 'MORNING' ? 'morning' : 'afternoon';
+    const students = (cached.data.students as any[]).map((row) => ({ ...row }));
+    for (const rec of attendance) {
+      const idx = students.findIndex((s: { studentId?: string }) => s.studentId === rec.studentId);
+      if (idx < 0) continue;
+      const prevSlot = students[idx][sessionKey] || {};
+      students[idx] = {
+        ...students[idx],
+        [sessionKey]: {
+          ...prevSlot,
+          status: rec.status,
+          ...(rec.remarks !== undefined ? { remarks: rec.remarks } : {}),
+        },
+      };
+    }
+    _classDailyAttendanceCache.set(cacheKey, {
+      data: { ...cached.data, classId, date, students },
+      ts: Date.now(),
+    });
+  }
+  return response.data;
 };
 
 export const getCachedClassGradesReport = (

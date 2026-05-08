@@ -8,10 +8,13 @@ import {
     ActivityIndicator,
     Alert,
     StatusBar,
+    Modal,
+    Pressable,
+    TextInput,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { format, addDays, subDays, isToday } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -45,8 +48,20 @@ interface AttendanceEntry {
     afternoon: { id: string; status: string; remarks?: string } | null;
 }
 
+type SessionKey = 'morning' | 'afternoon';
+
+interface StatusOption {
+    label: string;
+    value: string;
+}
+
 export default function ClassAttendanceScreen({ route, navigation }: any) {
-    const { classId, className } = route.params || {};
+    const {
+        classId,
+        className,
+        isHomeroom: initialIsHomeroom,
+        homeroomTeacherId,
+    } = route.params || {};
     const { t, i18n } = useTranslation();
     const { user } = useAuthStore();
     const initialDate = useMemo(() => new Date(), []);
@@ -63,6 +78,54 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
         initialCachedAttendance?.timetableContext || null
     );
     const [filter, setFilter] = useState<'ALL' | 'ABSENT' | 'PERMISSION'>('ALL');
+    const [daySwitching, setDaySwitching] = useState(false);
+    const [statusPicker, setStatusPicker] = useState<{
+        visible: boolean;
+        studentId: string;
+        session: SessionKey;
+        currentStatus?: string;
+        currentRemarks?: string;
+    }>({
+        visible: false,
+        studentId: '',
+        session: 'morning',
+        currentStatus: undefined,
+        currentRemarks: undefined,
+    });
+    const [excusedDraft, setExcusedDraft] = useState('');
+    const [isExcusedReasonStep, setIsExcusedReasonStep] = useState(false);
+    const closeAllModals = useCallback(() => {
+        setStatusPicker((prev) => ({ ...prev, visible: false }));
+        setIsExcusedReasonStep(false);
+        setExcusedDraft('');
+    }, []);
+    const isFutureDate = useMemo(() => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const selected = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        return selected > today;
+    }, [selectedDate]);
+
+    const isRouteHomeroom = initialIsHomeroom === true;
+    const isMatchedHomeroomTeacher =
+        Boolean(homeroomTeacherId) &&
+        (user?.teacher?.id === homeroomTeacherId || user?.id === homeroomTeacherId);
+    const isHomeroomFromServer = timetableContext?.isHomeroomTeacher === true;
+
+    const canEdit = useMemo(() => {
+        if (isFutureDate) return false;
+        // Homeroom teacher can edit for any non-future date, regardless of timetable.
+        return isRouteHomeroom || isMatchedHomeroomTeacher || isHomeroomFromServer;
+    }, [isFutureDate, isMatchedHomeroomTeacher, isRouteHomeroom, isHomeroomFromServer]);
+
+    const prefetchAdjacentDays = useCallback((date: Date) => {
+        if (!classId) return;
+        for (let offset = -3; offset <= 3; offset++) {
+            if (offset === 0) continue;
+            const prefetchDate = format(addDays(date, offset), 'yyyy-MM-dd');
+            void classesApi.prefetchClassDailyAttendance(classId, prefetchDate);
+        }
+    }, [classId]);
 
     const fetchAttendance = useCallback(async (date: Date, options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
         if (!classId) return;
@@ -83,21 +146,20 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
             const result = await classesApi.getClassDailyAttendance(classId, dateStr, force);
             setAttendanceData(result.students || []);
             setTimetableContext(result.timetableContext ?? null);
+            prefetchAdjacentDays(date);
         } catch (error) {
             if (__DEV__) console.warn('[attendance] class daily:', error);
             Alert.alert(t('common.error'), t('attendance.loadFailed'));
         } finally {
             setLoading(false);
+            setDaySwitching(false);
         }
-    }, [classId, t]);
+    }, [classId, t, prefetchAdjacentDays]);
 
     useEffect(() => {
-        const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
-        const hasCachedForSelectedDate = Boolean(
-            classId && classesApi.getCachedClassDailyAttendance(classId, selectedDateKey)
-        );
-
-        fetchAttendance(selectedDate, { preserveVisibleContent: hasCachedForSelectedDate });
+        setDaySwitching(true);
+        // Keep visible rows while loading new day to avoid jarring blank spinner.
+        fetchAttendance(selectedDate, { preserveVisibleContent: true });
     }, [classId, fetchAttendance, selectedDate]);
 
     /** Skip duplicate network call on mount (useEffect already loads); refresh when returning after timetable edits */
@@ -145,15 +207,117 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
         }
     };
 
-    const StatusBadge = ({ status }: { status?: string }) => {
-        if (!status) return <View style={[styles.miniBadge, styles.badgeEmpty]}><Text style={styles.miniBadgeEmpty}>-</Text></View>;
+    const statusOptions = useMemo<StatusOption[]>(() => ([
+        { label: t('attendance.status.present'), value: 'PRESENT' },
+        { label: t('attendance.status.absent'), value: 'ABSENT' },
+        { label: t('attendance.status.permission'), value: 'PERMISSION' },
+        { label: t('attendance.status.late'), value: 'LATE' },
+        { label: t('attendance.status.excused'), value: 'EXCUSED' },
+    ]), [t]);
+
+    const handleUpdateStatus = (
+        studentId: string,
+        session: SessionKey,
+        currentStatus: string,
+        currentRemarks?: string
+    ) => {
+        if (!canEdit) return;
+        setIsExcusedReasonStep(false);
+        setExcusedDraft('');
+        setStatusPicker({
+            visible: true,
+            studentId,
+            session,
+            currentStatus,
+            currentRemarks,
+        });
+    };
+
+    const performUpdate = useCallback(async (studentId: string, sessionKey: SessionKey, status: string, remarks?: string) => {
+        let beforeSlot: AttendanceEntry[SessionKey] | null = null;
+        setAttendanceData((prev) => {
+            const row = prev.find((item) => item.studentId === studentId);
+            const raw = row?.[sessionKey];
+            beforeSlot = raw ? { ...raw } : null;
+            return prev.map((item) => {
+                if (item.studentId !== studentId) return item;
+                return {
+                    ...item,
+                    [sessionKey]: { ...(item[sessionKey] || {}), status, remarks },
+                };
+            });
+        });
+
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        try {
+            await classesApi.bulkMarkAttendance(
+                classId,
+                dateStr,
+                sessionKey.toUpperCase() as 'MORNING' | 'AFTERNOON',
+                [{ studentId, status, remarks }]
+            );
+        } catch (err: any) {
+            setAttendanceData((prev) => prev.map((item) => {
+                if (item.studentId !== studentId) return item;
+                return { ...item, [sessionKey]: beforeSlot };
+            }));
+            Alert.alert(t('common.error'), err?.message || t('attendance.updateFailed'));
+        }
+    }, [classId, selectedDate, t]);
+
+    const handleSelectStatus = useCallback((status: string) => {
+        if (!statusPicker.studentId) return;
+        const sid = statusPicker.studentId;
+        const sess = statusPicker.session;
+        if (status === 'EXCUSED') {
+            setIsExcusedReasonStep(true);
+            setExcusedDraft(statusPicker.currentRemarks || '');
+            return;
+        }
+        setStatusPicker((prev) => ({ ...prev, visible: false }));
+        void performUpdate(sid, sess, status);
+    }, [statusPicker.studentId, statusPicker.session, statusPicker.currentRemarks, performUpdate]);
+
+    const handleSubmitExcusedReason = useCallback(() => {
+        const reason = excusedDraft.trim();
+        if (!reason) {
+            Alert.alert(t('attendance.alerts.reasonRequiredTitle'), t('attendance.alerts.reasonRequiredMessage'));
+            return;
+        }
+        const studentId = statusPicker.studentId;
+        const session = statusPicker.session;
+        closeAllModals();
+        void performUpdate(studentId, session, 'EXCUSED', reason);
+    }, [excusedDraft, statusPicker.studentId, statusPicker.session, t, performUpdate, closeAllModals]);
+
+    const statusLegend = useMemo(() => ([
+        { code: '✓', label: t('attendance.status.present'), color: '#059669', bg: '#ECFDF5' },
+        { code: 'A', label: t('attendance.status.absent'), color: '#EF4444', bg: '#FEF2F2' },
+        { code: 'P', label: t('attendance.status.permission'), color: '#7C3AED', bg: '#F5F3FF' },
+        { code: 'L', label: t('attendance.status.late'), color: '#F59E0B', bg: '#FFFBEB' },
+        { code: 'E', label: t('attendance.status.excused'), color: '#0F766E', bg: '#ECFEFF' },
+    ]), [t]);
+
+
+    const StatusBadge = ({ status, onPress }: { status?: string; onPress?: () => void }) => {
+        if (!status) {
+            return (
+                <TouchableOpacity 
+                    style={[styles.miniBadge, { backgroundColor: '#ECFDF5' }]} 
+                    onPress={onPress}
+                    disabled={!onPress}
+                >
+                    <Ionicons name="checkmark" size={18} color="#059669" />
+                </TouchableOpacity>
+            );
+        }
         
-        let label = 'P';
+        let label = '✓';
         let color = '#10B981';
         let bg = '#ECFDF5';
 
-        if (status === 'PRESENT' || status === 'EXCUSED') {
-            label = status === 'EXCUSED' ? 'E' : 'P';
+        if (status === 'PRESENT') {
+            label = '✓';
             color = '#059669';
             bg = '#ECFDF5';
         } else if (status === 'ABSENT') {
@@ -161,19 +325,27 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
             color = '#EF4444';
             bg = '#FEF2F2';
         } else if (status === 'PERMISSION') {
-            label = 'L'; // Leave/Permission
+            label = 'P'; // Permission leave
             color = '#7C3AED';
             bg = '#F5F3FF';
         } else if (status === 'LATE') {
-            label = 'T'; // Tardy
+            label = 'L'; // Late
             color = '#F59E0B';
             bg = '#FFFBEB';
+        } else if (status === 'EXCUSED') {
+            label = 'E';
+            color = '#0F766E';
+            bg = '#ECFEFF';
         }
 
         return (
-            <View style={[styles.miniBadge, { backgroundColor: bg }]}>
+            <TouchableOpacity 
+                style={[styles.miniBadge, { backgroundColor: bg }]}
+                onPress={onPress}
+                disabled={!onPress}
+            >
                 <Text style={[styles.miniBadgeText, { color }]}>{label}</Text>
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -207,12 +379,28 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
             <View style={styles.sessionWrap}>
                 <View style={styles.sessionCol}>
                     <Text style={styles.sessionLabel}>{t('attendance.morning').substring(0, 3)}</Text>
-                    <StatusBadge status={item.morning?.status} />
+                    <StatusBadge 
+                        status={item.morning?.status} 
+                        onPress={canEdit ? () => handleUpdateStatus(
+                            item.studentId,
+                            'morning',
+                            item.morning?.status || '',
+                            item.morning?.remarks
+                        ) : undefined}
+                    />
                 </View>
                 <View style={styles.sessionDivider} />
                 <View style={styles.sessionCol}>
                     <Text style={styles.sessionLabel}>{t('attendance.afternoon').substring(0, 3)}</Text>
-                    <StatusBadge status={item.afternoon?.status} />
+                    <StatusBadge 
+                        status={item.afternoon?.status} 
+                        onPress={canEdit ? () => handleUpdateStatus(
+                            item.studentId,
+                            'afternoon',
+                            item.afternoon?.status || '',
+                            item.afternoon?.remarks
+                        ) : undefined}
+                    />
                 </View>
             </View>
         </View>
@@ -233,8 +421,11 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                         <Ionicons name="chevron-back" size={24} color={Colors.text} />
                     </TouchableOpacity>
                     <View style={styles.headerTitleWrap}>
-                        <Text style={styles.headerTitle}>{className || t('attendance.title')}</Text>
-                        <Text style={styles.headerSubtitle}>{t('attendance.report.classDaily')}</Text>
+                        <Text style={styles.headerTitle} numberOfLines={1}>{className || t('attendance.title')}</Text>
+                        <View style={styles.headerSubtitleRow}>
+                            <MaterialCommunityIcons name="clipboard-check-outline" size={12} color={BRAND_TEAL} style={{ marginRight: 4 }} />
+                            <Text style={styles.headerSubtitle}>{t('attendance.classDaily.title')}</Text>
+                        </View>
                     </View>
                     <View style={{ width: 40 }} />
                 </View>
@@ -271,6 +462,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
             </SafeAreaView>
 
             {user?.role === 'TEACHER' &&
+                !canEdit &&
                 timetableContext?.patternSource === 'timetable' &&
                 timetableContext.teacherTeachingThisClassToday === false && (
                     <View style={styles.timetableInfoBanner}>
@@ -307,6 +499,22 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     <Text style={styles.statLab}>{t('attendance.status.permission')}</Text>
                 </TouchableOpacity>
             </View>
+            {daySwitching && !loading ? (
+                <View style={styles.daySwitchLoader}>
+                    <ActivityIndicator size="small" color={BRAND_TEAL} />
+                    <Text style={styles.daySwitchLoaderText}>{t('common.loading')}</Text>
+                </View>
+            ) : null}
+            <View style={styles.legendRow}>
+                {statusLegend.map((item) => (
+                    <View key={item.code} style={styles.legendItem}>
+                        <View style={[styles.legendCode, { backgroundColor: item.bg }]}>
+                            <Text style={[styles.legendCodeText, { color: item.color }]}>{item.code}</Text>
+                        </View>
+                        <Text style={styles.legendLabel}>{item.label}</Text>
+                    </View>
+                ))}
+            </View>
 
             {loading ? (
                 <View style={styles.loadingWrap}>
@@ -328,6 +536,71 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     }
                 />
             )}
+
+            <Modal
+                visible={statusPicker.visible}
+                animationType="fade"
+                transparent
+                onRequestClose={closeAllModals}
+            >
+                <Pressable
+                    style={styles.modalBackdrop}
+                    onPress={closeAllModals}
+                >
+                    <Pressable style={styles.modalCard} onPress={() => {}}>
+                        {isExcusedReasonStep ? (
+                            <>
+                                <Text style={styles.modalTitle}>{t('attendance.status.excused')}</Text>
+                                <Text style={styles.modalSubtitle}>{t('attendance.alerts.reasonRequiredMessage')}</Text>
+                                <TextInput
+                                    value={excusedDraft}
+                                    onChangeText={setExcusedDraft}
+                                    placeholder={t('attendance.requestPermission.reasonPlaceholder')}
+                                    style={styles.reasonInput}
+                                    multiline
+                                    autoFocus
+                                />
+                                <TouchableOpacity style={styles.modalPrimaryBtn} onPress={handleSubmitExcusedReason}>
+                                    <Text style={styles.modalPrimaryText}>{t('common.save')}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.modalCancelBtn}
+                                    onPress={() => setIsExcusedReasonStep(false)}
+                                >
+                                    <Text style={styles.modalCancelText}>{t('common.back')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <Text style={styles.modalTitle}>{t('attendance.updateStatus')}</Text>
+                                <Text style={styles.modalSubtitle}>
+                                    {t('attendance.selectStatusFor', { session: t(`attendance.${statusPicker.session}`) })}
+                                </Text>
+                                {statusOptions.map((option) => {
+                                    const active = option.value === statusPicker.currentStatus;
+                                    return (
+                                        <TouchableOpacity
+                                            key={option.value}
+                                            style={[styles.modalOption, active && styles.modalOptionActive]}
+                                            onPress={() => handleSelectStatus(option.value)}
+                                        >
+                                            <Text style={[styles.modalOptionText, active && styles.modalOptionTextActive]}>
+                                                {option.label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                                <TouchableOpacity
+                                    style={styles.modalCancelBtn}
+                                    onPress={closeAllModals}
+                                >
+                                    <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </View>
     );
 };
@@ -353,9 +626,10 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: '#F1F5F9',
     },
-    headerTitleWrap: { alignItems: 'center' },
-    headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
-    headerSubtitle: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+    headerTitleWrap: { alignItems: 'center', flex: 1, marginHorizontal: 8 },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+    headerSubtitleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    headerSubtitle: { fontSize: 14, fontWeight: '700', color: BRAND_TEAL },
     
     dateSelector: {
         flexDirection: 'row',
@@ -421,9 +695,50 @@ const styles = StyleSheet.create({
     timetableInfoBannerText: {
         flex: 1,
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#92400E',
-        lineHeight: 17,
+        lineHeight: 18,
+    },
+    homeroomBanner: {
+        backgroundColor: '#ECFDF5',
+        borderColor: '#10B981',
+    },
+    homeroomBannerText: {
+        color: '#065F46',
+    },
+
+    legendRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginHorizontal: 20,
+        marginTop: -10,
+        marginBottom: 10,
+    },
+    legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
+    legendCode: {
+        minWidth: 24,
+        height: 24,
+        borderRadius: 7,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 6,
+    },
+    legendCodeText: { fontSize: 12, fontWeight: '900' },
+    legendLabel: { fontSize: 11, color: '#64748B', fontWeight: '700' },
+    daySwitchLoader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginHorizontal: 20,
+        marginTop: -6,
+        marginBottom: 10,
+    },
+    daySwitchLoaderText: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '700',
     },
 
     listContent: { padding: 20, paddingTop: 0 },
@@ -445,20 +760,78 @@ const styles = StyleSheet.create({
     avatarFallback: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
     avatarInitial: { fontSize: 18, fontWeight: '700', color: '#64748B' },
     avatarInitialOnTeal: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
-    nameWrap: { flex: 1 },
-    studentName: { fontSize: 16, fontWeight: '700', color: Colors.text },
-    englishName: { fontSize: 11, fontWeight: '600', color: BRAND_TEAL, textTransform: 'uppercase', marginTop: 1 },
-    studentId: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
+    nameWrap: { flex: 1, paddingRight: 4 },
+    studentName: { fontSize: 15, fontWeight: '700', color: Colors.text },
+    englishName: { fontSize: 10, fontWeight: '700', color: BRAND_TEAL, textTransform: 'uppercase', marginTop: 1, letterSpacing: 0.5 },
+    studentId: { fontSize: 10, color: '#94A3B8', marginTop: 2, fontWeight: '500' },
 
-    sessionWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    sessionCol: { alignItems: 'center' },
-    sessionLabel: { fontSize: 9, fontWeight: '700', color: '#94A3B8', marginBottom: 6, textTransform: 'uppercase' },
-    sessionDivider: { width: 1, height: 30, backgroundColor: '#F1F5F9' },
+    sessionWrap: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    sessionCol: { alignItems: 'center', minWidth: 32 },
+    sessionLabel: { fontSize: 9, fontWeight: '800', color: '#94A3B8', marginBottom: 4, textTransform: 'uppercase' },
+    sessionDivider: { width: 1, height: 28, backgroundColor: '#F1F5F9' },
     
-    miniBadge: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-    miniBadgeText: { fontSize: 14, fontWeight: '900' },
+    miniBadge: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    miniBadgeText: { fontSize: 16, fontWeight: '900' },
     badgeEmpty: { backgroundColor: '#F1F5F9' },
-    miniBadgeEmpty: { color: '#CBD5E1', fontWeight: '700' },
+    miniBadgeEmpty: { color: '#94A3B8', fontWeight: '800', fontSize: 16 },
+
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(2, 6, 23, 0.35)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 18,
+    },
+    modalTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
+    modalSubtitle: { fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 14, fontWeight: '600' },
+    modalOption: {
+        height: 48,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#F8FAFC',
+    },
+    modalOptionActive: {
+        borderColor: BRAND_TEAL,
+        backgroundColor: '#ECFEFF',
+    },
+    modalOptionText: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+    modalOptionTextActive: { color: '#0E7490' },
+    modalCancelBtn: {
+        marginTop: 4,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F1F5F9',
+    },
+    modalCancelText: { fontSize: 15, fontWeight: '700', color: '#475569' },
+    reasonInput: {
+        minHeight: 88,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        backgroundColor: '#F8FAFC',
+        padding: 10,
+        textAlignVertical: 'top',
+        marginBottom: 12,
+    },
+    modalPrimaryBtn: {
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: BRAND_TEAL,
+        marginBottom: 8,
+    },
+    modalPrimaryText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
 
     loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -50 },
     loadingText: { marginTop: 12, color: Colors.textSecondary, fontSize: 14 },

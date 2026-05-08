@@ -1178,18 +1178,21 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     value={copyPreviewData?.subjectsCount || 0}
                     helper="Subjects available to copy"
                     tone="sky"
+                    icon={BookOpen}
                   />
                   <MetricCard
                     label={autoT("auto.web.settings_academic_years_page.k_dcdf3756")}
                     value={copyPreviewData?.teachersCount || 0}
                     helper="Teacher assignments available"
                     tone="emerald"
+                    icon={Users}
                   />
                   <MetricCard
                     label={autoT("auto.web.settings_academic_years_page.k_b6e09360")}
                     value={copyPreviewData?.classesCount || 0}
                     helper="Classes available to copy"
                     tone="gold"
+                    icon={GraduationCap}
                   />
                 </>
               )}

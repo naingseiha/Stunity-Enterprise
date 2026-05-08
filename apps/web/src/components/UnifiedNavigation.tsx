@@ -137,6 +137,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const [activeHover, setActiveHover] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isHydrated, setIsHydrated] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [transitionSkeleton, setTransitionSkeleton] = useState<{ type: SchoolSkeletonType; hasSidebar: boolean } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -150,6 +151,10 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     const q = searchParams?.get('q');
     if (q) setSearchQuery(q);
   }, [searchParams]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -386,6 +391,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       label: 'School Setup',
       items: [
         { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null, skeleton: 'table' as const },
+        ...(canOpenAttendanceDashboard
+          ? [{ name: 'Discipline Delegations', icon: Shield, path: `/${locale}/admin/discipline`, prefetch: null, skeleton: 'table' as const }]
+          : []),
         { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: 'locations', skeleton: 'table' as const },
         { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: 'academic-years', skeleton: 'table' as const },
       ],
@@ -928,8 +936,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     }
                   `}
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden">
-                    {user?.profilePictureUrl ? (
+                  <div suppressHydrationWarning className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden">
+                    {isHydrated && user?.profilePictureUrl ? (
                       <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <>
@@ -945,8 +953,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     {/* User Info */}
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold shadow-md overflow-hidden">
-                          {user?.profilePictureUrl ? (
+                        <div suppressHydrationWarning className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold shadow-md overflow-hidden">
+                          {isHydrated && user?.profilePictureUrl ? (
                             <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <>

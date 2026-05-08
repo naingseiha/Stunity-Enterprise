@@ -16,5 +16,6 @@ export { default as EditStudentScreen } from './EditStudentScreen';
 export { default as EditTeacherScreen } from './EditTeacherScreen';
 export { default as ClassGradesScreen } from './ClassGradesScreen';
 export { default as ClassAttendanceScreen } from './ClassAttendanceScreen';
+export { default as DisciplineWorkbenchScreen } from './DisciplineWorkbenchScreen';
 export { default as ClassDirectoryScreen } from './ClassDirectoryScreen';
 export { default as ClassAssignmentDetailScreen } from './ClassAssignmentDetailScreen';

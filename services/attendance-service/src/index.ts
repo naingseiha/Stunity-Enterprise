@@ -174,6 +174,7 @@ interface AuthRequest extends Request {
     email: string;
     role: string;
     schoolId: string;
+    isSuperAdmin?: boolean;
   };
   schoolId?: string;
 }
@@ -192,7 +193,11 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-    if (!decoded.userId || !decoded.schoolId) {
+    const userId = decoded.userId || decoded.user?.id || decoded.user?.userId;
+    const schoolId = decoded.schoolId || decoded.user?.schoolId;
+    const tokenRole = decoded.role || decoded.user?.role || (decoded.isSuperAdmin ? 'SUPER_ADMIN' : undefined);
+
+    if (!userId || !schoolId) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token format',
@@ -220,12 +225,13 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     req.user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-      schoolId: decoded.schoolId,
+      id: userId,
+      email: decoded.email || decoded.user?.email || '',
+      role: tokenRole || '',
+      schoolId,
+      isSuperAdmin: Boolean(decoded.isSuperAdmin || decoded.user?.isSuperAdmin || tokenRole === 'SUPER_ADMIN'),
     };
-    req.schoolId = decoded.schoolId;
+    req.schoolId = schoolId;
 
     next();
   } catch (error: any) {
@@ -437,6 +443,153 @@ interface BulkAttendanceRequest {
   acknowledgeOffSchedule?: boolean;
 }
 
+const ATTENDANCE_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+
+function normalizeRole(role: string | undefined | null): string {
+  return String(role || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+function hasAttendanceDelegationAdminAccess(role: string | undefined | null): boolean {
+  const normalized = normalizeRole(role);
+  if (ATTENDANCE_ADMIN_ROLES.has(normalized)) return true;
+  // Defensive fallback for legacy role naming variants.
+  return normalized.endsWith('_ADMIN') || normalized === 'ADMIN';
+}
+const ALL_ATTENDANCE_STATUSES = new Set(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'PERMISSION']);
+
+type DelegationScopeType = 'CLASS' | 'GRADE' | 'SCHOOL';
+type DisciplineCapabilityProfile = 'ATTENDANCE_APL' | 'DISCIPLINE_E' | 'FULL_ATTENDANCE';
+
+function allowedStatusesForCapability(profile: DisciplineCapabilityProfile): Set<string> {
+  if (profile === 'ATTENDANCE_APL') return new Set(['ABSENT', 'PERMISSION', 'LATE']);
+  if (profile === 'DISCIPLINE_E') return new Set(['EXCUSED']);
+  return new Set(ALL_ATTENDANCE_STATUSES);
+}
+
+function isDelegationActiveOnDate(
+  delegation: { activeFrom: Date | null; activeUntil: Date | null; isActive: boolean },
+  date: Date
+): boolean {
+  if (!delegation.isActive) return false;
+  if (delegation.activeFrom && date.getTime() < startOfDay(delegation.activeFrom).getTime()) return false;
+  if (delegation.activeUntil && date.getTime() > endOfDay(delegation.activeUntil).getTime()) return false;
+  return true;
+}
+
+function delegationMatchesClass(
+  delegation: { scopeType: DelegationScopeType; classId: string | null; grade: string | null },
+  classData: { id: string; grade: string }
+): boolean {
+  if (delegation.scopeType === 'SCHOOL') return true;
+  if (delegation.scopeType === 'CLASS') return delegation.classId === classData.id;
+  if (delegation.scopeType === 'GRADE') return delegation.grade === classData.grade;
+  return false;
+}
+
+async function resolveDelegatedClassAttendanceAccess(opts: {
+  req: AuthRequest;
+  classData: { id: string; grade: string; homeroomTeacherId?: string | null };
+  schoolId: string;
+  targetDate: Date;
+  statuses?: string[];
+}): Promise<{
+  allowed: boolean;
+  source: 'admin' | 'homeroom' | 'delegation' | 'none';
+  allowedStatuses: string[];
+  message?: string;
+}> {
+  const role = opts.req.user?.role || '';
+  if (ATTENDANCE_ADMIN_ROLES.has(role)) {
+    return { allowed: true, source: 'admin', allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES) };
+  }
+
+  const scopedKey = `delegated_attendance_enabled:${opts.schoolId}`;
+  const delegatedFlag = await prisma.featureFlag.findFirst({
+    where: { key: { in: [scopedKey, 'delegated_attendance_enabled'] } },
+    orderBy: { key: 'desc' },
+    select: { key: true, enabled: true },
+  });
+  const delegatedEnabled = delegatedFlag ? delegatedFlag.enabled : true;
+
+  if (role === 'TEACHER') {
+    const rosterTeacher = await prisma.teacher.findFirst({
+      where: { schoolId: opts.schoolId, user: { id: opts.req.user!.id } },
+      select: { id: true },
+    });
+    if (rosterTeacher && opts.classData.homeroomTeacherId === rosterTeacher.id) {
+      return { allowed: true, source: 'homeroom', allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES) };
+    }
+  }
+
+  if (!delegatedEnabled) {
+    return {
+      allowed: false,
+      source: 'none',
+      allowedStatuses: [],
+      message: 'Delegated attendance is currently disabled for this school',
+    };
+  }
+
+  const delegations = await prisma.attendanceDelegation.findMany({
+    where: {
+      schoolId: opts.schoolId,
+      assigneeUserId: opts.req.user!.id,
+      isActive: true,
+      OR: [
+        { activeFrom: null, activeUntil: null },
+        { activeFrom: { lte: opts.targetDate }, activeUntil: null },
+        { activeFrom: null, activeUntil: { gte: opts.targetDate } },
+        { activeFrom: { lte: opts.targetDate }, activeUntil: { gte: opts.targetDate } },
+      ],
+    },
+    select: {
+      id: true,
+      scopeType: true,
+      classId: true,
+      grade: true,
+      capabilityProfile: true,
+      activeFrom: true,
+      activeUntil: true,
+      isActive: true,
+    },
+  });
+
+  const matched = delegations.filter((d) =>
+    isDelegationActiveOnDate(d, opts.targetDate) && delegationMatchesClass(d as any, opts.classData)
+  );
+  if (matched.length === 0) {
+    return {
+      allowed: false,
+      source: 'none',
+      allowedStatuses: [],
+      message: 'You do not have delegated attendance permission for this class',
+    };
+  }
+
+  const allowed = new Set<string>();
+  for (const d of matched) {
+    for (const s of allowedStatusesForCapability(d.capabilityProfile as DisciplineCapabilityProfile)) {
+      allowed.add(s);
+    }
+  }
+  if (opts.statuses && opts.statuses.length > 0) {
+    const blocked = opts.statuses.find((s) => !allowed.has(s));
+    if (blocked) {
+      return {
+        allowed: false,
+        source: 'delegation',
+        allowedStatuses: Array.from(allowed),
+        message: `Status ${blocked} is not permitted for your delegated role`,
+      };
+    }
+  }
+
+  return { allowed: true, source: 'delegation', allowedStatuses: Array.from(allowed) };
+}
+
 // Utility Functions
 const calculateAttendancePercentage = (present: number, total: number): number => {
   if (total === 0) return 0;
@@ -470,6 +623,19 @@ function resolveTeacherLocalDate(req: AuthRequest): string {
   if (raw) return raw;
   const n = new Date();
   return `${n.getUTCFullYear()}-${String(n.getUTCMonth() + 1).padStart(2, '0')}-${String(n.getUTCDate()).padStart(2, '0')}`;
+}
+
+function requireAttendanceDelegationAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  const role = req.user?.role || '';
+  if (!hasAttendanceDelegationAdminAccess(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Insufficient permissions for attendance delegation management',
+      role,
+      normalizedRole: normalizeRole(role),
+    });
+  }
+  next();
 }
 
 async function verifyTeacherPersonalSessionScheduled(opts: {
@@ -549,6 +715,333 @@ app.get('/health/ready', async (req: Request, res: Response) => {
 });
 
 // ==================== A. Attendance Marking ====================
+
+// ==================== A0. Delegations & Discipline Policy ====================
+
+app.get('/attendance/delegations', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const classId = typeof req.query.classId === 'string' ? req.query.classId : undefined;
+    const grade = typeof req.query.grade === 'string' ? req.query.grade : undefined;
+    const assigneeUserId = typeof req.query.assigneeUserId === 'string' ? req.query.assigneeUserId : undefined;
+    const rows = await prisma.attendanceDelegation.findMany({
+      where: {
+        schoolId,
+        ...(classId ? { classId } : {}),
+        ...(grade ? { grade } : {}),
+        ...(assigneeUserId ? { assigneeUserId } : {}),
+      },
+      include: {
+        assigneeUser: { select: { id: true, firstName: true, lastName: true, role: true, email: true } },
+        grantedByUser: { select: { id: true, firstName: true, lastName: true, role: true, email: true } },
+        class: { select: { id: true, name: true, grade: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({ success: true, data: rows });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch delegations', error: error.message });
+  }
+});
+
+app.get('/attendance/delegations/users', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const rows = await prisma.user.findMany({
+      where: {
+        schoolId,
+        isActive: true,
+        ...(search
+          ? {
+              OR: [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+      take: 200,
+      orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
+    });
+    return res.json({ success: true, data: rows });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch delegation users', error: error.message });
+  }
+});
+
+app.post('/attendance/delegations', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const {
+      assigneeUserId,
+      responsibilityType,
+      capabilityProfile,
+      scopeType,
+      classId,
+      grade,
+      activeFrom,
+      activeUntil,
+      notes,
+      metadata,
+    } = req.body || {};
+
+    if (!assigneeUserId || !capabilityProfile || !scopeType) {
+      return res.status(400).json({ success: false, message: 'assigneeUserId, capabilityProfile, and scopeType are required' });
+    }
+
+    if (!['ATTENDANCE_APL', 'DISCIPLINE_E', 'FULL_ATTENDANCE'].includes(capabilityProfile)) {
+      return res.status(400).json({ success: false, message: 'Invalid capabilityProfile' });
+    }
+    if (!['CLASS', 'GRADE', 'SCHOOL'].includes(scopeType)) {
+      return res.status(400).json({ success: false, message: 'Invalid scopeType' });
+    }
+    if (scopeType === 'CLASS' && !classId) {
+      return res.status(400).json({ success: false, message: 'classId is required for CLASS scope' });
+    }
+    if (scopeType === 'GRADE' && !grade) {
+      return res.status(400).json({ success: false, message: 'grade is required for GRADE scope' });
+    }
+
+    const assignee = await prisma.user.findFirst({
+      where: { id: assigneeUserId, schoolId },
+      select: { id: true },
+    });
+    if (!assignee) {
+      return res.status(404).json({ success: false, message: 'Assignee user not found in your school' });
+    }
+    if (classId) {
+      const classRow = await prisma.class.findFirst({
+        where: { id: classId, schoolId },
+        select: { id: true },
+      });
+      if (!classRow) {
+        return res.status(404).json({ success: false, message: 'Class not found in your school' });
+      }
+    }
+
+    const created = await prisma.attendanceDelegation.create({
+      data: {
+        schoolId,
+        assigneeUserId,
+        grantedByUserId: req.user!.id,
+        responsibilityType: responsibilityType || 'CUSTOM',
+        capabilityProfile,
+        scopeType,
+        classId: classId || null,
+        grade: grade || null,
+        activeFrom: activeFrom ? new Date(activeFrom) : null,
+        activeUntil: activeUntil ? new Date(activeUntil) : null,
+        notes: notes || null,
+        metadata: metadata || null,
+        isActive: true,
+      },
+    });
+
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'ATTENDANCE_DELEGATION_CREATE',
+        resourceType: 'attendance_delegation',
+        resourceId: created.id,
+        details: { scopeType, capabilityProfile, classId: classId || null, grade: grade || null, assigneeUserId },
+      },
+    }).catch(() => {});
+
+    return res.status(201).json({ success: true, data: created });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to create delegation', error: error.message });
+  }
+});
+
+app.patch('/attendance/delegations/:id', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const id = req.params.id;
+    const existing = await prisma.attendanceDelegation.findFirst({ where: { id, schoolId } });
+    if (!existing) return res.status(404).json({ success: false, message: 'Delegation not found' });
+
+    const patch: any = {};
+    const fields = ['responsibilityType', 'capabilityProfile', 'scopeType', 'classId', 'grade', 'notes', 'metadata', 'isActive'] as const;
+    for (const f of fields) {
+      if (req.body?.[f] !== undefined) patch[f] = req.body[f];
+    }
+    if (req.body?.activeFrom !== undefined) patch.activeFrom = req.body.activeFrom ? new Date(req.body.activeFrom) : null;
+    if (req.body?.activeUntil !== undefined) patch.activeUntil = req.body.activeUntil ? new Date(req.body.activeUntil) : null;
+    if (patch.scopeType === 'CLASS' && !patch.classId && !existing.classId) {
+      return res.status(400).json({ success: false, message: 'classId is required for CLASS scope' });
+    }
+    if (patch.scopeType === 'GRADE' && !patch.grade && !existing.grade) {
+      return res.status(400).json({ success: false, message: 'grade is required for GRADE scope' });
+    }
+
+    const updated = await prisma.attendanceDelegation.update({
+      where: { id },
+      data: patch,
+    });
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'ATTENDANCE_DELEGATION_UPDATE',
+        resourceType: 'attendance_delegation',
+        resourceId: id,
+        details: patch,
+      },
+    }).catch(() => {});
+    return res.json({ success: true, data: updated });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to update delegation', error: error.message });
+  }
+});
+
+app.get('/attendance/delegations/effective', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const classId = typeof req.query.classId === 'string' ? req.query.classId : '';
+    const dateParam = typeof req.query.date === 'string' ? req.query.date : format(new Date(), 'yyyy-MM-dd');
+    if (!classId) return res.status(400).json({ success: false, message: 'classId is required' });
+    const targetDate = startOfDay(parseISO(dateParam));
+    if (Number.isNaN(targetDate.getTime())) return res.status(400).json({ success: false, message: 'Invalid date' });
+
+    const classData = await prisma.class.findFirst({
+      where: { id: classId, schoolId },
+      select: { id: true, grade: true, homeroomTeacherId: true, name: true },
+    });
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    const access = await resolveDelegatedClassAttendanceAccess({
+      req,
+      classData,
+      schoolId,
+      targetDate,
+    });
+    return res.json({
+      success: true,
+      data: {
+        classId: classData.id,
+        className: classData.name,
+        grade: classData.grade,
+        date: format(targetDate, 'yyyy-MM-dd'),
+        canWrite: access.allowed,
+        source: access.source,
+        allowedStatuses: access.allowedStatuses,
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to resolve effective delegation', error: error.message });
+  }
+});
+
+app.get('/attendance/discipline-policy', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const row = await prisma.disciplinePolicy.findUnique({ where: { schoolId } });
+    return res.json({ success: true, data: row });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch discipline policy', error: error.message });
+  }
+});
+
+app.put('/attendance/discipline-policy', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const {
+      allowedExcusedReasonTemplates,
+      mandatoryExcusedReasonMinLength,
+      requireEscalationForExcused,
+      metadata,
+    } = req.body || {};
+
+    const saved = await prisma.disciplinePolicy.upsert({
+      where: { schoolId },
+      update: {
+        ...(allowedExcusedReasonTemplates !== undefined ? { allowedExcusedReasonTemplates } : {}),
+        ...(mandatoryExcusedReasonMinLength !== undefined ? { mandatoryExcusedReasonMinLength: Number(mandatoryExcusedReasonMinLength) } : {}),
+        ...(requireEscalationForExcused !== undefined ? { requireEscalationForExcused: Boolean(requireEscalationForExcused) } : {}),
+        ...(metadata !== undefined ? { metadata } : {}),
+      },
+      create: {
+        schoolId,
+        allowedExcusedReasonTemplates: allowedExcusedReasonTemplates || [],
+        mandatoryExcusedReasonMinLength: Number(mandatoryExcusedReasonMinLength || 3),
+        requireEscalationForExcused: Boolean(requireEscalationForExcused),
+        metadata: metadata || null,
+      },
+    });
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'DISCIPLINE_POLICY_UPSERT',
+        resourceType: 'discipline_policy',
+        resourceId: saved.id,
+        details: {
+          mandatoryExcusedReasonMinLength: saved.mandatoryExcusedReasonMinLength,
+          requireEscalationForExcused: saved.requireEscalationForExcused,
+        },
+      },
+    }).catch(() => {});
+    return res.json({ success: true, data: saved });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to save discipline policy', error: error.message });
+  }
+});
+
+app.get('/attendance/delegations/rollout', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const scopedKey = `delegated_attendance_enabled:${schoolId}`;
+    const flag = await prisma.featureFlag.findFirst({
+      where: { key: { in: [scopedKey, 'delegated_attendance_enabled'] } },
+      orderBy: { key: 'desc' },
+    });
+    return res.json({ success: true, data: { enabled: flag ? flag.enabled : true } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch rollout flag', error: error.message });
+  }
+});
+
+app.put('/attendance/delegations/rollout', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const scopedKey = `delegated_attendance_enabled:${schoolId}`;
+    const enabled = Boolean(req.body?.enabled);
+    const existing = await prisma.featureFlag.findUnique({ where: { key: scopedKey } });
+    const saved = existing
+      ? await prisma.featureFlag.update({
+          where: { key: scopedKey },
+          data: { enabled, metadata: { managedBy: 'attendance-service', updatedBy: req.user?.id } },
+        })
+      : await prisma.featureFlag.create({
+          data: {
+            key: scopedKey,
+            schoolId,
+            enabled,
+            description: 'Enable delegated attendance and discipline workbench',
+            metadata: { managedBy: 'attendance-service', updatedBy: req.user?.id },
+          },
+        });
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'ATTENDANCE_DELEGATION_ROLLOUT_UPDATE',
+        resourceType: 'feature_flag',
+        resourceId: saved.id,
+        details: { enabled },
+      },
+    }).catch(() => {});
+    return res.json({ success: true, data: { enabled: saved.enabled } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to update rollout flag', error: error.message });
+  }
+});
 
 // GET /attendance/class/:classId/date/:date - Fetch all students in class with their attendance
 app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: AuthRequest, res: Response) => {
@@ -674,6 +1167,7 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
     let timetableContext:
       | {
           teacherTeachingThisClassToday: boolean;
+          isHomeroomTeacher: boolean;
           patternSource: 'timetable' | 'fallback';
           academicYearId: string | null;
           date: string;
@@ -695,6 +1189,7 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
         });
         timetableContext = {
           teacherTeachingThisClassToday: tctx.linkedDay,
+          isHomeroomTeacher: classData.homeroomTeacherId === rosterTeacher.id,
           patternSource: tctx.patternSource,
           academicYearId: tctx.academicYearId,
           date: dateKey,
@@ -769,38 +1264,33 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
 
     // Parse date
     const targetDate = startOfDay(parseISO(date));
-
-    const bulkAckOff = Boolean(
-      (req.body as BulkAttendanceRequest).acknowledgeOffSchedule
-    );
-    if (
-      TIMETABLE_ENFORCE_TEACHER &&
-      req.user?.role === 'TEACHER' &&
-      !bulkAckOff
-    ) {
-      const rosterTeacher = await prisma.teacher.findFirst({
-        where: { schoolId, user: { id: req.user!.id } },
-        select: { id: true },
+    if (Number.isNaN(targetDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use YYYY-MM-DD',
       });
-      if (rosterTeacher) {
-        const ymd = format(targetDate, 'yyyy-MM-dd');
-        const gate = await teacherTeachesClassSessionOnDate({
-          prisma,
-          teacherId: rosterTeacher.id,
-          classId,
-          schoolId,
-          localDateStr: ymd,
-          session,
-        });
-        if (!gate.allowed && gate.source === 'timetable') {
-          return res.status(403).json({
-            success: false,
-            code: 'NOT_ON_TIMETABLE',
-            message:
-              'You do not have a scheduled lesson for this class, date, and session. Enable off-schedule acknowledgment to save anyway.',
-          });
-        }
-      }
+    }
+    const today = startOfDay(new Date());
+    if (targetDate.getTime() > today.getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot record attendance for a future date',
+      });
+    }
+
+    const access = await resolveDelegatedClassAttendanceAccess({
+      req,
+      classData: { id: classData.id, grade: classData.grade, homeroomTeacherId: classData.homeroomTeacherId },
+      schoolId,
+      targetDate,
+      statuses: attendance.map((record) => record.status),
+    });
+    if (!access.allowed) {
+      return res.status(403).json({
+        success: false,
+        message: access.message || 'You do not have permission to record attendance for this class',
+        allowedStatuses: access.allowedStatuses,
+      });
     }
 
     // Validate students belong to class (via direct classId or StudentClass junction)
@@ -890,6 +1380,21 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
     }
 
     clearSchoolSummaryCache(schoolId);
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'ATTENDANCE_BULK_MARK',
+        resourceType: 'attendance',
+        resourceId: classId,
+        details: {
+          source: access.source,
+          allowedStatuses: access.allowedStatuses,
+          date: format(targetDate, 'yyyy-MM-dd'),
+          session,
+          savedCount,
+        },
+      },
+    }).catch(() => {});
 
     res.status(201).json({
       success: true,
@@ -956,6 +1461,33 @@ app.put('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Resp
       });
     }
 
+    const classRow = existingAttendance.classId
+      ? await prisma.class.findFirst({
+          where: { id: existingAttendance.classId, schoolId },
+          select: { id: true, grade: true, homeroomTeacherId: true },
+        })
+      : null;
+    if (!classRow) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found for attendance record',
+      });
+    }
+    const access = await resolveDelegatedClassAttendanceAccess({
+      req,
+      classData: classRow,
+      schoolId,
+      targetDate: startOfDay(existingAttendance.date),
+      statuses: [status],
+    });
+    if (!access.allowed) {
+      return res.status(403).json({
+        success: false,
+        message: access.message || 'You do not have permission to update this attendance record',
+        allowedStatuses: access.allowedStatuses,
+      });
+    }
+
     // Update attendance
     const updatedAttendance = await prisma.attendance.update({
       where: { id },
@@ -967,6 +1499,19 @@ app.put('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Resp
     });
 
     clearSchoolSummaryCache(schoolId);
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'ATTENDANCE_UPDATE',
+        resourceType: 'attendance',
+        resourceId: id,
+        details: {
+          classId: classRow.id,
+          source: access.source,
+          status,
+        },
+      },
+    }).catch(() => {});
 
     res.json({
       success: true,

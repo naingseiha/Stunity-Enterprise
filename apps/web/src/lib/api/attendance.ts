@@ -110,6 +110,40 @@ export interface ClassAttendanceSummary {
   }>;
 }
 
+export type DelegationScopeType = 'CLASS' | 'GRADE' | 'SCHOOL';
+export type DisciplineCapabilityProfile = 'ATTENDANCE_APL' | 'DISCIPLINE_E' | 'FULL_ATTENDANCE';
+export type DisciplineResponsibilityType = 'CLASS_LEADER' | 'DISCIPLINE_COUNCIL' | 'DISCIPLINE_TEACHER' | 'CUSTOM';
+
+export interface AttendanceDelegation {
+  id: string;
+  schoolId: string;
+  assigneeUserId: string;
+  grantedByUserId: string;
+  responsibilityType: DisciplineResponsibilityType;
+  capabilityProfile: DisciplineCapabilityProfile;
+  scopeType: DelegationScopeType;
+  classId?: string | null;
+  grade?: string | null;
+  notes?: string | null;
+  activeFrom?: string | null;
+  activeUntil?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  assigneeUser?: { id: string; firstName: string; lastName: string; email?: string; role: string };
+  class?: { id: string; name: string; grade?: string };
+}
+
+export interface DisciplinePolicy {
+  id: string;
+  schoolId: string;
+  allowedExcusedReasonTemplates: string[];
+  mandatoryExcusedReasonMinLength: number;
+  requireEscalationForExcused: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * Attendance API Client
  */
@@ -284,6 +318,105 @@ class AttendanceAPI {
     }
 
     return response.json();
+  }
+
+  async getDelegations(params?: { classId?: string; grade?: string; assigneeUserId?: string }): Promise<AttendanceDelegation[]> {
+    const query = new URLSearchParams();
+    if (params?.classId) query.append('classId', params.classId);
+    if (params?.grade) query.append('grade', params.grade);
+    if (params?.assigneeUserId) query.append('assigneeUserId', params.assigneeUserId);
+    const response = await fetch(`${API_BASE_URL}/attendance/delegations${query.toString() ? `?${query.toString()}` : ''}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const debugRole = payload?.normalizedRole || payload?.role;
+      throw new Error(`${payload.message || 'Failed to fetch delegations'}${debugRole ? ` (role: ${debugRole})` : ''}`);
+    }
+    return payload.data || [];
+  }
+
+  async createDelegation(input: Partial<AttendanceDelegation>): Promise<AttendanceDelegation> {
+    const response = await fetch(`${API_BASE_URL}/attendance/delegations`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(input),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Failed to create delegation');
+    return payload.data;
+  }
+
+  async updateDelegation(id: string, patch: Partial<AttendanceDelegation>): Promise<AttendanceDelegation> {
+    const response = await fetch(`${API_BASE_URL}/attendance/delegations/${id}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(patch),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Failed to update delegation');
+    return payload.data;
+  }
+
+  async getDelegationUsers(search?: string): Promise<Array<{ id: string; firstName: string; lastName: string; email?: string; role: string }>> {
+    const query = new URLSearchParams();
+    if (search) query.append('search', search);
+    const response = await fetch(`${API_BASE_URL}/attendance/delegations/users${query.toString() ? `?${query.toString()}` : ''}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const debugRole = payload?.normalizedRole || payload?.role;
+      throw new Error(`${payload.message || 'Failed to fetch users'}${debugRole ? ` (role: ${debugRole})` : ''}`);
+    }
+    return payload.data || [];
+  }
+
+  async getDisciplinePolicy(): Promise<DisciplinePolicy | null> {
+    const response = await fetch(`${API_BASE_URL}/attendance/discipline-policy`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Failed to fetch discipline policy');
+    return payload.data || null;
+  }
+
+  async saveDisciplinePolicy(input: Partial<DisciplinePolicy>): Promise<DisciplinePolicy> {
+    const response = await fetch(`${API_BASE_URL}/attendance/discipline-policy`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(input),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Failed to save discipline policy');
+    return payload.data;
+  }
+
+  async getDelegationRollout(): Promise<{ enabled: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/attendance/delegations/rollout`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const debugRole = payload?.normalizedRole || payload?.role;
+      throw new Error(`${payload.message || 'Failed to fetch rollout'}${debugRole ? ` (role: ${debugRole})` : ''}`);
+    }
+    return payload.data || { enabled: true };
+  }
+
+  async setDelegationRollout(enabled: boolean): Promise<{ enabled: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/attendance/delegations/rollout`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ enabled }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Failed to update rollout');
+    return payload.data || { enabled };
   }
 }
 

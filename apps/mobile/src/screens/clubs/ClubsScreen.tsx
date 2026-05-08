@@ -698,6 +698,7 @@ export default function ClubsScreen() {
           linkedStudentId: classItem.linkedStudentId,
           linkedTeacherId: classItem.linkedTeacherId,
           homeroomTeacher: classItem.homeroomTeacher,
+          isHomeroom: classItem.isHomeroom,
         },
       });
     },
@@ -711,6 +712,11 @@ export default function ClubsScreen() {
 
   const handleOpenInvites = useCallback(
     () => navigation.navigate('ClubInvites'),
+    [navigation]
+  );
+
+  const handleOpenDisciplineWorkbench = useCallback(
+    () => navigation.navigate('DisciplineWorkbench'),
     [navigation]
   );
 
@@ -833,6 +839,30 @@ export default function ClubsScreen() {
                 </View>
               )}
             </View>
+
+            <TouchableOpacity
+              style={[
+                styles.disciplineWorkbenchCard,
+                { backgroundColor: isDark ? '#062B34' : '#ECFEFF', borderColor: isDark ? '#0E7490' : '#A5F3FC' },
+              ]}
+              onPress={handleOpenDisciplineWorkbench}
+              activeOpacity={0.9}
+            >
+              <View style={[styles.disciplineWorkbenchIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#CFFAFE' }]}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? '#A5F3FC' : '#0E7490'} />
+              </View>
+              <View style={styles.disciplineWorkbenchBody}>
+                <Text style={[styles.disciplineWorkbenchTitle, { color: isDark ? '#ECFEFF' : '#0F172A' }, isKhmer && styles.khmerHeadingText]}>
+                  {isKhmer ? 'ផ្ទាំងវិន័យ និងវត្តមាន' : 'Discipline Workbench'}
+                </Text>
+                <Text style={[styles.disciplineWorkbenchSubtitle, { color: isDark ? '#67E8F9' : '#0E7490' }, isKhmer && styles.khmerInlineText]}>
+                  {isKhmer ? 'សម្គាល់ A / P / L / E សម្រាប់ថ្នាក់ដែលបានផ្ទេរសិទ្ធិ' : 'Mark delegated attendance quickly (A / P / L / E)'}
+                </Text>
+              </View>
+              <View style={[styles.disciplineWorkbenchArrow, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#FFFFFF' }]}>
+                <Ionicons name="chevron-forward" size={16} color={isDark ? '#A5F3FC' : '#0E7490'} />
+              </View>
+            </TouchableOpacity>
 
             {isAdminOrStaff && (
               <View style={styles.adminSearchWrap}>
@@ -1018,6 +1048,7 @@ export default function ClubsScreen() {
     handleClassPress,
     handleCreateClub,
     handleFilterChange,
+    handleOpenDisciplineWorkbench,
     loadAdminClasses,
     loadSchoolClasses,
     loadingAdminClasses,
@@ -1450,6 +1481,45 @@ const styles = StyleSheet.create({
 
   schoolClassesSection: {
     paddingBottom: 24,
+  },
+  disciplineWorkbenchCard: {
+    marginHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 12,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  disciplineWorkbenchIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disciplineWorkbenchBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  disciplineWorkbenchTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  disciplineWorkbenchSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  disciplineWorkbenchArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   schoolClassesSubsection: {
     paddingHorizontal: 0,

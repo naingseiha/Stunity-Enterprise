@@ -22,6 +22,8 @@
     "error": "Error",
     "success": "Success",
     "loading": "Loading...",
+    "today": "Today",
+    "all": "All",
     "search": "Search",
     "back": "Back",
     "done": "Done",
@@ -750,6 +752,10 @@
     "online": "ONLINE",
     "permissionNote": "Permission requested online. GPS verification is not required for this session.",
     "loadFailed": "Failed to load attendance records",
+    "updateStatus": "Update attendance status",
+    "selectStatusFor": "Select status for {{session}}",
+    "updateFailed": "Failed to update attendance",
+    "noRecordsForDate": "No attendance records for the selected date.",
     "finishSession": "Finish Session",
     "startMorning": "Start Morning",
     "startAfternoon": "Start Afternoon",
@@ -795,7 +801,25 @@
       "offScheduleConfirm": "Record anyway"
     },
     "classDaily": {
-      "notYourClassSlot": "Your timetable has no lesson for this class on this date."
+      "title": "Daily Attendance",
+      "notYourClassSlot": "Your timetable has no lesson for this class on this date.",
+      "homeroomEditAllowed": "You are the homeroom teacher. You can manage attendance for this class."
+    },
+    "disciplineWorkbench": {
+      "title": "Discipline Workbench",
+      "subtitle": "Delegated attendance (morning session)",
+      "legendTitle": "Codes",
+      "allowedLine": "Allowed statuses: {{statuses}}",
+      "sourceLine": "Source: {{source}}",
+      "searchPlaceholder": "Search by name or student ID",
+      "pickClass": "Select class",
+      "noClasses": "No classes are linked to your account.",
+      "emptyFiltered": "No students match your search or filter.",
+      "pullToRefresh": "Pull down to reload",
+      "noDelegatedPermission": "You have no active delegation for this class on this date.",
+      "filterTitle": "Status filter",
+      "excusedModalHint": "Enter a clear reason (minimum {{min}} characters).",
+      "emptyListTitle": "No students"
     },
     "geofencingActive": "Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.",
     "status": {

@@ -63,6 +63,8 @@ model School {
   timetableEntries      TimetableEntry[]
   users                 User[]
   profileChangeRequests ProfileChangeRequest[]
+  attendanceDelegations AttendanceDelegation[]
+  disciplinePolicy      DisciplinePolicy?
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -177,6 +179,7 @@ model Class {
   classAnnouncements      ClassAnnouncement[]
   classMaterials          ClassMaterial[]
   classAssignments        ClassAssignment[]
+  attendanceDelegations   AttendanceDelegation[]
 
   @@index([schoolId])
   @@index([grade])
@@ -720,6 +723,8 @@ model User {
   classAssignmentsCreated     ClassAssignment[]            @relation("ClassAssignmentCreator")
   profileChangeRequests       ProfileChangeRequest[]
   reviewedProfileChanges      ProfileChangeRequest[]       @relation("ProfileChangeReviewer")
+  attendanceDelegations       AttendanceDelegation[]       @relation("AttendanceDelegationAssignee")
+  grantedAttendanceDelegations AttendanceDelegation[]      @relation("AttendanceDelegationGranter")
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -3233,6 +3238,50 @@ model PlatformAuditLog {
   @@map("platform_audit_logs")
 }
 
+model AttendanceDelegation {
+  id                String                        @id @default(cuid())
+  schoolId          String
+  assigneeUserId    String
+  grantedByUserId   String
+  responsibilityType DisciplineResponsibilityType @default(CUSTOM)
+  capabilityProfile DisciplineCapabilityProfile
+  scopeType         DelegationScopeType
+  classId           String?
+  grade             String?
+  notes             String?
+  metadata          Json?
+  activeFrom        DateTime?
+  activeUntil       DateTime?
+  isActive          Boolean                       @default(true)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  assigneeUser      User                          @relation("AttendanceDelegationAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  grantedByUser     User                          @relation("AttendanceDelegationGranter", fields: [grantedByUserId], references: [id], onDelete: Cascade)
+  school            School                        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class             Class?                        @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, assigneeUserId, isActive])
+  @@index([schoolId, scopeType, classId])
+  @@index([schoolId, scopeType, grade])
+  @@index([activeFrom, activeUntil, isActive])
+  @@map("attendance_delegations")
+}
+
+model DisciplinePolicy {
+  id                            String   @id @default(cuid())
+  schoolId                      String   @unique
+  allowedExcusedReasonTemplates Json?    @default("[]")
+  mandatoryExcusedReasonMinLength Int    @default(3)
+  requireEscalationForExcused   Boolean  @default(false)
+  metadata                      Json?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  school                        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@map("discipline_policies")
+}
+
 model FeatureFlag {
   id          String   @id @default(cuid())
   key         String   @unique
@@ -3379,6 +3428,25 @@ enum StudentRole {
   CLASS_LEADER
   VICE_LEADER_1
   VICE_LEADER_2
+}
+
+enum DisciplineCapabilityProfile {
+  ATTENDANCE_APL
+  DISCIPLINE_E
+  FULL_ATTENDANCE
+}
+
+enum DelegationScopeType {
+  CLASS
+  GRADE
+  SCHOOL
+}
+
+enum DisciplineResponsibilityType {
+  CLASS_LEADER
+  DISCIPLINE_COUNCIL
+  DISCIPLINE_TEACHER
+  CUSTOM
 }
 
 enum ParentRelationship {
