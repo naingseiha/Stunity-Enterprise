@@ -18,6 +18,7 @@ import { addDays, format, isToday, parseISO } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { classesApi } from '@/api';
 import type { ClubsStackParamList } from '@/navigation/types';
@@ -29,6 +30,8 @@ const BRAND_TEAL = '#09CFF7';
 type Props = NativeStackScreenProps<ClubsStackParamList, 'DisciplineWorkbench'>;
 
 const statusOrder = ['ABSENT', 'PERMISSION', 'LATE', 'EXCUSED'] as const;
+/** Order in the status picker: Present first when permitted, so Excused can be cleared. */
+const modalStatusOrder = ['PRESENT', 'ABSENT', 'PERMISSION', 'LATE', 'EXCUSED'] as const;
 
 const avatarLetter = (first?: string, last?: string) => {
   const c = (first || last || '?').trim();
@@ -38,9 +41,28 @@ const avatarLetter = (first?: string, last?: string) => {
 const statusLetter = (s: (typeof statusOrder)[number]) =>
   s === 'PERMISSION' ? 'P' : s === 'ABSENT' ? 'A' : s === 'LATE' ? 'L' : 'E';
 
+const modalStatusCodeAndLabel = (s: (typeof modalStatusOrder)[number], t: TFunction) => {
+  if (s === 'PRESENT') return { code: '✓', label: t('attendance.status.present') };
+  const code = statusLetter(s);
+  if (s === 'ABSENT') return { code, label: t('attendance.status.absent') };
+  if (s === 'PERMISSION') return { code, label: t('attendance.status.permission') };
+  if (s === 'LATE') return { code, label: t('attendance.status.late') };
+  return { code, label: t('attendance.status.excused') };
+};
+
+const statusMeta = (status?: string) => {
+  const value = status || 'PRESENT';
+  if (value === 'ABSENT') return { code: 'A', bg: '#FEF2F2', color: '#DC2626' };
+  if (value === 'PERMISSION') return { code: 'P', bg: '#F5F3FF', color: '#7C3AED' };
+  if (value === 'LATE') return { code: 'L', bg: '#FFFBEB', color: '#D97706' };
+  if (value === 'EXCUSED') return { code: 'E', bg: '#ECFEFF', color: '#0F766E' };
+  return { code: '✓', bg: '#ECFDF5', color: '#059669' };
+};
+
 export default function DisciplineWorkbenchScreen({ navigation, route }: Props) {
   const { t, i18n } = useTranslation();
   const { colors } = useThemeContext();
+  const isKhmer = i18n.language?.startsWith('km');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,11 +75,22 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
   const [allowedStatuses, setAllowedStatuses] = useState<string[]>([]);
   const [capabilitySource, setCapabilitySource] = useState<string>('none');
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [reasonModal, setReasonModal] = useState<{ open: boolean; studentId?: string; draft: string }>({
-    open: false,
-    draft: '',
-  });
+  const [statusPicker, setStatusPicker] = useState<{
+    open: boolean;
+    studentId?: string;
+    currentStatus?: string;
+    currentRemarks?: string;
+  }>({ open: false });
+  /** Excused reason is a second step inside the same modal (avoids iOS freeze from stacked Modals). */
+  const [isExcusedReasonStep, setIsExcusedReasonStep] = useState(false);
+  const [excusedDraft, setExcusedDraft] = useState('');
   const [policyMinLen, setPolicyMinLen] = useState(3);
+
+  const closeAttendanceModal = useCallback(() => {
+    setStatusPicker({ open: false });
+    setIsExcusedReasonStep(false);
+    setExcusedDraft('');
+  }, []);
 
   const parsedDate = useMemo(() => {
     try {
@@ -133,14 +166,19 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
     });
   }, [rows, search, statusFilter]);
 
+  const canSetPresent = allowedStatuses.includes('PRESENT');
+
   const statusLegend = useMemo(
     () => [
+      ...(canSetPresent
+        ? [{ code: '✓', label: t('attendance.status.present'), color: '#059669', bg: '#ECFDF5' }]
+        : []),
       { code: 'A', label: t('attendance.status.absent'), color: '#EF4444', bg: '#FEF2F2' },
       { code: 'P', label: t('attendance.status.permission'), color: '#7C3AED', bg: '#F5F3FF' },
       { code: 'L', label: t('attendance.status.late'), color: '#F59E0B', bg: '#FFFBEB' },
       { code: 'E', label: t('attendance.status.excused'), color: '#0F766E', bg: '#ECFEFF' },
     ],
-    [t]
+    [t, canSetPresent]
   );
 
   const filterChips: Array<{ key: typeof statusFilter; label: string }> = useMemo(
@@ -152,6 +190,11 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
       { key: 'EXCUSED', label: t('attendance.status.excused') },
     ],
     [t]
+  );
+
+  const modalStatuses = useMemo(
+    () => modalStatusOrder.filter((s) => allowedStatuses.includes(s)),
+    [allowedStatuses]
   );
 
   const applyStatus = useCallback(
@@ -194,54 +237,59 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
 
   const renderRow = ({ item }: { item: any }) => {
     const active = item.morning?.status || 'PRESENT';
-    const allowedBtns = statusOrder.filter((s) => allowedStatuses.includes(s));
+    const current = statusMeta(active);
     return (
       <View style={styles.studentCard}>
-        <View style={styles.studentInfo}>
-          <View style={[styles.avatarFallback, { backgroundColor: colors.border }]}>
-            <Text style={[styles.avatarInitial, { color: colors.textSecondary }]}>
-              {avatarLetter(item.firstName, item.lastName)}
-            </Text>
-          </View>
-          <View style={styles.nameWrap}>
-            <Text style={[styles.studentName, { color: colors.text }]} numberOfLines={1}>
-              {[item.lastName, item.firstName].filter(Boolean).join(' ')}
-            </Text>
-            {item.studentNumber ? (
-              <Text style={[styles.studentId, { color: colors.textSecondary }]}>
-                {t('classScreens.members.idValue', { id: item.studentNumber })}
+        <View style={styles.rowTop}>
+          <View style={styles.studentInfo}>
+            <View style={[styles.avatarFallback, { backgroundColor: colors.border }]}>
+              <Text style={[styles.avatarInitial, { color: colors.textSecondary }]}>
+                {avatarLetter(item.firstName, item.lastName)}
               </Text>
-            ) : null}
+            </View>
+            <View style={styles.nameWrap}>
+              <Text style={[styles.studentName, { color: colors.text }]} numberOfLines={1}>
+                {[item.lastName, item.firstName].filter(Boolean).join(' ')}
+              </Text>
+              {item.studentNumber ? (
+                <Text style={[styles.studentId, { color: colors.textSecondary }]}>
+                  {t('classScreens.members.idValue', { id: item.studentNumber })}
+                </Text>
+              ) : null}
+              <View style={[styles.currentBadge, { backgroundColor: current.bg }]}>
+                <Text style={[styles.currentBadgeText, { color: current.color }]}>
+                  {isKhmer ? `ស្ថានភាពបច្ចុប្បន្ន៖ ${current.code}` : `Current: ${current.code}`}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
-        <View style={styles.actions}>
-          {allowedBtns.map((s) => {
-            const letter = statusLetter(s);
-            const isActive = active === s;
-            return (
-              <TouchableOpacity
-                key={s}
-                disabled={Boolean(savingId)}
-                onPress={() => {
-                  if (s === 'EXCUSED') {
-                    setReasonModal({ open: true, studentId: item.studentId, draft: item.morning?.remarks || '' });
-                    return;
-                  }
-                  void applyStatus(item.studentId, s);
-                }}
-                style={[
-                  styles.statusBtn,
-                  {
-                    borderColor: isActive ? BRAND_TEAL : '#E2E8F0',
-                    backgroundColor: isActive ? '#ECFEFF' : '#F8FAFC',
-                  },
-                ]}
-                accessibilityLabel={letter}
-              >
-                <Text style={[styles.statusTxt, { color: isActive ? '#0E7490' : Colors.text }]}>{letter}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={styles.actionsWrap}>
+          <TouchableOpacity
+            disabled={Boolean(savingId) || allowedStatuses.length === 0}
+            onPress={() => {
+              setIsExcusedReasonStep(false);
+              setExcusedDraft('');
+              setStatusPicker({
+                open: true,
+                studentId: item.studentId,
+                currentStatus: active,
+                currentRemarks: item.morning?.remarks || '',
+              });
+            }}
+            style={[
+              styles.statusBtn,
+              {
+                borderColor: '#D7DFEA',
+                backgroundColor: '#F8FAFC',
+                minWidth: 120,
+              },
+            ]}
+          >
+            <Text style={[styles.statusTxt, { color: Colors.text }]} numberOfLines={2}>
+              {t('attendance.disciplineWorkbench.changeStatusButton')}
+            </Text>
+          </TouchableOpacity>
           {savingId === item.studentId ? <ActivityIndicator size="small" color={BRAND_TEAL} /> : null}
         </View>
       </View>
@@ -442,32 +490,81 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
         />
       )}
 
-      <Modal visible={reasonModal.open} transparent animationType="fade" onRequestClose={() => setReasonModal({ open: false, draft: '' })}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setReasonModal({ open: false, draft: '' })}>
+      <Modal
+        visible={statusPicker.open}
+        animationType="fade"
+        transparent
+        statusBarTranslucent
+        onRequestClose={closeAttendanceModal}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={closeAttendanceModal}>
           <Pressable style={[styles.modalCard, { backgroundColor: '#FFF' }]} onPress={() => {}}>
-            <Text style={styles.modalTitle}>{t('attendance.status.excused')}</Text>
-            <Text style={styles.modalSubtitle}>{t('attendance.disciplineWorkbench.excusedModalHint', { min: policyMinLen })}</Text>
-            <TextInput
-              value={reasonModal.draft}
-              onChangeText={(v) => setReasonModal((s) => ({ ...s, draft: v }))}
-              placeholder={t('attendance.requestPermission.reasonPlaceholder')}
-              multiline
-              autoFocus
-              style={styles.reasonInput}
-            />
-            <TouchableOpacity
-              style={styles.saveBtn}
-              onPress={() => {
-                if (!reasonModal.studentId || reasonModal.draft.trim().length < policyMinLen) return;
-                void applyStatus(reasonModal.studentId, 'EXCUSED', reasonModal.draft.trim());
-                setReasonModal({ open: false, draft: '' });
-              }}
-            >
-              <Text style={styles.saveBtnText}>{t('common.save')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelGhost} onPress={() => setReasonModal({ open: false, draft: '' })}>
-              <Text style={styles.cancelGhostText}>{t('common.cancel')}</Text>
-            </TouchableOpacity>
+            {!isExcusedReasonStep ? (
+              <>
+                <Text style={styles.modalTitle}>{t('attendance.updateStatus')}</Text>
+                <Text style={styles.modalSubtitle}>{t('attendance.selectStatusFor', { session: t('attendance.morning') })}</Text>
+                {modalStatuses.map((s) => {
+                  const { code, label } = modalStatusCodeAndLabel(s, t);
+                  const activeOption =
+                    (s === 'PRESENT' && (!statusPicker.currentStatus || statusPicker.currentStatus === 'PRESENT')) ||
+                    statusPicker.currentStatus === s;
+                  return (
+                    <TouchableOpacity
+                      key={s}
+                      style={[styles.modalOption, activeOption && styles.modalOptionActive]}
+                      onPress={() => {
+                        const studentId = statusPicker.studentId;
+                        if (!studentId) return;
+                        if (s === 'EXCUSED') {
+                          setExcusedDraft(statusPicker.currentRemarks || '');
+                          setIsExcusedReasonStep(true);
+                          return;
+                        }
+                        closeAttendanceModal();
+                        void applyStatus(studentId, s, s === 'PRESENT' ? '' : undefined);
+                      }}
+                    >
+                      <Text style={[styles.modalOptionText, activeOption && styles.modalOptionTextActive]}>{`${code} · ${label}`}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity style={styles.cancelGhost} onPress={closeAttendanceModal}>
+                  <Text style={styles.cancelGhostText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>{t('attendance.status.excused')}</Text>
+                <TextInput
+                  value={excusedDraft}
+                  onChangeText={setExcusedDraft}
+                  placeholder={t('attendance.requestPermission.reasonPlaceholder')}
+                  multiline
+                  autoFocus={isExcusedReasonStep}
+                  style={[styles.reasonInput, styles.reasonInputAfterTitle]}
+                />
+                <TouchableOpacity
+                  style={styles.saveBtn}
+                  onPress={() => {
+                    const studentId = statusPicker.studentId;
+                    if (!studentId || excusedDraft.trim().length < policyMinLen) return;
+                    void applyStatus(studentId, 'EXCUSED', excusedDraft.trim());
+                    closeAttendanceModal();
+                  }}
+                >
+                  <Text style={styles.saveBtnText}>{t('common.save')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelGhost}
+                  onPress={() => {
+                    setIsExcusedReasonStep(false);
+                    setExcusedDraft('');
+                  }}
+                >
+                  <Text style={styles.cancelGhostText}>{t('common.back')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -611,41 +708,77 @@ const styles = StyleSheet.create({
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: 10, fontSize: 14 },
   studentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFF',
-    padding: 14,
-    borderRadius: 18,
-    marginBottom: 10,
+    padding: 13,
+    borderRadius: 16,
+    marginBottom: 9,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     ...Shadows.sm,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   avatarFallback: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarInitial: { fontSize: 18, fontWeight: '700' },
   nameWrap: { flex: 1 },
-  studentName: { fontSize: 15, fontWeight: '700' },
+  studentName: { fontSize: 14, fontWeight: '800' },
   studentId: { fontSize: 11, marginTop: 2, fontWeight: '600' },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  currentBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  currentBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  actionsWrap: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2F7',
+    paddingTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   statusBtn: {
     minWidth: 44,
-    minHeight: 44,
-    paddingHorizontal: 4,
-    borderRadius: 12,
+    minHeight: 38,
+    paddingHorizontal: 8,
+    borderRadius: 11,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusTxt: { fontWeight: '900', fontSize: 16 },
+  statusTxt: { fontWeight: '900', fontSize: 13 },
   emptyWrap: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24 },
   emptyTitle: { fontSize: 16, fontWeight: '800', marginTop: 12 },
   emptySubtitle: { fontSize: 13, marginTop: 4, textAlign: 'center' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(2,6,23,0.35)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   modalCard: { width: '100%', borderRadius: 20, padding: 18 },
   modalTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
-  modalSubtitle: { fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 12, fontWeight: '600' },
+  modalSubtitle: { fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 8, fontWeight: '600' },
+  modalOption: {
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: '#F8FAFC',
+  },
+  modalOptionActive: {
+    borderColor: BRAND_TEAL,
+    backgroundColor: '#ECFEFF',
+  },
+  modalOptionText: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
+  modalOptionTextActive: { color: '#0E7490' },
   reasonInput: {
     minHeight: 96,
     borderRadius: 12,
@@ -657,6 +790,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#0F172A',
   },
+  reasonInputAfterTitle: { marginTop: 12 },
   saveBtn: {
     marginTop: 12,
     backgroundColor: BRAND_TEAL,

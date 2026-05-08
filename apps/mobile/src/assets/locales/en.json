@@ -818,8 +818,8 @@
       "pullToRefresh": "Pull down to reload",
       "noDelegatedPermission": "You have no active delegation for this class on this date.",
       "filterTitle": "Status filter",
-      "excusedModalHint": "Enter a clear reason (minimum {{min}} characters).",
-      "emptyListTitle": "No students"
+      "emptyListTitle": "No students",
+      "changeStatusButton": "Change status"
     },
     "geofencingActive": "Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.",
     "status": {

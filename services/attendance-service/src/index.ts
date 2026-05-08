@@ -465,7 +465,8 @@ type DisciplineCapabilityProfile = 'ATTENDANCE_APL' | 'DISCIPLINE_E' | 'FULL_ATT
 
 function allowedStatusesForCapability(profile: DisciplineCapabilityProfile): Set<string> {
   if (profile === 'ATTENDANCE_APL') return new Set(['ABSENT', 'PERMISSION', 'LATE']);
-  if (profile === 'DISCIPLINE_E') return new Set(['EXCUSED']);
+  // Allow PRESENT so delegated discipline users can clear an incorrect Excused mark.
+  if (profile === 'DISCIPLINE_E') return new Set(['EXCUSED', 'PRESENT']);
   return new Set(ALL_ATTENDANCE_STATUSES);
 }
 
@@ -575,6 +576,8 @@ async function resolveDelegatedClassAttendanceAccess(opts: {
       allowed.add(s);
     }
   }
+  // Undo mistaken Excused: anyone who may mark EXCUSED must also be able to return to PRESENT.
+  if (allowed.has('EXCUSED')) allowed.add('PRESENT');
   if (opts.statuses && opts.statuses.length > 0) {
     const blocked = opts.statuses.find((s) => !allowed.has(s));
     if (blocked) {
