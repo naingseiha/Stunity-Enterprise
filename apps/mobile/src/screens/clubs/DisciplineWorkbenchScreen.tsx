@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  InteractionManager,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,6 +25,7 @@ import type { TFunction } from 'i18next';
 import { classesApi } from '@/api';
 import type { ClubsStackParamList } from '@/navigation/types';
 import { useThemeContext } from '@/contexts';
+import { useAuthStore } from '@/stores';
 import { Colors, Shadows } from '@/config';
 
 const BRAND_TEAL = '#09CFF7';
@@ -62,6 +65,7 @@ const statusMeta = (status?: string) => {
 export default function DisciplineWorkbenchScreen({ navigation, route }: Props) {
   const { t, i18n } = useTranslation();
   const { colors } = useThemeContext();
+  const user = useAuthStore((state) => state.user);
   const isKhmer = i18n.language?.startsWith('km');
 
   const [loading, setLoading] = useState(true);
@@ -85,6 +89,7 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
   const [isExcusedReasonStep, setIsExcusedReasonStep] = useState(false);
   const [excusedDraft, setExcusedDraft] = useState('');
   const [policyMinLen, setPolicyMinLen] = useState(3);
+  const loadRequestRef = React.useRef(0);
 
   const closeAttendanceModal = useCallback(() => {
     setStatusPicker({ open: false });
@@ -109,16 +114,42 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
   }, [route.params?.classId, route.params?.date]);
 
   const loadData = useCallback(
-    async (opts?: { skipFullScreenSpinner?: boolean }) => {
+    async (opts?: { skipFullScreenSpinner?: boolean; force?: boolean }) => {
       const quiet = opts?.skipFullScreenSpinner === true;
+      const force = opts?.force === true;
+      const requestId = loadRequestRef.current + 1;
+      loadRequestRef.current = requestId;
+
       if (!quiet) setLoading(true);
       try {
-        const myClasses = await classesApi.getMyClasses({ force: true });
-        setClasses(myClasses);
+        const myClassesPromise = classesApi.getMyClasses({
+          force,
+          scopeKey: user?.id,
+        });
+
         let activeClassId = classId;
+        let workbenchDataPromise = activeClassId
+          ? Promise.all([
+              classesApi.getClassDailyAttendance(activeClassId, date, force, { includeTimetableContext: false }),
+              classesApi.getDelegationEffectivePermission(activeClassId, date, force),
+              classesApi.getDisciplinePolicy(force),
+            ])
+          : null;
+
+        const myClasses = await myClassesPromise;
+        if (loadRequestRef.current !== requestId) return;
+
+        setClasses(myClasses);
         if (!activeClassId || !myClasses.some((c) => c.id === activeClassId)) {
           activeClassId = myClasses[0]?.id || '';
           if (activeClassId !== classId) setClassId(activeClassId);
+          workbenchDataPromise = activeClassId
+            ? Promise.all([
+                classesApi.getClassDailyAttendance(activeClassId, date, force, { includeTimetableContext: false }),
+                classesApi.getDelegationEffectivePermission(activeClassId, date, force),
+                classesApi.getDisciplinePolicy(force),
+              ])
+            : null;
         }
         if (!activeClassId) {
           setRows([]);
@@ -126,28 +157,30 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
           return;
         }
         const dateStr = date;
-        const [daily, effective, policy] = await Promise.all([
-          classesApi.getClassDailyAttendance(activeClassId, dateStr, true),
-          classesApi.getDelegationEffectivePermission(activeClassId, dateStr),
-          classesApi.getDisciplinePolicy(),
-        ]);
-        const base = parseISO(dateStr);
-        if (!Number.isNaN(base.getTime())) {
-          for (let offset = -3; offset <= 3; offset++) {
-            if (offset === 0) continue;
-            const d = addDays(base, offset);
-            void classesApi.prefetchClassDailyAttendance(activeClassId, format(d, 'yyyy-MM-dd'));
-          }
-        }
+        const [daily, effective, policy] = await workbenchDataPromise!;
+        if (loadRequestRef.current !== requestId) return;
+
         setRows(daily.students || []);
         setAllowedStatuses(effective.allowedStatuses || []);
         setCapabilitySource(effective.source || 'none');
         setPolicyMinLen(Math.max(1, policy?.mandatoryExcusedReasonMinLength || 3));
+
+        if ((effective.allowedStatuses || []).length > 0) {
+          const base = parseISO(dateStr);
+          if (!Number.isNaN(base.getTime())) {
+            InteractionManager.runAfterInteractions(() => {
+              [-1, 1].forEach((offset) => {
+                const d = addDays(base, offset);
+                void classesApi.prefetchClassDailyAttendance(activeClassId, format(d, 'yyyy-MM-dd'));
+              });
+            });
+          }
+        }
       } finally {
-        if (!quiet) setLoading(false);
+        if (!quiet && loadRequestRef.current === requestId) setLoading(false);
       }
     },
-    [classId, date]
+    [classId, date, user?.id]
   );
 
   useEffect(() => {
@@ -223,7 +256,7 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadData({ skipFullScreenSpinner: true });
+      await loadData({ skipFullScreenSpinner: true, force: true });
     } finally {
       setRefreshing(false);
     }
@@ -235,7 +268,7 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
     setDate(format(addDays(d, delta), 'yyyy-MM-dd'));
   }, [parsedDate]);
 
-  const renderRow = ({ item }: { item: any }) => {
+  const renderRow = useCallback(({ item }: { item: any }) => {
     const active = item.morning?.status || 'PRESENT';
     const current = statusMeta(active);
     return (
@@ -294,7 +327,7 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
         </View>
       </View>
     );
-  };
+  }, [allowedStatuses.length, applyStatus, colors.border, colors.text, colors.textSecondary, isKhmer, savingId, t]);
 
   const dateLabel =
     parsedDate?.toLocaleDateString(i18n.language?.startsWith('km') ? 'km-KH' : 'en-US', {
@@ -304,7 +337,7 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
       year: 'numeric',
     }) || date;
 
-  const listHeader = (
+  const listHeader = useMemo(() => (
     <>
       <View style={styles.sectionLabelRow}>
         <MaterialCommunityIcons name="account-group-outline" size={16} color={BRAND_TEAL} />
@@ -402,7 +435,23 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
         </View>
       ) : null}
     </>
-  );
+  ), [
+    allowedStatuses,
+    capabilitySource,
+    classId,
+    classes,
+    colors.text,
+    colors.textSecondary,
+    dateLabel,
+    filterChips,
+    isKhmer,
+    parsedDate,
+    search,
+    shiftDate,
+    statusFilter,
+    statusLegend,
+    t,
+  ]);
 
   return (
     <View style={styles.root}>
@@ -477,6 +526,13 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
           renderItem={renderRow}
           ListHeaderComponent={listHeader}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          updateCellsBatchingPeriod={50}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
+          keyboardShouldPersistTaps="handled"
+          extraData={`${savingId || ''}:${allowedStatuses.join('|')}`}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_TEAL} />}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>

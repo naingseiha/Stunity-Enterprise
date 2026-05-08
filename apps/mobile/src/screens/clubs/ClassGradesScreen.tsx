@@ -11,6 +11,8 @@ import {
   StatusBar,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -851,35 +853,12 @@ export default function ClassGradesScreen() {
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.bgOrbPrimary} />
-      <View style={styles.bgOrbSecondary} />
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView edges={['top']} style={styles.header}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isTeacher ? t('classScreens.grades.scoreImport') : (className ? t('classScreens.grades.classScoresWithName', { className }) : t('classScreens.grades.classScores'))}</Text>
-          {isTeacher ? (
-            <TouchableOpacity 
-              onPress={handleSave} 
-              disabled={saving || scoreRowsLoading || !selectedSubject || !scoreEditingEnabled}
-              style={[styles.saveBtn, (saving || scoreRowsLoading || !selectedSubject || !scoreEditingEnabled) && { opacity: 0.6 }]}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <Text style={styles.saveBtnText}>{t('common.save')}</Text>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 60 }} />
-          )}
-        </View>
+  const renderListHeader = () => {
+    if (loading) return null;
 
-        {isTeacher && (
+    return (
+      <View>
+        {isTeacher ? (
           <View style={styles.filterSection}>
             <View style={styles.scoreHero}>
               <LinearGradient
@@ -903,6 +882,7 @@ export default function ClassGradesScreen() {
                 </View>
               </View>
             </View>
+            
             <Text style={styles.sectionLabel}>{t('classScreens.grades.selectSubject')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {subjects.map(subject => (
@@ -1013,8 +993,7 @@ export default function ClassGradesScreen() {
               </View>
             ) : null}
           </View>
-        )}
-        {!isTeacher && (
+        ) : (
           <View style={styles.filterSection}>
             <View style={[styles.sectionLabelRow, { marginTop: 8 }]}>
               <Text style={styles.sectionLabelInline}>{t('classScreens.grades.academicMonth')}</Text>
@@ -1037,77 +1016,100 @@ export default function ClassGradesScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            
+            <View style={styles.readOnlySummaryRow}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>{t('classScreens.report.average')}</Text>
+                <Text style={styles.summaryValue}>
+                  {studentMonthlyGrades.length > 0
+                    ? (
+                      studentMonthlyGrades.reduce((sum, row) => sum + Number(row.score || 0), 0) /
+                      studentMonthlyGrades.length
+                    ).toFixed(1)
+                    : Number(reportStats?.classAverage || 0).toFixed(1)}
+                </Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>{t('classScreens.grades.passRate')}</Text>
+                <Text style={styles.summaryValue}>
+                  {studentMonthlyGrades.length > 0
+                    ? `${Math.round(
+                      (studentMonthlyGrades.filter((row) => {
+                        const max = Number(row.maxScore || row.subject?.maxScore || 100);
+                        return max > 0 && (Number(row.score || 0) / max) * 100 >= 50;
+                      }).length /
+                        studentMonthlyGrades.length) * 100
+                    )}%`
+                    : `${Math.round(Number(reportStats?.passRate || 0))}%`}
+                </Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>{t('classScreens.grades.subjects')}</Text>
+                <Text style={styles.summaryValue}>{studentMonthlyGrades.length || reportStudents.length}</Text>
+              </View>
+            </View>
           </View>
         )}
+
+        <View style={styles.listHeader}>
+          <Text style={styles.listHeaderTitle}>
+            {isTeacher 
+              ? t('classScreens.grades.studentListCount', { count: students.length })
+              : t('classScreens.grades.performanceOverview')}
+          </Text>
+          <View style={styles.listHeaderStatus}>
+            {scoreDataLoading ? (
+              <ActivityIndicator size="small" color={COLORS.primaryDark} />
+            ) : null}
+            <Text style={styles.listHeaderSubtitle}>
+              {isTeacher 
+                ? t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })
+                : selectedMonth}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
+      <View style={styles.bgOrbPrimary} />
+      <View style={styles.bgOrbSecondary} />
+      <StatusBar barStyle="dark-content" />
+      
+      <SafeAreaView edges={['top']} style={styles.header}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{isTeacher ? t('classScreens.grades.scoreImport') : (className ? t('classScreens.grades.classScoresWithName', { className }) : t('classScreens.grades.classScores'))}</Text>
+          {isTeacher ? (
+            <TouchableOpacity 
+              onPress={handleSave} 
+              disabled={saving || scoreRowsLoading || !selectedSubject || !scoreEditingEnabled}
+              style={[styles.saveBtn, (saving || scoreRowsLoading || !selectedSubject || !scoreEditingEnabled) && { opacity: 0.6 }]}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.saveBtnText}>{t('common.save')}</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 60 }} />
+          )}
+        </View>
       </SafeAreaView>
 
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primaryDark} />
           <Text style={styles.loadingText}>{t('classScreens.grades.loading')}</Text>
-        </View>
-      ) : !isTeacher ? (
-        <View style={[styles.screenBody, scoreDataLoading && styles.screenBodyRefreshing]}>
-          <View style={styles.readOnlySummaryRow}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>{t('classScreens.report.average')}</Text>
-              <Text style={styles.summaryValue}>
-                {studentMonthlyGrades.length > 0
-                  ? (
-                    studentMonthlyGrades.reduce((sum, row) => sum + Number(row.score || 0), 0) /
-                    studentMonthlyGrades.length
-                  ).toFixed(1)
-                  : Number(reportStats?.classAverage || 0).toFixed(1)}
-              </Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>{t('classScreens.grades.passRate')}</Text>
-              <Text style={styles.summaryValue}>
-                {studentMonthlyGrades.length > 0
-                  ? `${Math.round(
-                    (studentMonthlyGrades.filter((row) => {
-                      const max = Number(row.maxScore || row.subject?.maxScore || 100);
-                      return max > 0 && (Number(row.score || 0) / max) * 100 >= 50;
-                    }).length /
-                      studentMonthlyGrades.length) * 100
-                  )}%`
-                  : `${Math.round(Number(reportStats?.passRate || 0))}%`}
-              </Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>{t('classScreens.grades.subjects')}</Text>
-              <Text style={styles.summaryValue}>{studentMonthlyGrades.length || reportStudents.length}</Text>
-            </View>
-          </View>
-
-          <View style={styles.listHeader}>
-            <Text style={styles.listHeaderTitle}>{t('classScreens.grades.performanceOverview')}</Text>
-            <View style={styles.listHeaderStatus}>
-              {studentScoreRowsLoading ? (
-                <ActivityIndicator size="small" color={COLORS.primaryDark} />
-              ) : null}
-              <Text style={styles.listHeaderSubtitle}>{selectedMonth}</Text>
-            </View>
-          </View>
-          <FlatList
-            data={studentMonthlyGrades}
-            keyExtractor={item => item.id}
-            renderItem={renderStudentSubjectScore}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.center}>
-                {studentScoreRowsLoading ? (
-                  <ActivityIndicator size="large" color={COLORS.primaryDark} />
-                ) : (
-                  <Ionicons name="bar-chart-outline" size={48} color={COLORS.border} />
-                )}
-                <Text style={styles.emptyText}>
-                  {studentScoreRowsLoading ? t('classScreens.grades.loading') : t('classScreens.grades.emptyReport')}
-                </Text>
-              </View>
-            }
-          />
         </View>
       ) : isTeacher && subjects.length === 0 ? (
         <View style={styles.center}>
@@ -1116,37 +1118,31 @@ export default function ClassGradesScreen() {
         </View>
       ) : (
         <View style={[styles.screenBody, scoreDataLoading && styles.screenBodyRefreshing]}>
-          <View style={styles.listHeader}>
-            <Text style={styles.listHeaderTitle}>{t('classScreens.grades.studentListCount', { count: students.length })}</Text>
-            <View style={styles.listHeaderStatus}>
-              {scoreRowsLoading ? (
-                <ActivityIndicator size="small" color={COLORS.primaryDark} />
-              ) : null}
-              <Text style={styles.listHeaderSubtitle}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
-            </View>
-          </View>
           <FlatList
-            data={students}
+            data={isTeacher ? students : studentMonthlyGrades}
             keyExtractor={item => item.id}
-            renderItem={renderStudent}
+            renderItem={isTeacher ? renderStudent : renderStudentSubjectScore}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListHeaderComponent={renderListHeader}
             ListEmptyComponent={
               <View style={styles.center}>
-                {scoreRowsLoading ? (
+                {scoreDataLoading ? (
                   <ActivityIndicator size="large" color={COLORS.primaryDark} />
                 ) : (
-                  <Ionicons name="people-outline" size={48} color={COLORS.border} />
+                  <Ionicons name={isTeacher ? "people-outline" : "bar-chart-outline"} size={48} color={COLORS.border} />
                 )}
                 <Text style={styles.emptyText}>
-                  {scoreRowsLoading ? t('classScreens.grades.loading') : t('classScreens.grades.emptyStudents')}
+                  {scoreDataLoading 
+                    ? t('classScreens.grades.loading') 
+                    : (isTeacher ? t('classScreens.grades.emptyStudents') : t('classScreens.grades.emptyReport'))}
                 </Text>
               </View>
             }
           />
         </View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -1176,7 +1172,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.96)',
     borderBottomWidth: 1, 
     borderBottomColor: 'rgba(226,232,240,0.85)',
-    paddingBottom: 8,
+    paddingBottom: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1397,7 +1393,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   summaryCard: {
     flex: 1,
@@ -1429,8 +1426,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingTop: 18,
     paddingBottom: 8,
   },
   screenBody: { flex: 1 },
@@ -1439,13 +1436,14 @@ const styles = StyleSheet.create({
   listHeaderSubtitle: { fontSize: 13, fontWeight: '600', color: COLORS.primaryDark },
   listHeaderStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   
-  list: { padding: 16, paddingTop: 4, gap: 12, paddingBottom: 40 },
+  list: { paddingTop: 4, gap: 12, paddingBottom: 40 },
   studentCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     backgroundColor: COLORS.surface,
     padding: 16,
+    marginHorizontal: 16,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: 'rgba(226,232,240,0.95)',

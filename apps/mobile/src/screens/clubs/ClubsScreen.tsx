@@ -265,6 +265,7 @@ export default function ClubsScreen() {
   const isAdminOrStaff = Boolean(
     user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
   );
+  const canUseDisciplineWorkbench = Boolean(isAdminOrStaff || user?.role === 'TEACHER');
 
   const teacherClassSplit = useMemo(() => {
     if (user?.role !== 'TEACHER' || isAdminOrStaff) {
@@ -715,11 +716,6 @@ export default function ClubsScreen() {
     [navigation]
   );
 
-  const handleOpenDisciplineWorkbench = useCallback(
-    () => navigation.navigate('DisciplineWorkbench'),
-    [navigation]
-  );
-
   const handleFilterChange = useCallback(
     (filter: ClubFilter) => setSelectedFilter(filter),
     []
@@ -840,29 +836,31 @@ export default function ClubsScreen() {
               )}
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.disciplineWorkbenchCard,
-                { backgroundColor: isDark ? '#062B34' : '#ECFEFF', borderColor: isDark ? '#0E7490' : '#A5F3FC' },
-              ]}
-              onPress={handleOpenDisciplineWorkbench}
-              activeOpacity={0.9}
-            >
-              <View style={[styles.disciplineWorkbenchIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#CFFAFE' }]}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? '#A5F3FC' : '#0E7490'} />
-              </View>
-              <View style={styles.disciplineWorkbenchBody}>
-                <Text style={[styles.disciplineWorkbenchTitle, { color: isDark ? '#ECFEFF' : '#0F172A' }, isKhmer && styles.khmerHeadingText]}>
-                  {isKhmer ? 'ផ្ទាំងវិន័យ និងវត្តមាន' : 'Discipline Workbench'}
-                </Text>
-                <Text style={[styles.disciplineWorkbenchSubtitle, { color: isDark ? '#67E8F9' : '#0E7490' }, isKhmer && styles.khmerInlineText]}>
-                  {isKhmer ? 'សម្គាល់ A / P / L / E សម្រាប់ថ្នាក់ដែលបានផ្ទេរសិទ្ធិ' : 'Mark delegated attendance quickly (A / P / L / E)'}
-                </Text>
-              </View>
-              <View style={[styles.disciplineWorkbenchArrow, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#FFFFFF' }]}>
-                <Ionicons name="chevron-forward" size={16} color={isDark ? '#A5F3FC' : '#0E7490'} />
-              </View>
-            </TouchableOpacity>
+            {canUseDisciplineWorkbench && (
+              <TouchableOpacity
+                style={[
+                  styles.disciplineWorkbenchCard,
+                  { backgroundColor: isDark ? '#062B34' : '#ECFEFF', borderColor: isDark ? '#0E7490' : '#A5F3FC' },
+                ]}
+                onPress={() => navigation.navigate('DisciplineWorkbench', { classId: previewClasses[0]?.id })}
+                activeOpacity={0.9}
+              >
+                <View style={[styles.disciplineWorkbenchIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#CFFAFE' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? '#A5F3FC' : '#0E7490'} />
+                </View>
+                <View style={styles.disciplineWorkbenchBody}>
+                  <Text style={[styles.disciplineWorkbenchTitle, { color: isDark ? '#ECFEFF' : '#0F172A' }, isKhmer && styles.khmerHeadingText]}>
+                    {isKhmer ? 'ផ្ទាំងវិន័យ និងវត្តមាន' : 'Discipline Workbench'}
+                  </Text>
+                  <Text style={[styles.disciplineWorkbenchSubtitle, { color: isDark ? '#67E8F9' : '#0E7490' }, isKhmer && styles.khmerInlineText]}>
+                    {isKhmer ? 'សម្គាល់ A / P / L / E សម្រាប់ថ្នាក់ដែលបានផ្ទេរសិទ្ធិ' : 'Mark delegated attendance quickly (A / P / L / E)'}
+                  </Text>
+                </View>
+                <View style={[styles.disciplineWorkbenchArrow, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#FFFFFF' }]}>
+                  <Ionicons name="chevron-forward" size={16} color={isDark ? '#A5F3FC' : '#0E7490'} />
+                </View>
+              </TouchableOpacity>
+            )}
 
             {isAdminOrStaff && (
               <View style={styles.adminSearchWrap}>
@@ -1040,6 +1038,7 @@ export default function ClubsScreen() {
     );
   }, [
     canViewSchoolClasses,
+    canUseDisciplineWorkbench,
     isAdminOrStaff,
     academicYears,
     selectedYearId,
@@ -1048,7 +1047,6 @@ export default function ClubsScreen() {
     handleClassPress,
     handleCreateClub,
     handleFilterChange,
-    handleOpenDisciplineWorkbench,
     loadAdminClasses,
     loadSchoolClasses,
     loadingAdminClasses,

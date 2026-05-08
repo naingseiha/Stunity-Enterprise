@@ -1051,6 +1051,7 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
   try {
     const { classId, date } = req.params;
     const schoolId = req.schoolId!;
+    const includeTimetableContext = req.query.includeTimetableContext !== 'false';
 
     // Validate class belongs to school
     const classData = await prisma.class.findFirst({
@@ -1138,14 +1139,15 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
       },
     });
 
+    const attendanceByStudentSession = new Map<string, typeof attendanceRecords[number]>();
+    for (const record of attendanceRecords) {
+      attendanceByStudentSession.set(`${record.studentId}:${record.session}`, record);
+    }
+
     // Map attendance to students
     const studentsWithAttendance = students.map(student => {
-      const morningAttendance = attendanceRecords.find(
-        record => record.studentId === student.id && record.session === 'MORNING'
-      );
-      const afternoonAttendance = attendanceRecords.find(
-        record => record.studentId === student.id && record.session === 'AFTERNOON'
-      );
+      const morningAttendance = attendanceByStudentSession.get(`${student.id}:MORNING`);
+      const afternoonAttendance = attendanceByStudentSession.get(`${student.id}:AFTERNOON`);
 
       return {
         studentId: student.id,
@@ -1177,7 +1179,7 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
         }
       | undefined;
 
-    if (req.user?.role === 'TEACHER') {
+    if (includeTimetableContext && req.user?.role === 'TEACHER') {
       const rosterTeacher = await prisma.teacher.findFirst({
         where: { schoolId, user: { id: req.user!.id } },
         select: { id: true },

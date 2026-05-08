@@ -222,6 +222,10 @@ const _classAttendanceSummaryCache = new Map<string, { data: ClassAttendanceSumm
 const _classAttendanceSummaryInFlight = new Map<string, Promise<ClassAttendanceSummary>>();
 const _classDailyAttendanceCache = new Map<string, { data: ClassDailyAttendanceResponse; ts: number }>();
 const _classDailyAttendanceInFlight = new Map<string, Promise<ClassDailyAttendanceResponse>>();
+const _delegationEffectivePermissionCache = new Map<string, { data: DelegationEffectivePermission; ts: number }>();
+const _delegationEffectivePermissionInFlight = new Map<string, Promise<DelegationEffectivePermission>>();
+let _disciplinePolicyCache: { data: DisciplinePolicy | null; ts: number } | null = null;
+let _disciplinePolicyInFlight: Promise<DisciplinePolicy | null> | null = null;
 const _classGradesReportCache = new Map<string, { data: ClassGradesReport; ts: number }>();
 const _classGradesReportInFlight = new Map<string, Promise<ClassGradesReport>>();
 const _studentMonthlySummaryCache = new Map<string, { data: Record<string, unknown> | null; ts: number }>();
@@ -255,6 +259,7 @@ const getCachedResource = <T>(
 const getAttendanceSummaryCacheKey = (classId: string, startDate: string, endDate: string) =>
   `${classId}:${startDate}:${endDate}`;
 const getDailyAttendanceCacheKey = (classId: string, date: string) => `${classId}:${date}`;
+const getDelegationEffectivePermissionCacheKey = (classId: string, date: string) => `${classId}:${date}`;
 const getGradesReportCacheKey = (
   classId: string,
   options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number }
@@ -493,16 +498,19 @@ export const getCachedClassDailyAttendance = (
   classId: string,
   date: string
 ): ClassDailyAttendanceResponse | null =>
-  getCachedResource(_classDailyAttendanceCache, getDailyAttendanceCacheKey(classId, date));
+  getCachedResource(_classDailyAttendanceCache, `${getDailyAttendanceCacheKey(classId, date)}:context`) ||
+  getCachedResource(_classDailyAttendanceCache, `${getDailyAttendanceCacheKey(classId, date)}:plain`);
 
 export const getClassDailyAttendance = async (
   classId: string,
   date: string,
-  force = false
+  force = false,
+  options?: { includeTimetableContext?: boolean }
 ): Promise<ClassDailyAttendanceResponse> => {
-  const cacheKey = getDailyAttendanceCacheKey(classId, date);
+  const includeTimetableContext = options?.includeTimetableContext !== false;
+  const cacheKey = `${getDailyAttendanceCacheKey(classId, date)}:${includeTimetableContext ? 'context' : 'plain'}`;
   if (!force) {
-    const cached = getCachedClassDailyAttendance(classId, date);
+    const cached = getCachedResource(_classDailyAttendanceCache, cacheKey);
     if (cached) return cached;
 
     const inFlight = _classDailyAttendanceInFlight.get(cacheKey);
@@ -510,7 +518,8 @@ export const getClassDailyAttendance = async (
   }
 
   const request = attendanceApi.get<{ success?: boolean; data?: any }>(
-    `/attendance/class/${classId}/date/${date}`
+    `/attendance/class/${classId}/date/${date}`,
+    { params: includeTimetableContext ? undefined : { includeTimetableContext: 'false' } }
   ).then((response) => {
     const data = response.data?.data || { classId, date, students: [] };
     _classDailyAttendanceCache.set(cacheKey, { data, ts: Date.now() });
@@ -525,7 +534,7 @@ export const getClassDailyAttendance = async (
 
 export const prefetchClassDailyAttendance = async (classId: string, date: string): Promise<void> => {
   try {
-    await getClassDailyAttendance(classId, date);
+    await getClassDailyAttendance(classId, date, false, { includeTimetableContext: false });
   } catch {
     // Ignore prefetch failures.
   }
@@ -533,26 +542,60 @@ export const prefetchClassDailyAttendance = async (classId: string, date: string
 
 export const getDelegationEffectivePermission = async (
   classId: string,
-  date: string
+  date: string,
+  force = false
 ): Promise<DelegationEffectivePermission> => {
-  const response = await attendanceApi.get<{ success?: boolean; data?: DelegationEffectivePermission }>(
+  const cacheKey = getDelegationEffectivePermissionCacheKey(classId, date);
+
+  if (!force) {
+    const cached = getCachedResource(_delegationEffectivePermissionCache, cacheKey, 30_000);
+    if (cached) return cached;
+
+    const inFlight = _delegationEffectivePermissionInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const request = attendanceApi.get<{ success?: boolean; data?: DelegationEffectivePermission }>(
     '/attendance/delegations/effective',
     { params: { classId, date } }
-  );
-  return response.data?.data || {
-    classId,
-    date,
-    canWrite: false,
-    source: 'none',
-    allowedStatuses: [],
-  };
+  ).then((response) => {
+    const data = response.data?.data || {
+      classId,
+      date,
+      canWrite: false,
+      source: 'none',
+      allowedStatuses: [],
+    };
+    _delegationEffectivePermissionCache.set(cacheKey, { data, ts: Date.now() });
+    return data;
+  }).finally(() => {
+    _delegationEffectivePermissionInFlight.delete(cacheKey);
+  });
+
+  _delegationEffectivePermissionInFlight.set(cacheKey, request);
+  return request;
 };
 
-export const getDisciplinePolicy = async (): Promise<DisciplinePolicy | null> => {
-  const response = await attendanceApi.get<{ success?: boolean; data?: DisciplinePolicy | null }>(
+export const getDisciplinePolicy = async (force = false): Promise<DisciplinePolicy | null> => {
+  if (!force && _disciplinePolicyCache && Date.now() - _disciplinePolicyCache.ts < 5 * 60_000) {
+    return _disciplinePolicyCache.data;
+  }
+
+  if (!force && _disciplinePolicyInFlight) {
+    return _disciplinePolicyInFlight;
+  }
+
+  _disciplinePolicyInFlight = attendanceApi.get<{ success?: boolean; data?: DisciplinePolicy | null }>(
     '/attendance/discipline-policy'
-  );
-  return response.data?.data || null;
+  ).then((response) => {
+    const data = response.data?.data || null;
+    _disciplinePolicyCache = { data, ts: Date.now() };
+    return data;
+  }).finally(() => {
+    _disciplinePolicyInFlight = null;
+  });
+
+  return _disciplinePolicyInFlight;
 };
 
 /**
@@ -568,8 +611,13 @@ export const bulkMarkAttendance = async (
     '/attendance/bulk',
     { classId, date, session, attendance }
   );
-  const cacheKey = getDailyAttendanceCacheKey(classId, date);
-  const cached = _classDailyAttendanceCache.get(cacheKey);
+  const cacheKeys = [
+    `${getDailyAttendanceCacheKey(classId, date)}:context`,
+    `${getDailyAttendanceCacheKey(classId, date)}:plain`,
+  ];
+  _delegationEffectivePermissionCache.delete(getDelegationEffectivePermissionCacheKey(classId, date));
+  const cachedKey = cacheKeys.find((key) => _classDailyAttendanceCache.has(key));
+  const cached = cachedKey ? _classDailyAttendanceCache.get(cachedKey) : null;
   if (cached?.data?.students && attendance.length > 0) {
     const sessionKey = session === 'MORNING' ? 'morning' : 'afternoon';
     const students = (cached.data.students as any[]).map((row) => ({ ...row }));
@@ -586,9 +634,13 @@ export const bulkMarkAttendance = async (
         },
       };
     }
-    _classDailyAttendanceCache.set(cacheKey, {
-      data: { ...cached.data, classId, date, students },
-      ts: Date.now(),
+    cacheKeys.forEach((key) => {
+      const existing = _classDailyAttendanceCache.get(key);
+      if (!existing) return;
+      _classDailyAttendanceCache.set(key, {
+        data: { ...existing.data, classId, date, students },
+        ts: Date.now(),
+      });
     });
   }
   return response.data;
