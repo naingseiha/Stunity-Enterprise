@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   RefreshControl,
   ScrollView,
@@ -91,6 +92,35 @@ const attendanceRangeForMonth = (monthNumber: number, calendarYear: number) => {
 const metricValue = (value?: number | null, suffix = ''): string => {
   if (value === undefined || value === null || Number.isNaN(Number(value))) return '--';
   return `${Number(value).toFixed(Number.isInteger(value) ? 0 : 1)}${suffix}`;
+};
+
+const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+const formatPercent = (value?: number | null) => metricValue(value, '%');
+const getStudentUserId = (student?: { userId?: string | null; user?: { id?: string } | null }) =>
+  student?.userId || student?.user?.id || null;
+const isLeadershipRole = (role?: RouteParams['myRole']) =>
+  role === 'TEACHER' || role === 'ADMIN' || role === 'STAFF' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN';
+const getScoreTone = (value: number) => {
+  if (value >= 80) return COLORS.success;
+  if (value >= 50) return COLORS.warning;
+  return COLORS.danger;
+};
+const AVATAR_COLORS = ['#8B5CF6', '#06A8CC', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#6366F1'];
+const getInitials = (firstName?: string, lastName?: string) => {
+  const first = String(firstName || '').trim();
+  const last = String(lastName || '').trim();
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'ST';
+};
+const getAvatarColor = (value?: string) => {
+  const source = String(value || '');
+  const index = source.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+};
+const getRankMedalColor = (rank?: number) => {
+  if (rank === 1) return '#F59E0B';
+  if (rank === 2) return '#94A3B8';
+  if (rank === 3) return '#B45309';
+  return COLORS.primary;
 };
 
 type ReportMonthContext = {
@@ -479,6 +509,11 @@ export default function ClassReportScreen() {
       .sort((a, b) => (a.rank || Number.MAX_SAFE_INTEGER) - (b.rank || Number.MAX_SAFE_INTEGER))
       .slice(0, 5);
   }, [gradesReport?.students]);
+  const classRankingStudents = useMemo(() => {
+    return [...(gradesReport?.students || [])]
+      .sort((a, b) => (a.rank || Number.MAX_SAFE_INTEGER) - (b.rank || Number.MAX_SAFE_INTEGER));
+  }, [gradesReport?.students]);
+  const podiumStudents = useMemo(() => classRankingStudents.slice(0, 3), [classRankingStudents]);
   const atRiskStudents = useMemo(() => {
     return [...(gradesReport?.students || [])]
       .filter((student) => Number(student.average || 0) < 50)
@@ -501,6 +536,23 @@ export default function ClassReportScreen() {
     if (studentMonthlyGrades.length === 0) return 0;
     return studentMonthlyGrades.reduce((sum, row) => sum + Number(row.score || 0), 0) / studentMonthlyGrades.length;
   }, [studentMonthlyGrades]);
+  const studentSubjectInsights = useMemo(() => {
+    return studentMonthlyGrades
+      .map((row) => {
+        const max = Number(row.maxScore || row.subject?.maxScore || 100);
+        const score = Number(row.score || 0);
+        const percent = max > 0 ? Math.round((score / max) * 100) : 0;
+        return {
+          id: row.id || row.subject?.id || `${row.subject?.name}-${score}`,
+          name: row.subject?.name || t('classScreens.grades.na'),
+          code: row.subject?.code || t('classScreens.grades.na'),
+          score,
+          max,
+          percent,
+        };
+      })
+      .sort((a, b) => a.percent - b.percent);
+  }, [studentMonthlyGrades, t]);
 
   const attendanceRate = Number(attendanceSummary?.summary?.averageAttendanceRate || 0);
   const passingStudentCount = Math.max(0, Number(gradesReport?.statistics?.passingCount ?? 0));
@@ -518,8 +570,97 @@ export default function ClassReportScreen() {
   const reportTitle = className || gradesReport?.class?.name || attendanceSummary?.class?.name || t('classScreens.report.defaultTitle');
   const hasRenderableReport = Boolean(attendanceSummary || gradesReport || monthlySummary || studentMonthlyGrades.length > 0);
   const isPeriodUpdating = periodLoading || studentGradesLoading;
+  const classAverage = Number(gradesReport?.statistics?.classAverage || 0);
+  const highestAverage = Number(gradesReport?.statistics?.highestAverage || 0);
+  const lowestAverage = Number(gradesReport?.statistics?.lowestAverage || 0);
+  const performanceSpread = Math.max(0, highestAverage - lowestAverage);
+  const totalStudents = Number(gradesReport?.totalStudents || rankingBasis || 0);
+  const dataReadinessItems = [
+    {
+      label: t('classScreens.report.readiness.attendance', { defaultValue: 'Attendance' }),
+      ready: Boolean(attendanceSummary),
+      value: attendanceSummary ? formatPercent(attendanceRate) : '--',
+    },
+    {
+      label: t('classScreens.report.readiness.grades', { defaultValue: 'Grades' }),
+      ready: Boolean(gradesReport),
+      value: gradesReport ? String(totalStudents) : '--',
+    },
+    {
+      label: t('classScreens.report.readiness.ranking', { defaultValue: 'Ranking' }),
+      ready: topStudents.length > 0,
+      value: topStudents.length > 0 ? t('classScreens.report.ready', { defaultValue: 'Ready' }) : '--',
+    },
+  ];
+  const readinessScore = Math.round(
+    (dataReadinessItems.filter((item) => item.ready).length / dataReadinessItems.length) * 100
+  );
+  const riskLevel =
+    attendanceRate < 85 || (failureRatePct !== null && failureRatePct >= 25) || classAverage < 50
+      ? 'high'
+      : attendanceRate < 92 || (failureRatePct !== null && failureRatePct >= 10) || classAverage < 65
+        ? 'watch'
+        : 'healthy';
+  const riskColor = riskLevel === 'high' ? COLORS.danger : riskLevel === 'watch' ? COLORS.warning : COLORS.success;
+  const riskLabel = riskLevel === 'high'
+    ? t('classScreens.report.risk.high', { defaultValue: 'High attention' })
+    : riskLevel === 'watch'
+      ? t('classScreens.report.risk.watch', { defaultValue: 'Watch closely' })
+      : t('classScreens.report.risk.healthy', { defaultValue: 'Healthy' });
+  const lowestSubject = studentSubjectInsights[0];
+  const strongestSubject = studentSubjectInsights[studentSubjectInsights.length - 1];
+  const linkedStudentProfileUserId = useMemo(() => {
+    if (!linkedStudentId) return null;
+    const linkedStudent = (gradesReport?.students || []).find((row) => row.student.id === linkedStudentId);
+    return getStudentUserId(linkedStudent?.student);
+  }, [gradesReport?.students, linkedStudentId]);
 
   const roleLabel = myRole === 'PARENT' ? t('classScreens.report.role.parent') : myRole === 'STUDENT' ? t('classScreens.report.role.student') : t('classScreens.report.role.default');
+
+  const handleOpenAcademicProfile = useCallback(() => {
+    if (myRole === 'STUDENT') {
+      navigation.getParent()?.navigate('ProfileTab', { screen: 'AcademicProfile' });
+      return;
+    }
+
+    if (linkedStudentProfileUserId) {
+      navigation.getParent()?.navigate('ProfileTab', {
+        screen: 'Profile',
+        params: { userId: linkedStudentProfileUserId },
+      });
+      return;
+    }
+
+    Alert.alert(
+      t('classScreens.report.profileUnavailableTitle', { defaultValue: 'Profile unavailable' }),
+      t('classScreens.report.profileUnavailableBody', { defaultValue: 'This student does not have a linked social profile yet.' })
+    );
+  }, [linkedStudentProfileUserId, myRole, navigation, t]);
+
+  const handleOpenStudentProfile = useCallback((userId?: string | null) => {
+    if (!userId) {
+      Alert.alert(
+        t('classScreens.report.profileUnavailableTitle', { defaultValue: 'Profile unavailable' }),
+        t('classScreens.report.profileUnavailableBody', { defaultValue: 'This student does not have a linked social profile yet.' })
+      );
+      return;
+    }
+
+    navigation.getParent()?.navigate('ProfileTab', {
+      screen: 'Profile',
+      params: { userId },
+    });
+  }, [navigation, t]);
+
+  const handleOpenClassLeaderboard = useCallback(() => {
+    navigation.navigate('ClassLeaderboard', {
+      classId,
+      className: reportTitle,
+      selectedMonth,
+      myRole,
+      linkedStudentId,
+    });
+  }, [classId, linkedStudentId, myRole, navigation, reportTitle, selectedMonth]);
 
   const handleShareReport = useCallback(async () => {
     const lines = [
@@ -751,6 +892,105 @@ export default function ClassReportScreen() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.enterprisePanel}>
+            <View style={styles.enterpriseHeader}>
+              <View>
+                <Text style={styles.enterpriseEyebrow}>
+                  {t('classScreens.report.enterpriseView', { defaultValue: 'Enterprise view' })}
+                </Text>
+                <Text style={styles.enterpriseTitle}>
+                  {isLeadershipRole(myRole)
+                    ? t('classScreens.report.decisionCenter', { defaultValue: 'Decision center' })
+                    : t('classScreens.report.learningProfileLink', { defaultValue: 'Learning profile link' })}
+                </Text>
+              </View>
+              <View style={[styles.riskBadge, { backgroundColor: `${riskColor}14`, borderColor: `${riskColor}42` }]}>
+                <View style={[styles.riskDot, { backgroundColor: riskColor }]} />
+                <Text style={[styles.riskBadgeText, { color: riskColor }]}>{riskLabel}</Text>
+              </View>
+            </View>
+
+            {isLeadershipRole(myRole) ? (
+              <View style={styles.insightGrid}>
+                <View style={styles.insightTile}>
+                  <Text style={styles.insightValue}>{metricValue(classAverage)}</Text>
+                  <Text style={styles.insightLabel}>
+                    {t('classScreens.report.insights.classAverage', { defaultValue: 'Class average' })}
+                  </Text>
+                </View>
+                <View style={styles.insightTile}>
+                  <Text style={styles.insightValue}>{metricValue(performanceSpread)}</Text>
+                  <Text style={styles.insightLabel}>
+                    {t('classScreens.report.insights.performanceGap', { defaultValue: 'Performance gap' })}
+                  </Text>
+                </View>
+                <View style={styles.insightTile}>
+                  <Text style={styles.insightValue}>{atRiskStudents.length}</Text>
+                  <Text style={styles.insightLabel}>
+                    {t('classScreens.report.insights.needSupport', { defaultValue: 'Need support' })}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.profileBridgeCard}>
+                <View style={styles.profileBridgeIcon}>
+                  <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
+                </View>
+                <View style={styles.profileBridgeCopy}>
+                  <Text style={styles.profileBridgeTitle}>
+                    {t('classScreens.report.profileBridgeTitle', { defaultValue: 'School performance profile' })}
+                  </Text>
+                  <Text style={styles.profileBridgeMeta}>
+                    {strongestSubject && lowestSubject
+                      ? t('classScreens.report.profileBridgeMetaWithSubjects', {
+                          defaultValue: 'Strongest: {{strongest}} • Focus: {{focus}}',
+                          strongest: strongestSubject.name,
+                          focus: lowestSubject.name,
+                        })
+                      : t('classScreens.report.profileBridgeMeta', { defaultValue: 'Academic progress, class rank, and learning activity stay connected.' })}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.profileBridgeButton} onPress={handleOpenAcademicProfile}>
+                  <Ionicons name="open-outline" size={16} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.readinessCard}>
+            <View style={styles.readinessHeader}>
+              <View>
+                <Text style={styles.readinessTitle}>
+                  {t('classScreens.report.readiness.title', { defaultValue: 'Report readiness' })}
+                </Text>
+                <Text style={styles.readinessMeta}>
+                  {t('classScreens.report.readiness.generated', {
+                    defaultValue: 'Generated for {{month}} {{year}}',
+                    month: selectedMonth,
+                    year: selectedAcademicYear,
+                  })}
+                </Text>
+              </View>
+              <Text style={styles.readinessScore}>{readinessScore}%</Text>
+            </View>
+            <View style={styles.readinessTrack}>
+              <View style={[styles.readinessFill, { width: `${readinessScore}%` }]} />
+            </View>
+            <View style={styles.readinessItems}>
+              {dataReadinessItems.map((item) => (
+                <View key={item.label} style={styles.readinessItem}>
+                  <Ionicons
+                    name={item.ready ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={16}
+                    color={item.ready ? COLORS.success : COLORS.textMuted}
+                  />
+                  <Text style={styles.readinessItemLabel}>{item.label}</Text>
+                  <Text style={styles.readinessItemValue}>{item.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('classScreens.grades.academicMonth')}</Text>
@@ -839,7 +1079,7 @@ export default function ClassReportScreen() {
                   <Text style={styles.snapshotLabel}>{t('classScreens.report.classRank')}</Text>
                 </View>
                 <View style={styles.snapshotCard}>
-                  <Text style={styles.snapshotValue}>{studentMonthlyGrades.length || studentGradeLevel}</Text>
+                  <Text style={styles.snapshotValue}>{studentGradeLevel}</Text>
                   <Text style={styles.snapshotLabel}>{t('classScreens.report.level')}</Text>
                 </View>
               </View>
@@ -868,6 +1108,41 @@ export default function ClassReportScreen() {
                   })
                 )}
               </View>
+
+              {studentSubjectInsights.length > 0 && (
+                <View style={styles.subjectInsightCard}>
+                  <View style={styles.subjectInsightHeader}>
+                    <Text style={styles.subjectInsightTitle}>
+                      {t('classScreens.report.subjectSignals', { defaultValue: 'Subject signals' })}
+                    </Text>
+                    <Ionicons name="pulse-outline" size={18} color={COLORS.textMuted} />
+                  </View>
+                  {studentSubjectInsights.slice(0, 3).map((subject) => (
+                    <View key={subject.id} style={styles.subjectSignalRow}>
+                      <View style={styles.subjectSignalCopy}>
+                        <Text style={styles.subjectSignalName}>{subject.name}</Text>
+                        <Text style={styles.subjectSignalMeta}>{subject.code}</Text>
+                      </View>
+                      <View style={styles.subjectSignalMeter}>
+                        <View style={styles.subjectSignalTrack}>
+                          <View
+                            style={[
+                              styles.subjectSignalFill,
+                              {
+                                width: `${clamp(subject.percent)}%`,
+                                backgroundColor: getScoreTone(subject.percent),
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={[styles.subjectSignalPercent, { color: getScoreTone(subject.percent) }]}>
+                          {subject.percent}%
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
@@ -896,29 +1171,79 @@ export default function ClassReportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('classScreens.report.topPerformance')}</Text>
-              <Ionicons name="trophy-outline" size={20} color={COLORS.textMuted} />
+              <View>
+                <Text style={styles.sectionTitle}>{t('classScreens.report.classRankings', { defaultValue: 'Class Rankings' })}</Text>
+                <Text style={styles.sectionCaption}>
+                  {t('classScreens.report.classRankingsPreviewSub', {
+                    defaultValue: 'Top students preview • {{count}} total ranked',
+                    count: classRankingStudents.length,
+                  })}
+                </Text>
+              </View>
+              <Ionicons name="podium-outline" size={20} color={COLORS.textMuted} />
             </View>
-            <View style={styles.listCard}>
-              {topStudents.length === 0 ? (
+            <View style={styles.rankingPanel}>
+              {classRankingStudents.length === 0 ? (
                 <Text style={styles.emptyText}>{t('classScreens.report.noRankedResults')}</Text>
               ) : (
-                topStudents.map((student) => (
-                  <View key={student.student.id} style={styles.rankRow}>
-                    <View style={styles.rankBadge}>
-                      <Text style={styles.rankBadgeText}>#{student.rank}</Text>
-                    </View>
-                    <View style={styles.rankInfo}>
-                      <Text style={styles.rankName}>
-                        {student.student.firstName} {student.student.lastName}
-                      </Text>
-                      <Text style={styles.rankMeta}>
-                        {student.student.studentId || t('classScreens.report.noId')} • {student.gradeLevel || t('classScreens.report.na')}
-                      </Text>
-                    </View>
-                    <Text style={styles.rankScore}>{metricValue(student.average)}</Text>
+                <>
+                  <View style={styles.podiumRow}>
+                    {podiumStudents.map((student) => {
+                      const rank = student.rank || 0;
+                      const medalColor = getRankMedalColor(rank);
+                      return (
+                        <TouchableOpacity
+                          key={student.student.id}
+                          style={[
+                            styles.podiumCard,
+                            rank === 1 && styles.podiumCardFirst,
+                            { borderColor: `${medalColor}42` },
+                          ]}
+                          activeOpacity={0.86}
+                          onPress={() => handleOpenStudentProfile(getStudentUserId(student.student))}
+                        >
+                          <View style={[styles.podiumMedal, { backgroundColor: `${medalColor}18` }]}>
+                            <Ionicons name={rank === 1 ? 'trophy' : 'medal-outline'} size={16} color={medalColor} />
+                            <Text style={[styles.podiumMedalText, { color: medalColor }]}>#{rank}</Text>
+                          </View>
+                          <View style={[styles.podiumAvatar, { backgroundColor: getAvatarColor(student.student.id) }]}>
+                            {student.student.photoUrl ? (
+                              <Image source={{ uri: student.student.photoUrl }} style={styles.podiumAvatarImage} />
+                            ) : (
+                              <Text style={styles.podiumAvatarText}>
+                                {getInitials(student.student.firstName, student.student.lastName)}
+                              </Text>
+                            )}
+                          </View>
+                          <Text style={styles.podiumName} numberOfLines={1}>
+                            {student.student.firstName} {student.student.lastName}
+                          </Text>
+                          <Text style={styles.podiumMeta} numberOfLines={1}>
+                            {metricValue(student.average)} • {student.gradeLevel || t('classScreens.report.na')}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
-                ))
+
+                  <TouchableOpacity style={styles.viewFullLeaderboardButton} onPress={handleOpenClassLeaderboard} activeOpacity={0.86}>
+                    <View style={styles.viewFullLeaderboardIcon}>
+                      <Ionicons name="podium-outline" size={18} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.viewFullLeaderboardCopy}>
+                      <Text style={styles.viewFullLeaderboardTitle}>
+                        {t('classScreens.report.viewFullLeaderboard', { defaultValue: 'View full leaderboard' })}
+                      </Text>
+                      <Text style={styles.viewFullLeaderboardMeta}>
+                        {t('classScreens.report.viewFullLeaderboardMeta', {
+                          defaultValue: 'See all {{count}} students in a full-screen ranking',
+                          count: classRankingStudents.length,
+                        })}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                </>
               )}
             </View>
           </View>
@@ -951,7 +1276,12 @@ export default function ClassReportScreen() {
                 <Text style={styles.emptyText}>{t('classScreens.report.noHighRiskStudents')}</Text>
               ) : (
                 atRiskStudents.map((student) => (
-                  <View key={student.student.id} style={styles.rankRow}>
+                  <TouchableOpacity
+                    key={student.student.id}
+                    style={styles.rankRow}
+                    activeOpacity={0.82}
+                    onPress={() => handleOpenStudentProfile(getStudentUserId(student.student))}
+                  >
                     <View style={[styles.rankBadge, { backgroundColor: COLORS.dangerLight }]}>
                       <Ionicons name="alert-circle-outline" size={14} color={COLORS.danger} />
                     </View>
@@ -962,7 +1292,8 @@ export default function ClassReportScreen() {
                       <Text style={styles.rankMeta}>{student.student.studentId || t('classScreens.report.noId')}</Text>
                     </View>
                     <Text style={[styles.rankScore, { color: COLORS.danger }]}>{metricValue(student.average)}</Text>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+                  </TouchableOpacity>
                 ))
               )}
             </View>
@@ -1056,6 +1387,180 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: COLORS.primary,
+  },
+  enterprisePanel: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 14,
+    gap: 14,
+  },
+  enterpriseHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  enterpriseEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  enterpriseTitle: {
+    marginTop: 3,
+    fontSize: 18,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  riskBadge: {
+    minHeight: 32,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  riskDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  riskBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  insightGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  insightTile: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+    padding: 12,
+  },
+  insightValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  insightLabel: {
+    marginTop: 5,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  profileBridgeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    backgroundColor: '#F8FCFF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    padding: 12,
+  },
+  profileBridgeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primaryLight,
+  },
+  profileBridgeCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  profileBridgeTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  profileBridgeMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  profileBridgeButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  readinessCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 14,
+    gap: 12,
+  },
+  readinessHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  readinessTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  readinessMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  readinessScore: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: COLORS.primary,
+  },
+  readinessTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  readinessFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: COLORS.primary,
+  },
+  readinessItems: {
+    gap: 8,
+  },
+  readinessItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  readinessItemLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  readinessItemValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
   },
   heroCardWrap: {
     borderRadius: 24,
@@ -1252,6 +1757,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.textPrimary,
   },
+  sectionCaption: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
   studentSnapshotRow: {
     flexDirection: 'row',
     gap: 12,
@@ -1283,6 +1795,253 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 8,
+  },
+  rankingPanel: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 10,
+    gap: 12,
+  },
+  podiumRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+  },
+  podiumCard: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  podiumCardFirst: {
+    backgroundColor: '#FFFBEB',
+    transform: [{ translateY: -3 }],
+  },
+  podiumMedal: {
+    minHeight: 28,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  podiumMedalText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  podiumAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  podiumAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  podiumAvatarText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  podiumName: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+  },
+  podiumMeta: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  fullRankingList: {
+    gap: 8,
+  },
+  viewFullLeaderboardButton: {
+    minHeight: 72,
+    borderRadius: 18,
+    backgroundColor: '#F8FCFF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  viewFullLeaderboardIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primaryLight,
+  },
+  viewFullLeaderboardCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  viewFullLeaderboardTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  viewFullLeaderboardMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  leaderboardRow: {
+    minHeight: 76,
+    borderRadius: 18,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  leaderboardRowActive: {
+    backgroundColor: COLORS.primaryLight,
+    borderColor: '#7DD3FC',
+  },
+  leaderboardRank: {
+    minWidth: 42,
+    height: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+  },
+  leaderboardRankText: {
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  leaderboardAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  leaderboardAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  leaderboardAvatarText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  leaderboardCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  leaderboardName: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  leaderboardMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  leaderboardScoreBlock: {
+    alignItems: 'flex-end',
+    minWidth: 52,
+  },
+  leaderboardScore: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  leaderboardScoreLabel: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+  },
+  subjectInsightCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+    gap: 12,
+  },
+  subjectInsightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  subjectInsightTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  subjectSignalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  subjectSignalCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  subjectSignalName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  subjectSignalMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  subjectSignalMeter: {
+    width: 112,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  subjectSignalTrack: {
+    flex: 1,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  subjectSignalFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  subjectSignalPercent: {
+    width: 34,
+    textAlign: 'right',
+    fontSize: 12,
+    fontWeight: '900',
   },
   listRow: {
     flexDirection: 'row',

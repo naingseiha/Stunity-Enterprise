@@ -2499,11 +2499,13 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
   try {
     const { classId } = req.params;
     const { semester = '1', year } = req.query;
-    const { monthNumber: monthNumberQ, gradeYear: gradeYearQ, month: monthLabelQ } = req.query;
+    const { monthNumber: monthNumberQ, gradeYear: gradeYearQ, month: monthLabelQ, scope: scopeQ } = req.query;
     const schoolId = getSchoolId(req);
     if (!schoolId) {
       return res.status(400).json({ message: 'School context is required' });
     }
+    const rankScope = String(scopeQ || 'CLASS').toUpperCase();
+    const normalizedRankScope = ['CLASS', 'GRADE', 'SCHOOL'].includes(rankScope) ? rankScope : 'CLASS';
 
     const monthNumParsed = Number(monthNumberQ);
     const gradeYearParsed = Number(gradeYearQ);
@@ -2520,41 +2522,6 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
     let gradeWhere: Record<string, unknown>;
     let cacheKey: string;
 
-    if (monthlyMode) {
-      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
-      if (monthLabelForWhere) {
-        gradeWhere = {
-          classId,
-          year: gradeYearParsed,
-          OR: [{ monthNumber: monthNumParsed }, { month: monthLabelForWhere }],
-        };
-      } else {
-        gradeWhere = {
-          classId,
-          year: gradeYearParsed,
-          monthNumber: monthNumParsed,
-        };
-      }
-      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
-        semester
-      )}:${currentYear}:monthly:${gradeYearParsed}:${monthNumParsed}:${monthLabelForWhere || 'noname'}`;
-    } else {
-      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
-      gradeWhere = {
-        classId,
-        ...buildGradePeriodWhere(termContext.periods),
-      };
-      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
-        semester
-      )}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
-    }
-
-    const cachedResponse = readGradeReportCache(cacheKey);
-
-    if (cachedResponse) {
-      return res.json(cachedResponse);
-    }
-
     const classInfo = await prisma.class.findFirst({
       where: { id: classId, schoolId },
       select: {
@@ -2563,6 +2530,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
         grade: true,
         section: true,
         track: true,
+        academicYearId: true,
       },
     });
 
@@ -2570,10 +2538,61 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       return res.status(404).json({ message: 'Class not found in your school' });
     }
 
+    const scopedClassWhere =
+      normalizedRankScope === 'CLASS'
+        ? { id: classId, schoolId }
+        : normalizedRankScope === 'GRADE'
+          ? { schoolId, grade: classInfo.grade, academicYearId: classInfo.academicYearId }
+          : { schoolId, academicYearId: classInfo.academicYearId };
+
+    const scopedClassFilter =
+      normalizedRankScope === 'CLASS'
+        ? { classId }
+        : { class: scopedClassWhere };
+
+    if (monthlyMode) {
+      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+      if (monthLabelForWhere) {
+        gradeWhere = {
+          ...scopedClassFilter,
+          year: gradeYearParsed,
+          OR: [{ monthNumber: monthNumParsed }, { month: monthLabelForWhere }],
+        };
+      } else {
+        gradeWhere = {
+          ...scopedClassFilter,
+          year: gradeYearParsed,
+          monthNumber: monthNumParsed,
+        };
+      }
+      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
+        semester
+      )}:${currentYear}:${normalizedRankScope}:monthly:${gradeYearParsed}:${monthNumParsed}:${monthLabelForWhere || 'noname'}`;
+    } else {
+      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+      gradeWhere = {
+        ...scopedClassFilter,
+        ...buildGradePeriodWhere(termContext.periods),
+      };
+      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
+        semester
+      )}:${currentYear}:${normalizedRankScope}:${reportPeriodCacheKey(termContext)}`;
+    }
+
+    const cachedResponse = readGradeReportCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
     const [studentClasses, grades] = await Promise.all([
       prisma.studentClass.findMany({
         where: {
-          classId,
+          ...(normalizedRankScope === 'CLASS'
+            ? { classId }
+            : {
+                class: scopedClassWhere,
+              }),
           status: 'ACTIVE',
           student: {
             schoolId,
@@ -2588,6 +2607,11 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
               lastName: true,
               customFields: true,
               photoUrl: true,
+              user: {
+                select: {
+                  id: true,
+                },
+              },
             },
           },
         },
@@ -2619,6 +2643,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
           studentId: student.studentId,
           firstName: student.firstName,
           lastName: student.lastName,
+          userId: student.user?.id || null,
           khmerName: (student.customFields as any)?.regional?.khmerName || null,
           photoUrl: student.photoUrl,
         },
@@ -2649,6 +2674,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
 
     const result = {
       class: classInfo,
+      rankScope: normalizedRankScope,
       semester: parseInt(semester as string),
       year: monthlyMode ? gradeYearParsed : currentYear,
       monthlyScope: monthlyMode ? { gradeYear: gradeYearParsed, monthNumber: monthNumParsed } : undefined,

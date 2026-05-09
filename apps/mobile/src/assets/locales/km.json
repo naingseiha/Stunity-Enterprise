@@ -1797,6 +1797,33 @@
       "loading": "កំពុងផ្ទុករបាយការណ៍...",
       "retry": "ព្យាយាមម្ដងទៀត",
       "liveReport": "របាយការណ៍",
+      "enterpriseView": "ទិដ្ឋភាពសហគ្រាស",
+      "decisionCenter": "មជ្ឈមណ្ឌលសម្រេចចិត្ត",
+      "learningProfileLink": "ភ្ជាប់ប្រវត្តិសិក្សា",
+      "profileBridgeTitle": "ប្រវត្តិលទ្ធផលសិក្សារបស់សាលា",
+      "profileBridgeMeta": "វឌ្ឍនភាពសិក្សា ចំណាត់ថ្នាក់ថ្នាក់ និងសកម្មភាពសិក្សាត្រូវបានភ្ជាប់គ្នា។",
+      "profileBridgeMetaWithSubjects": "ខ្លាំងបំផុត៖ {{strongest}} • ត្រូវផ្តោត៖ {{focus}}",
+      "profileUnavailableTitle": "មិនមានប្រវត្តិរូប",
+      "profileUnavailableBody": "សិស្សនេះមិនទាន់មានប្រវត្តិរូបសង្គមដែលបានភ្ជាប់នៅឡើយទេ។",
+      "subjectSignals": "សញ្ញាមុខវិជ្ជា",
+      "ready": "រួចរាល់",
+      "risk": {
+        "high": "ត្រូវយកចិត្តទុកដាក់ខ្ពស់",
+        "watch": "តាមដានជិតស្និទ្ធ",
+        "healthy": "ស្ថានភាពល្អ"
+      },
+      "insights": {
+        "classAverage": "មធ្យមថ្នាក់",
+        "performanceGap": "គម្លាតលទ្ធផល",
+        "needSupport": "ត្រូវការជំនួយ"
+      },
+      "readiness": {
+        "title": "ភាពរួចរាល់របាយការណ៍",
+        "generated": "បានបង្កើតសម្រាប់ {{month}} {{year}}",
+        "attendance": "វត្តមាន",
+        "grades": "ពិន្ទុ",
+        "ranking": "ចំណាត់ថ្នាក់"
+      },
       "thisMonth": "ខែនេះ",
       "studentSnapshot": "ទិដ្ឋភាពសិស្ស",
       "average": "មធ្យម",
@@ -1804,6 +1831,18 @@
       "level": "កម្រិត",
       "attendanceBreakdown": "សេចក្ដីលម្អិតវត្តមាន",
       "topPerformance": "លទ្ធផលល្អបំផុត",
+      "classRankings": "ចំណាត់ថ្នាក់ថ្នាក់",
+      "classRankingsSub": "សិស្ស {{count}} នាក់ ត្រូវបានចាត់តាមមធ្យមប្រចាំខែ",
+      "classRankingsPreviewSub": "មើលសិស្សកំពូល • មានចំណាត់ថ្នាក់សរុប {{count}} នាក់",
+      "viewFullLeaderboard": "មើលតារាងចំណាត់ថ្នាក់ពេញ",
+      "viewFullLeaderboardMeta": "មើលសិស្សទាំង {{count}} នាក់ ក្នុងអេក្រង់ចំណាត់ថ្នាក់ពេញ",
+      "leaderboardTitle": "តារាងចំណាត់ថ្នាក់",
+      "youCurrentlyRank": "ចំណាត់ថ្នាក់បច្ចុប្បន្នរបស់អ្នក",
+      "updatingRanking": "កំពុងធ្វើបច្ចុប្បន្នភាពចំណាត់ថ្នាក់...",
+      "scope": {
+        "grade": "ថ្នាក់ទី",
+        "school": "សាលា"
+      },
       "gradeDistribution": "ការចែកចាយនិទ្ទេស",
       "gradeLabel": "និទ្ទេស {{level}}",
       "interventionQueue": "ជួរអន្តរាគមន៍",

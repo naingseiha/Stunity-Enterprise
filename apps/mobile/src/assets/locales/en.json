@@ -1797,6 +1797,33 @@
       "loading": "Loading report...",
       "retry": "Retry",
       "liveReport": "Report",
+      "enterpriseView": "Enterprise view",
+      "decisionCenter": "Decision center",
+      "learningProfileLink": "Learning profile link",
+      "profileBridgeTitle": "School performance profile",
+      "profileBridgeMeta": "Academic progress, class rank, and learning activity stay connected.",
+      "profileBridgeMetaWithSubjects": "Strongest: {{strongest}} • Focus: {{focus}}",
+      "profileUnavailableTitle": "Profile unavailable",
+      "profileUnavailableBody": "This student does not have a linked social profile yet.",
+      "subjectSignals": "Subject signals",
+      "ready": "Ready",
+      "risk": {
+        "high": "High attention",
+        "watch": "Watch closely",
+        "healthy": "Healthy"
+      },
+      "insights": {
+        "classAverage": "Class average",
+        "performanceGap": "Performance gap",
+        "needSupport": "Need support"
+      },
+      "readiness": {
+        "title": "Report readiness",
+        "generated": "Generated for {{month}} {{year}}",
+        "attendance": "Attendance",
+        "grades": "Grades",
+        "ranking": "Ranking"
+      },
       "thisMonth": "This month",
       "studentSnapshot": "Student Snapshot",
       "average": "Average",
@@ -1804,6 +1831,18 @@
       "level": "Level",
       "attendanceBreakdown": "Attendance Breakdown",
       "topPerformance": "Top Performance",
+      "classRankings": "Class Rankings",
+      "classRankingsSub": "{{count}} students ranked by monthly average",
+      "classRankingsPreviewSub": "Top students preview • {{count}} total ranked",
+      "viewFullLeaderboard": "View full leaderboard",
+      "viewFullLeaderboardMeta": "See all {{count}} students in a full-screen ranking",
+      "leaderboardTitle": "Leaderboard",
+      "youCurrentlyRank": "You Currently Rank",
+      "updatingRanking": "Updating ranking...",
+      "scope": {
+        "grade": "Grade",
+        "school": "School"
+      },
       "gradeDistribution": "Grade Distribution",
       "gradeLabel": "Grade {{level}}",
       "interventionQueue": "Intervention Queue",

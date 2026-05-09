@@ -45,6 +45,7 @@ import {
   ClassDetailsScreen,
   ClassAnnouncementsScreen,
   ClassReportScreen,
+  ClassLeaderboardScreen,
   ClassAssignmentsScreen,
   ClassMaterialsScreen,
   ClassMembersScreen,
@@ -119,6 +120,7 @@ const ClubsStackNavigator = () => (
     <ClubsStack.Screen name="ClassDetails" component={ClassDetailsScreen} />
     <ClubsStack.Screen name="ClassAnnouncements" component={ClassAnnouncementsScreen} />
     <ClubsStack.Screen name="ClassReport" component={ClassReportScreen} />
+    <ClubsStack.Screen name="ClassLeaderboard" component={ClassLeaderboardScreen} />
     <ClubsStack.Screen name="ClassAssignments" component={ClassAssignmentsScreen} />
     <ClubsStack.Screen name="ClassMaterials" component={ClassMaterialsScreen} />
     <ClubsStack.Screen name="ClassMembers" component={ClassMembersScreen} />
@@ -424,6 +426,7 @@ const MainNavigatorContent = () => {
               'ClassGrades',
               'ClassDetails',
               'ClassReport',
+              'ClassLeaderboard',
               'ClassAttendance',
               'ClassQuizzes',
               'CreateClub',

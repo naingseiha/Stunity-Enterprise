@@ -2148,6 +2148,11 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
             dateOfBirth: true,
             photoUrl: true,
             customFields: true,
+            user: {
+              select: {
+                id: true,
+              },
+            },
           },
         },
       },
@@ -2205,6 +2210,11 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
         dateOfBirth: true,
         photoUrl: true,
         customFields: true,
+        user: {
+          select: {
+            id: true,
+          },
+        },
       },
       orderBy: {
         firstName: 'asc',

@@ -50,6 +50,8 @@ export interface ClassStudent {
   dateOfBirth?: string;
   photoUrl?: string | null;
   customFields?: Record<string, unknown>;
+  userId?: string | null;
+  user?: { id: string } | null;
   nameKh?: string;
   status?: string;
   enrolledAt?: string;
@@ -117,6 +119,8 @@ export interface ClassGradesReport {
       lastName: string;
       englishFirstName?: string;
       englishLastName?: string;
+      userId?: string | null;
+      user?: { id: string } | null;
       studentId?: string;
       khmerName?: string | null;
       photoUrl?: string | null;
@@ -130,6 +134,7 @@ export interface ClassGradesReport {
     failingCount: number;
     passRate: number;
   };
+  rankScope?: 'CLASS' | 'GRADE' | 'SCHOOL';
   generatedAt?: string;
 }
 
@@ -262,9 +267,9 @@ const getDailyAttendanceCacheKey = (classId: string, date: string) => `${classId
 const getDelegationEffectivePermissionCacheKey = (classId: string, date: string) => `${classId}:${date}`;
 const getGradesReportCacheKey = (
   classId: string,
-  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number }
+  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number; scope?: 'CLASS' | 'GRADE' | 'SCHOOL' }
 ) =>
-  `${classId}:${options?.semester ?? 1}:${options?.year ?? 'current'}:${options?.gradeYear ?? ''}:${options?.monthNumber ?? ''}:${options?.month ?? ''}`;
+  `${classId}:${options?.scope ?? 'CLASS'}:${options?.semester ?? 1}:${options?.year ?? 'current'}:${options?.gradeYear ?? ''}:${options?.monthNumber ?? ''}:${options?.month ?? ''}`;
 const getStudentMonthlySummaryCacheKey = (
   studentId: string,
   monthLabel: string,
@@ -648,13 +653,13 @@ export const bulkMarkAttendance = async (
 
 export const getCachedClassGradesReport = (
   classId: string,
-  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number }
+  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number; scope?: 'CLASS' | 'GRADE' | 'SCHOOL' }
 ): ClassGradesReport | null =>
   getCachedResource(_classGradesReportCache, getGradesReportCacheKey(classId, options));
 
 export const getClassGradesReport = async (
   classId: string,
-  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number },
+  options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number; scope?: 'CLASS' | 'GRADE' | 'SCHOOL' },
   force = false
 ): Promise<ClassGradesReport> => {
   const cacheKey = getGradesReportCacheKey(classId, options);
@@ -672,6 +677,7 @@ export const getClassGradesReport = async (
   if (options?.monthNumber !== undefined && options?.monthNumber !== null) params.monthNumber = options.monthNumber;
   if (options?.gradeYear !== undefined && options?.gradeYear !== null) params.gradeYear = options.gradeYear;
   if (options?.month) params.month = options.month;
+  if (options?.scope) params.scope = options.scope;
 
   const request = gradeApi.get<ClassGradesReport>(`/grades/class-report/${classId}`, { params })
     .then((response) => {

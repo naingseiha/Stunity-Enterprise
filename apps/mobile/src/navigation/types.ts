@@ -200,6 +200,13 @@ export type ClubsStackParamList = {
     myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
     linkedStudentId?: string;
   };
+  ClassLeaderboard: {
+    classId: string;
+    className?: string;
+    selectedMonth?: string;
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    linkedStudentId?: string;
+  };
   ClassAssignments: {
     classId: string;
     myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
