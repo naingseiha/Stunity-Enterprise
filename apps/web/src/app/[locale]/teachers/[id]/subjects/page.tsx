@@ -264,7 +264,7 @@ export default function TeacherSubjectsPage() {
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <button onClick={() => router.push(`/${locale}/teachers/${teacherId}`)} className="hover:text-orange-600">
-            {teacher.firstName} {teacher.lastName}
+            {[teacher.lastName, teacher.firstName].filter(Boolean).join(' ')}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_46cf4ea1" /></span>
@@ -282,7 +282,7 @@ export default function TeacherSubjectsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {teacher.firstName} {teacher.lastName}
+                {[teacher.lastName, teacher.firstName].filter(Boolean).join(' ')}
               </h1>
               <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_46cf4ea1" /></p>
             </div>

@@ -245,7 +245,9 @@ export default function ClassMembersScreen() {
         )}
         
         <View style={styles.info}>
-          <Text style={styles.name} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {[item.lastName, item.firstName].filter(Boolean).join(' ')}
+          </Text>
           {item.englishFirstName || item.englishLastName ? (
             <Text style={styles.englishName} numberOfLines={1}>
               {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}

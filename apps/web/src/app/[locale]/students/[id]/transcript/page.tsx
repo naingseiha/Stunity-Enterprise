@@ -270,7 +270,7 @@ export default function StudentTranscriptPage() {
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <button onClick={() => router.push(`/students/${studentId}`)} className="hover:text-orange-600">
-            {student.firstName} {student.lastName}
+            {[student.lastName, student.firstName].filter(Boolean).join(' ')}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_80a85436" /></span>
@@ -327,7 +327,7 @@ export default function StudentTranscriptPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {student.firstName} {student.lastName}
+                    {[student.lastName, student.firstName].filter(Boolean).join(' ')}
                   </h2>
                   <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_416c1520" /> {student.studentId || 'N/A'}</p>
                   <p className="text-gray-500 text-sm">

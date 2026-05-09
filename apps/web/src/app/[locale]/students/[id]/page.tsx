@@ -675,11 +675,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       Student ID: {student.studentId}
                     </p>
                     <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                      {student.lastNameLatin} {student.firstNameLatin}
+                      {[student.lastName, student.firstName].filter(Boolean).join(' ') || student.khmerName}
                     </h1>
-                    <p className="text-base font-bold text-slate-500 dark:text-gray-400">
-                      {student.khmerName}
-                    </p>
+                    {(student.englishLastName || student.englishFirstName) && (
+                      <p className="text-base font-bold text-slate-500 dark:text-gray-400">
+                        {[student.englishLastName, student.englishFirstName].filter(Boolean).join(' ')}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

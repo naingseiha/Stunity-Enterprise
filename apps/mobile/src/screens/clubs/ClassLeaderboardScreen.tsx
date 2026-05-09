@@ -23,14 +23,18 @@ import { classesApi } from '@/api';
 
 const COLORS = {
   blue: '#2F8FF0',
-  pink: '#FF5F93',
+  pink: '#F75C8F',
+  coral: '#FF7A59',
+  teal: '#14B8A6',
+  ink: '#0F172A',
   white: '#FFFFFF',
-  background: '#F8FBFF',
+  background: '#F7FAFC',
   textPrimary: '#111827',
   textSecondary: '#475569',
   textMuted: '#94A3B8',
-  surfaceSoft: '#EFFFFB',
+  surfaceSoft: '#F0FDFA',
   border: '#E5E7EB',
+  borderSoft: '#EEF2F7',
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
@@ -112,9 +116,9 @@ const getAvatarColor = (value?: string) => {
 const getStudentUserId = (student?: { userId?: string | null; user?: { id?: string } | null }) =>
   student?.userId || student?.user?.id || null;
 const getRankColor = (rank?: number) => {
-  if (rank === 1) return '#FFC107';
-  if (rank === 2) return '#B8C0C8';
-  if (rank === 3) return '#B48A4A';
+  if (rank === 1) return '#F7B801';
+  if (rank === 2) return '#AEB8C4';
+  if (rank === 3) return '#B8863B';
   return COLORS.blue;
 };
 const getScoreTone = (score: number) => {
@@ -146,24 +150,20 @@ const LeaderboardRow = React.memo(({
   index,
   linkedStudentId,
   onOpenProfile,
-  noIdLabel,
-  naLabel,
 }: {
   item: RankingStudent;
   index: number;
   linkedStudentId?: string;
   onOpenProfile: (userId?: string | null) => void;
-  noIdLabel: string;
-  naLabel: string;
 }) => {
   const trendIcon = index % 3 === 0 ? 'triangle' : index % 3 === 1 ? 'triangle' : 'remove';
   const trendColor = index % 3 === 0 ? '#FFC107' : index % 3 === 1 ? '#FF7A59' : COLORS.textMuted;
   const average = Number(item.average || 0);
-  const scoreTone = getScoreTone(average);
+  const isActive = linkedStudentId === item.student.id;
 
   return (
     <TouchableOpacity
-      style={[styles.leaderboardRow, linkedStudentId === item.student.id && styles.leaderboardRowActive]}
+      style={[styles.leaderboardRow, isActive && styles.leaderboardRowActive]}
       activeOpacity={0.86}
       onPress={() => onOpenProfile(getStudentUserId(item.student))}
     >
@@ -176,17 +176,14 @@ const LeaderboardRow = React.memo(({
           style={trendColor === '#FF7A59' ? styles.trendDown : undefined}
         />
       </View>
-      <RankingAvatar student={item.student} size={54} textSize={17} />
+      <RankingAvatar student={item.student} size={50} textSize={16} />
       <View style={styles.rowCopy}>
         <Text style={styles.rowName} numberOfLines={1}>
           {formatMoeysName(item.student)}
         </Text>
-        <Text style={styles.rowMeta} numberOfLines={1}>
-          {item.student.studentId || noIdLabel} • {item.gradeLevel || naLabel}
-        </Text>
       </View>
-      <View style={[styles.scoreChip, { backgroundColor: `${scoreTone}14` }]}>
-        <Text style={[styles.scoreChipText, { color: scoreTone }]}>{metricValue(average)}</Text>
+      <View style={styles.scoreChip}>
+        <Text style={styles.scoreChipText}>{metricValue(average)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -422,7 +419,7 @@ export default function ClassLeaderboardScreen() {
                   isFirst && styles.podiumPhotoRingFirst,
                   { borderColor: getRankColor(rank) },
                 ]}>
-                  <RankingAvatar student={row.student} size={isFirst ? 112 : 82} textSize={isFirst ? 30 : 24} />
+                  <RankingAvatar student={row.student} size={isFirst ? 108 : 78} textSize={isFirst ? 30 : 23} />
                   <View style={[styles.podiumRankBadge, { backgroundColor: getRankColor(rank) }]}>
                     <Text style={styles.podiumRankBadgeText}>{rank}</Text>
                   </View>
@@ -476,8 +473,6 @@ export default function ClassLeaderboardScreen() {
         index={index}
         linkedStudentId={linkedStudentId}
         onOpenProfile={openProfile}
-        noIdLabel={t('classScreens.report.noId')}
-        naLabel={t('classScreens.report.na')}
       />
     ),
     [linkedStudentId, openProfile, t]
@@ -593,11 +588,11 @@ export default function ClassLeaderboardScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   safeArea: {
     paddingHorizontal: 18,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   topBar: {
     height: 58,
@@ -625,51 +620,52 @@ const styles = StyleSheet.create({
   topTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: COLORS.ink,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   contentPanel: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingTop: 14,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 34,
   },
   headerContent: {
-    gap: 10,
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   scopeTabs: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     alignItems: 'stretch',
   },
   scopeTab: {
     flex: 1,
-    minHeight: 46,
-    borderRadius: 23,
+    minHeight: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.borderSoft,
   },
   scopeTabActive: {
     backgroundColor: COLORS.pink,
     borderColor: COLORS.pink,
     shadowColor: COLORS.pink,
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 3,
   },
   scopeTabText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '900',
+    color: COLORS.ink,
   },
   scopeTabTextActive: {
     color: COLORS.white,
@@ -689,46 +685,57 @@ const styles = StyleSheet.create({
     color: COLORS.pink,
   },
   podiumWrap: {
-    minHeight: 214,
+    minHeight: 198,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 6,
+    paddingTop: 2,
+    paddingBottom: 2,
   },
   podiumItem: {
     flex: 1,
     alignItems: 'center',
     minWidth: 0,
-    paddingTop: 34,
+    paddingTop: 28,
   },
   podiumItemFirst: {
     paddingTop: 0,
   },
   crownIcon: {
-    marginBottom: 6,
+    marginBottom: 4,
   },
   podiumPhotoRing: {
-    width: 94,
-    height: 94,
-    borderRadius: 47,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    backgroundColor: COLORS.white,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   podiumPhotoRingFirst: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
   },
   podiumRankBadge: {
     position: 'absolute',
-    bottom: -12,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    bottom: -11,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.background,
   },
   podiumRankBadgeText: {
     fontSize: 16,
@@ -736,14 +743,15 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   podiumName: {
-    marginTop: 18,
-    fontSize: 16,
+    marginTop: 16,
+    fontSize: 15,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: COLORS.ink,
+    lineHeight: 22,
   },
   podiumScore: {
-    marginTop: 3,
-    fontSize: 12,
+    marginTop: 2,
+    fontSize: 13,
     fontWeight: '800',
     color: COLORS.textSecondary,
   },
@@ -762,9 +770,9 @@ const styles = StyleSheet.create({
   },
   currentRankCard: {
     minHeight: 74,
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#FBCFE8',
     backgroundColor: COLORS.white,
     flexDirection: 'row',
     alignItems: 'center',
@@ -784,29 +792,31 @@ const styles = StyleSheet.create({
   currentRankNumber: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: COLORS.ink,
   },
   currentRankText: {
     flex: 1,
     minWidth: 0,
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: COLORS.ink,
   },
   leaderboardRow: {
-    minHeight: 82,
-    borderRadius: 22,
-    backgroundColor: COLORS.surfaceSoft,
+    minHeight: 78,
+    borderRadius: 20,
+    borderWidth: 1.2,
+    borderColor: '#CFF3EE',
+    backgroundColor: '#EFFFFB',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 14,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   leaderboardRowActive: {
-    borderWidth: 1,
-    borderColor: COLORS.pink,
-    backgroundColor: '#FFF1F6',
+    borderWidth: 1.5,
+    borderColor: '#F75C8F',
+    backgroundColor: '#FFF6FA',
   },
   rowRankGroup: {
     width: 28,
@@ -816,7 +826,7 @@ const styles = StyleSheet.create({
   rowRank: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: COLORS.ink,
   },
   trendDown: {
     transform: [{ rotate: '180deg' }],
@@ -826,29 +836,26 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   rowName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
-    color: COLORS.textPrimary,
-  },
-  rowMeta: {
-    marginTop: 3,
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: COLORS.ink,
+    lineHeight: 25,
   },
   scoreChip: {
     minWidth: 72,
     height: 38,
     borderRadius: 19,
+    borderWidth: 1,
+    borderColor: '#D7E3E6',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E7F0F0',
+    backgroundColor: '#E4EFF1',
     paddingHorizontal: 12,
   },
   scoreChipText: {
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: COLORS.ink,
   },
   center: {
     flex: 1,

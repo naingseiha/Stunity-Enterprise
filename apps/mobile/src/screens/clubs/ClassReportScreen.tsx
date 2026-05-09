@@ -735,7 +735,7 @@ export default function ClassReportScreen() {
       } else {
         csvLines.push('student_id,student_name,rank,average,grade_level');
         (gradesReport?.students || []).forEach((student) => {
-          const name = `${student.student.firstName || ''} ${student.student.lastName || ''}`.trim().replace(/,/g, ' ');
+          const name = `${student.student.lastName || ''} ${student.student.firstName || ''}`.trim().replace(/,/g, ' ');
           csvLines.push(`${student.student.studentId || 'N/A'},${name},${student.rank || ''},${Number(student.average || 0).toFixed(1)},${student.gradeLevel || 'N/A'}`);
         });
       }
@@ -1217,7 +1217,7 @@ export default function ClassReportScreen() {
                             )}
                           </View>
                           <Text style={styles.podiumName} numberOfLines={1}>
-                            {student.student.firstName} {student.student.lastName}
+                            {[student.student.lastName, student.student.firstName].filter(Boolean).join(' ')}
                           </Text>
                           <Text style={styles.podiumMeta} numberOfLines={1}>
                             {metricValue(student.average)} • {student.gradeLevel || t('classScreens.report.na')}
@@ -1288,7 +1288,7 @@ export default function ClassReportScreen() {
                     </View>
                     <View style={styles.rankInfo}>
                       <Text style={styles.rankName}>
-                        {student.student.firstName} {student.student.lastName}
+                        {[student.student.lastName, student.student.firstName].filter(Boolean).join(' ')}
                       </Text>
                       <Text style={styles.rankMeta}>{student.student.studentId || t('classScreens.report.noId')}</Text>
                     </View>
