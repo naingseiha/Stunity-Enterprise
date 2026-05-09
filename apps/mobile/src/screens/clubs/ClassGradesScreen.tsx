@@ -288,7 +288,7 @@ export default function ClassGradesScreen() {
   const visibleTeacherSubjectRef = useRef<string | null>(null);
 
   const isTeacher = myRole === 'TEACHER';
-  const effectiveStudentId = linkedStudentId || (myRole === 'STUDENT' ? user?.id : undefined);
+  const effectiveStudentId = linkedStudentId || (myRole === 'STUDENT' ? user?.student?.id : undefined);
   const reportStudents = classReport?.students || [];
   const reportStats = classReport?.statistics;
   const isGradePortalAdmin = useMemo(() => GRADE_ADMIN_MOBILE_ROLES.has(String(user?.role || '')), [user?.role]);
@@ -679,6 +679,7 @@ export default function ClassGradesScreen() {
     try {
       setSaving(true);
       await gradeApi.post('/grades/batch', { grades: payload });
+      classesApi.invalidateClassGradeCaches(classId);
       Alert.alert(t('common.success'), t('classScreens.grades.updated'));
       await loadGrades(true);
       await loadMonthlySheetStatus();

@@ -648,6 +648,16 @@ export const bulkMarkAttendance = async (
       });
     });
   }
+  for (const key of _classAttendanceSummaryCache.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classAttendanceSummaryCache.delete(key);
+    }
+  }
+  for (const key of _classDetailCache.keys()) {
+    if (key.includes(`"classId":"${classId}"`)) {
+      _classDetailCache.delete(key);
+    }
+  }
   return response.data;
 };
 
@@ -739,6 +749,62 @@ export const getStudentMonthlySummary = async (
 
   _studentMonthlySummaryInFlight.set(cacheKey, request);
   return request;
+};
+
+export const invalidateClassGradeCaches = (classId?: string, studentId?: string): void => {
+  if (!classId && !studentId) {
+    _classGradesReportCache.clear();
+    _classGradesReportInFlight.clear();
+    _studentMonthlySummaryCache.clear();
+    _studentMonthlySummaryInFlight.clear();
+    _classDetailCache.clear();
+    _classDetailInFlight.clear();
+    return;
+  }
+
+  if (classId) {
+    for (const key of _classGradesReportCache.keys()) {
+      if (key.startsWith(`${classId}:`)) {
+        _classGradesReportCache.delete(key);
+      }
+    }
+
+    for (const key of _classGradesReportInFlight.keys()) {
+      if (key.startsWith(`${classId}:`)) {
+        _classGradesReportInFlight.delete(key);
+      }
+    }
+
+    for (const key of _classDetailCache.keys()) {
+      if (key.includes(`"classId":"${classId}"`)) {
+        _classDetailCache.delete(key);
+      }
+    }
+
+    for (const key of _classDetailInFlight.keys()) {
+      if (key.includes(`"classId":"${classId}"`)) {
+        _classDetailInFlight.delete(key);
+      }
+    }
+  }
+
+  if (studentId || classId) {
+    for (const key of _studentMonthlySummaryCache.keys()) {
+      const matchesStudent = studentId ? key.startsWith(`${studentId}:`) : true;
+      const matchesClass = classId ? key.includes(`:${classId}:`) : true;
+      if (matchesStudent && matchesClass) {
+        _studentMonthlySummaryCache.delete(key);
+      }
+    }
+
+    for (const key of _studentMonthlySummaryInFlight.keys()) {
+      const matchesStudent = studentId ? key.startsWith(`${studentId}:`) : true;
+      const matchesClass = classId ? key.includes(`:${classId}:`) : true;
+      if (matchesStudent && matchesClass) {
+        _studentMonthlySummaryInFlight.delete(key);
+      }
+    }
+  }
 };
 
 export const getTeacherById = async (teacherId: string): Promise<Record<string, unknown> | null> => {

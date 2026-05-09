@@ -1840,8 +1840,8 @@
       "youCurrentlyRank": "ចំណាត់ថ្នាក់បច្ចុប្បន្នរបស់អ្នក",
       "updatingRanking": "កំពុងធ្វើបច្ចុប្បន្នភាពចំណាត់ថ្នាក់...",
       "scope": {
-        "grade": "ថ្នាក់ទី",
-        "school": "សាលា"
+        "grade": "កម្រិតថ្នាក់",
+        "school": "កម្រិតសាលា"
       },
       "gradeDistribution": "ការចែកចាយនិទ្ទេស",
       "gradeLabel": "និទ្ទេស {{level}}",

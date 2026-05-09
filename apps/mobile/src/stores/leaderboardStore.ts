@@ -8,6 +8,8 @@ interface LeaderboardState {
     weeklyLeaderboard: any[];
     userGlobalStanding: UserStanding | null;
     userWeeklyStanding: any | null;
+    globalFetchedAt: number | null;
+    weeklyFetchedAt: number | null;
     isLoading: boolean;
     isRefreshing: boolean;
     error: string | null;
@@ -16,6 +18,10 @@ interface LeaderboardState {
     fetchWeeklyLeaderboard: (isRefresh?: boolean) => Promise<void>;
 }
 
+const LEADERBOARD_CACHE_TTL = 60_000;
+let globalLeaderboardInFlight: Promise<void> | null = null;
+let weeklyLeaderboardInFlight: Promise<void> | null = null;
+
 export const useLeaderboardStore = create<LeaderboardState>()(
     persist(
         (set, get) => ({
@@ -23,11 +29,23 @@ export const useLeaderboardStore = create<LeaderboardState>()(
             weeklyLeaderboard: [],
             userGlobalStanding: null,
             userWeeklyStanding: null,
+            globalFetchedAt: null,
+            weeklyFetchedAt: null,
             isLoading: false,
             isRefreshing: false,
             error: null,
 
             fetchGlobalLeaderboard: async (isRefresh = false) => {
+                const state = get();
+                const hasFreshCache =
+                    !isRefresh &&
+                    state.globalLeaderboard.length > 0 &&
+                    state.globalFetchedAt !== null &&
+                    Date.now() - state.globalFetchedAt < LEADERBOARD_CACHE_TTL;
+
+                if (hasFreshCache) return;
+                if (!isRefresh && globalLeaderboardInFlight) return globalLeaderboardInFlight;
+
                 try {
                     if (isRefresh) {
                         set({ isRefreshing: true, error: null });
@@ -35,13 +53,21 @@ export const useLeaderboardStore = create<LeaderboardState>()(
                         set({ isLoading: true, error: null });
                     }
 
-                    const response = await leaderboardApi.getGlobalLeaderboard(1, 50);
-                    set({
-                        globalLeaderboard: response.leaderboard,
-                        userGlobalStanding: response.userStanding,
-                        isLoading: false,
-                        isRefreshing: false,
-                    });
+                    globalLeaderboardInFlight = leaderboardApi.getGlobalLeaderboard(1, 50)
+                        .then((response) => {
+                            set({
+                                globalLeaderboard: response.leaderboard,
+                                userGlobalStanding: response.userStanding,
+                                globalFetchedAt: Date.now(),
+                                isLoading: false,
+                                isRefreshing: false,
+                            });
+                        })
+                        .finally(() => {
+                            globalLeaderboardInFlight = null;
+                        });
+
+                    await globalLeaderboardInFlight;
                 } catch (error: any) {
                     console.error('Fetch global leaderboard error:', error);
                     set({
@@ -53,6 +79,16 @@ export const useLeaderboardStore = create<LeaderboardState>()(
             },
 
             fetchWeeklyLeaderboard: async (isRefresh = false) => {
+                const state = get();
+                const hasFreshCache =
+                    !isRefresh &&
+                    state.weeklyLeaderboard.length > 0 &&
+                    state.weeklyFetchedAt !== null &&
+                    Date.now() - state.weeklyFetchedAt < LEADERBOARD_CACHE_TTL;
+
+                if (hasFreshCache) return;
+                if (!isRefresh && weeklyLeaderboardInFlight) return weeklyLeaderboardInFlight;
+
                 try {
                     if (isRefresh) {
                         set({ isRefreshing: true, error: null });
@@ -60,13 +96,21 @@ export const useLeaderboardStore = create<LeaderboardState>()(
                         set({ isLoading: true, error: null });
                     }
 
-                    const response = await leaderboardApi.getWeeklyLeaderboard();
-                    set({
-                        weeklyLeaderboard: response.leaderboard,
-                        userWeeklyStanding: response.userStanding,
-                        isLoading: false,
-                        isRefreshing: false,
-                    });
+                    weeklyLeaderboardInFlight = leaderboardApi.getWeeklyLeaderboard()
+                        .then((response) => {
+                            set({
+                                weeklyLeaderboard: response.leaderboard,
+                                userWeeklyStanding: response.userStanding,
+                                weeklyFetchedAt: Date.now(),
+                                isLoading: false,
+                                isRefreshing: false,
+                            });
+                        })
+                        .finally(() => {
+                            weeklyLeaderboardInFlight = null;
+                        });
+
+                    await weeklyLeaderboardInFlight;
                 } catch (error: any) {
                     console.error('Fetch weekly leaderboard error:', error);
                     set({
@@ -83,6 +127,10 @@ export const useLeaderboardStore = create<LeaderboardState>()(
             partialize: (state) => ({
                 globalLeaderboard: state.globalLeaderboard,
                 userGlobalStanding: state.userGlobalStanding,
+                globalFetchedAt: state.globalFetchedAt,
+                weeklyLeaderboard: state.weeklyLeaderboard,
+                userWeeklyStanding: state.userWeeklyStanding,
+                weeklyFetchedAt: state.weeklyFetchedAt,
             }), // only persist some state to allow offline viewing
         }
     )

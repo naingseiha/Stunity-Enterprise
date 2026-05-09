@@ -504,15 +504,11 @@ export default function ClassReportScreen() {
     ]).finally(() => setRefreshing(false));
   }, [loadData, loadStudentMonthlyGrades]);
 
-  const topStudents = useMemo(() => {
-    return [...(gradesReport?.students || [])]
-      .sort((a, b) => (a.rank || Number.MAX_SAFE_INTEGER) - (b.rank || Number.MAX_SAFE_INTEGER))
-      .slice(0, 5);
-  }, [gradesReport?.students]);
   const classRankingStudents = useMemo(() => {
     return [...(gradesReport?.students || [])]
       .sort((a, b) => (a.rank || Number.MAX_SAFE_INTEGER) - (b.rank || Number.MAX_SAFE_INTEGER));
   }, [gradesReport?.students]);
+  const topStudents = useMemo(() => classRankingStudents.slice(0, 5), [classRankingStudents]);
   const podiumStudents = useMemo(() => classRankingStudents.slice(0, 3), [classRankingStudents]);
   const atRiskStudents = useMemo(() => {
     return [...(gradesReport?.students || [])]
@@ -653,6 +649,11 @@ export default function ClassReportScreen() {
   }, [navigation, t]);
 
   const handleOpenClassLeaderboard = useCallback(() => {
+    void Promise.allSettled([
+      classesApi.getClassGradesReport(classId, { ...gradesReportOpts, scope: 'GRADE' }, false),
+      classesApi.getClassGradesReport(classId, { ...gradesReportOpts, scope: 'SCHOOL' }, false),
+    ]);
+
     navigation.navigate('ClassLeaderboard', {
       classId,
       className: reportTitle,
@@ -660,7 +661,7 @@ export default function ClassReportScreen() {
       myRole,
       linkedStudentId,
     });
-  }, [classId, linkedStudentId, myRole, navigation, reportTitle, selectedMonth]);
+  }, [classId, gradesReportOpts, linkedStudentId, myRole, navigation, reportTitle, selectedMonth]);
 
   const handleShareReport = useCallback(async () => {
     const lines = [

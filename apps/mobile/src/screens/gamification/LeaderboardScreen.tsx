@@ -1,5 +1,5 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -14,90 +14,149 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 
 import { Haptics } from '@/services/haptics';
 import { useLeaderboardStore } from '../../stores';
 import { LeaderboardEntry } from '../../api/leaderboard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+type LeaderboardTab = 'ALL_TIME' | 'WEEKLY';
+
+const getRankBadgeProps = (rank: number) => {
+    switch (rank) {
+        case 1: return { color: '#FBBF24', name: 'medal', bg: 'rgba(251, 191, 36, 0.2)' };
+        case 2: return { color: '#9CA3AF', name: 'medal', bg: 'rgba(156, 163, 175, 0.2)' };
+        case 3: return { color: '#B45309', name: 'medal', bg: 'rgba(180, 83, 9, 0.2)' };
+        default: return { color: 'rgba(255,255,255,0.6)', name: 'ribbon', bg: 'transparent' };
+    }
+};
+
+const LeaderboardRow = React.memo(({ item }: { item: LeaderboardEntry }) => {
+    const isTop3 = item.rank <= 3;
+    const badge = getRankBadgeProps(item.rank);
+
+    return (
+        <View style={[styles.entryCard, isTop3 && styles.top3Card]}>
+            <LinearGradient
+                colors={isTop3 ? ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)'] : ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
+                style={styles.entryGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            >
+                <View style={styles.rankContainer}>
+                    {isTop3 ? (
+                        <View style={[styles.badgeContainer, { backgroundColor: badge.bg }]}>
+                            <Ionicons name={badge.name as any} size={20} color={badge.color} />
+                        </View>
+                    ) : (
+                        <Text style={styles.rankNumber}>{item.rank}</Text>
+                    )}
+                </View>
+
+                <View style={styles.avatarContainer}>
+                    <Image
+                        source={{ uri: item.user.profilePictureUrl || `https://ui-avatars.com/api/?name=${item.user.firstName}+${item.user.lastName}&background=random` }}
+                        style={[styles.avatar, isTop3 && { borderColor: badge.color, borderWidth: 2 }]}
+                    />
+                </View>
+
+                <View style={styles.userInfo}>
+                    <Text style={styles.userName} numberOfLines={1}>
+                        {item.user.firstName} {item.user.lastName}
+                    </Text>
+                    <Text style={styles.userStats}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {item.level}  •  {item.xp.toLocaleString()} XP</Text>
+                </View>
+
+                {isTop3 && (
+                    <View style={styles.glowEffect}>
+                        <Ionicons name="sparkles" size={16} color={badge.color} />
+                    </View>
+                )}
+            </LinearGradient>
+        </View>
+    );
+});
 
 
 export const LeaderboardScreen = ({ navigation }: any) => {
-    const { globalLeaderboard, userGlobalStanding, isLoading, isRefreshing, fetchGlobalLeaderboard } = useLeaderboardStore();
-    const [activeTab, setActiveTab] = useState<'GLOBAL' | 'SCHOOL'>('GLOBAL');
+    const { t } = useTranslation();
+    const {
+        globalLeaderboard,
+        weeklyLeaderboard,
+        userGlobalStanding,
+        userWeeklyStanding,
+        isLoading,
+        isRefreshing,
+        fetchGlobalLeaderboard,
+        fetchWeeklyLeaderboard,
+    } = useLeaderboardStore();
+    const [activeTab, setActiveTab] = useState<LeaderboardTab>('ALL_TIME');
 
     useEffect(() => {
-        fetchGlobalLeaderboard();
-    }, []);
+        void fetchGlobalLeaderboard();
+        setTimeout(() => {
+            void fetchWeeklyLeaderboard();
+        }, 250);
+    }, [fetchGlobalLeaderboard, fetchWeeklyLeaderboard]);
+
+    useEffect(() => {
+        if (activeTab === 'WEEKLY') {
+            void fetchWeeklyLeaderboard();
+        }
+    }, [activeTab, fetchWeeklyLeaderboard]);
+
+    const normalizedWeeklyLeaderboard = useMemo<LeaderboardEntry[]>(() => {
+        return weeklyLeaderboard.map((entry: any) => {
+            const xp = Number(entry._sum?.xpEarned || 0);
+            return {
+                id: `weekly-${entry.userId}`,
+                userId: entry.userId,
+                xp,
+                level: Math.max(1, Math.floor(xp / 100) + 1),
+                totalQuizzes: Number(entry._count?.id || 0),
+                totalPoints: Number(entry._sum?.score || 0),
+                correctAnswers: 0,
+                totalAnswers: 0,
+                liveQuizWins: 0,
+                liveQuizTotal: 0,
+                createdAt: '',
+                updatedAt: '',
+                rank: Number(entry.rank || 0),
+                user: {
+                    id: entry.user?.id || entry.userId,
+                    firstName: entry.user?.firstName || '',
+                    lastName: entry.user?.lastName || '',
+                    profilePictureUrl: entry.user?.profilePictureUrl || null,
+                    email: entry.user?.email || '',
+                },
+            };
+        });
+    }, [weeklyLeaderboard]);
+
+    const visibleLeaderboard = activeTab === 'WEEKLY' ? normalizedWeeklyLeaderboard : globalLeaderboard;
+    const visibleStanding = activeTab === 'WEEKLY' ? userWeeklyStanding : userGlobalStanding;
 
     const onRefresh = useCallback(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        fetchGlobalLeaderboard(true);
-    }, [fetchGlobalLeaderboard]);
-
-    const getRankBadgeProps = (rank: number) => {
-        switch (rank) {
-            case 1: return { color: '#FBBF24', name: 'medal', bg: 'rgba(251, 191, 36, 0.2)' }; // Gold
-            case 2: return { color: '#9CA3AF', name: 'medal', bg: 'rgba(156, 163, 175, 0.2)' }; // Silver
-            case 3: return { color: '#B45309', name: 'medal', bg: 'rgba(180, 83, 9, 0.2)' }; // Bronze
-            default: return { color: 'rgba(255,255,255,0.6)', name: 'ribbon', bg: 'transparent' };
+        if (activeTab === 'WEEKLY') {
+            void fetchWeeklyLeaderboard(true);
+        } else {
+            void fetchGlobalLeaderboard(true);
         }
-    };
+    }, [activeTab, fetchGlobalLeaderboard, fetchWeeklyLeaderboard]);
 
-    const renderLeaderboardItem = ({ item, index }: { item: LeaderboardEntry, index: number }) => {
-        const isTop3 = item.rank <= 3;
-        const badge = getRankBadgeProps(item.rank);
+    const renderLeaderboardItem = useCallback(({ item }: { item: LeaderboardEntry }) => (
+        <LeaderboardRow item={item} />
+    ), []);
+    const keyExtractor = useCallback((item: LeaderboardEntry) => `${activeTab}-${item.userId}`, [activeTab]);
 
-        return (
-            <Animated.View>
-                <View style={[styles.entryCard, isTop3 && styles.top3Card]}>
-                    <LinearGradient
-                        colors={isTop3 ? ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)'] : ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
-                        style={styles.entryGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                    >
-                        <View style={styles.rankContainer}>
-                            {isTop3 ? (
-                                <View style={[styles.badgeContainer, { backgroundColor: badge.bg }]}>
-                                    <Ionicons name={badge.name as any} size={20} color={badge.color} />
-                                </View>
-                            ) : (
-                                <Text style={styles.rankNumber}>{item.rank}</Text>
-                            )}
-                        </View>
-
-                        <View style={styles.avatarContainer}>
-                            <Image
-                                source={{ uri: item.user.profilePictureUrl || `https://ui-avatars.com/api/?name=${item.user.firstName}+${item.user.lastName}&background=random` }}
-                                style={[styles.avatar, isTop3 && { borderColor: badge.color, borderWidth: 2 }]}
-                            />
-                        </View>
-
-                        <View style={styles.userInfo}>
-                            <Text style={styles.userName} numberOfLines={1}>
-                                {item.user.firstName} {item.user.lastName}
-                            </Text>
-                            <Text style={styles.userStats}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {item.level}  •  {item.xp.toLocaleString()} XP</Text>
-                        </View>
-
-                        {isTop3 && (
-                            <View style={styles.glowEffect}>
-                                <Ionicons name="sparkles" size={16} color={badge.color} />
-                            </View>
-                        )}
-                    </LinearGradient>
-                </View>
-            </Animated.View>
-        );
-    };
-
-    const renderHeader = () => (
+    const renderHeader = useCallback(() => (
         <Animated.View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitleMain}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_49e3a225" /></Text>
             <Text style={styles.headerSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_08ef8bfb" /></Text>
         </Animated.View>
-    );
+    ), []);
 
     return (
         <View style={styles.container}>
@@ -127,46 +186,53 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                 <View style={styles.tabContainerWrapper}>
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
-                            style={[styles.tab, activeTab === 'GLOBAL' && styles.activeTab]}
+                            style={[styles.tab, activeTab === 'ALL_TIME' && styles.activeTab]}
                             onPress={() => {
                                 Haptics.selectionAsync();
-                                setActiveTab('GLOBAL');
+                                setActiveTab('ALL_TIME');
                             }}
                         >
-                            <Text style={[styles.tabText, activeTab === 'GLOBAL' && styles.activeTabText]}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_8e098d24" /></Text>
+                            <Text style={[styles.tabText, activeTab === 'ALL_TIME' && styles.activeTabText]}>
+                                {t('leaderboard.tabs.allTime', { defaultValue: 'All time' })}
+                            </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.tab, activeTab === 'SCHOOL' && styles.activeTab]}
+                            style={[styles.tab, activeTab === 'WEEKLY' && styles.activeTab]}
                             onPress={() => {
                                 Haptics.selectionAsync();
-                                setActiveTab('SCHOOL');
+                                setActiveTab('WEEKLY');
                             }}
                         >
-                            <Text style={[styles.tabText, activeTab === 'SCHOOL' && styles.activeTabText]}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_38824c08" /></Text>
+                            <Text style={[styles.tabText, activeTab === 'WEEKLY' && styles.activeTabText]}>
+                                {t('leaderboard.tabs.weekly', { defaultValue: 'Weekly' })}
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {isLoading && !isRefreshing && globalLeaderboard.length === 0 ? (
+                {isLoading && !isRefreshing && visibleLeaderboard.length === 0 ? (
                     <View style={styles.loadingContainer}>
                         <Ionicons name="trophy-outline" size={48} color="rgba(255,255,255,0.2)" />
                         <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_2df13328" /></Text>
                     </View>
                 ) : (
                     <FlatList
-                        data={globalLeaderboard}
-                        keyExtractor={(item: any) => item.userId}
+                        data={visibleLeaderboard}
+                        keyExtractor={keyExtractor}
                         renderItem={renderLeaderboardItem}
                         ListHeaderComponent={renderHeader}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#FFF" />}
+                        initialNumToRender={12}
+                        windowSize={7}
+                        removeClippedSubviews={Platform.OS === 'android'}
                     />
                 )}
             </SafeAreaView>
 
             {/* Sticky User Position Card */}
-            {userGlobalStanding && (
+            {visibleStanding && (
                 <Animated.View style={styles.stickyFooterOverlay}>
                     <LinearGradient
                         colors={['rgba(15, 23, 42, 0.9)', 'rgba(15, 23, 42, 0.95)']}
@@ -180,7 +246,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                 end={{ x: 1, y: 1 }}
                             >
                                 <View style={styles.rankContainer}>
-                                    <Text style={[styles.rankNumber, { color: '#FFF' }]}>{userGlobalStanding.rank || '-'}</Text>
+                                    <Text style={[styles.rankNumber, { color: '#FFF' }]}>{visibleStanding.rank || '-'}</Text>
                                 </View>
                                 <View style={styles.avatarContainer}>
                                     <View style={[styles.avatar, styles.myAvatarPlaceholder]}>
@@ -192,7 +258,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                         <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_57f1a860" />
                                     </Text>
                                     <Text style={[styles.userStats, { color: 'rgba(255,255,255,0.8)' }]}>
-                                        <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {userGlobalStanding.level}  •  {userGlobalStanding.xp.toLocaleString()} XP
+                                        <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {visibleStanding.level || 1}  •  {Number(visibleStanding.xp || visibleStanding._sum?.xpEarned || 0).toLocaleString()} XP
                                     </Text>
                                 </View>
                                 <View style={styles.glowEffect}>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -173,20 +173,37 @@ export default function ClubAcademicsScreen() {
   const route = useRoute<any>();
   const { clubId, clubName } = route.params as ClubsStackParamList['ClubAcademics'];
   const user = useAuthStore((state) => state.user);
+  const initialCachedMembers = useMemo(() => clubsApi.getCachedClubMembers(clubId) || [], [clubId]);
+  const initialCachedSubjects = useMemo(() => clubAcademicsApi.getCachedClubSubjects(clubId) || [], [clubId]);
+  const initialCachedGrades = useMemo(() => clubAcademicsApi.getCachedClubGrades(clubId) || [], [clubId]);
+  const initialCachedSessions = useMemo(() => clubAcademicsApi.getCachedClubSessions(clubId) || [], [clubId]);
+  const initialCachedAttendanceStats = useMemo(() => clubAcademicsApi.getCachedClubAttendanceStatistics(clubId), [clubId]);
+  const initialCachedReport = useMemo(() => clubAcademicsApi.getCachedClubReport(clubId), [clubId]);
+  const initialHasVisibleData = Boolean(
+    initialCachedMembers.length ||
+    initialCachedSubjects.length ||
+    initialCachedGrades.length ||
+    initialCachedSessions.length ||
+    initialCachedAttendanceStats ||
+    initialCachedReport
+  );
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialHasVisibleData);
   const [refreshing, setRefreshing] = useState(false);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [members, setMembers] = useState<ClubMember[]>([]);
-  const [subjects, setSubjects] = useState<clubAcademicsApi.ClubSubject[]>([]);
-  const [grades, setGrades] = useState<clubAcademicsApi.ClubGrade[]>([]);
-  const [sessions, setSessions] = useState<clubAcademicsApi.ClubSession[]>([]);
-  const [attendanceStats, setAttendanceStats] = useState<clubAcademicsApi.ClubAttendanceStatistics | null>(null);
+  const [members, setMembers] = useState<ClubMember[]>(initialCachedMembers);
+  const [subjects, setSubjects] = useState<clubAcademicsApi.ClubSubject[]>(initialCachedSubjects);
+  const [grades, setGrades] = useState<clubAcademicsApi.ClubGrade[]>(initialCachedGrades);
+  const [sessions, setSessions] = useState<clubAcademicsApi.ClubSession[]>(initialCachedSessions);
+  const [attendanceStats, setAttendanceStats] = useState<clubAcademicsApi.ClubAttendanceStatistics | null>(initialCachedAttendanceStats);
   const [attendanceRecords, setAttendanceRecords] = useState<clubAcademicsApi.ClubAttendanceRecord[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [clubReport, setClubReport] = useState<any | null>(null);
+  const [clubReport, setClubReport] = useState<any | null>(initialCachedReport);
+  const activeFetchRef = useRef(0);
+  const hasVisibleDataRef = useRef(initialHasVisibleData);
 
   const [selectedTerm, setSelectedTerm] = useState<string>('ALL');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -280,9 +297,12 @@ export default function ClubAcademicsScreen() {
     return summary;
   }, [attendanceRecords]);
 
-  const fetchAttendanceForSession = useCallback(async (sessionId: string) => {
+  const fetchAttendanceForSession = useCallback(async (sessionId: string, force = false) => {
     try {
-      const records = await clubAcademicsApi.getSessionAttendance(sessionId);
+      const cached = !force ? clubAcademicsApi.getCachedSessionAttendance(sessionId) : null;
+      if (cached) setAttendanceRecords(cached);
+
+      const records = await clubAcademicsApi.getSessionAttendance(sessionId, force);
       setAttendanceRecords(records);
     } catch (err: any) {
       setAttendanceRecords([]);
@@ -292,17 +312,29 @@ export default function ClubAcademicsScreen() {
 
   const fetchAll = useCallback(
     async (force = false) => {
-      if (!force) setLoading(true);
+      const requestId = activeFetchRef.current + 1;
+      activeFetchRef.current = requestId;
+
+      if (force) {
+        setBackgroundLoading(hasVisibleDataRef.current);
+      } else if (!hasVisibleDataRef.current) {
+        setLoading(true);
+      } else {
+        setBackgroundLoading(true);
+      }
+      const hadVisibleData = hasVisibleDataRef.current;
 
       try {
         setError(null);
         const coreResults = await Promise.allSettled([
           clubsApi.getClubMembers(clubId, force),
-          clubAcademicsApi.getClubSubjects(clubId),
-          clubAcademicsApi.getClubGrades(clubId),
-          clubAcademicsApi.getClubSessions(clubId),
-          clubAcademicsApi.getClubAttendanceStatistics(clubId),
+          clubAcademicsApi.getClubSubjects(clubId, force),
+          clubAcademicsApi.getClubGrades(clubId, undefined, force),
+          clubAcademicsApi.getClubSessions(clubId, force),
+          clubAcademicsApi.getClubAttendanceStatistics(clubId, force),
         ]);
+
+        if (activeFetchRef.current !== requestId) return;
 
         const membersResult = coreResults[0];
         const fetchedMembers = membersResult.status === 'fulfilled' ? membersResult.value || [] : [];
@@ -312,11 +344,14 @@ export default function ClubAcademicsScreen() {
         if (coreResults[2].status === 'fulfilled') setGrades(coreResults[2].value || []);
         if (coreResults[3].status === 'fulfilled') setSessions(coreResults[3].value || []);
         if (coreResults[4].status === 'fulfilled') setAttendanceStats(coreResults[4].value || null);
+        hasVisibleDataRef.current = true;
 
         const firstCoreError = coreResults.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
 
         if (firstCoreError?.reason) {
-          setError(firstCoreError.reason?.message || t('clubScreens.academics.someDataLoadFailed'));
+          if (!hadVisibleData) {
+            setError(firstCoreError.reason?.message || t('clubScreens.academics.someDataLoadFailed'));
+          }
           return;
         }
 
@@ -331,17 +366,22 @@ export default function ClubAcademicsScreen() {
         }
 
         try {
-          const report = await clubAcademicsApi.getClubReport(clubId);
+          const report = await clubAcademicsApi.getClubReport(clubId, force);
+          if (activeFetchRef.current !== requestId) return;
           setClubReport(report || null);
         } catch (reportError: any) {
+          if (activeFetchRef.current !== requestId) return;
           setClubReport(null);
           if (!isPermissionError(reportError)) {
             setError(reportError?.message || t('clubScreens.academics.someDataLoadFailed'));
           }
         }
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (activeFetchRef.current === requestId) {
+          setLoading(false);
+          setRefreshing(false);
+          setBackgroundLoading(false);
+        }
       }
     },
     [clubId, t, user?.id]
@@ -385,7 +425,7 @@ export default function ClubAcademicsScreen() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchAll(true);
+    void fetchAll(true);
   }, [fetchAll]);
 
   const handleCreateSubject = useCallback(async () => {
@@ -414,6 +454,7 @@ export default function ClubAcademicsScreen() {
       setNewSubjectName('');
       setNewSubjectCode('');
       setNewSubjectWeight('1');
+      clubAcademicsApi.invalidateClubAcademicsCache(clubId);
       await fetchAll(true);
     } catch (err: any) {
       Alert.alert(t('clubScreens.academics.createSubjectFailed'), err?.message || t('common.tryAgain'));
@@ -458,6 +499,7 @@ export default function ClubAcademicsScreen() {
       if (termInput.trim().length > 0) {
         setSelectedTerm(normalizeTerm(termInput));
       }
+      clubAcademicsApi.invalidateClubAcademicsCache(clubId);
       await fetchAll(true);
     } catch (err: any) {
       Alert.alert(t('clubScreens.academics.saveGradeFailed'), err?.message || t('common.tryAgain'));
@@ -493,6 +535,7 @@ export default function ClubAcademicsScreen() {
         title,
         sessionDate: isoDate,
       });
+      clubAcademicsApi.invalidateClubAcademicsCache(clubId);
       await fetchAll(true);
       if (session?.id) setSelectedSessionId(session.id);
     } catch (err: any) {
@@ -507,10 +550,11 @@ export default function ClubAcademicsScreen() {
       if (!canManageAcademic || !selectedSessionId) return;
       try {
         await clubAcademicsApi.markSessionAttendance(selectedSessionId, { memberId, status });
+        clubAcademicsApi.invalidateClubAcademicsCache(clubId, selectedSessionId);
         await Promise.all([
-          fetchAttendanceForSession(selectedSessionId),
+          fetchAttendanceForSession(selectedSessionId, true),
           (async () => {
-            const nextStats = await clubAcademicsApi.getClubAttendanceStatistics(clubId);
+            const nextStats = await clubAcademicsApi.getClubAttendanceStatistics(clubId, true);
             setAttendanceStats(nextStats);
           })(),
         ]);
@@ -582,7 +626,11 @@ export default function ClubAcademicsScreen() {
             <Text style={styles.topSub} numberOfLines={1}>{clubName || t('clubScreens.academics.structuredClass')}</Text>
           </View>
           <TouchableOpacity onPress={handleRefresh} style={styles.backBtn}>
-            <Ionicons name="refresh-outline" size={20} color={COLORS.text} />
+            {backgroundLoading && !refreshing ? (
+              <ActivityIndicator size="small" color={COLORS.text} />
+            ) : (
+              <Ionicons name="refresh-outline" size={20} color={COLORS.text} />
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>

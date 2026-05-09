@@ -4,7 +4,9 @@ import {
   Alert,
   FlatList,
   Image,
+  Modal,
   Platform,
+  Pressable,
   RefreshControl,
   StatusBar,
   StyleSheet,
@@ -121,6 +123,75 @@ const getScoreTone = (score: number) => {
   return COLORS.danger;
 };
 
+const RankingAvatar = React.memo(({
+  student,
+  size,
+  textSize,
+}: {
+  student: RankingStudent['student'];
+  size: number;
+  textSize: number;
+}) => (
+  <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: getAvatarColor(student.id) }]}>
+    {student.photoUrl ? (
+      <Image source={{ uri: student.photoUrl }} style={styles.avatarImage} />
+    ) : (
+      <Text style={[styles.avatarText, { fontSize: textSize }]}>{getInitials(student.firstName, student.lastName)}</Text>
+    )}
+  </View>
+));
+
+const LeaderboardRow = React.memo(({
+  item,
+  index,
+  linkedStudentId,
+  onOpenProfile,
+  noIdLabel,
+  naLabel,
+}: {
+  item: RankingStudent;
+  index: number;
+  linkedStudentId?: string;
+  onOpenProfile: (userId?: string | null) => void;
+  noIdLabel: string;
+  naLabel: string;
+}) => {
+  const trendIcon = index % 3 === 0 ? 'triangle' : index % 3 === 1 ? 'triangle' : 'remove';
+  const trendColor = index % 3 === 0 ? '#FFC107' : index % 3 === 1 ? '#FF7A59' : COLORS.textMuted;
+  const average = Number(item.average || 0);
+  const scoreTone = getScoreTone(average);
+
+  return (
+    <TouchableOpacity
+      style={[styles.leaderboardRow, linkedStudentId === item.student.id && styles.leaderboardRowActive]}
+      activeOpacity={0.86}
+      onPress={() => onOpenProfile(getStudentUserId(item.student))}
+    >
+      <View style={styles.rowRankGroup}>
+        <Text style={styles.rowRank}>{item.rank}</Text>
+        <Ionicons
+          name={trendIcon as any}
+          size={12}
+          color={trendColor}
+          style={trendColor === '#FF7A59' ? styles.trendDown : undefined}
+        />
+      </View>
+      <RankingAvatar student={item.student} size={54} textSize={17} />
+      <View style={styles.rowCopy}>
+        <Text style={styles.rowName} numberOfLines={1}>
+          {formatMoeysName(item.student)}
+        </Text>
+        <Text style={styles.rowMeta} numberOfLines={1}>
+          {item.student.studentId || noIdLabel} • {item.gradeLevel || naLabel}
+        </Text>
+      </View>
+      <View style={[styles.scoreChip, { backgroundColor: `${scoreTone}14` }]}>
+        <Text style={[styles.scoreChipText, { color: scoreTone }]}>{metricValue(average)}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export default function ClassLeaderboardScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
@@ -132,7 +203,8 @@ export default function ClassLeaderboardScreen() {
     : MONTHS.includes(calendarMonthEnglish)
       ? calendarMonthEnglish
       : MONTHS[0];
-  const selectedMonth = initialMonth;
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
+  const [monthPickerVisible, setMonthPickerVisible] = useState(false);
   const [selectedScope, setSelectedScope] = useState<RankingScope>('CLASS');
   const monthContext = useMemo(() => getMonthContext(selectedMonth), [selectedMonth]);
   const gradesReportOpts = useMemo(
@@ -149,6 +221,12 @@ export default function ClassLeaderboardScreen() {
   const [periodLoading, setPeriodLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activeRequestRef = useRef(0);
+  const prefetchedScopeKeysRef = useRef(new Set<string>());
+  const reportRef = useRef<classesApi.ClassGradesReport | null>(initialCachedReport);
+
+  useEffect(() => {
+    reportRef.current = report;
+  }, [report]);
 
   const rankingStudents = useMemo(() => {
     return [...(report?.students || [])]
@@ -165,6 +243,40 @@ export default function ClassLeaderboardScreen() {
     [linkedStudentId, rankingStudents]
   );
   const title = className || report?.class?.name || t('classScreens.report.defaultTitle');
+  const getScopeReportOpts = useCallback(
+    (scope: RankingScope) => ({ ...monthContext.gradesReportOpts, scope }),
+    [monthContext.gradesReportOpts]
+  );
+  const prefetchOtherScopes = useCallback((baseScope: RankingScope) => {
+    if (!classId) return;
+
+    (['CLASS', 'GRADE', 'SCHOOL'] as RankingScope[])
+      .filter((scope) => scope !== baseScope)
+      .forEach((scope) => {
+        const key = `${classId}:${selectedMonth}:${monthContext.academicYear}:${scope}`;
+        if (prefetchedScopeKeysRef.current.has(key)) return;
+
+        prefetchedScopeKeysRef.current.add(key);
+        setTimeout(() => {
+          void classesApi.getClassGradesReport(classId, getScopeReportOpts(scope), false).catch(() => {});
+        }, scope === 'GRADE' ? 80 : 180);
+      });
+  }, [classId, getScopeReportOpts, monthContext.academicYear, selectedMonth]);
+
+  const handleSelectScope = useCallback((scope: RankingScope) => {
+    if (scope === selectedScope) return;
+
+    const cached = classesApi.getCachedClassGradesReport(classId, getScopeReportOpts(scope));
+    if (cached) {
+      setReport(cached);
+      setPeriodLoading(false);
+      setLoading(false);
+    } else if (reportRef.current) {
+      setPeriodLoading(true);
+    }
+
+    setSelectedScope(scope);
+  }, [classId, getScopeReportOpts, selectedScope]);
 
   const loadData = useCallback(async (force = false) => {
     if (!classId) {
@@ -181,7 +293,7 @@ export default function ClassLeaderboardScreen() {
       if (!force && cached) {
         setReport(cached);
         setLoading(false);
-      } else if (report) {
+      } else if (reportRef.current) {
         setPeriodLoading(true);
       } else {
         setLoading(true);
@@ -190,8 +302,9 @@ export default function ClassLeaderboardScreen() {
       const nextReport = await classesApi.getClassGradesReport(classId, gradesReportOpts, force);
       if (activeRequestRef.current !== requestId) return;
       setReport(nextReport || null);
+      prefetchOtherScopes(selectedScope);
     } catch (err: any) {
-      if (activeRequestRef.current === requestId && !report) {
+      if (activeRequestRef.current === requestId && !reportRef.current) {
         setError(err?.message || t('classScreens.report.loadFailed'));
       }
     } finally {
@@ -201,16 +314,44 @@ export default function ClassLeaderboardScreen() {
         setPeriodLoading(false);
       }
     }
-  }, [classId, gradesReportOpts, report, t]);
+  }, [classId, gradesReportOpts, prefetchOtherScopes, selectedScope, t]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    prefetchOtherScopes(selectedScope);
+  }, [prefetchOtherScopes, selectedScope]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     void loadData(true);
   }, [loadData]);
+
+  const handleSelectMonth = useCallback((month: string) => {
+    if (month === selectedMonth) {
+      setMonthPickerVisible(false);
+      return;
+    }
+
+    const nextContext = getMonthContext(month);
+    const cached = classesApi.getCachedClassGradesReport(classId, {
+      ...nextContext.gradesReportOpts,
+      scope: selectedScope,
+    });
+
+    if (cached) {
+      setReport(cached);
+      setLoading(false);
+      setPeriodLoading(false);
+    } else if (reportRef.current) {
+      setPeriodLoading(true);
+    }
+
+    setSelectedMonth(month);
+    setMonthPickerVisible(false);
+  }, [classId, selectedMonth, selectedScope]);
 
   const openProfile = useCallback((userId?: string | null) => {
     if (!userId) {
@@ -227,21 +368,7 @@ export default function ClassLeaderboardScreen() {
     });
   }, [navigation, t]);
 
-  const renderAvatar = (
-    student: RankingStudent['student'],
-    size: number,
-    textSize: number
-  ) => (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: getAvatarColor(student.id) }]}>
-      {student.photoUrl ? (
-        <Image source={{ uri: student.photoUrl }} style={styles.avatarImage} />
-      ) : (
-        <Text style={[styles.avatarText, { fontSize: textSize }]}>{getInitials(student.firstName, student.lastName)}</Text>
-      )}
-    </View>
-  );
-
-  const listHeader = (
+  const listHeader = useMemo(() => (
     <View style={styles.headerContent}>
       <View style={styles.scopeTabs}>
         {[
@@ -255,7 +382,7 @@ export default function ClassLeaderboardScreen() {
               key={tab.key}
               style={[styles.scopeTab, active && styles.scopeTabActive]}
               activeOpacity={0.86}
-              onPress={() => setSelectedScope(tab.key)}
+              onPress={() => handleSelectScope(tab.key)}
             >
               <Text
                 style={[styles.scopeTabText, active && styles.scopeTabTextActive]}
@@ -295,7 +422,7 @@ export default function ClassLeaderboardScreen() {
                   isFirst && styles.podiumPhotoRingFirst,
                   { borderColor: getRankColor(rank) },
                 ]}>
-                  {renderAvatar(row.student, isFirst ? 112 : 82, isFirst ? 30 : 24)}
+                  <RankingAvatar student={row.student} size={isFirst ? 112 : 82} textSize={isFirst ? 30 : 24} />
                   <View style={[styles.podiumRankBadge, { backgroundColor: getRankColor(rank) }]}>
                     <Text style={styles.podiumRankBadgeText}>{rank}</Text>
                   </View>
@@ -320,7 +447,7 @@ export default function ClassLeaderboardScreen() {
             <Text style={styles.currentRankNumber}>{currentStudent.rank}</Text>
             <Ionicons name="triangle" size={12} color="#FFC107" />
           </View>
-          {renderAvatar(currentStudent.student, 48, 15)}
+          <RankingAvatar student={currentStudent.student} size={48} textSize={15} />
           <Text style={styles.currentRankText} numberOfLines={1}>
             {t('classScreens.report.youCurrentlyRank', { defaultValue: 'You Currently Rank' })}
           </Text>
@@ -330,43 +457,33 @@ export default function ClassLeaderboardScreen() {
         </TouchableOpacity>
       )}
     </View>
+  ), [
+    currentStudent,
+    linkedStudentId,
+    openProfile,
+    orderedPodium,
+    periodLoading,
+    selectedScope,
+    handleSelectScope,
+    t,
+    title,
+  ]);
+
+  const renderRow = useCallback(
+    ({ item, index }: { item: RankingStudent; index: number }) => (
+      <LeaderboardRow
+        item={item}
+        index={index}
+        linkedStudentId={linkedStudentId}
+        onOpenProfile={openProfile}
+        noIdLabel={t('classScreens.report.noId')}
+        naLabel={t('classScreens.report.na')}
+      />
+    ),
+    [linkedStudentId, openProfile, t]
   );
 
-  const renderRow = ({ item, index }: { item: NonNullable<classesApi.ClassGradesReport['students']>[number]; index: number }) => {
-    const trendIcon = index % 3 === 0 ? 'triangle' : index % 3 === 1 ? 'triangle' : 'remove';
-    const trendColor = index % 3 === 0 ? '#FFC107' : index % 3 === 1 ? '#FF7A59' : COLORS.textMuted;
-    const average = Number(item.average || 0);
-
-    return (
-      <TouchableOpacity
-        style={[styles.leaderboardRow, linkedStudentId === item.student.id && styles.leaderboardRowActive]}
-        activeOpacity={0.86}
-        onPress={() => openProfile(getStudentUserId(item.student))}
-      >
-        <View style={styles.rowRankGroup}>
-          <Text style={styles.rowRank}>{item.rank}</Text>
-          <Ionicons
-            name={trendIcon as any}
-            size={12}
-            color={trendColor}
-            style={trendColor === '#FF7A59' ? styles.trendDown : undefined}
-          />
-        </View>
-        {renderAvatar(item.student, 54, 17)}
-        <View style={styles.rowCopy}>
-          <Text style={styles.rowName} numberOfLines={1}>
-            {formatMoeysName(item.student)}
-          </Text>
-          <Text style={styles.rowMeta} numberOfLines={1}>
-            {item.student.studentId || t('classScreens.report.noId')} • {item.gradeLevel || t('classScreens.report.na')}
-          </Text>
-        </View>
-        <View style={[styles.scoreChip, { backgroundColor: `${getScoreTone(average)}14` }]}>
-          <Text style={[styles.scoreChipText, { color: getScoreTone(average) }]}>{metricValue(average)}</Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const keyExtractor = useCallback((item: RankingStudent) => item.student.id, []);
 
   return (
     <View style={styles.screen}>
@@ -376,7 +493,14 @@ export default function ClassLeaderboardScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.84}>
             <Ionicons name="chevron-back" size={25} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.topTitle} numberOfLines={1}>{selectedMonth} {monthContext.academicYear}</Text>
+          <TouchableOpacity
+            style={styles.titleButton}
+            activeOpacity={0.82}
+            onPress={() => setMonthPickerVisible(true)}
+          >
+            <Text style={styles.topTitle} numberOfLines={1}>{selectedMonth} {monthContext.academicYear}</Text>
+            <Ionicons name="chevron-down" size={16} color={COLORS.textMuted} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.backButton} onPress={onRefresh} activeOpacity={0.84}>
             {refreshing || periodLoading ? (
               <ActivityIndicator size="small" color={COLORS.blue} />
@@ -404,7 +528,7 @@ export default function ClassLeaderboardScreen() {
         ) : (
           <FlatList
             data={listRows}
-            keyExtractor={(item) => item.student.id}
+            keyExtractor={keyExtractor}
             renderItem={renderRow}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
@@ -423,6 +547,45 @@ export default function ClassLeaderboardScreen() {
           />
         )}
       </View>
+
+      <Modal
+        visible={monthPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMonthPickerVisible(false)}
+      >
+        <Pressable style={styles.monthModalBackdrop} onPress={() => setMonthPickerVisible(false)}>
+          <Pressable style={styles.monthModalCard} onPress={() => {}}>
+            <View style={styles.monthModalHeader}>
+              <Text style={styles.monthModalTitle}>{t('classScreens.grades.academicMonth')}</Text>
+              <TouchableOpacity style={styles.monthModalClose} onPress={() => setMonthPickerVisible(false)}>
+                <Ionicons name="close" size={20} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.monthGrid}>
+              {MONTHS.map((month) => {
+                const active = month === selectedMonth;
+                const context = getMonthContext(month);
+                return (
+                  <TouchableOpacity
+                    key={month}
+                    style={[styles.monthOption, active && styles.monthOptionActive]}
+                    activeOpacity={0.86}
+                    onPress={() => handleSelectMonth(month)}
+                  >
+                    <Text style={[styles.monthOptionText, active && styles.monthOptionTextActive]} numberOfLines={1}>
+                      {month}
+                    </Text>
+                    <Text style={[styles.monthOptionYear, active && styles.monthOptionTextActive]}>
+                      {context.academicYear}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -449,12 +612,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
+  titleButton: {
+    flex: 1,
+    minWidth: 0,
+    marginHorizontal: 12,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   topTitle: {
     fontSize: 18,
     fontWeight: '900',
     color: COLORS.textPrimary,
-    flex: 1,
-    marginHorizontal: 12,
     textAlign: 'center',
   },
   contentPanel: {
@@ -710,5 +881,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textSecondary,
+  },
+  monthModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.22)',
+    justifyContent: 'flex-end',
+  },
+  monthModalCard: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 28,
+  },
+  monthModalHeader: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  monthModalTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  monthModalClose: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+  },
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingTop: 12,
+  },
+  monthOption: {
+    width: '30.8%',
+    minHeight: 64,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 6,
+  },
+  monthOptionActive: {
+    borderColor: COLORS.pink,
+    backgroundColor: COLORS.pink,
+  },
+  monthOptionText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+  },
+  monthOptionYear: {
+    marginTop: 3,
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.textMuted,
+  },
+  monthOptionTextActive: {
+    color: COLORS.white,
   },
 });

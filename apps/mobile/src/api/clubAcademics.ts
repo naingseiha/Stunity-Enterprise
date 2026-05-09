@@ -99,9 +99,103 @@ const unwrapEntity = <T>(data: any, keys: string[]): T => {
   return data as T;
 };
 
-export const getClubSubjects = async (clubId: string): Promise<ClubSubject[]> => {
-  const response = await api.get(`/subjects/clubs/${clubId}/subjects`);
-  return unwrapArray<ClubSubject>(response.data);
+const CLUB_ACADEMICS_CACHE_TTL = 60_000;
+const _cache = new Map<string, { data: unknown; ts: number }>();
+const _inFlight = new Map<string, Promise<unknown>>();
+
+const getCached = <T>(key: string): T | null => {
+  const cached = _cache.get(key);
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= CLUB_ACADEMICS_CACHE_TTL) {
+    _cache.delete(key);
+    return null;
+  }
+
+  return cached.data as T;
+};
+
+const withCache = async <T>(key: string, force: boolean, loader: () => Promise<T>): Promise<T> => {
+  if (!force) {
+    const cached = getCached<T>(key);
+    if (cached) return cached;
+
+    const inFlight = _inFlight.get(key);
+    if (inFlight) return inFlight as Promise<T>;
+  }
+
+  const request = loader()
+    .then((data) => {
+      _cache.set(key, { data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      _inFlight.delete(key);
+    });
+
+  _inFlight.set(key, request);
+  return request;
+};
+
+const deleteCachePrefix = (prefix: string) => {
+  for (const key of _cache.keys()) {
+    if (key.startsWith(prefix)) {
+      _cache.delete(key);
+    }
+  }
+  for (const key of _inFlight.keys()) {
+    if (key.startsWith(prefix)) {
+      _inFlight.delete(key);
+    }
+  }
+};
+
+const paramsKey = (params?: Record<string, unknown>) => JSON.stringify(params || {});
+
+export const getCachedClubSubjects = (clubId: string): ClubSubject[] | null =>
+  getCached<ClubSubject[]>(`subjects:${clubId}`);
+
+export const getCachedClubGrades = (
+  clubId: string,
+  params?: { term?: string; subjectId?: string; assessmentType?: string; memberId?: string }
+): ClubGrade[] | null => getCached<ClubGrade[]>(`grades:${clubId}:${paramsKey(params)}`);
+
+export const getCachedClubSessions = (clubId: string): ClubSession[] | null =>
+  getCached<ClubSession[]>(`sessions:${clubId}`);
+
+export const getCachedSessionAttendance = (sessionId: string): ClubAttendanceRecord[] | null =>
+  getCached<ClubAttendanceRecord[]>(`session-attendance:${sessionId}`);
+
+export const getCachedClubAttendanceStatistics = (clubId: string): ClubAttendanceStatistics | null =>
+  getCached<ClubAttendanceStatistics>(`attendance-stats:${clubId}`);
+
+export const getCachedClubReport = (clubId: string): any | null =>
+  getCached<any>(`report:${clubId}`);
+
+export const invalidateClubAcademicsCache = (clubId?: string, sessionId?: string): void => {
+  if (!clubId) {
+    _cache.clear();
+    _inFlight.clear();
+    return;
+  }
+
+  deleteCachePrefix(`subjects:${clubId}`);
+  deleteCachePrefix(`grades:${clubId}`);
+  deleteCachePrefix(`grade-stats:${clubId}`);
+  deleteCachePrefix(`sessions:${clubId}`);
+  deleteCachePrefix(`attendance-stats:${clubId}`);
+  deleteCachePrefix(`report:${clubId}`);
+
+  if (sessionId) {
+    deleteCachePrefix(`session-attendance:${sessionId}`);
+  }
+};
+
+export const getClubSubjects = async (clubId: string, force = false): Promise<ClubSubject[]> => {
+  return withCache(`subjects:${clubId}`, force, async () => {
+    const response = await api.get(`/subjects/clubs/${clubId}/subjects`);
+    return unwrapArray<ClubSubject>(response.data);
+  });
 };
 
 export const createClubSubject = async (
@@ -116,15 +210,19 @@ export const createClubSubject = async (
   }
 ): Promise<ClubSubject> => {
   const response = await api.post(`/subjects/clubs/${clubId}/subjects`, payload);
+  invalidateClubAcademicsCache(clubId);
   return unwrapEntity<ClubSubject>(response.data, ['subject', 'data']);
 };
 
 export const getClubGrades = async (
   clubId: string,
-  params?: { term?: string; subjectId?: string; assessmentType?: string; memberId?: string }
+  params?: { term?: string; subjectId?: string; assessmentType?: string; memberId?: string },
+  force = false
 ): Promise<ClubGrade[]> => {
-  const response = await api.get(`/grades/clubs/${clubId}/grades`, { params });
-  return unwrapArray<ClubGrade>(response.data);
+  return withCache(`grades:${clubId}:${paramsKey(params)}`, force, async () => {
+    const response = await api.get(`/grades/clubs/${clubId}/grades`, { params });
+    return unwrapArray<ClubGrade>(response.data);
+  });
 };
 
 export const createClubGrade = async (
@@ -141,20 +239,26 @@ export const createClubGrade = async (
   }
 ): Promise<ClubGrade> => {
   const response = await api.post(`/grades/clubs/${clubId}/grades`, payload);
+  invalidateClubAcademicsCache(clubId);
   return unwrapEntity<ClubGrade>(response.data, ['grade', 'data']);
 };
 
 export const getClubGradeStatistics = async (
   clubId: string,
-  params?: { term?: string; subjectId?: string }
+  params?: { term?: string; subjectId?: string },
+  force = false
 ): Promise<ClubGradeStatistics> => {
-  const response = await api.get(`/grades/clubs/${clubId}/grades/statistics`, { params });
-  return unwrapEntity<ClubGradeStatistics>(response.data, ['statistics', 'data']);
+  return withCache(`grade-stats:${clubId}:${paramsKey(params)}`, force, async () => {
+    const response = await api.get(`/grades/clubs/${clubId}/grades/statistics`, { params });
+    return unwrapEntity<ClubGradeStatistics>(response.data, ['statistics', 'data']);
+  });
 };
 
-export const getClubSessions = async (clubId: string): Promise<ClubSession[]> => {
-  const response = await api.get(`/sessions/clubs/${clubId}/sessions`);
-  return unwrapArray<ClubSession>(response.data);
+export const getClubSessions = async (clubId: string, force = false): Promise<ClubSession[]> => {
+  return withCache(`sessions:${clubId}`, force, async () => {
+    const response = await api.get(`/sessions/clubs/${clubId}/sessions`);
+    return unwrapArray<ClubSession>(response.data);
+  });
 };
 
 export const createClubSession = async (
@@ -169,12 +273,15 @@ export const createClubSession = async (
   }
 ): Promise<ClubSession> => {
   const response = await api.post(`/sessions/clubs/${clubId}/sessions`, payload);
+  invalidateClubAcademicsCache(clubId);
   return unwrapEntity<ClubSession>(response.data, ['session', 'data']);
 };
 
-export const getSessionAttendance = async (sessionId: string): Promise<ClubAttendanceRecord[]> => {
-  const response = await api.get(`/attendance/sessions/${sessionId}/attendance`);
-  return unwrapArray<ClubAttendanceRecord>(response.data);
+export const getSessionAttendance = async (sessionId: string, force = false): Promise<ClubAttendanceRecord[]> => {
+  return withCache(`session-attendance:${sessionId}`, force, async () => {
+    const response = await api.get(`/attendance/sessions/${sessionId}/attendance`);
+    return unwrapArray<ClubAttendanceRecord>(response.data);
+  });
 };
 
 export const markSessionAttendance = async (
@@ -186,15 +293,20 @@ export const markSessionAttendance = async (
   }
 ): Promise<ClubAttendanceRecord> => {
   const response = await api.post(`/attendance/sessions/${sessionId}/attendance`, payload);
+  deleteCachePrefix(`session-attendance:${sessionId}`);
   return unwrapEntity<ClubAttendanceRecord>(response.data, ['attendance', 'record', 'data']);
 };
 
-export const getClubAttendanceStatistics = async (clubId: string): Promise<ClubAttendanceStatistics> => {
-  const response = await api.get(`/attendance/clubs/${clubId}/attendance/statistics`);
-  return unwrapEntity<ClubAttendanceStatistics>(response.data, ['statistics', 'data']);
+export const getClubAttendanceStatistics = async (clubId: string, force = false): Promise<ClubAttendanceStatistics> => {
+  return withCache(`attendance-stats:${clubId}`, force, async () => {
+    const response = await api.get(`/attendance/clubs/${clubId}/attendance/statistics`);
+    return unwrapEntity<ClubAttendanceStatistics>(response.data, ['statistics', 'data']);
+  });
 };
 
-export const getClubReport = async (clubId: string): Promise<any> => {
-  const response = await api.get(`/reports/clubs/${clubId}/report`);
-  return unwrapEntity<any>(response.data, ['report', 'data']);
+export const getClubReport = async (clubId: string, force = false): Promise<any> => {
+  return withCache(`report:${clubId}`, force, async () => {
+    const response = await api.get(`/reports/clubs/${clubId}/report`);
+    return unwrapEntity<any>(response.data, ['report', 'data']);
+  });
 };

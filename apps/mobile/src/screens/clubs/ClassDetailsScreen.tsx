@@ -577,6 +577,7 @@ export default function ClassDetailsScreen() {
     try {
       setUploading(true);
       await gradeApi.post('/grades/batch', { grades: payload });
+      classesApi.invalidateClassGradeCaches(classId);
       Alert.alert(t('common.success'), t('classDetails.alerts.importedScores', { count: payload.length }));
       setScoreByStudent({});
       await loadData({ force: true, preserveVisibleContent: true });
