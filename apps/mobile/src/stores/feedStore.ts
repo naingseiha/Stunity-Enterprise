@@ -748,15 +748,24 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const FileSystem = await import('expo-file-system');
           const token = await tokenService.getAccessToken();
 
-          const localFiles = mediaUrls.filter(isLocalUri);
-          const mappedRequests = localFiles.map(uri => {
+          const localFiles = mediaUrls
+            .map((uri, originalIndex) => ({ uri, originalIndex }))
+            .filter(({ uri }) => isLocalUri(uri));
+          const mappedRequests = await Promise.all(localFiles.map(async ({ uri, originalIndex }) => {
+            if (uri.startsWith('file://')) {
+              const fileInfo = await FileSystem.getInfoAsync(uri);
+              if (!fileInfo.exists) {
+                throw new Error('One of the selected images is no longer available. Please remove it and choose the image again.');
+              }
+            }
+
             const filename = uri.split('/').pop() || `file-${Date.now()}`;
             const ext = /\.(\w+)$/.exec(filename)?.[1]?.toLowerCase() || 'jpg';
-            let type = 'image/jpeg';
+            let type = resolvedMediaMetadata[originalIndex]?.mimeType || 'image/jpeg';
             if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
             else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
             return { originalName: filename, mimeType: type, uri };
-          });
+          }));
 
           // 1. Ask backend for direct R2 Presigned upload tickets
           console.log(`🎟️ [FeedStore] Requesting ${mappedRequests.length} Presigned URLs...`);
@@ -779,11 +788,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const tickets = ticketData.data; // [{ presignedUrl, key, publicUrl }]
           uploadedMediaUrls = [];
 
+          let localUploadIndex = 0;
           for (let i = 0; i < mediaUrls.length; i++) {
             const uri = mediaUrls[i];
             if (isLocalUri(uri)) {
-              const reqMeta = mappedRequests.find(r => r.uri === uri);
-              const ticket = tickets[mappedRequests.indexOf(reqMeta!)];
+              const reqMeta = mappedRequests[localUploadIndex];
+              const ticket = tickets[localUploadIndex];
+              localUploadIndex += 1;
 
               console.log(`📤 [FeedStore] Direct PUT to Cloudflare R2: ${reqMeta?.originalName}`);
 
@@ -793,7 +804,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                   uri,
                   {
                     httpMethod: 'PUT',
-                    uploadType: 0, // FileSystemUploadType.BINARY_CONTENT (Raw direct upload)
+                    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
                     headers: {
                       'Content-Type': reqMeta!.mimeType
                     }

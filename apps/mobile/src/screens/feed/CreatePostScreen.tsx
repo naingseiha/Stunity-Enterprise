@@ -51,6 +51,7 @@ import { AILoadingOverlay, AIResultPreview } from '@/components/ai';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 import { metadataFromPickerAsset } from '@/utils/mediaMetadata';
+import { materializePickedMediaAsset } from '@/utils/localMediaCache';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; labelKey: string; titleKey: string; color: string; gradient: [string, string] }[] = [
@@ -324,8 +325,14 @@ export default function CreatePostScreen() {
     });
 
     if (!result.canceled && result.assets) {
-      const newUris = result.assets.map(asset => asset.uri);
-      const newMetadata = result.assets.map(metadataFromPickerAsset);
+      const assets = await Promise.all(
+        result.assets.map(async (asset, index) => ({
+          ...asset,
+          uri: await materializePickedMediaAsset(asset, mediaUris.length + index),
+        }))
+      );
+      const newUris = assets.map(asset => asset.uri);
+      const newMetadata = assets.map(metadataFromPickerAsset);
       setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
       setMediaMetadata(prev => [...prev, ...newMetadata].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -347,8 +354,14 @@ export default function CreatePostScreen() {
     });
 
     if (!result.canceled && result.assets) {
-      const newUris = result.assets.map(asset => asset.uri);
-      const newMetadata = result.assets.map(metadataFromPickerAsset);
+      const assets = await Promise.all(
+        result.assets.map(async (asset, index) => ({
+          ...asset,
+          uri: await materializePickedMediaAsset(asset, mediaUris.length + index),
+        }))
+      );
+      const newUris = assets.map(asset => asset.uri);
+      const newMetadata = assets.map(metadataFromPickerAsset);
       setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
       setMediaMetadata(prev => [...prev, ...newMetadata].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -367,11 +380,15 @@ export default function CreatePostScreen() {
     });
 
     if (!result.canceled && result.assets) {
-      setMediaUris(prev => [...prev, result.assets[0].uri].slice(0, 4));
-      setMediaMetadata(prev => [...prev, metadataFromPickerAsset(result.assets[0])].slice(0, 4));
+      const asset = {
+        ...result.assets[0],
+        uri: await materializePickedMediaAsset(result.assets[0], mediaUris.length),
+      };
+      setMediaUris(prev => [...prev, asset.uri].slice(0, 4));
+      setMediaMetadata(prev => [...prev, metadataFromPickerAsset(asset)].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  }, [t]);
+  }, [mediaUris.length, t]);
 
   const handleRemoveImage = useCallback((index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
