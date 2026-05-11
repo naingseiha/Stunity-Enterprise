@@ -23,7 +23,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
     const handleQuizPress = useCallback((item: any) => {
         const tabNavigation = navigation.getParent?.();
         const rootNavigation = tabNavigation?.getParent?.() || tabNavigation || navigation;
-        rootNavigation.navigate('TakeQuiz', {
+        rootNavigation.navigate('QuizDetails', {
             quiz: {
                 id: item.id,
                 title: item.title || 'Quiz',

@@ -51,6 +51,7 @@ export type RootStackParamList = {
 // Main Stack (for screens outside tabs)
 export type MainStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
+  QuizDetails: { quiz: any };
   TakeQuiz: { quiz: any };
   QuizResults: { quiz: any; score: number; passed: boolean; pointsEarned: number; results: any; answers: any[] };
   LiveQuizJoin: undefined;

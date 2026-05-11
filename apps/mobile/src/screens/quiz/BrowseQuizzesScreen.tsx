@@ -267,7 +267,7 @@ export default function BrowseQuizzesScreen() {
 
   const handleQuizPress = useCallback((quiz: QuizItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate('TakeQuiz', { quiz });
+    navigation.navigate('QuizDetails', { quiz });
   }, [navigation]);
 
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);

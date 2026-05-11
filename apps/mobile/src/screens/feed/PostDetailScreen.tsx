@@ -805,7 +805,7 @@ export default function PostDetailScreen() {
                   )}
                   <TouchableOpacity
                     style={styles.quizStartButton}
-                    onPress={() => navigation.navigate('TakeQuiz' as any, {
+                    onPress={() => navigation.navigate('QuizDetails' as any, {
                       quiz: { ...post.quizData, title: post.title },
                     })}
                   >

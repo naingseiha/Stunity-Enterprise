@@ -64,7 +64,7 @@ import {
   SubmissionsListScreen,
   GradeSubmissionScreen,
 } from '@/screens/assignments';
-import { TakeQuizScreen, QuizResultsScreen } from '@/screens/quiz';
+import { TakeQuizScreen, QuizResultsScreen, QuizDetailsScreen } from '@/screens/quiz';
 import QuizDashboardScreen from '@/screens/quiz/QuizDashboardScreen';
 import BrowseQuizzesScreen from '@/screens/quiz/BrowseQuizzesScreen';
 import { QuizStudioScreen } from '@/screens/quiz/QuizStudioScreen';
@@ -482,6 +482,7 @@ const MainNavigator = () => {
       <MainStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
         <MainStack.Screen name="MainTabs" component={MainNavigatorContent} />
         <MainStack.Screen name="Messages" component={MessagesStackNavigator} />
+        <MainStack.Screen name="QuizDetails" component={QuizDetailsScreen} />
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
         <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />
         <MainStack.Screen name="BrowseQuizzes" component={BrowseQuizzesScreen} />

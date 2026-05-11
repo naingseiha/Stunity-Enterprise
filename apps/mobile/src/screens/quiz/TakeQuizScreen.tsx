@@ -8,7 +8,7 @@
  * - Better progress tracking
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -29,29 +29,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Haptics } from '@/services/haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
+import { normalizeQuiz, NormalizedQuiz, NormalizedQuizQuestion } from '@/utils/quiz';
 
 const { width } = Dimensions.get('window');
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-interface QuizQuestion {
-  id: string;
-  text: string;
-  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
-  options?: string[];
-  correctAnswer: string;
-  points: number;
-}
+type QuizQuestion = NormalizedQuizQuestion;
 
-interface Quiz {
-  id: string;
-  title: string;
-  description?: string;
-  questions: QuizQuestion[];
-  timeLimit: number | null; // in minutes
-  passingScore: number;
-  totalPoints: number;
-  shuffleQuestions?: boolean;
-}
+type Quiz = NormalizedQuiz;
 
 interface UserAnswer {
   questionId: string;
@@ -62,9 +47,13 @@ export function TakeQuizScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
-  const quiz = (route.params as any)?.quiz as Quiz | undefined;
+  const routeQuiz = (route.params as any)?.quiz;
+  const quiz = useMemo(() => normalizeQuiz(routeQuiz) as Quiz | null, [routeQuiz]);
 
-  const [questions, setQuestions] = useState<QuizQuestion[]>(quiz?.questions || []);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(() => {
+    if (!quiz?.questions) return [];
+    return quiz.shuffleQuestions ? [...quiz.questions].sort(() => Math.random() - 0.5) : quiz.questions;
+  });
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [markedForReview, setMarkedForReview] = useState<Set<string>>(new Set());
@@ -80,9 +69,11 @@ export function TakeQuizScreen() {
 
   // Initialize questions (handle shuffling)
   useEffect(() => {
-    if (quiz?.questions && quiz.shuffleQuestions) {
-      setQuestions([...quiz.questions].sort(() => Math.random() - 0.5));
+    if (!quiz?.questions) {
+      setQuestions([]);
+      return;
     }
+    setQuestions(quiz.shuffleQuestions ? [...quiz.questions].sort(() => Math.random() - 0.5) : quiz.questions);
   }, [quiz]);
 
   // Timer countdown
@@ -131,6 +122,15 @@ export function TakeQuizScreen() {
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id)?.answer || '';
 
+  const parseJsonAnswer = <T,>(answer: string, fallback: T): T => {
+    if (!answer) return fallback;
+    try {
+      return JSON.parse(answer) as T;
+    } catch {
+      return fallback;
+    }
+  };
+
   const handleAnswerChange = (answer: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -151,6 +151,22 @@ export function TakeQuizScreen() {
     const newAnswers = answers.filter((a) => a.questionId !== currentQuestion.id);
     newAnswers.push({ questionId: currentQuestion.id, answer });
     setAnswers(newAnswers);
+  };
+
+  const handleExitQuiz = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      t('quiz.takeQuiz.exitQuizTitle'),
+      t('quiz.takeQuiz.exitQuizBody'),
+      [
+        { text: t('quiz.takeQuiz.stayInQuiz'), style: 'cancel' },
+        {
+          text: t('quiz.takeQuiz.leaveQuiz'),
+          style: 'destructive',
+          onPress: () => navigation.goBack(),
+        },
+      ]
+    );
   };
 
   const handleNext = () => {
@@ -287,9 +303,18 @@ export function TakeQuizScreen() {
               style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="chevron-back" size={28} color="#111827" />
+              <Ionicons name="chevron-back" size={28} color="#F8FAFC" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{t('quiz.takeQuiz.reviewYourAnswers')}</Text>
+            <TouchableOpacity
+              onPress={handleExitQuiz}
+              style={styles.exitButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('quiz.takeQuiz.exitQuiz')}
+            >
+              <Ionicons name="close" size={24} color="#F8FAFC" />
+            </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -402,16 +427,16 @@ export function TakeQuizScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={handleExitQuiz}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={28} color="#111827" />
+            <Ionicons name="chevron-back" size={28} color="#F8FAFC" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle} numberOfLines={1}>{quiz.title}</Text>
@@ -428,6 +453,15 @@ export function TakeQuizScreen() {
               </View>
             )}
           </View>
+          <TouchableOpacity
+            onPress={handleExitQuiz}
+            style={styles.exitButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={t('quiz.takeQuiz.exitQuiz')}
+          >
+            <Ionicons name="close" size={24} color="#F8FAFC" />
+          </TouchableOpacity>
         </View>
 
         {/* Progress Bar */}
@@ -488,7 +522,7 @@ export function TakeQuizScreen() {
                     const isSelected = currentAnswer === index.toString();
                     return (
                       <TouchableOpacity
-                        key={index}
+                        key={`${currentQuestion.id}-option-${index}-${option}`}
                         onPress={() => handleAnswerChange(index.toString())}
                         style={[styles.optionButton, isSelected && styles.optionButtonSelected]}
                         activeOpacity={0.7}
@@ -591,9 +625,7 @@ export function TakeQuizScreen() {
                 <View style={styles.orderingContainer}>
                   <Text style={styles.instructionText}>{t('quiz.takeQuiz.arrangeOrder')}</Text>
                   {(() => {
-                    const items: string[] = currentAnswer
-                      ? JSON.parse(currentAnswer)
-                      : currentQuestion.options || [];
+                    const items: string[] = parseJsonAnswer(currentAnswer, currentQuestion.options || []);
 
                     const moveItem = (from: number, to: number) => {
                       const newItems = [...items];
@@ -603,7 +635,7 @@ export function TakeQuizScreen() {
                     };
 
                     return items.map((item, index) => (
-                      <View key={index} style={styles.orderingItem}>
+                      <View key={`${currentQuestion.id}-order-${index}-${item}`} style={styles.orderingItem}>
                         <View style={styles.orderingNumber}>
                           <Text style={styles.orderingNumberText}>{index + 1}</Text>
                         </View>
@@ -652,10 +684,10 @@ export function TakeQuizScreen() {
                     // Or keep them as is (creator might have mixed them?). Creator entered pairs.
                     // We definitely need to shuffle right items for display.
 
-                    const currentMatches: Record<string, string> = currentAnswer ? JSON.parse(currentAnswer) : {};
+                    const currentMatches: Record<string, string> = parseJsonAnswer(currentAnswer, {});
 
                     return leftItems.map((left, idx) => (
-                      <View key={idx} style={styles.matchRow}>
+                      <View key={`${currentQuestion.id}-match-${idx}-${left}`} style={styles.matchRow}>
                         <View style={styles.matchLeft}>
                           <Text style={styles.matchText}>{left}</Text>
                         </View>
@@ -668,7 +700,7 @@ export function TakeQuizScreen() {
                               const isSelected = currentMatches[left] === right;
                               return (
                                 <TouchableOpacity
-                                  key={rIdx}
+                                  key={`${currentQuestion.id}-match-option-${idx}-${rIdx}-${right}`}
                                   onPress={() => {
                                     const newMatches = { ...currentMatches, [left]: right };
                                     handleAnswerChange(JSON.stringify(newMatches));
@@ -838,6 +870,15 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 12,
     padding: 4,
+  },
+  exitButton: {
+    marginLeft: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   headerContent: {
     flex: 1,

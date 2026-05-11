@@ -13,6 +13,65 @@ import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibil
 
 const router = Router();
 
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+const normalizeAnswerText = (value: unknown): string =>
+  String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
+const stripChoicePrefix = (value: string): string =>
+  value.replace(/^[a-f]\s*[:.)-]\s*/i, '').trim();
+
+const getChoiceIndex = (answer: unknown, options: unknown): number | null => {
+  if (!Array.isArray(options)) return null;
+
+  if (typeof answer === 'number' && Number.isInteger(answer) && options[answer] !== undefined) {
+    return answer;
+  }
+
+  const raw = String(answer ?? '').trim();
+  if (!raw) return null;
+
+  if (/^\d+$/.test(raw)) {
+    const index = Number(raw);
+    return options[index] !== undefined ? index : null;
+  }
+
+  const letterMatch = raw.match(/^([a-f])(?:\s*[:.)-]\s*(.*))?$/i);
+  if (letterMatch) {
+    const index = OPTION_LETTERS.indexOf(letterMatch[1].toUpperCase());
+    if (options[index] !== undefined) return index;
+  }
+
+  const normalizedRaw = normalizeAnswerText(raw);
+  const normalizedWithoutPrefix = normalizeAnswerText(stripChoicePrefix(raw));
+
+  const optionIndex = options.findIndex((option) => {
+    const normalizedOption = normalizeAnswerText(option);
+    return normalizedOption === normalizedRaw || normalizedOption === normalizedWithoutPrefix;
+  });
+
+  return optionIndex >= 0 ? optionIndex : null;
+};
+
+const isMultipleChoiceCorrect = (userAnswer: unknown, correctAnswer: unknown, options: unknown): boolean => {
+  const userChoiceIndex = getChoiceIndex(userAnswer, options);
+  const correctChoiceIndex = getChoiceIndex(correctAnswer, options);
+
+  if (userChoiceIndex !== null && correctChoiceIndex !== null) {
+    return userChoiceIndex === correctChoiceIndex;
+  }
+
+  return normalizeAnswerText(userAnswer) === normalizeAnswerText(correctAnswer);
+};
+
+const getQuestionPoints = (question: any): number => {
+  const points = Number(question?.points);
+  return Number.isFinite(points) && points > 0 ? points : 1;
+};
+
 // ========================================
 // Quiz Discovery Endpoints (new)
 // ========================================
@@ -353,6 +412,8 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
     // Parse questions from JSON
     const questions = quiz.questions as any[];
 
+    const possiblePoints = questions.reduce((sum: number, question: any) => sum + getQuestionPoints(question), 0);
+
     // Calculate score
     let pointsEarned = 0;
     const answerResults = answers.map((userAnswer: any) => {
@@ -365,17 +426,13 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
 
       // Check answer based on question type
       if (question.type === 'MULTIPLE_CHOICE') {
-        // Handle both string and number formats
-        const userAnswerStr = String(userAnswer.answer);
-        const correctAnswerStr = String(question.correctAnswer);
-        isCorrect = userAnswerStr === correctAnswerStr;
+        isCorrect = isMultipleChoiceCorrect(userAnswer.answer, question.correctAnswer, question.options);
 
         console.log('🔍 [QUIZ] MC Question:', {
           questionId: question.id,
           userAnswer: userAnswer.answer,
-          userAnswerStr,
           correctAnswer: question.correctAnswer,
-          correctAnswerStr,
+          options: question.options,
           isCorrect
         });
       } else if (question.type === 'TRUE_FALSE') {
@@ -432,7 +489,7 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
         }
       }
 
-      const points = isCorrect ? (question.points || 10) : 0;
+      const points = isCorrect ? getQuestionPoints(question) : 0;
       pointsEarned += points;
 
       return {
@@ -445,7 +502,7 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
     });
 
     // Calculate percentage score
-    const score = quiz.totalPoints > 0 ? Math.round((pointsEarned / quiz.totalPoints) * 100) : 0;
+    const score = possiblePoints > 0 ? Math.round((pointsEarned / possiblePoints) * 100) : 0;
     const passed = score >= quiz.passingScore;
 
     // Save quiz attempt
@@ -466,7 +523,7 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
       score,
       passed,
       pointsEarned,
-      totalPoints: quiz.totalPoints,
+      totalPoints: possiblePoints,
       submittedAt: attempt.submittedAt,
     };
 

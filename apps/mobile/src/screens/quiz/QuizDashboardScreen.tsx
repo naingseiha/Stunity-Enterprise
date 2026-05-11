@@ -87,7 +87,7 @@ export default function QuizDashboardScreen() {
 
     const handleDailyQuizPress = useCallback(() => {
         if (dailyQuiz) {
-            navigation.navigate('TakeQuiz', { quiz: dailyQuiz });
+            navigation.navigate('QuizDetails', { quiz: dailyQuiz });
         } else {
             // Fallback: navigate to browse
             navigation.navigate('BrowseQuizzes');
@@ -99,7 +99,7 @@ export default function QuizDashboardScreen() {
     }, [navigation]);
 
     const handleQuizPress = useCallback((quiz: QuizItem) => {
-        navigation.navigate('TakeQuiz', { quiz });
+        navigation.navigate('QuizDetails', { quiz });
     }, [navigation]);
 
     return (

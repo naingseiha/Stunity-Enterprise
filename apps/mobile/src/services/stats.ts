@@ -101,7 +101,11 @@ const createAnalyticsApi = (): AxiosInstance => {
           String(error.response?.status || error.code || 'ERROR')
         );
         if (__DEV__) {
-          console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
+          const status = error.response?.status || error.code;
+          const message = error.response?.data?.error || error.response?.data?.message || error.message;
+          console.warn(
+            `⚠️ [ANALYTICS] Optional request failed: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status}${message ? ` (${message})` : ''}`
+          );
         }
       }
 

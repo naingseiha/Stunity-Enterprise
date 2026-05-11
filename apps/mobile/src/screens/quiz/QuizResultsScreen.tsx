@@ -61,6 +61,60 @@ const DECORATIVE_ICONS = [
   { name: 'trophy', color: '#F59E0B', size: 28, bottom: 200, left: 30 },
 ];
 
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+const normalizeAnswerText = (value: unknown): string =>
+  String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
+const stripChoicePrefix = (value: string): string =>
+  value.replace(/^[a-f]\s*[:.)-]\s*/i, '').trim();
+
+const getChoiceIndex = (answer: unknown, options?: string[]): number | null => {
+  if (!options?.length) return null;
+
+  const raw = String(answer ?? '').trim();
+  if (!raw) return null;
+
+  if (/^\d+$/.test(raw)) {
+    const index = Number(raw);
+    return options[index] !== undefined ? index : null;
+  }
+
+  const letterMatch = raw.match(/^([a-f])(?:\s*[:.)-]\s*(.*))?$/i);
+  if (letterMatch) {
+    const index = OPTION_LETTERS.indexOf(letterMatch[1].toUpperCase());
+    if (options[index] !== undefined) return index;
+  }
+
+  const normalizedRaw = normalizeAnswerText(raw);
+  const normalizedWithoutPrefix = normalizeAnswerText(stripChoicePrefix(raw));
+  const optionIndex = options.findIndex((option) => {
+    const normalizedOption = normalizeAnswerText(option);
+    return normalizedOption === normalizedRaw || normalizedOption === normalizedWithoutPrefix;
+  });
+
+  return optionIndex >= 0 ? optionIndex : null;
+};
+
+const areAnswersEquivalent = (question: QuizQuestion, userAnswer: unknown, correctAnswer: unknown): boolean => {
+  if (question.type === 'MULTIPLE_CHOICE') {
+    const userChoiceIndex = getChoiceIndex(userAnswer, question.options);
+    const correctChoiceIndex = getChoiceIndex(correctAnswer, question.options);
+    if (userChoiceIndex !== null && correctChoiceIndex !== null) {
+      return userChoiceIndex === correctChoiceIndex;
+    }
+  }
+
+  if (question.type === 'TRUE_FALSE') {
+    return normalizeAnswerText(userAnswer) === normalizeAnswerText(correctAnswer);
+  }
+
+  return normalizeAnswerText(userAnswer) === normalizeAnswerText(correctAnswer);
+};
+
 export function QuizResultsScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
@@ -87,26 +141,22 @@ export function QuizResultsScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Computed Values
-  const totalPoints = pointsEarned || 0;
-  const scorePercentage = score || 0;
-  const isPassed = passed !== undefined ? passed : scorePercentage >= quiz.passingScore;
-
   // Merge manual calculation with API results if available
   const calculatedResults = quiz.questions.map((question) => {
     const userAnswerObj = answers.find((a) => a.questionId === question.id);
     const apiResult = apiResults?.find((r) => r.questionId === question.id);
     
     const userAnswer = userAnswerObj?.answer;
+    const equivalentAnswer = areAnswersEquivalent(question, userAnswer, question.correctAnswer);
     
     let isCorrect = false;
     let points = 0;
     
     if (apiResult) {
-      isCorrect = apiResult.correct;
-      points = apiResult.pointsEarned;
+      isCorrect = !!apiResult.correct || equivalentAnswer;
+      points = isCorrect ? question.points : 0;
     } else {
-      isCorrect = String(userAnswer) === String(question.correctAnswer);
+      isCorrect = equivalentAnswer;
       points = isCorrect ? question.points : 0;
     }
 
@@ -120,13 +170,18 @@ export function QuizResultsScreen() {
 
   const correctCount = calculatedResults.filter(r => r.isCorrect).length;
   const incorrectCount = calculatedResults.length - correctCount;
+  const derivedPointsEarned = calculatedResults.reduce((sum, result) => sum + result.points, 0);
+  const possiblePoints = quiz.questions.reduce((sum, question) => sum + (question.points || 0), 0);
+  const scorePercentage = possiblePoints > 0 ? Math.round((derivedPointsEarned / possiblePoints) * 100) : (score || 0);
+  const isPassed = scorePercentage >= quiz.passingScore;
+  const totalPoints = derivedPointsEarned;
 
   const formatAnswer = (type: string, answer: any, options?: string[]) => {
     if (answer === undefined || answer === null || answer === '') return t('quiz.results.skipped');
     if (type === 'MULTIPLE_CHOICE') {
       const index = parseInt(answer);
       if (!isNaN(index) && options && options[index]) {
-        return `${['A', 'B', 'C', 'D', 'E', 'F'][index]}: ${options[index]}`;
+        return `${OPTION_LETTERS[index]}: ${options[index]}`;
       }
       return answer;
     }
@@ -253,7 +308,7 @@ export function QuizResultsScreen() {
                   <View style={[styles.statIconCircle, { backgroundColor: 'rgba(251, 191, 36, 0.2)' }]}>
                     <Ionicons name="trophy" size={18} color="#FBBF24" />
                   </View>
-                  <Text style={styles.statValue}>{pointsEarned}</Text>
+                  <Text style={styles.statValue}>{totalPoints}</Text>
                   <Text style={styles.statLabel}>{t('quiz.results.xpEarned')}</Text>
                 </LinearGradient>
               </View>

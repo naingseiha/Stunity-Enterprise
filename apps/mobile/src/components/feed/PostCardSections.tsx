@@ -489,7 +489,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
 
     const handleTakeQuiz = React.useCallback(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        navigation.navigate('TakeQuiz', {
+        navigation.navigate('QuizDetails', {
             quiz: {
                 id: quizData.id,
                 title: postTitle || t('feed.postTypes.quiz'),
