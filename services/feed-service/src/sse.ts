@@ -6,6 +6,7 @@
 import { Request, Response, Router } from 'express';
 import { createSubscriber, inMemorySubscribe, isRedisConnected } from './redis';
 import { SSEEvent, REDIS_CHANNELS } from './events';
+import { AuthRequest } from './middleware/auth';
 
 const router = Router();
 
@@ -18,10 +19,19 @@ let activeConnections = 0;
  * 
  * Clients connect to this endpoint to receive real-time events
  */
-router.get('/stream', async (req: Request, res: Response) => {
-  const userId = req.query.userId as string;
+router.get('/stream', async (req: AuthRequest, res: Response) => {
+  const requestedUserId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
+  const userId = req.user?.id;
   
   if (!userId) {
+    return res.status(401).json({ error: 'Authenticated user is required' });
+  }
+
+  if (requestedUserId && requestedUserId !== userId) {
+    return res.status(403).json({ error: 'Cannot subscribe to another user stream' });
+  }
+
+  if (!requestedUserId) {
     return res.status(400).json({ error: 'userId is required' });
   }
 

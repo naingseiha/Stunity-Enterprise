@@ -286,11 +286,12 @@ export class FeedRanker {
                     return this.getRecentFeed(userId, 1, limit, subject, cursor);
                 }
                 const nextCursor = this.getNextCursorFromFeedItems(paged);
+                const hasMore = start + paged.length < cachedSequence.length;
                 return {
                     items: paged,
                     total: cachedSequence.length,
-                    hasMore: Boolean(nextCursor),
-                    ...(nextCursor ? { nextCursor } : {}),
+                    hasMore,
+                    ...(hasMore && nextCursor ? { nextCursor } : {}),
                 };
             }
             if (process.env.NODE_ENV !== 'production') {
@@ -311,6 +312,7 @@ export class FeedRanker {
                 return this.getRecentFeed(userId, 1, limit, subject, cursor);
             }
             const nextCursor = this.getNextCursorFromFeedItems(paged);
+            const hasMore = start + paged.length < items.length;
 
             // Cache the generated sequence for page > 1
             if (page === 1) {
@@ -320,8 +322,8 @@ export class FeedRanker {
             return {
                 items: paged,
                 total: items.length,
-                hasMore: Boolean(nextCursor),
-                ...(nextCursor ? { nextCursor } : {}),
+                hasMore,
+                ...(hasMore && nextCursor ? { nextCursor } : {}),
             };
         }
 
@@ -401,23 +403,22 @@ export class FeedRanker {
                 this.getSuggestedQuizzes(userId, userSignals),
             ]);
 
-            let injectionIndex = 6;
-
             // Inject Users
+            let injectionIndex = 6;
             if (suggestedUsers.length > 0 && rawFeedItems.length >= injectionIndex) {
                 rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_USERS', data: suggestedUsers });
-                injectionIndex += 8; // Next injection 8 items later
             }
 
-            // Inject Courses
-            if (suggestedCourses.length > 0 && rawFeedItems.length >= injectionIndex) {
-                rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_COURSES', data: suggestedCourses });
-                injectionIndex += 10;
-            }
-
-            // Inject Quizzes
+            // Quiz suggestions work best as a distinct quick challenge break before course discovery.
+            injectionIndex = 12;
             if (suggestedQuizzes.length > 0 && rawFeedItems.length >= injectionIndex) {
                 rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_QUIZZES', data: suggestedQuizzes });
+            }
+
+            // Course recommendations sit later so the two learning suggestion carousels do not stack.
+            injectionIndex = 22;
+            if (suggestedCourses.length > 0 && rawFeedItems.length >= injectionIndex) {
+                rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_COURSES', data: suggestedCourses });
             }
         }
 
@@ -428,6 +429,7 @@ export class FeedRanker {
             return this.getRecentFeed(userId, 1, limit, subject, cursor);
         }
         const nextCursor = this.getNextCursorFromFeedItems(paged);
+        const hasMore = start + paged.length < rawFeedItems.length;
 
         // Cache the generated sequence for page > 1
         if (page === 1) {
@@ -437,8 +439,8 @@ export class FeedRanker {
         return {
             items: paged,
             total: rawFeedItems.length,
-            hasMore: Boolean(nextCursor),
-            ...(nextCursor ? { nextCursor } : {}),
+            hasMore,
+            ...(hasMore && nextCursor ? { nextCursor } : {}),
         };
     }
 
@@ -680,7 +682,7 @@ export class FeedRanker {
                     pollOptions: {
                         select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
                     },
-                    quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
+                    quiz: { select: { id: true, questions: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                     postScore: true,
                     _count: { select: { likes: true, comments: true, views: true } },
                     repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
@@ -738,7 +740,7 @@ export class FeedRanker {
                     pollOptions: {
                         select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
                     },
-                    quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
+                    quiz: { select: { id: true, questions: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                     postScore: true,
                     _count: { select: { likes: true, comments: true, views: true } },
                     repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
@@ -957,6 +959,7 @@ export class FeedRanker {
                 quiz: {
                     select: {
                         id: true,
+                        questions: true,
                         timeLimit: true,
                         passingScore: true,
                         totalPoints: true,

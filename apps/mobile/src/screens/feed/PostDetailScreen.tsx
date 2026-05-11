@@ -717,7 +717,7 @@ export default function PostDetailScreen() {
           {/* ── Media ── */}
           {post.mediaUrls && post.mediaUrls.length > 0 && (
             <Animated.View style={styles.mediaContainer}>
-              <ImageCarousel images={post.mediaUrls} borderRadius={0} mode="auto" />
+              <ImageCarousel images={post.mediaUrls} borderRadius={0} mode="auto" fullBleed />
               {/* View count overlay */}
               <View style={styles.viewCountOverlay}>
                 <Ionicons name="eye-outline" size={14} color="#fff" />

@@ -847,7 +847,7 @@ export default function FeedScreen() {
       return;
     }
     if (item.type === 'SUGGESTED_QUIZZES') {
-      layout.size = 250;
+      layout.size = 286;
       return;
     }
 

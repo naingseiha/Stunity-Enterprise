@@ -252,7 +252,7 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
     });
 
     runAfterResponse('new post fanout', async () => {
-      const followers = await prismaRead.follow.findMany({
+      const followers = await prisma.follow.findMany({
         where: { followingId: req.user!.id },
         select: { followerId: true }
       });

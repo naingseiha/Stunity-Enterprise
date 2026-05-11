@@ -272,6 +272,10 @@ app.use(compression({
   threshold: 1024, // Only compress responses > 1KB
   level: 6, // Balance between speed and compression ratio
   filter: (req, res) => {
+    // SSE must flush each event frame immediately; compression can buffer chunks.
+    if (req.path.startsWith('/api/events')) {
+      return false;
+    }
     // Don't compress if client doesn't support it
     if (req.headers['x-no-compression']) {
       return false;

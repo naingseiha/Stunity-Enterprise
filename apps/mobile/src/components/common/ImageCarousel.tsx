@@ -40,6 +40,7 @@ interface ImageCarouselProps {
   mode?: AspectRatioMode; // Layout mode: auto detects from image, or use fixed mode
   enableViewer?: boolean;
   optimizeForFeed?: boolean;
+  fullBleed?: boolean;
 }
 
 // Helper to check if URI is video
@@ -59,13 +60,12 @@ function ImageCarouselInner({
   mode = 'auto', // Default to auto-detect
   enableViewer = true,
   optimizeForFeed = false,
+  fullBleed = false,
 }: ImageCarouselProps) {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const IMAGE_WIDTH = useMemo(() => {
-    // If borderRadius is 0, it's full screen (detail view)
-    // Otherwise, account for the 14px margins on each side from PostCard mediaWrapper
-    return borderRadius === 0 ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
-  }, [SCREEN_WIDTH, borderRadius]);
+    return fullBleed ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
+  }, [SCREEN_WIDTH, fullBleed]);
 
   // Normalize image URLs (handle R2 keys and relative paths)
   const normalizedImages = useMemo(() => {
@@ -354,6 +354,7 @@ function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProp
     prev.mode === next.mode &&
     prev.enableViewer === next.enableViewer &&
     prev.optimizeForFeed === next.optimizeForFeed &&
+    prev.fullBleed === next.fullBleed &&
     prev.images.length === next.images.length &&
     prev.images.every((img, i) => img === next.images[i])
   );

@@ -46,6 +46,17 @@ export const bucketFeedAspectRatio = (
   return 'portrait';
 };
 
+const normalizeHeightWidthRatio = (ratio?: number): number | undefined => {
+  if (!ratio || !Number.isFinite(ratio)) return undefined;
+
+  // The mobile app stores height / width, but older/API-created rows may carry
+  // width / height (for example 16 / 9). Values above this threshold are much
+  // more likely to be width / height for landscape media than true tall media.
+  if (ratio > 1.55) return 1 / ratio;
+
+  return ratio;
+};
+
 export const getFeedMediaBucket = (post: any): FeedMediaBucket => {
   const mediaCount = post?.mediaUrls?.length || 0;
   const displayMode = String(post?.mediaDisplayMode || '').toUpperCase();
@@ -62,15 +73,20 @@ export const getFeedMediaBucket = (post: any): FeedMediaBucket => {
   }
 
   const metadataRatio =
-    typeof post?.mediaAspectRatio === 'number'
-      ? post.mediaAspectRatio
-      : typeof firstMeta?.aspectRatio === 'number'
-        ? firstMeta.aspectRatio
-        : firstMeta?.width && firstMeta?.height
-          ? firstMeta.height / firstMeta.width
-          : undefined;
+    typeof firstMeta?.aspectRatio === 'number'
+      ? firstMeta.aspectRatio
+      : firstMeta?.width && firstMeta?.height
+        ? firstMeta.height / firstMeta.width
+        : undefined;
+  const postRatio = typeof post?.mediaAspectRatio === 'number'
+    ? normalizeHeightWidthRatio(post.mediaAspectRatio)
+    : undefined;
 
-  return bucketFeedAspectRatio(metadataRatio ?? inferAspectRatioFromUrl(firstUrl));
+  return bucketFeedAspectRatio(
+    normalizeHeightWidthRatio(metadataRatio) ??
+    postRatio ??
+    inferAspectRatioFromUrl(firstUrl)
+  );
 };
 
 export const getFeedMediaAspectRatio = (post: any) => FEED_MEDIA_RATIOS[getFeedMediaBucket(post)];

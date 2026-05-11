@@ -25,6 +25,20 @@ function resolveMediaUrls(urls: string[], req: AuthRequest): string[] {
   });
 }
 
+function resolveUserMediaUrl(url: string | null | undefined, req: AuthRequest): string | null | undefined {
+  if (!url) return url;
+  return resolveMediaUrls([url], req)[0] || url;
+}
+
+function resolvePostUserMedia(post: any, req: AuthRequest): void {
+  if (post.author?.profilePictureUrl) {
+    post.author.profilePictureUrl = resolveUserMediaUrl(post.author.profilePictureUrl, req);
+  }
+  if (post.repostOf?.author?.profilePictureUrl) {
+    post.repostOf.author.profilePictureUrl = resolveUserMediaUrl(post.repostOf.author.profilePictureUrl, req);
+  }
+}
+
 // ========================================
 // POSTS ENDPOINTS
 // ========================================
@@ -37,6 +51,8 @@ function stripToMinimal(post: any): any {
     content: post.content?.slice(0, 300) || '',
     postType: post.postType,
     mediaUrls: post.mediaUrls || [],  // Keep ALL URLs — needed for image carousel
+    mediaMetadata: post.mediaMetadata || [],
+    mediaAspectRatio: post.mediaAspectRatio,
     createdAt: post.createdAt,
     isPinned: post.isPinned,
     likesCount: post.likesCount ?? post._count?.likes ?? 0,
@@ -274,6 +290,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
         quiz: {
           select: {
             id: true,
+            questions: true,
             timeLimit: true,
             passingScore: true,
             totalPoints: true,
@@ -374,6 +391,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     // Resolve relative media URLs to absolute
     outputPosts.forEach((p: any) => {
       if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
+      resolvePostUserMedia(p, req as AuthRequest);
     });
     const lastVisiblePost = pagePostRows[pagePostRows.length - 1];
     const nextCursor = hasMore && lastVisiblePost
@@ -549,6 +567,8 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
             mediaUrls: sp.post.mediaUrls,
             mediaKeys: sp.post.mediaKeys,
             mediaDisplayMode: sp.post.mediaDisplayMode,
+            mediaMetadata: sp.post.mediaMetadata,
+            mediaAspectRatio: sp.post.mediaAspectRatio,
             likesCount: sp.post.likesCount,
             commentsCount: sp.post.commentsCount,
             sharesCount: sp.post.sharesCount,
@@ -584,7 +604,10 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       const outputPosts = minimal ? formattedFeed.map(f => f.type === 'POST' ? { type: 'POST', data: stripToMinimal(f.data) } : f) : formattedFeed;
 
       outputPosts.forEach((p: any) => {
-        if (p.type === 'POST' && p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req as AuthRequest);
+        if (p.type === 'POST') {
+          if (p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req as AuthRequest);
+          resolvePostUserMedia(p.data, req as AuthRequest);
+        }
         if (p.type === 'SUGGESTED_USERS' && p.data) {
           p.data.forEach((u: any) => {
             if (u.profilePictureUrl) {

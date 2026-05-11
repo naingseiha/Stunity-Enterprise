@@ -39,6 +39,7 @@ const FEED_RETRY_TIMEOUT_MS = 25_000;
 const FEED_NEXT_PAGE_TIMEOUT_MS = 12_000;
 const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
 const MAX_INITIAL_FEED_RETRIES = 2;
+const MAX_FEED_ITEMS_IN_MEMORY = 1500;
 let initialFeedRetryAttempts = 0;
 let initialFeedRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -423,8 +424,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           }
         }
 
-        const hasMore = pagination?.hasMore ?? postItemsCount >= limit;
         const newCursor = pagination?.nextCursor || null;
+        const hasMore = typeof pagination?.hasMore === 'boolean'
+          ? pagination.hasMore
+          : Boolean(newCursor) || postItemsCount >= limit;
 
         const currentFeedItems = get().feedItems;
         const shouldPreserveFeedOnEmptyRefresh =
@@ -470,11 +473,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         // Keep a bounded rolling window instead of letting the RN heap grow forever.
         // On append, preserve the newest page at the tail; the old first-500 cap
         // could fetch more data forever while never exposing rows past the cap.
-        const maxFeedItemsInMemory = 1500;
-        const optimizedFeedItems = finalFeedItems.length > maxFeedItemsInMemory
+        const optimizedFeedItems = finalFeedItems.length > MAX_FEED_ITEMS_IN_MEMORY
           ? refresh
-            ? finalFeedItems.slice(0, maxFeedItemsInMemory)
-            : finalFeedItems.slice(finalFeedItems.length - maxFeedItemsInMemory)
+            ? finalFeedItems.slice(0, MAX_FEED_ITEMS_IN_MEMORY)
+            : finalFeedItems.slice(finalFeedItems.length - MAX_FEED_ITEMS_IN_MEMORY)
           : finalFeedItems;
 
         // Track timestamp of newest post for real-time dedup. Use the full merged
@@ -506,7 +508,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         }
 
         // ── Client-side suggestion carousel fallback ──────────────────────────
-        // If the backend didn't inject SUGGESTED_USERS or SUGGESTED_COURSES rows
+        // If the backend didn't inject suggestion rows
         // (e.g. seed data is sparse or user is new), fetch and inject them ourselves.
         // This runs in the background so it never blocks the feed render.
         if (page === 1) {
@@ -576,16 +578,16 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                     items.splice(insertAt, 0, { type: 'SUGGESTED_USERS', data: users });
                   }
 
-                  // Inject suggested courses at position 14 (after suggested users insert)
-                  if (!alreadyHasCourses && courses.length > 0) {
-                    const insertAt = Math.min(14, items.length);
-                    items.splice(insertAt, 0, { type: 'SUGGESTED_COURSES', data: courses });
+                  // Quiz suggestions should feel like a quick feed break, not an add-on beside courses.
+                  if (!alreadyHasQuizzes && quizzes.length > 0) {
+                    const insertAt = Math.min(12, items.length);
+                    items.splice(insertAt, 0, { type: 'SUGGESTED_QUIZZES', data: quizzes });
                   }
 
-                  // Inject suggested quizzes at position 22 (after suggested courses insert)
-                  if (!alreadyHasQuizzes && quizzes.length > 0) {
+                  // Keep course recommendations deeper in the learning discovery area.
+                  if (!alreadyHasCourses && courses.length > 0) {
                     const insertAt = Math.min(22, items.length);
-                    items.splice(insertAt, 0, { type: 'SUGGESTED_QUIZZES', data: quizzes });
+                    items.splice(insertAt, 0, { type: 'SUGGESTED_COURSES', data: courses });
                   }
 
                   return { feedItems: items };

@@ -1,256 +1,334 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback } from 'react';
 import { useThemeContext } from '@/contexts';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Image } from 'expo-image';
-import { Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
-    quizzes: any[];
+  quizzes: any[];
 }
+
+const ACCENT_COLORS = ['#14B8A6', '#F59E0B', '#EC4899', '#6366F1'];
+
+const getQuestionCount = (item: any) => {
+  if (Array.isArray(item?.questions)) return item.questions.length;
+  if (typeof item?.questionCount === 'number') return item.questionCount;
+  return 0;
+};
+
+const getAuthorName = (item: any) => {
+  const firstName = item?.author?.firstName || '';
+  const lastName = item?.author?.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || item?.author?.name || '';
+};
 
 export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const { t } = useTranslation();
+  const navigation = useNavigation<any>();
 
-    const { t } = useTranslation();
-    const navigation = useNavigation<any>();
+  const handleQuizPress = useCallback((item: any) => {
+    const tabNavigation = navigation.getParent?.();
+    const rootNavigation = tabNavigation?.getParent?.() || tabNavigation || navigation;
+    rootNavigation.navigate('QuizDetails', {
+      quiz: {
+        id: item.id,
+        title: item.title || 'Quiz',
+        description: item.description || item.content || '',
+        questions: Array.isArray(item.questions) ? item.questions : [],
+        timeLimit: item.timeLimit ?? null,
+        passingScore: item.passingScore ?? 70,
+        totalPoints: item.totalPoints ?? 0,
+        shuffleQuestions: item.shuffleQuestions,
+      },
+    });
+  }, [navigation]);
 
-    const handleQuizPress = useCallback((item: any) => {
-        const tabNavigation = navigation.getParent?.();
-        const rootNavigation = tabNavigation?.getParent?.() || tabNavigation || navigation;
-        rootNavigation.navigate('QuizDetails', {
-            quiz: {
-                id: item.id,
-                title: item.title || 'Quiz',
-                description: item.description || item.content || '',
-                questions: Array.isArray(item.questions) ? item.questions : [],
-                timeLimit: item.timeLimit ?? null,
-                passingScore: item.passingScore ?? 70,
-                totalPoints: item.totalPoints ?? 0,
-                shuffleQuestions: item.shuffleQuestions,
-            },
-        });
-    }, [navigation]);
+  const handleViewAll = useCallback(() => {
+    const tabNavigation = navigation.getParent?.();
+    tabNavigation?.navigate('QuizTab');
+  }, [navigation]);
 
-    if (!quizzes?.length) return null;
+  if (!quizzes?.length) return null;
 
-    const renderItem = ({ item }: { item: any }) => {
-        if (!item) return null;
-        return (
-            <TouchableOpacity
-                style={[styles.card, Shadows.sm]}
-                activeOpacity={0.8}
-                onPress={() => handleQuizPress(item)}
-            >
-                <LinearGradient
-                    colors={['#1E1B4B', '#312E81']}
-                    style={styles.gradientBg}
-                />
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
+    if (!item) return null;
 
-                {/* Topic Pill */}
-                {item.topicTags && item.topicTags.length > 0 && (
-                    <View style={styles.topicPill}>
-                        <Text style={styles.topicText}>{item.topicTags[0]}</Text>
-                    </View>
-                )}
-
-                <View style={styles.content}>
-                    <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-
-                    <View style={styles.metaRow}>
-                        <View style={styles.metaItem}>
-                        <Ionicons name="time-outline" size={12} color="#C7D2FE" />
-                            <Text style={styles.metaText}>{item.timeLimit || 10}<AutoI18nText i18nKey="auto.mobile.components_feed_SuggestedQuizzesCarousel.k_836d554b" /></Text>
-                        </View>
-                        <View style={styles.metaDot} />
-                        <View style={styles.metaItem}>
-                            <Ionicons name="document-text-outline" size={12} color="#C7D2FE" />
-                            <Text style={styles.metaText}>{item.questions?.length || 0} <AutoI18nText i18nKey="auto.mobile.components_feed_SuggestedQuizzesCarousel.k_fdfd4cc3" /></Text>
-                        </View>
-                        <View style={styles.metaDot} />
-                        <View style={styles.metaItem}>
-                            <Ionicons name="people-outline" size={12} color="#C7D2FE" />
-                            <Text style={styles.metaText}>{item.attemptCount || 0}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.authorRow}>
-                        {item.author?.profilePictureUrl ? (
-                            <Image
-                                source={{ uri: item.author.profilePictureUrl }}
-                                style={styles.authorAvatar}
-                                contentFit="cover"
-                            />
-                        ) : (
-                            <View style={[styles.authorAvatar, { backgroundColor: '#4F46E5', justifyContent: 'center', alignItems: 'center' }]}>
-                                <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-                                    {item.author?.lastName?.charAt(0) || item.author?.firstName?.charAt(0) || 'U'}
-                                </Text>
-                            </View>
-                        )}
-                        <Text style={styles.authorName} numberOfLines={1}>
-                            {item.author?.lastName} {item.author?.firstName}
-                        </Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
-    };
+    const accent = ACCENT_COLORS[index % ACCENT_COLORS.length];
+    const questionCount = getQuestionCount(item);
+    const attemptCount = item.attemptCount || item.totalAttempts || 0;
+    const authorName = getAuthorName(item);
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <View style={styles.iconContainer}>
-                        <Ionicons name="bulb" size={16} color={colors.primary} />
-                    </View>
-                    <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
-                </View>
-                <TouchableOpacity onPress={() => navigation.getParent()?.navigate('QuizTab')}>
-                    <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
-                </TouchableOpacity>
-            </View>
-            <FlatList
-                data={quizzes}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => item?.id || `suggested-quiz-${index}`}
-                contentContainerStyle={styles.listContent}
-                snapToInterval={260 + 12}
-                decelerationRate="fast"
-            />
+      <TouchableOpacity
+        style={[styles.card, { borderColor: `${accent}55` }]}
+        activeOpacity={0.86}
+        onPress={() => handleQuizPress(item)}
+      >
+        <View style={[styles.accentRail, { backgroundColor: accent }]} />
+        <View style={styles.cardTopRow}>
+          <View style={[styles.iconBubble, { backgroundColor: `${accent}1F` }]}>
+            <Ionicons name="flash" size={17} color={accent} />
+          </View>
+          <View style={styles.pointsPill}>
+            <Ionicons name="trophy-outline" size={12} color={accent} />
+            <Text style={[styles.pointsText, { color: accent }]}>
+              {item.totalPoints || Math.max(questionCount * 10, 10)} XP
+            </Text>
+          </View>
         </View>
+
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title || t('feed.postTypes.quiz')}
+        </Text>
+
+        {!!item.description && (
+          <Text style={styles.description} numberOfLines={2}>
+            {item.description}
+          </Text>
+        )}
+
+        <View style={styles.metaGrid}>
+          <View style={styles.metaItem}>
+            <Ionicons name="help-circle-outline" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaText}>{questionCount || '--'} {t('feed.sections.questions')}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaText}>
+              {item.timeLimit ? t('feed.sections.minutesShort', { count: item.timeLimit }) : '∞'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.footerRow}>
+          <Text style={styles.authorText} numberOfLines={1}>
+            {authorName || t('feed.suggestedQuizzes')}
+          </Text>
+          <View style={styles.startButton}>
+            <Text style={styles.startText}>{t('feed.sections.takeQuizNow')}</Text>
+            <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+          </View>
+        </View>
+
+        {attemptCount > 0 && (
+          <View style={styles.socialProof}>
+            <Ionicons name="people-outline" size={11} color={colors.textSecondary} />
+            <Text style={styles.socialProofText}>{attemptCount}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
     );
+  };
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={isDark ? ['#10201F', '#151923'] : ['#ECFDF5', '#F8FAFC']}
+        style={styles.panel}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="sparkles" size={16} color="#0F766E" />
+            </View>
+            <View>
+              <Text style={styles.eyebrow}>{t('feed.quiz', 'Quiz')}</Text>
+              <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={handleViewAll} style={styles.seeAllButton} activeOpacity={0.8}>
+            <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={quizzes}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item?.id || `suggested-quiz-${index}`}
+          contentContainerStyle={styles.listContent}
+          snapToInterval={234}
+          decelerationRate="fast"
+        />
+      </LinearGradient>
+    </View>
+  );
 };
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
-    container: {
-        marginVertical: 12,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        marginBottom: 12,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    iconContainer: {
-        width: 28,
-        height: 28,
-        borderRadius: 8,
-        backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#EEF2FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerTitle: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: colors.text,
-    },
-    seeAll: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: colors.primary,
-    },
-    listContent: {
-        paddingHorizontal: 16,
-        gap: 12,
-    },
-    card: {
-        width: 260,
-        height: 140,
-        backgroundColor: '#1E1B4B',
-        borderRadius: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#3730A3',
-    },
-    gradientBg: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
-    topicPill: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-    },
-    topicText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: '#E0E7FF',
-        textTransform: 'uppercase',
-    },
-    content: {
-        flex: 1,
-        padding: 14,
-        justifyContent: 'flex-end',
-    },
-    title: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#FFFFFF',
-        marginBottom: 8,
-        lineHeight: 20,
-    },
-    metaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    metaText: {
-        fontSize: 11,
-        fontWeight: '500',
-        color: '#C7D2FE',
-    },
-    metaDot: {
-        width: 3,
-        height: 3,
-        borderRadius: 1.5,
-        backgroundColor: '#4B5563',
-        marginHorizontal: 8,
-    },
-    authorRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)',
-    },
-    authorAvatar: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-    },
-    authorName: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#D1D5DB',
-        flex: 1,
-    }
+  container: {
+    marginVertical: 14,
+  },
+  panel: {
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: isDark ? 'rgba(20,184,166,0.18)' : '#D1FAE5',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: isDark ? 'rgba(20,184,166,0.16)' : '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0F766E',
+    textTransform: 'uppercase',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: colors.text,
+    marginTop: 1,
+  },
+  seeAllButton: {
+    minHeight: 32,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  seeAll: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  card: {
+    width: 222,
+    minHeight: 182,
+    backgroundColor: isDark ? '#111827' : '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    overflow: 'hidden',
+  },
+  accentRail: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  iconBubble: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pointsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
+  },
+  pointsText: {
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  cardTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  description: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  authorText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: '#0F766E',
+  },
+  startText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  socialProof: {
+    position: 'absolute',
+    right: 12,
+    bottom: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  socialProofText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textSecondary,
+  },
 });
