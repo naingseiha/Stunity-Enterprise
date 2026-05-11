@@ -6,7 +6,8 @@
  *   2. Relevance (variable)  — match between user interests, enrolled courses, and post topics
  *   3. Quality (variable)    — content quality signals (type, media, author credibility)
  *   4. Recency (variable)    — time decay (tuned per post type)
- *   5. Social Proof (variable) — interactions from followed users + author affinity
+ *   5. Social Proof (variable) — batched counts of likes/comments from the viewer's
+ *      circle (followers, classmates, study-group peers), not per-post relation hydration
  *   6. Learning Context (10%) — boost for posts matching enrolled courses
  * 
  * Weights are dynamic per post type:
@@ -21,7 +22,7 @@
 
 import { PrismaClient, Post, User, PostType, Prisma } from '@prisma/client';
 import { feedCache } from './redis';
-import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from './utils/visibilityScope';
+import { resolveFeedVisibilityWhere } from './utils/visibilityScope';
 import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from './utils/feedCursor';
 
 // ─── Scoring Weights (v2 — dynamic per post type) ──────────────────
@@ -97,6 +98,65 @@ const POST_TYPE_QUALITY: Partial<Record<PostType, number>> = {
     QUESTION: 0.45,
 };
 
+const SCORING_WEIGHT_KEYS: (keyof ScoringWeights)[] = [
+    'ENGAGEMENT',
+    'RELEVANCE',
+    'QUALITY',
+    'RECENCY',
+    'SOCIAL_PROOF',
+    'LEARNING_CONTEXT',
+    'ACADEMIC_RELEVANCE',
+    'TEACHER_RELEVANCE',
+    'PEER_LEARNING',
+    'DIFFICULTY_MATCH',
+];
+
+function normalizeScoringWeights(weights: ScoringWeights): ScoringWeights {
+    const total = SCORING_WEIGHT_KEYS.reduce((sum, key) => sum + Math.max(0, weights[key]), 0);
+    if (total <= 0) return weights;
+
+    return SCORING_WEIGHT_KEYS.reduce((normalized, key) => {
+        normalized[key] = Math.max(0, weights[key]) / total;
+        return normalized;
+    }, {} as ScoringWeights);
+}
+
+function calculateEducationalQualityBoost(averageRating?: number | null, ratingCount?: number): number {
+    if (!averageRating || averageRating <= 0 || !ratingCount || ratingCount <= 0) return 0;
+
+    const confidence = 1 - Math.exp(-ratingCount / 5);
+    const normalizedRating = Math.max(0, Math.min(averageRating / 5, 1));
+    return normalizedRating * confidence * 0.18;
+}
+
+function calculatePostQualityScore(post: {
+    postType: PostType;
+    mediaUrls?: string[] | null;
+    content?: string | null;
+    title?: string | null;
+    questionBounty?: number | null;
+    author?: { isVerified?: boolean | null } | null;
+}, educationalAverageRating?: number | null, educationalRatingCount?: number): number {
+    let score = POST_TYPE_QUALITY[post.postType] || 0.40;
+
+    if (post.mediaUrls && post.mediaUrls.length > 0) score += 0.10;
+
+    const contentLength = post.content?.length || 0;
+    if (contentLength > 200) score += 0.05;
+    if (contentLength > 500) score += 0.05;
+
+    if (post.author?.isVerified) score += 0.10;
+    if (post.title) score += 0.05;
+
+    if (post.postType === 'QUESTION' && (post.questionBounty || 0) > 0) {
+        score += Math.min((post.questionBounty || 0) / 300, 0.3);
+    }
+
+    score += calculateEducationalQualityBoost(educationalAverageRating, educationalRatingCount);
+
+    return Math.min(score, 1.0);
+}
+
 const USER_SIGNALS_CACHE_TTL_SECONDS = 60;
 const SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS = 300;
 const CANDIDATE_POOL_CACHE_TTL_SECONDS = 45;
@@ -139,6 +199,7 @@ interface UserSignals {
     topics: Record<string, number>;      // topicId → interest score
     topicDwellTime: Record<string, number>; // topicId → avg view duration (seconds)
     followingIds: string[];
+    blockedUserIds: string[];
     authorAffinity: Record<string, number>; // authorId → affinity score (0-100)
     enrolledCourseTopics: string[];         // topics from enrolled courses
     academicLevel: number;
@@ -150,10 +211,10 @@ interface UserSignals {
     instructorIds: string[];
 }
 
-function buildQuizPostWhere(userId: string, schoolId: string | null | undefined): Prisma.PostWhereInput {
+async function buildQuizPostWhere(prisma: PrismaClient, userId: string, schoolId: string | null | undefined): Promise<Prisma.PostWhereInput> {
     return {
         AND: [
-            buildFeedVisibilityWhere({ userId, schoolId }),
+            await resolveFeedVisibilityWhere(prisma, { userId, schoolId }),
             { postType: 'QUIZ' },
         ],
     };
@@ -283,7 +344,10 @@ export class FeedRanker {
                 const start = (page - 1) * limit;
                 const paged = cachedSequence.slice(start, start + limit);
                 if (paged.length === 0) {
-                    return this.getRecentFeed(userId, 1, limit, subject, cursor);
+                    if (cursor) {
+                        return this.getRecentFeed(userId, 1, limit, subject, cursor);
+                    }
+                    return { items: [], total: cachedSequence.length, hasMore: false };
                 }
                 const nextCursor = this.getNextCursorFromFeedItems(paged);
                 const hasMore = start + paged.length < cachedSequence.length || (mode === 'FOR_YOU' && Boolean(nextCursor));
@@ -302,14 +366,22 @@ export class FeedRanker {
         if (mode === 'FOLLOWING') {
             const userSignals = await this.getUserSignals(userId);
             const candidates = await this.getCandidates(userId, userSignals, 'FOLLOWING', normalizedExcludeIds, subject);
-            const scored = candidates.map(post => this.scorePost(post, userSignals));
+            const circleIds = this.getSocialCircleActorIds(userSignals);
+            const circleSocial =
+                circleIds.length > 0 && candidates.length > 0
+                    ? await this.loadCircleSocialProofCounts(candidates.map((p) => p.id), circleIds)
+                    : new Map();
+            const scored = candidates.map(post => this.scorePost(post, userSignals, circleSocial));
             const diversified = this.applyDiversity(scored);
 
             const items: FeedItem[] = diversified.map(p => ({ type: 'POST', data: p }));
             const start = (page - 1) * limit;
             const paged = items.slice(start, start + limit);
             if (paged.length === 0) {
-                return this.getRecentFeed(userId, 1, limit, subject, cursor);
+                if (cursor) {
+                    return this.getRecentFeed(userId, 1, limit, subject, cursor);
+                }
+                return { items: [], total: items.length, hasMore: false };
             }
             const nextCursor = this.getNextCursorFromFeedItems(paged);
             const hasMore = start + paged.length < items.length;
@@ -337,26 +409,35 @@ export class FeedRanker {
             this.getExploreContent(userId, userSignals, normalizedExcludeIds, subject),
         ]);
 
-        // Pool 1: Relevance-ranked candidates (60% of feed) — required
+        // Pool 1–3 raw rows — required before scoring so we batch social-proof queries once
         const relevanceCandidates = relevanceResult.status === 'fulfilled' ? relevanceResult.value : [];
-        const relevanceScored = relevanceCandidates.map(post => this.scorePost(post, userSignals));
-        relevanceScored.sort((a, b) => b.score - a.score);
-
-        // Pool 2: Trending (25% of feed) — optional, graceful fallback
         const trendingPosts = trendingResult.status === 'fulfilled' ? trendingResult.value : [];
         if (trendingResult.status === 'rejected') {
             console.warn('⚠️ [FeedRanker] Trending pool failed, skipping:', trendingResult.reason?.message);
         }
-        const trendingScored = trendingPosts.map(post => this.scorePost(post, userSignals));
-
-        // Pool 3: Explore (15% of feed) — optional, graceful fallback
         const explorePosts = exploreResult.status === 'fulfilled' ? exploreResult.value : [];
         if (exploreResult.status === 'rejected') {
             console.warn('⚠️ [FeedRanker] Explore pool failed, skipping:', exploreResult.reason?.message);
         }
-        const exploreScored = explorePosts.map(post => this.scorePost(post, userSignals));
 
-        console.log(`🧠 [FeedRanker] Pools: relevance=${relevanceScored.length} trending=${trendingScored.length} explore=${exploreScored.length}`);
+        const uniquePoolIds = [...new Set(
+            [...relevanceCandidates, ...trendingPosts, ...explorePosts].map((p) => p.id)
+        )];
+        const circleIds = this.getSocialCircleActorIds(userSignals);
+        const circleSocial =
+            circleIds.length > 0 && uniquePoolIds.length > 0
+                ? await this.loadCircleSocialProofCounts(uniquePoolIds, circleIds)
+                : new Map();
+
+        const relevanceScored = relevanceCandidates.map(post => this.scorePost(post, userSignals, circleSocial));
+        relevanceScored.sort((a, b) => b.score - a.score);
+
+        const trendingScored = trendingPosts.map(post => this.scorePost(post, userSignals, circleSocial));
+        const exploreScored = explorePosts.map(post => this.scorePost(post, userSignals, circleSocial));
+
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`🧠 [FeedRanker] Pools: relevance=${relevanceScored.length} trending=${trendingScored.length} explore=${exploreScored.length}`);
+        }
 
         // Mix: interleave pools with target ratios.
         // Cache enough items for several fast page fetches without over-generating work.
@@ -426,7 +507,10 @@ export class FeedRanker {
         const start = (page - 1) * limit;
         const paged = rawFeedItems.slice(start, start + limit);
         if (paged.length === 0) {
-            return this.getRecentFeed(userId, 1, limit, subject, cursor);
+            if (cursor) {
+                return this.getRecentFeed(userId, 1, limit, subject, cursor);
+            }
+            return { items: [], total: rawFeedItems.length, hasMore: false };
         }
         const nextCursor = this.getNextCursorFromFeedItems(paged);
         const hasMore = start + paged.length < rawFeedItems.length || Boolean(nextCursor);
@@ -452,7 +536,7 @@ export class FeedRanker {
             // Suggest users who share interests, teachers, or anyone active the user isn't already following.
             // Intentionally permissive — we only exclude the current user and already-followed users.
             const userTopics = Object.keys(signals.topics).slice(0, 5);
-            const excludeIds = [userId, ...signals.followingIds];
+            const excludeIds = [userId, ...signals.followingIds, ...signals.blockedUserIds];
 
             const baseWhere: any = {
                 id: { notIn: excludeIds },
@@ -460,6 +544,7 @@ export class FeedRanker {
 
             const primaryWhere: any = {
                 ...baseWhere,
+                ...(signals.schoolId ? { schoolId: signals.schoolId } : {}),
                 OR: [
                     { role: { in: ['TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STAFF'] } },
                     ...(userTopics.length > 0 ? [{ interests: { hasSome: userTopics } }] : []),
@@ -512,7 +597,7 @@ export class FeedRanker {
             ];
 
             const primaryWhere: any = {
-                instructorId: { not: userId },
+                instructorId: { notIn: [userId, ...signals.blockedUserIds] },
                 isPublished: true,
                 enrollments: { none: { userId } },
                 ...(userTopics.length > 0 && { tags: { hasSome: userTopics } }),
@@ -528,7 +613,7 @@ export class FeedRanker {
             if (suggested.length < 2) {
                 suggested = await db.course.findMany({
                     where: {
-                        instructorId: { not: userId },
+                        instructorId: { notIn: [userId, ...signals.blockedUserIds] },
                         isPublished: true,
                         enrollments: { none: { userId } },
                     },
@@ -541,7 +626,7 @@ export class FeedRanker {
             if (suggested.length < 2) {
                 suggested = await db.course.findMany({
                     where: {
-                        instructorId: { not: userId },
+                        instructorId: { notIn: [userId, ...signals.blockedUserIds] },
                         isPublished: true,
                     },
                     include: includeFields,
@@ -552,7 +637,7 @@ export class FeedRanker {
 
             if (suggested.length < 2) {
                 suggested = await db.course.findMany({
-                    where: { instructorId: { not: userId } },
+                    where: { instructorId: { notIn: [userId, ...signals.blockedUserIds] } },
                     include: includeFields,
                     orderBy,
                     take: 8,
@@ -561,6 +646,7 @@ export class FeedRanker {
 
             return suggested.map(course => ({
                 ...course,
+                thumbnailUrl: (course as any).thumbnailUrl || course.thumbnail,
                 enrollmentCount: course.enrolledCount,
             }));
         });
@@ -571,7 +657,7 @@ export class FeedRanker {
         return this.getOrLoadCached(cacheKey, SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS, async () => {
             const db = this.readPrisma;
             const userTopics = Object.keys(signals.topics).slice(0, 5);
-            const quizVisibilityWhere = buildQuizPostWhere(userId, signals.schoolId);
+            const quizVisibilityWhere = await buildQuizPostWhere(this.readPrisma, userId, signals.schoolId);
 
             const attempted = await db.quizAttempt.findMany({
                 where: { userId },
@@ -766,7 +852,7 @@ export class FeedRanker {
         const cacheKey = `feedranker:signals:${userId}:v1`;
         return this.getOrLoadCached(cacheKey, USER_SIGNALS_CACHE_TTL_SECONDS, async () => {
             const db = this.readPrisma;
-            const [feedSignals, follows, user, authorInteractions, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
+            const [feedSignals, follows, user, authorInteractions, blockedRelationships, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
                 db.userFeedSignal.findMany({
                     where: { userId },
                     orderBy: { score: 'desc' },
@@ -780,23 +866,68 @@ export class FeedRanker {
                     where: { id: userId },
                     select: { schoolId: true, interests: true, skills: true, careerGoals: true },
                 }),
-                db.like.groupBy({
-                    by: ['postId'],
-                    where: { userId },
-                    _count: { postId: true },
-                }).then(async (likes) => {
-                    if (likes.length === 0) return new Map<string, number>();
-                    const postIds = likes.map(l => l.postId);
+                (async () => {
+                    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+                    const [likes, comments, bookmarks, views] = await Promise.all([
+                        db.like.findMany({
+                            where: { userId, createdAt: { gte: since } },
+                            select: { postId: true },
+                            orderBy: { createdAt: 'desc' },
+                            take: 300,
+                        }),
+                        db.comment.findMany({
+                            where: { authorId: userId, createdAt: { gte: since } },
+                            select: { postId: true },
+                            orderBy: { createdAt: 'desc' },
+                            take: 300,
+                        }),
+                        db.bookmark.findMany({
+                            where: { userId, createdAt: { gte: since } },
+                            select: { postId: true },
+                            orderBy: { createdAt: 'desc' },
+                            take: 300,
+                        }),
+                        db.postView.findMany({
+                            where: { userId, viewedAt: { gte: since } },
+                            select: { postId: true, duration: true },
+                            orderBy: { viewedAt: 'desc' },
+                            take: 500,
+                        }),
+                    ]);
+
+                    const postWeights = new Map<string, number>();
+                    const addPostWeight = (postId: string, weight: number) => {
+                        postWeights.set(postId, (postWeights.get(postId) || 0) + weight);
+                    };
+
+                    likes.forEach(item => addPostWeight(item.postId, 3));
+                    comments.forEach(item => addPostWeight(item.postId, 5));
+                    bookmarks.forEach(item => addPostWeight(item.postId, 6));
+                    views.forEach(item => addPostWeight(item.postId, (item.duration || 0) >= 15 ? 2 : 0.75));
+
+                    const postIds = Array.from(postWeights.keys()).slice(0, 600);
+                    if (postIds.length === 0) return new Map<string, number>();
+
                     const posts = await db.post.findMany({
-                        where: { id: { in: postIds.slice(0, 200) } },
+                        where: { id: { in: postIds } },
                         select: { id: true, authorId: true },
                     });
                     const authorCounts = new Map<string, number>();
                     for (const post of posts) {
-                        authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + 3);
+                        if (post.authorId === userId) continue;
+                        authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + (postWeights.get(post.id) || 0));
                     }
                     return authorCounts;
-                }).catch(() => new Map<string, number>()),
+                })().catch(() => new Map<string, number>()),
+                db.userBlock.findMany({
+                    where: {
+                        OR: [
+                            { blockerId: userId },
+                            { blockedId: userId },
+                        ],
+                    },
+                    select: { blockerId: true, blockedId: true },
+                }).catch(() => [] as any[]),
                 db.enrollment.findMany({
                     where: { userId },
                     select: {
@@ -814,11 +945,13 @@ export class FeedRanker {
                     where: { course: { enrollments: { some: { userId } } } },
                     select: { userId: true },
                     distinct: ['userId'],
+                    take: 500,
                 }).catch(() => [] as any[]),
                 db.clubMember.findMany({
                     where: { club: { members: { some: { userId } } } },
                     select: { userId: true },
                     distinct: ['userId'],
+                    take: 500,
                 }).catch(() => [] as any[])
             ]);
 
@@ -860,6 +993,16 @@ export class FeedRanker {
                 authorAffinity[authorId] = Math.min(score, 100);
             }
 
+            const blockedUserIds = Array.from(new Set(
+                blockedRelationships
+                    .map((block: any) => block.blockerId === userId ? block.blockedId : block.blockerId)
+                    .filter((id: string | undefined): id is string => Boolean(id))
+            ));
+            const blockedSet = new Set(blockedUserIds);
+            const followingIds = follows
+                .map(f => f.followingId)
+                .filter(id => !blockedSet.has(id));
+
             const enrolledCourseTopics: string[] = [];
             const instructorIds: string[] = [];
             const courseTopicSet = new Set<string>();
@@ -896,7 +1039,8 @@ export class FeedRanker {
                 schoolId: user?.schoolId ?? null,
                 topics,
                 topicDwellTime,
-                followingIds: follows.map(f => f.followingId),
+                followingIds,
+                blockedUserIds,
                 authorAffinity,
                 enrolledCourseTopics,
                 academicLevel,
@@ -1041,13 +1185,107 @@ export class FeedRanker {
         return this.getOrLoadCached(cacheKey, CANDIDATE_POOL_CACHE_TTL_SECONDS, load);
     }
 
+    /**
+     * Viewer's learning circle for social-proof: followers + classmates + study-group peers,
+     * excluding blocked users (followingIds are already sanitized in getUserSignals).
+     */
+    private getSocialCircleActorIds(signals: UserSignals): string[] {
+        const blocked = new Set(signals.blockedUserIds);
+        const merged = [
+            ...signals.followingIds,
+            ...signals.classmates,
+            ...signals.studyGroupMembers,
+        ].filter((id): id is string => Boolean(id && !blocked.has(id)));
+        return [...new Set(merged)];
+    }
+
+    /**
+     * Count likes/comments per post from members of socialCircleActorIds via batched groupBy —
+     * avoids hydrating likes[] / comments[] on every candidate row.
+     *
+     * Chunking strategy: minimize round-trips when post IDs are bounded (~≤120) but the
+     * peer circle can be large — chunk actor IN lists only unless both dimensions exceed MAX_IN.
+     */
+    private async loadCircleSocialProofCounts(
+        postIds: string[],
+        socialCircleActorIds: string[],
+    ): Promise<Map<string, { likes: number; comments: number }>> {
+        const out = new Map<string, { likes: number; comments: number }>();
+        if (postIds.length === 0 || socialCircleActorIds.length === 0) return out;
+
+        const uniquePosts = [...new Set(postIds)];
+        const uniqueActors = [...new Set(socialCircleActorIds)];
+        /** Safe upper bound for Prisma/SQL IN-list size per column */
+        const MAX_IN = 200;
+
+        const accumulate = (
+            rows: Array<{ postId: string; _count: { _all: number } }>,
+            field: 'likes' | 'comments'
+        ) => {
+            for (const row of rows) {
+                const cur = out.get(row.postId) || { likes: 0, comments: 0 };
+                cur[field] += row._count._all;
+                out.set(row.postId, cur);
+            }
+        };
+
+        const queryPair = async (postChunk: string[], actorChunk: string[]) => {
+            const [likeGroups, commentGroups] = await Promise.all([
+                this.readPrisma.like.groupBy({
+                    by: ['postId'],
+                    where: { postId: { in: postChunk }, userId: { in: actorChunk } },
+                    _count: { _all: true },
+                }),
+                this.readPrisma.comment.groupBy({
+                    by: ['postId'],
+                    where: { postId: { in: postChunk }, authorId: { in: actorChunk } },
+                    _count: { _all: true },
+                }),
+            ]);
+            accumulate(likeGroups, 'likes');
+            accumulate(commentGroups, 'comments');
+        };
+
+        if (uniquePosts.length <= MAX_IN && uniqueActors.length <= MAX_IN) {
+            await queryPair(uniquePosts, uniqueActors);
+            return out;
+        }
+
+        if (uniquePosts.length <= MAX_IN) {
+            for (let ai = 0; ai < uniqueActors.length; ai += MAX_IN) {
+                await queryPair(uniquePosts, uniqueActors.slice(ai, ai + MAX_IN));
+            }
+            return out;
+        }
+
+        if (uniqueActors.length <= MAX_IN) {
+            for (let pi = 0; pi < uniquePosts.length; pi += MAX_IN) {
+                await queryPair(uniquePosts.slice(pi, pi + MAX_IN), uniqueActors);
+            }
+            return out;
+        }
+
+        for (let pi = 0; pi < uniquePosts.length; pi += MAX_IN) {
+            const postChunk = uniquePosts.slice(pi, pi + MAX_IN);
+            for (let ai = 0; ai < uniqueActors.length; ai += MAX_IN) {
+                await queryPair(postChunk, uniqueActors.slice(ai, ai + MAX_IN));
+            }
+        }
+
+        return out;
+    }
+
     // ─── Step 3: Score a Post ─────────────────────────────────────────
-    private scorePost(post: PostWithRelations, signals: UserSignals): ScoredPost {
+    private scorePost(
+        post: PostWithRelations,
+        signals: UserSignals,
+        circleSocialCounts?: Map<string, { likes: number; comments: number }>,
+    ): ScoredPost {
         const engagement = this.calcEngagement(post);
         const relevance = this.calcRelevance(post, signals);
         const quality = this.calcQuality(post);
         const recency = this.calcRecency(post);
-        const socialProof = this.calcSocialProof(post, signals);
+        const socialProof = this.calcSocialProof(post, signals, circleSocialCounts);
         const learningContext = this.calcLearningContext(post, signals);
 
         // Gamification / Academic Context
@@ -1058,7 +1296,7 @@ export class FeedRanker {
 
         // Get per-post-type weights (or fall back to base weights)
         const overrides = POST_TYPE_WEIGHTS[post.postType];
-        const weights = overrides ? { ...BASE_WEIGHTS, ...overrides } : BASE_WEIGHTS;
+        const weights = normalizeScoringWeights(overrides ? { ...BASE_WEIGHTS, ...overrides } : BASE_WEIGHTS);
 
         // Pinned posts always come first
         const pinBoost = post.isPinned ? 1000 : 0;
@@ -1155,30 +1393,7 @@ export class FeedRanker {
             return post.postScore.qualityScore;
         }
 
-        let score = POST_TYPE_QUALITY[post.postType] || 0.40;
-
-        // Media bonus
-        if (post.mediaUrls && post.mediaUrls.length > 0) score += 0.10;
-
-        // Content length bonus (meaningful content)
-        if (post.content.length > 200) score += 0.05;
-        if (post.content.length > 500) score += 0.05;
-
-        // Verified author bonus
-        if (post.author?.isVerified) score += 0.10;
-
-        // Title presence (structured content)
-        if (post.title) score += 0.05;
-
-        // 💎 Q&A Bounty Boost (Max +0.3 for very high bounties)
-        if (post.postType === 'QUESTION' && (post as any).questionBounty > 0) {
-            const bounty = (post as any).questionBounty;
-            // 10 diamonds = 0.05, 50 = 0.15, 100+ = 0.3
-            const bountyBoost = Math.min(bounty / 300, 0.3);
-            score += bountyBoost;
-        }
-
-        return Math.min(score, 1.0);
+        return calculatePostQualityScore(post);
     }
 
     // ─── Recency Score (0-1) ───────────────────────────────────────
@@ -1191,20 +1406,28 @@ export class FeedRanker {
     }
 
     // ─── Social Proof Score (0-1) ──────────────────────────────────
-    private calcSocialProof(post: PostWithRelations, signals: UserSignals): number {
-        // Check if any followed users liked or commented on this post
-        const followedLikes = post.likes?.filter(
-            l => signals.followingIds.includes(l.userId)
-        ).length || 0;
+    private calcSocialProof(
+        post: PostWithRelations,
+        signals: UserSignals,
+        circleSocialCounts?: Map<string, { likes: number; comments: number }>,
+    ): number {
+        let circleLikes = 0;
+        let circleComments = 0;
 
-        const followedComments = post.comments?.filter(
-            c => signals.followingIds.includes(c.authorId)
-        ).length || 0;
+        const pre = circleSocialCounts?.get(post.id);
+        if (pre) {
+            circleLikes = pre.likes;
+            circleComments = pre.comments;
+        } else {
+            const circle = new Set(this.getSocialCircleActorIds(signals));
+            circleLikes = post.likes?.filter(l => circle.has(l.userId)).length || 0;
+            circleComments = post.comments?.filter(c => circle.has(c.authorId)).length || 0;
+        }
 
-        if (followedLikes + followedComments === 0) return 0;
+        if (circleLikes + circleComments === 0) return 0;
 
-        // Normalize: cap at 5 social interactions
-        return Math.min((followedLikes * 2 + followedComments * 3) / 15, 1.0);
+        // Normalize: weighted comments > likes; cap ~5 meaningful interactions
+        return Math.min((circleLikes * 2 + circleComments * 3) / 15, 1.0);
     }
 
     // ─── Learning Context Score (0-1) — NEW ────────────────────────
@@ -1562,7 +1785,7 @@ export class FeedRanker {
     // ─── Track User Action (Batched) ──────────────────────────────
     async trackViewSignalsBatch(
         userId: string,
-        views: { postId: string; duration?: number; source?: string }[],
+        views: { postId: string; duration?: number; source?: string; sampleRate?: number }[],
         preloadedPosts?: { id: string; topicTags: string[] }[]
     ): Promise<void> {
         try {
@@ -1583,12 +1806,16 @@ export class FeedRanker {
             for (const view of views) {
                 const topics = topicsByPostId.get(view.postId) || [];
                 const duration = view.duration || 3;
+                const sampleRate = Number(view.sampleRate);
+                const sampleMultiplier = Number.isFinite(sampleRate) && sampleRate > 0 && sampleRate < 1
+                    ? Math.min(1 / sampleRate, 10)
+                    : 1;
 
                 for (const rawTopic of topics) {
                     const topicId = rawTopic.toLowerCase();
                     const current = topicAgg.get(topicId) || { count: 0, score: 0, duration: 0 };
                     current.count += 1;
-                    current.score += weight;
+                    current.score += weight * sampleMultiplier;
                     current.duration += duration;
                     topicAgg.set(topicId, current);
                 }
@@ -1708,23 +1935,52 @@ export class FeedRanker {
                 id: true,
                 sharesCount: true,
                 postType: true,
+                mediaUrls: true,
+                content: true,
+                title: true,
+                questionBounty: true,
                 createdAt: true,
+                author: {
+                    select: { isVerified: true },
+                },
                 _count: { select: { likes: true, comments: true, views: true } },
             },
         });
 
         if (posts.length === 0) return 0;
 
-        // Pre-compute all scores in memory (zero DB cost)
+        const postIds = posts.map(post => post.id);
+        const educationalRatings = await this.prisma.educationalValueRating.groupBy({
+            by: ['postId'],
+            where: { postId: { in: postIds } },
+            _avg: { averageRating: true },
+            _count: { postId: true },
+        });
+        const educationalQualityByPostId = new Map(
+            educationalRatings.map(rating => [
+                rating.postId,
+                {
+                    averageRating: rating._avg.averageRating || 0,
+                    count: rating._count.postId || 0,
+                },
+            ])
+        );
+
+        // Pre-compute all scores in memory after the aggregate quality read.
         const scored = posts.map(post => {
             const likes = post._count.likes;
             const comments = post._count.comments;
             const views = post._count.views;
             const shares = post.sharesCount;
+            const educationalQuality = educationalQualityByPostId.get(post.id);
 
             const engagementRaw = (likes * 3) + (comments * 5) + (shares * 7) + (views * 0.5);
             const engagementScore = engagementRaw / (engagementRaw + 50);
-            const qualityScore = POST_TYPE_QUALITY[post.postType] || 0.40;
+            const qualityScore = calculatePostQualityScore(
+                post,
+                educationalQuality?.averageRating,
+                educationalQuality?.count
+            );
             const ageHours = (Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
             const decayFactor = Math.exp(-0.029 * ageHours);
             const trendingScore = engagementScore * decayFactor;

@@ -23,13 +23,27 @@ router.get('/users/suggested', authenticateToken, async (req: AuthRequest, res: 
     const currentUserId = req.user?.id;
     const { limit = 10 } = req.query;
 
-    // Get IDs the user is already following (to exclude them)
-    const following = await prisma.follow.findMany({
-      where: { followerId: currentUserId },
-      select: { followingId: true },
-    });
+    // Get IDs the user is already following or has blocked/been blocked by.
+    const [following, blockedRelationships] = await Promise.all([
+      prisma.follow.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      }),
+      prisma.userBlock.findMany({
+        where: {
+          OR: [
+            { blockerId: currentUserId },
+            { blockedId: currentUserId },
+          ],
+        },
+        select: { blockerId: true, blockedId: true },
+      }),
+    ]);
     const followingIds = following.map(f => f.followingId);
-    const excludeIds = [currentUserId!, ...followingIds];
+    const blockedIds = blockedRelationships.map(block =>
+      block.blockerId === currentUserId ? block.blockedId : block.blockerId
+    );
+    const excludeIds = [currentUserId!, ...followingIds, ...blockedIds];
 
     const selectFields = {
       id: true,
@@ -45,6 +59,7 @@ router.get('/users/suggested', authenticateToken, async (req: AuthRequest, res: 
     let users: any[] = await prisma.user.findMany({
       where: {
         id: { notIn: excludeIds },
+        ...(req.user?.schoolId ? { schoolId: req.user.schoolId } : {}),
         role: { in: ['TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STAFF'] as any[] },
       },
       select: selectFields,
@@ -53,6 +68,18 @@ router.get('/users/suggested', authenticateToken, async (req: AuthRequest, res: 
     });
 
     // Fallback: any other users if not enough teachers/admins
+    if (users.length < 3) {
+      users = await prisma.user.findMany({
+        where: {
+          id: { notIn: excludeIds },
+          ...(req.user?.schoolId ? { schoolId: req.user.schoolId } : {}),
+        },
+        select: selectFields,
+        orderBy: { createdAt: 'desc' },
+        take: Number(limit),
+      });
+    }
+
     if (users.length < 3) {
       users = await prisma.user.findMany({
         where: { id: { notIn: excludeIds } },
@@ -371,6 +398,13 @@ router.post('/users/:id/block', authenticateToken, async (req: AuthRequest, res:
       },
     });
 
+    Promise.all([
+      feedCache.invalidateUser(blockerId),
+      feedCache.invalidateUser(blockedId),
+      feedCache.invalidateVisibilityScope(blockerId),
+      feedCache.invalidateVisibilityScope(blockedId),
+    ]).catch(() => { });
+
     res.json({ success: true, block });
   } catch (error: any) {
     console.error('Block user error:', error);
@@ -394,6 +428,13 @@ router.delete('/users/:id/block', authenticateToken, async (req: AuthRequest, re
         blockedId,
       },
     });
+
+    Promise.all([
+      feedCache.invalidateUser(blockerId),
+      feedCache.invalidateUser(blockedId),
+      feedCache.invalidateVisibilityScope(blockerId),
+      feedCache.invalidateVisibilityScope(blockedId),
+    ]).catch(() => { });
 
     res.json({ success: true });
   } catch (error: any) {

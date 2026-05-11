@@ -9,7 +9,7 @@ import { prisma, prismaRead, feedRanker, upload } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
-import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibilityScope';
+import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 
 const router = Router();
 
@@ -86,7 +86,7 @@ router.get('/quizzes', authenticateToken, async (req: AuthRequest, res: Response
 
     const postWhere: any = {
       AND: [
-        buildFeedVisibilityWhere({
+        await resolveFeedVisibilityWhere(prismaRead, {
           userId,
           schoolId: req.user!.schoolId,
         }),
@@ -158,7 +158,7 @@ router.get('/quizzes/recommended', authenticateToken, async (req: AuthRequest, r
         ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
         post: {
           AND: [
-            buildFeedVisibilityWhere({
+            await resolveFeedVisibilityWhere(prismaRead, {
               userId,
               schoolId: req.user!.schoolId,
             }),
@@ -214,7 +214,7 @@ router.get('/quizzes/daily', authenticateToken, async (req: AuthRequest, res: Re
       where: {
         post: {
           AND: [
-            buildFeedVisibilityWhere({
+            await resolveFeedVisibilityWhere(prismaRead, {
               userId,
               schoolId: req.user!.schoolId,
             }),

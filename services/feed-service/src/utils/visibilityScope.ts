@@ -215,6 +215,30 @@ async function resolveAccessibleClassAuthorIds(
   ]));
 }
 
+async function resolveBlockedUserIds(
+  prisma: PrismaClient,
+  userId: string
+): Promise<string[]> {
+  const blocks = await prisma.userBlock.findMany({
+    where: {
+      OR: [
+        { blockerId: userId },
+        { blockedId: userId },
+      ],
+    },
+    select: {
+      blockerId: true,
+      blockedId: true,
+    },
+  });
+
+  return Array.from(new Set(
+    blocks
+      .map((block) => block.blockerId === userId ? block.blockedId : block.blockerId)
+      .filter((value): value is string => Boolean(value))
+  ));
+}
+
 export async function resolveFeedVisibilityWhere(
   prisma: PrismaClient,
   options: FeedVisibilityScopeOptions
@@ -227,7 +251,10 @@ export async function resolveFeedVisibilityWhere(
     return cached.where;
   }
 
-  const classAuthorIds = await resolveAccessibleClassAuthorIds(prisma, userId);
+  const [classAuthorIds, blockedUserIds] = await Promise.all([
+    resolveAccessibleClassAuthorIds(prisma, userId),
+    resolveBlockedUserIds(prisma, userId),
+  ]);
 
   const visibilityClauses: Prisma.PostWhereInput[] = [
     { authorId: userId },
@@ -245,9 +272,16 @@ export async function resolveFeedVisibilityWhere(
     });
   }
 
-  const resolvedWhere = {
-    OR: visibilityClauses,
-  };
+  const resolvedWhere: Prisma.PostWhereInput = blockedUserIds.length > 0
+    ? {
+        AND: [
+          { authorId: { notIn: blockedUserIds } },
+          { OR: visibilityClauses },
+        ],
+      }
+    : {
+        OR: visibilityClauses,
+      };
 
   await feedCache.set(cacheKey, { where: resolvedWhere }, 60);
 

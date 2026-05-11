@@ -736,6 +736,17 @@
       "studyClubs": "ក្លឹបសិក្សា",
       "events": "ព្រឹត្តិការណ៍"
     },
+    "suggestions": {
+      "peopleTitle": "មនុស្សដែលបានផ្តល់អនុសាសន៍",
+      "coursesTitle": "វគ្គសិក្សាសម្រាប់អ្នក",
+      "quizzesTitle": "កម្រងសំណួរប្រយ័ត្ន",
+      "enrolledCount": "បានចុះឈ្មោះ {{count}} នាក់",
+      "open": "វគ្គបើក",
+      "fallbackName": "សមាជិក",
+      "untitledCourse": "វគ្គសិក្សា",
+      "untitledQuiz": "កម្រងសំណួរ",
+      "passScore": "រួច {{score}}%"
+    },
     "tabs": {
       "feed": "មតិព័ត៌មាន",
       "myPosts": "ការបង្ហោះរបស់ខ្ញុំ",

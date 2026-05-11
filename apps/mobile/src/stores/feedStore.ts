@@ -33,7 +33,7 @@ const VIEW_FLUSH_INTERVAL = 60_000; // 60 seconds (Free Tier optimization)
 // Example: 10K users × 20 posts × 20% = 40K tracked views (represents 200K actual views)
 const VIEW_SAMPLE_RATE = 0.2; // Track 20% of views (1 in 5)
 let viewFlushTimer: ReturnType<typeof setTimeout> | null = null;
-const viewBuffer = new Map<string, { postId: string; duration: number; source: string; timestamp: number }>();
+const viewBuffer = new Map<string, { postId: string; duration: number; source: string; timestamp: number; sampleRate: number }>();
 
 // Feed cold-start resilience (Cloud Run free-tier friendly)
 const FEED_FIRST_PAGE_TIMEOUT_MS = 20_000;
@@ -1565,7 +1565,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     // Add to view buffer for batched flush
     if (!viewBuffer.has(postId)) {
-      viewBuffer.set(postId, { postId, duration: 3, source: 'feed', timestamp: Date.now() });
+      viewBuffer.set(postId, { postId, duration: 3, source: 'feed', timestamp: Date.now(), sampleRate: VIEW_SAMPLE_RATE });
 
       // Start flush timer on first buffered view
       if (viewBuffer.size === 1) {

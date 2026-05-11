@@ -736,6 +736,17 @@
       "studyClubs": "Study Clubs",
       "events": "Events"
     },
+    "suggestions": {
+      "peopleTitle": "Suggested people",
+      "coursesTitle": "Courses for you",
+      "quizzesTitle": "Quiz challenges",
+      "enrolledCount": "{{count}} enrolled",
+      "open": "Open course",
+      "fallbackName": "Member",
+      "untitledCourse": "Course",
+      "untitledQuiz": "Quiz",
+      "passScore": "Pass {{score}}%"
+    },
     "tabs": {
       "feed": "Feed",
       "myPosts": "My Posts",

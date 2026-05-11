@@ -14,6 +14,7 @@ import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../uti
 
 const router = Router();
 const inFlightFeedResponses = new Map<string, Promise<{ payload: any; etag: string }>>();
+const FEED_RESPONSE_CACHE_TTL_SECONDS = 90;
 
 // Resolve relative media URLs (e.g. /uploads/...) to absolute URLs using request host
 function resolveMediaUrls(urls: string[], req: AuthRequest): string[] {
@@ -56,7 +57,9 @@ function stripToMinimal(post: any): any {
     mediaMetadata: post.mediaMetadata || [],
     mediaAspectRatio: post.mediaAspectRatio,
     createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
     isPinned: post.isPinned,
+    isEdited: post.isEdited,
     likesCount: post.likesCount ?? post._count?.likes ?? 0,
     commentsCount: post.commentsCount ?? post._count?.comments ?? 0,
     sharesCount: post.sharesCount ?? 0,
@@ -86,8 +89,16 @@ function stripToMinimal(post: any): any {
 
 // Helper: generate ETag from post IDs for 304 Not Modified
 function createETag(posts: any[]): string {
-  const hash = posts.map(p => p.id).join(',');
-  // Simple but effective: hash of IDs + count
+  const hash = posts.map(p => [
+    p.id,
+    p.updatedAt,
+    p.likesCount,
+    p.commentsCount,
+    p.sharesCount,
+    p.isEdited,
+    p.isPinned,
+  ].join(':')).join(',');
+  // Simple but effective: hash of IDs + mutable feed-card fields
   let h = 0;
   for (let i = 0; i < hash.length; i++) {
     h = ((h << 5) - h + hash.charCodeAt(i)) | 0;
@@ -504,7 +515,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       if (cachedEtag) {
         res.setHeader('ETag', cachedEtag);
       }
-      res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
+      res.setHeader('Cache-Control', `private, max-age=${FEED_RESPONSE_CACHE_TTL_SECONDS}, stale-while-revalidate=300`);
       if (cachedEtag && req.headers['if-none-match'] === cachedEtag) {
         return res.status(304).end();
       }
@@ -649,11 +660,11 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
         },
         meta: {
           mode: String(mode),
-          algorithm: 'v1',
+          algorithm: 'v2',
         },
       };
 
-      feedCache.set(cacheKey, { payload, etag }).catch(() => { });
+      feedCache.set(cacheKey, { payload, etag }, FEED_RESPONSE_CACHE_TTL_SECONDS).catch(() => { });
       return { payload, etag };
     };
 
@@ -667,7 +678,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
 
     const { payload, etag } = await responsePromise;
     res.setHeader('ETag', etag);
-    res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
+    res.setHeader('Cache-Control', `private, max-age=${FEED_RESPONSE_CACHE_TTL_SECONDS}, stale-while-revalidate=300`);
 
     if (req.headers['if-none-match'] === etag) {
       return res.status(304).end();
@@ -715,7 +726,7 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
       return res.status(400).json({ success: false, error: 'views array is required' });
     }
 
-    const batch = (views.slice(0, 50) as { postId: string; duration?: number; source?: string }[])
+    const batch = (views.slice(0, 50) as { postId: string; duration?: number; source?: string; sampleRate?: number }[])
       .filter(v => v.postId);
 
     const existingPosts = await prisma.post.findMany({
