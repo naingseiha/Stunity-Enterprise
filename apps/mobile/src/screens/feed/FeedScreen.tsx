@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -349,6 +349,11 @@ export default function FeedScreen() {
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
   const flatListRef = React.useRef<FlashList<FeedItem> | null>(null);
+  const scrollToTopRef = React.useRef({
+    scrollToTop: () => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    },
+  });
   const canTriggerEndReachedRef = React.useRef(true);
   const postsRef = useRef(feedItems);
   const pendingPostsRef = useRef(pendingPosts);
@@ -361,6 +366,8 @@ export default function FeedScreen() {
   const displayedFeedItems = optimisticFilterItems || feedItems;
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
   const isFilterTransitioning = !!pendingSubjectFilter;
+
+  useScrollToTop(scrollToTopRef);
 
   useEffect(() => {
     if (!pendingSubjectFilter && feedItems.length > 0) {

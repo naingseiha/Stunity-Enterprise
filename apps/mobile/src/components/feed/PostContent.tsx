@@ -63,6 +63,7 @@ const PostContent = ({
   const isQuestion = post.postType === 'QUESTION';
   const isAutomated = ['EVENT_CREATED', 'CLUB_CREATED'].includes(post.postType);
   const showProgress = (post.postType === 'COURSE' || post.postType === 'QUIZ') && learningMeta?.progress !== undefined;
+  const mediaDisplayMode = String(post.mediaDisplayMode || 'AUTO').toUpperCase();
   const feedMediaAspectRatio = React.useMemo(() => getFeedMediaAspectRatio(post), [
     post.id,
     post.mediaType,
@@ -98,7 +99,7 @@ const PostContent = ({
             mediaMetadata={post.mediaMetadata || []}
             onImagePress={onImagePress}
             borderRadius={0}
-            aspectRatio={feedMediaAspectRatio}
+            aspectRatio={mediaDisplayMode === 'AUTO' || mediaDisplayMode === 'CAROUSEL' ? undefined : feedMediaAspectRatio}
             mode="auto"
             enableViewer={false}
             optimizeForFeed

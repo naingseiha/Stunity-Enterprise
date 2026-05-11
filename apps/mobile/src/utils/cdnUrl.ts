@@ -11,12 +11,12 @@ const CDN_BASE_URL = process.env.EXPO_PUBLIC_CDN_URL || '';
 
 // Preset sizes for different use cases
 export const ImageSize = {
-    AVATAR_SM: { w: 48, h: 48, q: 80 },
-    AVATAR_MD: { w: 80, h: 80, q: 85 },
-    AVATAR_LG: { w: 160, h: 160, q: 90 },
-    FEED_THUMB: { w: 400, h: 400, q: 80 },
-    FEED_FULL: { w: 800, h: 800, q: 85 },
-    FULL: { w: 0, h: 0, q: 95 },  // Original size
+    AVATAR_SM: { w: 48, h: 48, q: 80, fit: 'cover' },
+    AVATAR_MD: { w: 80, h: 80, q: 85, fit: 'cover' },
+    AVATAR_LG: { w: 160, h: 160, q: 90, fit: 'cover' },
+    FEED_THUMB: { w: 400, h: 400, q: 80, fit: 'cover' },
+    FEED_FULL: { w: 900, h: 0, q: 85, fit: 'scale-down' },
+    FULL: { w: 0, h: 0, q: 95, fit: 'scale-down' },  // Original size
 } as const;
 
 type SizePreset = keyof typeof ImageSize;
@@ -42,9 +42,17 @@ export function cdnUrl(url: string | undefined | null, preset: SizePreset = 'FEE
         const parsed = new URL(url);
         const path = parsed.pathname;
 
-        // Build CDN URL with resize params (Cloudflare Image Resizing format)
+        // Build CDN URL with resize params (Cloudflare Image Resizing format).
+        // Feed full images must preserve the source aspect ratio; square cover
+        // crops are only for thumbnails and avatars.
+        const resizeParts = [
+            size.w > 0 ? `width=${size.w}` : null,
+            size.h > 0 ? `height=${size.h}` : null,
+            `quality=${size.q}`,
+            `fit=${size.fit}`,
+        ].filter(Boolean);
         const params = size.w > 0
-            ? `/cdn-cgi/image/width=${size.w},height=${size.h},quality=${size.q},fit=cover${path}`
+            ? `/cdn-cgi/image/${resizeParts.join(',')}${path}`
             : path;
 
         return `${CDN_BASE_URL}${params}`;

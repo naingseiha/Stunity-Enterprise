@@ -577,9 +577,11 @@ export default function PostDetailScreen() {
   const rawTypeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
   const typeKey = post.postType.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
   const typeConfig = { ...rawTypeConfig, label: t(`feed.postTypes.${typeKey}`) };
+  const detailMediaDisplayMode = String(post.mediaDisplayMode || 'AUTO').toUpperCase();
   const detailMediaAspectRatio = getPostDetailMediaAspectRatio(post);
   const detailMediaBucket = getPostDetailMediaBucket(post);
   const detailMediaMode = detailMediaBucket === 'standard' ? 'auto' : detailMediaBucket;
+  const shouldUseFixedDetailMedia = detailMediaDisplayMode !== 'AUTO' && detailMediaDisplayMode !== 'CAROUSEL';
   const learningMeta = post.learningMeta;
   const isCurrentUser = currentUserOwnsPost;
   const deadlineInfo = learningMeta?.deadline ? {
@@ -726,8 +728,8 @@ export default function PostDetailScreen() {
                 images={post.mediaUrls}
                 mediaMetadata={post.mediaMetadata || []}
                 borderRadius={0}
-                aspectRatio={detailMediaAspectRatio}
-                mode={detailMediaMode}
+                aspectRatio={shouldUseFixedDetailMedia ? detailMediaAspectRatio : undefined}
+                mode={shouldUseFixedDetailMedia ? detailMediaMode : 'auto'}
                 fullBleed
               />
               {/* View count overlay */}

@@ -17,6 +17,8 @@ import { seedDatabase } from '@/lib/seed';
 import { cacheFeedPosts, loadCachedFeed, isCacheStale } from '@/services/feedCache';
 import { useAuthStore } from './authStore';
 import { metadataForUris, primaryMediaAspectRatio } from '@/utils/mediaMetadata';
+import { normalizeMediaUrls } from '@/utils/mediaUtils';
+import { cdnUrl } from '@/utils/cdnUrl';
 // TEMPORARY: Disabled until native module rebuilt with EAS
 // import { networkQualityService } from '@/services/networkQuality';
 
@@ -616,6 +618,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const urlsToPrefetch = optimizedPostsOnly
             .flatMap((p: Post) => p.mediaUrls?.slice(0, 1) || [])
             .filter(Boolean)
+            .map((url: string) => cdnUrl(normalizeMediaUrls([url])[0] || url, 'FEED_FULL'))
             .slice(0, 6);
 
           InteractionManager.runAfterInteractions(() => {

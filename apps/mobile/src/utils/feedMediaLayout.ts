@@ -35,6 +35,32 @@ export const inferAspectRatioFromUrl = (uri?: string): number | undefined => {
   return undefined;
 };
 
+export const normalizeHeightWidthRatio = (ratio?: number): number | undefined => {
+  if (!ratio || !Number.isFinite(ratio)) return undefined;
+  // The mobile app stores height / width. Keep tall portrait ratios intact so
+  // screenshots, posters, and phone photos render as portrait instead of being
+  // mistaken for landscape width / height values.
+  return ratio;
+};
+
+export const getMediaItemAspectRatio = (
+  metadata?: { width?: number; height?: number; aspectRatio?: number },
+  uri?: string
+): number | undefined => {
+  const width = Number(metadata?.width) || 0;
+  const height = Number(metadata?.height) || 0;
+
+  if (width > 0 && height > 0) {
+    return height / width;
+  }
+
+  return normalizeHeightWidthRatio(
+    typeof metadata?.aspectRatio === 'number'
+      ? metadata.aspectRatio
+      : inferAspectRatioFromUrl(uri)
+  );
+};
+
 export const bucketFeedAspectRatio = (
   rawRatio?: number,
   fallback: FeedMediaBucket = 'standard'
@@ -46,24 +72,13 @@ export const bucketFeedAspectRatio = (
   return 'portrait';
 };
 
-const normalizeHeightWidthRatio = (ratio?: number): number | undefined => {
-  if (!ratio || !Number.isFinite(ratio)) return undefined;
-
-  // The mobile app stores height / width, but older/API-created rows may carry
-  // width / height (for example 16 / 9). Values above this threshold are much
-  // more likely to be width / height for landscape media than true tall media.
-  if (ratio > 1.55) return 1 / ratio;
-
-  return ratio;
-};
-
 export const getFeedMediaBucket = (post: any): FeedMediaBucket => {
   const mediaCount = post?.mediaUrls?.length || 0;
   const displayMode = String(post?.mediaDisplayMode || '').toUpperCase();
   const firstMeta = post?.mediaMetadata?.[0];
   const firstUrl = post?.mediaUrls?.[0];
 
-  if (mediaCount > 1 || displayMode === 'GRID' || displayMode === 'CAROUSEL') return 'square';
+  if (displayMode === 'GRID') return 'square';
   if (displayMode === 'LANDSCAPE') return 'landscape';
   if (displayMode === 'SQUARE') return 'square';
   if (displayMode === 'PORTRAIT') return 'portrait';
@@ -72,20 +87,15 @@ export const getFeedMediaBucket = (post: any): FeedMediaBucket => {
     return 'landscape';
   }
 
-  const metadataRatio =
-    typeof firstMeta?.aspectRatio === 'number'
-      ? firstMeta.aspectRatio
-      : firstMeta?.width && firstMeta?.height
-        ? firstMeta.height / firstMeta.width
-        : undefined;
   const postRatio = typeof post?.mediaAspectRatio === 'number'
     ? normalizeHeightWidthRatio(post.mediaAspectRatio)
     : undefined;
 
   return bucketFeedAspectRatio(
-    normalizeHeightWidthRatio(metadataRatio) ??
+    getMediaItemAspectRatio(firstMeta, firstUrl) ??
     postRatio ??
-    inferAspectRatioFromUrl(firstUrl)
+    inferAspectRatioFromUrl(firstUrl),
+    mediaCount > 1 ? 'square' : 'standard'
   );
 };
 
@@ -104,18 +114,12 @@ export const getPostDetailMediaBucket = (post: any): FeedMediaBucket => {
     return 'landscape';
   }
 
-  const metadataRatio =
-    typeof firstMeta?.aspectRatio === 'number'
-      ? firstMeta.aspectRatio
-      : firstMeta?.width && firstMeta?.height
-        ? firstMeta.height / firstMeta.width
-        : undefined;
   const postRatio = typeof post?.mediaAspectRatio === 'number'
     ? normalizeHeightWidthRatio(post.mediaAspectRatio)
     : undefined;
 
   return bucketFeedAspectRatio(
-    normalizeHeightWidthRatio(metadataRatio) ??
+    getMediaItemAspectRatio(firstMeta, firstUrl) ??
     postRatio ??
     inferAspectRatioFromUrl(firstUrl)
   );

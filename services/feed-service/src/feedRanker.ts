@@ -286,7 +286,7 @@ export class FeedRanker {
                     return this.getRecentFeed(userId, 1, limit, subject, cursor);
                 }
                 const nextCursor = this.getNextCursorFromFeedItems(paged);
-                const hasMore = start + paged.length < cachedSequence.length;
+                const hasMore = start + paged.length < cachedSequence.length || (mode === 'FOR_YOU' && Boolean(nextCursor));
                 return {
                     items: paged,
                     total: cachedSequence.length,
@@ -429,7 +429,7 @@ export class FeedRanker {
             return this.getRecentFeed(userId, 1, limit, subject, cursor);
         }
         const nextCursor = this.getNextCursorFromFeedItems(paged);
-        const hasMore = start + paged.length < rawFeedItems.length;
+        const hasMore = start + paged.length < rawFeedItems.length || Boolean(nextCursor);
 
         // Cache the generated sequence for page > 1
         if (page === 1) {

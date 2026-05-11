@@ -11,14 +11,11 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * - Handles CloudFlare R2 URLs and relative keys
  */
 
-import React, { useState, useRef, useMemo, useCallback, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useLayoutEffect } from 'react';
 import {
   Text,
   View,
   StyleSheet,
-  Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
@@ -28,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { MediaMetadata } from '@/types';
 import { normalizeMediaUrls } from '@/utils';
 import { cdnUrl } from '@/utils/cdnUrl';
+import { FEED_MEDIA_RATIOS, getMediaItemAspectRatio } from '@/utils/feedMediaLayout';
 import ImageViewerModal from './ImageViewerModal';
 import { VideoPlayer, ResizeMode } from './VideoPlayer';
 
@@ -67,6 +65,11 @@ const getVideoPosterUrl = (metadata?: MediaMetadata) => {
 // Global cache for image dimensions to prevent layout jumps during fast scrolling
 const MAX_DIMENSION_CACHE_ENTRIES = 500;
 const MAX_VISIBLE_DOTS = 8;
+const DEFAULT_AUTO_RATIO = FEED_MEDIA_RATIOS.standard;
+const MIXED_MULTI_MEDIA_RATIO = FEED_MEDIA_RATIOS.standard;
+const LANDSCAPE_RATIO_CUTOFF = 0.68;
+const PORTRAIT_RATIO_CUTOFF = 1.12;
+const MAX_AUTO_HEIGHT_RATIO = 1.4;
 const globalImageDimensionsCache = new Map<string, { width: number; height: number }>();
 
 const getCachedImageDimensions = (uri?: string) => {
@@ -84,6 +87,41 @@ const cacheImageDimensions = (uri: string, dimensions: { width: number; height: 
     const oldestKey = globalImageDimensionsCache.keys().next().value;
     if (oldestKey) globalImageDimensionsCache.delete(oldestKey);
   }
+};
+
+const getKnownMediaDimensions = (uri: string | undefined, metadata?: MediaMetadata) => {
+  if (!uri) return undefined;
+
+  const cachedDimensions = getCachedImageDimensions(uri);
+  if (cachedDimensions) return cachedDimensions;
+
+  if (isVideoMedia(uri, metadata)) {
+    const ratio = getMediaItemAspectRatio(metadata, uri) || 9 / 16;
+    return { width: 1, height: ratio };
+  }
+
+  const ratio = getMediaItemAspectRatio(metadata, uri);
+  return ratio ? { width: 1, height: ratio } : undefined;
+};
+
+const getMultiMediaFeedFrameRatio = (ratios: Array<number | undefined>) => {
+  const knownRatios = ratios.filter((ratio): ratio is number => (
+    typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
+  ));
+
+  if (knownRatios.length !== ratios.length || knownRatios.length === 0) {
+    return MIXED_MULTI_MEDIA_RATIO;
+  }
+
+  const hasLandscape = knownRatios.some(ratio => ratio <= LANDSCAPE_RATIO_CUTOFF);
+  const hasPortrait = knownRatios.some(ratio => ratio > PORTRAIT_RATIO_CUTOFF);
+
+  if (hasLandscape && hasPortrait) return MIXED_MULTI_MEDIA_RATIO;
+  if (knownRatios.every(ratio => ratio <= LANDSCAPE_RATIO_CUTOFF)) return FEED_MEDIA_RATIOS.landscape;
+  if (knownRatios.every(ratio => ratio > PORTRAIT_RATIO_CUTOFF)) return FEED_MEDIA_RATIOS.portrait;
+  if (knownRatios.every(ratio => ratio > 0.9 && ratio <= PORTRAIT_RATIO_CUTOFF)) return FEED_MEDIA_RATIOS.square;
+
+  return MIXED_MULTI_MEDIA_RATIO;
 };
 
 const FeedVideoPreview = React.memo(function FeedVideoPreview({
@@ -129,35 +167,23 @@ function ImageCarouselInner({
   const IMAGE_WIDTH = useMemo(() => {
     return fullBleed ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
   }, [SCREEN_WIDTH, fullBleed]);
+  const safeMediaMetadata = useMemo(
+    () => Array.isArray(mediaMetadata) ? mediaMetadata : [],
+    [mediaMetadata]
+  );
 
   // Normalize image URLs (handle R2 keys and relative paths)
   const normalizedImages = useMemo(() => {
     const normalized = normalizeMediaUrls(images);
     return optimizeForFeed
-      ? normalized.map((uri, index) => isVideoMedia(uri, mediaMetadata[index]) ? uri : cdnUrl(uri, 'FEED_FULL'))
+      ? normalized.map((uri, index) => isVideoMedia(uri, safeMediaMetadata[index]) ? uri : cdnUrl(uri, 'FEED_FULL'))
       : normalized;
-  }, [images, mediaMetadata, optimizeForFeed]);
+  }, [images, safeMediaMetadata, optimizeForFeed]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const usesFixedHeight = aspectRatio !== undefined || mode !== 'auto';
-
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(() => {
-    const cachedDimensions = getCachedImageDimensions(normalizedImages[0]);
-    if (!usesFixedHeight && cachedDimensions) {
-      return cachedDimensions;
-    }
-    return null;
-  });
-  const [isCropped, setIsCropped] = useState(() => {
-    const dims = getCachedImageDimensions(normalizedImages[0]);
-    if (!usesFixedHeight && dims) {
-      const imageAspectRatio = dims.height / dims.width;
-      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-      const maxHeight = IMAGE_WIDTH * 1.4;
-      return calculatedHeight > maxHeight;
-    }
-    return false;
-  });
+  const usesMultiMediaFeedFrame = optimizeForFeed && normalizedImages.length > 1 && !usesFixedHeight && mode === 'auto';
+  const [dimensionRevision, setDimensionRevision] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalInitialIndex, setModalInitialIndex] = useState(0);
   const flashListRef = useRef<any>(null);
@@ -174,23 +200,6 @@ function ImageCarouselInner({
       return;
     }
 
-    if (normalizedImages.length > 0) {
-      const firstImg = normalizedImages[0];
-      const dims = getCachedImageDimensions(firstImg);
-      if (dims) {
-        setImageDimensions(dims);
-        const imageAspectRatio = dims.height / dims.width;
-        const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-        const maxHeight = IMAGE_WIDTH * 1.4;
-        setIsCropped(calculatedHeight > maxHeight);
-      } else {
-        setImageDimensions(null);
-        setIsCropped(false);
-      }
-    } else {
-      setImageDimensions(null);
-      setIsCropped(false);
-    }
     setActiveIndex(0);
     // Skip the current frame and let FlashList mount completely before resetting scroll.
     if (!optimizeForFeed && normalizedImages.length > 1) {
@@ -198,35 +207,40 @@ function ImageCarouselInner({
         flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
       });
     }
-  }, [normalizedImages, IMAGE_WIDTH, usesFixedHeight, optimizeForFeed]);
+  }, [normalizedImages, usesFixedHeight, optimizeForFeed]);
 
+  const activeDimensions = useMemo(() => {
+    if (usesFixedHeight || usesMultiMediaFeedFrame || normalizedImages.length === 0) return undefined;
+    return (
+      getKnownMediaDimensions(normalizedImages[activeIndex], safeMediaMetadata[activeIndex]) ||
+      getKnownMediaDimensions(normalizedImages[0], safeMediaMetadata[0])
+    );
+  }, [activeIndex, dimensionRevision, safeMediaMetadata, normalizedImages, usesFixedHeight, usesMultiMediaFeedFrame]);
 
-  // For videos in auto mode, default to 16:9 since we can't use onLoad
-  useEffect(() => {
-    if (mode === 'auto' && !imageDimensions && normalizedImages.length > 0 && isVideo(normalizedImages[0])) {
-      setImageDimensions({ width: 16, height: 9 });
-      setIsCropped(false);
-    }
-  }, [normalizedImages, mode, imageDimensions]);
+  const getItemRatio = useCallback((index: number) => {
+    const dimensions = getKnownMediaDimensions(normalizedImages[index], safeMediaMetadata[index]);
+    if (!dimensions?.width || !dimensions?.height) return undefined;
+    return dimensions.height / dimensions.width;
+  }, [dimensionRevision, safeMediaMetadata, normalizedImages]);
 
-  // Handle first image load to detect natural dimensions for auto mode
-  const handleFirstImageLoad = useCallback((event: ImageLoadEventData) => {
-    if (usesFixedHeight || mode !== 'auto') return;
+  const multiMediaFeedFrameRatio = useMemo(() => {
+    if (!usesMultiMediaFeedFrame) return undefined;
+    return getMultiMediaFeedFrameRatio(normalizedImages.map((_, index) => getItemRatio(index)));
+  }, [getItemRatio, normalizedImages, usesMultiMediaFeedFrame]);
+
+  const handleImageLoad = useCallback((index: number, event: ImageLoadEventData) => {
+    if (usesFixedHeight || usesMultiMediaFeedFrame || mode !== 'auto') return;
     const { width, height } = event.source;
     if (width && height) {
-      if (normalizedImages.length > 0) {
-        cacheImageDimensions(normalizedImages[0], { width, height });
-      }
-      // Only set state if we don't already have these dimensions
-      if (!imageDimensions || imageDimensions.width !== width || imageDimensions.height !== height) {
-        setImageDimensions({ width, height });
-        const imageAspectRatio = height / width;
-        const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-        const maxHeight = IMAGE_WIDTH * 1.4;
-        setIsCropped(calculatedHeight > maxHeight);
+      const uri = normalizedImages[index];
+      if (!uri) return;
+      const cached = getCachedImageDimensions(uri);
+      if (!cached || cached.width !== width || cached.height !== height) {
+        cacheImageDimensions(uri, { width, height });
+        setDimensionRevision(value => value + 1);
       }
     }
-  }, [usesFixedHeight, mode, imageDimensions, IMAGE_WIDTH, normalizedImages]);
+  }, [usesFixedHeight, usesMultiMediaFeedFrame, mode, normalizedImages]);
 
   // Calculate image height based on mode and dimensions
   const IMAGE_HEIGHT = useMemo(() => {
@@ -234,12 +248,15 @@ function ImageCarouselInner({
       return IMAGE_WIDTH * aspectRatio;
     }
 
-    if (mode === 'auto' && imageDimensions) {
-      const imageAspectRatio = imageDimensions.height / imageDimensions.width;
-      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+    if (multiMediaFeedFrameRatio !== undefined) {
+      return IMAGE_WIDTH * multiMediaFeedFrameRatio;
+    }
 
-      const minHeight = 240;
-      const maxHeight = IMAGE_WIDTH * 1.4;
+    if (mode === 'auto' && activeDimensions) {
+      const imageAspectRatio = activeDimensions.height / activeDimensions.width;
+      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+      const minHeight = Math.min(220, Math.max(180, IMAGE_WIDTH * 0.5625));
+      const maxHeight = IMAGE_WIDTH * MAX_AUTO_HEIGHT_RATIO;
 
       const finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
       return finalHeight;
@@ -251,7 +268,14 @@ function ImageCarouselInner({
       case 'square': return IMAGE_WIDTH;
       default: return IMAGE_WIDTH * 0.75;
     }
-  }, [IMAGE_WIDTH, aspectRatio, mode, imageDimensions, SCREEN_WIDTH]);
+  }, [IMAGE_WIDTH, aspectRatio, mode, activeDimensions, multiMediaFeedFrameRatio]);
+
+  const isActiveMediaCapped = useMemo(() => {
+    if (usesFixedHeight || usesMultiMediaFeedFrame || mode !== 'auto' || !activeDimensions?.width || !activeDimensions.height) {
+      return false;
+    }
+    return IMAGE_WIDTH * (activeDimensions.height / activeDimensions.width) > IMAGE_WIDTH * MAX_AUTO_HEIGHT_RATIO;
+  }, [IMAGE_WIDTH, activeDimensions, mode, usesFixedHeight, usesMultiMediaFeedFrame]);
 
   const viewabilityConfig = useMemo(() => ({
     itemVisiblePercentThreshold: 50,
@@ -275,7 +299,7 @@ function ImageCarouselInner({
   }, []);
 
   const handleImagePress = useCallback((index: number) => {
-    if (isVideoMedia(normalizedImages[index], mediaMetadata[index])) {
+    if (isVideoMedia(normalizedImages[index], safeMediaMetadata[index])) {
       if (optimizeForFeed) {
         onImagePress?.(index);
       }
@@ -284,18 +308,20 @@ function ImageCarouselInner({
     setModalInitialIndex(index);
     if (enableViewer) setModalVisible(true);
     onImagePress?.(index);
-  }, [enableViewer, mediaMetadata, normalizedImages, onImagePress, optimizeForFeed]);
+  }, [enableViewer, safeMediaMetadata, normalizedImages, onImagePress, optimizeForFeed]);
 
   if (normalizedImages.length === 0) return null;
 
   // Render Item Helper
   const renderItem = useCallback(({ item: uri, index }: { item: string, index: number }) => {
-    const metadata = mediaMetadata[index];
+    const metadata = safeMediaMetadata[index];
     const isVid = isVideoMedia(uri, metadata);
     const posterUrl = getVideoPosterUrl(metadata);
     const playbackUri = isVid && metadata?.hlsUrl
       ? (normalizeMediaUrls([metadata.hlsUrl])[0] || uri)
       : uri;
+    const itemRatio = getItemRatio(index) || DEFAULT_AUTO_RATIO;
+    const isItemHeightCapped = !optimizeForFeed && !usesMultiMediaFeedFrame && !usesFixedHeight && mode === 'auto' && IMAGE_WIDTH * itemRatio > IMAGE_WIDTH * MAX_AUTO_HEIGHT_RATIO;
 
     return (
       <TouchableOpacity
@@ -321,7 +347,7 @@ function ImageCarouselInner({
           <Image
             source={{ uri }}
             style={[styles.image, { borderRadius }]}
-            contentFit="cover"
+            contentFit={isItemHeightCapped ? 'contain' : 'cover'}
             transition={120}
             // Critical for 120Hz scroll performance
             cachePolicy="memory-disk" // Cache decoded images in memory
@@ -330,7 +356,7 @@ function ImageCarouselInner({
             // GPU acceleration hints
             blurRadius={0} // No blur = faster
             allowDownscaling={optimizeForFeed} // Downscale feed bitmaps to reduce decode/upload cost while scrolling
-            onLoad={!usesFixedHeight && index === 0 ? handleFirstImageLoad : undefined}
+            onLoad={!usesFixedHeight && !usesMultiMediaFeedFrame ? (event) => handleImageLoad(index, event) : undefined}
           />
         )}
       </TouchableOpacity>
@@ -338,13 +364,16 @@ function ImageCarouselInner({
   }, [
     activeIndex,
     borderRadius,
-    handleFirstImageLoad,
+    getItemRatio,
+    handleImageLoad,
     handleImagePress,
     IMAGE_HEIGHT,
     IMAGE_WIDTH,
-    mediaMetadata,
+    safeMediaMetadata,
+    mode,
     optimizeForFeed,
     usesFixedHeight,
+    usesMultiMediaFeedFrame,
   ]);
 
   // Single item
@@ -405,15 +434,15 @@ function ImageCarouselInner({
       {/* Counter */}
       <View style={styles.counterContainer}>
         <View style={styles.counterBadge}>
-          <Ionicons name={isVideoMedia(normalizedImages[activeIndex], mediaMetadata[activeIndex]) ? "videocam" : "images"} size={12} color="#fff" />
+          <Ionicons name={isVideoMedia(normalizedImages[activeIndex], safeMediaMetadata[activeIndex]) ? 'videocam' : 'images'} size={12} color="#fff" />
           <Text style={styles.counterText}>
-            {activeIndex + 1}/{images.length}
+            {activeIndex + 1}/{normalizedImages.length}
           </Text>
         </View>
       </View>
 
-      {/* Expand Indicator (only for cropped images) */}
-      {isCropped && !isVideoMedia(normalizedImages[activeIndex], mediaMetadata[activeIndex]) && (
+      {/* Expand Indicator (only for very tall images capped in-feed) */}
+      {isActiveMediaCapped && !isVideoMedia(normalizedImages[activeIndex], safeMediaMetadata[activeIndex]) && (
         <View style={styles.expandIndicator}>
           <View style={styles.expandBadge}>
             <Ionicons name="expand-outline" size={14} color="#fff" />
@@ -436,6 +465,11 @@ function ImageCarouselInner({
 
 // Memoize to prevent re-renders when parent (PostCard) re-renders with same media
 function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProps) {
+  const prevImages = Array.isArray(prev.images) ? prev.images : [];
+  const nextImages = Array.isArray(next.images) ? next.images : [];
+  const prevMetadata = Array.isArray(prev.mediaMetadata) ? prev.mediaMetadata : [];
+  const nextMetadata = Array.isArray(next.mediaMetadata) ? next.mediaMetadata : [];
+
   return (
     prev.borderRadius === next.borderRadius &&
     prev.aspectRatio === next.aspectRatio &&
@@ -443,9 +477,9 @@ function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProp
     prev.enableViewer === next.enableViewer &&
     prev.optimizeForFeed === next.optimizeForFeed &&
     prev.fullBleed === next.fullBleed &&
-    (prev.mediaMetadata || []).length === (next.mediaMetadata || []).length &&
-    (prev.mediaMetadata || []).every((meta, i) => {
-      const nextMeta = next.mediaMetadata?.[i];
+    prevMetadata.length === nextMetadata.length &&
+    prevMetadata.every((meta, i) => {
+      const nextMeta = nextMetadata[i];
       return (
         meta?.uri === nextMeta?.uri &&
         meta?.thumbnailUrl === nextMeta?.thumbnailUrl &&
@@ -458,8 +492,8 @@ function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProp
         meta?.aspectRatio === nextMeta?.aspectRatio
       );
     }) &&
-    prev.images.length === next.images.length &&
-    prev.images.every((img, i) => img === next.images[i])
+    prevImages.length === nextImages.length &&
+    prevImages.every((img, i) => img === nextImages[i])
   );
 }
 
