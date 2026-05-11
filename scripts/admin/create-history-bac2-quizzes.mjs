@@ -1,0 +1,77 @@
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+const quizzes = [
+  {
+    title: 'Quiz: ប្រវត្តិកម្ពុជា - សម័យអង្គរ',
+    content: 'សាកល្បងចំណេះដឹងប្រវត្តិសាស្ត្រនៃអំណាចចក្រភពអង្គរ (ថ្នាក់ ១២)',
+    topicTags: ['ប្រវត្តិវិទ្យា', 'បាក់ឌុប', 'អង្គរ'],
+    questions: [
+      { question: 'តើរាជ្យអង្គរត្រូវបានបង្កើតឡើងដោយស្តេចណា?', options: ['ជ័យវរ្ម័នទី២', 'ជ័យវរ្ម័នទី៧', 'សូរ្យវរ្ម័នទី២', 'ឥន្រ្ទវរ្ម័នទី១'], correctAnswer: 0, explanation: 'ជ័យវរ្ម័នទី២ (Jayavarman II) ត្រូវបានគេចាត់ទុកថាជាស្ថាបនិករបស់ចក្រភពខ្មែរ នៅ ៨០២ ш.l.', points: 10 },
+      { question: 'ប្រាសាទអង្គរវត្តត្រូវបានសាងសង់ក្នុងរជ្ជកាលស្តេចណា?', options: ['ជ័យវរ្ម័នទី៧', 'សូរ្យវរ្ម័នទី២', 'យសោវរ្ម័នទី១', 'ឥន្រ្ទវរ្ម័នទី១'], correctAnswer: 1, explanation: 'ប្រាសាទអង្គរវត្តសាងសង់ដោយព្រះបាទសូរ្យវរ្ម័នទី២ ក្នុងសតវត្សទី១២', points: 10 },
+      { question: 'ស្តេចខ្មែរអង្គណាដែលបានពង្រីកចក្រភព និងសាងសង់អង្គរធំ?', options: ['ជ័យវរ្ម័នទី២', 'ជ័យវរ្ម័នទី៧', 'ធរណីន្រ្ទវរ្ម័ន', 'ហស៌វរ្ម័ន'], correctAnswer: 1, explanation: 'ជ័យវរ្ម័នទី៧ជាស្តេចដ៏ខ្លាំងក្លា បានសាងសង់អង្គរធំ ប្រាសាទបាយ័ន និងអ្នកនាងតា', points: 10 },
+      { question: 'តើអង្គរវត្តសម្ព័ន្ធទៅនឹងព្រហ្មញ្ញសាសនាដើម ឬ?', options: ['ពុទ្ធសាសនា', 'ព្រហ្មញ្ញសាសនា (Hindu)', 'ឥស្លាម', 'ខ្ញុំ'], correctAnswer: 1, explanation: 'ដើមឡើយអង្គរវត្តបានសាងសង់ថ្វាយព្រះវិស្ណុ (ព្រហ្មញ្ញសាសនា)', points: 10 },
+      { question: 'ទីក្រុងដំបូងបង្អស់របស់ចក្រភពខ្មែរបុរាណហៅថា?', options: ['អង្គរ', 'ហរិហរាល័យ', 'ភ្នំបាខែង', 'យស្ថាបុរៈ'], correctAnswer: 1, explanation: 'ហរិហរាល័យ (Hariharalaya) ជារាជធានីដំបូងនៃចក្រភពខ្មែរ', points: 10 },
+      { question: 'ចក្រភពខ្មែរដួលរលំក្នុងឆ្នាំណា?', options: ['១៤៣១', '១៥០០', '១៣០០', '១៦០០'], correctAnswer: 0, explanation: 'ឆ្នាំ ១៤៣១ ថៃបានចូលកាន់កាប់អង្គរ ហើយខ្មែរបានផ្លាស់រាជធានីមកភ្នំពេញ', points: 10 },
+      { question: 'ប្រព័ន្ធចំនួន "បារាយណ៍" ក្នុងយុគសម័យអង្គរប្រើប្រាស់សម្រាប?', options: ['ទ្រទ្រង់ទូក', 'ស្រោចស្រព', 'ស្តុកទឹក', 'ទាំងអស់ខាងលើ'], correctAnswer: 3, explanation: 'បារាយណ៍ប្រើសម្រាប់ស្រោចស្រព ស្តុកទឹក និងចរាចរណ៍ (ដោះស្រាយបញ្ហាអំណែប ប្រជុំ)', points: 10 },
+      { question: 'ព្រះបាទជ័យវរ្ម័នទី២ ប្រកាសឯករាជ្យពីចក្រភពអ្វី?', options: ['ចាម', 'ជ្វា', 'ថៃ', 'ចិន'], correctAnswer: 1, explanation: 'ជ័យវរ្ម័នទី២ ប្រកាសឯករាជ្យពីការគ្រប់គ្រងរបស់ជ្វា នៅលើភ្នំគូលែន ក្នុង ៨០២ ш.l.', points: 10 },
+      { question: 'ភ្នំគូលែន (Phnom Kulen) មានសារៈសំខាន់ប្រវត្តិសាស្ត្រយ៉ាងណា?', options: ['ជាកន្លែងដែលជ័យវរ្ម័នទី២ប្រកាសសេរីភាព', 'ជាច្រករបៀងពាណិជ្ជកម្ម', 'ជាទីតាំងសំរាប់ការប្រឡង', 'ជារាជធានី'], correctAnswer: 0, explanation: 'ភ្នំគូលែនជាទីកន្លែងប្រវត្តិសាស្ត្រ ព្រះបាទជ័យវរ្ម័នទី២ ប្រកាសសេរីភាពនៅ ៨០២ ш.l.', points: 10 },
+      { question: 'ស្ថាបត្យករ/បច្ចេកទេសសំខាន់ក្នុងការសាងសង់ប្រាសាទខ្មែរ គឺ?', options: ['ឧបករណ៍ជីក', 'ថ្មភ្នំ', 'ថ្មបារក (Laterite) និងថ្មភ្នំ', 'ក្បឿង'], correctAnswer: 2, explanation: 'ស្ថាបត្យករខ្មែរប្រើប្រាស់ ថ្មបារក (Laterite) ជាមូលដ្ឋាន និងថ្មភ្នំ (Sandstone) ជាការតុបតែង', points: 10 }
+    ],
+    timeLimit: 15, passingScore: 60, totalPoints: 100
+  },
+  {
+    title: 'Quiz: ប្រវត្តិកម្ពុជា - សម័យមុនអាណានិគម',
+    content: 'ប្រចាំថ្នាក់ ១២ - ប្រវត្តិកម្ពុជា ពីសតវត្សទី ១៥ ដល់ ១៩',
+    topicTags: ['ប្រវត្តិវិទ្យា', 'បាក់ឌុប', 'ប្រវត្តិកម្ពុជា'],
+    questions: [
+      { question: 'ក្រោយចក្រភពអង្គរដួលរលំ ខ្មែរបានផ្លាស់ប្តូររាជធានីទៅ?', options: ['សៀមរាប', 'ភ្នំពេញ', 'ឧត្តុង្គ', 'លង្វែក'], correctAnswer: 1, explanation: 'ក្នុង ១៤៣១ ភ្នំពេញបានក្លាយជារាជធានីថ្មី មុនពេលខ្លះប្តូរទៅឧត្តុង្គ', points: 10 },
+      { question: 'ខ្មែរក្រហមគ្រប់គ្រងកម្ពុជារយៈពេលប៉ុន្មានឆ្នាំ?', options: ['៤ ឆ្នាំ', '១០ ឆ្នាំ', '២ ឆ្នាំ', '៧ ឆ្នាំ'], correctAnswer: 0, explanation: 'ខ្មែរក្រហម (POL POT) គ្រប់គ្រងពី ១៩៧៥ ដល់ ១៩៧៩ = ៤ ឆ្នាំ', points: 10 },
+      { question: 'ឆ្នាំណាដែលបារាំងបានដំឡើងអាណានិគមនៅកម្ពុជា?', options: ['១៨៦៣', '១៩០០', '១៨០០', '១៨៤០'], correctAnswer: 0, explanation: 'ឆ្នាំ ១៨៦៣ ជាឆ្នាំដែលបារាំង (France) ចុះហត្ថលេខាលើសន្ធិសញ្ញានៃការការពារ (Protectorate)', points: 10 },
+      { question: 'ព្រះករុណា នរោត្តម សីហនុ ប្រកាសឯករាជ្យកម្ពុជានៅ?', options: ['ខែតុលា ១៩៥៣', 'ខែវិច្ឆិកា ១៩៥៣', 'ខែមករា ១៩៥៥', 'ខែមេសា ១៩៥០'], correctAnswer: 1, explanation: 'ថ្ងៃ ៩ វិច្ឆិកា ១៩៥៣ ជាថ្ងៃឯករាជ្យជាតិកម្ពុជា', points: 10 },
+      { question: 'ព្រះបាទ នរោត្តម សីហនុ ជាស្ថាបនិករ?', options: ['FUNCINPEC', 'សង្គមរាស្ត្រនិយម', 'Sangkum Reastr Niyum', 'ប្រជុំប្រជា'], correctAnswer: 2, explanation: 'Sangkum Reastr Niyum (សង្គម រាស្ត្រ និយម) ត្រូវបានបង្កើតដោយ សីហនុ ក្នុងឆ្នាំ ១៩៥៥', points: 10 },
+      { question: 'ឆ្នាំ ១៩៧០ - ឡូន ណុល ធ្វើ?', options: ['ចូលរួមជាមួយ POL POT', 'ទម្លាក់សីហនុ', 'ដណ្តើមអំណាចពី POL POT', 'ចុះហត្ថលេខាសន្ធិសញ្ញា'], correctAnswer: 1, explanation: 'ឆ្នាំ ១៩៧០ ឡូន ណុល (Lon Nol) ធ្វើរដ្ឋប្រហារ ទម្លាក់ ព្រះករុណា សីហនុ', points: 10 },
+      { question: 'ខ្មែរក្រហមមានឈ្មោះផ្លូវការ?', options: ['ខ្មែរក្រហម', 'ក្បួនកុំយូនីស', 'ពួកខ្មែររ', 'គណបក្សកុម្មុយនីស្ត កម្ពូជា'], correctAnswer: 3, explanation: 'ឈ្មោះផ្លូវការ: Communist Party of Kampuchea (ក.ប.ក) ហៅ ខ្មែរក្រហម', points: 10 },
+      { question: 'ថ្ងៃ ៧ មករា ១៩៧៩ សំខាន់?', options: ['ថ្ងៃស្ថាបនាធម្មនុញ្ញ', 'ថ្ងៃវៀតណាមចូលដោះស្រាយ POL POT', 'ថ្ងៃបោះឆ្នោត', 'ថ្ងៃជ័យជម្នះ'], correctAnswer: 1, explanation: '៧ មករា ១៩៧៩ ជាថ្ងៃដែលវៀតណាមចូលដោះលែងខ្មែរពីការគ្រប់គ្រង POL POT', points: 10 },
+      { question: 'បុព្វហេតុចំបងដែលបណ្តាលឱ្យ POL POT ប្រលែងខ្ទប់?', options: ['ការទប់ប្រឆាំងពីប្រជាជន', 'ការបោះឆ្នោត', 'ការចូលរបស់វៀតណាម', 'ការបំណឹងរបស់ UN'], correctAnswer: 2, explanation: 'ការឈ្លានពានរបស់វៀតណាម ២ ខែ ១ ប្រើ ឆ្នាំ ១៩៧៨-៧៩ ធ្វើឱ្យ POL POT ក្ស័យ', points: 10 },
+      { question: 'UNTAC ប្រតិបត្តិការនៅ?', options: ['១៩៨០-១៩៨៥', '១៩৯২-১৯93', '১৯৮৮-১৯৯০', '২০০০-২০০৫'], correctAnswer: 1, explanation: 'UNTAC (United Nations Transitional Authority in Cambodia) ១៩৯২-১৯৯৩', points: 10 }
+    ],
+    timeLimit: 15, passingScore: 60, totalPoints: 100
+  }
+];
+
+async function createHistoryQuizzes() {
+  const admin = await prisma.user.findFirst({ where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } } });
+  if (!admin) { console.error('No admin found'); return; }
+
+  for (const q of quizzes) {
+    const post = await prisma.post.create({
+      data: {
+        authorId: admin.id,
+        title: q.title,
+        content: q.content,
+        postType: 'QUIZ',
+        visibility: 'PUBLIC',
+        topicTags: q.topicTags,
+        quiz: {
+          create: {
+            questions: q.questions,
+            timeLimit: q.timeLimit,
+            passingScore: q.passingScore,
+            totalPoints: q.totalPoints,
+            resultsVisibility: 'AFTER_SUBMISSION',
+            shuffleQuestions: false,
+            shuffleAnswers: false,
+            maxAttempts: 3,
+            showReview: true,
+            showExplanations: true,
+          }
+        }
+      }
+    });
+    console.log(`✅ Created: ${q.title} (${q.questions.length} questions) - ID: ${post.id}`);
+  }
+  console.log('\n🎉 Done!');
+}
+
+createHistoryQuizzes().catch(console.error).finally(() => prisma.$disconnect());
