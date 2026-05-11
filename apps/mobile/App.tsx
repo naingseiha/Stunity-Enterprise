@@ -5,7 +5,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { InteractionManager, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ExpoSplashScreen from 'expo-splash-screen';
@@ -43,6 +43,17 @@ ExpoSplashScreen.preventAutoHideAsync().catch((error) => {
 
 const APP_INIT_TIMEOUT_MS = 15000;
 
+function scheduleExpoImageCacheReset() {
+  InteractionManager.runAfterInteractions(() => {
+    try {
+      Image.clearDiskCache();
+      Image.clearMemoryCache();
+    } catch (e) {
+      console.warn('Failed to clear expo-image caches:', e);
+    }
+  });
+}
+
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
@@ -53,23 +64,17 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Force clear corrupted iOS image caches (temporary fix for posterization)
-        Image.clearDiskCache();
-        Image.clearMemoryCache();
-
         // Apply persisted runtime server host override before any auth/API calls.
         await hydrateServerHostOverride();
 
-        // Hydrate app preferences early so global haptics/video behavior is correct.
-        await hydrateAppPreferences();
-        
-        // Initialize auth - this will restore persisted state
-        await Promise.race([
+        const initWithTimeout = Promise.race([
           initialize(),
           new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('App initialization timed out')), APP_INIT_TIMEOUT_MS);
           }),
         ]);
+
+        await Promise.all([hydrateAppPreferences(), initWithTimeout]);
       } catch (e) {
         console.warn('App init error:', e);
         useAuthStore.setState({
@@ -114,7 +119,9 @@ export default function App() {
   useEffect(() => {
     if (!appIsReady || !areFontsReady) return;
 
-    // Mount JS splash first, then hide native splash to avoid white transition flash.
+    scheduleExpoImageCacheReset();
+
+    // Mount custom splash first, then hide native on the next frame to avoid a flash.
     setShowSplash(true);
     const frame = requestAnimationFrame(() => {
       ExpoSplashScreen.hideAsync().catch((error) => {
