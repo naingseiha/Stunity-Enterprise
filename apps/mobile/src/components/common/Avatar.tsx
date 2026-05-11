@@ -9,6 +9,7 @@ import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, BorderRadius } from '@/config';
+import { cdnAvatar } from '@/utils/cdnUrl';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 type GradientPreset = 'purple' | 'orange' | 'blue' | 'green' | 'pink' | 'gold' | 'rainbow' | 'none';
@@ -143,6 +144,10 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
   const backgroundGradient = isPostVariant
     ? getPostGradientColors(name)
     : getGradientColors(name);
+  const imageUri = React.useMemo(
+    () => cdnAvatar(uri, size === 'xs' || size === 'sm' || size === 'md' ? 'sm' : size === 'lg' || size === 'xl' ? 'md' : 'lg'),
+    [uri, size]
+  );
 
   // Determine gradient colors
   const getGradientBorderColors = (): string[] => {
@@ -187,16 +192,16 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
               },
             ]}
           >
-            {uri ? (
+            {imageUri ? (
               <Image
-                source={{ uri }}
+                source={{ uri: imageUri }}
                 style={styles.image}
                 contentFit="cover"
-                allowDownscaling={false}
+                allowDownscaling
                 transition={150} // Faster transition for avatars
                 cachePolicy="memory-disk" // Cache avatars aggressively
                 priority="normal" // Lower priority than feed images
-                recyclingKey={uri ? `${uri}-${size}` : undefined} // Reuse across list, but differentiate by size
+                recyclingKey={`${imageUri}-${size}`} // Reuse across list, but differentiate by size
               />
             ) : (
               <LinearGradient
@@ -245,15 +250,15 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
 
   return (
     <View style={[styles.container, containerStyle, style]}>
-      {uri ? (
+      {imageUri ? (
         <Image
-          source={{ uri }}
+          source={{ uri: imageUri }}
           style={styles.image}
           contentFit="cover"
-          allowDownscaling={false}
+          allowDownscaling
           transition={150}
           cachePolicy="memory-disk"
-          recyclingKey={uri ? `${uri}-${size}` : undefined}
+          recyclingKey={`${imageUri}-${size}`}
         />
       ) : (
         <LinearGradient

@@ -12,7 +12,7 @@ const LEGACY_CACHE_KEY = 'feed:cached_posts';
 const LEGACY_CACHE_TS_KEY = 'feed:cached_at';
 const CACHE_KEY_PREFIX = 'feed:cached_posts';
 const CACHE_TS_KEY_PREFIX = 'feed:cached_at';
-const MAX_CACHED = 50; // Match in-memory limit
+const MAX_CACHED = 80; // Enough for instant cold-start without bloating AsyncStorage
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 function resolveScopedKeys(userId?: string) {

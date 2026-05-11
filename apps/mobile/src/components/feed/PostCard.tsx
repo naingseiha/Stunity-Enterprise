@@ -724,6 +724,15 @@ const PostCardInner: React.FC<PostCardProps> = ({
 };
 
 // React.memo with custom comparator — only re-render when meaningful post data changes
+const sameStringArray = (a?: string[], b?: string[]) => {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
 function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolean {
   // Guard: FlashList cell recycling can pass undefined during transitions
   if (!prev.post || !next.post) return prev.post === next.post;
@@ -737,6 +746,13 @@ function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolea
     prev.post.userVotedOptionId === next.post.userVotedOptionId &&
     prev.post.updatedAt === next.post.updatedAt &&
     prev.post.content === next.post.content &&
+    prev.post.title === next.post.title &&
+    prev.post.postType === next.post.postType &&
+    prev.post.mediaDisplayMode === next.post.mediaDisplayMode &&
+    prev.post.mediaAspectRatio === next.post.mediaAspectRatio &&
+    prev.post.mediaMetadata === next.post.mediaMetadata &&
+    sameStringArray(prev.post.mediaUrls, next.post.mediaUrls) &&
+    sameStringArray(prev.post.topicTags, next.post.topicTags) &&
     prev.isValued === next.isValued
   );
 }

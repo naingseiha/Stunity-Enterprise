@@ -95,6 +95,7 @@ const PostContent = ({
         <View style={styles.mediaWrapper}>
           <ImageCarousel
             images={post.mediaUrls}
+            mediaMetadata={post.mediaMetadata || []}
             onImagePress={onImagePress}
             borderRadius={0}
             aspectRatio={feedMediaAspectRatio}

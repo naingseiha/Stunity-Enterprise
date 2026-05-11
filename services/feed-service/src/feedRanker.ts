@@ -1516,16 +1516,16 @@ export class FeedRanker {
             };
         }
 
-        const [posts, total] = await Promise.all([
-            this.readPrisma.post.findMany({
-                ...baseQuery,
-                skip,
-                take: limit,
-            }) as unknown as PostWithRelations[],
-            this.readPrisma.post.count({ where }),
-        ]);
+        const posts = await this.readPrisma.post.findMany({
+            ...baseQuery,
+            skip,
+            take: limit + 1,
+        }) as unknown as PostWithRelations[];
 
-        const scored = posts.map(post => ({
+        const hasMore = posts.length > limit;
+        const pagePosts = hasMore ? posts.slice(0, limit) : posts;
+
+        const scored = pagePosts.map(post => ({
             post,
             score: 0,
             breakdown: {
@@ -1543,21 +1543,94 @@ export class FeedRanker {
         }));
 
         const items: FeedItem[] = scored.map(s => ({ type: 'POST', data: s }));
+        const lastVisiblePost = pagePosts[pagePosts.length - 1];
+        const nextCursor = hasMore && lastVisiblePost
+            ? encodeFeedCursor({
+                id: lastVisiblePost.id,
+                createdAt: lastVisiblePost.createdAt,
+                isPinned: lastVisiblePost.isPinned,
+            })
+            : undefined;
 
         return {
             items,
-            total,
-            hasMore: skip + limit < total,
+            hasMore,
+            ...(nextCursor ? { nextCursor } : {}),
         };
     }
 
     // ─── Track User Action (Batched) ──────────────────────────────
+    async trackViewSignalsBatch(
+        userId: string,
+        views: { postId: string; duration?: number; source?: string }[],
+        preloadedPosts?: { id: string; topicTags: string[] }[]
+    ): Promise<void> {
+        try {
+            if (views.length === 0) return;
+
+            const postIds = [...new Set(views.map(view => view.postId).filter(Boolean))];
+            if (postIds.length === 0) return;
+
+            const posts = preloadedPosts ?? await this.prisma.post.findMany({
+                where: { id: { in: postIds } },
+                select: { id: true, topicTags: true },
+            });
+
+            const topicsByPostId = new Map(posts.map(post => [post.id, post.topicTags || []]));
+            const topicAgg = new Map<string, { count: number; score: number; duration: number }>();
+            const weight = ACTION_WEIGHTS.VIEW || 1;
+
+            for (const view of views) {
+                const topics = topicsByPostId.get(view.postId) || [];
+                const duration = view.duration || 3;
+
+                for (const rawTopic of topics) {
+                    const topicId = rawTopic.toLowerCase();
+                    const current = topicAgg.get(topicId) || { count: 0, score: 0, duration: 0 };
+                    current.count += 1;
+                    current.score += weight;
+                    current.duration += duration;
+                    topicAgg.set(topicId, current);
+                }
+            }
+
+            if (topicAgg.size === 0) return;
+
+            const ops = Array.from(topicAgg.entries()).map(([topicId, agg]) =>
+                this.prisma.userFeedSignal.upsert({
+                    where: {
+                        userId_topicId: { userId, topicId },
+                    },
+                    create: {
+                        userId,
+                        topicId,
+                        score: agg.score,
+                        viewCount: agg.count,
+                        avgViewDuration: agg.duration / agg.count,
+                    },
+                    update: {
+                        score: { increment: agg.score },
+                        viewCount: { increment: agg.count },
+                        lastInteraction: new Date(),
+                        avgViewDuration: { increment: agg.duration * 0.1 },
+                    },
+                })
+            );
+
+            await this.prisma.$transaction(ops);
+            await feedCache.invalidateUser(userId);
+        } catch (error) {
+            console.error('❌ [FeedRanker] trackViewSignalsBatch error:', error);
+        }
+    }
+
     async trackAction(
         userId: string,
         postId: string,
         action: 'VIEW' | 'LIKE' | 'COMMENT' | 'SHARE' | 'BOOKMARK',
         duration?: number,
-        source?: string
+        source?: string,
+        recordView = true
     ): Promise<void> {
         try {
             const post = await this.prisma.post.findUnique({
@@ -1596,8 +1669,10 @@ export class FeedRanker {
                 });
             });
 
-            // Include postView create in the same transaction for VIEW
-            if (action === 'VIEW') {
+            // Include postView create in the same transaction for single VIEW
+            // calls. Bulk view tracking inserts views in one createMany call and
+            // then reuses this method only for topic/user-signal updates.
+            if (action === 'VIEW' && recordView) {
                 ops.push(this.prisma.postView.create({
                     data: {
                         postId,

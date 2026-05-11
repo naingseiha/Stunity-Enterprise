@@ -39,7 +39,8 @@ const FEED_RETRY_TIMEOUT_MS = 25_000;
 const FEED_NEXT_PAGE_TIMEOUT_MS = 12_000;
 const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
 const MAX_INITIAL_FEED_RETRIES = 2;
-const MAX_FEED_ITEMS_IN_MEMORY = 1500;
+const PERSONALIZED_FEED_PAGE_SIZE = 12;
+const MAX_FEED_ITEMS_IN_MEMORY = 600;
 let initialFeedRetryAttempts = 0;
 let initialFeedRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -335,8 +336,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       const usePersonalizedFeed = feedMode === 'FOR_YOU' || feedMode === 'FOLLOWING';
       const endpoint = usePersonalizedFeed ? '/posts/feed' : '/posts';
 
-      // Personalized feed is page-based, so keep the page size stable across requests.
-      const limit = usePersonalizedFeed ? 10 : (page === 1 ? 10 : Math.max(10, adaptiveBatchSize));
+      // Personalized feed is page/session-based, so keep the page size stable
+      // across requests while still reducing request fan-out versus 10-item pages.
+      const limit = usePersonalizedFeed
+        ? PERSONALIZED_FEED_PAGE_SIZE
+        : (page === 1 ? PERSONALIZED_FEED_PAGE_SIZE : Math.max(PERSONALIZED_FEED_PAGE_SIZE, adaptiveBatchSize));
 
       console.log('📶 [FeedStore] Network: excellent (static) | Batch size:', limit);
 

@@ -724,6 +724,7 @@ export default function PostDetailScreen() {
             <Animated.View style={styles.mediaContainer}>
               <ImageCarousel
                 images={post.mediaUrls}
+                mediaMetadata={post.mediaMetadata || []}
                 borderRadius={0}
                 aspectRatio={detailMediaAspectRatio}
                 mode={detailMediaMode}

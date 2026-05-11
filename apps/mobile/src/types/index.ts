@@ -258,11 +258,16 @@ export interface PostLearningMeta {
 
 export interface MediaMetadata {
   uri?: string;
+  thumbnailUrl?: string;
+  posterUrl?: string;
+  hlsUrl?: string;
   width?: number;
   height?: number;
   aspectRatio?: number; // height / width
   type?: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | string;
   mimeType?: string;
+  duration?: number;
+  blurhash?: string;
 }
 
 export interface Post {

@@ -25,6 +25,7 @@ import {
 import { FlashList, ViewToken } from '@shopify/flash-list';
 import { Image, ImageLoadEventData } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import type { MediaMetadata } from '@/types';
 import { normalizeMediaUrls } from '@/utils';
 import { cdnUrl } from '@/utils/cdnUrl';
 import ImageViewerModal from './ImageViewerModal';
@@ -34,6 +35,7 @@ type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 
 interface ImageCarouselProps {
   images: string[];
+  mediaMetadata?: MediaMetadata[];
   onImagePress?: (index: number) => void;
   borderRadius?: number;
   aspectRatio?: number; // Fixed aspect ratio (height/width)
@@ -45,15 +47,76 @@ interface ImageCarouselProps {
 
 // Helper to check if URI is video
 const isVideo = (uri: string) => {
-  const ext = uri.split('.').pop()?.toLowerCase();
-  return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
+  const cleanUri = uri.split('?')[0].toLowerCase();
+  return ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv'].some(ext => cleanUri.endsWith(ext));
+};
+
+const isVideoMedia = (uri: string, metadata?: MediaMetadata) => {
+  const type = String(metadata?.type || '').toUpperCase();
+  const mimeType = String(metadata?.mimeType || '').toLowerCase();
+  return type === 'VIDEO' || mimeType.startsWith('video/') || isVideo(uri);
+};
+
+const getVideoPosterUrl = (metadata?: MediaMetadata) => {
+  const rawPoster = metadata?.thumbnailUrl || metadata?.posterUrl;
+  if (!rawPoster) return null;
+  const normalizedPoster = normalizeMediaUrls([rawPoster])[0];
+  return normalizedPoster ? cdnUrl(normalizedPoster, 'FEED_FULL') : null;
 };
 
 // Global cache for image dimensions to prevent layout jumps during fast scrolling
-const globalImageDimensionsCache: Record<string, { width: number; height: number }> = {};
+const MAX_DIMENSION_CACHE_ENTRIES = 500;
+const MAX_VISIBLE_DOTS = 8;
+const globalImageDimensionsCache = new Map<string, { width: number; height: number }>();
+
+const getCachedImageDimensions = (uri?: string) => {
+  if (!uri) return undefined;
+  return globalImageDimensionsCache.get(uri);
+};
+
+const cacheImageDimensions = (uri: string, dimensions: { width: number; height: number }) => {
+  if (globalImageDimensionsCache.has(uri)) {
+    globalImageDimensionsCache.delete(uri);
+  }
+  globalImageDimensionsCache.set(uri, dimensions);
+
+  if (globalImageDimensionsCache.size > MAX_DIMENSION_CACHE_ENTRIES) {
+    const oldestKey = globalImageDimensionsCache.keys().next().value;
+    if (oldestKey) globalImageDimensionsCache.delete(oldestKey);
+  }
+};
+
+const FeedVideoPreview = React.memo(function FeedVideoPreview({
+  borderRadius,
+  posterUrl,
+}: {
+  borderRadius: number;
+  posterUrl?: string | null;
+}) {
+  return (
+    <View style={[styles.feedVideoPreview, { borderRadius }]}>
+      {posterUrl ? (
+        <Image
+          source={{ uri: posterUrl }}
+          style={[styles.feedVideoPoster, { borderRadius }]}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="normal"
+          recyclingKey={posterUrl}
+          allowDownscaling
+        />
+      ) : null}
+      {posterUrl ? <View style={styles.feedVideoScrim} /> : null}
+      <View style={styles.feedVideoPlayButton}>
+        <Ionicons name="play" size={22} color="#FFFFFF" />
+      </View>
+    </View>
+  );
+});
 
 function ImageCarouselInner({
   images,
+  mediaMetadata = [],
   onImagePress,
   borderRadius = 12,
   aspectRatio,
@@ -70,21 +133,24 @@ function ImageCarouselInner({
   // Normalize image URLs (handle R2 keys and relative paths)
   const normalizedImages = useMemo(() => {
     const normalized = normalizeMediaUrls(images);
-    return optimizeForFeed ? normalized.map(uri => isVideo(uri) ? uri : cdnUrl(uri, 'FEED_FULL')) : normalized;
-  }, [images, optimizeForFeed]);
+    return optimizeForFeed
+      ? normalized.map((uri, index) => isVideoMedia(uri, mediaMetadata[index]) ? uri : cdnUrl(uri, 'FEED_FULL'))
+      : normalized;
+  }, [images, mediaMetadata, optimizeForFeed]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const usesFixedHeight = aspectRatio !== undefined || mode !== 'auto';
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(() => {
-    if (!usesFixedHeight && normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
-      return globalImageDimensionsCache[normalizedImages[0]];
+    const cachedDimensions = getCachedImageDimensions(normalizedImages[0]);
+    if (!usesFixedHeight && cachedDimensions) {
+      return cachedDimensions;
     }
     return null;
   });
   const [isCropped, setIsCropped] = useState(() => {
-    if (!usesFixedHeight && normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
-      const dims = globalImageDimensionsCache[normalizedImages[0]];
+    const dims = getCachedImageDimensions(normalizedImages[0]);
+    if (!usesFixedHeight && dims) {
       const imageAspectRatio = dims.height / dims.width;
       const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
       const maxHeight = IMAGE_WIDTH * 1.4;
@@ -110,8 +176,8 @@ function ImageCarouselInner({
 
     if (normalizedImages.length > 0) {
       const firstImg = normalizedImages[0];
-      if (globalImageDimensionsCache[firstImg]) {
-        const dims = globalImageDimensionsCache[firstImg];
+      const dims = getCachedImageDimensions(firstImg);
+      if (dims) {
         setImageDimensions(dims);
         const imageAspectRatio = dims.height / dims.width;
         const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
@@ -149,7 +215,7 @@ function ImageCarouselInner({
     const { width, height } = event.source;
     if (width && height) {
       if (normalizedImages.length > 0) {
-        globalImageDimensionsCache[normalizedImages[0]] = { width, height };
+        cacheImageDimensions(normalizedImages[0], { width, height });
       }
       // Only set state if we don't already have these dimensions
       if (!imageDimensions || imageDimensions.width !== width || imageDimensions.height !== height) {
@@ -200,30 +266,36 @@ function ImageCarouselInner({
     }
   }, [activeIndex]);
 
-  const scrollToIndex = (index: number) => {
+  const scrollToIndex = useCallback((index: number) => {
     flashListRef.current?.scrollToIndex({
       index,
       animated: true,
     });
     setActiveIndex(index);
-  };
+  }, []);
 
-  const handleImagePress = (index: number) => {
-    if (isVideo(normalizedImages[index])) {
-      // For video, do nothing (VideoPlayer handles controls)
-      // Or maybe toggle fullscreen?
+  const handleImagePress = useCallback((index: number) => {
+    if (isVideoMedia(normalizedImages[index], mediaMetadata[index])) {
+      if (optimizeForFeed) {
+        onImagePress?.(index);
+      }
       return;
     }
     setModalInitialIndex(index);
     if (enableViewer) setModalVisible(true);
     onImagePress?.(index);
-  };
+  }, [enableViewer, mediaMetadata, normalizedImages, onImagePress, optimizeForFeed]);
 
   if (normalizedImages.length === 0) return null;
 
   // Render Item Helper
   const renderItem = useCallback(({ item: uri, index }: { item: string, index: number }) => {
-    const isVid = isVideo(uri);
+    const metadata = mediaMetadata[index];
+    const isVid = isVideoMedia(uri, metadata);
+    const posterUrl = getVideoPosterUrl(metadata);
+    const playbackUri = isVid && metadata?.hlsUrl
+      ? (normalizeMediaUrls([metadata.hlsUrl])[0] || uri)
+      : uri;
 
     return (
       <TouchableOpacity
@@ -235,9 +307,11 @@ function ImageCarouselInner({
           height: IMAGE_HEIGHT
         }]}
       >
-        {isVid ? (
+        {isVid && optimizeForFeed ? (
+          <FeedVideoPreview borderRadius={borderRadius} posterUrl={posterUrl} />
+        ) : isVid ? (
           <VideoPlayer
-            uri={uri}
+            uri={playbackUri}
             style={{ width: '100%', height: '100%', borderRadius }}
             resizeMode={ResizeMode.CONTAIN}
             shouldPlay={!optimizeForFeed && index === activeIndex} // Keep feed previews paused for smooth vertical scroll
@@ -261,7 +335,17 @@ function ImageCarouselInner({
         )}
       </TouchableOpacity>
     );
-  }, [activeIndex, handleFirstImageLoad, handleImagePress, IMAGE_HEIGHT, IMAGE_WIDTH, borderRadius, mode]);
+  }, [
+    activeIndex,
+    borderRadius,
+    handleFirstImageLoad,
+    handleImagePress,
+    IMAGE_HEIGHT,
+    IMAGE_WIDTH,
+    mediaMetadata,
+    optimizeForFeed,
+    usesFixedHeight,
+  ]);
 
   // Single item
   if (normalizedImages.length === 1) {
@@ -298,26 +382,30 @@ function ImageCarouselInner({
         snapToAlignment="start"
         // @ts-ignore
         estimatedItemSize={IMAGE_WIDTH}
+        drawDistance={IMAGE_WIDTH * 1.5}
+        removeClippedSubviews
       />
 
       {/* Dot Indicators */}
-      <View style={styles.indicatorContainer}>
-        {normalizedImages.map((_, index) => (
-          <TouchableOpacity
-            key={index}
-            onPress={() => scrollToIndex(index)}
-            style={[
-              styles.dot,
-              index === activeIndex && styles.activeDot,
-            ]}
-          />
-        ))}
-      </View>
+      {normalizedImages.length <= MAX_VISIBLE_DOTS && (
+        <View style={styles.indicatorContainer}>
+          {normalizedImages.map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => scrollToIndex(index)}
+              style={[
+                styles.dot,
+                index === activeIndex && styles.activeDot,
+              ]}
+            />
+          ))}
+        </View>
+      )}
 
       {/* Counter */}
       <View style={styles.counterContainer}>
         <View style={styles.counterBadge}>
-          <Ionicons name={isVideo(normalizedImages[activeIndex]) ? "videocam" : "images"} size={12} color="#fff" />
+          <Ionicons name={isVideoMedia(normalizedImages[activeIndex], mediaMetadata[activeIndex]) ? "videocam" : "images"} size={12} color="#fff" />
           <Text style={styles.counterText}>
             {activeIndex + 1}/{images.length}
           </Text>
@@ -325,7 +413,7 @@ function ImageCarouselInner({
       </View>
 
       {/* Expand Indicator (only for cropped images) */}
-      {isCropped && !isVideo(normalizedImages[activeIndex]) && (
+      {isCropped && !isVideoMedia(normalizedImages[activeIndex], mediaMetadata[activeIndex]) && (
         <View style={styles.expandIndicator}>
           <View style={styles.expandBadge}>
             <Ionicons name="expand-outline" size={14} color="#fff" />
@@ -355,6 +443,21 @@ function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProp
     prev.enableViewer === next.enableViewer &&
     prev.optimizeForFeed === next.optimizeForFeed &&
     prev.fullBleed === next.fullBleed &&
+    (prev.mediaMetadata || []).length === (next.mediaMetadata || []).length &&
+    (prev.mediaMetadata || []).every((meta, i) => {
+      const nextMeta = next.mediaMetadata?.[i];
+      return (
+        meta?.uri === nextMeta?.uri &&
+        meta?.thumbnailUrl === nextMeta?.thumbnailUrl &&
+        meta?.posterUrl === nextMeta?.posterUrl &&
+        meta?.hlsUrl === nextMeta?.hlsUrl &&
+        meta?.type === nextMeta?.type &&
+        meta?.mimeType === nextMeta?.mimeType &&
+        meta?.width === nextMeta?.width &&
+        meta?.height === nextMeta?.height &&
+        meta?.aspectRatio === nextMeta?.aspectRatio
+      );
+    }) &&
     prev.images.length === next.images.length &&
     prev.images.every((img, i) => img === next.images[i])
   );
@@ -393,6 +496,29 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#F3F4F6',
+  },
+  feedVideoPreview: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedVideoPlayButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: 'rgba(0, 0, 0, 0.56)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 3,
+  },
+  feedVideoPoster: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  feedVideoScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
   },
   indicatorContainer: {
     position: 'absolute',

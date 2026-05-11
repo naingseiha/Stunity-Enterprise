@@ -50,7 +50,9 @@ function stripToMinimal(post: any): any {
     title: post.title,
     content: post.content?.slice(0, 300) || '',
     postType: post.postType,
+    visibility: post.visibility,
     mediaUrls: post.mediaUrls || [],  // Keep ALL URLs — needed for image carousel
+    mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
     mediaMetadata: post.mediaMetadata || [],
     mediaAspectRatio: post.mediaAspectRatio,
     createdAt: post.createdAt,
@@ -59,6 +61,7 @@ function stripToMinimal(post: any): any {
     commentsCount: post.commentsCount ?? post._count?.comments ?? 0,
     sharesCount: post.sharesCount ?? 0,
     isLikedByMe: post.isLikedByMe,
+    isBookmarked: post.isBookmarked || false,
     isFollowingAuthor: post.isFollowingAuthor || false,
     author: post.author ? {
       id: post.author.id,
@@ -717,12 +720,13 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
 
     const existingPosts = await prisma.post.findMany({
       where: { id: { in: Array.from(new Set(batch.map(v => v.postId))) } },
-      select: { id: true },
+      select: { id: true, topicTags: true },
     });
     const existingPostIds = new Set(existingPosts.map(post => post.id));
     const validBatch = batch.filter(v => existingPostIds.has(v.postId));
 
-    // Bulk insert all views in one query — skipDuplicates handles re-views within the same session
+    // Bulk insert all sampled views in one query. The mobile client buffers by
+    // postId, so this avoids per-card writes during fast scrolling.
     await prisma.postView.createMany({
       data: validBatch
         .map(v => ({
@@ -734,11 +738,8 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
       skipDuplicates: true,
     }).catch(() => { }); // Non-critical — analytics, not user-facing
 
-    // Track feed ranker signals in parallel (fire-and-forget)
-    Promise.allSettled(
-      validBatch
-        .map(v => feedRanker.trackAction(userId, v.postId, 'VIEW', v.duration || 3, v.source || 'feed'))
-    );
+    // Track feed ranker signals in one batched signal update (fire-and-forget).
+    feedRanker.trackViewSignalsBatch(userId, validBatch, existingPosts).catch(() => { });
 
     res.json({ success: true, message: `${batch.length} views tracked` });
   } catch (error: any) {

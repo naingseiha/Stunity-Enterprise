@@ -10,7 +10,7 @@ const POST_TYPE = [
   'COURSE', 'EVENT_CREATED', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'RESOURCE', 'TUTORIAL',
   'RESEARCH', 'CLUB_CREATED', 'REFLECTION', 'COLLABORATION',
 ] as const;
-const MEDIA_DISPLAY_MODE = ['AUTO', 'GRID', 'CAROUSEL', 'GALLERY'] as const;
+const MEDIA_DISPLAY_MODE = ['AUTO', 'GRID', 'CAROUSEL', 'GALLERY', 'LANDSCAPE', 'PORTRAIT', 'SQUARE'] as const;
 
 export const createPostSchema = z.object({
   content: z.string().min(1, 'Content is required').max(50000, 'Content must be at most 50,000 characters').trim(),
@@ -21,11 +21,16 @@ export const createPostSchema = z.object({
   mediaDisplayMode: z.enum(MEDIA_DISPLAY_MODE).default('AUTO'),
   mediaMetadata: z.array(z.object({
     uri: z.string().max(2048).optional(),
+    thumbnailUrl: z.string().max(2048).optional(),
+    posterUrl: z.string().max(2048).optional(),
+    hlsUrl: z.string().max(2048).optional(),
     width: z.number().positive().optional(),
     height: z.number().positive().optional(),
     aspectRatio: z.number().positive().optional(),
     type: z.string().max(32).optional(),
     mimeType: z.string().max(128).optional(),
+    duration: z.number().positive().optional(),
+    blurhash: z.string().max(256).optional(),
   })).max(20).default([]),
   mediaAspectRatio: z.number().positive().optional(),
   topicTags: z.array(z.string().max(50)).max(20).optional(),
