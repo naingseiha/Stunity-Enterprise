@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +60,12 @@ const PostContent = ({
 
   const { t } = useTranslation();
 
+  const [mediaContentWidth, setMediaContentWidth] = useState<number | undefined>(undefined);
+  const onMediaWrapperLayout = useCallback((e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0) setMediaContentWidth(w);
+  }, []);
+
   const isQuestion = post.postType === 'QUESTION';
   const isAutomated = ['EVENT_CREATED', 'CLUB_CREATED'].includes(post.postType);
   const showProgress = (post.postType === 'COURSE' || post.postType === 'QUIZ') && learningMeta?.progress !== undefined;
@@ -93,7 +99,7 @@ const PostContent = ({
 
       {/* Media - Full Width */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <View style={styles.mediaWrapper}>
+        <View style={styles.mediaWrapper} onLayout={onMediaWrapperLayout}>
           <ImageCarousel
             images={post.mediaUrls}
             mediaMetadata={post.mediaMetadata || []}
@@ -103,6 +109,7 @@ const PostContent = ({
             mode="auto"
             enableViewer={false}
             optimizeForFeed
+            contentWidth={mediaContentWidth}
           />
           {/* Rich content indicators */}
           {(learningMeta?.hasCode || learningMeta?.hasPdf || learningMeta?.hasFormula) && (

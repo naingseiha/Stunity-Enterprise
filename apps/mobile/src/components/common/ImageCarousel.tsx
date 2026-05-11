@@ -18,8 +18,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
-import { FlashList, ViewToken } from '@shopify/flash-list';
+import PagerView from 'react-native-pager-view';
 import { Image, ImageLoadEventData } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { MediaMetadata } from '@/types';
@@ -28,6 +29,7 @@ import { cdnUrl } from '@/utils/cdnUrl';
 import { FEED_MEDIA_RATIOS, getMediaItemAspectRatio } from '@/utils/feedMediaLayout';
 import ImageViewerModal from './ImageViewerModal';
 import { VideoPlayer, ResizeMode } from './VideoPlayer';
+import { FEED_POST_CARD_MARGIN_H } from '@/constants';
 
 type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 
@@ -41,6 +43,8 @@ interface ImageCarouselProps {
   enableViewer?: boolean;
   optimizeForFeed?: boolean;
   fullBleed?: boolean;
+  /** Measured inner width from parent `onLayout` (e.g. feed post media row). Overrides feed fallback math when set. */
+  contentWidth?: number;
 }
 
 // Helper to check if URI is video
@@ -162,11 +166,22 @@ function ImageCarouselInner({
   enableViewer = true,
   optimizeForFeed = false,
   fullBleed = false,
+  contentWidth,
 }: ImageCarouselProps) {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const IMAGE_WIDTH = useMemo(() => {
-    return fullBleed ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
-  }, [SCREEN_WIDTH, fullBleed]);
+    // Parent `onLayout` wins (feed row + optional full-bleed detail container)
+    if (typeof contentWidth === 'number' && contentWidth > 0) {
+      return Math.round(contentWidth);
+    }
+    if (fullBleed) {
+      return Math.round(SCREEN_WIDTH);
+    }
+    if (optimizeForFeed) {
+      return Math.round(SCREEN_WIDTH - FEED_POST_CARD_MARGIN_H * 2);
+    }
+    return Math.round(SCREEN_WIDTH - 28);
+  }, [SCREEN_WIDTH, fullBleed, contentWidth, optimizeForFeed]);
   const safeMediaMetadata = useMemo(
     () => Array.isArray(mediaMetadata) ? mediaMetadata : [],
     [mediaMetadata]
@@ -186,28 +201,17 @@ function ImageCarouselInner({
   const [dimensionRevision, setDimensionRevision] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalInitialIndex, setModalInitialIndex] = useState(0);
-  const flashListRef = useRef<any>(null);
+  const pagerRef = useRef<PagerView>(null);
 
-  // Reset state on cell recycling (when images prop changes)
+  // Reset carousel when media set changes (e.g. FlashList recycling)
   useLayoutEffect(() => {
-    if (usesFixedHeight) {
-      setActiveIndex(0);
-      if (!optimizeForFeed && normalizedImages.length > 1) {
-        requestAnimationFrame(() => {
-          flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
-        });
-      }
-      return;
-    }
-
     setActiveIndex(0);
-    // Skip the current frame and let FlashList mount completely before resetting scroll.
-    if (!optimizeForFeed && normalizedImages.length > 1) {
+    if (normalizedImages.length > 1) {
       requestAnimationFrame(() => {
-        flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
+        pagerRef.current?.setPageWithoutAnimation(0);
       });
     }
-  }, [normalizedImages, usesFixedHeight, optimizeForFeed]);
+  }, [normalizedImages]);
 
   const activeDimensions = useMemo(() => {
     if (usesFixedHeight || usesMultiMediaFeedFrame || normalizedImages.length === 0) return undefined;
@@ -277,24 +281,15 @@ function ImageCarouselInner({
     return IMAGE_WIDTH * (activeDimensions.height / activeDimensions.width) > IMAGE_WIDTH * MAX_AUTO_HEIGHT_RATIO;
   }, [IMAGE_WIDTH, activeDimensions, mode, usesFixedHeight, usesMultiMediaFeedFrame]);
 
-  const viewabilityConfig = useMemo(() => ({
-    itemVisiblePercentThreshold: 50,
-  }), []);
-
-  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems.length > 0) {
-      const index = viewableItems[0].index;
-      if (index !== null && index !== activeIndex) {
-        setActiveIndex(index);
-      }
+  const onPageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
+    const pos = e.nativeEvent.position;
+    if (typeof pos === 'number') {
+      setActiveIndex(pos);
     }
-  }, [activeIndex]);
+  }, []);
 
   const scrollToIndex = useCallback((index: number) => {
-    flashListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-    });
+    pagerRef.current?.setPage(index);
     setActiveIndex(index);
   }, []);
 
@@ -312,8 +307,7 @@ function ImageCarouselInner({
 
   if (normalizedImages.length === 0) return null;
 
-  // Render Item Helper
-  const renderItem = useCallback(({ item: uri, index }: { item: string, index: number }) => {
+  const renderSlide = useCallback((uri: string, index: number) => {
     const metadata = safeMediaMetadata[index];
     const isVid = isVideoMedia(uri, metadata);
     const posterUrl = getVideoPosterUrl(metadata);
@@ -325,12 +319,11 @@ function ImageCarouselInner({
 
     return (
       <TouchableOpacity
-        key={`${uri}-${index}`}
         activeOpacity={isVid ? 1 : 0.95}
         onPress={() => handleImagePress(index)}
         style={[styles.imageContainer, {
-          width: IMAGE_WIDTH,
-          height: IMAGE_HEIGHT
+          width: '100%',
+          height: IMAGE_HEIGHT,
         }]}
       >
         {isVid && optimizeForFeed ? (
@@ -380,7 +373,7 @@ function ImageCarouselInner({
   if (normalizedImages.length === 1) {
     return (
       <>
-        {renderItem({ item: normalizedImages[0], index: 0 })}
+        {renderSlide(normalizedImages[0], 0)}
         {enableViewer && (
           <ImageViewerModal
             visible={modalVisible}
@@ -393,27 +386,22 @@ function ImageCarouselInner({
     );
   }
 
-  // Carousel
+  // Carousel — native PagerView for smooth horizontal paging inside vertical feeds
   return (
     <View style={[styles.container, { height: IMAGE_HEIGHT }]}>
-      <FlashList
-        ref={flashListRef}
-        data={normalizedImages}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${item}-${index}`}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        viewabilityConfig={viewabilityConfig}
-        onViewableItemsChanged={onViewableItemsChanged}
-        decelerationRate="fast"
-        snapToInterval={IMAGE_WIDTH}
-        snapToAlignment="start"
-        // @ts-ignore
-        estimatedItemSize={IMAGE_WIDTH}
-        drawDistance={IMAGE_WIDTH * 1.5}
-        removeClippedSubviews
-      />
+      <PagerView
+        ref={pagerRef}
+        style={styles.pager}
+        initialPage={0}
+        onPageSelected={onPageSelected}
+        {...(Platform.OS === 'android' ? { overScrollMode: 'never' as const } : {})}
+      >
+        {normalizedImages.map((uri, index) => (
+          <View key={`${uri}-${index}`} style={styles.pagerPage} collapsable={false}>
+            {renderSlide(uri, index)}
+          </View>
+        ))}
+      </PagerView>
 
       {/* Dot Indicators */}
       {normalizedImages.length <= MAX_VISIBLE_DOTS && (
@@ -477,6 +465,7 @@ function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProp
     prev.enableViewer === next.enableViewer &&
     prev.optimizeForFeed === next.optimizeForFeed &&
     prev.fullBleed === next.fullBleed &&
+    prev.contentWidth === next.contentWidth &&
     prevMetadata.length === nextMetadata.length &&
     prevMetadata.every((meta, i) => {
       const nextMeta = nextMetadata[i];
@@ -503,6 +492,13 @@ export default ImageCarousel;
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+  },
+  pager: {
+    width: '100%',
+    height: '100%',
+  },
+  pagerPage: {
+    flex: 1,
   },
   loadingContainer: {
     backgroundColor: '#F3F4F6',

@@ -177,3 +177,6 @@ export const ANIMATION = {
   SLOW: 500,
   VERY_SLOW: 800,
 } as const;
+
+/** Horizontal margin on feed post cards — keep in sync with `PostCard` and feed `ImageCarousel` width. */
+export const FEED_POST_CARD_MARGIN_H = 12;

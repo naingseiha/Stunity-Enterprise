@@ -19,12 +19,12 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
   ActivityIndicator,
   Share,
   Alert,
   RefreshControl,
   Animated,
+  LayoutChangeEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,8 +46,6 @@ import { feedApi } from '@/api/client';
 import { useThemeContext } from '@/contexts';
 import { getPostDetailMediaAspectRatio, getPostDetailMediaBucket } from '@/utils/feedMediaLayout';
 import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type PostDetailRouteProp = RouteProp<FeedStackParamList, 'PostDetail'>;
 
@@ -216,6 +214,7 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [detailMediaContentWidth, setDetailMediaContentWidth] = useState<number | undefined>(undefined);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -249,7 +248,13 @@ export default function PostDetailScreen() {
     }
   }, [postId, fetchPostById, post]);
 
+  const onDetailMediaLayout = useCallback((e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0) setDetailMediaContentWidth(w);
+  }, []);
+
   useEffect(() => {
+    setDetailMediaContentWidth(undefined);
     setDetailViewBump(0);
     screenOpacity.setValue(0);
     screenTranslateY.setValue(18);
@@ -652,6 +657,7 @@ export default function PostDetailScreen() {
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          nestedScrollEnabled={Platform.OS === 'android'}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />}
         >
           {/* ── Author Section ── */}
@@ -723,7 +729,7 @@ export default function PostDetailScreen() {
 
           {/* ── Media ── */}
           {post.mediaUrls && post.mediaUrls.length > 0 && (
-            <Animated.View style={styles.mediaContainer}>
+            <Animated.View style={styles.mediaContainer} onLayout={onDetailMediaLayout}>
               <ImageCarousel
                 images={post.mediaUrls}
                 mediaMetadata={post.mediaMetadata || []}
@@ -731,6 +737,7 @@ export default function PostDetailScreen() {
                 aspectRatio={shouldUseFixedDetailMedia ? detailMediaAspectRatio : undefined}
                 mode={shouldUseFixedDetailMedia ? detailMediaMode : 'auto'}
                 fullBleed
+                contentWidth={detailMediaContentWidth}
               />
               {/* View count overlay */}
               <View style={styles.viewCountOverlay}>

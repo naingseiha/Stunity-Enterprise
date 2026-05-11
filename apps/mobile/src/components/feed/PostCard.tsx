@@ -42,6 +42,7 @@ import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSection
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
 import PostOptionsSheet, { PostOptionAction } from './PostOptionsSheet';
+import { FEED_POST_CARD_MARGIN_H } from '@/constants';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -762,7 +763,7 @@ export const PostCard = React.memo(PostCardInner, arePostCardPropsEqual);
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
-    marginHorizontal: 12,
+    marginHorizontal: FEED_POST_CARD_MARGIN_H,
     marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
