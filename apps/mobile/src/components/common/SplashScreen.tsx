@@ -38,8 +38,8 @@ const BouncingDot: React.FC<{
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(
-      index * 150,
+    progress.value =       withDelay(
+        index * 120,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 360, easing: Easing.out(Easing.quad) }),
@@ -67,7 +67,7 @@ const BouncingDot: React.FC<{
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   onComplete,
-  duration = 2000,
+  duration = 1400,
 }) => {
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
@@ -87,23 +87,23 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       onCompleteRef.current?.();
     };
 
-    // Logo entrance
+    // Logo entrance (kept tight for handoff from native splash)
     logoOpacity.value = withTiming(1, {
-      duration: 500,
+      duration: 420,
       easing: Easing.out(Easing.cubic),
     });
-    logoScale.value = withSpring(1, { damping: 12, stiffness: 90 });
+    logoScale.value = withSpring(1, { damping: 14, stiffness: 100 });
     logoTranslateY.value = withTiming(0, {
-      duration: 600,
+      duration: 480,
       easing: Easing.out(Easing.cubic),
     });
 
     // Dots fade in after logo settles
-    dotsOpacity.value = withDelay(400, withTiming(1, { duration: 400 }));
+    dotsOpacity.value = withDelay(320, withTiming(1, { duration: 320 }));
 
     // Subtle breathing on logo
     logoBreath.value = withDelay(
-      700,
+      560,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
@@ -114,16 +114,16 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     );
 
     // Exit: gentle scale up + fade out
-    const exitDelay = Math.max(800, duration - 400);
+    const exitDelay = Math.max(700, duration - 380);
     const exitTimer = setTimeout(() => {
       cancelAnimation(logoBreath);
       containerScale.value = withTiming(1.06, {
-        duration: 380,
+        duration: 320,
         easing: Easing.out(Easing.cubic),
       });
       containerOpacity.value = withTiming(
         0,
-        { duration: 380, easing: Easing.out(Easing.cubic) },
+        { duration: 320, easing: Easing.out(Easing.cubic) },
         (finished) => {
           if (finished) {
             runOnJS(handleComplete)();
