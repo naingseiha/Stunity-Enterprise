@@ -20,6 +20,10 @@ interface PollFormProps {
   options: string[];
   onOptionsChange: (options: string[]) => void;
   onDataChange: (data: PollData) => void;
+  /** When editing a post, keep settings aligned with loaded poll (Create flow omits this). */
+  initialPollSettings?: Partial<
+    Pick<PollData, 'duration' | 'resultsVisibility' | 'allowMultipleSelections' | 'anonymousVoting'>
+  >;
 }
 
 export interface PollData {
@@ -50,14 +54,20 @@ const OPTION_COLORS = [
   '#EC4899', '#0EA5E9', '#14B8A6', '#F97316', '#84CC16',
 ];
 
-export function PollForm({ options, onOptionsChange, onDataChange }: PollFormProps) {
+export function PollForm({ options, onOptionsChange, onDataChange, initialPollSettings }: PollFormProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const [duration, setDuration] = useState<number | null>(24);
-  const [resultsVisibility, setResultsVisibility] = useState<PollData['resultsVisibility']>('AFTER_VOTING');
-  const [allowMultipleSelections, setAllowMultipleSelections] = useState(false);
-  const [anonymousVoting, setAnonymousVoting] = useState(false);
+  const [duration, setDuration] = useState<number | null>(() =>
+    initialPollSettings?.duration !== undefined ? initialPollSettings.duration : 24,
+  );
+  const [resultsVisibility, setResultsVisibility] = useState<PollData['resultsVisibility']>(
+    initialPollSettings?.resultsVisibility ?? 'AFTER_VOTING',
+  );
+  const [allowMultipleSelections, setAllowMultipleSelections] = useState(
+    initialPollSettings?.allowMultipleSelections ?? false,
+  );
+  const [anonymousVoting, setAnonymousVoting] = useState(initialPollSettings?.anonymousVoting ?? false);
 
   // UI State
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);

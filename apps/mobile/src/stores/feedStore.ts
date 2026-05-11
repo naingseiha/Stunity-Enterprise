@@ -534,7 +534,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                     ? learnApi.get('/courses', { params: { limit: 8, page: 1, isPublished: true }, timeout: 5000 })
                     : Promise.resolve(null),
                   !hasSuggestedQuizzes
-                    ? quizApi.get('/quizzes/recommended', { params: { limit: 8 }, timeout: 5000 })
+                    ? quizApi.get('/quizzes/recommended', { params: { limit: 16 }, timeout: 5000 })
                     : Promise.resolve(null),
                 ]);
 

@@ -26,7 +26,10 @@ const DEFAULT_LOCALE = 'en';
 const KHMER_LOCALE = 'km';
 const NUMERIC_ONLY_TEXT_RE = /^[\d\s.,/%:+\-()]+$/;
 const NAME_LIKE_TEXT_RE = /^[A-Za-z\u1780-\u17FF\s.'’-]+$/;
-const CONTAINS_EMOJI_RE = /[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]/; // Robust surrogate-pair and emoji range detection
+// Match display-layer emoji detection so TextInput gets system/emoji fallback too.
+/** Non-global — safe for `.test()` without mutating lastIndex */
+const CONTAINS_EMOJI_RE =
+  /(?:[\uD83C][\uDDE6-\uDDFF]){2}|[#*0-9]\uFE0F?\u20E3|(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?(?:[\uD83C][\uDFFB-\uDFFF])?(?:\u200D(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?(?:[\uD83C][\uDFFB-\uDFFF])?)*/;
 let activeLocale = DEFAULT_LOCALE;
 let patchApplied = false;
 
@@ -57,16 +60,18 @@ const extractChildrenText = (children: ReactNode): string => {
   return '';
 };
 
-const isNumericOnlyChildren = (children: ReactNode): boolean => {
-  const plainText = extractChildrenText(children).trim();
+const isNumericOnlyText = (text: string): boolean => {
+  const plainText = text.trim();
   if (!plainText) return false;
   return NUMERIC_ONLY_TEXT_RE.test(plainText);
 };
 
+const containsEmojiInString = (text: string): boolean =>
+  Boolean(text) && CONTAINS_EMOJI_RE.test(text);
+
 const containsEmoji = (children: ReactNode): boolean => {
   const plainText = extractChildrenText(children);
-  if (!plainText) return false;
-  return CONTAINS_EMOJI_RE.test(plainText);
+  return containsEmojiInString(plainText);
 };
 
 const normalizeText = (text: string): string => text.replace(/\s+/g, ' ').trim();
@@ -169,14 +174,19 @@ const stripFontFamily = (style: StyleProp<TextStyle>): StyleProp<TextStyle> => {
 const getKhmerAwareStyle = (
   style: StyleProp<TextStyle>,
   children: ReactNode,
-  options: { forceRole?: KhmerTextRole } = {}
+  options: { forceRole?: KhmerTextRole; inputText?: string } = {},
 ): StyleProp<TextStyle> => {
   if (!isKhmerLocale(activeLocale)) {
     return style;
   }
 
+  // TextInput carries its text in value/defaultValue — children are usually empty,
+  // so combine with optional input text for typography (emoji/system font, Khmer shaping).
+  const textFromChildren = extractChildrenText(children);
+  const corpus = `${textFromChildren}${options.inputText ?? ''}`;
+
   // Keep pure numeric strings in Latin/system glyphs (e.g., ring counters like "1", "95%").
-  if (isNumericOnlyChildren(children)) {
+  if (isNumericOnlyText(corpus)) {
     return style;
   }
 
@@ -185,7 +195,7 @@ const getKhmerAwareStyle = (
   // We strip any custom font so CoreText / Skia can fall back to the platform emoji font.
   // Exception: preserve nodes that already use a named emoji font family, a system font,
   // or have no fontFamily at all (undefined); the latter is the iOS emoji-span style.
-  if (containsEmoji(children)) {
+  if (containsEmoji(children) || containsEmojiInString(corpus)) {
     const flattened = flattenTextStyle(style);
     const ff = flattened.fontFamily;
     if (
@@ -199,7 +209,7 @@ const getKhmerAwareStyle = (
     return stripFontFamily(style);
   }
 
-  const plainText = normalizeText(extractChildrenText(children));
+  const plainText = normalizeText(corpus.replace(/\u200b/g, '').trim());
   const flattened = flattenTextStyle(style);
   if (hasExistingCustomFont(flattened)) {
     return style;
@@ -210,9 +220,17 @@ const getKhmerAwareStyle = (
   return appendFontFamily(style, family);
 };
 
-const patchComponentRender = <P extends { style?: StyleProp<TextStyle>; children?: ReactNode; disableKhmerTypography?: boolean }>(
+const patchComponentRender = <
+  P extends {
+    style?: StyleProp<TextStyle>;
+    children?: ReactNode;
+    value?: string;
+    defaultValue?: string;
+    disableKhmerTypography?: boolean;
+  },
+>(
   component: PatchableComponent<P>,
-  options: { forceRole?: KhmerTextRole } = {}
+  options: { forceRole?: KhmerTextRole; inferInputText?: boolean } = {},
 ) => {
   const originalRender = component.render;
   if (!originalRender) {
@@ -231,7 +249,19 @@ const patchComponentRender = <P extends { style?: StyleProp<TextStyle>; children
       return originalRender(nativeProps as P, ref);
     }
 
-    const nextStyle = getKhmerAwareStyle(nativeProps.style, nativeProps.children, options);
+    const inputText =
+      options.inferInputText &&
+      typeof (nativeProps as { value?: string }).value === 'string'
+        ? (nativeProps as { value: string }).value
+        : options.inferInputText &&
+          typeof (nativeProps as { defaultValue?: string }).defaultValue === 'string'
+          ? (nativeProps as { defaultValue: string }).defaultValue
+          : undefined;
+
+    const nextStyle = getKhmerAwareStyle(nativeProps.style, nativeProps.children, {
+      forceRole: options.forceRole,
+      inputText,
+    });
     return originalRender({ ...nativeProps, style: nextStyle } as P, ref);
   };
 };
@@ -248,8 +278,13 @@ export const initializeKhmerTypography = (initialLanguage: string) => {
     Text as unknown as PatchableComponent<{ style?: StyleProp<TextStyle>; children?: ReactNode }>
   );
   patchComponentRender(
-    TextInput as unknown as PatchableComponent<{ style?: StyleProp<TextStyle>; children?: ReactNode }>,
-    { forceRole: 'body' }
+    TextInput as unknown as PatchableComponent<{
+      style?: StyleProp<TextStyle>;
+      children?: ReactNode;
+      value?: string;
+      defaultValue?: string;
+    }>,
+    { forceRole: 'body', inferInputText: true },
   );
 
   patchApplied = true;

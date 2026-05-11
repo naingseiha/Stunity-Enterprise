@@ -4,7 +4,7 @@
  * Edit existing post - matching CreatePost clean design
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform, Animated
+  Platform,
+  InteractionManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -29,6 +30,7 @@ import { useFeedStore } from '@/stores';
 import { useThemeContext } from '@/contexts';
 import { MediaMetadata, Post } from '@/types';
 import { feedApi } from '@/api/client';
+import { EmojiMirrorMultilineInput } from '@/components/feed/EmojiMirrorMultilineInput';
 import { QuizForm, QuizData } from './create-post/forms/QuizForm';
 import { PollForm, PollData } from './create-post/forms/PollForm';
 import { metadataFromPickerAsset, metadataForUris, primaryMediaAspectRatio } from '@/utils/mediaMetadata';
@@ -127,6 +129,24 @@ const VISIBILITY_OPTIONS = [
 
 type EditPostScreenRouteProp = RouteProp<{ EditPost: { post: Post } }, 'EditPost'>;
 
+function buildInitialPollDataForEdit(post: Post): PollData | null {
+  if (post.postType !== 'POLL') return null;
+  let duration: number | null = null;
+  if (post.learningMeta?.deadline) {
+    const diff = new Date(post.learningMeta.deadline).getTime() - Date.now();
+    if (diff > 0) {
+      duration = Math.ceil(diff / (1000 * 60 * 60));
+    }
+  }
+  return {
+    options: post.pollOptions?.map((o) => o.text) || ['', ''],
+    duration,
+    resultsVisibility: 'AFTER_VOTING',
+    allowMultipleSelections: false,
+    anonymousVoting: false,
+  };
+}
+
 export default function EditPostScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -137,48 +157,67 @@ export default function EditPostScreen() {
 
   const { updatePost } = useFeedStore();
 
+  const contentInputRef = useRef<TextInput>(null);
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
   const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata[]>(() => metadataForUris(post.mediaUrls || [], post.mediaMetadata || []));
   const [quizData, setQuizData] = useState<QuizData | undefined>(post.quizData as QuizData | undefined);
 
-  // Initialize poll data
-  const [pollData, setPollData] = useState<PollData | null>(() => {
-    if (post.postType === 'POLL') {
-      let duration = null;
-      if (post.learningMeta?.deadline) {
-        const diff = new Date(post.learningMeta.deadline).getTime() - new Date().getTime();
-        // If deadline is in future, calculate remaining hours. 
-        // Note: For editing, we might want to show original duration or remaining. 
-        // Let's show remaining rounded to nearest standard option or just raw hours.
-        if (diff > 0) {
-          duration = Math.ceil(diff / (1000 * 60 * 60));
-        }
-      }
+  const initialPollSnapshot = useMemo(() => buildInitialPollDataForEdit(post), [post]);
 
-      return {
-        options: post.pollOptions?.map(o => o.text) || ['', ''],
-        duration,
-        resultsVisibility: 'AFTER_VOTING', // Default, ideally fetch from backend if available in Post type
-        allowMultipleSelections: false,
-        anonymousVoting: false,
-      };
-    }
-    return null;
-  });
+  const [pollData, setPollData] = useState<PollData | null>(() => buildInitialPollDataForEdit(post));
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const baselineMediaMetadata = useMemo(
+    () => metadataForUris(post.mediaUrls || [], post.mediaMetadata || []),
+    [post.mediaUrls, post.mediaMetadata],
+  );
+
+  const hasChanges = useMemo(() => {
+    if (content.trim() !== post.content.trim()) return true;
+    if (visibility !== (post.visibility || 'PUBLIC')) return true;
+    if (JSON.stringify(mediaUrls) !== JSON.stringify(post.mediaUrls || [])) return true;
+    if (JSON.stringify(mediaMetadata) !== JSON.stringify(baselineMediaMetadata)) return true;
+    if (post.postType === 'QUIZ' && JSON.stringify(quizData ?? null) !== JSON.stringify(post.quizData ?? null)) {
+      return true;
+    }
+    if (
+      post.postType === 'POLL' &&
+      pollData != null &&
+      initialPollSnapshot != null &&
+      JSON.stringify(pollData) !== JSON.stringify(initialPollSnapshot)
+    ) {
+      return true;
+    }
+    return false;
+  }, [
+    baselineMediaMetadata,
+    content,
+    initialPollSnapshot,
+    mediaMetadata,
+    mediaUrls,
+    pollData,
+    post.content,
+    post.mediaUrls,
+    post.postType,
+    post.quizData,
+    post.visibility,
+    quizData,
+    visibility,
+  ]);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      contentInputRef.current?.focus();
+    });
+    return () => task.cancel();
+  }, []);
 
   // Helpers
   const isLocalUri = (uri: string) => uri && !uri.startsWith('http') && !uri.startsWith('https') && !uri.startsWith('data:');
   const getLocalUris = () => mediaUrls.filter(isLocalUri);
-  const hasChanges =
-    content.trim() !== post.content.trim() ||
-    visibility !== (post.visibility || 'PUBLIC') ||
-    JSON.stringify(mediaUrls) !== JSON.stringify(post.mediaUrls || []) ||
-    JSON.stringify(mediaMetadata) !== JSON.stringify(metadataForUris(post.mediaUrls || [], post.mediaMetadata || [])) ||
-    (post.postType === 'QUIZ' && JSON.stringify(quizData) !== JSON.stringify(post.quizData));
 
   // Handle close
   const handleClose = () => {
@@ -378,16 +417,21 @@ export default function EditPostScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Content Input */}
-          <TextInput
+          <EmojiMirrorMultilineInput
+            ref={contentInputRef}
             style={styles.contentInput}
             placeholder={t('feed.createPost.contentPlaceholder')}
             placeholderTextColor={colors.textTertiary}
             multiline
+            textAlignVertical="top"
             value={content}
             onChangeText={setContent}
-            autoFocus
             maxLength={5000}
             editable={!isSubmitting}
           />
@@ -411,6 +455,12 @@ export default function EditPostScreen() {
                 options={pollData.options}
                 onOptionsChange={(opts) => setPollData(prev => prev ? { ...prev, options: opts } : null)}
                 onDataChange={setPollData}
+                initialPollSettings={{
+                  duration: pollData.duration,
+                  resultsVisibility: pollData.resultsVisibility,
+                  allowMultipleSelections: pollData.allowMultipleSelections,
+                  anonymousVoting: pollData.anonymousVoting,
+                }}
               />
             </View>
           )}
@@ -574,9 +624,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   contentInput: {
     fontSize: 16,
+    lineHeight: 25,
     color: colors.text,
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 8,
     minHeight: 150,
     textAlignVertical: 'top',
   },

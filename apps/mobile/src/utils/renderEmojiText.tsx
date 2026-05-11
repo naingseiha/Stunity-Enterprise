@@ -15,6 +15,12 @@ import { KHMER_FONT_FAMILIES } from '@/lib/khmerTypography';
 const EMOJI_TOKEN_RE =
   /(?:[\uD83C][\uDDE6-\uDDFF]){2}|[#*0-9]\uFE0F?\u20E3|(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?(?:[\uD83C][\uDFFB-\uDFFF])?(?:\u200D(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\uFE0F?(?:[\uD83C][\uDFFB-\uDFFF])?)*/g;
 const HAS_EMOJI_RE = new RegExp(EMOJI_TOKEN_RE.source);
+
+/** Same detection as post body rendering (Twemoji path on iOS). */
+export function postContentHasEmoji(text: string): boolean {
+  if (!text) return false;
+  return HAS_EMOJI_RE.test(text);
+}
 const KHMER_CHAR_RE = /[\u1780-\u17FF]/u;
 
 type InlineRunKind = 'text' | 'khmer' | 'latin' | 'emoji';

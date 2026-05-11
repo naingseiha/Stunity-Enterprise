@@ -159,6 +159,9 @@ function calculatePostQualityScore(post: {
 
 const USER_SIGNALS_CACHE_TTL_SECONDS = 60;
 const SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS = 300;
+
+/** Horizontally scrollable quiz rail — fill with topic-matched first, then wider pool. */
+const SUGGESTED_QUIZ_CAROUSEL_TARGET = 16;
 const CANDIDATE_POOL_CACHE_TTL_SECONDS = 45;
 const TRENDING_POOL_CACHE_TTL_SECONDS = 45;
 const EXPLORE_POOL_CACHE_TTL_SECONDS = 45;
@@ -653,7 +656,7 @@ export class FeedRanker {
     }
 
     private async getSuggestedQuizzes(userId: string, signals: UserSignals): Promise<any[]> {
-        const cacheKey = `feedranker:suggested-quizzes:${userId}:v1`;
+        const cacheKey = `feedranker:suggested-quizzes:${userId}:v2`;
         return this.getOrLoadCached(cacheKey, SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS, async () => {
             const db = this.readPrisma;
             const userTopics = Object.keys(signals.topics).slice(0, 5);
@@ -685,35 +688,40 @@ export class FeedRanker {
                 { post: { createdAt: 'desc' } },
             ];
 
+            const target = SUGGESTED_QUIZ_CAROUSEL_TARGET;
+
+            // 1) Prefer topic overlap when we have interest signals.
             let suggested = await db.quiz.findMany({
                 where: {
                     ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
                     post: {
-                        AND: [
-                            quizVisibilityWhere,
-                        ],
-                        ...(userTopics.length > 0 && { topicTags: { hasSome: userTopics } })
+                        AND: [quizVisibilityWhere],
+                        ...(userTopics.length > 0 ? { topicTags: { hasSome: userTopics } } : {}),
                     },
                 },
                 include: includeFields,
                 orderBy,
-                take: 8,
+                take: target,
             });
 
-            if (suggested.length < 2) {
-                suggested = await db.quiz.findMany({
+            // 2) If topic filter (or sparse pool) yielded too few, backfill from all visible quizzes.
+            // Previously we only widened when suggested.length < 2, so exactly 1–2 topic matches
+            // never expanded to the full carousel.
+            if (suggested.length < target) {
+                const have = new Set(suggested.map(q => q.id));
+                const excludeIds = [...new Set([...attemptedIds, ...have])];
+                const remaining = await db.quiz.findMany({
                     where: {
-                        ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
+                        ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
                         post: {
-                            AND: [
-                                quizVisibilityWhere,
-                            ],
+                            AND: [quizVisibilityWhere],
                         },
                     },
                     include: includeFields,
                     orderBy,
-                    take: 8,
+                    take: target - suggested.length,
                 });
+                suggested = [...suggested, ...remaining];
             }
 
             return suggested.map(q => ({
