@@ -44,6 +44,8 @@ import { formatRelativeTime, formatNumber } from '@/utils';
 import { FeedStackParamList } from '@/navigation/types';
 import { feedApi } from '@/api/client';
 import { useThemeContext } from '@/contexts';
+import { getPostDetailMediaAspectRatio, getPostDetailMediaBucket } from '@/utils/feedMediaLayout';
+import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -575,6 +577,9 @@ export default function PostDetailScreen() {
   const rawTypeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
   const typeKey = post.postType.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
   const typeConfig = { ...rawTypeConfig, label: t(`feed.postTypes.${typeKey}`) };
+  const detailMediaAspectRatio = getPostDetailMediaAspectRatio(post);
+  const detailMediaBucket = getPostDetailMediaBucket(post);
+  const detailMediaMode = detailMediaBucket === 'standard' ? 'auto' : detailMediaBucket;
   const learningMeta = post.learningMeta;
   const isCurrentUser = currentUserOwnsPost;
   const deadlineInfo = learningMeta?.deadline ? {
@@ -717,7 +722,13 @@ export default function PostDetailScreen() {
           {/* ── Media ── */}
           {post.mediaUrls && post.mediaUrls.length > 0 && (
             <Animated.View style={styles.mediaContainer}>
-              <ImageCarousel images={post.mediaUrls} borderRadius={0} mode="auto" fullBleed />
+              <ImageCarousel
+                images={post.mediaUrls}
+                borderRadius={0}
+                aspectRatio={detailMediaAspectRatio}
+                mode={detailMediaMode}
+                fullBleed
+              />
               {/* View count overlay */}
               <View style={styles.viewCountOverlay}>
                 <Ionicons name="eye-outline" size={14} color="#fff" />
@@ -731,13 +742,13 @@ export default function PostDetailScreen() {
           {/* ── Title (if present) ── */}
           {post.title && (
             <Animated.View style={styles.titleSection}>
-              <Text style={styles.postTitle}>{post.title}</Text>
+              {renderPostTitleText(post.title, styles.postTitle)}
             </Animated.View>
           )}
 
           {/* ── Content ── */}
           <Animated.View style={styles.contentCard}>
-            <Text style={styles.contentText}>{post.content}</Text>
+            {renderPostBodyText(post.content, styles.contentText)}
 
             {/* Poll Voting */}
             {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
@@ -1143,8 +1154,15 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   viewCountText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
 
   // Title
-  titleSection: { backgroundColor: colors.card, paddingHorizontal: 16, paddingTop: 16 },
-  postTitle: { fontSize: 22, fontWeight: '800', color: colors.text, lineHeight: 28 },
+  titleSection: { backgroundColor: colors.card, paddingHorizontal: 16, paddingTop: 18 },
+  postTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.text,
+    lineHeight: Platform.OS === 'ios' ? 35 : 38,
+    paddingTop: Platform.OS === 'ios' ? 3 : 5,
+    paddingBottom: Platform.OS === 'ios' ? 2 : 3,
+  },
 
   // Content
   contentCard: { backgroundColor: colors.card, paddingBottom: 4 },

@@ -409,14 +409,14 @@ export class FeedRanker {
                 rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_USERS', data: suggestedUsers });
             }
 
-            // Quiz suggestions work best as a distinct quick challenge break before course discovery.
-            injectionIndex = 12;
+            // Quiz suggestions work best as an early quick challenge, far from course discovery.
+            injectionIndex = 3;
             if (suggestedQuizzes.length > 0 && rawFeedItems.length >= injectionIndex) {
                 rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_QUIZZES', data: suggestedQuizzes });
             }
 
             // Course recommendations sit later so the two learning suggestion carousels do not stack.
-            injectionIndex = 22;
+            injectionIndex = 26;
             if (suggestedCourses.length > 0 && rawFeedItems.length >= injectionIndex) {
                 rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_COURSES', data: suggestedCourses });
             }

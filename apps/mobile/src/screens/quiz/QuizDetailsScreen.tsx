@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { Haptics } from '@/services/haptics';
 import { fetchQuizById } from '@/services/quiz';
 import { normalizeQuiz, NormalizedQuiz } from '@/utils/quiz';
+import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
 
 const BG = '#0F172A';
 const SURFACE = '#182235';
@@ -128,9 +129,9 @@ export function QuizDetailsScreen() {
           <View style={styles.heroIcon}>
             <Ionicons name="rocket" size={30} color="#FDE68A" />
           </View>
-          <Text style={styles.quizTitle}>{quiz.title}</Text>
+          {renderPostTitleText(quiz.title, styles.quizTitle)}
           {!!quiz.description && (
-            <Text style={styles.quizDescription} numberOfLines={4}>{quiz.description}</Text>
+            renderPostBodyText(quiz.description, styles.quizDescription, 4)
           )}
         </LinearGradient>
 
@@ -277,12 +278,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 26,
     fontWeight: '900',
-    lineHeight: 34,
+    lineHeight: 42,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   quizDescription: {
     color: 'rgba(255,255,255,0.72)',
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 26,
     marginTop: 8,
   },
   statsRow: {

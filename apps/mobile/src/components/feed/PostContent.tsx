@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { PollVoting } from './PollVoting';
 import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, ClubCreatedSection } from './PostCardSections';
 import { formatNumber, formatRelativeTime } from '@/utils';
 import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
+import { renderPostBodyText } from '@/utils/renderEmojiText';
 
 // Placeholder for missing types, adjust based on actual types
 interface PostContentProps {
@@ -127,9 +128,7 @@ const PostContent = ({
       {/* Content Text - Hidden for automated posts to avoid redundancy and messiness */}
       {!isAutomated && (
         <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
-          <Text style={styles.contentText} numberOfLines={4}>
-            {Platform.OS === 'ios' ? cleanText(post.content) : post.content}
-          </Text>
+          {renderPostBodyText(post.content, styles.contentText, 4)}
         </TouchableOpacity>
       )}
 
@@ -393,8 +392,10 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   contentText: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 27,
     color: colors.text,
+    paddingTop: 3,
+    paddingBottom: 1,
   },
   repostEmbed: {
     marginHorizontal: 16,

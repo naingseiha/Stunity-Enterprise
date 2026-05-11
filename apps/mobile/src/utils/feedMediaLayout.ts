@@ -90,3 +90,35 @@ export const getFeedMediaBucket = (post: any): FeedMediaBucket => {
 };
 
 export const getFeedMediaAspectRatio = (post: any) => FEED_MEDIA_RATIOS[getFeedMediaBucket(post)];
+
+export const getPostDetailMediaBucket = (post: any): FeedMediaBucket => {
+  const displayMode = String(post?.mediaDisplayMode || '').toUpperCase();
+  const firstMeta = post?.mediaMetadata?.[0];
+  const firstUrl = post?.mediaUrls?.[0];
+
+  if (displayMode === 'LANDSCAPE') return 'landscape';
+  if (displayMode === 'SQUARE' || displayMode === 'GRID') return 'square';
+  if (displayMode === 'PORTRAIT') return 'portrait';
+
+  if (post?.mediaType === 'VIDEO' || firstMeta?.type === 'VIDEO' || isVideoUri(firstUrl)) {
+    return 'landscape';
+  }
+
+  const metadataRatio =
+    typeof firstMeta?.aspectRatio === 'number'
+      ? firstMeta.aspectRatio
+      : firstMeta?.width && firstMeta?.height
+        ? firstMeta.height / firstMeta.width
+        : undefined;
+  const postRatio = typeof post?.mediaAspectRatio === 'number'
+    ? normalizeHeightWidthRatio(post.mediaAspectRatio)
+    : undefined;
+
+  return bucketFeedAspectRatio(
+    normalizeHeightWidthRatio(metadataRatio) ??
+    postRatio ??
+    inferAspectRatioFromUrl(firstUrl)
+  );
+};
+
+export const getPostDetailMediaAspectRatio = (post: any) => FEED_MEDIA_RATIOS[getPostDetailMediaBucket(post)];

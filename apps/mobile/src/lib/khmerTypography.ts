@@ -143,7 +143,7 @@ const resolveFontFamily = (role: KhmerTextRole, style: TextStyle): string => {
 
 const appendFontFamily = (
   style: StyleProp<TextStyle>,
-  fontFamily: string
+  fontFamily: TextStyle['fontFamily']
 ): StyleProp<TextStyle> => {
   if (Array.isArray(style)) {
     return [...style, { fontFamily }];
@@ -152,6 +152,18 @@ const appendFontFamily = (
     return [style, { fontFamily }];
   }
   return { fontFamily };
+};
+
+// Named emoji font families. On iOS we no longer set 'Apple Color Emoji' explicitly
+// (we use undefined so CoreText can resolve it naturally), but keep the set so any
+// legacy instances are still whitelisted.
+const EMOJI_FONT_FAMILIES = new Set(['Apple Color Emoji', 'Noto Color Emoji']);
+
+const stripFontFamily = (style: StyleProp<TextStyle>): StyleProp<TextStyle> => {
+  if (!style) return style;
+  const flattened = flattenTextStyle(style);
+  const { fontFamily: _fontFamily, ...withoutFontFamily } = flattened;
+  return withoutFontFamily;
 };
 
 const getKhmerAwareStyle = (
@@ -168,10 +180,23 @@ const getKhmerAwareStyle = (
     return style;
   }
 
-  // Skip patching for text containing emojis, as custom fonts often lack emoji glyphs
-  // and iOS/Android system fallback is better with the default system font.
+  // Force system font for text containing emoji. Returning the original style is
+  // not enough on iOS because an inherited/custom font can still render emoji as tofu.
+  // We strip any custom font so CoreText / Skia can fall back to the platform emoji font.
+  // Exception: preserve nodes that already use a named emoji font family, a system font,
+  // or have no fontFamily at all (undefined); the latter is the iOS emoji-span style.
   if (containsEmoji(children)) {
-    return style;
+    const flattened = flattenTextStyle(style);
+    const ff = flattened.fontFamily;
+    if (
+      typeof ff !== 'string' ||
+      EMOJI_FONT_FAMILIES.has(ff) ||
+      SYSTEM_FONT_FAMILIES.has(ff)
+    ) {
+      // fontFamily is undefined/null, a system font, or an emoji font; leave it alone.
+      return style;
+    }
+    return stripFontFamily(style);
   }
 
   const plainText = normalizeText(extractChildrenText(children));
@@ -185,7 +210,7 @@ const getKhmerAwareStyle = (
   return appendFontFamily(style, family);
 };
 
-const patchComponentRender = <P extends { style?: StyleProp<TextStyle>; children?: ReactNode }>(
+const patchComponentRender = <P extends { style?: StyleProp<TextStyle>; children?: ReactNode; disableKhmerTypography?: boolean }>(
   component: PatchableComponent<P>,
   options: { forceRole?: KhmerTextRole } = {}
 ) => {
@@ -197,8 +222,17 @@ const patchComponentRender = <P extends { style?: StyleProp<TextStyle>; children
 
   component.render = (props: P, ref: ForwardedRef<unknown>) => {
     const safeProps = (props || {}) as P;
-    const nextStyle = getKhmerAwareStyle(safeProps.style, safeProps.children, options);
-    return originalRender({ ...safeProps, style: nextStyle }, ref);
+    const {
+      disableKhmerTypography,
+      ...nativeProps
+    } = safeProps as P & { disableKhmerTypography?: boolean };
+    
+    if (disableKhmerTypography) {
+      return originalRender(nativeProps as P, ref);
+    }
+
+    const nextStyle = getKhmerAwareStyle(nativeProps.style, nativeProps.children, options);
+    return originalRender({ ...nativeProps, style: nextStyle } as P, ref);
   };
 };
 

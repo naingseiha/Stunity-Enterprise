@@ -578,15 +578,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                     items.splice(insertAt, 0, { type: 'SUGGESTED_USERS', data: users });
                   }
 
-                  // Quiz suggestions should feel like a quick feed break, not an add-on beside courses.
+                  // Quiz suggestions should feel like an early quick challenge, far from course discovery.
                   if (!alreadyHasQuizzes && quizzes.length > 0) {
-                    const insertAt = Math.min(12, items.length);
+                    const insertAt = Math.min(3, items.length);
                     items.splice(insertAt, 0, { type: 'SUGGESTED_QUIZZES', data: quizzes });
                   }
 
                   // Keep course recommendations deeper in the learning discovery area.
                   if (!alreadyHasCourses && courses.length > 0) {
-                    const insertAt = Math.min(22, items.length);
+                    const insertAt = Math.min(26, items.length);
                     items.splice(insertAt, 0, { type: 'SUGGESTED_COURSES', data: courses });
                   }
 

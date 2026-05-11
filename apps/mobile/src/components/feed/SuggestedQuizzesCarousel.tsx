@@ -1,16 +1,24 @@
 import React, { useCallback } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { Shadows } from '@/config';
+import { renderPostTitleText } from '@/utils/renderEmojiText';
 
 interface Props {
   quizzes: any[];
 }
 
-const ACCENT_COLORS = ['#14B8A6', '#F59E0B', '#EC4899', '#6366F1'];
+const QUIZ_BACKGROUNDS = [
+  'https://images.unsplash.com/photo-1513258496099-48168024aec0?w=800&q=80',
+  'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80',
+  'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80',
+  'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80',
+];
 
 const getQuestionCount = (item: any) => {
   if (Array.isArray(item?.questions)) return item.questions.length;
@@ -58,66 +66,63 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
   const renderItem = ({ item, index }: { item: any; index: number }) => {
     if (!item) return null;
 
-    const accent = ACCENT_COLORS[index % ACCENT_COLORS.length];
     const questionCount = getQuestionCount(item);
     const attemptCount = item.attemptCount || item.totalAttempts || 0;
     const authorName = getAuthorName(item);
+    const background = item.thumbnailUrl || item.coverImageUrl || item.imageUrl || QUIZ_BACKGROUNDS[index % QUIZ_BACKGROUNDS.length];
 
     return (
       <TouchableOpacity
-        style={[styles.card, { borderColor: `${accent}55` }]}
-        activeOpacity={0.86}
+        style={[styles.card, Shadows.sm]}
+        activeOpacity={0.82}
         onPress={() => handleQuizPress(item)}
       >
-        <View style={[styles.accentRail, { backgroundColor: accent }]} />
-        <View style={styles.cardTopRow}>
-          <View style={[styles.iconBubble, { backgroundColor: `${accent}1F` }]}>
-            <Ionicons name="flash" size={17} color={accent} />
+        <Image source={{ uri: background }} style={styles.image} contentFit="cover" />
+        <LinearGradient
+          colors={['rgba(7,12,22,0.05)', 'rgba(7,12,22,0.44)', 'rgba(7,12,22,0.92)']}
+          locations={[0, 0.42, 1]}
+          style={styles.gradient}
+        />
+
+        <View style={styles.topRow}>
+          <View style={styles.typePill}>
+            <Ionicons name="school" size={12} color="#FFFFFF" />
+            <Text style={styles.typeText}>{t('feed.quiz', 'Quiz')}</Text>
           </View>
           <View style={styles.pointsPill}>
-            <Ionicons name="trophy-outline" size={12} color={accent} />
-            <Text style={[styles.pointsText, { color: accent }]}>
+            <Ionicons name="flash" size={12} color="#FDE68A" />
+            <Text style={styles.pointsText}>
               {item.totalPoints || Math.max(questionCount * 10, 10)} XP
             </Text>
           </View>
         </View>
 
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {item.title || t('feed.postTypes.quiz')}
-        </Text>
-
-        {!!item.description && (
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-
-        <View style={styles.metaGrid}>
-          <View style={styles.metaItem}>
-            <Ionicons name="help-circle-outline" size={14} color={colors.textSecondary} />
+        <View style={styles.content}>
+          {renderPostTitleText(item.title || t('feed.postTypes.quiz'), styles.title, 2)}
+          <View style={styles.meta}>
+            <Ionicons name="help-circle" size={12} color="#E0F2FE" />
             <Text style={styles.metaText}>{questionCount || '--'} {t('feed.sections.questions')}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaDot}>•</Text>
+            <Ionicons name="time" size={12} color="#E0F2FE" />
             <Text style={styles.metaText}>
               {item.timeLimit ? t('feed.sections.minutesShort', { count: item.timeLimit }) : '∞'}
             </Text>
           </View>
-        </View>
 
-        <View style={styles.footerRow}>
-          <Text style={styles.authorText} numberOfLines={1}>
-            {authorName || t('feed.suggestedQuizzes')}
-          </Text>
-          <View style={styles.startButton}>
-            <Text style={styles.startText}>{t('feed.sections.takeQuizNow')}</Text>
-            <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+          <View style={styles.footerRow}>
+            <Text style={styles.authorText} numberOfLines={1}>
+              {authorName || t('feed.suggestedQuizzes')}
+            </Text>
+            <View style={styles.startButton}>
+              <Text style={styles.startText} numberOfLines={1}>{t('feed.sections.takeQuizNow')}</Text>
+              <Ionicons name="arrow-forward" size={12} color="#0F172A" />
+            </View>
           </View>
         </View>
 
         {attemptCount > 0 && (
           <View style={styles.socialProof}>
-            <Ionicons name="people-outline" size={11} color={colors.textSecondary} />
+            <Ionicons name="people" size={11} color="#F8FAFC" />
             <Text style={styles.socialProofText}>{attemptCount}</Text>
           </View>
         )}
@@ -127,49 +132,65 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={isDark ? ['#10201F', '#151923'] : ['#ECFDF5', '#F8FAFC']}
-        style={styles.panel}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.headerIcon}>
-              <Ionicons name="sparkles" size={16} color="#0F766E" />
-            </View>
-            <View>
-              <Text style={styles.eyebrow}>{t('feed.quiz', 'Quiz')}</Text>
-              <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
-            </View>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.headerIcon}>
+            <Ionicons name="sparkles" size={16} color="#7C3AED" />
           </View>
-          <TouchableOpacity onPress={handleViewAll} style={styles.seeAllButton} activeOpacity={0.8}>
-            <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
-          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
         </View>
+        <TouchableOpacity onPress={handleViewAll} style={styles.seeAllButton} activeOpacity={0.8}>
+          <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
+        </TouchableOpacity>
+      </View>
 
-        <FlatList
-          data={quizzes}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => item?.id || `suggested-quiz-${index}`}
-          contentContainerStyle={styles.listContent}
-          snapToInterval={234}
-          decelerationRate="fast"
-        />
-      </LinearGradient>
+      <FlatList
+        data={quizzes}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => item?.id || `suggested-quiz-${index}`}
+        contentContainerStyle={styles.listContent}
+        snapToInterval={260 + 12}
+        decelerationRate="fast"
+      />
     </View>
   );
 };
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+type QuizCarouselStyles = {
+  container: ViewStyle;
+  header: ViewStyle;
+  headerLeft: ViewStyle;
+  headerIcon: ViewStyle;
+  headerTitle: TextStyle;
+  seeAllButton: ViewStyle;
+  seeAll: TextStyle;
+  listContent: ViewStyle;
+  card: ViewStyle;
+  image: ImageStyle;
+  gradient: ViewStyle;
+  topRow: ViewStyle;
+  typePill: ViewStyle;
+  typeText: TextStyle;
+  pointsPill: ViewStyle;
+  pointsText: TextStyle;
+  content: ViewStyle;
+  title: TextStyle;
+  meta: ViewStyle;
+  metaText: TextStyle;
+  metaDot: TextStyle;
+  footerRow: ViewStyle;
+  authorText: TextStyle;
+  startButton: ViewStyle;
+  startText: TextStyle;
+  socialProof: ViewStyle;
+  socialProofText: TextStyle;
+};
+
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCarouselStyles>({
   container: {
-    marginVertical: 14,
-  },
-  panel: {
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: isDark ? 'rgba(20,184,166,0.18)' : '#D1FAE5',
+    marginVertical: 12,
   },
   header: {
     flexDirection: 'row',
@@ -185,24 +206,17 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
   },
   headerIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: isDark ? 'rgba(20,184,166,0.16)' : '#CCFBF1',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: isDark ? 'rgba(124,58,237,0.18)' : '#F3E8FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#0F766E',
-    textTransform: 'uppercase',
-  },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '800',
     color: colors.text,
-    marginTop: 1,
   },
   seeAllButton: {
     minHeight: 32,
@@ -219,109 +233,132 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     gap: 12,
   },
   card: {
-    width: 222,
-    minHeight: 182,
-    backgroundColor: isDark ? '#111827' : '#FFFFFF',
-    borderRadius: 14,
+    width: 260,
+    height: 148,
+    backgroundColor: colors.card,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
-  accentRail: {
+  image: {
+    width: '100%',
+    height: '100%',
     position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
   },
-  cardTopRow: {
+  gradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  topRow: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
-  iconBubble: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+  typePill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(15,23,42,0.54)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  typeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   pointsPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
+    backgroundColor: 'rgba(15,23,42,0.54)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   pointsText: {
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  cardTitle: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '900',
-    color: colors.text,
+  content: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 12,
   },
-  description: {
-    marginTop: 6,
-    fontSize: 12,
-    lineHeight: 17,
-    color: colors.textSecondary,
+  title: {
+    fontSize: 14,
+    lineHeight: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    paddingTop: 3,
+    paddingBottom: 1,
+    textShadowColor: 'rgba(0,0,0,0.48)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  metaGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 12,
-  },
-  metaItem: {
+  meta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   metaText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: colors.textSecondary,
+    fontWeight: '600',
+    color: '#F8FAFC',
+  },
+  metaDot: {
+    fontSize: 11,
+    color: '#E5E7EB',
+    marginHorizontal: 2,
   },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginTop: 9,
   },
   authorText: {
     flex: 1,
     fontSize: 11,
-    fontWeight: '700',
-    color: colors.textSecondary,
+    fontWeight: '600',
+    color: '#E5E7EB',
   },
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#0F766E',
+    backgroundColor: '#FFFFFF',
+    maxWidth: 112,
   },
   startText: {
-    fontSize: 11,
+    flexShrink: 1,
+    fontSize: 10,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   socialProof: {
     position: 'absolute',
     right: 12,
-    bottom: 54,
+    bottom: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
@@ -329,6 +366,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   socialProofText: {
     fontSize: 10,
     fontWeight: '800',
-    color: colors.textSecondary,
+    color: '#F8FAFC',
   },
 });
