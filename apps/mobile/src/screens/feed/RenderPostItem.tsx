@@ -24,6 +24,7 @@ const RenderPostItem = ({ item, handlersRef, isValued, setAnalyticsPostId }: Ren
         onComment={() => h.navigation.navigate('Comments', { postId: item.id })}
         onShare={() => h.handleSharePost(item)}
         onBookmark={() => h.bookmarkPost(item.id)}
+        onNotInterested={() => h.notInterestedPost(item.id)}
         onValue={() => h.handleValuePost(item)}
         isValued={isValued}
         onUserPress={() => h.navigation.navigate('UserProfile', { userId: item.author?.id })}

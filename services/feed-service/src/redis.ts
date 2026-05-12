@@ -319,6 +319,7 @@ export const feedCache = {
     // Clear memory cache
     memoryCache.deleteByPattern(`${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:session:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:feedback:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:signals:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:suggested-users:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:suggested-courses:${userId}:*`);
@@ -333,6 +334,7 @@ export const feedCache = {
       const patterns = [
         `feed:${userId}:*`,
         `feed:feedranker:session:${userId}:*`,
+        `feed:feedranker:feedback:${userId}:*`,
         `feed:feedranker:signals:${userId}:*`,
         `feed:feedranker:suggested-users:${userId}:*`,
         `feed:feedranker:suggested-courses:${userId}:*`,

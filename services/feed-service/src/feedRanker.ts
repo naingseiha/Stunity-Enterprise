@@ -129,6 +129,20 @@ function calculateEducationalQualityBoost(averageRating?: number | null, ratingC
     return normalizedRating * confidence * 0.18;
 }
 
+function getPostSignalTopics(post: {
+    topicTags?: string[] | null;
+    postType?: PostType | string | null;
+}): string[] {
+    const topics = [
+        ...(post.topicTags || []),
+        post.postType,
+    ]
+        .map((topic) => String(topic || '').trim().toLowerCase())
+        .filter(Boolean);
+
+    return [...new Set(topics)];
+}
+
 function calculatePostQualityScore(post: {
     postType: PostType;
     mediaUrls?: string[] | null;
@@ -169,6 +183,9 @@ const FEED_SESSION_CACHE_TTL_SECONDS = 300;
 const FEED_SESSION_PAGE_MULTIPLIER = 6;
 const FEED_SESSION_MIN_ITEMS = 80;
 const FEED_SESSION_MAX_ITEMS = 120;
+const OPTIONAL_FEED_POOL_TIMEOUT_MS = Number(process.env.FEED_OPTIONAL_POOL_TIMEOUT_MS || 1200);
+const SOCIAL_PROOF_TIMEOUT_MS = Number(process.env.FEED_SOCIAL_PROOF_TIMEOUT_MS || 900);
+const FEED_SUGGESTIONS_TIMEOUT_MS = Number(process.env.FEED_SUGGESTIONS_TIMEOUT_MS || 900);
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface PostWithRelations extends Post {
@@ -180,10 +197,10 @@ interface PostWithRelations extends Post {
         role: string;
         isVerified: boolean;
     };
-    _count: {
-        likes: number;
-        comments: number;
-        views: number;
+    _count?: {
+        likes?: number;
+        comments?: number;
+        views?: number;
     };
     postScore?: {
         engagementScore: number;
@@ -200,9 +217,11 @@ interface UserSignals {
     userId: string;
     schoolId?: string | null;
     topics: Record<string, number>;      // topicId → interest score
+    negativeTopics: Record<string, number>; // topicId → explicit downranking score
     topicDwellTime: Record<string, number>; // topicId → avg view duration (seconds)
     followingIds: string[];
     blockedUserIds: string[];
+    hiddenPostIds: string[];
     authorAffinity: Record<string, number>; // authorId → affinity score (0-100)
     enrolledCourseTopics: string[];         // topics from enrolled courses
     academicLevel: number;
@@ -213,6 +232,96 @@ interface UserSignals {
     studyGroupMembers: string[];
     instructorIds: string[];
 }
+
+type UserPostFeedbackRow = {
+    postId: string;
+    feedbackType: string;
+    topicTags: string[] | null;
+    postType: PostType | string | null;
+    createdAt: Date;
+};
+
+const FEED_AUTHOR_SELECT = {
+    id: true,
+    firstName: true,
+    lastName: true,
+    profilePictureUrl: true,
+    role: true,
+    isVerified: true,
+} satisfies Prisma.UserSelect;
+
+const FEED_CANDIDATE_POST_SELECT = {
+    id: true,
+    authorId: true,
+    schoolId: true,
+    content: true,
+    title: true,
+    postType: true,
+    visibility: true,
+    mediaUrls: true,
+    mediaKeys: true,
+    mediaDisplayMode: true,
+    mediaMetadata: true,
+    mediaAspectRatio: true,
+    likesCount: true,
+    commentsCount: true,
+    sharesCount: true,
+    viewsCount: true,
+    isEdited: true,
+    isPinned: true,
+    createdAt: true,
+    updatedAt: true,
+    topicTags: true,
+    trendingScore: true,
+    difficultyLevel: true,
+    questionBounty: true,
+    repostOfId: true,
+    repostComment: true,
+    author: { select: FEED_AUTHOR_SELECT },
+    postScore: {
+        select: {
+            engagementScore: true,
+            qualityScore: true,
+            trendingScore: true,
+            decayFactor: true,
+        },
+    },
+} satisfies Prisma.PostSelect;
+
+const FEED_VISIBLE_RELATIONS_SELECT = {
+    id: true,
+    pollOptions: {
+        select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+        orderBy: { position: 'asc' as const },
+    },
+    quiz: {
+        select: {
+            id: true,
+            questions: true,
+            timeLimit: true,
+            passingScore: true,
+            totalPoints: true,
+            resultsVisibility: true,
+        },
+    },
+    repostOf: {
+        select: {
+            id: true,
+            content: true,
+            title: true,
+            postType: true,
+            mediaUrls: true,
+            mediaMetadata: true,
+            mediaAspectRatio: true,
+            createdAt: true,
+            likesCount: true,
+            commentsCount: true,
+            viewsCount: true,
+            sharesCount: true,
+            author: { select: FEED_AUTHOR_SELECT },
+        },
+    },
+} satisfies Prisma.PostSelect;
 
 async function buildQuizPostWhere(prisma: PrismaClient, userId: string, schoolId: string | null | undefined): Promise<Prisma.PostWhereInput> {
     return {
@@ -237,6 +346,7 @@ export interface ScoredPost {
         teacherRelevance: number;
         peerLearning: number;
         difficultyMatch: number;
+        negativeFeedback: number;
     };
 }
 
@@ -311,6 +421,77 @@ export class FeedRanker {
         return loadPromise;
     }
 
+    private async withSoftTimeout<T>(
+        label: string,
+        promise: Promise<T>,
+        timeoutMs: number,
+        fallback: T,
+    ): Promise<T> {
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        const guarded = promise.catch((error) => {
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn(`⚠️ [FeedRanker] ${label} failed:`, error?.message || error);
+            }
+            return fallback;
+        });
+
+        const timeoutPromise = new Promise<T>((resolve) => {
+            timeout = setTimeout(() => {
+                if (process.env.NODE_ENV !== 'production') {
+                    console.warn(`⚠️ [FeedRanker] ${label} timed out after ${timeoutMs}ms; returning fallback`);
+                }
+                resolve(fallback);
+            }, timeoutMs);
+        });
+
+        try {
+            return await Promise.race([guarded, timeoutPromise]);
+        } finally {
+            if (timeout) clearTimeout(timeout);
+        }
+    }
+
+    private async hydrateVisiblePostRelations(items: FeedItem[]): Promise<FeedItem[]> {
+        const postItems = items.filter((item): item is { type: 'POST'; data: ScoredPost } => item.type === 'POST');
+        const relationPostIds = postItems
+            .filter((item) => item.data.post.postType === 'POLL' || item.data.post.postType === 'QUIZ' || Boolean(item.data.post.repostOfId))
+            .map((item) => item.data.post.id);
+
+        if (relationPostIds.length === 0) return items;
+
+        const relationRows = await this.withSoftTimeout(
+            'visible feed relation hydration',
+            this.readPrisma.post.findMany({
+                where: { id: { in: [...new Set(relationPostIds)] } },
+                select: FEED_VISIBLE_RELATIONS_SELECT,
+            }),
+            1600,
+            [] as any[],
+        );
+        if (relationRows.length === 0) return items;
+
+        const relationsByPostId = new Map(relationRows.map((post: any) => [post.id, post]));
+        return items.map((item) => {
+            if (item.type !== 'POST') return item;
+
+            const relations = relationsByPostId.get(item.data.post.id);
+            if (!relations) return item;
+
+            return {
+                type: 'POST',
+                data: {
+                    ...item.data,
+                    post: {
+                        ...item.data.post,
+                        pollOptions: relations.pollOptions,
+                        quiz: relations.quiz,
+                        repostOf: relations.repostOf,
+                    },
+                },
+            };
+        });
+    }
+
     /**
      * Generate a personalized feed for a user.
      * FOR_YOU mode uses content-mixing: relevance (60%) + trending (25%) + explore (15%)
@@ -335,7 +516,7 @@ export class FeedRanker {
             return this.getRecentFeed(userId, page, limit, subject, cursor);
         }
 
-        const feedSessionKey = `feedranker:session:${userId}:${mode}:${subject || 'ALL'}:limit:${limit}:exclude:${excludeKey}`;
+        const feedSessionKey = `feedranker:session:${userId}:v2:${mode}:${subject || 'ALL'}:limit:${limit}:exclude:${excludeKey}`;
 
         // Phase 1 Optimization: If page > 1, pull from the cached feed sequence session
         if (page > 1) {
@@ -355,7 +536,7 @@ export class FeedRanker {
                 const nextCursor = this.getNextCursorFromFeedItems(paged);
                 const hasMore = start + paged.length < cachedSequence.length || (mode === 'FOR_YOU' && Boolean(nextCursor));
                 return {
-                    items: paged,
+                    items: await this.hydrateVisiblePostRelations(paged),
                     total: cachedSequence.length,
                     hasMore,
                     ...(hasMore && nextCursor ? { nextCursor } : {}),
@@ -372,7 +553,12 @@ export class FeedRanker {
             const circleIds = this.getSocialCircleActorIds(userSignals);
             const circleSocial =
                 circleIds.length > 0 && candidates.length > 0
-                    ? await this.loadCircleSocialProofCounts(candidates.map((p) => p.id), circleIds)
+                    ? await this.withSoftTimeout(
+                        'following social proof counts',
+                        this.loadCircleSocialProofCounts(candidates.map((p) => p.id), circleIds),
+                        SOCIAL_PROOF_TIMEOUT_MS,
+                        new Map<string, { likes: number; comments: number }>(),
+                    )
                     : new Map();
             const scored = candidates.map(post => this.scorePost(post, userSignals, circleSocial));
             const diversified = this.applyDiversity(scored);
@@ -395,7 +581,7 @@ export class FeedRanker {
             }
 
             return {
-                items: paged,
+                items: await this.hydrateVisiblePostRelations(paged),
                 total: items.length,
                 hasMore,
                 ...(hasMore && nextCursor ? { nextCursor } : {}),
@@ -408,8 +594,18 @@ export class FeedRanker {
         // Run all 3 pools in parallel for speed — use allSettled so failures don't block
         const [relevanceResult, trendingResult, exploreResult] = await Promise.allSettled([
             this.getCandidates(userId, userSignals, 'FOR_YOU', normalizedExcludeIds, subject),
-            this.getTrendingContent(userId, userSignals.schoolId, normalizedExcludeIds, subject),
-            this.getExploreContent(userId, userSignals, normalizedExcludeIds, subject),
+            this.withSoftTimeout(
+                'trending pool',
+                this.getTrendingContent(userId, userSignals, normalizedExcludeIds, subject),
+                OPTIONAL_FEED_POOL_TIMEOUT_MS,
+                [] as PostWithRelations[],
+            ),
+            this.withSoftTimeout(
+                'explore pool',
+                this.getExploreContent(userId, userSignals, normalizedExcludeIds, subject),
+                OPTIONAL_FEED_POOL_TIMEOUT_MS,
+                [] as PostWithRelations[],
+            ),
         ]);
 
         // Pool 1–3 raw rows — required before scoring so we batch social-proof queries once
@@ -429,7 +625,12 @@ export class FeedRanker {
         const circleIds = this.getSocialCircleActorIds(userSignals);
         const circleSocial =
             circleIds.length > 0 && uniquePoolIds.length > 0
-                ? await this.loadCircleSocialProofCounts(uniquePoolIds, circleIds)
+                ? await this.withSoftTimeout(
+                    'social proof counts',
+                    this.loadCircleSocialProofCounts(uniquePoolIds, circleIds),
+                    SOCIAL_PROOF_TIMEOUT_MS,
+                    new Map<string, { likes: number; comments: number }>(),
+                )
                 : new Map();
 
         const relevanceScored = relevanceCandidates.map(post => this.scorePost(post, userSignals, circleSocial));
@@ -482,9 +683,24 @@ export class FeedRanker {
         // Only fetch suggestions if we are generating page 1
         if (page === 1) {
             const [suggestedUsers, suggestedCourses, suggestedQuizzes] = await Promise.all([
-                this.getSuggestedUsers(userId, userSignals),
-                this.getSuggestedCourses(userId, userSignals),
-                this.getSuggestedQuizzes(userId, userSignals),
+                this.withSoftTimeout(
+                    'suggested users',
+                    this.getSuggestedUsers(userId, userSignals),
+                    FEED_SUGGESTIONS_TIMEOUT_MS,
+                    [] as Partial<User>[],
+                ),
+                this.withSoftTimeout(
+                    'suggested courses',
+                    this.getSuggestedCourses(userId, userSignals),
+                    FEED_SUGGESTIONS_TIMEOUT_MS,
+                    [] as any[],
+                ),
+                this.withSoftTimeout(
+                    'suggested quizzes',
+                    this.getSuggestedQuizzes(userId, userSignals),
+                    FEED_SUGGESTIONS_TIMEOUT_MS,
+                    [] as any[],
+                ),
             ]);
 
             // Inject Users
@@ -524,11 +740,39 @@ export class FeedRanker {
         }
 
         return {
-            items: paged,
+            items: await this.hydrateVisiblePostRelations(paged),
             total: rawFeedItems.length,
             hasMore,
             ...(hasMore && nextCursor ? { nextCursor } : {}),
         };
+    }
+
+    private async getUserPostFeedback(userId: string): Promise<UserPostFeedbackRow[]> {
+        const cacheKey = `feedranker:feedback:${userId}:v1`;
+        return this.getOrLoadCached(cacheKey, USER_SIGNALS_CACHE_TTL_SECONDS, async () => {
+            try {
+                return await this.readPrisma.$queryRaw<UserPostFeedbackRow[]>`
+                    SELECT
+                        f."postId",
+                        f."feedbackType",
+                        p."topicTags",
+                        p."postType",
+                        f."createdAt"
+                    FROM "user_post_feedback" f
+                    INNER JOIN "posts" p ON p."id" = f."postId"
+                    WHERE f."userId" = ${userId}
+                      AND f."feedbackType" IN ('HIDE', 'NOT_INTERESTED', 'SHOW_LESS')
+                      AND f."createdAt" >= NOW() - INTERVAL '180 days'
+                    ORDER BY f."createdAt" DESC
+                    LIMIT 500
+                `;
+            } catch (error: any) {
+                if (process.env.NODE_ENV !== 'production') {
+                    console.warn('⚠️ [FeedRanker] Feedback table unavailable, skipping negative signals:', error?.message);
+                }
+                return [];
+            }
+        });
     }
 
     // ─── Suggested Content Injectors ──────────────────────────────────────
@@ -744,14 +988,15 @@ export class FeedRanker {
     // ─── Trending Content (high engagement velocity) ──────────────────
     private async getTrendingContent(
         userId: string,
-        schoolId: string | null | undefined,
+        signals: UserSignals,
         excludeIds: string[],
         subject?: string
     ): Promise<PostWithRelations[]> {
         const load = async () => {
+            const suppressedIds = [...new Set([...excludeIds, ...signals.hiddenPostIds])];
             const where: any = {
                 AND: [
-                    await resolveFeedVisibilityWhere(this.readPrisma, { userId, schoolId }),
+                    await resolveFeedVisibilityWhere(this.readPrisma, { userId, schoolId: signals.schoolId }),
                     { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
                     { trendingScore: { gt: 0.1 } },
                 ],
@@ -760,37 +1005,23 @@ export class FeedRanker {
             if (subject && subject !== 'ALL') {
                 where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
             }
-            if (excludeIds.length > 0) {
-                where.AND.push({ id: { notIn: excludeIds } });
+            if (suppressedIds.length > 0) {
+                where.AND.push({ id: { notIn: suppressedIds } });
             }
 
             return await this.readPrisma.post.findMany({
                 where,
-                include: {
-                    author: {
-                        select: {
-                            id: true, firstName: true, lastName: true,
-                            profilePictureUrl: true, role: true, isVerified: true,
-                        },
-                    },
-                    pollOptions: {
-                        select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
-                    },
-                    quiz: { select: { id: true, questions: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
-                    postScore: true,
-                    _count: { select: { likes: true, comments: true, views: true } },
-                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
-                },
+                select: FEED_CANDIDATE_POST_SELECT,
                 orderBy: { trendingScore: 'desc' },
                 take: 36,
             }) as unknown as PostWithRelations[];
         };
 
-        if (excludeIds.length > 0) {
+        if (excludeIds.length > 0 || signals.hiddenPostIds.length > 0) {
             return load();
         }
 
-        const cacheKey = `feedranker:trending:${userId}:${schoolId || 'ALL'}:${subject || 'ALL'}`;
+        const cacheKey = `feedranker:trending:${userId}:v2:${signals.schoolId || 'ALL'}:${subject || 'ALL'}`;
         return this.getOrLoadCached(cacheKey, TRENDING_POOL_CACHE_TTL_SECONDS, load);
     }
 
@@ -803,6 +1034,7 @@ export class FeedRanker {
     ): Promise<PostWithRelations[]> {
         const load = async () => {
             const userTopics = Object.keys(signals.topics);
+            const suppressedIds = [...new Set([...excludeIds, ...signals.hiddenPostIds])];
             const where: any = {
                 AND: [
                     await resolveFeedVisibilityWhere(this.readPrisma, { userId, schoolId: signals.schoolId }),
@@ -818,27 +1050,13 @@ export class FeedRanker {
             if (subject && subject !== 'ALL') {
                 where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
             }
-            if (excludeIds.length > 0) {
-                where.AND.push({ id: { notIn: excludeIds } });
+            if (suppressedIds.length > 0) {
+                where.AND.push({ id: { notIn: suppressedIds } });
             }
 
             return await this.readPrisma.post.findMany({
                 where,
-                include: {
-                    author: {
-                        select: {
-                            id: true, firstName: true, lastName: true,
-                            profilePictureUrl: true, role: true, isVerified: true,
-                        },
-                    },
-                    pollOptions: {
-                        select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
-                    },
-                    quiz: { select: { id: true, questions: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
-                    postScore: true,
-                    _count: { select: { likes: true, comments: true, views: true } },
-                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
-                },
+                select: FEED_CANDIDATE_POST_SELECT,
                 orderBy: [
                     { likesCount: 'desc' },
                     { createdAt: 'desc' },
@@ -847,20 +1065,20 @@ export class FeedRanker {
             }) as unknown as PostWithRelations[];
         };
 
-        if (excludeIds.length > 0) {
+        if (excludeIds.length > 0 || signals.hiddenPostIds.length > 0) {
             return load();
         }
 
-        const cacheKey = `feedranker:explore:${userId}:${subject || 'ALL'}`;
+        const cacheKey = `feedranker:explore:${userId}:v2:${subject || 'ALL'}`;
         return this.getOrLoadCached(cacheKey, EXPLORE_POOL_CACHE_TTL_SECONDS, load);
     }
 
     // ─── Step 1: User Signals (Enhanced v2) ──────────────────────────
     private async getUserSignals(userId: string): Promise<UserSignals> {
-        const cacheKey = `feedranker:signals:${userId}:v1`;
+        const cacheKey = `feedranker:signals:${userId}:v2`;
         return this.getOrLoadCached(cacheKey, USER_SIGNALS_CACHE_TTL_SECONDS, async () => {
             const db = this.readPrisma;
-            const [feedSignals, follows, user, authorInteractions, blockedRelationships, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
+            const [feedSignals, follows, user, authorInteractions, blockedRelationships, postFeedback, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
                 db.userFeedSignal.findMany({
                     where: { userId },
                     orderBy: { score: 'desc' },
@@ -874,59 +1092,64 @@ export class FeedRanker {
                     where: { id: userId },
                     select: { schoolId: true, interests: true, skills: true, careerGoals: true },
                 }),
-                (async () => {
-                    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-                    const [likes, comments, bookmarks, views] = await Promise.all([
-                        db.like.findMany({
-                            where: { userId, createdAt: { gte: since } },
-                            select: { postId: true },
-                            orderBy: { createdAt: 'desc' },
-                            take: 300,
-                        }),
-                        db.comment.findMany({
-                            where: { authorId: userId, createdAt: { gte: since } },
-                            select: { postId: true },
-                            orderBy: { createdAt: 'desc' },
-                            take: 300,
-                        }),
-                        db.bookmark.findMany({
-                            where: { userId, createdAt: { gte: since } },
-                            select: { postId: true },
-                            orderBy: { createdAt: 'desc' },
-                            take: 300,
-                        }),
-                        db.postView.findMany({
-                            where: { userId, viewedAt: { gte: since } },
-                            select: { postId: true, duration: true },
-                            orderBy: { viewedAt: 'desc' },
-                            take: 500,
-                        }),
-                    ]);
+                this.withSoftTimeout(
+                    'author affinity signals',
+                    (async () => {
+                        const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+                        const [likes, comments, bookmarks, views] = await Promise.all([
+                            db.like.findMany({
+                                where: { userId, createdAt: { gte: since } },
+                                select: { postId: true },
+                                orderBy: { createdAt: 'desc' },
+                                take: 150,
+                            }),
+                            db.comment.findMany({
+                                where: { authorId: userId, createdAt: { gte: since } },
+                                select: { postId: true },
+                                orderBy: { createdAt: 'desc' },
+                                take: 150,
+                            }),
+                            db.bookmark.findMany({
+                                where: { userId, createdAt: { gte: since } },
+                                select: { postId: true },
+                                orderBy: { createdAt: 'desc' },
+                                take: 150,
+                            }),
+                            db.postView.findMany({
+                                where: { userId, viewedAt: { gte: since } },
+                                select: { postId: true, duration: true },
+                                orderBy: { viewedAt: 'desc' },
+                                take: 240,
+                            }),
+                        ]);
 
-                    const postWeights = new Map<string, number>();
-                    const addPostWeight = (postId: string, weight: number) => {
-                        postWeights.set(postId, (postWeights.get(postId) || 0) + weight);
-                    };
+                        const postWeights = new Map<string, number>();
+                        const addPostWeight = (postId: string, weight: number) => {
+                            postWeights.set(postId, (postWeights.get(postId) || 0) + weight);
+                        };
 
-                    likes.forEach(item => addPostWeight(item.postId, 3));
-                    comments.forEach(item => addPostWeight(item.postId, 5));
-                    bookmarks.forEach(item => addPostWeight(item.postId, 6));
-                    views.forEach(item => addPostWeight(item.postId, (item.duration || 0) >= 15 ? 2 : 0.75));
+                        likes.forEach(item => addPostWeight(item.postId, 3));
+                        comments.forEach(item => addPostWeight(item.postId, 5));
+                        bookmarks.forEach(item => addPostWeight(item.postId, 6));
+                        views.forEach(item => addPostWeight(item.postId, (item.duration || 0) >= 15 ? 2 : 0.75));
 
-                    const postIds = Array.from(postWeights.keys()).slice(0, 600);
-                    if (postIds.length === 0) return new Map<string, number>();
+                        const postIds = Array.from(postWeights.keys()).slice(0, 300);
+                        if (postIds.length === 0) return new Map<string, number>();
 
-                    const posts = await db.post.findMany({
-                        where: { id: { in: postIds } },
-                        select: { id: true, authorId: true },
-                    });
-                    const authorCounts = new Map<string, number>();
-                    for (const post of posts) {
-                        if (post.authorId === userId) continue;
-                        authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + (postWeights.get(post.id) || 0));
-                    }
-                    return authorCounts;
-                })().catch(() => new Map<string, number>()),
+                        const posts = await db.post.findMany({
+                            where: { id: { in: postIds } },
+                            select: { id: true, authorId: true },
+                        });
+                        const authorCounts = new Map<string, number>();
+                        for (const post of posts) {
+                            if (post.authorId === userId) continue;
+                            authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + (postWeights.get(post.id) || 0));
+                        }
+                        return authorCounts;
+                    })(),
+                    1200,
+                    new Map<string, number>(),
+                ),
                 db.userBlock.findMany({
                     where: {
                         OR: [
@@ -936,31 +1159,56 @@ export class FeedRanker {
                     },
                     select: { blockerId: true, blockedId: true },
                 }).catch(() => [] as any[]),
-                db.enrollment.findMany({
-                    where: { userId },
-                    select: {
-                        course: { select: { tags: true, category: true, instructorId: true } },
-                    },
-                    take: 20,
-                }).catch(() => [] as any[]),
-                db.userAcademicProfile.findUnique({
-                    where: { userId },
-                }).catch(() => null),
-                db.userDeadline.findMany({
-                    where: { userId, deadlineDate: { gte: new Date() } },
-                }).catch(() => [] as any[]),
-                db.enrollment.findMany({
-                    where: { course: { enrollments: { some: { userId } } } },
-                    select: { userId: true },
-                    distinct: ['userId'],
-                    take: 500,
-                }).catch(() => [] as any[]),
-                db.clubMember.findMany({
-                    where: { club: { members: { some: { userId } } } },
-                    select: { userId: true },
-                    distinct: ['userId'],
-                    take: 500,
-                }).catch(() => [] as any[])
+                this.getUserPostFeedback(userId).catch(() => []),
+                this.withSoftTimeout(
+                    'enrollment learning signals',
+                    db.enrollment.findMany({
+                        where: { userId },
+                        select: {
+                            course: { select: { tags: true, category: true, instructorId: true } },
+                        },
+                        take: 20,
+                    }),
+                    900,
+                    [] as any[],
+                ),
+                this.withSoftTimeout(
+                    'academic profile signals',
+                    db.userAcademicProfile.findUnique({ where: { userId } }),
+                    700,
+                    null,
+                ),
+                this.withSoftTimeout(
+                    'deadline signals',
+                    db.userDeadline.findMany({
+                        where: { userId, deadlineDate: { gte: new Date() } },
+                        take: 50,
+                    }),
+                    700,
+                    [] as any[],
+                ),
+                this.withSoftTimeout(
+                    'classmate signals',
+                    db.enrollment.findMany({
+                        where: { course: { enrollments: { some: { userId } } } },
+                        select: { userId: true },
+                        distinct: ['userId'],
+                        take: 200,
+                    }),
+                    900,
+                    [] as any[],
+                ),
+                this.withSoftTimeout(
+                    'study group signals',
+                    db.clubMember.findMany({
+                        where: { club: { members: { some: { userId } } } },
+                        select: { userId: true },
+                        distinct: ['userId'],
+                        take: 200,
+                    }),
+                    900,
+                    [] as any[],
+                )
             ]);
 
             const topics: Record<string, number> = {};
@@ -1011,6 +1259,26 @@ export class FeedRanker {
                 .map(f => f.followingId)
                 .filter(id => !blockedSet.has(id));
 
+            const hiddenPostIds: string[] = [];
+            const negativeTopics: Record<string, number> = {};
+            const feedbackWeights: Record<string, number> = {
+                HIDE: 18,
+                NOT_INTERESTED: 14,
+                SHOW_LESS: 8,
+            };
+            for (const feedback of postFeedback) {
+                if (feedback.feedbackType === 'HIDE' || feedback.feedbackType === 'NOT_INTERESTED' || feedback.feedbackType === 'SHOW_LESS') {
+                    hiddenPostIds.push(feedback.postId);
+                }
+
+                const feedbackWeight = feedbackWeights[feedback.feedbackType] || 0;
+                if (feedbackWeight <= 0) continue;
+
+                for (const topic of getPostSignalTopics(feedback)) {
+                    negativeTopics[topic] = Math.min((negativeTopics[topic] || 0) + feedbackWeight, 100);
+                }
+            }
+
             const enrolledCourseTopics: string[] = [];
             const instructorIds: string[] = [];
             const courseTopicSet = new Set<string>();
@@ -1046,9 +1314,11 @@ export class FeedRanker {
                 userId,
                 schoolId: user?.schoolId ?? null,
                 topics,
+                negativeTopics,
                 topicDwellTime,
                 followingIds,
                 blockedUserIds,
+                hiddenPostIds: [...new Set(hiddenPostIds)],
                 authorAffinity,
                 enrolledCourseTopics,
                 academicLevel,
@@ -1090,46 +1360,13 @@ export class FeedRanker {
                 baseAnd.push({ id: { notIn: excludeIds } });
             }
 
+            if (signals.hiddenPostIds.length > 0) {
+                baseAnd.push({ id: { notIn: signals.hiddenPostIds } });
+            }
+
             if (mode === 'FOLLOWING') {
                 baseAnd.push({ authorId: { in: signals.followingIds } });
             }
-
-            const sharedInclude = {
-                author: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        profilePictureUrl: true,
-                        role: true,
-                        isVerified: true,
-                    },
-                },
-                pollOptions: {
-                    select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
-                },
-                quiz: {
-                    select: {
-                        id: true,
-                        questions: true,
-                        timeLimit: true,
-                        passingScore: true,
-                        totalPoints: true,
-                        resultsVisibility: true,
-                    },
-                },
-                postScore: true,
-                _count: {
-                    select: { likes: true, comments: true, views: true },
-                },
-                repostOf: {
-                    select: {
-                        id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true,
-                        createdAt: true, likesCount: true, commentsCount: true,
-                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
-                    },
-                },
-            };
 
             const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
             const recentWhere = { AND: [...baseAnd, { createdAt: { gte: since } }] };
@@ -1137,7 +1374,7 @@ export class FeedRanker {
             const [established, fresh] = await Promise.all([
                 this.readPrisma.post.findMany({
                     where: recentWhere,
-                    include: sharedInclude,
+                    select: FEED_CANDIDATE_POST_SELECT,
                     orderBy: [
                         { isPinned: 'desc' },
                         { trendingScore: 'desc' },
@@ -1145,12 +1382,17 @@ export class FeedRanker {
                     ],
                     take: 60,
                 }),
-                this.readPrisma.post.findMany({
-                    where: { AND: [...baseAnd, { createdAt: { gte: sixHoursAgo } }] },
-                    include: sharedInclude,
-                    orderBy: { createdAt: 'desc' },
-                    take: 20,
-                }),
+                this.withSoftTimeout(
+                    'fresh candidate pool',
+                    this.readPrisma.post.findMany({
+                        where: { AND: [...baseAnd, { createdAt: { gte: sixHoursAgo } }] },
+                        select: FEED_CANDIDATE_POST_SELECT,
+                        orderBy: { createdAt: 'desc' },
+                        take: 20,
+                    }),
+                    OPTIONAL_FEED_POOL_TIMEOUT_MS,
+                    [] as any[],
+                ),
             ]);
 
             const seen = new Set<string>(established.map(p => p.id));
@@ -1169,7 +1411,7 @@ export class FeedRanker {
 
                 const backfill = await this.readPrisma.post.findMany({
                     where: backfillWhere,
-                    include: sharedInclude,
+                    select: FEED_CANDIDATE_POST_SELECT,
                     orderBy: [
                         { isPinned: 'desc' },
                         { createdAt: 'desc' },
@@ -1185,11 +1427,11 @@ export class FeedRanker {
             return candidates;
         };
 
-        if (excludeIds.length > 0) {
+        if (excludeIds.length > 0 || signals.hiddenPostIds.length > 0) {
             return load();
         }
 
-        const cacheKey = `feedranker:candidates:${userId}:${mode}:${subject || 'ALL'}`;
+        const cacheKey = `feedranker:candidates:${userId}:v2:${mode}:${subject || 'ALL'}`;
         return this.getOrLoadCached(cacheKey, CANDIDATE_POOL_CACHE_TTL_SECONDS, load);
     }
 
@@ -1291,6 +1533,7 @@ export class FeedRanker {
     ): ScoredPost {
         const engagement = this.calcEngagement(post);
         const relevance = this.calcRelevance(post, signals);
+        const negativeFeedback = this.calcNegativeFeedback(post, signals);
         const quality = this.calcQuality(post);
         const recency = this.calcRecency(post);
         const socialProof = this.calcSocialProof(post, signals, circleSocialCounts);
@@ -1324,20 +1567,21 @@ export class FeedRanker {
             (peerLearning * weights.PEER_LEARNING) +
             (difficultyMatch * weights.DIFFICULTY_MATCH) +
             (velocityBonus * 0.05) + // Small but impactful velocity boost
+            -(negativeFeedback * 0.30) +
             pinBoost;
 
         return {
             post,
             score,
-            breakdown: { engagement, relevance, quality, recency, socialProof, learningContext, academicRelevance, teacherRelevance, peerLearning, difficultyMatch },
+            breakdown: { engagement, relevance, quality, recency, socialProof, learningContext, academicRelevance, teacherRelevance, peerLearning, difficultyMatch, negativeFeedback },
         };
     }
 
     // ─── Engagement Score (0-1) ────────────────────────────────────
     private calcEngagement(post: PostWithRelations): number {
-        const likes = post._count?.likes || post.likesCount || 0;
-        const comments = post._count?.comments || post.commentsCount || 0;
-        const views = post._count?.views || 0;
+        const likes = post.likesCount || post._count?.likes || 0;
+        const comments = post.commentsCount || post._count?.comments || 0;
+        const views = post.viewsCount || post._count?.views || 0;
         const shares = post.sharesCount || 0;
 
         // Weighted sum
@@ -1392,6 +1636,23 @@ export class FeedRanker {
         }
 
         return Math.min(topicScore + authorScore, 1.0);
+    }
+
+    // ─── Negative Feedback Score (0-1) ─────────────────────────────
+    // Learner-controlled signals such as "Not interested" should overpower
+    // passive popularity while still allowing explicit searches/subjects.
+    private calcNegativeFeedback(post: PostWithRelations, signals: UserSignals): number {
+        if (Object.keys(signals.negativeTopics).length === 0) return 0;
+
+        const topics = getPostSignalTopics(post);
+        if (topics.length === 0) return 0;
+
+        let penalty = 0;
+        for (const topic of topics) {
+            penalty += signals.negativeTopics[topic] || 0;
+        }
+
+        return Math.min(penalty / (topics.length * 100), 1.0);
     }
 
     // ─── Quality Score (0-1) ───────────────────────────────────────
@@ -1476,8 +1737,8 @@ export class FeedRanker {
         // Only calculate velocity for posts < 24 hours old
         if (ageHours > 24) return 0;
 
-        const likes = post._count?.likes || post.likesCount || 0;
-        const comments = post._count?.comments || post.commentsCount || 0;
+        const likes = post.likesCount || post._count?.likes || 0;
+        const comments = post.commentsCount || post._count?.comments || 0;
         const totalEngagement = likes + comments;
 
         if (totalEngagement === 0) return 0;
@@ -1623,6 +1884,9 @@ export class FeedRanker {
             where: { id: userId },
             select: { schoolId: true },
         });
+        const hiddenPostIds = (await this.getUserPostFeedback(userId))
+            .filter((feedback) => ['HIDE', 'NOT_INTERESTED', 'SHOW_LESS'].includes(feedback.feedbackType))
+            .map((feedback) => feedback.postId);
 
         const where: any = {
             AND: [
@@ -1634,6 +1898,9 @@ export class FeedRanker {
         };
         if (subject && subject !== 'ALL') {
             where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+        }
+        if (hiddenPostIds.length > 0) {
+            where.AND.push({ id: { notIn: [...new Set(hiddenPostIds)] } });
         }
 
         let cursorWhere: any = null;
@@ -1687,9 +1954,6 @@ export class FeedRanker {
                         resultsVisibility: true,
                     },
                 },
-                _count: {
-                    select: { likes: true, comments: true, views: true },
-                },
                 repostOf: {
                     select: {
                         id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true,
@@ -1727,6 +1991,7 @@ export class FeedRanker {
                     teacherRelevance: 0,
                     peerLearning: 0,
                     difficultyMatch: 0,
+                    negativeFeedback: 0,
                 },
             }));
 
@@ -1770,6 +2035,7 @@ export class FeedRanker {
                 teacherRelevance: 0,
                 peerLearning: 0,
                 difficultyMatch: 0,
+                negativeFeedback: 0,
             },
         }));
 
@@ -1794,7 +2060,7 @@ export class FeedRanker {
     async trackViewSignalsBatch(
         userId: string,
         views: { postId: string; duration?: number; source?: string; sampleRate?: number }[],
-        preloadedPosts?: { id: string; topicTags: string[] }[]
+        preloadedPosts?: { id: string; topicTags: string[]; postType?: PostType | string | null }[]
     ): Promise<void> {
         try {
             if (views.length === 0) return;
@@ -1804,10 +2070,10 @@ export class FeedRanker {
 
             const posts = preloadedPosts ?? await this.prisma.post.findMany({
                 where: { id: { in: postIds } },
-                select: { id: true, topicTags: true },
+                select: { id: true, topicTags: true, postType: true },
             });
 
-            const topicsByPostId = new Map(posts.map(post => [post.id, post.topicTags || []]));
+            const topicsByPostId = new Map(posts.map(post => [post.id, getPostSignalTopics(post)]));
             const topicAgg = new Map<string, { count: number; score: number; duration: number }>();
             const weight = ACTION_WEIGHTS.VIEW || 1;
 
@@ -1831,8 +2097,23 @@ export class FeedRanker {
 
             if (topicAgg.size === 0) return;
 
-            const ops = Array.from(topicAgg.entries()).map(([topicId, agg]) =>
-                this.prisma.userFeedSignal.upsert({
+            const topicIds = Array.from(topicAgg.keys());
+            const existingSignals = await this.prisma.userFeedSignal.findMany({
+                where: { userId, topicId: { in: topicIds } },
+                select: { topicId: true, viewCount: true, avgViewDuration: true },
+            });
+            const existingByTopic = new Map(existingSignals.map(signal => [signal.topicId, signal]));
+
+            const ops = Array.from(topicAgg.entries()).map(([topicId, agg]) => {
+                const existing = existingByTopic.get(topicId);
+                const existingViewCount = existing?.viewCount || 0;
+                const nextViewCount = existingViewCount + agg.count;
+                const previousDurationTotal = (existing?.avgViewDuration || 0) * existingViewCount;
+                const avgViewDuration = nextViewCount > 0
+                    ? (previousDurationTotal + agg.duration) / nextViewCount
+                    : agg.duration / agg.count;
+
+                return this.prisma.userFeedSignal.upsert({
                     where: {
                         userId_topicId: { userId, topicId },
                     },
@@ -1847,10 +2128,10 @@ export class FeedRanker {
                         score: { increment: agg.score },
                         viewCount: { increment: agg.count },
                         lastInteraction: new Date(),
-                        avgViewDuration: { increment: agg.duration * 0.1 },
+                        avgViewDuration,
                     },
-                })
-            );
+                });
+            });
 
             await this.prisma.$transaction(ops);
             await feedCache.invalidateUser(userId);
@@ -1870,18 +2151,31 @@ export class FeedRanker {
         try {
             const post = await this.prisma.post.findUnique({
                 where: { id: postId },
-                select: { topicTags: true },
+                select: { topicTags: true, postType: true },
             });
 
             if (!post) return;
 
-            const topics = ((post as any).topicTags as string[]) || [];
+            const topics = getPostSignalTopics(post);
             const weight = ACTION_WEIGHTS[action] || 1;
             const actionField = `${action.toLowerCase()}Count` as any;
+            const existingSignals = action === 'VIEW' && duration
+                ? await this.prisma.userFeedSignal.findMany({
+                    where: { userId, topicId: { in: topics } },
+                    select: { topicId: true, viewCount: true, avgViewDuration: true },
+                })
+                : [];
+            const existingByTopic = new Map(existingSignals.map(signal => [signal.topicId, signal]));
 
             // Batch all signal upserts + optional postView into a single transaction
             const ops = topics.map(topic => {
                 const key = topic.toLowerCase();
+                const existing = existingByTopic.get(key);
+                const existingViewCount = existing?.viewCount || 0;
+                const avgViewDuration = action === 'VIEW' && duration
+                    ? (((existing?.avgViewDuration || 0) * existingViewCount) + duration) / (existingViewCount + 1)
+                    : undefined;
+
                 return this.prisma.userFeedSignal.upsert({
                     where: {
                         userId_topicId: { userId, topicId: key },
@@ -1897,9 +2191,7 @@ export class FeedRanker {
                         score: { increment: weight },
                         [actionField]: { increment: 1 },
                         lastInteraction: new Date(),
-                        ...(action === 'VIEW' && duration ? {
-                            avgViewDuration: { increment: duration * 0.1 },
-                        } : {}),
+                        ...(avgViewDuration !== undefined ? { avgViewDuration } : {}),
                     },
                 });
             });
@@ -1915,6 +2207,10 @@ export class FeedRanker {
                         duration: duration ? Math.round(duration) : null,
                         source: source || 'feed',
                     },
+                }) as any);
+                ops.push(this.prisma.post.update({
+                    where: { id: postId },
+                    data: { viewsCount: { increment: 1 } },
                 }) as any);
             }
 
@@ -1941,7 +2237,10 @@ export class FeedRanker {
             },
             select: {
                 id: true,
+                likesCount: true,
+                commentsCount: true,
                 sharesCount: true,
+                viewsCount: true,
                 postType: true,
                 mediaUrls: true,
                 content: true,
@@ -1951,7 +2250,6 @@ export class FeedRanker {
                 author: {
                     select: { isVerified: true },
                 },
-                _count: { select: { likes: true, comments: true, views: true } },
             },
         });
 
@@ -1976,9 +2274,9 @@ export class FeedRanker {
 
         // Pre-compute all scores in memory after the aggregate quality read.
         const scored = posts.map(post => {
-            const likes = post._count.likes;
-            const comments = post._count.comments;
-            const views = post._count.views;
+            const likes = post.likesCount;
+            const comments = post.commentsCount;
+            const views = post.viewsCount;
             const shares = post.sharesCount;
             const educationalQuality = educationalQualityByPostId.get(post.id);
 

@@ -16,12 +16,17 @@ const ENGAGEMENT_SCORES = {
     SHARE: 7,
     BOOKMARK: 4,
     CLICK: 3,
+    NOT_INTERESTED: -8,
 };
+
+type RecommendationAction = 'VIEW' | 'LIKE' | 'COMMENT' | 'SHARE' | 'BOOKMARK' | 'NOT_INTERESTED';
 
 export interface UserInterestProfile {
     topics: Record<string, number>; // Topic -> Weight (0-100)
+    negativeTopics: Record<string, number>; // Topic -> Explicit downrank weight (0-100)
     following: string[];
     interactedPosts: string[];
+    hiddenPosts: string[];
 }
 
 // Mock User Profile for initial testing
@@ -33,8 +38,10 @@ export const INITIAL_USER_PROFILE: UserInterestProfile = {
         'History': 30,
         'Art': 30,
     },
+    negativeTopics: {},
     following: [],
     interactedPosts: [],
+    hiddenPosts: [],
 };
 
 class RecommendationEngine {
@@ -45,8 +52,26 @@ class RecommendationEngine {
     }
 
     // Update user profile based on actions
-    trackAction(action: 'VIEW' | 'LIKE' | 'COMMENT' | 'SHARE' | 'BOOKMARK', post: Post) {
+    trackAction(action: RecommendationAction, post: Post) {
         const weight = ENGAGEMENT_SCORES[action] || 1;
+        this.userProfile.negativeTopics ??= {};
+        this.userProfile.hiddenPosts ??= [];
+
+        if (action === 'NOT_INTERESTED') {
+            if (!this.userProfile.hiddenPosts.includes(post.id)) {
+                this.userProfile.hiddenPosts.push(post.id);
+            }
+            post.topicTags?.forEach(tag => {
+                const currentNegativeWeight = this.userProfile.negativeTopics[tag] || 0;
+                const currentPositiveWeight = this.userProfile.topics[tag] || 0;
+                this.userProfile.negativeTopics[tag] = Math.min(currentNegativeWeight + Math.abs(weight), 100);
+                this.userProfile.topics[tag] = Math.max(currentPositiveWeight + weight, 0);
+            });
+            if (!this.userProfile.interactedPosts.includes(post.id)) {
+                this.userProfile.interactedPosts.push(post.id);
+            }
+            return;
+        }
 
         // Boost topic weights
         if (post.topicTags) {
@@ -85,6 +110,12 @@ class RecommendationEngine {
             if (matches.length > 0) {
                 const avgWeight = matches.reduce((sum, tag) => sum + this.userProfile.topics[tag], 0) / matches.length;
                 score += avgWeight;
+            }
+
+            const negativeMatches = post.topicTags.filter(tag => this.userProfile.negativeTopics?.[tag]);
+            if (negativeMatches.length > 0) {
+                const avgNegativeWeight = negativeMatches.reduce((sum, tag) => sum + this.userProfile.negativeTopics[tag], 0) / negativeMatches.length;
+                score -= avgNegativeWeight * 0.4;
             }
         }
 
@@ -151,7 +182,8 @@ class RecommendationEngine {
 
     // Feed Generation
     generateFeed(posts: Post[]): Post[] {
-        const scoredPosts = posts.map(post => {
+        const hiddenPosts = new Set(this.userProfile.hiddenPosts ?? []);
+        const scoredPosts = posts.filter(post => !hiddenPosts.has(post.id)).map(post => {
             const scoreData = this.calculateScore(post);
             return { ...post, score: scoreData.total, scoreBreakdown: scoreData.breakdown };
         });

@@ -55,6 +55,7 @@ interface PostCardProps {
   onShare?: () => void;
   onRepost?: () => void;
   onBookmark?: () => void;
+  onNotInterested?: () => void;
   onValue?: () => void;  // Educational value rating
   isValued?: boolean;     // Whether current user has already rated this post
   onUserPress?: () => void;
@@ -150,11 +151,14 @@ interface ActionBarProps {
   valued: boolean;
   commentCount: number;
   shareCount: number;
+  viewCount: number;
   onLike: () => void;
   onComment: () => void;
   onRepost: () => void;
   onShare: () => void;
   onValue: () => void;
+  onViewStats?: () => void;
+  canOpenStats?: boolean;
   styles: any;
   colors: any;
   isDark: boolean;
@@ -269,9 +273,33 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
   );
 });
 
+const ViewStatsIndicator = React.memo<{
+  count: number;
+  onPress?: () => void;
+  disabled?: boolean;
+  styles: any;
+  colors: any;
+}>(({ count, onPress, disabled = true, styles, colors }) => (
+  <Pressable
+    onPress={disabled ? undefined : onPress}
+    disabled={disabled}
+    hitSlop={8}
+    accessibilityRole={disabled ? undefined : 'button'}
+    accessibilityLabel={`${formatNumber(count)} post views`}
+    style={styles.viewStatPressable}
+  >
+    <View style={styles.viewStatInner}>
+      <Ionicons name="stats-chart" size={18} color="#0D9488" />
+      <Text style={[styles.viewStatText, { color: colors.textSecondary }]}>
+        {formatNumber(count)}
+      </Text>
+    </View>
+  </Pressable>
+));
+
 const ActionBar = React.memo<ActionBarProps>(({
-  liked, likeCount, valued, commentCount, shareCount,
-  onLike, onComment, onRepost, onShare, onValue,
+  liked, likeCount, valued, commentCount, shareCount, viewCount,
+  onLike, onComment, onRepost, onShare, onValue, onViewStats, canOpenStats,
   styles, colors,
 }) => (
   <View style={styles.actionBar}>
@@ -316,16 +344,25 @@ const ActionBar = React.memo<ActionBarProps>(({
         accessibilityLabel="Share post"
       />
     </View>
-    <AnimatedActionButton
-      icon="diamond-outline"
-      activeIcon="diamond"
-      active={valued}
-      color={colors.text}
-      activeColor="#8B5CF6"
-      onPress={onValue}
-      styles={styles}
-      accessibilityLabel="Rate educational value"
-    />
+    <View style={styles.actionBarRight}>
+      <ViewStatsIndicator
+        count={viewCount}
+        onPress={onViewStats}
+        disabled={!canOpenStats}
+        styles={styles}
+        colors={colors}
+      />
+      <AnimatedActionButton
+        icon="diamond-outline"
+        activeIcon="diamond"
+        active={valued}
+        color={colors.text}
+        activeColor="#8B5CF6"
+        onPress={onValue}
+        styles={styles}
+        accessibilityLabel="Rate educational value"
+      />
+    </View>
   </View>
 ));
 
@@ -368,6 +405,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   onShare,
   onRepost,
   onBookmark,
+  onNotInterested,
   onValue,
   isValued: isValuedProp = false,
   onUserPress,
@@ -438,6 +476,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
     setShowMenu(false);
     onBookmark?.();
   }, [bookmarked, onBookmark]);
+
+  const handleNotInterested = useCallback(() => {
+    setTimeout(() => Haptics.selectionAsync(), 0);
+    setShowMenu(false);
+    onNotInterested?.();
+  }, [onNotInterested]);
 
   const handleComment = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
@@ -608,6 +652,19 @@ const PostCardInner: React.FC<PostCardProps> = ({
         label: bookmarked ? t('settings.bookmarks') : t('common.save'),
         onPress: handleBookmark,
       },
+    );
+
+    if (!isCurrentUser) {
+      actions.push({
+        key: 'not-interested',
+        icon: 'eye-off-outline',
+        color: '#F97316',
+        label: t('feed.actions.notInterested', 'Not interested'),
+        onPress: handleNotInterested,
+      });
+    }
+
+    actions.push(
       {
         key: 'report',
         icon: 'flag-outline',
@@ -642,6 +699,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     bookmarked,
     colors.text,
     handleBookmark,
+    handleNotInterested,
     post.id,
   ]);
 
@@ -704,11 +762,14 @@ const PostCardInner: React.FC<PostCardProps> = ({
         valued={valued}
         commentCount={post.comments}
         shareCount={post.shares}
+        viewCount={post.views || 0}
         onLike={handleLike}
         onComment={handleComment}
         onRepost={handleRepost}
         onShare={handleShare}
         onValue={handleValue}
+        onViewStats={handleViewAnalytics}
+        canOpenStats={isCurrentUser && Boolean(onViewAnalytics)}
         styles={styles}
         colors={colors}
         isDark={isDark}
@@ -744,6 +805,7 @@ function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolea
     prev.post.comments === next.post.comments &&
     prev.post.isBookmarked === next.post.isBookmarked &&
     prev.post.shares === next.post.shares &&
+    prev.post.views === next.post.views &&
     prev.post.userVotedOptionId === next.post.userVotedOptionId &&
     prev.post.updatedAt === next.post.updatedAt &&
     prev.post.content === next.post.content &&
@@ -1195,6 +1257,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
+  actionBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   actionPressable: {
     minWidth: 34,
     minHeight: 34,
@@ -1220,6 +1287,24 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
+  },
+  viewStatPressable: {
+    minWidth: 34,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewStatInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 2,
+    paddingVertical: 5,
+  },
+  viewStatText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   pollSection: {
     paddingHorizontal: 16,
@@ -1392,6 +1477,7 @@ export default React.memo(PostCard, (prevProps, nextProps) => {
     prevProps.post.likes === nextProps.post.likes &&
     prevProps.post.comments === nextProps.post.comments &&
     prevProps.post.shares === nextProps.post.shares &&
+    prevProps.post.views === nextProps.post.views &&
     prevProps.post.isLiked === nextProps.post.isLiked &&
     prevProps.post.isBookmarked === nextProps.post.isBookmarked &&
     prevProps.post.content === nextProps.post.content && // for edits

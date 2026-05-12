@@ -16,6 +16,12 @@ import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from '../utils/v
 
 const router = Router();
 const EDUCATIONAL_VALUE_DIFFICULTIES = new Set(['too_easy', 'just_right', 'too_hard']);
+const FEED_FEEDBACK_TYPES = new Set(['HIDE', 'NOT_INTERESTED', 'SHOW_LESS']);
+const FEED_FEEDBACK_TOPIC_PENALTY: Record<string, number> = {
+  HIDE: 18,
+  NOT_INTERESTED: 14,
+  SHOW_LESS: 8,
+};
 
 const normalizeRating = (value: unknown): number | null => {
   const rating = Number(value);
@@ -26,6 +32,36 @@ const normalizeDifficulty = (value: unknown): string | null => {
   if (typeof value !== 'string') return null;
   return EDUCATIONAL_VALUE_DIFFICULTIES.has(value) ? value : null;
 };
+
+const normalizeFeedFeedbackType = (value: unknown): 'HIDE' | 'NOT_INTERESTED' | 'SHOW_LESS' => {
+  if (typeof value !== 'string') return 'NOT_INTERESTED';
+  const normalized = value.trim().toUpperCase();
+  return FEED_FEEDBACK_TYPES.has(normalized)
+    ? (normalized as 'HIDE' | 'NOT_INTERESTED' | 'SHOW_LESS')
+    : 'NOT_INTERESTED';
+};
+
+const normalizeOptionalText = (value: unknown, maxLength: number): string | null => {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  if (!text) return null;
+  return text.slice(0, maxLength);
+};
+
+const getFeedbackSignalTopics = (post: { topicTags?: string[] | null; postType?: string | null }): string[] => {
+  const topics = new Set<string>();
+  for (const tag of post.topicTags ?? []) {
+    const normalized = tag?.trim().toLowerCase();
+    if (normalized) topics.add(normalized);
+  }
+  const postType = post.postType?.trim().toLowerCase();
+  if (postType) topics.add(postType);
+  return [...topics];
+};
+
+const isMissingFeedbackTableError = (error: any): boolean => (
+  error?.code === 'P2010' && String(error?.meta?.code || '').toUpperCase() === '42P01'
+) || String(error?.message || '').includes('user_post_feedback');
 
 const runAfterResponse = (label: string, task: () => Promise<void> | void): void => {
   setImmediate(() => {
@@ -248,6 +284,7 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
         isLikedByMe: false,
         likesCount: 0,
         commentsCount: 0,
+        viewsCount: 0,
       },
     });
 
@@ -306,11 +343,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       likesCount: true,
       commentsCount: true,
       sharesCount: true,
-      _count: {
-        select: {
-          views: true,
-        },
-      },
+      viewsCount: true,
       isPinned: true,
       isEdited: true,
       createdAt: true,
@@ -427,7 +460,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       likes?: { id: string }[];
       bookmarks?: { id: string }[];
       educationalValueRatings?: { id: string }[];
-      _count?: { views?: number };
+      viewsCount?: number;
     };
     const isLikedByMe = (postWithState.likes?.length || 0) > 0;
     const isBookmarked = (postWithState.bookmarks?.length || 0) > 0;
@@ -466,7 +499,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         isValuedByMe,
         likesCount: post.likesCount ?? 0,
         commentsCount: post.commentsCount ?? 0,
-        viewsCount: postWithState._count?.views ?? 0,
+        viewsCount: postWithState.viewsCount ?? 0,
         ...(post.postType === 'POLL' && { userVotedOptionId }),
       },
     });
@@ -1397,6 +1430,105 @@ router.post('/posts/:id/bookmark', authenticateToken, async (req: AuthRequest, r
   } catch (error: any) {
     console.error('Bookmark error:', error);
     res.status(500).json({ success: false, error: 'Failed to bookmark post' });
+  }
+});
+
+// POST /posts/:id/feedback - Personal feed feedback (hide/show less/not interested)
+router.post('/posts/:id/feedback', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+    const feedbackType = normalizeFeedFeedbackType(req.body?.feedbackType);
+    const reason = normalizeOptionalText(req.body?.reason, 100);
+    const details = normalizeOptionalText(req.body?.details, 1000);
+
+    const targetPost = await findAccessiblePost(postId, req, {
+      id: true,
+      authorId: true,
+      topicTags: true,
+      postType: true,
+    });
+
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    if (targetPost.authorId === userId) {
+      return res.status(400).json({ success: false, error: 'Cannot apply feed feedback to your own post' });
+    }
+
+    let persisted = true;
+    try {
+      await prisma.$executeRaw`
+        INSERT INTO "user_post_feedback" (
+          "id",
+          "userId",
+          "postId",
+          "feedbackType",
+          "reason",
+          "details",
+          "createdAt",
+          "updatedAt"
+        )
+        VALUES (
+          md5(random()::text || clock_timestamp()::text),
+          ${userId},
+          ${targetPost.id},
+          ${feedbackType},
+          ${reason},
+          ${details},
+          NOW(),
+          NOW()
+        )
+        ON CONFLICT ("userId", "postId", "feedbackType")
+        DO UPDATE SET
+          "reason" = EXCLUDED."reason",
+          "details" = EXCLUDED."details",
+          "updatedAt" = NOW()
+      `;
+    } catch (error: any) {
+      if (!isMissingFeedbackTableError(error)) throw error;
+      persisted = false;
+      console.warn('[post-actions] user_post_feedback table unavailable; applying feed signal fallback only');
+    }
+
+    const topics = getFeedbackSignalTopics(targetPost as { topicTags?: string[] | null; postType?: string | null });
+    const penalty = FEED_FEEDBACK_TOPIC_PENALTY[feedbackType] || FEED_FEEDBACK_TOPIC_PENALTY.SHOW_LESS;
+    if (topics.length > 0) {
+      await prisma.$transaction(
+        topics.map(topic =>
+          prisma.userFeedSignal.upsert({
+            where: {
+              userId_topicId: { userId, topicId: topic },
+            },
+            create: {
+              userId,
+              topicId: topic,
+              score: -penalty,
+              lastInteraction: new Date(),
+            },
+            update: {
+              score: { decrement: penalty },
+              lastInteraction: new Date(),
+            },
+          })
+        )
+      );
+    }
+
+    runAfterResponse('feed feedback cache invalidation', async () => {
+      await feedCache.invalidateUser(userId);
+    });
+
+    res.json({
+      success: true,
+      feedbackType,
+      hidden: true,
+      persisted,
+    });
+  } catch (error: any) {
+    console.error('Feed feedback error:', error);
+    res.status(500).json({ success: false, error: 'Failed to save feed feedback' });
   }
 });
 

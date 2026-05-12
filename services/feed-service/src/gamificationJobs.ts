@@ -103,7 +103,7 @@ async function updateUserAcademicProfiles(prisma: PrismaClient) {
         try {
             // Get their 20 most recent scores
             const userScores = await prisma.quizAttempt.findMany({
-                where: { userId, submittedAt: { not: null } },
+                where: { userId },
                 select: { score: true, quiz: { select: { totalPoints: true, post: { select: { topicTags: true } } } } },
                 take: 20,
                 orderBy: { submittedAt: 'desc' },

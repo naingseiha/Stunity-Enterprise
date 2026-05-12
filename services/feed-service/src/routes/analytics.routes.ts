@@ -10,6 +10,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { updateUserFeedSignals } from './signals.routes';
+import { resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 
 const router = Router();
 
@@ -27,17 +28,19 @@ router.post('/posts/views/batch', authenticateToken, async (req: AuthRequest, re
       return res.status(400).json({ success: false, error: 'postIds must be a non-empty array' });
     }
 
+    const distinctPostIds = [...new Set(postIds.filter(Boolean))];
+
     // Check recent views for all posts
     const recentViews = await prisma.postView.findMany({
       where: {
-        postId: { in: postIds },
+        postId: { in: distinctPostIds },
         userId,
         viewedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
       },
     });
 
     const recentPostIds = new Set(recentViews.map(v => v.postId));
-    const newPostIds = postIds.filter(id => !recentPostIds.has(id));
+    const newPostIds = distinctPostIds.filter(id => !recentPostIds.has(id));
 
     if (newPostIds.length > 0) {
       await prisma.postView.createMany({
@@ -47,6 +50,10 @@ router.post('/posts/views/batch', authenticateToken, async (req: AuthRequest, re
           source: source || 'feed',
         })),
         skipDuplicates: true,
+      });
+      await prisma.post.updateMany({
+        where: { id: { in: [...new Set(newPostIds)] } },
+        data: { viewsCount: { increment: 1 } },
       });
 
       // Update feed signals for personalization
@@ -81,14 +88,20 @@ router.post('/posts/:id/view', authenticateToken, async (req: AuthRequest, res: 
     });
 
     if (!recentView) {
-      await prisma.postView.create({
-        data: {
-          postId,
-          userId,
-          duration: duration || null,
-          source: source || 'feed',
-        },
-      });
+      await prisma.$transaction([
+        prisma.postView.create({
+          data: {
+            postId,
+            userId,
+            duration: duration || null,
+            source: source || 'feed',
+          },
+        }),
+        prisma.post.update({
+          where: { id: postId },
+          data: { viewsCount: { increment: 1 } },
+        }),
+      ]);
     } else if (duration) {
       // Update duration if provided
       await prisma.postView.update({
@@ -121,7 +134,7 @@ router.get('/posts/:id/analytics', authenticateToken, async (req: AuthRequest, r
     // Verify post exists and user is authorized — fetch only scalar fields
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { authorId: true, sharesCount: true, createdAt: true, _count: { select: { likes: true, comments: true, bookmarks: true, views: true } } },
+      select: { authorId: true, sharesCount: true, viewsCount: true, createdAt: true, _count: { select: { likes: true, comments: true, bookmarks: true } } },
     });
 
     if (!post) {
@@ -166,7 +179,7 @@ router.get('/posts/:id/analytics', authenticateToken, async (req: AuthRequest, r
       `,
     ]);
 
-    const totalViews = post._count.views;
+    const totalViews = post.viewsCount ?? 0;
     const avgDuration = Math.round(avgDurationResult._avg.duration || 0);
     const engagementRate = totalViews > 0
       ? parseFloat(((post._count.likes + post._count.comments + post._count.bookmarks) / totalViews * 100).toFixed(2))
@@ -306,37 +319,50 @@ router.get('/analytics/trending', authenticateToken, async (req: AuthRequest, re
       default: since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     }
 
-    // Get posts with engagement data
-    const posts = await prisma.post.findMany({
-      where: {
-        createdAt: { gte: since },
-        visibility: { in: ['PUBLIC', 'SCHOOL'] },
-      },
-      include: {
-        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
-        views: { where: { viewedAt: { gte: since } } },
-        likes: true,
-        comments: true,
-        _count: { select: { views: true, likes: true, comments: true } },
-      },
+    // Use the same visibility rules as the main feed so school-only content
+    // trends inside the right audience, not globally.
+    const visibilityWhere = await resolveFeedVisibilityWhere(prismaRead, {
+      userId: req.user!.id,
+      schoolId: req.user!.schoolId,
     });
 
-    // Calculate trending score: views + (likes * 3) + (comments * 5) + (shares * 2)
+    // Use denormalized counters so trending stays cheap at large scale.
+    const posts = await prisma.post.findMany({
+      where: {
+        AND: [
+          visibilityWhere,
+          { createdAt: { gte: since } },
+        ],
+      },
+      select: {
+        id: true,
+        content: true,
+        postType: true,
+        sharesCount: true,
+        viewsCount: true,
+        likesCount: true,
+        commentsCount: true,
+        trendingScore: true,
+        createdAt: true,
+        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
+      },
+      orderBy: { trendingScore: 'desc' },
+      take: Math.min(Math.max(Number(limit) || 10, 1), 50),
+    });
+
     const trendingPosts = posts
       .map(p => ({
         id: p.id,
         content: p.content.substring(0, 150),
         postType: p.postType,
         author: p.author,
-        views: p._count.views,
-        likes: p._count.likes,
-        comments: p._count.comments,
+        views: p.viewsCount,
+        likes: p.likesCount,
+        comments: p.commentsCount,
         shares: p.sharesCount,
-        trendingScore: p._count.views + (p._count.likes * 3) + (p._count.comments * 5) + (p.sharesCount * 2),
+        trendingScore: p.trendingScore,
         createdAt: p.createdAt,
-      }))
-      .sort((a, b) => b.trendingScore - a.trendingScore)
-      .slice(0, Number(limit));
+      }));
 
     res.json({
       success: true,

@@ -690,6 +690,7 @@ model User {
   pollVotes                   PollVote[]                   @relation("PollVotes")
   reportedPosts               PostReport[]                 @relation("PostReporter")
   reviewedReports             PostReport[]                 @relation("ReportReviewer")
+  postFeedback                 UserPostFeedback[]
   postViews                   PostView[]
   posts                       Post[]
   projects                    Project[]
@@ -771,6 +772,7 @@ model Post {
   likesCount               Int            @default(0)
   commentsCount            Int            @default(0)
   sharesCount              Int            @default(0)
+  viewsCount               Int            @default(0)
   isEdited                 Boolean        @default(false)
   isPinned                 Boolean        @default(false)
   createdAt                DateTime       @default(now())
@@ -818,6 +820,7 @@ model Post {
   pollOptions              PollOption[]
   postScore                PostScore?
   views                    PostView[]
+  userFeedback             UserPostFeedback[]
   educationalValueRatings  EducationalValueRating[]
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   repostOf                 Post?          @relation("Reposts", fields: [repostOfId], references: [id])
@@ -830,14 +833,18 @@ model Post {
   @@index([postType, createdAt(sort: Desc)])
   @@index([visibility, createdAt(sort: Desc)])
   @@index([trendingScore(sort: Desc)])
+  @@index([trendingScore(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "posts_trending_created_id_idx")
   @@index([pollExpiresAt])
   @@index([studyClubId])
   @@index([schoolId, visibility, isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
+  @@index([schoolId, visibility, trendingScore(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "posts_school_visibility_trending_created_id_idx")
   @@index([isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
+  @@index([visibility, trendingScore(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "posts_visibility_trending_created_id_idx")
   @@index([authorId, postType, createdAt(sort: Desc)])
   @@index([authorId, visibility, createdAt(sort: Desc)])
+  @@index([authorId, isPinned(sort: Desc), trendingScore(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "posts_author_pinned_trending_created_id_idx")
   @@index([authorId, repostOfId])
   @@index([studyClubId, createdAt(sort: Desc)])
   @@map("posts")
@@ -875,6 +882,7 @@ model Like {
 
   @@unique([postId, userId])
   @@index([userId])
+  @@index([userId, postId], map: "likes_user_post_idx")
   @@index([postId])
   @@map("likes")
 }
@@ -889,6 +897,7 @@ model Bookmark {
 
   @@unique([postId, userId])
   @@index([userId])
+  @@index([userId, postId], map: "bookmarks_user_post_idx")
   @@index([userId, createdAt(sort: Desc)])
   @@map("bookmarks")
 }
@@ -1004,6 +1013,7 @@ model PollVote {
   @@index([userId])
   @@index([optionId])
   @@index([postId, userId])
+  @@index([userId, postId], map: "poll_votes_user_post_idx")
   @@map("poll_votes")
 }
 
@@ -1278,6 +1288,24 @@ model PostReport {
   @@map("post_reports")
 }
 
+model UserPostFeedback {
+  id           String   @id @default(cuid())
+  userId       String
+  postId       String
+  feedbackType String
+  reason       String?
+  details      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, feedbackType])
+  @@index([userId, feedbackType, createdAt])
+  @@index([postId])
+  @@map("user_post_feedback")
+}
+
 model UserBlock {
   id        String   @id @default(cuid())
   blockerId String
@@ -1307,6 +1335,7 @@ model PostView {
   @@index([userId])
   @@index([viewedAt])
   @@index([postId, userId])
+  @@index([userId, postId, viewedAt(sort: Desc)], map: "post_views_user_post_viewed_idx")
   @@index([postId, viewedAt(sort: Desc)])
   @@map("post_views")
 }

@@ -41,10 +41,11 @@ const FEED_RETRY_TIMEOUT_MS = 25_000;
 const FEED_NEXT_PAGE_TIMEOUT_MS = 12_000;
 const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
 const MAX_INITIAL_FEED_RETRIES = 2;
-const PERSONALIZED_FEED_PAGE_SIZE = 12;
-const MAX_FEED_ITEMS_IN_MEMORY = 600;
+const PERSONALIZED_FEED_PAGE_SIZE = 18;
+const MAX_FEED_ITEMS_IN_MEMORY = 900;
 let initialFeedRetryAttempts = 0;
 let initialFeedRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let feedWarmPageTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Realtime fallback: if Supabase channel is subscribed but not delivering events,
 // poll RECENT feed periodically so users still receive "New posts" updates.
@@ -106,8 +107,7 @@ async function flushViewBuffer() {
   } catch {
     // Fallback: fire individual requests if bulk endpoint not available
     for (const view of views) {
-      feedApi.post(`/posts/${view.postId}/view`, { source: view.source }).catch(() => { });
-      feedApi.post('/feed/track-action', { action: 'VIEW', postId: view.postId, duration: view.duration, source: view.source }).catch(() => { });
+      feedApi.post(`/posts/${view.postId}/view`, { duration: view.duration, source: view.source }).catch(() => { });
     }
   }
 }
@@ -190,6 +190,7 @@ interface FeedState {
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
+  notInterestedPost: (postId: string) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
 
   // Comments actions
@@ -317,6 +318,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
 
     const page = refresh ? 1 : postsPage;
+
+    if (refresh && feedWarmPageTimer) {
+      clearTimeout(feedWarmPageTimer);
+      feedWarmPageTimer = null;
+    }
 
     set({ isLoadingPosts: true });
 
@@ -511,6 +517,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         if (page === 1 && optimizedPostsOnly.length > 0) {
           initialFeedRetryAttempts = 0;
           cacheFeedPosts(optimizedPostsOnly, authState.user.id).catch(() => { });
+        }
+
+        // Warm page 2 after first paint. This gives the list a loaded buffer before
+        // the user reaches the end, similar to large social feeds, without blocking
+        // the initial render or competing with gestures.
+        if (page === 1 && hasMore && newCursor && !feedWarmPageTimer) {
+          const warmSubject = subject;
+          const warmCursor = newCursor;
+          feedWarmPageTimer = setTimeout(() => {
+            feedWarmPageTimer = null;
+            InteractionManager.runAfterInteractions(() => {
+              const latest = get();
+              if (
+                latest.hasMorePosts &&
+                !latest.isLoadingPosts &&
+                latest.nextCursor === warmCursor &&
+                latest.feedItems.length <= optimizedFeedItems.length + 4
+              ) {
+                latest.fetchPosts(false, warmSubject).catch(() => { });
+              }
+            });
+          }, 450);
         }
 
         // ── Client-side suggestion carousel fallback ──────────────────────────
@@ -972,8 +1000,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     try {
       await feedApi.post(`/posts/${postId}/like`);
-      // Track for server-side feed algorithm (fire-and-forget)
-      feedApi.post('/feed/track-action', { action: 'LIKE', postId, source: 'feed' }).catch(() => { });
     } catch (error) {
       // Revert on error
       set((state) => ({
@@ -1036,10 +1062,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     try {
       // Backend uses POST for toggle (handles both bookmark and unbookmark)
       await feedApi.post(`/posts/${postId}/bookmark`);
-      // Track for server-side feed algorithm (only on bookmark, not unbookmark)
-      if (!wasBookmarked) {
-        feedApi.post('/feed/track-action', { action: 'BOOKMARK', postId, source: 'feed' }).catch(() => { });
-      }
     } catch (error) {
       // Revert on error
       set((state) => ({
@@ -1047,6 +1069,30 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, isBookmarked: wasBookmarked } } : item
         ),
       }));
+    }
+  },
+
+  // Hide a post and teach the ranking model to show less similar content
+  notInterestedPost: async (postId) => {
+    const { feedItems: previousFeedItems, pendingPosts: previousPendingPosts } = get();
+    const postItem = previousFeedItems.find(i => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    if (!postItem) return;
+
+    set((state) => ({
+      feedItems: state.feedItems.filter((i) => !(i.type === 'POST' && i.data.id === postId)),
+      pendingPosts: state.pendingPosts.filter((p) => p.id !== postId),
+    }));
+
+    try {
+      await feedApi.post(`/posts/${postId}/feedback`, {
+        feedbackType: 'NOT_INTERESTED',
+        source: 'feed',
+      });
+      recommendationEngine.trackAction('NOT_INTERESTED', postItem.data);
+      set({ userInterestProfile: recommendationEngine.getUserProfile() });
+    } catch (error) {
+      console.error('Failed to save feed feedback:', error);
+      set({ feedItems: previousFeedItems, pendingPosts: previousPendingPosts });
     }
   },
 
@@ -1539,8 +1585,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         ),
       }));
 
-      // Track for server-side feed algorithm (fire-and-forget)
-      feedApi.post('/feed/track-action', { action: 'SHARE', postId, source: 'feed' }).catch(() => { });
+      // The share endpoint updates ranking signals server-side.
     } catch (error) {
       console.error('Failed to track share:', error);
     }

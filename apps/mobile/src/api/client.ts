@@ -77,6 +77,15 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         _queuedForRetry?: boolean;
       };
 
+      // Request cancellation is an intentional control flow path for fast search,
+      // screen transitions, and stale request cleanup. Keep it out of the redbox.
+      if (error.code === 'ERR_CANCELED' || axios.isCancel(error)) {
+        if (originalRequest) {
+          finishApiTiming(originalRequest, 'CANCELED');
+        }
+        return Promise.reject(error);
+      }
+
       // Handle network errors - Queue for retry when network reconnects
       if (error.code === 'ERR_NETWORK' && !originalRequest._queuedForRetry) {
         const isOnline = networkService.getStatus();

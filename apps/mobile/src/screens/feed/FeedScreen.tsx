@@ -319,6 +319,7 @@ export default function FeedScreen() {
   const likePost = useFeedStore(s => s.likePost);
   const unlikePost = useFeedStore(s => s.unlikePost);
   const bookmarkPost = useFeedStore(s => s.bookmarkPost);
+  const notInterestedPost = useFeedStore(s => s.notInterestedPost);
   const voteOnPoll = useFeedStore(s => s.voteOnPoll);
   const sharePost = useFeedStore(s => s.sharePost);
   const trackPostView = useFeedStore(s => s.trackPostView);
@@ -405,7 +406,7 @@ export default function FeedScreen() {
   // Stable key extractor for FlatList
   const keyExtractor = useCallback((item: FeedItem, index: number) => {
     if (item?.type === 'POST') return item.data?.id || `post-${index}`;
-    if (item?.type) return `${item.type}-${index}`;
+    if (item?.type) return item.type;
     return `item-${index}`;
   }, []);
 
@@ -795,13 +796,13 @@ export default function FeedScreen() {
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
     handleLikePost, handleSharePost, handleValuePost, handlePostPress,
-    handleVoteOnPoll, bookmarkPost, navigation,
+    handleVoteOnPoll, bookmarkPost, notInterestedPost, navigation,
   });
   // Update ref on every render so callbacks are fresh but identity is stable
   useEffect(() => {
     handlersRef.current = {
       handleLikePost, handleSharePost, handleValuePost, handlePostPress,
-      handleVoteOnPoll, bookmarkPost, navigation,
+      handleVoteOnPoll, bookmarkPost, notInterestedPost, navigation,
     };
   });
 
