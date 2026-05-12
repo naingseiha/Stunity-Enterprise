@@ -382,9 +382,19 @@ export default function ProfileScreen() {
 
       try {
         setProfileInsightsLoading(isOwnProfile);
-        const visitorsPreviewPromise = isOwnProfile
-          ? fetchProfileVisitorsPreview("me").catch(() => [])
-          : Promise.resolve([]);
+        // Resolve visitors as soon as the preview returns — do not defer the
+        // handler until after profile fetch; that made the card wait for the
+        // slower of the two even when the preview was already done.
+        if (isOwnProfile) {
+          void fetchProfileVisitorsPreview("me")
+            .catch(() => [] as ProfileVisitor[])
+            .then((visitors) => {
+              if (requestId !== requestIdRef.current) return;
+              setRecentProfileVisitors(visitors);
+              setProfileInsightsLoading(false);
+            });
+        }
+
         const profileData = await apiFetchProfile(targetId);
 
         if (requestId !== requestIdRef.current) {
@@ -396,14 +406,9 @@ export default function ProfileScreen() {
         setIsFollowing(profileData.isFollowing || false);
         setLoading(false);
 
-        visitorsPreviewPromise.then((visitors) => {
-          if (requestId !== requestIdRef.current) {
-            return;
-          }
-
-          setRecentProfileVisitors(visitors);
+        if (!isOwnProfile) {
           setProfileInsightsLoading(false);
-        });
+        }
 
         interactionTaskRef.current?.cancel();
         interactionTaskRef.current = InteractionManager.runAfterInteractions(

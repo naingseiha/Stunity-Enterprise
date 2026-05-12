@@ -81,7 +81,7 @@ async function getRecentProfileVisitors(
     viewerFilter.notIn = excludeIds;
   }
 
-  const recentViews = await prisma.profileView.findMany({
+  const recentViews = await prismaRead.profileView.findMany({
     where: {
       profileUserId,
       viewerId: viewerFilter,
@@ -118,7 +118,7 @@ async function getRecentProfileVisitors(
   }
 
   const [users, viewCounts] = await Promise.all([
-    prisma.user.findMany({
+    prismaRead.user.findMany({
       where: { id: { in: viewerIds }, isActive: true },
       select: {
         id: true,
@@ -130,7 +130,7 @@ async function getRecentProfileVisitors(
         professionalTitle: true,
       },
     }),
-    prisma.profileView.groupBy({
+    prismaRead.profileView.groupBy({
       by: ["viewerId"],
       where: {
         profileUserId,

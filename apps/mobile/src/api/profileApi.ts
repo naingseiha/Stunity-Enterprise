@@ -131,7 +131,11 @@ export async function fetchProfileVisitorsPreview(userId: string = "me") {
   const { data } = await feedApi.get<{
     success: boolean;
     visitors: ProfileVisitor[];
-  }>(`/users/${userId}/profile/visitors/preview`);
+  }>(`/users/${userId}/profile/visitors/preview`, {
+    // Small payload — avoid sharing the global 120s AI-oriented timeout.
+    timeout: 15_000,
+    headers: { "X-No-Retry": "true" },
+  });
   return data.visitors || [];
 }
 

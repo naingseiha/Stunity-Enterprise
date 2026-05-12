@@ -22,20 +22,30 @@ import {
     ActivityIndicator,
     Keyboard,
     Platform,
-    Animated,
     ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { BlurView } from 'expo-blur';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+    FadeIn,
+    FadeInDown,
+    Layout,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
+} from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import { Haptics } from '@/services/haptics';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Avatar } from '@/components/common';
 import { useThemeContext } from '@/contexts';
+import { ColorScale } from '@/config/theme';
 import { feedApi } from '@/api/client';
 import { Post, PostType } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
@@ -65,14 +75,14 @@ type SearchCacheEntry = {
 };
 
 const POST_FILTERS: Array<{ key: PostFilter; label: string; icon: IoniconName; color: string; bg: string }> = [
-    { key: 'ALL', label: 'All', icon: 'sparkles-outline', color: '#0F766E', bg: '#CCFBF1' },
-    { key: 'COURSE', label: 'Courses', icon: 'school-outline', color: '#2563EB', bg: '#DBEAFE' },
-    { key: 'QUIZ', label: 'Quizzes', icon: 'flash-outline', color: '#B45309', bg: '#FEF3C7' },
-    { key: 'QUESTION', label: 'Questions', icon: 'help-circle-outline', color: '#BE123C', bg: '#FFE4E6' },
-    { key: 'RESOURCE', label: 'Resources', icon: 'library-outline', color: '#047857', bg: '#D1FAE5' },
-    { key: 'TUTORIAL', label: 'Tutorials', icon: 'play-circle-outline', color: '#7C2D12', bg: '#FFEDD5' },
-    { key: 'RESEARCH', label: 'Research', icon: 'flask-outline', color: '#6D28D9', bg: '#EDE9FE' },
-    { key: 'PROJECT', label: 'Projects', icon: 'construct-outline', color: '#0369A1', bg: '#E0F2FE' },
+    { key: 'ALL', label: 'All', icon: 'sparkles-outline', color: ColorScale.primary[700], bg: ColorScale.primary[50] },
+    { key: 'COURSE', label: 'Courses', icon: 'school-outline', color: ColorScale.primary[800], bg: ColorScale.primary[100] },
+    { key: 'QUIZ', label: 'Quizzes', icon: 'flash-outline', color: ColorScale.secondary[800], bg: ColorScale.secondary[100] },
+    { key: 'QUESTION', label: 'Questions', icon: 'help-circle-outline', color: ColorScale.teal[800], bg: ColorScale.teal[100] },
+    { key: 'RESOURCE', label: 'Resources', icon: 'library-outline', color: ColorScale.teal[700], bg: ColorScale.teal[50] },
+    { key: 'TUTORIAL', label: 'Tutorials', icon: 'play-circle-outline', color: ColorScale.secondary[700], bg: ColorScale.secondary[50] },
+    { key: 'RESEARCH', label: 'Research', icon: 'flask-outline', color: ColorScale.primary[900], bg: ColorScale.primary[100] },
+    { key: 'PROJECT', label: 'Projects', icon: 'construct-outline', color: ColorScale.primary[600], bg: ColorScale.primary[50] },
 ];
 
 const SORT_OPTIONS: Array<{ key: SortMode; label: string; icon: IoniconName }> = [
@@ -95,17 +105,17 @@ const TOPIC_SUGGESTIONS = [
 const getPostTypeMeta = (type: PostType | string) => {
     const match = POST_FILTERS.find(filter => filter.key === type);
     if (match) return match;
-    if (type === 'POLL') return { key: 'ALL' as const, label: 'Poll', icon: 'bar-chart-outline' as IoniconName, color: '#7C3AED', bg: '#EDE9FE' };
-    if (type === 'ASSIGNMENT') return { key: 'ALL' as const, label: 'Assignment', icon: 'clipboard-outline' as IoniconName, color: '#0F766E', bg: '#CCFBF1' };
-    if (type === 'EXAM') return { key: 'ALL' as const, label: 'Exam', icon: 'document-text-outline' as IoniconName, color: '#B45309', bg: '#FEF3C7' };
-    return { key: 'ALL' as const, label: String(type || 'Post').replace(/_/g, ' '), icon: 'document-text-outline' as IoniconName, color: '#334155', bg: '#E2E8F0' };
+    if (type === 'POLL') return { key: 'ALL' as const, label: 'Poll', icon: 'bar-chart-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
+    if (type === 'ASSIGNMENT') return { key: 'ALL' as const, label: 'Assignment', icon: 'clipboard-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
+    if (type === 'EXAM') return { key: 'ALL' as const, label: 'Exam', icon: 'document-text-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
+    return { key: 'ALL' as const, label: String(type || 'Post').replace(/_/g, ' '), icon: 'document-text-outline' as IoniconName, color: ColorScale.gray[700], bg: ColorScale.gray[100] };
 };
 
 const getRoleMeta = (role: string) => {
-    if (role === 'TEACHER') return { label: 'Teacher', icon: 'school-outline' as IoniconName, color: '#2563EB', bg: '#DBEAFE' };
-    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') return { label: 'Admin', icon: 'shield-checkmark-outline' as IoniconName, color: '#0F766E', bg: '#CCFBF1' };
-    if (role === 'STAFF') return { label: 'Staff', icon: 'briefcase-outline' as IoniconName, color: '#7C2D12', bg: '#FFEDD5' };
-    return { label: 'Student', icon: 'reader-outline' as IoniconName, color: '#6D28D9', bg: '#EDE9FE' };
+    if (role === 'TEACHER') return { label: 'Teacher', icon: 'school-outline' as IoniconName, color: ColorScale.primary[800], bg: ColorScale.primary[100] };
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') return { label: 'Admin', icon: 'shield-checkmark-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
+    if (role === 'STAFF') return { label: 'Staff', icon: 'briefcase-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
+    return { label: 'Student', icon: 'reader-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
 };
 
 const normalizePostTypeLabel = (label: string) =>
@@ -129,6 +139,7 @@ export default function SearchScreen() {
     const { t: autoT } = useTranslation();
     const navigation = useNavigation();
     const inputRef = useRef<TextInput>(null);
+    const insets = useSafeAreaInsets();
     const { colors, isDark } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
@@ -141,12 +152,16 @@ export default function SearchScreen() {
     const [userResults, setUserResults] = useState<SearchUser[]>([]);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const [searchFocused, setSearchFocused] = useState(false);
+    const [stickyHeaderHeight, setStickyHeaderHeight] = useState(
+        insets.top + (Platform.OS === 'ios' ? 132 : 138),
+    );
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchCacheRef = useRef<Map<string, SearchCacheEntry>>(new Map());
     const searchRequestIdRef = useRef(0);
     const activeSearchControllerRef = useRef<AbortController | null>(null);
-    const loadingPulse = useRef(new Animated.Value(0)).current;
+    const loadingPulse = useSharedValue(0);
 
     // Load recent searches
     useEffect(() => {
@@ -165,29 +180,17 @@ export default function SearchScreen() {
 
     useEffect(() => {
         if (!isSearching) {
-            loadingPulse.stopAnimation();
-            loadingPulse.setValue(0);
+            loadingPulse.value = 0;
             return;
         }
 
-        const animation = Animated.loop(
-            Animated.sequence([
-                Animated.timing(loadingPulse, {
-                    toValue: 1,
-                    duration: 650,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(loadingPulse, {
-                    toValue: 0,
-                    duration: 650,
-                    useNativeDriver: true,
-                }),
-            ])
-        );
-        animation.start();
+        loadingPulse.value = withTiming(1, { duration: 650 });
+        const interval = setInterval(() => {
+            loadingPulse.value = loadingPulse.value === 0 ? withTiming(1, { duration: 650 }) : withTiming(0, { duration: 650 });
+        }, 650);
 
-        return () => animation.stop();
-    }, [isSearching, loadingPulse]);
+        return () => clearInterval(interval);
+    }, [isSearching]);
 
     const saveRecentSearch = useCallback(async (term: string) => {
         const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, MAX_RECENT);
@@ -199,6 +202,20 @@ export default function SearchScreen() {
         setRecentSearches([]);
         await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
     }, []);
+
+    const removeRecentSearch = useCallback(async (term: string) => {
+        const updated = recentSearches.filter((s) => s !== term);
+        setRecentSearches(updated);
+        await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    }, [recentSearches]);
+
+    const handleIdleScopePress = useCallback((scope: SearchScope) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setActiveScope(scope);
+        if (scope === 'posts' && !query.trim()) {
+            setSelectedType('ALL');
+        }
+    }, [query]);
 
     const performSearch = useCallback(async (
         searchQuery: string,
@@ -393,7 +410,10 @@ export default function SearchScreen() {
         const relevance = Math.max(0, Math.min(Math.round((item._score || 0) * 100), 100));
 
         return (
-            <Animated.View>
+            <Animated.View 
+                entering={FadeInDown.delay(index * 40).springify().damping(15)}
+                layout={Layout.springify()}
+            >
                 <TouchableOpacity
                     style={styles.postResultCard}
                     activeOpacity={0.9}
@@ -418,15 +438,19 @@ export default function SearchScreen() {
                                 )}
                             </View>
                         </View>
-                        <View style={[styles.postTypeBadge, { backgroundColor: typeMeta.bg }]}>
-                            <Ionicons name={typeMeta.icon} size={12} color={typeMeta.color} />
+                        <LinearGradient 
+                            colors={[typeMeta.bg, typeMeta.bg + 'CC'] as any}
+                            style={styles.postTypeBadge}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons name={typeMeta.icon} size={11} color={typeMeta.color} />
                             <Text style={[styles.postTypeText, { color: typeMeta.color }]} numberOfLines={1}>
                                 {normalizePostTypeLabel(typeMeta.label)}
                             </Text>
-                        </View>
+                        </LinearGradient>
                     </View>
 
-                    {/* Title (for quiz/course/resource posts) */}
                     {item.title ? (
                         <Text style={styles.postResultTitle} numberOfLines={1}>{item.title}</Text>
                     ) : null}
@@ -435,7 +459,6 @@ export default function SearchScreen() {
                         {item.content}
                     </Text>
 
-                    {/* ── Quiz Info Card ── */}
                     {isQuiz && item.quizData && (() => {
                         const quiz = item.quizData;
                         const questionCount = quiz?.questions?.length || 0;
@@ -444,48 +467,41 @@ export default function SearchScreen() {
                                 <View style={styles.quizInfoRow}>
                                     {questionCount > 0 && (
                                         <View style={styles.quizInfoChip}>
-                                            <Ionicons name="help-circle" size={13} color="#D97706" />
+                                            <Ionicons name="help-circle" size={12} color="#D97706" />
                                             <Text style={styles.quizInfoText}>{questionCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_99c80c8a" /></Text>
                                         </View>
                                     )}
                                     {quiz?.timeLimit ? (
                                         <View style={styles.quizInfoChip}>
-                                            <Ionicons name="timer-outline" size={13} color="#D97706" />
+                                            <Ionicons name="timer-outline" size={12} color="#D97706" />
                                             <Text style={styles.quizInfoText}>{quiz.timeLimit}<AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_e5af6899" /></Text>
-                                        </View>
-                                    ) : null}
-                                    {quiz?.totalPoints ? (
-                                        <View style={styles.quizInfoChip}>
-                                            <Ionicons name="star" size={13} color="#D97706" />
-                                            <Text style={styles.quizInfoText}>{quiz.totalPoints} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_da04648b" /></Text>
                                         </View>
                                     ) : null}
                                     {quiz?.passingScore ? (
                                         <View style={styles.quizInfoChip}>
-                                            <Ionicons name="checkmark-circle" size={13} color="#10B981" />
+                                            <Ionicons name="checkmark-circle" size={12} color="#10B981" />
                                             <Text style={[styles.quizInfoText, { color: '#10B981' }]}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_e9cd1ebe" /> {quiz.passingScore}%</Text>
                                         </View>
                                     ) : null}
                                 </View>
-                                <View style={styles.quizStartBtn}>
-                                    <Ionicons name="play-circle" size={14} color="#fff" />
+                                <TouchableOpacity style={styles.quizStartBtn} activeOpacity={0.8} onPress={() => handlePostPress(item)}>
+                                    <Ionicons name="play" size={14} color="#fff" />
                                     <Text style={styles.quizStartText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_74c69c56" /></Text>
-                                </View>
+                                </TouchableOpacity>
                             </View>
                         );
                     })()}
 
-                    {/* ── Poll Preview ── */}
                     {isPoll && item.pollOptions && item.pollOptions.length > 0 && (
                         <View style={styles.pollPreview}>
-                            {item.pollOptions.slice(0, 3).map((opt: any, i: number) => (
+                            {item.pollOptions.slice(0, 2).map((opt: any, i: number) => (
                                 <View key={opt.id || i} style={styles.pollOptionRow}>
                                     <View style={styles.pollOptionDot} />
                                     <Text style={styles.pollOptionText} numberOfLines={1}>{opt.text}</Text>
                                 </View>
                             ))}
-                            {item.pollOptions.length > 3 && (
-                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 3} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f016a8c3" /></Text>
+                            {item.pollOptions.length > 2 && (
+                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 2} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f016a8c3" /></Text>
                             )}
                         </View>
                     )}
@@ -500,13 +516,15 @@ export default function SearchScreen() {
                             <Text style={styles.postStatText}>{formatNumber(item.comments)}</Text>
                         </View>
                         <View style={styles.postStatItem}>
-                            <Ionicons name="stats-chart" size={14} color="#0F766E" />
+                            <Ionicons name="stats-chart-outline" size={14} color={colors.textSecondary} />
                             <Text style={styles.postStatText}>{formatNumber(item.views || 0)}</Text>
                         </View>
                         {item.topicTags && item.topicTags.length > 0 && (
                             <View style={styles.postResultTags}>
                                 {item.topicTags.slice(0, 2).map((tag, i) => (
-                                    <Text key={i} style={styles.postResultTag}>#{tag}</Text>
+                                    <View key={i} style={styles.tagBadge}>
+                                        <Text style={styles.postResultTag}>#{tag}</Text>
+                                    </View>
                                 ))}
                             </View>
                         )}
@@ -525,7 +543,10 @@ export default function SearchScreen() {
         const name = `${item.lastName} ${item.firstName}`;
         const roleMeta = getRoleMeta(item.role);
         return (
-            <Animated.View>
+            <Animated.View 
+                entering={FadeInDown.delay(index * 30).springify().damping(15)}
+                layout={Layout.springify()}
+            >
                 <TouchableOpacity
                     style={styles.userResultCard}
                     activeOpacity={0.9}
@@ -541,17 +562,22 @@ export default function SearchScreen() {
                         <View style={styles.userNameRow}>
                             <Text style={styles.userResultName}>{name}</Text>
                             {item.isVerified && (
-                                <View style={styles.verifiedBadge}>
-                                    <Ionicons name="checkmark" size={10} color="#fff" />
-                                </View>
+                                <LinearGradient 
+                                    colors={['#0EA5E9', '#0284C7']}
+                                    style={styles.verifiedBadge}
+                                >
+                                    <Ionicons name="checkmark" size={8} color="#fff" />
+                                </LinearGradient>
                             )}
                         </View>
                         <View style={[styles.rolePill, { backgroundColor: roleMeta.bg }]}>
-                            <Ionicons name={roleMeta.icon} size={12} color={roleMeta.color} />
+                            <Ionicons name={roleMeta.icon} size={11} color={roleMeta.color} />
                             <Text style={[styles.userResultRole, { color: roleMeta.color }]}>{roleMeta.label}</Text>
                         </View>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+                    <View style={styles.userResultAction}>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                    </View>
                 </TouchableOpacity>
             </Animated.View>
         );
@@ -561,35 +587,55 @@ export default function SearchScreen() {
         if (activeScope !== 'all' || userResults.length === 0) return null;
 
         return (
-            <View style={styles.peoplePreview}>
+            <Animated.View 
+                entering={FadeInDown.springify()}
+                style={styles.peoplePreview}
+            >
                 <View style={styles.peoplePreviewHeader}>
                     <Text style={styles.peoplePreviewTitle}>People</Text>
-                    <TouchableOpacity onPress={() => setActiveScope('people')}>
-                        <Ionicons name="arrow-forward" size={18} color="#0F766E" />
+                    <TouchableOpacity onPress={() => setActiveScope('people')} style={styles.seeAllBtn}>
+                        <Text style={styles.seeAllText}>See all</Text>
+                        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.peoplePreviewRow}>
-                    {userResults.slice(0, 8).map((user) => {
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    contentContainerStyle={styles.peoplePreviewRow}
+                    decelerationRate="fast"
+                >
+                    {userResults.slice(0, 8).map((user, index) => {
                         const name = `${user.lastName} ${user.firstName}`;
                         const roleMeta = getRoleMeta(user.role);
                         return (
-                            <TouchableOpacity
+                            <Animated.View
                                 key={user.id}
-                                style={styles.peoplePreviewCard}
-                                activeOpacity={0.86}
-                                onPress={() => handleUserPress(user.id)}
+                                entering={FadeIn.delay(index * 50)}
                             >
-                                <Avatar uri={user.profilePictureUrl} name={name} size="md" variant="post" />
-                                <Text style={styles.peoplePreviewName} numberOfLines={1}>{name}</Text>
-                                <View style={[styles.peoplePreviewRole, { backgroundColor: roleMeta.bg }]}>
-                                    <Ionicons name={roleMeta.icon} size={11} color={roleMeta.color} />
-                                    <Text style={[styles.peoplePreviewRoleText, { color: roleMeta.color }]} numberOfLines={1}>{roleMeta.label}</Text>
-                                </View>
-                            </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.peoplePreviewCard}
+                                    activeOpacity={0.86}
+                                    onPress={() => handleUserPress(user.id)}
+                                >
+                                    <View style={styles.peoplePreviewAvatarWrap}>
+                                        <Avatar uri={user.profilePictureUrl} name={name} size="md" variant="post" />
+                                        {user.isVerified && (
+                                            <View style={styles.verifiedBadgeSmall}>
+                                                <Ionicons name="checkmark" size={6} color="#fff" />
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Text style={styles.peoplePreviewName} numberOfLines={1}>{name}</Text>
+                                    <View style={[styles.peoplePreviewRole, { backgroundColor: roleMeta.bg }]}>
+                                        <Ionicons name={roleMeta.icon} size={9} color={roleMeta.color} />
+                                        <Text style={[styles.peoplePreviewRoleText, { color: roleMeta.color }]} numberOfLines={1}>{roleMeta.label}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </Animated.View>
                         );
                     })}
                 </ScrollView>
-            </View>
+            </Animated.View>
         );
     };
 
@@ -599,14 +645,50 @@ export default function SearchScreen() {
 
         if (hasSearched) {
             return (
-                <Animated.View style={styles.emptyContainer}>
-                    <View style={styles.emptyIconContainer}>
-                        <Ionicons name="search" size={48} color="#D1D5DB" />
-                    </View>
-                    <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_d728da09" /></Text>
+                <Animated.View style={styles.emptyContainer} entering={FadeInDown.springify()}>
+                    <LinearGradient
+                        colors={
+                            isDark
+                                ? [ColorScale.primary[900], '#0F172A']
+                                : [ColorScale.primary[50], ColorScale.primary[100]]
+                        }
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.emptyIconRing}
+                    >
+                        <View style={[styles.emptyIconInner, { backgroundColor: colors.card }]}>
+                            <Ionicons name="search" size={36} color={colors.primary} />
+                        </View>
+                    </LinearGradient>
+                    <Text style={styles.emptyTitle}>
+                        <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_d728da09" />
+                    </Text>
                     <Text style={styles.emptySubtitle}>
                         <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_bb6d714c" />
                     </Text>
+                    <View style={styles.emptyActions}>
+                        <TouchableOpacity
+                            style={styles.emptyPrimaryBtn}
+                            activeOpacity={0.88}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                handleBrowseFilter('COURSE');
+                            }}
+                        >
+                            <Ionicons name="compass-outline" size={18} color="#fff" />
+                            <Text style={styles.emptyPrimaryBtnText}>Browse courses</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.emptyGhostBtn}
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                handleClearQuery();
+                            }}
+                        >
+                            <Text style={styles.emptyGhostBtnText}>Clear search</Text>
+                        </TouchableOpacity>
+                    </View>
                 </Animated.View>
             );
         }
@@ -617,69 +699,151 @@ export default function SearchScreen() {
     const renderRecentSearches = () => {
         if (hasSearched || query.length > 0) return null;
 
+        const contentTop = stickyHeaderHeight + 8;
+        const scrollBottomPad = insets.bottom + 56;
+
         return (
-            <View style={styles.recentSection}>
+            <ScrollView
+                style={styles.recentSection}
+                contentContainerStyle={{
+                    paddingTop: contentTop,
+                    paddingBottom: scrollBottomPad,
+                }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                nestedScrollEnabled
+            >
+                <View style={styles.idleScopeSection}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.idleScopeRow}
+                    >
+                        {(
+                            [
+                                { key: 'all' as const, label: 'Everything', icon: 'layers-outline' as IoniconName },
+                                { key: 'posts' as const, label: 'Posts', icon: 'newspaper-outline' as IoniconName },
+                                { key: 'people' as const, label: 'People', icon: 'people-outline' as IoniconName },
+                            ] as const
+                        ).map((scope) => {
+                            const active = activeScope === scope.key;
+                            return (
+                                <TouchableOpacity
+                                    key={scope.key}
+                                    style={[styles.idleScopeChip, active && styles.idleScopeChipActive]}
+                                    onPress={() => handleIdleScopePress(scope.key)}
+                                    activeOpacity={0.88}
+                                >
+                                    <Ionicons
+                                        name={scope.icon}
+                                        size={16}
+                                        color={active ? colors.primary : colors.textTertiary}
+                                    />
+                                    <Text
+                                        style={[
+                                            styles.idleScopeChipText,
+                                            active && styles.idleScopeChipTextActive,
+                                        ]}
+                                    >
+                                        {scope.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+
                 {recentSearches.length > 0 && (
-                    <>
+                    <View style={styles.sectionContainer}>
                         <View style={styles.recentHeader}>
-                            <Text style={styles.recentTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_986fbbfe" /></Text>
-                            <TouchableOpacity onPress={clearRecentSearches}>
-                                <Text style={styles.clearText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f9d87fdb" /></Text>
+                            <Text style={styles.recentTitle}>
+                                <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_986fbbfe" />
+                            </Text>
+                            <TouchableOpacity onPress={clearRecentSearches} style={styles.clearAllBtn}>
+                                <Text style={styles.clearText}>
+                                    <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f9d87fdb" />
+                                </Text>
                             </TouchableOpacity>
                         </View>
-                        {recentSearches.map((term, index) => (
-                            <Animated.View
-                                key={term}
-                            >
+                        <View style={styles.recentList}>
+                            {recentSearches.map((term) => (
+                                <View key={term} style={styles.recentItem}>
+                                    <TouchableOpacity
+                                        style={styles.recentItemMain}
+                                        onPress={() => handleRecentSearchPress(term)}
+                                        activeOpacity={0.72}
+                                    >
+                                        <View style={styles.recentIconWrap}>
+                                            <Ionicons name="time-outline" size={16} color={colors.textTertiary} />
+                                        </View>
+                                        <Text style={styles.recentText}>{term}</Text>
+                                        <Ionicons
+                                            name="chevron-forward"
+                                            size={16}
+                                            color={colors.textTertiary}
+                                        />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.recentRemoveBtn}
+                                        onPress={() => removeRecentSearch(term)}
+                                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                                        accessibilityLabel="Remove from history"
+                                    >
+                                        <Ionicons name="close-circle" size={22} color={colors.textTertiary} />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.suggestionsSection}>
+                    <View style={styles.sectionTitleRow}>
+                        <LinearGradient colors={[ColorScale.primary[400], ColorScale.primary[600]]} style={styles.trendingIcon}>
+                            <Ionicons name="trending-up" size={12} color="#fff" />
+                        </LinearGradient>
+                        <Text style={styles.recentTitle}>Trending topics</Text>
+                    </View>
+                    <View style={styles.suggestionChips}>
+                        {TOPIC_SUGGESTIONS.map((chip, index) => (
+                            <Animated.View key={chip} entering={FadeInDown.delay(index * 30)}>
                                 <TouchableOpacity
-                                    style={styles.recentItem}
-                                    onPress={() => handleRecentSearchPress(term)}
+                                    style={styles.suggestionChip}
+                                    onPress={() => handleRecentSearchPress(chip)}
+                                    activeOpacity={0.8}
                                 >
-                                    <Ionicons name="time-outline" size={18} color={colors.textTertiary} />
-                                    <Text style={styles.recentText}>{term}</Text>
-                                    <Ionicons name="arrow-forward-outline" size={16} color={colors.textTertiary} />
+                                    <Text style={styles.suggestionChipText}>{chip}</Text>
                                 </TouchableOpacity>
                             </Animated.View>
                         ))}
-                    </>
-                )}
-
-                {/* Trending / Suggestion Section */}
-                <View style={styles.suggestionsSection}>
-                    <View style={styles.sectionTitleRow}>
-                        <Ionicons name="trending-up-outline" size={17} color="#0F766E" />
-                        <Text style={styles.recentTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_b0e2c843" /></Text>
                     </View>
-                    <View style={styles.suggestionChips}>
-                        {TOPIC_SUGGESTIONS.map((chip) => (
+                </View>
+
+                <View style={styles.discoverySection}>
+                    <Text style={styles.recentTitle}>Explore by type</Text>
+                    <View style={styles.discoveryGrid}>
+                        {POST_FILTERS.slice(1, 7).map((filter) => (
                             <TouchableOpacity
-                                key={chip}
-                                style={styles.suggestionChip}
-                                onPress={() => handleRecentSearchPress(chip)}
+                                key={filter.key}
+                                style={styles.discoveryTile}
+                                activeOpacity={0.86}
+                                onPress={() => handleBrowseFilter(filter.key)}
                             >
-                                <Ionicons name="search-outline" size={13} color="#0F766E" />
-                                <Text style={styles.suggestionChipText}>{chip}</Text>
+                                <LinearGradient
+                                    colors={[filter.bg, `${filter.bg}DD`] as [string, string]}
+                                    style={styles.discoveryIcon}
+                                >
+                                    <Ionicons name={filter.icon} size={22} color={filter.color} />
+                                </LinearGradient>
+                                <Text style={styles.discoveryLabel} numberOfLines={2}>
+                                    {filter.label}
+                                </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
                 </View>
-
-                <View style={styles.discoveryGrid}>
-                    {POST_FILTERS.slice(1, 7).map((filter) => (
-                        <TouchableOpacity
-                            key={filter.key}
-                            style={styles.discoveryTile}
-                            activeOpacity={0.86}
-                            onPress={() => handleBrowseFilter(filter.key)}
-                        >
-                            <View style={[styles.discoveryIcon, { backgroundColor: filter.bg }]}>
-                                <Ionicons name={filter.icon} size={18} color={filter.color} />
-                            </View>
-                            <Text style={styles.discoveryLabel} numberOfLines={1}>{filter.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
+            </ScrollView>
         );
     };
 
@@ -697,32 +861,38 @@ export default function SearchScreen() {
     const currentResults = activeScope === 'people' ? userResults : sortedPostResults;
     const postCount = postResults.length;
     const userCount = userResults.length;
-    const resultSummary = `${postCount} posts / ${userCount} people`;
-    const loadingSkeletonOpacity = loadingPulse.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.45, 0.88],
+    const resultSummary =
+        postCount === 0 && userCount === 0
+            ? 'No results yet'
+            : `${postCount} post${postCount === 1 ? '' : 's'} · ${userCount} ${
+                  userCount === 1 ? 'person' : 'people'
+              }`;
+    const skeletonAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: 0.45 + (loadingPulse.value * (0.88 - 0.45))
+        };
     });
 
-    const renderSearchLoadingOverlay = () => (
+    const renderSearchLoadingOverlay = () => {
+        const padTop = stickyHeaderHeight + 16;
+        return (
         <BlurView
-            intensity={Platform.OS === 'ios' ? 34 : 70}
+            intensity={Platform.OS === 'ios' ? 28 : 56}
             tint={isDark ? 'dark' : 'light'}
             style={styles.searchLoadingOverlay}
         >
             <View
                 style={[
                     styles.searchLoadingContent,
-                    hasSearched && activeScope !== 'people'
-                        ? styles.searchLoadingContentWithFilters
-                        : styles.searchLoadingContentBase,
+                    { paddingTop: padTop },
                 ]}
             >
                 <View style={styles.searchLoadingPill}>
-                    <ActivityIndicator size="small" color="#0F766E" />
+                    <ActivityIndicator size="small" color={colors.primary} />
                     <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_dc975d59" /></Text>
                 </View>
                 {[0, 1, 2].map((item) => (
-                    <Animated.View key={item} style={[styles.searchSkeletonCard, { opacity: loadingSkeletonOpacity }]}>
+                    <Animated.View key={item} style={[styles.searchSkeletonCard, skeletonAnimatedStyle]}>
                         <View style={styles.searchSkeletonHeader}>
                             <View style={styles.searchSkeletonAvatar} />
                             <View style={styles.searchSkeletonLines}>
@@ -742,116 +912,230 @@ export default function SearchScreen() {
                 ))}
             </View>
         </BlurView>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>
-            {/* Search Header - Sticky and Blurred */}
-            <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint={isDark ? 'dark' : 'light'} style={styles.headerBlur}>
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.header}>
-                        <TouchableOpacity
-                            onPress={() => navigation.goBack()}
-                            style={styles.backButton}
-                        >
-                            <Ionicons name="chevron-back" size={24} color={colors.text} />
-                        </TouchableOpacity>
-
-                        <View style={styles.searchInputContainer}>
-                            <Ionicons name="search" size={20} color={colors.textTertiary} />
-                            <TextInput
-                                ref={inputRef}
-                                style={styles.searchInput}
-                                placeholder={autoT("auto.mobile.screens_feed_SearchScreen.k_5bd00d2d")}
-                                placeholderTextColor={colors.textTertiary}
-                                value={query}
-                                onChangeText={handleQueryChange}
-                                returnKeyType="search"
-                                onSubmitEditing={handleSubmitSearch}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                            />
-                            {query.length > 0 && (
+            {/* Search row: no card; controls card only after a search */}
+            <View style={styles.headerSticky}>
+                <View
+                    onLayout={(e) => {
+                        const h = e.nativeEvent.layout.height;
+                        if (h > 48) setStickyHeaderHeight(h);
+                    }}
+                >
+                    <SafeAreaView edges={['top']}>
+                        <View style={styles.headerSection}>
+                            <View style={styles.searchRow}>
                                 <TouchableOpacity
-                                    onPress={handleClearQuery}
-                                    style={styles.clearButton}
+                                    onPress={() => navigation.goBack()}
+                                    style={styles.searchBackBtn}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                 >
-                                    <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+                                    <Ionicons name="chevron-back" size={22} color={colors.text} />
                                 </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Tabs — only show when there are results */}
-                    {hasSearched && (
-                        <>
-                            <View style={styles.tabBar}>
-                                {([
-                                    { key: 'all', label: 'All', count: postCount + userCount, icon: 'sparkles-outline' as IoniconName },
-                                    { key: 'posts', label: 'Posts', count: postCount, icon: 'newspaper-outline' as IoniconName },
-                                    { key: 'people', label: 'People', count: userCount, icon: 'people-outline' as IoniconName },
-                                ] as const).map((scope) => (
+                                <View
+                                    style={[
+                                        styles.searchInputInner,
+                                        searchFocused && styles.searchInputInnerFocused,
+                                    ]}
+                                >
+                                    <TextInput
+                                        ref={inputRef}
+                                        style={styles.searchInput}
+                                        placeholder={autoT('auto.mobile.screens_feed_SearchScreen.k_5bd00d2d')}
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={query}
+                                        onChangeText={handleQueryChange}
+                                        returnKeyType="search"
+                                        onSubmitEditing={handleSubmitSearch}
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                        onFocus={() => setSearchFocused(true)}
+                                        onBlur={() => setSearchFocused(false)}
+                                    />
+                                </View>
+                                {query.length > 0 ? (
                                     <TouchableOpacity
-                                        key={scope.key}
-                                        style={[styles.tab, activeScope === scope.key && styles.activeTab]}
-                                        onPress={() => {
-                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                            setActiveScope(scope.key);
-                                        }}
+                                        onPress={handleClearQuery}
+                                        style={styles.searchCircleBtn}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     >
-                                        <Ionicons name={scope.icon} size={15} color={activeScope === scope.key ? '#0F766E' : colors.textTertiary} />
-                                        <Text style={[styles.tabText, activeScope === scope.key && styles.activeTabText]} numberOfLines={1}>
-                                            {scope.label}{scope.count > 0 ? ` ${scope.count}` : ''}
-                                        </Text>
+                                        <Ionicons name="close" size={22} color={colors.textTertiary} />
                                     </TouchableOpacity>
-                                ))}
+                                ) : (
+                                    <TouchableOpacity
+                                        style={styles.searchCircleBtn}
+                                        onPress={() => inputRef.current?.focus()}
+                                        activeOpacity={0.85}
+                                    >
+                                        <Ionicons name="search" size={20} color={colors.primary} />
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                            {activeScope !== 'people' && (
-                                <View style={styles.filterShell}>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-                                        {POST_FILTERS.map((filter) => {
-                                            const active = selectedType === filter.key;
+
+                            {hasSearched && (
+                                <View style={styles.searchControlsCard}>
+                                    <LinearGradient
+                                        colors={['transparent', colors.border, 'transparent']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.searchStoryDivider}
+                                    />
+                                    <View style={styles.searchCardFooter}>
+                                        <View style={styles.tabBarWrap}>
+                                            <View style={styles.tabBar}>
+                                        {(
+                                            [
+                                                {
+                                                    key: 'all',
+                                                    label: 'All',
+                                                    count: postCount + userCount,
+                                                    icon: 'sparkles-outline' as IoniconName,
+                                                },
+                                                {
+                                                    key: 'posts',
+                                                    label: 'Posts',
+                                                    count: postCount,
+                                                    icon: 'newspaper-outline' as IoniconName,
+                                                },
+                                                {
+                                                    key: 'people',
+                                                    label: 'People',
+                                                    count: userCount,
+                                                    icon: 'people-outline' as IoniconName,
+                                                },
+                                            ] as const
+                                        ).map((scope) => {
+                                            const active = activeScope === scope.key;
                                             return (
                                                 <TouchableOpacity
-                                                    key={filter.key}
-                                                    style={[
-                                                        styles.filterChip,
-                                                        active && { backgroundColor: filter.bg, borderColor: filter.color },
-                                                    ]}
-                                                    onPress={() => handleFilterPress(filter.key)}
-                                                    activeOpacity={0.85}
+                                                    key={scope.key}
+                                                    style={[styles.tab, active && styles.tabActive]}
+                                                    onPress={() => {
+                                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                                        setActiveScope(scope.key);
+                                                    }}
+                                                    activeOpacity={0.88}
                                                 >
-                                                    <Ionicons name={filter.icon} size={14} color={active ? filter.color : colors.textTertiary} />
-                                                    <Text style={[styles.filterChipText, active && { color: filter.color }]} numberOfLines={1}>
-                                                        {filter.label}
-                                                    </Text>
+                                                    {active ? (
+                                                        <LinearGradient
+                                                            colors={[ColorScale.primary[500], ColorScale.primary[600]]}
+                                                            start={{ x: 0, y: 0 }}
+                                                            end={{ x: 1, y: 1 }}
+                                                            style={styles.tabGradientFill}
+                                                        >
+                                                            <Ionicons name={scope.icon} size={15} color="#fff" />
+                                                            <Text style={styles.tabTextOnAccent} numberOfLines={1}>
+                                                                {scope.label}
+                                                                {scope.count > 0 ? ` · ${scope.count}` : ''}
+                                                            </Text>
+                                                        </LinearGradient>
+                                                    ) : (
+                                                        <View style={styles.tabInnerMuted}>
+                                                            <Ionicons
+                                                                name={scope.icon}
+                                                                size={15}
+                                                                color={colors.textTertiary}
+                                                            />
+                                                            <Text style={styles.tabTextMuted} numberOfLines={1}>
+                                                                {scope.label}
+                                                                {scope.count > 0 ? ` ${scope.count}` : ''}
+                                                            </Text>
+                                                        </View>
+                                                    )}
                                                 </TouchableOpacity>
                                             );
                                         })}
-                                    </ScrollView>
-                                    <View style={styles.sortRow}>
-                                        <Text style={styles.resultSummary} numberOfLines={1}>{resultSummary}</Text>
-                                        <View style={styles.sortCluster}>
-                                            {SORT_OPTIONS.map((option) => {
-                                                const active = sortMode === option.key;
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={option.key}
-                                                        style={[styles.sortButton, active && styles.sortButtonActive]}
-                                                        onPress={() => handleSortPress(option.key)}
-                                                    >
-                                                        <Ionicons name={option.icon} size={13} color={active ? '#0F766E' : colors.textTertiary} />
-                                                    </TouchableOpacity>
-                                                );
-                                            })}
+                                            </View>
                                         </View>
+                                        {activeScope !== 'people' && (
+                                            <View style={styles.filterShell}>
+                                            <ScrollView
+                                                horizontal
+                                                showsHorizontalScrollIndicator={false}
+                                                contentContainerStyle={styles.filterRow}
+                                            >
+                                                {POST_FILTERS.map((filter) => {
+                                                    const active = selectedType === filter.key;
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={filter.key}
+                                                            style={[
+                                                                styles.filterChip,
+                                                                active && {
+                                                                    backgroundColor: filter.bg,
+                                                                    borderColor: filter.color,
+                                                                },
+                                                            ]}
+                                                            onPress={() => handleFilterPress(filter.key)}
+                                                            activeOpacity={0.85}
+                                                        >
+                                                            <Ionicons
+                                                                name={filter.icon}
+                                                                size={14}
+                                                                color={active ? filter.color : colors.textTertiary}
+                                                            />
+                                                            <Text
+                                                                style={[
+                                                                    styles.filterChipText,
+                                                                    active && { color: filter.color },
+                                                                ]}
+                                                                numberOfLines={1}
+                                                            >
+                                                                {filter.label}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </ScrollView>
+                                            <View style={styles.sortRow}>
+                                                <Text style={styles.resultSummary} numberOfLines={1}>
+                                                    {resultSummary}
+                                                </Text>
+                                                <View style={styles.sortCluster}>
+                                                    {SORT_OPTIONS.map((option) => {
+                                                        const active = sortMode === option.key;
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={option.key}
+                                                                style={[
+                                                                    styles.sortPill,
+                                                                    active && styles.sortPillActive,
+                                                                ]}
+                                                                onPress={() => handleSortPress(option.key)}
+                                                                activeOpacity={0.85}
+                                                            >
+                                                                <Ionicons
+                                                                    name={option.icon}
+                                                                    size={13}
+                                                                    color={
+                                                                        active ? colors.primary : colors.textTertiary
+                                                                    }
+                                                                />
+                                                                <Text
+                                                                    style={[
+                                                                        styles.sortPillLabel,
+                                                                        active && styles.sortPillLabelActive,
+                                                                    ]}
+                                                                >
+                                                                    {option.label}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
+                                                </View>
+                                            </View>
+                                        </View>
+                                        )}
                                     </View>
                                 </View>
                             )}
-                        </>
-                    )}
-                </SafeAreaView>
-            </BlurView>
+                        </View>
+                    </SafeAreaView>
+                </View>
+            </View>
 
             {/* Recent Searches (when no query) */}
             {renderRecentSearches()}
@@ -863,13 +1147,18 @@ export default function SearchScreen() {
                         data={currentResults as any[]}
                         renderItem={activeScope === 'people' ? renderUserResult as any : renderPostResult as any}
                         keyExtractor={(item: any) => item.id}
-                        contentContainerStyle={hasSearched && activeScope !== 'people' ? styles.resultsListWithFilters : styles.resultsList}
+                        contentContainerStyle={{
+                            paddingHorizontal: 16,
+                            paddingBottom: 40 + insets.bottom + 8,
+                            paddingTop: stickyHeaderHeight + (activeScope !== 'people' ? 8 : 12),
+                        }}
                         showsVerticalScrollIndicator={false}
                         ListEmptyComponent={renderEmptyState}
                         ListHeaderComponent={renderPeoplePreview}
                         keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
                         estimatedItemSize={activeScope === 'people' ? 86 : 178}
-                        getItemType={(item) => activeScope === 'people' ? 'USER' : (item.postType || 'POST')}
+                        getItemType={(item) => (activeScope === 'people' ? 'USER' : item.postType || 'POST')}
                     />
                 </View>
             )}
@@ -884,96 +1173,145 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    headerBlur: {
+    headerSticky: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         zIndex: 10,
-        backgroundColor: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)',
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        backgroundColor: colors.background,
     },
-    header: {
+    headerSection: {
+        paddingTop: 8,
+        paddingBottom: 4,
+    },
+    searchRow: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 10,
         gap: 12,
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        backgroundColor: colors.surfaceVariant,
+    searchBackBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: 'transparent',
     },
-    searchInputContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surfaceVariant,
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        height: 44,
-        gap: 8,
+    searchControlsCard: {
+        backgroundColor: colors.card,
+        marginHorizontal: 12,
+        marginTop: 4,
+        marginBottom: 8,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
+        overflow: 'hidden',
+    },
+    searchCircleBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.teal[50],
+    },
+    searchInputInner: {
+        flex: 1,
+        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.teal[50],
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        justifyContent: 'center',
+        minHeight: 44,
+        borderWidth: 0,
+    },
+    searchInputInnerFocused: {
+        borderWidth: 1,
+        borderColor: isDark ? colors.primary : ColorScale.teal[100],
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.1)' : ColorScale.teal[50],
     },
     searchInput: {
         flex: 1,
-        fontSize: 15,
+        fontSize: 16,
+        fontWeight: '500',
         color: colors.text,
-        paddingVertical: 8,
+        paddingVertical: 10,
     },
-    clearButton: {
-        padding: 4,
+    searchStoryDivider: {
+        height: 1,
+        marginHorizontal: 16,
+        marginTop: 2,
+        marginBottom: 6,
+    },
+    searchCardFooter: {
+        paddingBottom: 4,
     },
 
     // Tab Bar
+    tabBarWrap: {
+        paddingHorizontal: 16,
+        paddingBottom: 10,
+    },
     tabBar: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
-        paddingBottom: 8,
-        gap: 8,
+        padding: 4,
+        borderRadius: 999,
+        gap: 6,
+        backgroundColor: colors.surfaceVariant,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     tab: {
         flex: 1,
-        minHeight: 36,
-        paddingVertical: 8,
+        minHeight: 40,
+        borderRadius: 999,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    tabActive: {},
+    tabGradientFill: {
+        width: '100%',
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        flexDirection: 'row',
         gap: 6,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.card,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
+        borderRadius: 999,
     },
-    activeTab: {
-        borderColor: '#0F766E',
-        backgroundColor: isDark ? 'rgba(20, 184, 166, 0.14)' : '#CCFBF1',
+    tabTextOnAccent: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#fff',
     },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '600',
+    tabTextMuted: {
+        fontSize: 13,
+        fontWeight: '700',
         color: colors.textTertiary,
     },
-    activeTabText: {
-        color: '#0F766E',
+    tabInnerMuted: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
     },
+
     filterShell: {
-        paddingBottom: 10,
+        paddingBottom: 12,
     },
     filterRow: {
         paddingHorizontal: 16,
         gap: 8,
     },
     filterChip: {
-        height: 34,
-        paddingHorizontal: 10,
-        borderRadius: 8,
+        height: 32,
+        paddingHorizontal: 12,
+        borderRadius: 999,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.card,
@@ -983,11 +1321,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     },
     filterChipText: {
         fontSize: 12,
-        fontWeight: '700',
+        fontWeight: '600',
         color: colors.textSecondary,
     },
     sortRow: {
-        marginTop: 10,
+        marginTop: 12,
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
@@ -998,244 +1336,155 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         flex: 1,
         fontSize: 12,
         color: colors.textTertiary,
-        fontWeight: '600',
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     sortCluster: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
         gap: 6,
+        maxWidth: '62%',
     },
-    sortButton: {
-        width: 30,
-        height: 30,
-        borderRadius: 8,
+    sortPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 999,
+        backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
         borderColor: colors.border,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.card,
     },
-    sortButtonActive: {
-        borderColor: '#0F766E',
-        backgroundColor: isDark ? 'rgba(20, 184, 166, 0.14)' : '#CCFBF1',
+    sortPillActive: {
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.18)' : ColorScale.primary[50],
+        borderColor: colors.primary,
     },
-
-    // Loading
-    loadingContainer: {
-        paddingVertical: 40,
-        paddingTop: Platform.OS === 'ios' ? 150 : 160,
-        alignItems: 'center',
-        gap: 12,
-    },
-    loadingText: {
-        fontSize: 14,
+    sortPillLabel: {
+        fontSize: 11,
+        fontWeight: '800',
         color: colors.textTertiary,
-        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.4,
     },
-    searchLoadingOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 8,
-        backgroundColor: isDark ? 'rgba(2, 6, 23, 0.42)' : 'rgba(248, 250, 252, 0.52)',
-    },
-    searchLoadingContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 24,
-    },
-    searchLoadingContentBase: {
-        paddingTop: Platform.OS === 'ios' ? 164 : 174,
-    },
-    searchLoadingContentWithFilters: {
-        paddingTop: Platform.OS === 'ios' ? 304 : 314,
-    },
-    searchLoadingPill: {
-        alignSelf: 'center',
-        minHeight: 40,
-        paddingHorizontal: 16,
-        marginBottom: 14,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    searchSkeletonCard: {
-        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.86)' : 'rgba(255, 255, 255, 0.9)',
-        borderRadius: 8,
-        padding: 14,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    searchSkeletonHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 12,
-    },
-    searchSkeletonAvatar: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        backgroundColor: isDark ? '#1F2937' : '#E2E8F0',
-    },
-    searchSkeletonLines: {
-        flex: 1,
-        gap: 6,
-    },
-    searchSkeletonLineShort: {
-        width: '54%',
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: isDark ? '#334155' : '#CBD5E1',
-    },
-    searchSkeletonLineTiny: {
-        width: '32%',
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: isDark ? '#1F2937' : '#E2E8F0',
-    },
-    searchSkeletonBadge: {
-        width: 64,
-        height: 24,
-        borderRadius: 6,
-        backgroundColor: isDark ? '#1F2937' : '#E2E8F0',
-    },
-    searchSkeletonLineFull: {
-        width: '92%',
-        height: 11,
-        borderRadius: 6,
-        backgroundColor: isDark ? '#334155' : '#CBD5E1',
-        marginBottom: 8,
-    },
-    searchSkeletonLineMid: {
-        width: '68%',
-        height: 11,
-        borderRadius: 6,
-        backgroundColor: isDark ? '#1F2937' : '#E2E8F0',
-        marginBottom: 14,
-    },
-    searchSkeletonStats: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    searchSkeletonStat: {
-        width: 42,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: isDark ? '#1F2937' : '#E2E8F0',
-    },
-
-    // Results List
-    resultsList: {
-        paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 150 : 160, // Offset for absolute blur header
-        paddingBottom: 40,
-    },
-    resultsListWithFilters: {
-        paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 244 : 254,
-        paddingBottom: 40,
+    sortPillLabelActive: {
+        color: colors.primary,
     },
 
     // Post Result Card
     postResultCard: {
         backgroundColor: colors.card,
-        borderRadius: 8,
-        padding: 14,
-        marginBottom: 10,
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 12,
         borderWidth: 1,
         borderColor: colors.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 1,
     },
     postResultHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
-        gap: 10,
+        marginBottom: 12,
+        gap: 12,
     },
     postResultAuthorInfo: {
         flex: 1,
     },
     postResultAuthor: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 15,
+        fontWeight: '700',
         color: colors.text,
+    },
+    postResultTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.text,
+        marginBottom: 6,
+        letterSpacing: -0.2,
     },
     postResultTime: {
         fontSize: 12,
         color: colors.textTertiary,
-        marginTop: 1,
     },
     postMetaLine: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        marginTop: 1,
+        marginTop: 2,
     },
     metaDot: {
         width: 3,
         height: 3,
         borderRadius: 1.5,
-        backgroundColor: colors.textTertiary,
+        backgroundColor: colors.textQuaternary || '#CBD5E1',
     },
     postTypeBadge: {
-        maxWidth: 118,
-        paddingHorizontal: 8,
-        paddingVertical: 5,
-        borderRadius: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 5,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     postTypeText: {
-        fontSize: 10,
-        fontWeight: '600',
-        color: '#6366F1',
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
     },
     postResultContent: {
-        fontSize: 14,
+        fontSize: 15,
         color: colors.text,
-        lineHeight: 20,
-        marginBottom: 10,
+        lineHeight: 22,
+        marginBottom: 12,
+        opacity: 0.9,
     },
     postResultStats: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
     },
     postStatItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 5,
     },
     postStatText: {
-        fontSize: 12,
+        fontSize: 13,
         color: colors.textSecondary,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     postResultTags: {
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        gap: 6,
+        gap: 8,
+    },
+    tagBadge: {
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.12)' : ColorScale.primary[50],
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     postResultTag: {
         fontSize: 11,
-        color: '#0F766E',
-        fontWeight: '700',
+        color: colors.primary,
+        fontWeight: '800',
     },
     relevanceTrack: {
-        height: 3,
+        height: 4,
         borderRadius: 2,
         overflow: 'hidden',
-        backgroundColor: isDark ? 'rgba(148, 163, 184, 0.18)' : '#E2E8F0',
-        marginTop: 12,
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+        marginTop: 14,
     },
     relevanceFill: {
         height: '100%',
@@ -1247,17 +1496,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.card,
-        borderRadius: 8,
+        borderRadius: 20,
         padding: 14,
         marginBottom: 10,
         gap: 14,
         borderWidth: 1,
         borderColor: colors.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 1,
     },
     userResultInfo: {
         flex: 1,
@@ -1268,16 +1512,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         gap: 6,
     },
     userResultName: {
-        flexShrink: 1,
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 17,
+        fontWeight: '700',
         color: colors.text,
     },
     verifiedBadge: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: '#1D9BF0',
+        width: 14,
+        height: 14,
+        borderRadius: 7,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -1285,254 +1527,525 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        gap: 4,
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 6,
-        marginTop: 5,
+        borderRadius: 999,
+        marginTop: 4,
     },
     userResultRole: {
-        fontSize: 12,
-        fontWeight: '700',
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
     },
+    userResultAction: {
+        width: 32,
+        height: 32,
+        borderRadius: 999,
+        backgroundColor: colors.surfaceVariant,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+
+    // People Preview
     peoplePreview: {
-        marginBottom: 12,
+        marginBottom: 20,
+        marginTop: 4,
     },
     peoplePreviewHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 14,
+        paddingHorizontal: 4,
     },
     peoplePreviewTitle: {
-        fontSize: 15,
+        fontSize: 17,
         fontWeight: '800',
         color: colors.text,
+        letterSpacing: -0.3,
+    },
+    seeAllBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.08)' : ColorScale.primary[50],
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    seeAllText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.primary,
     },
     peoplePreviewRow: {
-        gap: 10,
-        paddingRight: 4,
+        gap: 12,
+        paddingRight: 16,
     },
     peoplePreviewCard: {
-        width: 118,
-        minHeight: 126,
-        borderRadius: 8,
+        width: 120,
+        borderRadius: 999,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.card,
         alignItems: 'center',
-        padding: 12,
+        padding: 16,
+    },
+    peoplePreviewAvatarWrap: {
+        position: 'relative',
+        marginBottom: 10,
+    },
+    verifiedBadgeSmall: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#0EA5E9',
+        borderWidth: 1,
+        borderColor: colors.card,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     peoplePreviewName: {
         width: '100%',
-        marginTop: 8,
         textAlign: 'center',
-        fontSize: 12,
-        fontWeight: '800',
+        fontSize: 13,
+        fontWeight: '700',
         color: colors.text,
+        marginBottom: 8,
     },
     peoplePreviewRole: {
-        marginTop: 7,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        paddingHorizontal: 7,
+        paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 6,
+        borderRadius: 999,
     },
     peoplePreviewRoleText: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '800',
+        textTransform: 'uppercase',
     },
 
-    // Empty State
-    emptyContainer: {
-        paddingVertical: 60,
-        alignItems: 'center',
-    },
-    emptyIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: isDark ? '#251A3D' : '#F5F3FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.text,
-        marginBottom: 6,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        color: colors.textTertiary,
-        textAlign: 'center',
-        paddingHorizontal: 32,
-    },
-
-    // Recent Searches
+    // Recent Section
     recentSection: {
+        flex: 1,
+    },
+    idleScopeSection: {
+        marginBottom: 16,
+        marginTop: 4,
         paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 150 : 160, // Account for blurred sticky header
+    },
+    idleScopeRow: {
+        gap: 10,
+        paddingRight: 8,
+    },
+    idleScopeChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 11,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.card,
+    },
+    idleScopeChipActive: {
+        borderColor: colors.primary,
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.12)' : ColorScale.primary[50],
+    },
+    idleScopeChipText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.textSecondary,
+    },
+    idleScopeChipTextActive: {
+        color: colors.primary,
+    },
+    sectionContainer: {
+        marginBottom: 24,
+        paddingHorizontal: 16,
     },
     recentHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 14,
     },
     recentTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 17,
+        fontWeight: '800',
         color: colors.text,
+        letterSpacing: -0.3,
+    },
+    clearAllBtn: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     clearText: {
         fontSize: 13,
-        fontWeight: '500',
+        fontWeight: '700',
         color: '#6366F1',
+    },
+    recentList: {
+        backgroundColor: colors.surfaceVariant,
+        borderRadius: 20,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     recentItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
-        gap: 12,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+    },
+    recentItemMain: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        gap: 12,
+    },
+    recentRemoveBtn: {
+        paddingRight: 10,
+        paddingVertical: 8,
+    },
+    recentIconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.card,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     recentText: {
         flex: 1,
         fontSize: 15,
+        fontWeight: '500',
         color: colors.text,
     },
 
-    // Suggestions
+    // Suggestions Section
     suggestionsSection: {
-        marginTop: 24,
+        marginBottom: 24,
+        paddingHorizontal: 16,
     },
     sectionTitleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 7,
+        gap: 10,
+        marginBottom: 16,
+    },
+    trendingIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     suggestionChips: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
-        marginTop: 12,
-    },
-    suggestionChip: {
-        backgroundColor: isDark ? 'rgba(20, 184, 166, 0.12)' : '#ECFDF5',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(45, 212, 191, 0.28)' : '#A7F3D0',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    suggestionChipText: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#0F766E',
-    },
-    discoveryGrid: {
-        marginTop: 22,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: 10,
     },
-    discoveryTile: {
-        width: '31%',
-        minWidth: 96,
-        borderRadius: 8,
+    suggestionChip: {
+        backgroundColor: colors.card,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 999,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    suggestionChipText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.textSecondary,
+    },
+
+    // Discovery Section
+    discoverySection: {
+        marginBottom: 24,
+        paddingHorizontal: 16,
+    },
+    discoveryGrid: {
+        marginTop: 16,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        justifyContent: 'space-between',
+    },
+    discoveryTile: {
+        width: '47%',
+        borderRadius: 18,
         backgroundColor: colors.card,
-        padding: 10,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     discoveryIcon: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 48,
+        height: 48,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 8,
+        marginBottom: 12,
     },
     discoveryLabel: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '800',
         color: colors.text,
+        textAlign: 'center',
     },
 
-    // Post result title (for quiz/course/resource)
-    postResultTitle: {
+    // Search Loading
+    searchLoadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 8,
+        backgroundColor: isDark ? 'rgba(2, 6, 23, 0.6)' : 'rgba(248, 250, 252, 0.7)',
+    },
+    searchLoadingContent: {
+        paddingHorizontal: 16,
+        paddingBottom: 24,
+    },
+    searchLoadingPill: {
+        alignSelf: 'center',
+        height: 42,
+        paddingHorizontal: 18,
+        marginBottom: 20,
+        borderRadius: 999,
+        backgroundColor: colors.card,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    loadingText: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        fontWeight: '700',
+    },
+    searchSkeletonCard: {
+        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    searchSkeletonHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16,
+    },
+    searchSkeletonAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: isDark ? '#334155' : '#E2E8F0',
+    },
+    searchSkeletonLines: {
+        flex: 1,
+        gap: 6,
+    },
+    searchSkeletonLineShort: {
+        width: '50%',
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: isDark ? '#334155' : '#E2E8F0',
+    },
+    searchSkeletonLineTiny: {
+        width: '30%',
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: isDark ? '#1F2937' : '#F1F5F9',
+    },
+    searchSkeletonBadge: {
+        width: 70,
+        height: 28,
+        borderRadius: 10,
+        backgroundColor: isDark ? '#334155' : '#E2E8F0',
+    },
+    searchSkeletonLineFull: {
+        width: '100%',
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: isDark ? '#334155' : '#E2E8F0',
+        marginBottom: 10,
+    },
+    searchSkeletonLineMid: {
+        width: '70%',
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: isDark ? '#1F2937' : '#F1F5F9',
+        marginBottom: 16,
+    },
+    searchSkeletonStats: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    searchSkeletonStat: {
+        width: 40,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: isDark ? '#1F2937' : '#F1F5F9',
+    },
+
+    // Empty State
+    emptyContainer: {
+        paddingVertical: 56,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+    },
+    emptyIconRing: {
+        width: 108,
+        height: 108,
+        borderRadius: 54,
+        padding: 4,
+        marginBottom: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyIconInner: {
+        width: 92,
+        height: 92,
+        borderRadius: 46,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyActions: {
+        marginTop: 22,
+        width: '100%',
+        maxWidth: 320,
+        gap: 12,
+    },
+    emptyPrimaryBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: colors.primary,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.primary,
+    },
+    emptyPrimaryBtnText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#fff',
+    },
+    emptyGhostBtn: {
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.08)' : ColorScale.primary[50],
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    emptyGhostBtnText: {
         fontSize: 15,
         fontWeight: '700',
+        color: colors.primary,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: '800',
         color: colors.text,
-        marginBottom: 4,
+        marginBottom: 8,
+        letterSpacing: -0.5,
+    },
+    emptySubtitle: {
+        fontSize: 15,
+        color: colors.textTertiary,
+        textAlign: 'center',
+        paddingHorizontal: 40,
+        lineHeight: 22,
     },
 
-    // Quiz info box
+    // Quiz Info
     quizInfoBox: {
-        backgroundColor: '#FFFBEB',
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 10,
-
-        borderColor: '#FDE68A',
-        gap: 8,
+        backgroundColor: isDark ? 'rgba(217, 119, 6, 0.08)' : '#FFFBEB',
+        borderRadius: 16,
+        padding: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(217, 119, 6, 0.15)' : '#FEF3C7',
     },
     quizInfoRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 6,
+        gap: 8,
+        marginBottom: 10,
     },
     quizInfoChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        backgroundColor: '#FEF3C7',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
+        gap: 5,
+        backgroundColor: isDark ? 'rgba(217, 119, 6, 0.15)' : '#FEF3C7',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(217, 119, 6, 0.25)' : '#FDE68A',
     },
     quizInfoText: {
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#D97706',
     },
     quizStartBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
+        gap: 8,
         backgroundColor: '#F59E0B',
-        paddingVertical: 7,
-        borderRadius: 8,
+        height: 38,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: '#D97706',
     },
     quizStartText: {
         fontSize: 13,
-        fontWeight: '700',
+        fontWeight: '800',
         color: '#fff',
     },
 
-    // Poll preview
+    // Poll Info
     pollPreview: {
-        backgroundColor: '#F5F3FF',
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 10,
-        gap: 6,
-
-        borderColor: '#EDE9FE',
+        backgroundColor: isDark ? 'rgba(124, 58, 237, 0.08)' : '#F5F3FF',
+        borderRadius: 16,
+        padding: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#EDE9FE',
     },
     pollOptionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
+        marginBottom: 8,
     },
     pollOptionDot: {
         width: 8,
@@ -1542,13 +2055,15 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     },
     pollOptionText: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 14,
         color: colors.text,
+        fontWeight: '500',
     },
     pollMoreText: {
         fontSize: 12,
         color: '#7C3AED',
-        fontWeight: '500',
+        fontWeight: '700',
         marginTop: 2,
+        marginLeft: 18,
     },
 });

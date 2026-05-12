@@ -794,7 +794,7 @@ export default function PerformanceTab({
             </View>
           )}
 
-          {!profileInsightsLoading && recentVisitors.length > 0 && (
+          {recentVisitors.length > 0 && (
             <View style={[s.visitorsPanel, { borderColor: colors.border }]}>
               <View style={s.visitorsHeader}>
                 <View>
