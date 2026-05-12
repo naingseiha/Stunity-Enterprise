@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useAuthStore } from '@/stores';
-import { Avatar } from '@/components/common';
+import { Avatar, ImageViewerModal } from '@/components/common';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import { fetchProfile, updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { authApi } from '@/api/client';
@@ -42,6 +42,12 @@ interface FormData {
   lastName: string;
   englishFirstName: string;
   englishLastName: string;
+  gender: string;
+  dateOfBirth: string;
+  phoneNumber: string;
+  email: string;
+  address: string;
+  hireDate: string;
   headline: string;
   bio: string;
   location: string;
@@ -79,6 +85,13 @@ const STUDENT_SCHOOL_FIELDS: CustomFieldConfig[] = [
   { key: 'transferredFrom', label: 'Transferred From', placeholder: 'Transfer source', icon: 'swap-horizontal-outline' },
 ];
 
+const STUDENT_CORE_FIELDS: CustomFieldConfig[] = [
+  { key: 'dateOfBirth', label: 'Date of Birth', placeholder: 'YYYY-MM-DD', icon: 'calendar-outline' },
+  { key: 'gender', label: 'Gender', placeholder: 'MALE / FEMALE', icon: 'male-female-outline' },
+  { key: 'phoneNumber', label: 'Student Phone', placeholder: '+855...', icon: 'call-outline', keyboardType: 'phone-pad' },
+  { key: 'email', label: 'Email', placeholder: 'student@example.com', icon: 'mail-outline', keyboardType: 'email-address' },
+];
+
 const STUDENT_EXAM_FIELDS: CustomFieldConfig[] = [
   { key: 'grade9ExamSession', label: 'Grade 9 Session', placeholder: 'Exam session', icon: 'calendar-outline' },
   { key: 'grade9ExamCenter', label: 'Grade 9 Center', placeholder: 'Exam center', icon: 'business-outline' },
@@ -102,6 +115,15 @@ const TEACHER_PROFESSIONAL_FIELDS: CustomFieldConfig[] = [
   { key: 'major2', label: 'Major 2', placeholder: 'Secondary major', icon: 'library-outline' },
 ];
 
+const TEACHER_CORE_FIELDS: CustomFieldConfig[] = [
+  { key: 'dateOfBirth', label: 'Date of Birth', placeholder: 'YYYY-MM-DD', icon: 'calendar-outline' },
+  { key: 'gender', label: 'Gender', placeholder: 'MALE / FEMALE', icon: 'male-female-outline' },
+  { key: 'phoneNumber', label: 'Phone', placeholder: '+855...', icon: 'call-outline', keyboardType: 'phone-pad' },
+  { key: 'email', label: 'Email', placeholder: 'teacher@example.com', icon: 'mail-outline', keyboardType: 'email-address' },
+  { key: 'address', label: 'Address', placeholder: 'Current address', icon: 'home-outline' },
+  { key: 'hireDate', label: 'Hire Date', placeholder: 'YYYY-MM-DD', icon: 'calendar-number-outline' },
+];
+
 const TEACHER_IDENTITY_FIELDS: CustomFieldConfig[] = [
   { key: 'idCard', label: 'ID Card No.', placeholder: 'National ID', icon: 'card-outline' },
   { key: 'passport', label: 'Passport No.', placeholder: 'Passport number', icon: 'document-text-outline' },
@@ -121,7 +143,8 @@ function getNativeFullName(firstName: string, lastName: string): string {
 
 function hydrateFormData(profile: any): FormData {
   const sl = profile?.socialLinks || {};
-  const roleFields = profile?.role === 'TEACHER' ? profile.teacher?.customFields : profile?.student?.customFields;
+  const roleProfile = profile?.teacher || profile?.student;
+  const roleFields = roleProfile?.customFields;
   const fieldKeys = [
     ...STUDENT_FAMILY_FIELDS,
     ...STUDENT_SCHOOL_FIELDS,
@@ -143,6 +166,12 @@ function hydrateFormData(profile: any): FormData {
     lastName: profile?.lastName || '',
     englishFirstName: profile?.englishFirstName || '',
     englishLastName: profile?.englishLastName || '',
+    gender: roleProfile?.gender || getRegionalValue(roleFields, 'gender') || '',
+    dateOfBirth: roleProfile?.dateOfBirth || getRegionalValue(roleFields, 'dateOfBirth') || '',
+    phoneNumber: roleProfile?.phoneNumber || roleProfile?.phone || profile?.phone || '',
+    email: roleProfile?.email || profile?.email || '',
+    address: roleProfile?.address || getRegionalValue(roleFields, 'address') || '',
+    hireDate: roleProfile?.hireDate || getRegionalValue(roleFields, 'hireDate') || '',
     headline: profile?.headline || '',
     bio: profile?.bio || '',
     location: profile?.location || '',
@@ -169,6 +198,12 @@ function mergePendingIntoFormData(base: FormData, requestedData: any): FormData 
     lastName: requestedData.lastName !== undefined ? requestedData.lastName || '' : base.lastName,
     englishFirstName: requestedData.englishFirstName !== undefined ? requestedData.englishFirstName || '' : base.englishFirstName,
     englishLastName: requestedData.englishLastName !== undefined ? requestedData.englishLastName || '' : base.englishLastName,
+    gender: requestedData.gender !== undefined ? requestedData.gender || '' : base.gender,
+    dateOfBirth: requestedData.dateOfBirth !== undefined ? requestedData.dateOfBirth || '' : base.dateOfBirth,
+    phoneNumber: requestedData.phoneNumber !== undefined ? requestedData.phoneNumber || '' : base.phoneNumber,
+    email: requestedData.email !== undefined ? requestedData.email || '' : base.email,
+    address: requestedData.address !== undefined ? requestedData.address || '' : base.address,
+    hireDate: requestedData.hireDate !== undefined ? requestedData.hireDate || '' : base.hireDate,
     headline: requestedData.headline !== undefined ? requestedData.headline || '' : base.headline,
     bio: requestedData.bio !== undefined ? requestedData.bio || '' : base.bio,
     location: requestedData.location !== undefined ? requestedData.location || '' : base.location,
@@ -203,27 +238,41 @@ export default function EditProfileScreen() {
   const [localProfilePic, setLocalProfilePic] = useState<string | null>(null);
   const [localCoverPic, setLocalCoverPic] = useState<string | null>(null);
   const [pendingProfileChange, setPendingProfileChange] = useState<any | null>(null);
+  const [viewerState, setViewerState] = useState<{ visible: boolean; images: string[]; initialIndex: number }>({
+    visible: false,
+    images: [],
+    initialIndex: 0,
+  });
 
   const isProfileLocked = React.useMemo(() => {
-    if (user?.role === 'TEACHER') return user?.teacher?.isProfileLocked;
-    if (user?.role === 'STUDENT') return user?.student?.isProfileLocked;
+    if (user?.teacher) return user.teacher.isProfileLocked;
+    if (user?.student) return user.student.isProfileLocked;
     return false;
   }, [user]);
   const isSchoolControlledProfile = React.useMemo(() => {
+    const hasOfficialProfile = Boolean(user?.student?.id || user?.teacher?.id);
     const schoolLinked = Boolean(user?.schoolId || user?.student || user?.teacher);
-    return schoolLinked && (user?.role === 'STUDENT' || user?.role === 'TEACHER');
+    return schoolLinked && hasOfficialProfile;
   }, [user]);
+  const hasLinkedStudentProfile = Boolean(user?.student?.id);
+  const hasLinkedTeacherProfile = Boolean(user?.teacher?.id);
   const isPendingApproval = Boolean(pendingProfileChange);
-  const isProfileReadOnly = isSchoolControlledProfile && Boolean(isProfileLocked);
-  const reviewRequired = isSchoolControlledProfile && !isProfileLocked;
-  const saveDisabled = saving || isProfileReadOnly;
-  const saveLabel = isPendingApproval ? 'Update' : reviewRequired ? 'Submit' : t('profile.save');
+  const requiresAdminApproval = isSchoolControlledProfile;
+  const isProfileReadOnly = false;
+  const saveDisabled = saving;
+  const saveLabel = isPendingApproval ? 'Update' : requiresAdminApproval ? 'Submit' : t('profile.save');
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     englishFirstName: '',
     englishLastName: '',
+    gender: '',
+    dateOfBirth: '',
+    phoneNumber: '',
+    email: '',
+    address: '',
+    hireDate: '',
     headline: '',
     bio: '',
     location: '',
@@ -248,22 +297,38 @@ export default function EditProfileScreen() {
   };
 
   const renderField = (field: CustomFieldConfig) => (
-    <View key={field.key} style={s.fieldBlock}>
-      <Text style={s.fieldLabel}>{field.label}</Text>
-      <View style={[s.inputWrap, isProfileReadOnly && s.inputDisabled]}>
-        <Ionicons name={field.icon} size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-        <TextInput
-          style={s.input}
-          value={formData.customFields[field.key] || ''}
-          onChangeText={(value) => setCustomField(field.key, value)}
-          placeholder={field.placeholder}
-          placeholderTextColor={colors.textTertiary}
-          keyboardType={field.keyboardType || 'default'}
-          autoCapitalize="words"
-          editable={!isProfileReadOnly}
-        />
-      </View>
-    </View>
+    (() => {
+      const isCoreField = field.key.startsWith('core:');
+      const formKey = isCoreField ? field.key.replace('core:', '') : field.key;
+      const value = isCoreField
+        ? String((formData as any)[formKey] || '')
+        : formData.customFields[formKey] || '';
+
+      return (
+        <View key={field.key} style={s.fieldBlock}>
+          <Text style={s.fieldLabel}>{field.label}</Text>
+          <View style={[s.inputWrap, isProfileReadOnly && s.inputDisabled]}>
+            <Ionicons name={field.icon} size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
+            <TextInput
+              style={s.input}
+              value={value}
+              onChangeText={(nextValue) => {
+                if (isCoreField) {
+                  setFormData(current => ({ ...current, [formKey]: nextValue }));
+                } else {
+                  setCustomField(formKey, nextValue);
+                }
+              }}
+              placeholder={field.placeholder}
+              placeholderTextColor={colors.textTertiary}
+              keyboardType={field.keyboardType || 'default'}
+              autoCapitalize={field.keyboardType === 'email-address' ? 'none' : 'words'}
+              editable={!isProfileReadOnly}
+            />
+          </View>
+        </View>
+      );
+    })()
   );
 
   const renderNativeFullName = () => {
@@ -384,14 +449,6 @@ export default function EditProfileScreen() {
   // ── Photo Pickers ────────────────────────────────────────────
 
   const pickProfilePhoto = async () => {
-    if (isProfileReadOnly) {
-      Alert.alert(
-        'Profile locked',
-        'Your school admin must unlock your profile before you can submit changes.'
-      );
-      return;
-    }
-
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('profile.permissionNeeded'), t('profile.permissionMessage'));
@@ -455,14 +512,6 @@ export default function EditProfileScreen() {
   };
 
   const pickCoverPhoto = async () => {
-    if (isProfileReadOnly) {
-      Alert.alert(
-        'Profile locked',
-        'Your school admin must unlock your profile before you can submit changes.'
-      );
-      return;
-    }
-
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('profile.permissionNeeded'), t('profile.permissionMessage'));
@@ -543,6 +592,12 @@ export default function EditProfileScreen() {
         lastName: formData.lastName.trim(),
         englishFirstName: formData.englishFirstName.trim(),
         englishLastName: formData.englishLastName.trim(),
+        gender: formData.gender.trim().toUpperCase(),
+        dateOfBirth: formData.dateOfBirth.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        email: formData.email.trim(),
+        address: formData.address.trim(),
+        hireDate: formData.hireDate.trim(),
         headline: formData.headline.trim(),
         bio: formData.bio.trim(),
         location: formData.location.trim(),
@@ -556,14 +611,6 @@ export default function EditProfileScreen() {
           },
         },
       };
-
-      if (isSchoolControlledProfile && isProfileLocked) {
-        Alert.alert(
-          'Profile locked',
-          'Your school has locked official profile editing. Please wait until an admin unlocks your profile.'
-        );
-        return;
-      }
 
       if (isSchoolControlledProfile) {
         try {
@@ -598,6 +645,8 @@ export default function EditProfileScreen() {
         lastName: profileData.lastName,
         englishFirstName: profileData.englishFirstName,
         englishLastName: profileData.englishLastName,
+        phone: profileData.phoneNumber,
+        email: profileData.email,
         name: `${profileData.firstName} ${profileData.lastName}`.trim(),
         headline: profileData.headline,
         bio: profileData.bio,
@@ -638,6 +687,16 @@ export default function EditProfileScreen() {
   const pendingRequestedData = pendingProfileChange?.requestedData || {};
   const coverUri = localCoverPic || pendingRequestedData.coverPhotoUrl || user?.coverPhotoUrl;
   const profileUri = localProfilePic || pendingRequestedData.profilePictureUrl || user?.profilePictureUrl;
+  const openProfileMedia = (target: 'cover' | 'avatar') => {
+    const images = [coverUri, profileUri].filter(Boolean) as string[];
+    const targetUri = target === 'cover' ? coverUri : profileUri;
+    if (!targetUri) return;
+    setViewerState({
+      visible: true,
+      images,
+      initialIndex: Math.max(0, images.indexOf(targetUri)),
+    });
+  };
 
   return (
     <View style={s.container}>
@@ -683,7 +742,7 @@ export default function EditProfileScreen() {
           <Animated.View style={s.photoSection}>
             <TouchableOpacity
               style={s.coverTouch}
-              onPress={pickCoverPhoto}
+              onPress={() => coverUri ? openProfileMedia('cover') : pickCoverPhoto()}
               disabled={uploadingCover || isProfileReadOnly}
               activeOpacity={0.85}
             >
@@ -702,35 +761,46 @@ export default function EditProfileScreen() {
                   </View>
                 </>
               )}
-              <View style={s.coverBadge}>
+              <TouchableOpacity
+                style={s.coverBadge}
+                onPress={pickCoverPhoto}
+                disabled={uploadingCover || isProfileReadOnly}
+                activeOpacity={0.85}
+              >
                 {uploadingCover ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <Ionicons name="camera" size={14} color="#fff" />
                 )}
-              </View>
+              </TouchableOpacity>
             </TouchableOpacity>
 
             <View style={s.avatarWrap}>
               <TouchableOpacity
-                onPress={pickProfilePhoto}
+                onPress={() => profileUri ? openProfileMedia('avatar') : pickProfilePhoto()}
                 disabled={uploadingPhoto || isProfileReadOnly}
                 activeOpacity={0.85}
               >
                 <Avatar
                   uri={profileUri}
                   name={fullName}
-                  size="2xl"
+                  size="3xl"
                   showBorder
                   gradientBorder="blue"
+                  style={s.avatarImage}
                 />
-                <View style={s.avatarBadge}>
+                <TouchableOpacity
+                  style={s.avatarBadge}
+                  onPress={pickProfilePhoto}
+                  disabled={uploadingPhoto || isProfileReadOnly}
+                  activeOpacity={0.85}
+                >
                   {uploadingPhoto ? (
                     <ActivityIndicator color="#0EA5E9" size="small" />
                   ) : (
                     <Ionicons name="camera" size={14} color="#0EA5E9" />
                   )}
-                </View>
+                </TouchableOpacity>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -749,14 +819,14 @@ export default function EditProfileScreen() {
                   {isPendingApproval
                     ? 'Pending admin approval'
                     : isProfileLocked
-                    ? 'Profile editing locked'
+                    ? 'Official profile protected'
                     : 'Changes require admin approval'}
                 </Text>
                 <Text style={s.noticeText}>
                   {isPendingApproval
                     ? 'You are editing your pending request. Submit again to update what admin will review.'
                     : isProfileLocked
-                    ? 'Your school admin must unlock your profile before you can submit changes.'
+                    ? 'Your school protects official records. Your edits will be reviewed before they are applied.'
                     : 'Save will send your updates to the school admin before official records change.'}
                 </Text>
               </View>
@@ -896,7 +966,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Role Details ──────────────────────────────── */}
-          {user?.role === 'STUDENT' && (
+          {hasLinkedStudentProfile && (
             <>
               {renderSection(
                 'Student identity',
@@ -904,6 +974,10 @@ export default function EditProfileScreen() {
                 'school-outline',
                 <>
                   {renderNativeFullName()}
+                  {STUDENT_CORE_FIELDS.map((field) => renderField({
+                    ...field,
+                    key: `core:${field.key}`,
+                  }))}
                   {STUDENT_SCHOOL_FIELDS.map(renderField)}
                 </>
               )}
@@ -922,7 +996,7 @@ export default function EditProfileScreen() {
             </>
           )}
 
-          {user?.role === 'TEACHER' && (
+          {hasLinkedTeacherProfile && (
             <>
               {renderSection(
                 'Professional details',
@@ -930,6 +1004,10 @@ export default function EditProfileScreen() {
                 'briefcase-outline',
                 <>
                   {renderNativeFullName()}
+                  {TEACHER_CORE_FIELDS.map((field) => renderField({
+                    ...field,
+                    key: `core:${field.key}`,
+                  }))}
                   {TEACHER_PROFESSIONAL_FIELDS.map(renderField)}
                 </>
               )}
@@ -979,6 +1057,12 @@ export default function EditProfileScreen() {
           <View style={{ height: 80 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+      <ImageViewerModal
+        visible={viewerState.visible}
+        images={viewerState.images}
+        initialIndex={viewerState.initialIndex}
+        onClose={() => setViewerState(current => ({ ...current, visible: false }))}
+      />
     </View>
   );
 }
@@ -1056,15 +1140,20 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   avatarWrap: {
     alignItems: 'center',
-    marginTop: -50,
+    marginTop: -70,
+  },
+  avatarImage: {
+    width: 156,
+    height: 156,
+    borderRadius: 78,
   },
   avatarBadge: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    bottom: 4,
+    right: 4,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',

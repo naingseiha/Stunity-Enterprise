@@ -126,6 +126,12 @@ function getProfileRequestItems(requestedData: Record<string, any> = {}) {
   [
     ['Headline', requestedData.headline],
     ['Bio', requestedData.bio],
+    ['Gender', requestedData.gender],
+    ['Date of birth', requestedData.dateOfBirth],
+    ['Phone', requestedData.phoneNumber],
+    ['Email', requestedData.email],
+    ['Address', requestedData.address],
+    ['Hire date', requestedData.hireDate],
     ['Location', requestedData.location],
     ['Interests', requestedData.interests],
     ['Social links', requestedData.socialLinks],

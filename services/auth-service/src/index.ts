@@ -2274,21 +2274,10 @@ app.post('/users/me/profile-change-requests', authenticateToken, async (req: Aut
         role: true,
         studentId: true,
         teacherId: true,
-        student: { select: { isProfileLocked: true } },
-        teacher: { select: { isProfileLocked: true } },
       },
     });
-    if (!user || !user.schoolId || !['STUDENT', 'TEACHER'].includes(user.role)) {
+    if (!user || !user.schoolId || (!user.studentId && !user.teacherId)) {
       return res.status(400).json({ success: false, error: 'User is not linked to a school' });
-    }
-    const profileLocked =
-      (user.role === 'STUDENT' && user.student?.isProfileLocked) ||
-      (user.role === 'TEACHER' && user.teacher?.isProfileLocked);
-    if (profileLocked) {
-      return res.status(409).json({
-        success: false,
-        error: 'Profile editing is locked by the school admin',
-      });
     }
 
     const existingPending = await prisma.profileChangeRequest.findFirst({
@@ -2459,6 +2448,8 @@ app.post('/auth/admin/profile-change-requests/:id/approve', authenticateToken, a
       if (changes.lastName !== undefined) userUpdateData.lastName = changes.lastName || request.user.lastName;
       if (changes.englishFirstName !== undefined) userUpdateData.englishFirstName = changes.englishFirstName || null;
       if (changes.englishLastName !== undefined) userUpdateData.englishLastName = changes.englishLastName || null;
+      if (changes.email !== undefined) userUpdateData.email = changes.email || null;
+      if (changes.phoneNumber !== undefined) userUpdateData.phone = changes.phoneNumber || null;
       if (changes.bio !== undefined) userUpdateData.bio = changes.bio;
       if (changes.headline !== undefined) userUpdateData.headline = changes.headline;
       if (changes.professionalTitle !== undefined) userUpdateData.professionalTitle = changes.professionalTitle;
@@ -2502,6 +2493,10 @@ app.post('/auth/admin/profile-change-requests/:id/approve', authenticateToken, a
              lastName: changes.lastName || undefined,
              englishFirstName: changes.englishFirstName ?? undefined,
              englishLastName: changes.englishLastName ?? undefined,
+             gender: changes.gender || undefined,
+             dateOfBirth: changes.dateOfBirth || undefined,
+             phoneNumber: changes.phoneNumber ?? undefined,
+             email: changes.email === '' ? null : changes.email ?? undefined,
              ...(Object.keys(incomingCustomFields).length > 0 ? {
                customFields: {
                  ...existingCustomFields,
@@ -2534,6 +2529,12 @@ app.post('/auth/admin/profile-change-requests/:id/approve', authenticateToken, a
              lastName: changes.lastName || undefined,
              englishFirstName: changes.englishFirstName ?? undefined,
              englishLastName: changes.englishLastName ?? undefined,
+             gender: changes.gender || undefined,
+             dateOfBirth: changes.dateOfBirth === '' ? null : changes.dateOfBirth ?? undefined,
+             phone: changes.phoneNumber === '' ? null : changes.phoneNumber ?? undefined,
+             email: changes.email === '' ? null : changes.email ?? undefined,
+             address: changes.address === '' ? null : changes.address ?? undefined,
+             hireDate: changes.hireDate === '' ? null : changes.hireDate ?? undefined,
              ...(Object.keys(incomingCustomFields).length > 0 ? {
                customFields: {
                  ...existingCustomFields,
