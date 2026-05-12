@@ -1,16 +1,17 @@
 /**
  * Navigation Types
- * 
+ *
  * Type definitions for React Navigation
  */
 
-import { NavigatorScreenParams } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { CompositeScreenProps } from '@react-navigation/native';
-import { Post } from '@/types';
-import type { MyClassSummary } from '@/api/classes';
-import type { Club } from '@/api/clubs';
+import { NavigatorScreenParams } from "@react-navigation/native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { CompositeScreenProps } from "@react-navigation/native";
+import { Post } from "@/types";
+import type { ProfileVisitor } from "@/api/profileApi";
+import type { MyClassSummary } from "@/api/classes";
+import type { Club } from "@/api/clubs";
 
 // Parent Stack (parent portal)
 export type ParentStackParamList = {
@@ -37,7 +38,12 @@ export type RootStackParamList = {
   StoryViewer: { groupIndex: number };
   CourseDetail: { courseId: string };
   LessonViewer: { courseId: string; lessonId: string; contentLocale?: string };
-  DocumentViewer: { title: string; url: string; resourceType?: string; contentLocale?: string };
+  DocumentViewer: {
+    title: string;
+    url: string;
+    resourceType?: string;
+    contentLocale?: string;
+  };
   UserProfile: { userId: string };
   EditProfile: undefined;
   Settings: undefined;
@@ -53,12 +59,27 @@ export type MainStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   QuizDetails: { quiz: any };
   TakeQuiz: { quiz: any };
-  QuizResults: { quiz: any; score: number; passed: boolean; pointsEarned: number; results: any; answers: any[] };
+  QuizResults: {
+    quiz: any;
+    score: number;
+    passed: boolean;
+    pointsEarned: number;
+    results: any;
+    answers: any[];
+  };
   LiveQuizJoin: undefined;
   LiveQuizHost: { quizId: string };
-  LiveQuizLobby: { sessionCode: string; participantId: string; isHost: boolean };
+  LiveQuizLobby: {
+    sessionCode: string;
+    participantId: string;
+    isHost: boolean;
+  };
   LiveQuizPlay: { sessionCode: string; participantId: string; isHost: boolean };
-  LiveQuizLeaderboard: { sessionCode: string; participantId: string; isHost: boolean };
+  LiveQuizLeaderboard: {
+    sessionCode: string;
+    participantId: string;
+    isHost: boolean;
+  };
   LiveQuizPodium: { sessionCode: string };
   Stats: undefined;
   Leaderboard: undefined;
@@ -115,10 +136,17 @@ export type FeedStackParamList = {
 
 // Learn Stack
 export type LearnStackParamList = {
-  LearnHub: { initialTab?: 'explore' | 'enrolled' | 'created' | 'paths' } | undefined;
+  LearnHub:
+    | { initialTab?: "explore" | "enrolled" | "created" | "paths" }
+    | undefined;
   CourseDetail: { courseId: string };
   LessonViewer: { courseId: string; lessonId: string; contentLocale?: string };
-  DocumentViewer: { title: string; url: string; resourceType?: string; contentLocale?: string };
+  DocumentViewer: {
+    title: string;
+    url: string;
+    resourceType?: string;
+    contentLocale?: string;
+  };
   CreateCourse: undefined;
   EditCourse: { courseId: string };
   LearningPath: { pathId: string };
@@ -148,7 +176,18 @@ export type ClubsStackParamList = {
     clubId: string;
     initialClub?: Pick<
       Club,
-      'id' | 'name' | 'description' | 'type' | 'mode' | 'memberCount' | 'isJoined' | 'isActive' | 'tags' | 'coverImage' | 'createdAt' | 'updatedAt'
+      | "id"
+      | "name"
+      | "description"
+      | "type"
+      | "mode"
+      | "memberCount"
+      | "isJoined"
+      | "isActive"
+      | "tags"
+      | "coverImage"
+      | "createdAt"
+      | "updatedAt"
     >;
   };
   ClubAcademics: {
@@ -168,19 +207,36 @@ export type ClubsStackParamList = {
     clubName?: string;
   };
   ClubInvites: undefined;
-  ClassDirectory: { teacherSectionFilter?: 'teaching' | 'other' };
+  ClassDirectory: { teacherSectionFilter?: "teaching" | "other" };
   ClassDetails: {
     classId: string;
     className?: string;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
     linkedStudentId?: string;
     linkedTeacherId?: string;
     homeroomTeacherId?: string;
     /** Teacher hub sections: timetable-linked vs other school links (homeroom, etc.) */
-    teacherClassAccess?: 'teaching' | 'other';
+    teacherClassAccess?: "teaching" | "other";
     initialSummary?: Pick<
       MyClassSummary,
-      'id' | 'name' | 'grade' | 'section' | 'track' | 'studentCount' | 'myRole' | 'linkedStudentId' | 'linkedTeacherId' | 'homeroomTeacher' | 'isHomeroom'
+      | "id"
+      | "name"
+      | "grade"
+      | "section"
+      | "track"
+      | "studentCount"
+      | "myRole"
+      | "linkedStudentId"
+      | "linkedTeacherId"
+      | "homeroomTeacher"
+      | "isHomeroom"
     >;
   };
   ClassAttendance: {
@@ -190,34 +246,64 @@ export type ClubsStackParamList = {
     homeroomTeacherId?: string;
     date?: string; // Optional initial date
   };
-  DisciplineWorkbench: {
-    classId?: string;
-    date?: string;
-  } | undefined;
+  DisciplineWorkbench:
+    | {
+        classId?: string;
+        date?: string;
+      }
+    | undefined;
   ClassAnnouncements: { classId: string };
   ClassReport: {
     classId: string;
     className?: string;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
     linkedStudentId?: string;
   };
   ClassLeaderboard: {
     classId: string;
     className?: string;
     selectedMonth?: string;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
     linkedStudentId?: string;
   };
   ClassAssignments: {
     classId: string;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
     linkedStudentId?: string;
   };
   ClassMaterials: { classId: string };
   ClassMembers: {
     classId: string;
     homeroomTeacherId?: string;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
   };
   EditStudent: {
     studentId: string;
@@ -230,13 +316,27 @@ export type ClubsStackParamList = {
   ClassQuizzes: { classId: string };
   ClassAssignmentDetail: {
     assignment: any;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
     linkedStudentId?: string;
   };
-  ClassGrades: { 
+  ClassGrades: {
     classId: string;
     className?: string;
-    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    myRole?:
+      | "STUDENT"
+      | "TEACHER"
+      | "PARENT"
+      | "ADMIN"
+      | "STAFF"
+      | "SUPER_ADMIN"
+      | "SCHOOL_ADMIN";
     linkedStudentId?: string;
     linkedTeacherId?: string;
   };
@@ -246,7 +346,11 @@ export type ClubsStackParamList = {
   CreateAssignment: { clubId: string };
   SubmissionForm: { assignmentId: string; clubId: string };
   SubmissionsList: { assignmentId: string; clubId: string };
-  GradeSubmission: { submissionId: string; assignmentId: string; clubId: string };
+  GradeSubmission: {
+    submissionId: string;
+    assignmentId: string;
+    clubId: string;
+  };
 };
 
 // Profile Stack
@@ -255,9 +359,10 @@ export type ProfileStackParamList = {
   EditProfile: undefined;
   UserCard: undefined;
   MyQRCard: undefined;
-  Connections: { type: 'followers' | 'following' };
+  Connections: { type: "followers" | "following" };
   Settings: undefined;
   BlockedUsers: undefined;
+  ProfileVisitors: { initialVisitors?: ProfileVisitor[] } | undefined;
   PasswordSecurity: undefined;
   Bookmarks: undefined;
   MyPosts: undefined;
@@ -322,6 +427,6 @@ export type ClubsStackScreenProps<T extends keyof ClubsStackParamList> =
 // Declare global types for useNavigation
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList { }
+    interface RootParamList extends RootStackParamList {}
   }
 }

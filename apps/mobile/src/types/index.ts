@@ -1,6 +1,6 @@
 /**
  * Core Type Definitions
- * 
+ *
  * Shared types used throughout the application
  */
 
@@ -28,7 +28,7 @@ export interface User {
   careerGoals?: string;
   socialLinks?: Record<string, string>;
   profileCompleteness?: number;
-  profileVisibility?: 'PUBLIC' | 'SCHOOL' | 'PRIVATE';
+  profileVisibility?: "PUBLIC" | "SCHOOL" | "PRIVATE";
   isVerified: boolean;
   isOnline: boolean;
   lastActiveAt?: string;
@@ -44,6 +44,11 @@ export interface User {
   school?: { id: string; name: string; logo?: string };
   teacher?: {
     id: string;
+    email?: string | null;
+    phone?: string | null;
+    gender?: string | null;
+    dateOfBirth?: string | null;
+    address?: string | null;
     customFields?: Record<string, any>;
     position?: string;
     degree?: string;
@@ -64,6 +69,9 @@ export interface User {
     id: string;
     firstName: string;
     lastName: string;
+    email?: string | null;
+    gender?: string | null;
+    dateOfBirth?: string | null;
     customFields?: Record<string, any>;
     class?: { id: string; name: string; grade: string };
     studentId?: string;
@@ -89,16 +97,16 @@ export interface User {
   updatedAt: string;
 }
 
-export type LinkingStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LinkingStatus = "NONE" | "PENDING" | "APPROVED" | "REJECTED";
 
 export type UserRole =
-  | 'STUDENT'
-  | 'TEACHER'
-  | 'PARENT'
-  | 'ADMIN'
-  | 'SUPER_ADMIN'
-  | 'SCHOOL_ADMIN'
-  | 'STAFF';
+  | "STUDENT"
+  | "TEACHER"
+  | "PARENT"
+  | "ADMIN"
+  | "SUPER_ADMIN"
+  | "SCHOOL_ADMIN"
+  | "STAFF";
 
 export interface UserStats {
   posts: number;
@@ -113,6 +121,13 @@ export interface UserStats {
   postsThisMonth: number;
   totalLikes: number;
   totalViews: number;
+  profileViews?: number;
+  profileViews7d?: number;
+  profileViews30d?: number;
+  uniqueProfileViewers7d?: number;
+  uniqueProfileViewers30d?: number;
+  profilePerformanceScore?: number;
+  trendingProfileScore?: number;
 }
 
 export interface ProfileData {
@@ -141,7 +156,15 @@ export interface Education {
 
 export interface Experience {
   id: string;
-  type: 'WORK' | 'INTERNSHIP' | 'VOLUNTEER' | 'FREELANCE' | 'TEACHING_ASSISTANT' | 'RESEARCH' | 'STUDENT_ORG' | 'TUTORING';
+  type:
+    | "WORK"
+    | "INTERNSHIP"
+    | "VOLUNTEER"
+    | "FREELANCE"
+    | "TEACHING_ASSISTANT"
+    | "RESEARCH"
+    | "STUDENT_ORG"
+    | "TUTORING";
   title: string;
   organization: string;
   location?: string;
@@ -189,33 +212,33 @@ export interface RegisterData {
   password: string;
   role: UserRole;
   organization?: string;
-  organizationType?: 'university' | 'school' | 'corporate' | 'other';
+  organizationType?: "university" | "school" | "corporate" | "other";
 }
 
 // Post Types
 export type PostType =
-  | 'ARTICLE'
-  | 'QUESTION'
-  | 'ANNOUNCEMENT'
-  | 'POLL'
-  | 'ACHIEVEMENT'
-  | 'PROJECT'
-  | 'COURSE'
-  | 'EVENT'
-  | 'QUIZ'
-  | 'EXAM'
-  | 'ASSIGNMENT'
-  | 'RESOURCE'
-  | 'TUTORIAL'
-  | 'RESEARCH'
-  | 'REFLECTION'
-  | 'COLLABORATION'
-  | 'CLUB_ANNOUNCEMENT'
-  | 'EVENT_CREATED'
-  | 'CLUB_CREATED';
+  | "ARTICLE"
+  | "QUESTION"
+  | "ANNOUNCEMENT"
+  | "POLL"
+  | "ACHIEVEMENT"
+  | "PROJECT"
+  | "COURSE"
+  | "EVENT"
+  | "QUIZ"
+  | "EXAM"
+  | "ASSIGNMENT"
+  | "RESOURCE"
+  | "TUTORIAL"
+  | "RESEARCH"
+  | "REFLECTION"
+  | "COLLABORATION"
+  | "CLUB_ANNOUNCEMENT"
+  | "EVENT_CREATED"
+  | "CLUB_CREATED";
 
 // E-Learning specific metadata for posts
-export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type DifficultyLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
 export interface PostLearningMeta {
   // Progress tracking (for Course, Quiz, Assignment)
@@ -264,7 +287,7 @@ export interface MediaMetadata {
   width?: number;
   height?: number;
   aspectRatio?: number; // height / width
-  type?: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | string;
+  type?: "IMAGE" | "VIDEO" | "DOCUMENT" | string;
   mimeType?: string;
   duration?: number;
   blurhash?: string;
@@ -276,7 +299,7 @@ export interface Post {
   title?: string; // For Quiz, Course, etc.
   postType: PostType;
   mediaUrls: string[];
-  mediaType?: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  mediaType?: "IMAGE" | "VIDEO" | "DOCUMENT";
   mediaDisplayMode?: string; // 'AUTO', 'GRID', 'CAROUSEL', etc.
   mediaAspectRatio?: number; // height / width for the primary media preview
   mediaMetadata?: MediaMetadata[];
@@ -290,7 +313,7 @@ export interface Post {
   isBookmarked: boolean;
   isValued?: boolean;
   isFollowingAuthor?: boolean;
-  visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'PRIVATE';
+  visibility: "PUBLIC" | "SCHOOL" | "CLASS" | "PRIVATE";
   tags: string[];
   // E-Learning enhancements
   learningMeta?: PostLearningMeta;
@@ -333,7 +356,7 @@ export interface Post {
     questions: Array<{
       id: string;
       text: string;
-      type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+      type: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
       options?: string[];
       correctAnswer: string;
       points: number;
@@ -342,7 +365,7 @@ export interface Post {
     timeLimit: number | null; // in minutes
     passingScore: number; // percentage (0-100)
     totalPoints: number;
-    resultsVisibility?: 'IMMEDIATE' | 'AFTER_SUBMISSION' | 'MANUAL';
+    resultsVisibility?: "IMMEDIATE" | "AFTER_SUBMISSION" | "MANUAL";
     shuffleQuestions?: boolean;
     shuffleAnswers?: boolean;
     maxAttempts?: number | null;
@@ -381,10 +404,10 @@ export interface Post {
 }
 
 export type FeedItem =
-  | { type: 'POST'; data: Post }
-  | { type: 'SUGGESTED_USERS'; data: Partial<User>[] }
-  | { type: 'SUGGESTED_COURSES'; data: Course[] }
-  | { type: 'SUGGESTED_QUIZZES'; data: any[] };
+  | { type: "POST"; data: Post }
+  | { type: "SUGGESTED_USERS"; data: Partial<User>[] }
+  | { type: "SUGGESTED_COURSES"; data: Course[] }
+  | { type: "SUGGESTED_QUIZZES"; data: any[] };
 
 export interface Comment {
   id: string;
@@ -403,7 +426,7 @@ export interface Comment {
 export interface Story {
   id: string;
   author: User;
-  type: 'TEXT' | 'IMAGE' | 'VIDEO';
+  type: "TEXT" | "IMAGE" | "VIDEO";
   mediaUrl?: string;
   text?: string;
   backgroundColor?: string;
@@ -448,7 +471,11 @@ export interface Course {
   updatedAt: string;
 }
 
-export type CourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'ALL_LEVELS';
+export type CourseLevel =
+  | "BEGINNER"
+  | "INTERMEDIATE"
+  | "ADVANCED"
+  | "ALL_LEVELS";
 
 export interface Lesson {
   id: string;
@@ -464,7 +491,7 @@ export interface Lesson {
   isFree: boolean;
 }
 
-export type LessonType = 'VIDEO' | 'ARTICLE' | 'QUIZ' | 'ASSIGNMENT' | 'LIVE';
+export type LessonType = "VIDEO" | "ARTICLE" | "QUIZ" | "ASSIGNMENT" | "LIVE";
 
 export interface CourseModule {
   id: string;
@@ -526,7 +553,13 @@ export interface Message {
   createdAt: string;
 }
 
-export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE' | 'AUDIO' | 'SYSTEM';
+export type MessageType =
+  | "TEXT"
+  | "IMAGE"
+  | "VIDEO"
+  | "FILE"
+  | "AUDIO"
+  | "SYSTEM";
 
 // Notification Types
 export interface Notification {
@@ -543,28 +576,28 @@ export interface Notification {
 }
 
 export type NotificationType =
-  | 'LIKE'
-  | 'COMMENT'
-  | 'REPLY'
-  | 'FOLLOW'
-  | 'MENTION'
-  | 'ANNOUNCEMENT'
-  | 'GRADE_POSTED'
-  | 'ATTENDANCE_MARKED'
-  | 'SKILL_ENDORSED'
-  | 'RECOMMENDATION_RECEIVED'
-  | 'PROJECT_LIKED'
-  | 'SHARE'
-  | 'ACHIEVEMENT_EARNED'
-  | 'ASSIGNMENT_DUE'
-  | 'COURSE_ENROLL'
-  | 'POLL_RESULT'
-  | 'MESSAGE'
-  | 'COURSE_UPDATE'
-  | 'ENROLLMENT'
-  | 'ACHIEVEMENT'
-  | 'SCHOOL_LINK_REQUEST'
-  | 'SYSTEM';
+  | "LIKE"
+  | "COMMENT"
+  | "REPLY"
+  | "FOLLOW"
+  | "MENTION"
+  | "ANNOUNCEMENT"
+  | "GRADE_POSTED"
+  | "ATTENDANCE_MARKED"
+  | "SKILL_ENDORSED"
+  | "RECOMMENDATION_RECEIVED"
+  | "PROJECT_LIKED"
+  | "SHARE"
+  | "ACHIEVEMENT_EARNED"
+  | "ASSIGNMENT_DUE"
+  | "COURSE_ENROLL"
+  | "POLL_RESULT"
+  | "MESSAGE"
+  | "COURSE_UPDATE"
+  | "ENROLLMENT"
+  | "ACHIEVEMENT"
+  | "SCHOOL_LINK_REQUEST"
+  | "SYSTEM";
 
 // Club & Event Types
 export interface Club {
@@ -576,7 +609,7 @@ export interface Club {
   memberCount: number;
   isMember: boolean;
   isAdmin: boolean;
-  privacy: 'PUBLIC' | 'PRIVATE' | 'INVITE_ONLY';
+  privacy: "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
   createdAt: string;
 }
 
@@ -625,5 +658,5 @@ export interface PaginationParams {
   page?: number;
   pageSize?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }

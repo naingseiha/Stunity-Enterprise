@@ -11,54 +11,54 @@ datasource db {
 }
 
 model School {
-  id                  String               @id @default(cuid())
-  name                String
-  slug                String               @unique
-  email               String               @unique
-  phone               String?
-  address             String?
-  logo                String?
-  website             String?
-  subscriptionTier    SubscriptionTier     @default(FREE_TRIAL_1M)
-  subscriptionStart   DateTime             @default(now())
-  subscriptionEnd     DateTime?
-  isActive            Boolean              @default(true)
-  isTrial             Boolean              @default(true)
-  maxStudents         Int                  @default(100)
-  maxTeachers         Int                  @default(10)
-  maxStorage          BigInt               @default(1073741824)
-  currentStudents     Int                  @default(0)
-  currentTeachers     Int                  @default(0)
-  currentStorage      BigInt               @default(0)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  gradeRange          String               @default("7-12")
-  onboardingStep      Int                  @default(0)
-  schoolType          SchoolType           @default(HIGH_SCHOOL)
-  setupCompleted      Boolean              @default(false)
-  setupCompletedAt    DateTime?
-  workingDays         Int[]                @default([1, 2, 3, 4, 5])
-  countryCode         String?              @default("KH")
-  defaultLanguage     String?              @default("km-KH")
-  educationModel      EducationModel?      @default(KHM_MOEYS)
-  idFormat            IdFormat             @default(STRUCTURED)
-  idPrefix            String?              @default("01")
-  nextStudentNumber   Int                  @default(1)
-  nextTeacherNumber   Int                  @default(1)
-  regionCode          String?
-  registrationStatus  RegistrationStatus   @default(APPROVED)
-  academicYears       AcademicYear[]
-  claimCodes          ClaimCode[]
-  classes             Class[]
-  featureFlags        FeatureFlag[]
-  idGenerationLogs    IdGenerationLog[]
-  onboardingChecklist OnboardingChecklist?
-  periods             Period[]
-  SchoolLocation      SchoolLocation[]
-  schoolSettings      SchoolSettings?
-  schoolShifts        SchoolShift[]
-  students            Student[]
-  studyClubs          StudyClub[]
+  id                    String                 @id @default(cuid())
+  name                  String
+  slug                  String                 @unique
+  email                 String                 @unique
+  phone                 String?
+  address               String?
+  logo                  String?
+  website               String?
+  subscriptionTier      SubscriptionTier       @default(FREE_TRIAL_1M)
+  subscriptionStart     DateTime               @default(now())
+  subscriptionEnd       DateTime?
+  isActive              Boolean                @default(true)
+  isTrial               Boolean                @default(true)
+  maxStudents           Int                    @default(100)
+  maxTeachers           Int                    @default(10)
+  maxStorage            BigInt                 @default(1073741824)
+  currentStudents       Int                    @default(0)
+  currentTeachers       Int                    @default(0)
+  currentStorage        BigInt                 @default(0)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  gradeRange            String                 @default("7-12")
+  onboardingStep        Int                    @default(0)
+  schoolType            SchoolType             @default(HIGH_SCHOOL)
+  setupCompleted        Boolean                @default(false)
+  setupCompletedAt      DateTime?
+  workingDays           Int[]                  @default([1, 2, 3, 4, 5])
+  countryCode           String?                @default("KH")
+  defaultLanguage       String?                @default("km-KH")
+  educationModel        EducationModel?        @default(KHM_MOEYS)
+  idFormat              IdFormat               @default(STRUCTURED)
+  idPrefix              String?                @default("01")
+  nextStudentNumber     Int                    @default(1)
+  nextTeacherNumber     Int                    @default(1)
+  regionCode            String?
+  registrationStatus    RegistrationStatus     @default(APPROVED)
+  academicYears         AcademicYear[]
+  claimCodes            ClaimCode[]
+  classes               Class[]
+  featureFlags          FeatureFlag[]
+  idGenerationLogs      IdGenerationLog[]
+  onboardingChecklist   OnboardingChecklist?
+  periods               Period[]
+  SchoolLocation        SchoolLocation[]
+  schoolSettings        SchoolSettings?
+  schoolShifts          SchoolShift[]
+  students              Student[]
+  studyClubs            StudyClub[]
   teachers              Teacher[]
   timetableEntries      TimetableEntry[]
   users                 User[]
@@ -222,21 +222,21 @@ enum MonthlyGradeSheetStatus {
 }
 
 model GradeConfirmation {
-  id          String                    @id @default(cuid())
+  id          String                  @id @default(cuid())
   classId     String
   subjectId   String
   month       String
   monthNumber Int?
   year        Int
-  status      MonthlyGradeSheetStatus   @default(DRAFT)
-  isConfirmed Boolean                   @default(false)
+  status      MonthlyGradeSheetStatus @default(DRAFT)
+  isConfirmed Boolean                 @default(false)
   confirmedBy String?
   confirmedAt DateTime?
   submittedAt DateTime?
   lockedBy    String?
   lockedAt    DateTime?
-  updatedAt   DateTime                  @updatedAt
-  user        User?                     @relation(fields: [confirmedBy], references: [id], onDelete: SetNull)
+  updatedAt   DateTime                @updatedAt
+  user        User?                   @relation(fields: [confirmedBy], references: [id], onDelete: SetNull)
 
   @@unique([classId, subjectId, month, year])
   @@index([classId, month, year])
@@ -272,43 +272,43 @@ model StudentMonthlySummary {
 }
 
 model Student {
-  id                   String                  @id @default(cuid())
-  schoolId             String
-  studentId            String?                 @unique
-  firstName            String
-  lastName             String
-  englishFirstName     String?
-  englishLastName      String?
-  isProfileLocked      Boolean                 @default(false)
-  dateOfBirth          String
-  gender               Gender
-  email                String?                 @unique
-  phoneNumber          String?
-  classId              String?
-  photoUrl             String?
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
-  accountDeactivatedAt DateTime?
-  deactivationReason   String?
-  isAccountActive      Boolean                 @default(true)
-  studentRole          StudentRole             @default(GENERAL)
-  entryYear            Int?
-  permanentId          String?                 @unique
-  studentIdFormat      IdFormat?
-  studentIdMeta        Json?
-  customFields         Json?
-  attendance           Attendance[]
-  claimCode            ClaimCode?
-  conversations        Conversation[]
-  grades               Grade[]
-  studentClasses       StudentClass[]
-  monthlySummaries     StudentMonthlySummary[]
-  studentParents       StudentParent[]
-  StudentProgression   StudentProgression[]
+  id                         String                      @id @default(cuid())
+  schoolId                   String
+  studentId                  String?                     @unique
+  firstName                  String
+  lastName                   String
+  englishFirstName           String?
+  englishLastName            String?
+  isProfileLocked            Boolean                     @default(false)
+  dateOfBirth                String
+  gender                     Gender
+  email                      String?                     @unique
+  phoneNumber                String?
+  classId                    String?
+  photoUrl                   String?
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  accountDeactivatedAt       DateTime?
+  deactivationReason         String?
+  isAccountActive            Boolean                     @default(true)
+  studentRole                StudentRole                 @default(GENERAL)
+  entryYear                  Int?
+  permanentId                String?                     @unique
+  studentIdFormat            IdFormat?
+  studentIdMeta              Json?
+  customFields               Json?
+  attendance                 Attendance[]
+  claimCode                  ClaimCode?
+  conversations              Conversation[]
+  grades                     Grade[]
+  studentClasses             StudentClass[]
+  monthlySummaries           StudentMonthlySummary[]
+  studentParents             StudentParent[]
+  StudentProgression         StudentProgression[]
   classAssignmentSubmissions ClassAssignmentSubmission[]
-  class                Class?                  @relation(fields: [classId], references: [id])
-  school               School                  @relation(fields: [schoolId], references: [id])
-  user                 User?
+  class                      Class?                      @relation(fields: [classId], references: [id])
+  school                     School                      @relation(fields: [schoolId], references: [id])
+  user                       User?
 
   @@index([schoolId])
   @@index([classId])
@@ -325,17 +325,17 @@ model Student {
 }
 
 model ClassAnnouncement {
-  id          String   @id @default(cuid())
-  classId     String
-  authorId    String
-  content     String
-  mediaUrls   String[]
-  mediaKeys   String[]
-  isPinned    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  author      User     @relation("ClassAnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  classId   String
+  authorId  String
+  content   String
+  mediaUrls String[]
+  mediaKeys String[]
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  author    User     @relation("ClassAnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([classId, createdAt(sort: Desc)])
   @@index([authorId])
@@ -363,20 +363,20 @@ model ClassMaterial {
 }
 
 model ClassAssignment {
-  id              String   @id @default(cuid())
-  classId         String
-  creatorId       String
-  title           String
-  description     String?
-  dueDate         DateTime?
-  maxPoints       Int?
-  deepLinkUrl     String?
-  quizId          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  class           Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  creator         User     @relation("ClassAssignmentCreator", fields: [creatorId], references: [id])
-  submissions     ClassAssignmentSubmission[]
+  id          String                      @id @default(cuid())
+  classId     String
+  creatorId   String
+  title       String
+  description String?
+  dueDate     DateTime?
+  maxPoints   Int?
+  deepLinkUrl String?
+  quizId      String?
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  class       Class                       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator     User                        @relation("ClassAssignmentCreator", fields: [creatorId], references: [id])
+  submissions ClassAssignmentSubmission[]
 
   @@index([classId, dueDate])
   @@index([creatorId])
@@ -384,17 +384,17 @@ model ClassAssignment {
 }
 
 model ClassAssignmentSubmission {
-  id             String   @id @default(cuid())
-  assignmentId   String
-  studentId      String
-  status         String   @default("PENDING")
-  score          Int?
-  feedback       String?
-  submittedAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  assignment     ClassAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id           String          @id @default(cuid())
+  assignmentId String
+  studentId    String
+  status       String          @default("PENDING")
+  score        Int?
+  feedback     String?
+  submittedAt  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  assignment   ClassAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([assignmentId, studentId])
   @@index([studentId])
@@ -567,165 +567,167 @@ model Teacher {
 }
 
 model User {
-  id                          String                       @id @default(cuid())
-  schoolId                    String?
-  email                       String?                      @unique
-  password                    String
-  firstName                   String
-  lastName                    String
-  englishFirstName            String?
-  englishLastName             String?
-  createdAt                   DateTime                     @default(now())
-  updatedAt                   DateTime                     @updatedAt
-  failedAttempts              Int                          @default(0)
-  isActive                    Boolean                      @default(true)
-  lastLogin                   DateTime?
-  lockedUntil                 DateTime?
-  loginCount                  Int                          @default(0)
-  permissions                 Json?                        @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
-  phone                       String?                      @unique
-  studentId                   String?                      @unique
-  teacherId                   String?                      @unique
-  role                        UserRole                     @default(TEACHER)
-  accountSuspendedAt          DateTime?
-  isDefaultPassword           Boolean                      @default(true)
-  isSuperAdmin                Boolean                      @default(false)
-  linkingStatus               LinkingStatus                @default(NONE)
-  pendingLinkData             Json?
-  lastPasswordHashes          String[]
-  passwordChangedAt           DateTime?
-  passwordExpiresAt           DateTime?
-  passwordResetExpiry         DateTime?
-  passwordResetToken          String?                      @unique
-  suspensionReason            String?
-  parentId                    String?                      @unique
-  profilePictureUrl           String?
-  profilePictureKey           String?
-  coverPhotoUrl               String?
-  coverPhotoKey               String?
-  bio                         String?
-  headline                    String?
-  interests                   String[]
-  skills                      String[]
-  socialLinks                 Json?
-  profileCompleteness         Int                          @default(0)
-  profileUpdatedAt            DateTime?
-  profileVisibility           ProfileVisibility            @default(SCHOOL)
-  careerGoals                 String?
-  location                    String?
-  languages                   String[]
-  professionalTitle           String?
-  isVerified                  Boolean                      @default(false)
-  verifiedAt                  DateTime?
-  totalLearningHours          Int                          @default(0)
-  currentStreak               Int                          @default(0)
-  longestStreak               Int                          @default(0)
-  totalPoints                 Int                          @default(0)
-  level                       Int                          @default(1)
-  isOpenToOpportunities       Boolean                      @default(false)
-  resumeUrl                   String?
-  resumeKey                   String?
-  accountType                 AccountType                  @default(SOCIAL_ONLY)
-  emailVerificationExpiry     DateTime?
-  emailVerificationToken      String?                      @unique
-  isEmailVerified             Boolean                      @default(false)
-  organizationCode            String?
-  organizationName            String?
-  organizationType            String?
-  privacySettings             Json?
-  socialFeaturesEnabled       Boolean                      @default(true)
-  ssoAccessToken              String?
-  ssoId                       String?
-  ssoProvider                 String?
-  challengeParticipations     ChallengeParticipant[]
-  learningStreak              LearningStreak?
-  quizAttemptRecords          QuizAttemptRecord[]
-  challengesAsChallenger      QuizChallenge[]              @relation("ChallengerChallenges")
-  challengesAsOpponent        QuizChallenge[]              @relation("OpponentChallenges")
-  gameAchievements            UserGameAchievement[]
-  stats                       UserStats?
-  weeklyLeaderboards          WeeklyLeaderboard[]
-  achievements                Achievement[]
-  attendanceStreak            AttendanceStreak?
-  adminAuditLogs              AuditLog[]                   @relation("AuditLogAdmin")
-  teacherAuditLogs            AuditLog[]                   @relation("AuditLogTeacher")
-  bookmarks                   Bookmark[]                   @relation("UserBookmarks")
-  certifications              Certification[]
-  courseCertificates          CourseCertificate[]
-  userChallenges              Challenge[]
-  claimedCode                 ClaimCode?
-  clubAnnouncements           ClubAnnouncement[]           @relation("ClubAnnouncementCreator")
-  clubSubmissionGrading       ClubAssignmentSubmission[]   @relation("ClubSubmissionGrader")
-  clubAssignments             ClubAssignment[]             @relation("ClubAssignmentCreator")
-  clubAttendanceMarking       ClubAttendance[]             @relation("ClubAttendanceMarker")
-  clubAwardsGiven             ClubAward[]                  @relation("ClubAwardGiver")
-  clubGrades                  ClubGrade[]                  @relation("ClubGrader")
-  clubMaterialsUploaded       ClubMaterial[]               @relation("ClubMaterialUploader")
-  clubMemberships             ClubMember[]                 @relation("ClubMemberships")
-  clubReportsGenerated        ClubReport[]                 @relation("ClubReportGenerator")
-  clubSessions                ClubSession[]                @relation("ClubSessionCreator")
-  clubInstructions            ClubSubject[]                @relation("ClubInstructor")
-  commentReactions            CommentReaction[]
-  comments                    Comment[]
-  courseReviews               CourseReview[]
-  createdCourses              Course[]                     @relation("CourseInstructor")
-  deviceTokens                DeviceToken[]
-  sentDirectMessages          DirectMessage[]              @relation("DMSender")
-  dmParticipations            DMParticipant[]
-  dmReadReceipts              DMReadReceipt[]
-  education                   Education[]
-  enrollments                 Enrollment[]
-  eventAttendances            EventAttendee[]
-  createdEvents               Event[]                      @relation("EventCreator")
-  experiences                 Experience[]
-  following                   Follow[]                     @relation("Following")
-  followers                   Follow[]                     @relation("Followers")
-  gradeConfirmations          GradeConfirmation[]
-  createdPaths                LearningPath[]               @relation("PathCreator")
-  likes                       Like[]
-  milestoneEvents             MilestoneEvent[]
-  sentNotifications           Notification[]               @relation("NotificationActor")
-  notifications               Notification[]               @relation("NotificationRecipient")
-  platformAuditLogs           PlatformAuditLog[]
-  pollVotes                   PollVote[]                   @relation("PollVotes")
-  reportedPosts               PostReport[]                 @relation("PostReporter")
-  reviewedReports             PostReport[]                 @relation("ReportReviewer")
+  id                           String                       @id @default(cuid())
+  schoolId                     String?
+  email                        String?                      @unique
+  password                     String
+  firstName                    String
+  lastName                     String
+  englishFirstName             String?
+  englishLastName              String?
+  createdAt                    DateTime                     @default(now())
+  updatedAt                    DateTime                     @updatedAt
+  failedAttempts               Int                          @default(0)
+  isActive                     Boolean                      @default(true)
+  lastLogin                    DateTime?
+  lockedUntil                  DateTime?
+  loginCount                   Int                          @default(0)
+  permissions                  Json?                        @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone                        String?                      @unique
+  studentId                    String?                      @unique
+  teacherId                    String?                      @unique
+  role                         UserRole                     @default(TEACHER)
+  accountSuspendedAt           DateTime?
+  isDefaultPassword            Boolean                      @default(true)
+  isSuperAdmin                 Boolean                      @default(false)
+  linkingStatus                LinkingStatus                @default(NONE)
+  pendingLinkData              Json?
+  lastPasswordHashes           String[]
+  passwordChangedAt            DateTime?
+  passwordExpiresAt            DateTime?
+  passwordResetExpiry          DateTime?
+  passwordResetToken           String?                      @unique
+  suspensionReason             String?
+  parentId                     String?                      @unique
+  profilePictureUrl            String?
+  profilePictureKey            String?
+  coverPhotoUrl                String?
+  coverPhotoKey                String?
+  bio                          String?
+  headline                     String?
+  interests                    String[]
+  skills                       String[]
+  socialLinks                  Json?
+  profileCompleteness          Int                          @default(0)
+  profileUpdatedAt             DateTime?
+  profileVisibility            ProfileVisibility            @default(SCHOOL)
+  careerGoals                  String?
+  location                     String?
+  languages                    String[]
+  professionalTitle            String?
+  isVerified                   Boolean                      @default(false)
+  verifiedAt                   DateTime?
+  totalLearningHours           Int                          @default(0)
+  currentStreak                Int                          @default(0)
+  longestStreak                Int                          @default(0)
+  totalPoints                  Int                          @default(0)
+  level                        Int                          @default(1)
+  isOpenToOpportunities        Boolean                      @default(false)
+  resumeUrl                    String?
+  resumeKey                    String?
+  accountType                  AccountType                  @default(SOCIAL_ONLY)
+  emailVerificationExpiry      DateTime?
+  emailVerificationToken       String?                      @unique
+  isEmailVerified              Boolean                      @default(false)
+  organizationCode             String?
+  organizationName             String?
+  organizationType             String?
+  privacySettings              Json?
+  socialFeaturesEnabled        Boolean                      @default(true)
+  ssoAccessToken               String?
+  ssoId                        String?
+  ssoProvider                  String?
+  challengeParticipations      ChallengeParticipant[]
+  learningStreak               LearningStreak?
+  quizAttemptRecords           QuizAttemptRecord[]
+  challengesAsChallenger       QuizChallenge[]              @relation("ChallengerChallenges")
+  challengesAsOpponent         QuizChallenge[]              @relation("OpponentChallenges")
+  gameAchievements             UserGameAchievement[]
+  stats                        UserStats?
+  weeklyLeaderboards           WeeklyLeaderboard[]
+  achievements                 Achievement[]
+  attendanceStreak             AttendanceStreak?
+  adminAuditLogs               AuditLog[]                   @relation("AuditLogAdmin")
+  teacherAuditLogs             AuditLog[]                   @relation("AuditLogTeacher")
+  bookmarks                    Bookmark[]                   @relation("UserBookmarks")
+  certifications               Certification[]
+  courseCertificates           CourseCertificate[]
+  userChallenges               Challenge[]
+  claimedCode                  ClaimCode?
+  clubAnnouncements            ClubAnnouncement[]           @relation("ClubAnnouncementCreator")
+  clubSubmissionGrading        ClubAssignmentSubmission[]   @relation("ClubSubmissionGrader")
+  clubAssignments              ClubAssignment[]             @relation("ClubAssignmentCreator")
+  clubAttendanceMarking        ClubAttendance[]             @relation("ClubAttendanceMarker")
+  clubAwardsGiven              ClubAward[]                  @relation("ClubAwardGiver")
+  clubGrades                   ClubGrade[]                  @relation("ClubGrader")
+  clubMaterialsUploaded        ClubMaterial[]               @relation("ClubMaterialUploader")
+  clubMemberships              ClubMember[]                 @relation("ClubMemberships")
+  clubReportsGenerated         ClubReport[]                 @relation("ClubReportGenerator")
+  clubSessions                 ClubSession[]                @relation("ClubSessionCreator")
+  clubInstructions             ClubSubject[]                @relation("ClubInstructor")
+  commentReactions             CommentReaction[]
+  comments                     Comment[]
+  courseReviews                CourseReview[]
+  createdCourses               Course[]                     @relation("CourseInstructor")
+  deviceTokens                 DeviceToken[]
+  sentDirectMessages           DirectMessage[]              @relation("DMSender")
+  dmParticipations             DMParticipant[]
+  dmReadReceipts               DMReadReceipt[]
+  education                    Education[]
+  enrollments                  Enrollment[]
+  eventAttendances             EventAttendee[]
+  createdEvents                Event[]                      @relation("EventCreator")
+  experiences                  Experience[]
+  following                    Follow[]                     @relation("Following")
+  followers                    Follow[]                     @relation("Followers")
+  gradeConfirmations           GradeConfirmation[]
+  createdPaths                 LearningPath[]               @relation("PathCreator")
+  likes                        Like[]
+  milestoneEvents              MilestoneEvent[]
+  sentNotifications            Notification[]               @relation("NotificationActor")
+  notifications                Notification[]               @relation("NotificationRecipient")
+  platformAuditLogs            PlatformAuditLog[]
+  pollVotes                    PollVote[]                   @relation("PollVotes")
+  profileViewsMade             ProfileView[]                @relation("ProfileViewsMade")
+  profileViewsReceived         ProfileView[]                @relation("ProfileViewsReceived")
+  reportedPosts                PostReport[]                 @relation("PostReporter")
+  reviewedReports              PostReport[]                 @relation("ReportReviewer")
   postFeedback                 UserPostFeedback[]
-  postViews                   PostView[]
-  posts                       Post[]
-  projects                    Project[]
-  quizAttempts                QuizAttempt[]                @relation("QuizAttempts")
-  givenRecommendations        Recommendation[]             @relation("RecommendationAuthor")
-  recommendations             Recommendation[]             @relation("RecommendationRecipient")
-  endorsementsGiven           SkillEndorsement[]           @relation("EndorsementGiver")
-  endorsementsReceived        SkillEndorsement[]           @relation("EndorsementRecipient")
-  socialAccounts              SocialAccount[]
-  stories                     Story[]                      @relation("UserStories")
-  createdStudyClubs           StudyClub[]                  @relation("ClubCreator")
-  teamChallengeParticipations TeamChallengeParticipant[]
-  twoFactorSecret             TwoFactorSecret?
-  academicProfile             UserAcademicProfile?
-  achievementProgress         UserAchievementProgress[]
-  blockedBy                   UserBlock[]                  @relation("Blocked")
-  blocking                    UserBlock[]                  @relation("Blocker")
-  deadlines                   UserDeadline[]
-  feedSignals                 UserFeedSignal[]
-  educationalValueRatings     EducationalValueRating[]
-  userSkills                  UserSkill[]
-  unlockables                 UserUnlockable[]
-  parent                      Parent?                      @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  school                      School?                      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  student                     Student?                     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher                     Teacher?                     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  currency                    VirtualCurrency?
-  currencyTransactions        VirtualCurrencyTransaction[]
-  classAnnouncements          ClassAnnouncement[]          @relation("ClassAnnouncementAuthor")
-  classMaterials              ClassMaterial[]              @relation("ClassMaterialUploader")
-  classAssignmentsCreated     ClassAssignment[]            @relation("ClassAssignmentCreator")
-  profileChangeRequests       ProfileChangeRequest[]
-  reviewedProfileChanges      ProfileChangeRequest[]       @relation("ProfileChangeReviewer")
-  attendanceDelegations       AttendanceDelegation[]       @relation("AttendanceDelegationAssignee")
-  grantedAttendanceDelegations AttendanceDelegation[]      @relation("AttendanceDelegationGranter")
+  postViews                    PostView[]
+  posts                        Post[]
+  projects                     Project[]
+  quizAttempts                 QuizAttempt[]                @relation("QuizAttempts")
+  givenRecommendations         Recommendation[]             @relation("RecommendationAuthor")
+  recommendations              Recommendation[]             @relation("RecommendationRecipient")
+  endorsementsGiven            SkillEndorsement[]           @relation("EndorsementGiver")
+  endorsementsReceived         SkillEndorsement[]           @relation("EndorsementRecipient")
+  socialAccounts               SocialAccount[]
+  stories                      Story[]                      @relation("UserStories")
+  createdStudyClubs            StudyClub[]                  @relation("ClubCreator")
+  teamChallengeParticipations  TeamChallengeParticipant[]
+  twoFactorSecret              TwoFactorSecret?
+  academicProfile              UserAcademicProfile?
+  achievementProgress          UserAchievementProgress[]
+  blockedBy                    UserBlock[]                  @relation("Blocked")
+  blocking                     UserBlock[]                  @relation("Blocker")
+  deadlines                    UserDeadline[]
+  feedSignals                  UserFeedSignal[]
+  educationalValueRatings      EducationalValueRating[]
+  userSkills                   UserSkill[]
+  unlockables                  UserUnlockable[]
+  parent                       Parent?                      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  school                       School?                      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student                      Student?                     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher                      Teacher?                     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  currency                     VirtualCurrency?
+  currencyTransactions         VirtualCurrencyTransaction[]
+  classAnnouncements           ClassAnnouncement[]          @relation("ClassAnnouncementAuthor")
+  classMaterials               ClassMaterial[]              @relation("ClassMaterialUploader")
+  classAssignmentsCreated      ClassAssignment[]            @relation("ClassAssignmentCreator")
+  profileChangeRequests        ProfileChangeRequest[]
+  reviewedProfileChanges       ProfileChangeRequest[]       @relation("ProfileChangeReviewer")
+  attendanceDelegations        AttendanceDelegation[]       @relation("AttendanceDelegationAssignee")
+  grantedAttendanceDelegations AttendanceDelegation[]       @relation("AttendanceDelegationGranter")
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -761,26 +763,26 @@ model AuditLog {
 }
 
 model Post {
-  id                       String         @id @default(cuid())
+  id                       String                   @id @default(cuid())
   authorId                 String
   schoolId                 String?
   content                  String
   mediaUrls                String[]
   mediaKeys                String[]
-  postType                 PostType       @default(ARTICLE)
-  visibility               PostVisibility @default(SCHOOL)
-  likesCount               Int            @default(0)
-  commentsCount            Int            @default(0)
-  sharesCount              Int            @default(0)
-  viewsCount               Int            @default(0)
-  isEdited                 Boolean        @default(false)
-  isPinned                 Boolean        @default(false)
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
+  postType                 PostType                 @default(ARTICLE)
+  visibility               PostVisibility           @default(SCHOOL)
+  likesCount               Int                      @default(0)
+  commentsCount            Int                      @default(0)
+  sharesCount              Int                      @default(0)
+  viewsCount               Int                      @default(0)
+  isEdited                 Boolean                  @default(false)
+  isPinned                 Boolean                  @default(false)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
   pollExpiresAt            DateTime?
-  pollAllowMultiple        Boolean        @default(false)
+  pollAllowMultiple        Boolean                  @default(false)
   pollMaxChoices           Int?
-  pollIsAnonymous          Boolean        @default(false)
+  pollIsAnonymous          Boolean                  @default(false)
   assignmentDueDate        DateTime?
   assignmentPoints         Int?
   assignmentSubmissionType String?
@@ -803,17 +805,17 @@ model Post {
   projectStatus            String?
   projectDeadline          DateTime?
   projectTeamSize          Int?
-  mediaDisplayMode         String?        @default("AUTO")
-  mediaMetadata            Json?          @default("[]")
+  mediaDisplayMode         String?                  @default("AUTO")
+  mediaMetadata            Json?                    @default("[]")
   mediaAspectRatio         Float?
   studyClubId              String?
-  difficultyLevel          Decimal?       @default(2.5) @db.Decimal(3, 2)
-  questionBounty           Int            @default(0)
+  difficultyLevel          Decimal?                 @default(2.5) @db.Decimal(3, 2)
+  questionBounty           Int                      @default(0)
   repostComment            String?
   repostOfId               String?
   title                    String?
   topicTags                String[]
-  trendingScore            Float          @default(0)
+  trendingScore            Float                    @default(0)
   bookmarks                Bookmark[]
   comments                 Comment[]
   likes                    Like[]
@@ -822,10 +824,10 @@ model Post {
   views                    PostView[]
   userFeedback             UserPostFeedback[]
   educationalValueRatings  EducationalValueRating[]
-  author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  repostOf                 Post?          @relation("Reposts", fields: [repostOfId], references: [id])
-  reposts                  Post[]         @relation("Reposts")
-  studyClub                StudyClub?     @relation("ClubPosts", fields: [studyClubId], references: [id])
+  author                   User                     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  repostOf                 Post?                    @relation("Reposts", fields: [repostOfId], references: [id])
+  reposts                  Post[]                   @relation("Reposts")
+  studyClub                StudyClub?               @relation("ClubPosts", fields: [studyClubId], references: [id])
   quizQuestions            QuizQuestion[]
   quiz                     Quiz?
 
@@ -903,20 +905,20 @@ model Bookmark {
 }
 
 model EducationalValueRating {
-  id              String   @id @default(cuid())
-  postId          String
-  userId          String
-  accuracy        Int
-  helpfulness     Int
-  clarity         Int
-  depth           Int
-  difficulty      String?
-  wouldRecommend  Boolean  @default(false)
-  averageRating   Float
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  postId         String
+  userId         String
+  accuracy       Int
+  helpfulness    Int
+  clarity        Int
+  depth          Int
+  difficulty     String?
+  wouldRecommend Boolean  @default(false)
+  averageRating  Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  post           Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([postId])
@@ -1340,6 +1342,25 @@ model PostView {
   @@map("post_views")
 }
 
+model ProfileView {
+  id            String   @id @default(cuid())
+  profileUserId String
+  viewerId      String?
+  viewedAt      DateTime @default(now())
+  source        String?  @default("profile")
+  dwellMs       Int?
+  profileUser   User     @relation("ProfileViewsReceived", fields: [profileUserId], references: [id], onDelete: Cascade)
+  viewer        User?    @relation("ProfileViewsMade", fields: [viewerId], references: [id])
+
+  @@index([profileUserId])
+  @@index([viewerId])
+  @@index([viewedAt])
+  @@index([profileUserId, viewedAt(sort: Desc)])
+  @@index([profileUserId, viewerId, viewedAt(sort: Desc)], map: "profile_views_profile_viewer_viewed_idx")
+  @@index([viewerId, profileUserId, viewedAt(sort: Desc)], map: "profile_views_viewer_profile_viewed_idx")
+  @@map("profile_views")
+}
+
 model UserFeedSignal {
   id              String   @id @default(cuid())
   userId          String
@@ -1723,7 +1744,7 @@ model TimetablePublish {
 }
 
 model TimetableConflictException {
-  id             String    @id @default(cuid())
+  id             String     @id @default(cuid())
   schoolId       String
   academicYearId String
   type           String
@@ -1735,13 +1756,13 @@ model TimetableConflictException {
   entryIds       Json
   reason         String
   approvedBy     String
-  isActive       Boolean   @default(true)
+  isActive       Boolean    @default(true)
   metadata       Json?
   revokedAt      DateTime?
   revokedBy      String?
   revokeReason   String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   @@unique([schoolId, academicYearId, type, fingerprint])
   @@index([schoolId])
@@ -2298,40 +2319,40 @@ model EventAttendee {
 }
 
 model Course {
-  id            String               @id @default(cuid())
-  title         String
-  description   String
+  id                      String               @id @default(cuid())
+  title                   String
+  description             String
   titleTranslations       Json?
   descriptionTranslations Json?
   sourceLocale            String               @default("en")
   supportedLocales        String[]             @default(["en"])
-  thumbnail     String?
-  category      String
-  level         CourseLevel          @default(BEGINNER)
-  status        CourseStatus         @default(DRAFT)
-  duration      Int                  @default(0)
-  lessonsCount  Int                  @default(0)
-  price         Float                @default(0)
-  isFree        Boolean              @default(true)
-  isFeatured    Boolean              @default(false)
-  isPublished   Boolean              @default(false)
-  instructorId  String
-  tags          String[]
-  rating        Float                @default(0)
-  reviewsCount  Int                  @default(0)
-  enrolledCount Int                  @default(0)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  reviews       CourseReview[]
-  instructor    User                 @relation("CourseInstructor", fields: [instructorId], references: [id])
-  enrollments   Enrollment[]
-  pathCourses   LearningPathCourse[]
-  lessons       Lesson[]
-  sections      CourseSection[]
-  announcements CourseAnnouncement[]
-  qaThreads     CourseQAThread[]
-  certificates  CourseCertificate[]
-  UserDeadline  UserDeadline[]
+  thumbnail               String?
+  category                String
+  level                   CourseLevel          @default(BEGINNER)
+  status                  CourseStatus         @default(DRAFT)
+  duration                Int                  @default(0)
+  lessonsCount            Int                  @default(0)
+  price                   Float                @default(0)
+  isFree                  Boolean              @default(true)
+  isFeatured              Boolean              @default(false)
+  isPublished             Boolean              @default(false)
+  instructorId            String
+  tags                    String[]
+  rating                  Float                @default(0)
+  reviewsCount            Int                  @default(0)
+  enrolledCount           Int                  @default(0)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  reviews                 CourseReview[]
+  instructor              User                 @relation("CourseInstructor", fields: [instructorId], references: [id])
+  enrollments             Enrollment[]
+  pathCourses             LearningPathCourse[]
+  lessons                 Lesson[]
+  sections                CourseSection[]
+  announcements           CourseAnnouncement[]
+  qaThreads               CourseQAThread[]
+  certificates            CourseCertificate[]
+  UserDeadline            UserDeadline[]
 
   @@index([category])
   @@index([level])
@@ -2343,36 +2364,36 @@ model Course {
 }
 
 model Lesson {
-  id          String           @id @default(cuid())
-  courseId    String
-  sectionId   String?
-  type        CourseItemType   @default(VIDEO)
-  title       String
-  description String?
-  content     String?
+  id                      String         @id @default(cuid())
+  courseId                String
+  sectionId               String?
+  type                    CourseItemType @default(VIDEO)
+  title                   String
+  description             String?
+  content                 String?
   titleTranslations       Json?
   descriptionTranslations Json?
   contentTranslations     Json?
-  videoUrl    String?
-  duration    Int              @default(0)
-  order       Int
-  isFree      Boolean          @default(false)
-  isPublished Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  
-  // Polymorphic Relations
-  quiz        CourseQuiz?
-  assignment  CourseAssignment?
-  exercise    CourseCodingExercise?
+  videoUrl                String?
+  duration                Int            @default(0)
+  order                   Int
+  isFree                  Boolean        @default(false)
+  isPublished             Boolean        @default(true)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
 
-  progress    LessonProgress[]
-  resources   LessonResource[]
-  textTracks  LessonTextTrack[]
-  notes       CourseNote[]
-  bookmarks   LessonBookmark[]
-  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  section     CourseSection?   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  // Polymorphic Relations
+  quiz       CourseQuiz?
+  assignment CourseAssignment?
+  exercise   CourseCodingExercise?
+
+  progress   LessonProgress[]
+  resources  LessonResource[]
+  textTracks LessonTextTrack[]
+  notes      CourseNote[]
+  bookmarks  LessonBookmark[]
+  course     Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  section    CourseSection?    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
   @@index([sectionId])
@@ -2416,14 +2437,14 @@ model LessonTextTrack {
 }
 
 model Enrollment {
-  id             String    @id @default(cuid())
+  id             String             @id @default(cuid())
   userId         String
   courseId       String
-  progress       Float     @default(0)
+  progress       Float              @default(0)
   completedAt    DateTime?
   certificateUrl String?
-  enrolledAt     DateTime  @default(now())
-  lastAccessedAt DateTime  @default(now())
+  enrolledAt     DateTime           @default(now())
+  lastAccessedAt DateTime           @default(now())
   course         Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   certificate    CourseCertificate?
@@ -2451,18 +2472,18 @@ model LessonProgress {
 }
 
 model CourseCertificate {
-  id               String     @id @default(cuid())
-  verificationCode String     @unique
-  enrollmentId     String     @unique
+  id               String    @id @default(cuid())
+  verificationCode String    @unique
+  enrollmentId     String    @unique
   userId           String
   courseId         String
-  issuedAt         DateTime   @default(now())
+  issuedAt         DateTime  @default(now())
   pdfUrl           String?
-  sharedAt         DateTime?  
-  
-  enrollment       Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course           Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sharedAt         DateTime?
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([verificationCode])
   @@index([userId])
@@ -2488,17 +2509,17 @@ model CourseReview {
 }
 
 model CourseSection {
-  id          String   @id @default(cuid())
-  courseId    String
-  title       String
-  description String?
+  id                      String   @id @default(cuid())
+  courseId                String
+  title                   String
+  description             String?
   titleTranslations       Json?
   descriptionTranslations Json?
-  order       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons     Lesson[]
+  order                   Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  course                  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons                 Lesson[]
 
   @@index([courseId])
   @@map("course_sections")
@@ -2537,13 +2558,13 @@ model CourseQAAnswer {
 }
 
 model CourseAnnouncement {
-  id        String   @id @default(cuid())
-  courseId  String
-  authorId  String
-  title     String
-  body      String
-  sentAt    DateTime @default(now())
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  courseId String
+  authorId String
+  title    String
+  body     String
+  sentAt   DateTime @default(now())
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
   @@map("course_announcements")
@@ -2617,9 +2638,9 @@ model ProfileChangeRequest {
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  school        School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  reviewer      User?               @relation("ProfileChangeReviewer", fields: [reviewedBy], references: [id])
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  reviewer User?  @relation("ProfileChangeReviewer", fields: [reviewedBy], references: [id])
 
   @@index([userId])
   @@index([schoolId])
@@ -2918,33 +2939,33 @@ model UserAcademicProfile {
 // ─── Polymorphic Course Interactive Items ─────────────────────────────
 
 model CourseQuiz {
-  id           String         @id @default(cuid())
-  lessonId     String         @unique
-  passingScore Int            @default(80)
-  lesson       Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id           String               @id @default(cuid())
+  lessonId     String               @unique
+  passingScore Int                  @default(80)
+  lesson       Lesson               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   questions    CourseQuizQuestion[]
 
   @@map("course_quizzes")
 }
 
 model CourseQuizQuestion {
-  id          String        @id @default(cuid())
+  id          String             @id @default(cuid())
   quizId      String
   question    String
   explanation String?
-  order       Int           @default(0)
+  order       Int                @default(0)
   options     CourseQuizOption[]
-  quiz        CourseQuiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quiz        CourseQuiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
   @@map("course_quiz_questions_ref")
 }
 
 model CourseQuizOption {
-  id         String       @id @default(cuid())
+  id         String             @id @default(cuid())
   questionId String
   text       String
-  isCorrect  Boolean      @default(false)
+  isCorrect  Boolean            @default(false)
   question   CourseQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([questionId])
@@ -2952,37 +2973,37 @@ model CourseQuizOption {
 }
 
 model CourseAssignment {
-  id           String @id @default(cuid())
-  lessonId     String @unique
-  instructions String @db.Text
-  rubric       String? @db.Text
+  id                       String                 @id @default(cuid())
+  lessonId                 String                 @unique
+  instructions             String                 @db.Text
+  rubric                   String?                @db.Text
   instructionsTranslations Json?
   rubricTranslations       Json?
-  maxScore     Int    @default(100)
-  passingScore Int    @default(80)
-  lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  submissions  AssignmentSubmission[]
+  maxScore                 Int                    @default(100)
+  passingScore             Int                    @default(80)
+  lesson                   Lesson                 @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions              AssignmentSubmission[]
 
   @@map("course_assignments")
 }
 
 model AssignmentSubmission {
-  id           String              @id @default(cuid())
-  assignmentId String
-  userId       String
-  courseId     String
-  lessonId     String
-  submissionText String?           @db.Text
+  id             String           @id @default(cuid())
+  assignmentId   String
+  userId         String
+  courseId       String
+  lessonId       String
+  submissionText String?          @db.Text
   submissionUrl  String?
   fileUrl        String?
   fileName       String?
-  status         SubmissionStatus  @default(SUBMITTED)
+  status         SubmissionStatus @default(SUBMITTED)
   score          Int?
-  feedback       String?           @db.Text
-  submittedAt    DateTime          @default(now())
+  feedback       String?          @db.Text
+  submittedAt    DateTime         @default(now())
   gradedAt       DateTime?
   gradedBy       String?
-  assignment     CourseAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignment     CourseAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   @@unique([assignmentId, userId])
   @@index([userId])
@@ -2991,13 +3012,13 @@ model AssignmentSubmission {
 }
 
 model CourseCodingExercise {
-  id           String @id @default(cuid())
-  lessonId     String @unique
-  language     String @default("java")
-  initialCode  String @db.Text
-  solution     String? @db.Text
-  testCases    String? @db.Text
-  lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  lessonId    String  @unique
+  language    String  @default("java")
+  initialCode String  @db.Text
+  solution    String? @db.Text
+  testCases   String? @db.Text
+  lesson      Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@map("course_coding_exercises")
 }
@@ -3268,26 +3289,26 @@ model PlatformAuditLog {
 }
 
 model AttendanceDelegation {
-  id                String                        @id @default(cuid())
-  schoolId          String
-  assigneeUserId    String
-  grantedByUserId   String
+  id                 String                       @id @default(cuid())
+  schoolId           String
+  assigneeUserId     String
+  grantedByUserId    String
   responsibilityType DisciplineResponsibilityType @default(CUSTOM)
-  capabilityProfile DisciplineCapabilityProfile
-  scopeType         DelegationScopeType
-  classId           String?
-  grade             String?
-  notes             String?
-  metadata          Json?
-  activeFrom        DateTime?
-  activeUntil       DateTime?
-  isActive          Boolean                       @default(true)
-  createdAt         DateTime                      @default(now())
-  updatedAt         DateTime                      @updatedAt
-  assigneeUser      User                          @relation("AttendanceDelegationAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
-  grantedByUser     User                          @relation("AttendanceDelegationGranter", fields: [grantedByUserId], references: [id], onDelete: Cascade)
-  school            School                        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  class             Class?                        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  capabilityProfile  DisciplineCapabilityProfile
+  scopeType          DelegationScopeType
+  classId            String?
+  grade              String?
+  notes              String?
+  metadata           Json?
+  activeFrom         DateTime?
+  activeUntil        DateTime?
+  isActive           Boolean                      @default(true)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  assigneeUser       User                         @relation("AttendanceDelegationAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  grantedByUser      User                         @relation("AttendanceDelegationGranter", fields: [grantedByUserId], references: [id], onDelete: Cascade)
+  school             School                       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class              Class?                       @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@index([schoolId, assigneeUserId, isActive])
   @@index([schoolId, scopeType, classId])
@@ -3297,15 +3318,15 @@ model AttendanceDelegation {
 }
 
 model DisciplinePolicy {
-  id                            String   @id @default(cuid())
-  schoolId                      String   @unique
-  allowedExcusedReasonTemplates Json?    @default("[]")
-  mandatoryExcusedReasonMinLength Int    @default(3)
-  requireEscalationForExcused   Boolean  @default(false)
-  metadata                      Json?
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
-  school                        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id                              String   @id @default(cuid())
+  schoolId                        String   @unique
+  allowedExcusedReasonTemplates   Json?    @default("[]")
+  mandatoryExcusedReasonMinLength Int      @default(3)
+  requireEscalationForExcused     Boolean  @default(false)
+  metadata                        Json?
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+  school                          School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
   @@map("discipline_policies")
@@ -3371,10 +3392,10 @@ enum SchoolType {
 }
 
 enum EducationModel {
-  KHM_MOEYS   // Cambodia — Ministry of Education, Youth and Sport
+  KHM_MOEYS // Cambodia — Ministry of Education, Youth and Sport
   EU_STANDARD // Generic European / term-based system
-  INT_BACC    // International Baccalaureate
-  CUSTOM      // School-defined — no auto-seeding
+  INT_BACC // International Baccalaureate
+  CUSTOM // School-defined — no auto-seeding
 }
 
 enum AcademicYearStatus {
