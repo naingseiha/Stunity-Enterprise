@@ -4,7 +4,7 @@
 
 **File:** `stunity-development.apk`  
 **Size:** 219 MB  
-**Location:** `/Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile/`
+**Location:** `apps/mobile/`
 
 ---
 
@@ -20,7 +20,7 @@
 
 2. **Connect Device & Install:**
    ```bash
-   cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+   cd apps/mobile
    adb devices  # Verify device is connected
    adb install stunity-development.apk
    ```
@@ -104,7 +104,7 @@ if (!networkQualityService.shouldPrefetch()) return;
 
 2. **Clear Metro Cache & Restart:**
    ```bash
-   cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+   cd apps/mobile
    npm start -- --clear
    ```
 

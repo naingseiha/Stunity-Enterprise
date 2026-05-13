@@ -47,17 +47,17 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 
 ## Confirmed Code Anchors
 
-- Mobile classes client: [`apps/mobile/src/api/classes.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/api/classes.ts)
-- Mobile clubs client: [`apps/mobile/src/api/clubs.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/api/clubs.ts)
-- Mobile clubs screen: [`apps/mobile/src/screens/clubs/ClubsScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/ClubsScreen.tsx)
-- Mobile live quiz service: [`apps/mobile/src/services/liveQuiz.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/services/liveQuiz.ts)
-- Web super admin area: [`apps/web/src/app/[locale]/super-admin`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/super-admin)
-- Auth routes: [`services/auth-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/auth-service/src/index.ts)
-- Class routes: [`services/class-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/class-service/src/index.ts)
-- Messaging routes: [`services/messaging-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/messaging-service/src/index.ts)
-- Analytics routes: [`services/analytics-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/analytics-service/src/index.ts)
+- Mobile classes client: [`apps/mobile/src/api/classes.ts`](../../apps/mobile/src/api/classes.ts)
+- Mobile clubs client: [`apps/mobile/src/api/clubs.ts`](../../apps/mobile/src/api/clubs.ts)
+- Mobile clubs screen: [`apps/mobile/src/screens/clubs/ClubsScreen.tsx`](../../apps/mobile/src/screens/clubs/ClubsScreen.tsx)
+- Mobile live quiz service: [`apps/mobile/src/services/liveQuiz.ts`](../../apps/mobile/src/services/liveQuiz.ts)
+- Web super admin area: [`apps/web/src/app/[locale]/super-admin`](../../apps/web/src/app/[locale]/super-admin)
+- Auth routes: [`services/auth-service/src/index.ts`](../../services/auth-service/src/index.ts)
+- Class routes: [`services/class-service/src/index.ts`](../../services/class-service/src/index.ts)
+- Messaging routes: [`services/messaging-service/src/index.ts`](../../services/messaging-service/src/index.ts)
+- Analytics routes: [`services/analytics-service/src/index.ts`](../../services/analytics-service/src/index.ts)
 
 ## Use This With
 
-- [`PROJECT_STATUS.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/PROJECT_STATUS.md) for the latest verified gaps
-- [`NEXT_IMPLEMENTATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/NEXT_IMPLEMENTATION.md) for what to work on next
+- [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the latest verified gaps
+- [`NEXT_IMPLEMENTATION.md`](NEXT_IMPLEMENTATION.md) for what to work on next

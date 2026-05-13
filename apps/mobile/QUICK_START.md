@@ -15,7 +15,7 @@
 ## Step 1: Start Backend Services (Terminal 1)
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd "$(git rev-parse --show-toplevel)"
 
 # Start all 12 services
 ./quick-start.sh
@@ -34,7 +34,7 @@ cd /Users/naingseiha/Documents/Stunity-Enterprise
 ## Step 2: Start Mobile App (Terminal 2)
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Install dependencies (first time only)
 npm install

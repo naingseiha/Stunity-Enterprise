@@ -65,19 +65,19 @@ After Google approves the reset, future uploads must use that **new** upload key
 The Play upload key has been created outside the repository:
 
 ```text
-/Users/naingseiha/.stunity/keys/stunity-upload-key.jks
+~/.stunity/keys/stunity-upload-key.jks
 ```
 
 The private build passwords are stored locally with `chmod 600`:
 
 ```text
-/Users/naingseiha/.stunity/keys/stunity-upload-key-passwords.txt
+~/.stunity/keys/stunity-upload-key-passwords.txt
 ```
 
 The public upload certificate is available for Play Console if requested:
 
 ```text
-/Users/naingseiha/.stunity/keys/stunity-upload-certificate.pem
+~/.stunity/keys/stunity-upload-certificate.pem
 ```
 
 Upload key fingerprints:
@@ -116,10 +116,10 @@ After the build finishes, download the `.aab` and upload it to Play Console.
 
 ```bash
 set -a
-source /Users/naingseiha/.stunity/keys/stunity-upload-key-passwords.txt
+source ~/.stunity/keys/stunity-upload-key-passwords.txt
 set +a
 
-cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/android
+cd apps/mobile/android
 EXPO_PUBLIC_APP_ENV=production \
 ./gradlew bundleRelease
 ```

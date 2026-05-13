@@ -334,7 +334,7 @@ curl -X POST http://localhost:3010/posts \
 ### Start Services
 ```bash
 # Terminal 1: Backend
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd "$(git rev-parse --show-toplevel)"
 ./quick-start.sh
 
 # Wait for services to start (30 seconds)

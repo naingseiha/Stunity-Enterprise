@@ -66,13 +66,13 @@ apps/mobile/app.json
 The Play upload key is stored outside the repository:
 
 ```text
-/Users/naingseiha/.stunity/keys/stunity-upload-key.jks
+~/.stunity/keys/stunity-upload-key.jks
 ```
 
 The password environment file is also outside the repository:
 
 ```text
-/Users/naingseiha/.stunity/keys/stunity-upload-key-passwords.txt
+~/.stunity/keys/stunity-upload-key-passwords.txt
 ```
 
 Do not commit the keystore or password file.
@@ -80,10 +80,10 @@ Do not commit the keystore or password file.
 ### Build Android App Bundle
 
 ```bash
-cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/android
+cd apps/mobile/android
 
 set -a
-source /Users/naingseiha/.stunity/keys/stunity-upload-key-passwords.txt
+source ~/.stunity/keys/stunity-upload-key-passwords.txt
 set +a
 
 EXPO_PUBLIC_APP_ENV=production ./gradlew bundleRelease
@@ -92,7 +92,7 @@ EXPO_PUBLIC_APP_ENV=production ./gradlew bundleRelease
 Upload this file to Play Console:
 
 ```text
-/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
 ```
 
 ### Android Play Console Steps
@@ -203,7 +203,7 @@ stunity-ios
 Open the workspace:
 
 ```bash
-open /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/ios/Stunity.xcworkspace
+open apps/mobile/ios/Stunity.xcworkspace
 ```
 
 In Xcode:
@@ -233,7 +233,7 @@ After upload, wait for App Store Connect processing, then add the build to TestF
 After Apple signing is working in Xcode, this command can also create an archive:
 
 ```bash
-cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/ios
+cd apps/mobile/ios
 
 EXPO_PUBLIC_APP_ENV=production \
 xcodebuild \

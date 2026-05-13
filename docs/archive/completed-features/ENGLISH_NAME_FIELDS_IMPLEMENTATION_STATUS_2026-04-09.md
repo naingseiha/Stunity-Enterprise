@@ -33,76 +33,76 @@ The Prisma schema already includes:
 - `User.englishFirstName`
 - `User.englishLastName`
 
-Confirmed in [`packages/database/prisma/schema.prisma`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/packages/database/prisma/schema.prisma).
+Confirmed in [`packages/database/prisma/schema.prisma`](../../../packages/database/prisma/schema.prisma).
 
 ### Student Service
 
 Student create, update, lightweight list, and search now support the split English name fields.
 
-Confirmed in [`services/student-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/student-service/src/index.ts).
+Confirmed in [`services/student-service/src/index.ts`](../../../services/student-service/src/index.ts).
 
 Notes:
 
 - The service now persists `englishFirstName` and `englishLastName` directly on the `Student` record.
-- Request payload validation for student create/update now uses a dedicated Zod schema in [`services/student-service/src/validators/student.validator.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/student-service/src/validators/student.validator.ts).
+- Request payload validation for student create/update now uses a dedicated Zod schema in [`services/student-service/src/validators/student.validator.ts`](../../../services/student-service/src/validators/student.validator.ts).
 - It still keeps a legacy combined `englishName` inside `customFields.regional` for backward compatibility with older readers.
 
 ### Teacher Service
 
 Teacher create, update, lightweight list, and search now support the split English name fields.
 
-Confirmed in [`services/teacher-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/teacher-service/src/index.ts).
+Confirmed in [`services/teacher-service/src/index.ts`](../../../services/teacher-service/src/index.ts).
 
 Notes:
 
 - The service now persists `englishFirstName` and `englishLastName` directly on the `Teacher` record.
-- Request payload validation for teacher create/update now uses a dedicated Zod schema in [`services/teacher-service/src/validators/teacher.validator.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/teacher-service/src/validators/teacher.validator.ts).
+- Request payload validation for teacher create/update now uses a dedicated Zod schema in [`services/teacher-service/src/validators/teacher.validator.ts`](../../../services/teacher-service/src/validators/teacher.validator.ts).
 - It still keeps a legacy combined `englishName` inside `customFields.regional` for backward compatibility.
 
 ### User Profile Service
 
 User profile read and update flows already support the split English name fields.
 
-Confirmed in [`services/feed-service/src/routes/profile.routes.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/feed-service/src/routes/profile.routes.ts).
+Confirmed in [`services/feed-service/src/routes/profile.routes.ts`](../../../services/feed-service/src/routes/profile.routes.ts).
 
-Validation for profile updates now uses a dedicated Zod schema in [`services/feed-service/src/validators/profile.validator.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/feed-service/src/validators/profile.validator.ts).
+Validation for profile updates now uses a dedicated Zod schema in [`services/feed-service/src/validators/profile.validator.ts`](../../../services/feed-service/src/validators/profile.validator.ts).
 
 ### Web App
 
 Implemented on the web side:
 
-- Student create/edit form in [`apps/web/src/components/students/StudentModal.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/components/students/StudentModal.tsx)
-- Teacher create/edit form in [`apps/web/src/components/teachers/TeacherModal.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/components/teachers/TeacherModal.tsx)
-- User profile edit form in [`apps/web/src/app/[locale]/profile/[userId]/edit/page.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/profile/[userId]/edit/page.tsx)
+- Student create/edit form in [`apps/web/src/components/students/StudentModal.tsx`](../../../apps/web/src/components/students/StudentModal.tsx)
+- Teacher create/edit form in [`apps/web/src/components/teachers/TeacherModal.tsx`](../../../apps/web/src/components/teachers/TeacherModal.tsx)
+- User profile edit form in [`apps/web/src/app/[locale]/profile/[userId]/edit/page.tsx`](../../../apps/web/src/app/[locale]/profile/[userId]/edit/page.tsx)
 - Display usage in student, teacher, attendance, and profile screens such as:
-  - [`apps/web/src/app/[locale]/students/page.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/students/page.tsx)
-  - [`apps/web/src/app/[locale]/teachers/page.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/teachers/page.tsx)
-  - [`apps/web/src/app/[locale]/attendance/mark/page.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/attendance/mark/page.tsx)
-  - [`apps/web/src/app/[locale]/profile/[userId]/page.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/profile/[userId]/page.tsx)
+  - [`apps/web/src/app/[locale]/students/page.tsx`](../../../apps/web/src/app/[locale]/students/page.tsx)
+  - [`apps/web/src/app/[locale]/teachers/page.tsx`](../../../apps/web/src/app/[locale]/teachers/page.tsx)
+  - [`apps/web/src/app/[locale]/attendance/mark/page.tsx`](../../../apps/web/src/app/[locale]/attendance/mark/page.tsx)
+  - [`apps/web/src/app/[locale]/profile/[userId]/page.tsx`](../../../apps/web/src/app/[locale]/profile/[userId]/page.tsx)
 - Feed display updates for name-order consistency in:
-  - [`apps/web/src/components/feed/CreatePostModal.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/components/feed/CreatePostModal.tsx)
-  - [`apps/web/src/components/feed/PostCard.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/components/feed/PostCard.tsx)
-  - [`apps/web/src/components/feed/TopContributorsWidget.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/components/feed/TopContributorsWidget.tsx)
-  - [`apps/web/src/components/feed/TrendingSection.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/components/feed/TrendingSection.tsx)
+  - [`apps/web/src/components/feed/CreatePostModal.tsx`](../../../apps/web/src/components/feed/CreatePostModal.tsx)
+  - [`apps/web/src/components/feed/PostCard.tsx`](../../../apps/web/src/components/feed/PostCard.tsx)
+  - [`apps/web/src/components/feed/TopContributorsWidget.tsx`](../../../apps/web/src/components/feed/TopContributorsWidget.tsx)
+  - [`apps/web/src/components/feed/TrendingSection.tsx`](../../../apps/web/src/components/feed/TrendingSection.tsx)
 
 ### Mobile App
 
 Implemented on mobile today:
 
-- User profile edit form in [`apps/mobile/src/screens/profile/EditProfileScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/profile/EditProfileScreen.tsx)
-- User profile display in [`apps/mobile/src/screens/profile/ProfileScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/profile/ProfileScreen.tsx)
-- Dedicated student edit screen in [`apps/mobile/src/screens/clubs/EditStudentScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/EditStudentScreen.tsx)
-- Dedicated teacher edit screen in [`apps/mobile/src/screens/clubs/EditTeacherScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/EditTeacherScreen.tsx)
+- User profile edit form in [`apps/mobile/src/screens/profile/EditProfileScreen.tsx`](../../../apps/mobile/src/screens/profile/EditProfileScreen.tsx)
+- User profile display in [`apps/mobile/src/screens/profile/ProfileScreen.tsx`](../../../apps/mobile/src/screens/profile/ProfileScreen.tsx)
+- Dedicated student edit screen in [`apps/mobile/src/screens/clubs/EditStudentScreen.tsx`](../../../apps/mobile/src/screens/clubs/EditStudentScreen.tsx)
+- Dedicated teacher edit screen in [`apps/mobile/src/screens/clubs/EditTeacherScreen.tsx`](../../../apps/mobile/src/screens/clubs/EditTeacherScreen.tsx)
 - Additional display usage in class-related screens such as:
-  - [`apps/mobile/src/screens/clubs/ClassMembersScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/ClassMembersScreen.tsx)
-  - [`apps/mobile/src/screens/clubs/ClassAttendanceScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/ClassAttendanceScreen.tsx)
-  - [`apps/mobile/src/screens/clubs/ClassGradesScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/ClassGradesScreen.tsx)
+  - [`apps/mobile/src/screens/clubs/ClassMembersScreen.tsx`](../../../apps/mobile/src/screens/clubs/ClassMembersScreen.tsx)
+  - [`apps/mobile/src/screens/clubs/ClassAttendanceScreen.tsx`](../../../apps/mobile/src/screens/clubs/ClassAttendanceScreen.tsx)
+  - [`apps/mobile/src/screens/clubs/ClassGradesScreen.tsx`](../../../apps/mobile/src/screens/clubs/ClassGradesScreen.tsx)
 - Feed/profile display-order updates in:
-  - [`apps/mobile/src/screens/feed/FeedScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/feed/FeedScreen.tsx)
-  - [`apps/mobile/src/screens/feed/PostDetailScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/feed/PostDetailScreen.tsx)
-  - [`apps/mobile/src/screens/feed/CommentsScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/feed/CommentsScreen.tsx)
-  - [`apps/mobile/src/screens/feed/SearchScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/feed/SearchScreen.tsx)
-  - [`apps/mobile/src/screens/profile/UserCardScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/profile/UserCardScreen.tsx)
+  - [`apps/mobile/src/screens/feed/FeedScreen.tsx`](../../../apps/mobile/src/screens/feed/FeedScreen.tsx)
+  - [`apps/mobile/src/screens/feed/PostDetailScreen.tsx`](../../../apps/mobile/src/screens/feed/PostDetailScreen.tsx)
+  - [`apps/mobile/src/screens/feed/CommentsScreen.tsx`](../../../apps/mobile/src/screens/feed/CommentsScreen.tsx)
+  - [`apps/mobile/src/screens/feed/SearchScreen.tsx`](../../../apps/mobile/src/screens/feed/SearchScreen.tsx)
+  - [`apps/mobile/src/screens/profile/UserCardScreen.tsx`](../../../apps/mobile/src/screens/profile/UserCardScreen.tsx)
 
 ## Remaining Gaps
 

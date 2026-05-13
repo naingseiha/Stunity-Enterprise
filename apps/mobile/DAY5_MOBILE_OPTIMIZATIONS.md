@@ -226,7 +226,7 @@ By time user reaches 75%, next page is already loaded!
 
 ### Test 1: Verify Network Adaptation
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 npm start
 
 # On device:

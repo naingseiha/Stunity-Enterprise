@@ -4,7 +4,8 @@
 
 echo "🧹 Clearing all caches..."
 
-cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 # 1. Clear Metro bundler cache
 echo "📦 Clearing Metro bundler cache..."

@@ -167,7 +167,7 @@ transform: translateZ(0);
 
 ### Test the Fix
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Clear cache and restart
 npm start -- --reset-cache

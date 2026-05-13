@@ -2,7 +2,7 @@
 
 **Last Verified:** April 9, 2026
 
-Use this document for day-to-day development setup and repo orientation. For the latest reality check, read [`../CURRENT_SITUATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/CURRENT_SITUATION.md) first.
+Use this document for day-to-day development setup and repo orientation. For the latest reality check, read [`../CURRENT_SITUATION.md`](../CURRENT_SITUATION.md) first.
 
 ## Setup
 
@@ -73,7 +73,7 @@ The default local startup scripts use these ports:
 | 3014 | `analytics-service` | Live quiz, leaderboards, gamification |
 | 3020 | `ai-service` | Optional AI service |
 
-Three folders exist in [`services`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services) but are not part of the default local runtime today:
+Three folders exist in [`services`](../../services) but are not part of the default local runtime today:
 
 - `search-service`
 - `storage-service`
@@ -83,30 +83,30 @@ Each currently contains only a placeholder `Dockerfile`.
 
 ## App Reality
 
-- Mobile currently uses Expo `~52.0.7` from [`apps/mobile/package.json`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/package.json).
-- Web currently uses Next `^15.0.0` from [`apps/web/package.json`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/package.json).
-- The shared database in active use is Supabase/PostgreSQL through Prisma in [`packages/database`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/packages/database).
+- Mobile currently uses Expo `~52.0.7` from [`apps/mobile/package.json`](../../apps/mobile/package.json).
+- Web currently uses Next `^15.0.0` from [`apps/web/package.json`](../../apps/web/package.json).
+- The shared database in active use is Supabase/PostgreSQL through Prisma in [`packages/database`](../../packages/database).
 
 ## Where To Work
 
 Common areas:
 
-- Mobile screens and API clients: [`apps/mobile/src`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src)
-- Web routes and API helpers: [`apps/web/src`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src)
-- Service entrypoints: [`services`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services)
-- Prisma schema: [`packages/database/prisma/schema.prisma`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/packages/database/prisma/schema.prisma)
+- Mobile screens and API clients: [`apps/mobile/src`](../../apps/mobile/src)
+- Web routes and API helpers: [`apps/web/src`](../../apps/web/src)
+- Service entrypoints: [`services`](../../services)
+- Prisma schema: [`packages/database/prisma/schema.prisma`](../../packages/database/prisma/schema.prisma)
 
 Examples confirmed during this audit:
 
-- Mobile classes API: [`apps/mobile/src/api/classes.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/api/classes.ts)
-- Mobile clubs screen: [`apps/mobile/src/screens/clubs/ClubsScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs/ClubsScreen.tsx)
-- Class service routes: [`services/class-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/class-service/src/index.ts)
-- Auth password and 2FA routes: [`services/auth-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/auth-service/src/index.ts)
-- Super admin web area: [`apps/web/src/app/[locale]/super-admin`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/super-admin)
+- Mobile classes API: [`apps/mobile/src/api/classes.ts`](../../apps/mobile/src/api/classes.ts)
+- Mobile clubs screen: [`apps/mobile/src/screens/clubs/ClubsScreen.tsx`](../../apps/mobile/src/screens/clubs/ClubsScreen.tsx)
+- Class service routes: [`services/class-service/src/index.ts`](../../services/class-service/src/index.ts)
+- Auth password and 2FA routes: [`services/auth-service/src/index.ts`](../../services/auth-service/src/index.ts)
+- Super admin web area: [`apps/web/src/app/[locale]/super-admin`](../../apps/web/src/app/[locale]/super-admin)
 
 ## Working Rules
 
 - Run `npm run db:generate` after clone or Prisma schema changes.
-- Treat [`../DATABASE_SAFETY.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DATABASE_SAFETY.md) as required reading before running database mutation commands.
-- Prefer [`README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/README.md) as the entrypoint and avoid using archived docs as source of truth.
+- Treat [`../DATABASE_SAFETY.md`](../DATABASE_SAFETY.md) as required reading before running database mutation commands.
+- Prefer [`README.md`](../../README.md) as the entrypoint and avoid using archived docs as source of truth.
 - When documenting status, separate `live-verified` from `implemented in code but not re-tested`.

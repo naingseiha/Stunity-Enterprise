@@ -220,4 +220,5 @@ npx tsx scripts/admin/create-school-admin.ts
 - Prefer updating **`docs/current/*`** when verification status changes.
 - Put **new long-form reference** under `docs/guides/` or the relevant `docs/` subsystem folder.
 - Move **finished plans and dated “status of work” writeups** into `docs/archive/…` and link them once from [docs/archive/completed-milestones-2026-05/README.md](docs/archive/completed-milestones-2026-05/README.md) or a dedicated archive README.
+- Use **repository-relative** Markdown links (for example `../../services/auth-service/src/index.ts` from `docs/current/`) so docs render correctly on GitHub and other clones; do not embed machine-specific absolute paths.
 - Keep this root `README.md` as the navigation hub; avoid sprouting new top-level markdown files unless there is a strong reason (e.g. GitHub-required `SECURITY.md`).

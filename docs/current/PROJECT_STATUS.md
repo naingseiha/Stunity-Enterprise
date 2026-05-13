@@ -6,7 +6,7 @@ This status page reflects the current codebase, the March 22 live API smoke test
 
 ## Audit Summary
 
-The root documentation was previously overstating or mixing old release notes with current reality. The active top-level docs now live under [`docs/current`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current), and the root [`README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/README.md) is the single entrypoint.
+The root documentation was previously overstating or mixing old release notes with current reality. The active top-level docs now live under [`docs/current`](.), and the root [`README.md`](../../README.md) is the single entrypoint.
 
 Key corrections made during the audit:
 
@@ -65,7 +65,7 @@ These were checked against running local services and real API responses:
 - Club list retrieval through `GET /clubs?page=1&limit=5`
 - Admin parent directory through `GET /auth/admin/parents`
 - Dashboard teacher stats alignment through `GET /schools/:schoolId/academic-years/:yearId/stats`
-- Isolated school registration and onboarding through the QA bootstrap flow in [`scripts/testing/manual/bootstrap-onboarding-test-school.js`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/scripts/testing/manual/bootstrap-onboarding-test-school.js)
+- Isolated school registration and onboarding through the QA bootstrap flow in [`scripts/testing/manual/bootstrap-onboarding-test-school.js`](../../scripts/testing/manual/bootstrap-onboarding-test-school.js)
 - Hierarchical course retrieval through `GET /courses/:id` (Learn Service)
 - Instructor analytics and SVG growth charts through `GET /courses/instructor/stats`
 
@@ -73,14 +73,14 @@ These were checked against running local services and real API responses:
 
 These areas are clearly present and wired in code, but were not all fully re-smoke-tested end to end in this documentation pass:
 
-- Mobile classes and clubs flows under [`apps/mobile/src/screens/clubs`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/clubs)
-- Mobile live quiz flows under [`apps/mobile/src/screens/live-quiz`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/live-quiz)
-- Mobile password reset and password change screens under [`apps/mobile/src/screens/auth`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/auth) and [`apps/mobile/src/screens/profile/PasswordSecurityScreen.tsx`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile/src/screens/profile/PasswordSecurityScreen.tsx)
-- Auth social login and 2FA routes in [`services/auth-service/src/routes`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/auth-service/src/routes)
-- Web super admin area in [`apps/web/src/app/[locale]/super-admin`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/super-admin)
-- Analytics leaderboards and live quiz APIs in [`services/analytics-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/analytics-service/src/index.ts)
-- Super-admin school deletion now clears dependent school data before deleting the school record in [`services/school-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/school-service/src/index.ts)
-- Admin web performance optimizations now span navigation, school management, timetable, attendance, grades, claim codes, and locations across [`apps/web/src`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src) plus the related service packages under [`services`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services)
+- Mobile classes and clubs flows under [`apps/mobile/src/screens/clubs`](../../apps/mobile/src/screens/clubs)
+- Mobile live quiz flows under [`apps/mobile/src/screens/live-quiz`](../../apps/mobile/src/screens/live-quiz)
+- Mobile password reset and password change screens under [`apps/mobile/src/screens/auth`](../../apps/mobile/src/screens/auth) and [`apps/mobile/src/screens/profile/PasswordSecurityScreen.tsx`](../../apps/mobile/src/screens/profile/PasswordSecurityScreen.tsx)
+- Auth social login and 2FA routes in [`services/auth-service/src/routes`](../../services/auth-service/src/routes)
+- Web super admin area in [`apps/web/src/app/[locale]/super-admin`](../../apps/web/src/app/[locale]/super-admin)
+- Analytics leaderboards and live quiz APIs in [`services/analytics-service/src/index.ts`](../../services/analytics-service/src/index.ts)
+- Super-admin school deletion now clears dependent school data before deleting the school record in [`services/school-service/src/index.ts`](../../services/school-service/src/index.ts)
+- Admin web performance optimizations now span navigation, school management, timetable, attendance, grades, claim codes, and locations across [`apps/web/src`](../../apps/web/src) plus the related service packages under [`services`](../../services)
 
 ## Known Current Gaps
 

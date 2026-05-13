@@ -264,7 +264,7 @@ expo run:ios --configuration Release
 Run this to apply all image optimizations:
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Find all Image components not using expo-image
 grep -r "import.*Image.*from.*react-native" src/components/

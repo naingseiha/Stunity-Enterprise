@@ -74,7 +74,7 @@ Should show your username.
 ### For iOS (Simulator)
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Build for iOS simulator (fast, local testing)
 eas build --profile development --platform ios --local
@@ -93,7 +93,7 @@ eas build --profile development --platform ios
 ### For Android
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Build for Android
 eas build --profile development --platform android --local

@@ -43,7 +43,7 @@ r
 ```bash
 # Stop Expo (Ctrl+C)
 # Then restart:
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 npm start
 
 # In simulator: Press Cmd+R to reload

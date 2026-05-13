@@ -7,7 +7,7 @@ The error is **cached** in Metro bundler. The invalid code is already removed, b
 
 ### Option 1: Quick Clear (Recommended)
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Clear and restart
 npm start -- --clear
@@ -19,7 +19,7 @@ npm start
 
 ### Option 2: Full Nuclear Clear
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Stop all processes
 pkill -f "expo start"
@@ -59,7 +59,7 @@ npm start -- --clear
 Let's confirm the invalid code is gone:
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Search for translateZ (should return nothing)
 grep -r "translateZ" src/
@@ -83,7 +83,7 @@ pkill -f "metro"
 
 ### Step 2: Clear Caches
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Run clear script
 ./clear-cache.sh
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
 1. Check you're in the right directory:
    ```bash
    pwd
-   # Should be: /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+   # Should be: apps/mobile
    ```
 
 2. Verify file was actually saved:
@@ -183,7 +183,7 @@ Using `--clear` flag forces Metro to:
 ## Quick Test Commands
 
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # 1. Verify code is clean
 grep "translateZ" src/components/feed/PostCard.tsx
@@ -215,7 +215,7 @@ After clearing cache, you should see:
 If you still see the error, run:
 ```bash
 # Show me what's in PostCard.tsx around line 940-950
-sed -n '940,950p' /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile/src/components/feed/PostCard.tsx
+sed -n '940,950p' apps/mobile/src/components/feed/PostCard.tsx
 ```
 
 Send me that output and I'll debug further!

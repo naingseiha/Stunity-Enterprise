@@ -237,7 +237,7 @@ apps/mobile/
 ### Prerequisites
 ```bash
 # Check backend services are running
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd "$(git rev-parse --show-toplevel)"
 ./check-services.sh
 
 # Expected:
@@ -250,7 +250,7 @@ cd /Users/naingseiha/Documents/Stunity-Enterprise
 
 #### Option 1: Expo Go (Recommended for Development)
 ```bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd apps/mobile
 
 # Start with tunnel (works on any network)
 npx expo start --tunnel
