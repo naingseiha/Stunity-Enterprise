@@ -970,6 +970,9 @@ app.post(
             role: user.role,
             profilePictureUrl: user.profilePictureUrl,
             schoolId: user.schoolId,
+            teacherId: user.teacherId,
+            studentId: user.studentId,
+            teacher: user.teacherId ? { id: user.teacherId } : null,
             isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
             linkingStatus: user.linkingStatus,
             pendingLinkData: user.pendingLinkData,
@@ -2154,6 +2157,9 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
         isActive: user.isActive,
         createdAt: user.createdAt,
         schoolId: user.schoolId,
+        teacherId: user.teacherId,
+        studentId: user.studentId,
+        teacher: user.teacherId ? { id: user.teacherId } : null,
         school: user.school ? {
           ...user.school,
           trialDaysRemaining,
@@ -2705,6 +2711,10 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           skills: user.skills,
           socialLinks: user.socialLinks,
           schoolId: user.schoolId,
+          teacherId: user.teacherId,
+          studentId: user.studentId,
+          /** Minimal shape so mobile can treat admin+teacher like TEACHER for feature flags */
+          teacher: user.teacherId ? { id: user.teacherId } : null,
           linkingStatus: user.linkingStatus,
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
           ...(children && { children }),

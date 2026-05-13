@@ -10,8 +10,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  Dimensions,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -21,8 +21,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { CelebrationConfetti } from '@/components/common';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Brand Colors
 const TEAL = '#09CFF7';
@@ -116,6 +114,7 @@ const areAnswersEquivalent = (question: QuizQuestion, userAnswer: unknown, corre
 };
 
 export function QuizResultsScreen() {
+  const { width: windowWidth } = useWindowDimensions();
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute();
@@ -449,7 +448,7 @@ export function QuizResultsScreen() {
         </ScrollView>
 
         {showConfetti && (
-          <CelebrationConfetti count={200} origin={{ x: SCREEN_WIDTH / 2, y: -20 }} fadeOut />
+          <CelebrationConfetti count={200} origin={{ x: windowWidth / 2, y: -20 }} fadeOut />
         )}
       </SafeAreaView>
     </View>

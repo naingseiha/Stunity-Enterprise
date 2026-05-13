@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -19,9 +19,8 @@ import { CelebrationConfetti } from '@/components/common';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizPodium'>;
 
-const { width, height } = Dimensions.get('window');
-
 export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { width: windowWidth } = useWindowDimensions();
   const { t } = useTranslation();
   const { sessionCode } = route.params;
   const [winners, setWinners] = useState<any[]>([]);
@@ -132,7 +131,7 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
         style={styles.gradient}
       >
         {/* Confetti */}
-        <CelebrationConfetti count={200} origin={{ x: width / 2, y: 0 }} fadeOut />
+        <CelebrationConfetti count={200} origin={{ x: windowWidth / 2, y: 0 }} fadeOut />
 
         {/* Header */}
         <View style={styles.header}>

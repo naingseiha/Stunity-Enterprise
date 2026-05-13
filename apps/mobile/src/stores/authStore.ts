@@ -70,9 +70,12 @@ const mapApiUserToUser = (apiUser: any): User => {
     isOnline: apiUser.isOnline ?? true,
     schoolId: apiUser.schoolId,
     school: apiUser.school,
+    teacherId: apiUser.teacherId ?? null,
+    studentId: apiUser.studentId ?? null,
     linkingStatus: apiUser.linkingStatus || 'NONE',
     pendingLinkData: apiUser.pendingLinkData || null,
-    teacher: apiUser.teacher,
+    teacher:
+      apiUser.teacher ?? (apiUser.teacherId ? { id: apiUser.teacherId } : undefined),
     student: apiUser.student,
     level: apiUser.level ?? 1,
     totalPoints: apiUser.totalPoints ?? 0,

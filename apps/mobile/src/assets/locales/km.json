@@ -53,7 +53,9 @@
     "yes": "បាទ/ចាស",
     "no": "ទេ",
     "continue": "បន្ត",
-    "next": "បន្ទាប់"
+    "next": "បន្ទាប់",
+    "male": "ប្រុស",
+    "female": "ស្រី"
   },
   "auth": {
     "title": "ស្វាគមន៍ត្រឡប់មកវិញ",
@@ -1685,6 +1687,7 @@
       "seeAllOtherCount": "មើលថ្នាក់ផ្សេងទៀតទាំងអស់ ({{count}})",
       "teacherSectionTeaching": "ថ្នាក់ដែលខ្ញុំបង្រៀន",
       "teacherSectionOther": "ថ្នាក់ផ្សេងទៀតដែលភ្ជាប់",
+      "teacherSectionClassCount": "ថ្នាក់ {{count}}",
       "myClassesSection": "ថ្នាក់របស់ខ្ញុំ",
       "communityClubs": "ក្លឹបសិក្សា",
       "todaysClubs": "ក្លឹបថ្ងៃនេះ",

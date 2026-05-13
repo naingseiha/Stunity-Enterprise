@@ -6,15 +6,18 @@
 
 import { Dimensions, Platform, PixelRatio } from 'react-native';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { getLayoutBreakpoint } from './layout';
 
-// Responsive scaling based on iPhone 11 Pro (375px width)
-const scale = SCREEN_WIDTH / 375;
+/** Max width scale vs 375pt baseline so typography does not balloon on tablets */
+const NORMALIZE_MAX_SCALE = 1.22;
 
 /**
- * Normalize font size for different screen sizes
+ * Normalize font size for different screen sizes (clamped on wide screens / tablets).
  */
 export function normalize(size: number): number {
+  const { width: w } = Dimensions.get('window');
+  const rawScale = w / 375;
+  const scale = Math.min(rawScale, NORMALIZE_MAX_SCALE);
   const newSize = size * scale;
   if (Platform.OS === 'ios') {
     return Math.round(PixelRatio.roundToNearestPixel(newSize));
@@ -265,14 +268,27 @@ export function extractMentions(text: string): string[] {
 }
 
 /**
- * Screen dimensions
+ * Screen dimensions (getters read current window — safe for rotation / split view).
  */
 export const screen = {
-  width: SCREEN_WIDTH,
-  height: SCREEN_HEIGHT,
-  isSmall: SCREEN_WIDTH < 375,
-  isMedium: SCREEN_WIDTH >= 375 && SCREEN_WIDTH < 414,
-  isLarge: SCREEN_WIDTH >= 414,
+  get width() {
+    return Dimensions.get('window').width;
+  },
+  get height() {
+    return Dimensions.get('window').height;
+  },
+  get isSmall() {
+    return this.width < 375;
+  },
+  get isMedium() {
+    return this.width >= 375 && this.width < 414;
+  },
+  get isLarge() {
+    return this.width >= 414;
+  },
+  get isTablet() {
+    return getLayoutBreakpoint(this.width, this.height).isTablet;
+  },
 };
 
 /**
@@ -296,4 +312,16 @@ export {
 
 export { transformPost, transformPosts } from './transformPost';
 export { cdnUrl, cdnUrls, cdnAvatar, ImageSize } from './cdnUrl';
+
+export {
+  getLayoutBreakpoint,
+  getTabletSceneStyle,
+  TABLET_MIN_SHORT_SIDE,
+  LARGE_TABLET_MIN_SHORT_SIDE,
+  TABLET_MAX_CONTENT_WIDTH,
+  TABLET_MAX_CONTENT_WIDTH_LARGE,
+  FEED_MAX_CONTENT_WIDTH,
+  TABLET_TAB_RAIL_WIDTH,
+  type LayoutBreakpoint,
+} from './layout';
 

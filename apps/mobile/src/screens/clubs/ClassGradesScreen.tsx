@@ -235,6 +235,11 @@ export default function ClassGradesScreen() {
   const navigation = useNavigation<any>();
   const { classId, className, myRole, linkedTeacherId, linkedStudentId } = route.params || {};
   const { user } = useAuthStore();
+  const accountTeacherId = user?.teacherId || user?.teacher?.id;
+  /** Class hub passes linkedTeacherId for the roster teacher; admins who teach match this id. */
+  const isTeacher =
+    myRole === 'TEACHER' ||
+    Boolean(accountTeacherId && linkedTeacherId && accountTeacherId === linkedTeacherId);
   const initialCachedStudents = useMemo(() => (
     classId ? classesApi.getCachedClassStudents(classId) || [] : []
   ), [classId]);
@@ -246,7 +251,7 @@ export default function ClassGradesScreen() {
   ), [classId]);
 
   const [loading, setLoading] = useState(() => {
-    if (myRole === 'TEACHER') {
+    if (isTeacher) {
       return !(initialCachedStudents.length > 0 || initialCachedTimetable);
     }
     return !initialCachedReport;
@@ -287,7 +292,6 @@ export default function ClassGradesScreen() {
   const sheetStatusRequestRef = useRef(0);
   const visibleTeacherSubjectRef = useRef<string | null>(null);
 
-  const isTeacher = myRole === 'TEACHER';
   const effectiveStudentId = linkedStudentId || (myRole === 'STUDENT' ? user?.student?.id : undefined);
   const reportStudents = classReport?.students || [];
   const reportStats = classReport?.statistics;

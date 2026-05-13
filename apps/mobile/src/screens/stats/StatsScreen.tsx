@@ -7,8 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Dimensions,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -23,8 +23,6 @@ import Svg, { Path, Circle, Line, Text as SvgText } from 'react-native-svg';
 import { Haptics } from '@/services/haptics';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Stats'>;
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Simple Line Chart Component
 const SimpleLineChart = ({ data, width, height }: { data: number[], width: number, height: number }) => {
@@ -73,10 +71,15 @@ const SimpleLineChart = ({ data, width, height }: { data: number[], width: numbe
 };
 
 export const StatsScreen: React.FC<Props> = ({ navigation }) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const [chartAreaWidth, setChartAreaWidth] = useState(0);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const userId = useAuthStore((state) => state.user?.id);
+
+  const chartWidth =
+    chartAreaWidth > 0 ? chartAreaWidth : Math.max(280, windowWidth - 40);
 
   // Animation values
   const progressValue = useRef(new Animated.Value(0)).current;
@@ -270,10 +273,16 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
           {/* Performance Chart */}
           <Animated.View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_60edc7fe" /></Text>
-            <View style={styles.chartCard}>
+            <View
+              style={styles.chartCard}
+              onLayout={(e) => {
+                const w = Math.floor(e.nativeEvent.layout.width);
+                if (w > 0) setChartAreaWidth(w);
+              }}
+            >
               <SimpleLineChart
                 data={scoreHistory.length > 0 ? scoreHistory : [0, 0]}
-                width={SCREEN_WIDTH - 60}
+                width={chartWidth}
                 height={150}
               />
               <Text style={styles.chartSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_dc1aa0ed" /> {scoreHistory.length} <AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_fb4a9bcd" /></Text>
@@ -449,7 +458,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   gridItem: {
-    width: (SCREEN_WIDTH - 52) / 2, // 20 padding * 2 + 12 gap = 52
+    width: '48%',
     height: 100,
     borderRadius: 16,
     overflow: 'hidden',

@@ -515,14 +515,13 @@ async function resolveDelegatedClassAttendanceAccess(opts: {
   });
   const delegatedEnabled = delegatedFlag ? delegatedFlag.enabled : true;
 
-  if (role === 'TEACHER') {
-    const rosterTeacher = await prisma.teacher.findFirst({
-      where: { schoolId: opts.schoolId, user: { id: opts.req.user!.id } },
-      select: { id: true },
-    });
-    if (rosterTeacher && opts.classData.homeroomTeacherId === rosterTeacher.id) {
-      return { allowed: true, source: 'homeroom', allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES) };
-    }
+  // Homeroom marking: any account linked to that teacher row (role may be ADMIN, etc.)
+  const rosterTeacherForHomeroom = await prisma.teacher.findFirst({
+    where: { schoolId: opts.schoolId, user: { id: opts.req.user!.id } },
+    select: { id: true },
+  });
+  if (rosterTeacherForHomeroom && opts.classData.homeroomTeacherId === rosterTeacherForHomeroom.id) {
+    return { allowed: true, source: 'homeroom', allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES) };
   }
 
   if (!delegatedEnabled) {
@@ -1179,7 +1178,8 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
         }
       | undefined;
 
-    if (includeTimetableContext && req.user?.role === 'TEACHER') {
+    // Any user linked to a Teacher row (including school admins who teach) needs timetable context for the mobile UI.
+    if (includeTimetableContext) {
       const rosterTeacher = await prisma.teacher.findFirst({
         where: { schoolId, user: { id: req.user!.id } },
         select: { id: true },

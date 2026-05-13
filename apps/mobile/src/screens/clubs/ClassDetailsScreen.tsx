@@ -525,7 +525,14 @@ export default function ClassDetailsScreen() {
       .slice(0, 5);
   }, [studentSearch, students]);
 
-  const canSubmitScores = myRole === 'TEACHER' && Boolean(params.linkedTeacherId) && Boolean(selectedQuickSubject);
+  const canSubmitScores =
+    Boolean(params.linkedTeacherId && selectedQuickSubject) &&
+    (myRole === 'TEACHER' ||
+      Boolean(
+        (user?.teacherId || user?.teacher?.id) &&
+          params.linkedTeacherId &&
+          (user?.teacherId || user?.teacher?.id) === params.linkedTeacherId
+      ));
 
   const handleScoreChange = useCallback((studentId: string, value: string) => {
     if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
@@ -652,7 +659,12 @@ export default function ClassDetailsScreen() {
   }, [navigation, hasUnsavedQuickScores, uploading, handleSubmitScores, t]);
 
   const navigateToAttendance = useCallback(() => {
-    const isTeacherHomeroom = user?.teacher?.id && (user.teacher.id === params.homeroomTeacherId || user.teacher.id === params.initialSummary?.homeroomTeacher?.id);
+    const teacherProfileId = user?.teacherId || user?.teacher?.id;
+    const isTeacherHomeroom = Boolean(
+      teacherProfileId &&
+        (teacherProfileId === params.homeroomTeacherId ||
+          teacherProfileId === params.initialSummary?.homeroomTeacher?.id)
+    );
     const isUserHomeroom = user?.id && (user.id === params.homeroomTeacherId || user.id === params.initialSummary?.homeroomTeacher?.id);
     
     navigation.navigate('ClassAttendance', {
@@ -661,7 +673,7 @@ export default function ClassDetailsScreen() {
       isHomeroom: params.initialSummary?.isHomeroom || isTeacherHomeroom || isUserHomeroom,
       homeroomTeacherId: params.homeroomTeacherId || params.initialSummary?.homeroomTeacher?.id
     });
-  }, [navigation, classId, title, params.initialSummary, user?.id, user?.teacher?.id, params.homeroomTeacherId]);
+  }, [navigation, classId, title, params.initialSummary, user?.id, user?.teacher?.id, user?.teacherId, params.homeroomTeacherId]);
 
   const handleStartConversation = useCallback(async (participantId: string, displayName: string) => {
     try {
@@ -830,7 +842,13 @@ export default function ClassDetailsScreen() {
             </View>
           </View>
 
-          {myRole === 'TEACHER' && params.teacherClassAccess === 'other' && (
+          {params.teacherClassAccess === 'other' &&
+            (myRole === 'TEACHER' ||
+              Boolean(
+                (user?.teacherId || user?.teacher?.id) &&
+                  params.linkedTeacherId &&
+                  (user?.teacherId || user?.teacher?.id) === params.linkedTeacherId
+              )) && (
             <View style={styles.viewOnlyHint}>
               <Ionicons name="information-circle-outline" size={20} color={Colors.primaryDark} style={{ marginRight: 10 }} />
               <Text style={[styles.viewOnlyHintText, isKhmer && styles.khmerInlineText]}>

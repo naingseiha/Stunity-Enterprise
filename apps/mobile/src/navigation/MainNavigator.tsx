@@ -7,7 +7,7 @@
 
 import React, { useCallback, useEffect, useRef } from "react";
 import { Animated, StyleSheet, Platform, View } from "react-native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createBottomTabNavigator, BottomTabBar } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
   useNavigation,
@@ -28,6 +28,9 @@ import {
 } from "./types";
 import { Colors, Typography, Shadows } from "@/config";
 import { Sidebar } from "@/components/navigation";
+import TabletTabRail from "@/components/navigation/TabletTabRail";
+import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
+import { getTabletSceneStyle } from "@/utils/layout";
 import {
   NavigationProvider,
   useNavigationContext,
@@ -407,6 +410,7 @@ const MainTabIcon = React.memo(function MainTabIcon({
 });
 
 const MainNavigatorContent = () => {
+  const layout = useLayoutBreakpoint();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(
     () => createStyles(colors, isDark),
@@ -475,9 +479,20 @@ const MainNavigatorContent = () => {
     [navigation],
   );
 
+  const tabletScene = getTabletSceneStyle(layout);
+
   return (
     <>
       <Tab.Navigator
+        sceneContainerStyle={{
+          backgroundColor: colors.background,
+          ...(tabletScene || {}),
+        }}
+        tabBar={
+          layout.isTablet
+            ? () => null
+            : (props) => <BottomTabBar {...props} />
+        }
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarShowLabel: false, // Instagram-style: icons only
@@ -673,17 +688,32 @@ const MainNavigatorContent = () => {
   );
 };
 
-const MainNavigator = () => {
+function MainTabsScreenWrapper() {
+  const layout = useLayoutBreakpoint();
   return (
-    <NavigationProvider>
-      <MainStack.Navigator
-        screenOptions={{
-          headerShown: false,
-          animation: "slide_from_right",
-          gestureEnabled: true,
-        }}
-      >
-        <MainStack.Screen name="MainTabs" component={MainNavigatorContent} />
+    <View style={{ flex: 1, flexDirection: "row" }}>
+      {layout.isTablet ? <TabletTabRail /> : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <MainNavigatorContent />
+      </View>
+    </View>
+  );
+}
+
+function MainStackNavigatorTabletAware() {
+  const layout = useLayoutBreakpoint();
+  const tabletScene = getTabletSceneStyle(layout);
+
+  return (
+    <MainStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+        contentStyle: tabletScene ?? {},
+      }}
+    >
+        <MainStack.Screen name="MainTabs" component={MainTabsScreenWrapper} />
         <MainStack.Screen name="Messages" component={MessagesStackNavigator} />
         <MainStack.Screen name="QuizDetails" component={QuizDetailsScreen} />
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
@@ -722,6 +752,13 @@ const MainNavigator = () => {
         />
         <MainStack.Screen name="Search" component={SearchScreen} />
       </MainStack.Navigator>
+  );
+};
+
+const MainNavigator = () => {
+  return (
+    <NavigationProvider>
+      <MainStackNavigatorTabletAware />
     </NavigationProvider>
   );
 };

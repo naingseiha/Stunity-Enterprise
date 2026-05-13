@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   RefreshControl, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -22,8 +21,6 @@ import Svg, { Polygon } from 'react-native-svg';
 import { Haptics } from '@/services/haptics';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Achievements'>;
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Hexagon Badge Component
 const HexagonBadge = ({ icon, locked, color }: { icon: string, locked: boolean, color: string }) => {
@@ -288,7 +285,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   badgeItem: {
-    width: (SCREEN_WIDTH - 60) / 2,
+    width: '47%' as any,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 14,
     padding: 16,

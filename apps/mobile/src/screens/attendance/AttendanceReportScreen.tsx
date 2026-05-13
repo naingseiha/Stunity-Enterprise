@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     ScrollView,
-    Dimensions,
     StatusBar,
     RefreshControl
     , Animated
@@ -22,8 +21,6 @@ import { attendanceService, REQUEST_TIMEOUT_CODE } from '@/services/attendance';
 import { useAuthStore } from '@/stores';
 import { Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
 
 const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
@@ -794,7 +791,7 @@ const styles = StyleSheet.create({
         rowGap: 12,
     },
     statCard: {
-        width: (width - 52) / 2,
+        width: '48%',
         backgroundColor: '#fff',
         borderRadius: 24,
         overflow: 'hidden',

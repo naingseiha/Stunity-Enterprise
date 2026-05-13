@@ -28,8 +28,8 @@ import {
   TouchableOpacity,
   View,
   Pressable,
-  Dimensions,
   FlatList,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -51,6 +51,8 @@ import { ClubCard } from '@/components/clubs/ClubCard';
 import { BannerCarousel, ShortcutItem, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
 import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 import { useTranslation } from 'react-i18next';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
 
@@ -96,7 +98,13 @@ const formatTeacherDisplayName = (
 };
 
 const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
-  Boolean(user?.schoolId && (user.role === 'STUDENT' || user.role === 'TEACHER' || user.role === 'PARENT'));
+  Boolean(
+    user?.schoolId &&
+      (user.role === 'STUDENT' ||
+        user.role === 'TEACHER' ||
+        user.role === 'PARENT' ||
+        Boolean(user.teacher?.id || user.teacherId)),
+  );
 
 const getClassCacheScopeKey = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
   user?.id || `${user?.role || 'anonymous'}:${user?.schoolId || 'no-school'}`;
@@ -121,6 +129,8 @@ const SchoolClassCard = React.memo(
     const teacherName = item.homeroomTeacher
       ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)
       : t('classes.directory.notAssigned');
+    const { male: maleCount, female: femaleCount } = getClassGenderCounts(item);
+    const studentTotal = getSafeStudentCount(item);
     const scale = useSharedValue(1);
     const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -158,7 +168,7 @@ const SchoolClassCard = React.memo(
                     {isKhmer ? 'ប្រុស' : t('common.male')}
                   </Text>
                   <Text style={styles.genderStatValue}>
-                    {(item as any).maleCount ?? Math.floor(item.studentCount * 0.45)}
+                    {maleCount}
                   </Text>
                 </View>
                 <View style={styles.genderStat}>
@@ -166,7 +176,7 @@ const SchoolClassCard = React.memo(
                     {isKhmer ? 'ស្រី' : t('common.female')}
                   </Text>
                   <Text style={styles.genderStatValue}>
-                    {(item as any).femaleCount ?? (item.studentCount - Math.floor(item.studentCount * 0.45))}
+                    {femaleCount}
                   </Text>
                 </View>
               </View>
@@ -183,7 +193,7 @@ const SchoolClassCard = React.memo(
               <View style={styles.schoolClassChip}>
                 <Ionicons name="people" size={13} color={COLORS.textSecondary} />
                 <Text style={styles.schoolClassChipText}>
-                  {isKhmer ? `សិស្ស៖ ${item.studentCount} នាក់` : item.studentCount}
+                  {isKhmer ? `សិស្ស៖ ${studentTotal} នាក់` : studentTotal}
                 </Text>
               </View>
               <View style={[styles.schoolClassChip, { flex: 1 }]}>
@@ -211,6 +221,32 @@ export default function ClubsScreen() {
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
+  const layoutBreakpoint = useLayoutBreakpoint();
+  const { width: windowWidth } = useWindowDimensions();
+  /** Measured width of the school-classes band (matches on-screen column, not raw window width). */
+  const [schoolClassesBandWidth, setSchoolClassesBandWidth] = useState(0);
+  const gridConfig = useMemo(() => {
+    const contentW = layoutBreakpoint.isTablet
+      ? Math.min(windowWidth, layoutBreakpoint.contentColumnWidth)
+      : windowWidth;
+    const gridHPad = 12;
+    const basisW =
+      layoutBreakpoint.isTablet && schoolClassesBandWidth > 0
+        ? schoolClassesBandWidth
+        : contentW;
+    const innerW = Math.max(0, basisW - gridHPad * 2);
+    /** Target ~3 columns on iPad class screens; tune min card width so measured innerW yields 3 cols when space allows. */
+    const MIN_CLASS_COL_W = 200;
+    const cols = layoutBreakpoint.isTablet
+      ? Math.min(3, Math.max(1, Math.floor(innerW / MIN_CLASS_COL_W)))
+      : 1;
+    /** Wider gutters between columns/rows on multi-column grids (also drives `gap` on the flex wrap). */
+    const gap = cols > 1 ? 18 : 12;
+    const cellW = cols === 1 ? innerW : (innerW - gap * (cols - 1)) / cols;
+    const classPreviewCount = cols === 1 ? 6 : cols * 3;
+    const teacherSectionCount = cols === 1 ? 3 : cols * 2;
+    return { cols, contentW, gap, cellW, classPreviewCount, teacherSectionCount, gridHPad };
+  }, [layoutBreakpoint.isTablet, layoutBreakpoint.contentColumnWidth, windowWidth, schoolClassesBandWidth]);
   const user = useAuthStore((state) => state.user);
   const initialClubsPage = clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE });
   const initialAcademicYears = classesApi.getCachedAcademicYears() || [];
@@ -259,8 +295,13 @@ export default function ClubsScreen() {
   const prefetchedClassDetailKeysRef = useRef<Set<string>>(new Set());
   const prefetchedClubDetailKeysRef = useRef<Set<string>>(new Set());
   const hasFocusedOnceRef = useRef(false);
+  const hasLinkedTeacherProfile = Boolean(user?.teacher?.id || user?.teacherId);
   const canViewSchoolClasses = Boolean(
-    user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER' || user?.role === 'PARENT')
+    user?.schoolId &&
+      (user?.role === 'STUDENT' ||
+        user?.role === 'TEACHER' ||
+        user?.role === 'PARENT' ||
+        hasLinkedTeacherProfile),
   );
   const isAdminOrStaff = Boolean(
     user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
@@ -268,19 +309,73 @@ export default function ClubsScreen() {
   const canUseDisciplineWorkbench = Boolean(isAdminOrStaff || user?.role === 'TEACHER');
 
   const teacherClassSplit = useMemo(() => {
-    if (user?.role !== 'TEACHER' || isAdminOrStaff) {
+    const eligible =
+      Boolean(user?.schoolId) && (user?.role === 'TEACHER' || hasLinkedTeacherProfile);
+    if (!eligible) {
       return { teaching: [] as MyClassSummary[], other: [] as MyClassSummary[] };
     }
     const teaching = schoolClasses.filter((c) => c.hasTimetableAssignment === true);
     return { teaching, other: [] as MyClassSummary[] };
-  }, [isAdminOrStaff, schoolClasses, user?.role]);
+  }, [hasLinkedTeacherProfile, schoolClasses, user?.role, user?.schoolId]);
 
   const teacherOtherClasses = useMemo(() => {
-    if (user?.role !== 'TEACHER' || isAdminOrStaff) return [] as MyClassSummary[];
-    if (!Array.isArray(allSchoolClasses) || allSchoolClasses.length === 0) return [] as MyClassSummary[];
+    const eligible =
+      Boolean(user?.schoolId) && (user?.role === 'TEACHER' || hasLinkedTeacherProfile);
+    if (!eligible) return [] as MyClassSummary[];
     const teachingIds = new Set(teacherClassSplit.teaching.map((c) => c.id));
-    return allSchoolClasses.filter((c) => !teachingIds.has(c.id));
-  }, [allSchoolClasses, isAdminOrStaff, teacherClassSplit.teaching, user?.role]);
+    /** Classes in "my" roster that are not timetable-taught (homeroom-only, etc.) */
+    const myOtherLinked = schoolClasses.filter((c) => c.hasTimetableAssignment !== true);
+    /** Rest of school directory (e.g. homeroom / light list), excluding teaching set */
+    const fromDirectory = Array.isArray(allSchoolClasses)
+      ? allSchoolClasses.filter((c) => !teachingIds.has(c.id))
+      : [];
+
+    const seen = new Set<string>();
+    const merged: MyClassSummary[] = [];
+    for (const c of myOtherLinked) {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        merged.push(c);
+      }
+    }
+    for (const c of fromDirectory) {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        merged.push(c);
+      }
+    }
+    return merged;
+  }, [
+    allSchoolClasses,
+    hasLinkedTeacherProfile,
+    schoolClasses,
+    teacherClassSplit.teaching,
+    user?.role,
+    user?.schoolId,
+  ]);
+
+  const isTeacherClassLayout = Boolean(
+    user?.schoolId && (user?.role === 'TEACHER' || hasLinkedTeacherProfile),
+  );
+
+  const teacherTeachingIds = useMemo(
+    () => new Set(teacherClassSplit.teaching.map((c) => c.id)),
+    [teacherClassSplit.teaching],
+  );
+
+  const teacherPreviewClasses = useMemo(() => {
+    if (!isTeacherClassLayout) return [] as MyClassSummary[];
+    return [
+      ...teacherClassSplit.teaching,
+      ...teacherOtherClasses.filter((c) => !teacherTeachingIds.has(c.id)),
+    ];
+  }, [isTeacherClassLayout, teacherClassSplit.teaching, teacherOtherClasses, teacherTeachingIds]);
+
+  const previewClasses = useMemo(() => {
+    if (isTeacherClassLayout) return teacherPreviewClasses;
+    if (isAdminOrStaff) return adminClasses;
+    return schoolClasses;
+  }, [adminClasses, isAdminOrStaff, isTeacherClassLayout, schoolClasses, teacherPreviewClasses]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -395,7 +490,7 @@ export default function ClubsScreen() {
 
   const loadAllSchoolClasses = useCallback(async () => {
     if (!user?.schoolId) return;
-    if (user?.role !== 'TEACHER' || isAdminOrStaff) return;
+    if (!(user?.role === 'TEACHER' || user?.teacher?.id || user?.teacherId)) return;
     try {
       setLoadingAllSchoolClasses(true);
       setAllSchoolClassesError(null);
@@ -410,7 +505,7 @@ export default function ClubsScreen() {
     } finally {
       setLoadingAllSchoolClasses(false);
     }
-  }, [isAdminOrStaff, selectedYearId, t, user?.role, user?.schoolId]);
+  }, [selectedYearId, t, user?.role, user?.schoolId, user?.teacher?.id, user?.teacherId]);
 
   const loadAdminClasses = useCallback(async (query = '') => {
     if (!isAdminOrStaff) return;
@@ -538,7 +633,10 @@ export default function ClubsScreen() {
   );
 
   useEffect(() => {
-    const visibleClasses = (isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 3);
+    const visibleClasses = (isTeacherClassLayout ? schoolClasses : isAdminOrStaff ? adminClasses : schoolClasses).slice(
+      0,
+      3,
+    );
     if (visibleClasses.length === 0) return;
 
     const task = InteractionManager.runAfterInteractions(() => {
@@ -548,7 +646,7 @@ export default function ClubsScreen() {
     return () => {
       task.cancel?.();
     };
-  }, [adminClasses, isAdminOrStaff, prefetchClassDetails, schoolClasses]);
+  }, [adminClasses, isAdminOrStaff, isTeacherClassLayout, prefetchClassDetails, schoolClasses]);
 
   useEffect(() => {
     const visibleClubs = clubs.slice(0, 2);
@@ -567,11 +665,11 @@ export default function ClubsScreen() {
     // Prefetch directory data to improve speed when user clicks "View All"
     InteractionManager.runAfterInteractions(() => {
       classesApi.getAcademicYears();
-      if (user?.role === 'TEACHER') {
+      if (user?.role === 'TEACHER' || user?.teacher?.id || user?.teacherId) {
         classesApi.getClassesLightweight({ asRole: 'TEACHER' });
       }
     });
-  }, [user?.role]);
+  }, [user?.role, user?.teacher?.id, user?.teacherId]);
 
   const onRefresh = useCallback(() => {
     setPage(1);
@@ -585,10 +683,23 @@ export default function ClubsScreen() {
     Promise.all([
       loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current }),
       isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true),
-      user?.role === 'TEACHER' && !isAdminOrStaff ? loadAllSchoolClasses() : Promise.resolve(),
+      user?.role === 'TEACHER' || user?.teacher?.id || user?.teacherId
+        ? loadAllSchoolClasses()
+        : Promise.resolve(),
       loadInvites(),
     ]).finally(() => setRefreshing(false));
-  }, [adminSearchQuery, isAdminOrStaff, loadAdminClasses, loadAllSchoolClasses, loadClubs, loadInvites, loadSchoolClasses, user?.role]);
+  }, [
+    adminSearchQuery,
+    isAdminOrStaff,
+    loadAdminClasses,
+    loadAllSchoolClasses,
+    loadClubs,
+    loadInvites,
+    loadSchoolClasses,
+    user?.role,
+    user?.teacher?.id,
+    user?.teacherId,
+  ]);
 
   const loadMoreClubs = useCallback(() => {
     if (
@@ -747,19 +858,6 @@ export default function ClubsScreen() {
       { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: isDark ? '#3B2B09' : '#FEF3C7' },
       { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
     ];
-    const isTeacherClassPreview = user?.role === 'TEACHER' && !isAdminOrStaff;
-    const teacherTeachingIds = new Set(teacherClassSplit.teaching.map((classItem) => classItem.id));
-    const teacherPreviewClasses = isTeacherClassPreview
-      ? [
-          ...teacherClassSplit.teaching,
-          ...teacherOtherClasses.filter((classItem) => !teacherTeachingIds.has(classItem.id)),
-        ]
-      : [];
-    const previewClasses = isAdminOrStaff
-      ? adminClasses
-      : isTeacherClassPreview
-        ? teacherPreviewClasses
-        : schoolClasses;
 
     return (
       <View style={styles.listHeader}>
@@ -783,7 +881,13 @@ export default function ClubsScreen() {
 
         {/* School Classes Section */}
         {(canViewSchoolClasses || isAdminOrStaff) && (
-          <View style={styles.schoolClassesSection}>
+          <View
+            style={styles.schoolClassesSection}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (w > 0) setSchoolClassesBandWidth((prev) => (Math.abs(prev - w) < 1 ? prev : w));
+            }}
+          >
             <View style={styles.schoolClassesHeader}>
               <View style={styles.schoolClassesHeaderInfo}>
                 <View style={styles.schoolClassesTitleRow}>
@@ -796,13 +900,15 @@ export default function ClubsScreen() {
                     <MaterialCommunityIcons name="google-classroom" size={14} color="#FFFFFF" />
                   </LinearGradient>
                   <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
-                    {isAdminOrStaff ? t('classes.directory.title') : t('clubs.screen.schoolClasses')}
+                    {isAdminOrStaff && !isTeacherClassLayout
+                      ? t('classes.directory.title')
+                      : t('clubs.screen.schoolClasses')}
                   </Text>
                 </View>
               </View>
 
-              {/* Academic Year Selector - Now in its own row for better clarity */}
-              {!isAdminOrStaff && academicYears.length > 1 && (
+              {/* Academic Year Selector — teachers & school admins who also teach need year scope */}
+              {(!isAdminOrStaff || hasLinkedTeacherProfile) && academicYears.length > 1 && (
                 <View style={styles.yearSelectorContainer}>
                   <ScrollView 
                     horizontal 
@@ -862,7 +968,7 @@ export default function ClubsScreen() {
               </TouchableOpacity>
             )}
 
-            {isAdminOrStaff && (
+            {isAdminOrStaff && !isTeacherClassLayout && (
               <View style={styles.adminSearchWrap}>
                 <View style={[styles.adminSearchBar, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
                   <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
@@ -913,16 +1019,44 @@ export default function ClubsScreen() {
                       : t('clubs.screen.noClassesYear')}
                 </Text>
               </View>
-            ) : isTeacherClassPreview ? (
-              <View>
+            ) : isTeacherClassLayout ? (
+              <View style={styles.teacherTwoSectionWrap}>
                 {teacherClassSplit.teaching.length > 0 ? (
-                  <View style={styles.schoolClassesSubsection}>
-                    <Text style={[styles.classSubsectionTitle, { color: colors.textSecondary }, isKhmer && styles.khmerHeadingText]}>
-                      {t('clubs.screen.teacherSectionTeaching')}
-                    </Text>
-                    <View style={styles.schoolClassesGridTight}>
-                      {teacherClassSplit.teaching.slice(0, 3).map((item, idx) => (
-                        <View key={`teach-${item.id}`} style={styles.gridItemWrapper}>
+                  <View
+                    style={[
+                      styles.teacherSectionCard,
+                      { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9', borderColor: colors.border },
+                    ]}
+                  >
+                    <View style={styles.teacherSectionCardHeader}>
+                      <View style={[styles.teacherSectionIconBubble, { backgroundColor: '#0EA5E9' }]}>
+                        <Ionicons name="ribbon-outline" size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.teacherSectionHeaderText}>
+                        <Text style={[styles.teacherSectionCardTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                          {t('clubs.screen.teacherSectionTeaching')}
+                        </Text>
+                        <Text style={[styles.teacherSectionCardMeta, { color: colors.textSecondary }]}>
+                          {t('clubs.screen.teacherSectionClassCount', { count: teacherClassSplit.teaching.length })}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={[
+                        styles.schoolClassesGridInCard,
+                        gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
+                        gridConfig.cols > 1 && { gap: gridConfig.gap },
+                      ]}
+                    >
+                      {teacherClassSplit.teaching.slice(0, gridConfig.teacherSectionCount).map((item, idx) => (
+                        <View
+                          key={`teach-${item.id}`}
+                          style={[
+                            styles.gridItemWrapper,
+                            gridConfig.cols > 1 && styles.gridItemMulticol,
+                            gridConfig.cols > 1 && { width: gridConfig.cellW },
+                          ]}
+                        >
                           <SchoolClassCard
                             item={item}
                             index={idx}
@@ -932,9 +1066,9 @@ export default function ClubsScreen() {
                         </View>
                       ))}
                     </View>
-                    {teacherClassSplit.teaching.length > 3 ? (
+                    {teacherClassSplit.teaching.length > gridConfig.teacherSectionCount ? (
                       <TouchableOpacity
-                        style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                         onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })}
                         activeOpacity={0.8}
                       >
@@ -948,13 +1082,41 @@ export default function ClubsScreen() {
                 ) : null}
 
                 {teacherOtherClasses.length > 0 ? (
-                  <View style={[styles.schoolClassesSubsection, teacherClassSplit.teaching.length > 0 && { marginTop: 16 }]}>
-                    <Text style={[styles.classSubsectionTitle, { color: colors.textSecondary }, isKhmer && styles.khmerHeadingText]}>
-                      {t('clubs.screen.teacherSectionOther')}
-                    </Text>
-                    <View style={styles.schoolClassesGridTight}>
-                      {teacherOtherClasses.slice(0, 3).map((item, idx) => (
-                        <View key={`oth-${item.id}`} style={styles.gridItemWrapper}>
+                  <View
+                    style={[
+                      styles.teacherSectionCard,
+                      { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9', borderColor: colors.border },
+                    ]}
+                  >
+                    <View style={styles.teacherSectionCardHeader}>
+                      <View style={[styles.teacherSectionIconBubble, { backgroundColor: '#6366F1' }]}>
+                        <Ionicons name="layers-outline" size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.teacherSectionHeaderText}>
+                        <Text style={[styles.teacherSectionCardTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                          {t('clubs.screen.teacherSectionOther')}
+                        </Text>
+                        <Text style={[styles.teacherSectionCardMeta, { color: colors.textSecondary }]}>
+                          {t('clubs.screen.teacherSectionClassCount', { count: teacherOtherClasses.length })}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={[
+                        styles.schoolClassesGridInCard,
+                        gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
+                        gridConfig.cols > 1 && { gap: gridConfig.gap },
+                      ]}
+                    >
+                      {teacherOtherClasses.slice(0, gridConfig.teacherSectionCount).map((item, idx) => (
+                        <View
+                          key={`oth-${item.id}`}
+                          style={[
+                            styles.gridItemWrapper,
+                            gridConfig.cols > 1 && styles.gridItemMulticol,
+                            gridConfig.cols > 1 && { width: gridConfig.cellW },
+                          ]}
+                        >
                           <SchoolClassCard
                             item={item}
                             index={idx}
@@ -964,9 +1126,9 @@ export default function ClubsScreen() {
                         </View>
                       ))}
                     </View>
-                    {teacherOtherClasses.length > 3 ? (
+                    {teacherOtherClasses.length > gridConfig.teacherSectionCount ? (
                       <TouchableOpacity
-                        style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                         onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })}
                         activeOpacity={0.8}
                       >
@@ -980,9 +1142,22 @@ export default function ClubsScreen() {
                 ) : null}
               </View>
             ) : (
-              <View style={styles.schoolClassesGrid}>
-                {previewClasses.slice(0, 6).map((item, idx) => (
-                  <View key={item.id} style={styles.gridItemWrapper}>
+              <View
+                style={[
+                  styles.schoolClassesGrid,
+                  gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
+                  gridConfig.cols > 1 && { gap: gridConfig.gap },
+                ]}
+              >
+                {previewClasses.slice(0, gridConfig.classPreviewCount).map((item, idx) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.gridItemWrapper,
+                      gridConfig.cols > 1 && styles.gridItemMulticol,
+                      gridConfig.cols > 1 && { width: gridConfig.cellW },
+                    ]}
+                  >
                     <SchoolClassCard
                       item={item}
                       index={idx}
@@ -992,7 +1167,7 @@ export default function ClubsScreen() {
                   </View>
                 ))}
 
-                {previewClasses.length > 6 && (
+                {previewClasses.length > gridConfig.classPreviewCount && (
                   <TouchableOpacity
                     style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                     onPress={() => { navigation.navigate('ClassDirectory'); }}
@@ -1039,10 +1214,12 @@ export default function ClubsScreen() {
   }, [
     canViewSchoolClasses,
     canUseDisciplineWorkbench,
+    hasLinkedTeacherProfile,
     isAdminOrStaff,
+    isTeacherClassLayout,
     academicYears,
     selectedYearId,
-    adminClasses,
+    previewClasses,
     adminSearchQuery,
     handleClassPress,
     handleCreateClub,
@@ -1063,20 +1240,33 @@ export default function ClubsScreen() {
     user?.role,
     teacherClassSplit,
     teacherOtherClasses,
+    gridConfig,
   ]);
 
-  // ── Render item (memoized card) ───────────────────────────────────────────
+  // ── Render item (memoized card) — padded cells when multi-column grid ───────
   const renderClubCard = useCallback(
     ({ item }: { item: Club }) => (
-      <ClubCard
-        item={item}
-        isJoined={Boolean(item.isJoined || joinedClubSet.has(item.id))}
-        isBusy={busyClubId === item.id}
-        onPress={handleClubPress}
-        onToggleMembership={handleToggleMembership}
-      />
+      <View
+        style={
+          gridConfig.cols > 1
+            ? {
+                flex: 1,
+                paddingHorizontal: 6,
+                paddingBottom: 12,
+              }
+            : undefined
+        }
+      >
+        <ClubCard
+          item={item}
+          isJoined={Boolean(item.isJoined || joinedClubSet.has(item.id))}
+          isBusy={busyClubId === item.id}
+          onPress={handleClubPress}
+          onToggleMembership={handleToggleMembership}
+        />
+      </View>
     ),
-    [joinedClubSet, busyClubId, handleClubPress, handleToggleMembership]
+    [gridConfig.cols, joinedClubSet, busyClubId, handleClubPress, handleToggleMembership]
   );
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -1195,10 +1385,12 @@ export default function ClubsScreen() {
       <View style={styles.safeArea}>
         {/* @ts-ignore FlashList types omit some valid props */}
         <FlashList
+          key={`club-cols-${gridConfig.cols}`}
           data={filteredClubs}
           keyExtractor={keyExtractor}
           renderItem={renderClubCard}
-          estimatedItemSize={180}
+          numColumns={gridConfig.cols}
+          estimatedItemSize={gridConfig.cols > 1 ? 210 : 180}
           drawDistance={600}
           getItemType={getItemType}
           ListHeaderComponent={renderHeader}
@@ -1522,6 +1714,57 @@ const styles = StyleSheet.create({
   schoolClassesSubsection: {
     paddingHorizontal: 0,
   },
+  teacherTwoSectionWrap: {
+    marginTop: 4,
+    gap: 18,
+  },
+  teacherSectionCard: {
+    marginHorizontal: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingTop: 14,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+  },
+  teacherSeeAllInCard: {
+    marginHorizontal: 0,
+    marginTop: 8,
+  },
+  teacherSectionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+  teacherSectionIconBubble: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teacherSectionHeaderText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  teacherSectionCardTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  teacherSectionCardMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  /** Class grid inside a teacher section card (no extra horizontal padding — card handles inset). */
+  schoolClassesGridInCard: {
+    paddingHorizontal: 0,
+  },
+  gridItemMulticol: {
+    marginBottom: 0,
+  },
   classSubsectionTitle: {
     fontSize: 10,
     lineHeight: 16,
@@ -1677,6 +1920,12 @@ const styles = StyleSheet.create({
   schoolClassesGridTight: {
     paddingHorizontal: 12,
     marginTop: 4,
+  },
+  /** iPad / tablet: 2–3 columns for class cards */
+  schoolClassesGridMulticol: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
   },
   gridItemWrapper: {
     width: '100%',

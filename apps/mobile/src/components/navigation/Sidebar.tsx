@@ -11,7 +11,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   BackHandler,
-  Dimensions,
   View,
   Text,
   StyleSheet,
@@ -22,6 +21,7 @@ import {
   StatusBar,
   Alert,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,9 +72,10 @@ interface SidebarProps {
 
 const CARD_ASPECT_RATIO = 1.586;
 const VERTICAL_CARD_ASPECT_RATIO = 1 / CARD_ASPECT_RATIO;
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const slideDistance = windowWidth;
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useThemeContext();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -86,14 +87,20 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   const [selectedStyleId, setSelectedStyleId] = useState<UserCardStyleId>(DEFAULT_USER_CARD_STYLE_ID);
   const [selectedOrientation, setSelectedOrientation] = useState<UserCardOrientation>(DEFAULT_USER_CARD_ORIENTATION);
   const [rendered, setRendered] = useState(visible);
-  const translateX = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
+  const translateX = useRef(new Animated.Value(-slideDistance)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const pendingAfterCloseRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!visible && !rendered) {
+      translateX.setValue(-slideDistance);
+    }
+  }, [slideDistance, rendered, translateX, visible]);
 
   const animateClose = useCallback(() => {
     Animated.parallel([
       Animated.timing(translateX, {
-        toValue: -SCREEN_WIDTH,
+        toValue: -slideDistance,
         duration: 220,
         useNativeDriver: true,
       }),
@@ -108,7 +115,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       pendingAfterCloseRef.current = null;
       afterClose?.();
     });
-  }, [backdropOpacity, translateX]);
+  }, [backdropOpacity, slideDistance, translateX]);
 
   const requestClose = useCallback((afterClose?: () => void) => {
     pendingAfterCloseRef.current = afterClose || null;
@@ -185,7 +192,10 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   const isPrismDesign = selectedDesignId === 'prism';
   const isLuxeDesign = selectedDesignId === 'luxe';
   const cardLastFour = cardNumber.replace(/\s/g, '').slice(-4).padStart(4, '0');
-  const attendanceMenuItem: MenuItem | null = role === 'TEACHER'
+  /** Teacher portal: TEACHER role or User.teacherId / nested teacher (auth now returns both). */
+  const canAccessTeacherAttendance =
+    role === 'TEACHER' || Boolean(user?.teacher?.id || user?.teacherId);
+  const attendanceMenuItem: MenuItem | null = canAccessTeacherAttendance
     ? {
       key: 'attendance',
       label: t('profile.attendance'),

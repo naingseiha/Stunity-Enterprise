@@ -4,10 +4,12 @@
  * Authentication flow screens
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthStackParamList } from './types';
 import { Colors } from '@/config';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { getTabletSceneStyle } from '@/utils/layout';
 
 // Import actual screen components
 import {
@@ -26,11 +28,21 @@ import {
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 const AuthNavigator: React.FC = () => {
+  const layout = useLayoutBreakpoint();
+  const tabletScene = getTabletSceneStyle(layout);
+  const contentStyle = useMemo(
+    () => ({
+      backgroundColor: Colors.white,
+      ...(tabletScene || {}),
+    }),
+    [tabletScene],
+  );
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Colors.white },
+        contentStyle,
         animation: 'slide_from_right',
         gestureEnabled: true,
       }}

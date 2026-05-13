@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   RefreshControl,
   Platform,
 } from 'react-native';
@@ -23,7 +22,6 @@ import { learnApi } from '@/api';
 import type { InstructorDashboardStats, PerformanceData, InstructorCourseStats } from '@/api/learn';
 import { Colors, Typography, Shadows } from '@/config';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HEIGHT = 200;
 const CHART_HORIZONTAL_PADDING = 12;
 const CHART_VERTICAL_PADDING = 18;
@@ -328,7 +326,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   statCard: {
-    width: (SCREEN_WIDTH - 52) / 2,
+    width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,

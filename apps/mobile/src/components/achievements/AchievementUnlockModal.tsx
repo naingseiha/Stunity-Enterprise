@@ -6,22 +6,20 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * Includes confetti, animations, and XP reward display
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   Animated,
-  Dimensions,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Achievement } from '@/services/stats';
 import { CelebrationConfetti } from '@/components/common';
-
-const { width, height } = Dimensions.get('window');
 
 interface AchievementUnlockModalProps {
   visible: boolean;
@@ -34,6 +32,8 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
   achievement,
   onClose,
 }) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const styles = useMemo(() => createAchievementUnlockStyles(windowWidth), [windowWidth]);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -85,7 +85,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
     >
       <View style={styles.overlay}>
         {/* Confetti */}
-        <CelebrationConfetti count={100} origin={{ x: width / 2, y: -10 }} fadeOut />
+        <CelebrationConfetti count={100} origin={{ x: windowWidth / 2, y: -10 }} fadeOut />
 
         {/* Content */}
         <View style={styles.container}>
@@ -157,7 +157,8 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function createAchievementUnlockStyles(w: number) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    width: width - 48,
+    width: w - 48,
     borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -268,4 +269,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1f2937',
   },
-});
+  });
+}

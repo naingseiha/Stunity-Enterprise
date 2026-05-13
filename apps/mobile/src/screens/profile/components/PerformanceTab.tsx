@@ -9,15 +9,15 @@
  * - Leaderboard Position
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   Animated,
+  useWindowDimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -40,8 +40,6 @@ import type { UserStats as ProfileUserStats } from "@/types";
 import { Shadows } from "@/config";
 import { useThemeContext } from "@/contexts";
 import { Avatar } from "@/components/common";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -108,6 +106,10 @@ const STAT_CARDS = [
   },
 ];
 
+const GRID_GAP = 12;
+const GRID_PADDING = 16;
+const PARENT_PADDING = 16; // From ProfileScreen's tabContent
+
 function compactNumber(value: number | undefined) {
   const safeValue = value ?? 0;
   if (safeValue >= 1000000) return `${(safeValue / 1000000).toFixed(1)}M`;
@@ -141,11 +143,13 @@ function StatCard({
   value,
   label,
   index = 0,
+  gridCardWidth,
 }: {
   icon: string;
   value: string | number;
   label: string;
   index?: number;
+  gridCardWidth: number;
 }) {
   const cfg = STAT_CARDS[index % STAT_CARDS.length];
   const { colors, isDark } = useThemeContext();
@@ -177,6 +181,7 @@ function StatCard({
     <Animated.View
       style={[
         s.statGridCardWrapper,
+        { width: gridCardWidth },
         {
           shadowOpacity: isDark ? 0 : 0.08,
           transform: [{ scale }, { translateY }],
@@ -489,6 +494,21 @@ export default function PerformanceTab({
   onViewStats,
 }: PerformanceTabProps) {
   const { t, i18n } = useTranslation();
+  const { width: windowWidth } = useWindowDimensions();
+  const [miniChartWidth, setMiniChartWidth] = useState(0);
+  const [statGridInnerWidth, setStatGridInnerWidth] = useState(0);
+  const gridCardWidth = useMemo(() => {
+    if (statGridInnerWidth > 0) {
+      return (statGridInnerWidth - GRID_GAP * 2) / 3 - 0.5;
+    }
+    return (
+      (windowWidth - PARENT_PADDING * 2 - GRID_PADDING * 2 - GRID_GAP * 2) /
+        3 -
+      0.5
+    );
+  }, [statGridInnerWidth, windowWidth]);
+  const miniChartPixelWidth =
+    miniChartWidth > 0 ? miniChartWidth : Math.max(200, windowWidth - 80);
   const { colors, isDark } = useThemeContext();
   const cardScale = useRef(new Animated.Value(0.95)).current;
   const cardStyle = {
@@ -921,11 +941,19 @@ export default function PerformanceTab({
             <Text style={[s.chartTitle, { color: colors.textSecondary }]}>
               {t("profile.performance.recentScores")}
             </Text>
-            <MiniLineChart
-              data={scoreHistory.slice(-7)}
-              width={SCREEN_WIDTH - 80}
-              height={100}
-            />
+            <View
+              style={{ width: "100%" }}
+              onLayout={(e) => {
+                const w = Math.floor(e.nativeEvent.layout.width);
+                if (w > 0) setMiniChartWidth(w);
+              }}
+            >
+              <MiniLineChart
+                data={scoreHistory.slice(-7)}
+                width={miniChartPixelWidth}
+                height={100}
+              />
+            </View>
           </View>
         )}
         {scoreHistory.length < 2 && (
@@ -1007,42 +1035,54 @@ export default function PerformanceTab({
         </View>
 
         <View style={s.statGridWrapper}>
-          <View style={s.statGrid}>
+          <View
+            style={s.statGrid}
+            onLayout={(e) => {
+              const w = Math.floor(e.nativeEvent.layout.width);
+              if (w > 0) setStatGridInnerWidth(w);
+            }}
+          >
             <StatCard
               icon="book-outline"
               value={quizStats?.totalQuizzes ?? 0}
               label={t("profile.performance.quizzesDone")}
               index={0}
+              gridCardWidth={gridCardWidth}
             />
             <StatCard
               icon="star-outline"
               value={quizStats?.totalPoints ?? profile?.totalPoints ?? 0}
               label={t("profile.performance.totalPoints")}
               index={1}
+              gridCardWidth={gridCardWidth}
             />
             <StatCard
               icon="time-outline"
               value={profile?.totalLearningHours ?? 0}
               label={t("profile.performance.studyHours")}
               index={2}
+              gridCardWidth={gridCardWidth}
             />
             <StatCard
               icon="flame-outline"
               value={streak?.currentStreak ?? profile?.currentStreak ?? 0}
               label={t("profile.performance.streak")}
               index={3}
+              gridCardWidth={gridCardWidth}
             />
             <StatCard
               icon="trophy-outline"
               value={achievements?.length || 0}
               label={t("profile.performance.achievements")}
               index={4}
+              gridCardWidth={gridCardWidth}
             />
             <StatCard
               icon="code-slash-outline"
               value={(profile as any)?.projects?.length ?? 0}
               label={t("profile.performance.projects")}
               index={5}
+              gridCardWidth={gridCardWidth}
             />
           </View>
         </View>
@@ -1154,13 +1194,6 @@ export default function PerformanceTab({
     </View>
   );
 }
-
-const GRID_GAP = 12;
-const GRID_PADDING = 16;
-const PARENT_PADDING = 16; // From ProfileScreen's tabContent
-const CARD_WIDTH =
-  (SCREEN_WIDTH - PARENT_PADDING * 2 - GRID_PADDING * 2 - GRID_GAP * 2) / 3 -
-  0.5;
 
 const s = StyleSheet.create({
   container: { gap: 12, paddingTop: 12 },
@@ -1477,7 +1510,6 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
   statGridCardWrapper: {
-    width: CARD_WIDTH,
     borderRadius: 18, // Match the inner card to fix Android corner glitch
     ...Shadows.sm,
     shadowOpacity: 0.08,

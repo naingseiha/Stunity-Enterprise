@@ -8,6 +8,8 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  */
 
 import React, { useState, useRef } from 'react';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 import {
   View,
   Text,
@@ -18,7 +20,7 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Dimensions, Animated
+  Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,8 +39,6 @@ import { authApi } from '@/api/client';
 const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
 
-const { width } = Dimensions.get('window');
-
 type NavigationProp = AuthStackScreenProps<'Register'>['navigation'];
 
 const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; description: string; color: string; bg: string }[] = [
@@ -53,6 +53,7 @@ const STEP_LABELS = ['Info', 'Role', 'Account'];
 export default function RegisterScreen() {
     const { t: autoT } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const layout = useLayoutBreakpoint();
   const { register, login, isLoading, error, clearError } = useAuthStore();
 
   const [step, setStep] = useState(1);
@@ -226,11 +227,11 @@ export default function RegisterScreen() {
         <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_0073c7e3" /></Text>
       </View>
 
-      <View style={s.rolesContainer}>
+      <View style={[s.rolesContainer, layout.isTablet && s.rolesContainerTablet]}>
         {ROLES.map((r, i) => (
-          <Animated.View key={r.value}>
+          <Animated.View key={r.value} style={layout.isTablet ? { flex: 1 } : undefined}>
             <TouchableOpacity
-              style={[s.roleCard, role === r.value && { borderColor: r.color, backgroundColor: r.bg }]}
+              style={[s.roleCard, layout.isTablet && s.roleCardRowTablet, role === r.value && { borderColor: r.color, backgroundColor: r.bg }]}
               onPress={() => setRole(r.value)}
               activeOpacity={0.8}
             >
@@ -241,9 +242,9 @@ export default function RegisterScreen() {
                   color={role === r.value ? '#fff' : r.color}
                 />
               </View>
-              <View style={s.roleInfo}>
-                <Text style={[s.roleLabel, role === r.value && { color: r.color }]}>{r.label}</Text>
-                <Text style={s.roleDescription}>{r.description}</Text>
+              <View style={[s.roleInfo, layout.isTablet && s.roleInfoTablet]}>
+                <Text style={[s.roleLabel, role === r.value && { color: r.color }]} numberOfLines={2}>{r.label}</Text>
+                <Text style={s.roleDescription} numberOfLines={layout.isTablet ? 2 : 3}>{r.description}</Text>
               </View>
               {!!(role === r.value) && (
                 <Animated.View>
@@ -427,10 +428,12 @@ export default function RegisterScreen() {
           style={{ flex: 1 }}
         >
           <ScrollView
-            contentContainerStyle={s.scrollContent}
+            contentContainerStyle={[s.scrollContent, layout.isTablet && { paddingTop: 20, paddingBottom: 40 }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <AuthTabletShell layout={layout} variant="register">
+            <>
             {/* Header */}
             <Animated.View style={s.header}>
               <TouchableOpacity
@@ -440,7 +443,7 @@ export default function RegisterScreen() {
                 <Ionicons name="chevron-back" size={22} color={Colors.gray[700]} />
               </TouchableOpacity>
 
-              <Text style={s.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_a069174f" /></Text>
+              <Text style={[s.headerTitle, layout.isTablet && s.headerTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_a069174f" /></Text>
               <View style={s.stepBadge}>
                 <Text style={s.stepBadgeText}>{step}/3</Text>
               </View>
@@ -452,6 +455,8 @@ export default function RegisterScreen() {
               {step === 2 && renderStep2()}
               {step === 3 && renderStep3()}
             </Animated.View>
+            </>
+            </AuthTabletShell>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -506,6 +511,9 @@ const s = StyleSheet.create({
     color: Colors.gray[900],
     flex: 1,
     textAlign: 'center',
+  },
+  headerTitleTablet: {
+    fontSize: 22,
   },
   stepBadge: {
     backgroundColor: '#ECFEFF',
@@ -622,6 +630,11 @@ const s = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
+  rolesContainerTablet: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
+  },
   roleCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -635,6 +648,13 @@ const s = StyleSheet.create({
     shadowOpacity: 0.04,
 
 
+  },
+  roleCardRowTablet: {
+    minHeight: 100,
+    paddingVertical: 14,
+  },
+  roleInfoTablet: {
+    flex: 1,
   },
   roleIcon: {
     width: 50,

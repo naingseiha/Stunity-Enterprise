@@ -19,9 +19,9 @@ import {
   Platform,
   Alert,
   AppState,
-  Dimensions,
   Animated,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,8 +55,7 @@ import { useNavigationContext, useThemeContext } from '@/contexts';
 import RenderPostItem from './RenderPostItem';
 import { statsAPI } from '@/services/stats';
 import { getFeedMediaAspectRatio, getFeedMediaBucket } from '@/utils/feedMediaLayout';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 const INITIAL_FEED_NOTICE_MS = 2800;
 const INITIAL_FEED_STILL_WORKING_MS = 9000;
 const LIST_DRAW_DISTANCE = Platform.OS === 'android' ? 520 : 720;
@@ -300,6 +299,8 @@ const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create
 
 export default function FeedScreen() {
   const { t } = useTranslation();
+  const layout = useLayoutBreakpoint();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
@@ -844,30 +845,30 @@ export default function FeedScreen() {
     return 'text';
   }, []);
 
-  const overrideItemLayout = useCallback((layout: { span?: number; size?: number }, item: FeedItem) => {
+  const overrideItemLayout = useCallback((slot: { span?: number; size?: number }, item: FeedItem) => {
     if (!item) return;
     if (item.type === 'SUGGESTED_USERS') {
-      layout.size = 230;
+      slot.size = 230;
       return;
     }
     if (item.type === 'SUGGESTED_COURSES') {
-      layout.size = 270;
+      slot.size = 270;
       return;
     }
     if (item.type === 'SUGGESTED_QUIZZES') {
-      layout.size = 270;
+      slot.size = 270;
       return;
     }
 
     const postData = (item as any).data || item;
     if (!postData?.mediaUrls?.length) {
-      layout.size = postData?.postType === 'POLL' || postData?.postType === 'QUIZ' ? 430 : ESTIMATED_TEXT_POST_SIZE;
+      slot.size = postData?.postType === 'POLL' || postData?.postType === 'QUIZ' ? 430 : ESTIMATED_TEXT_POST_SIZE;
       return;
     }
 
-    const mediaHeight = (SCREEN_WIDTH - 28) * getFeedMediaAspectRatio(postData);
-    layout.size = Math.round(ESTIMATED_MEDIA_BASE_SIZE + mediaHeight);
-  }, []);
+    const mediaHeight = (layout.contentColumnWidth - 28) * getFeedMediaAspectRatio(postData);
+    slot.size = Math.round(ESTIMATED_MEDIA_BASE_SIZE + mediaHeight);
+  }, [layout.contentColumnWidth]);
 
   const renderFooter = useCallback(() => {
     if (!isLoadingPosts || pendingSubjectFilter) return null;
@@ -1005,6 +1006,7 @@ export default function FeedScreen() {
       )}
 
       <View style={styles.feedBody}>
+        <View style={styles.feedListColumn}>
         {/* FlashList — cell recycling for smooth 60fps scrolling */}
         <FlashList
           ref={flatListRef}
@@ -1034,7 +1036,7 @@ export default function FeedScreen() {
           // ── FlashList performance props for 120Hz smooth scrolling ──
           // @ts-ignore - The types for FlashList in this version omit estimatedItemSize, but it is supported and critical for performance.
           estimatedItemSize={420}
-          estimatedListSize={{ height: SCREEN_HEIGHT, width: SCREEN_WIDTH }}
+          estimatedListSize={{ height: windowHeight, width: windowWidth }}
           drawDistance={LIST_DRAW_DISTANCE}
           getItemType={getItemType}
           overrideItemLayout={overrideItemLayout}
@@ -1042,6 +1044,7 @@ export default function FeedScreen() {
           removeClippedSubviews={Platform.OS === 'android'}
           decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
         />
+        </View>
 
         {isFilterTransitioning && (
           <Animated.View
@@ -1153,6 +1156,10 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   feedBody: {
     flex: 1,
     position: 'relative',
+  },
+  feedListColumn: {
+    flex: 1,
+    width: '100%',
   },
   listContent: {
     paddingBottom: 100,

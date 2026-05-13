@@ -107,16 +107,19 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     }, [selectedDate]);
 
     const isRouteHomeroom = initialIsHomeroom === true;
+    const teacherProfileId = user?.teacherId || user?.teacher?.id;
     const isMatchedHomeroomTeacher =
         Boolean(homeroomTeacherId) &&
-        (user?.teacher?.id === homeroomTeacherId || user?.id === homeroomTeacherId);
+        (teacherProfileId === homeroomTeacherId || user?.id === homeroomTeacherId);
     const isHomeroomFromServer = timetableContext?.isHomeroomTeacher === true;
+    const teachesThisClassToday = timetableContext?.teacherTeachingThisClassToday === true;
 
     const canEdit = useMemo(() => {
         if (isFutureDate) return false;
         // Homeroom teacher can edit for any non-future date, regardless of timetable.
-        return isRouteHomeroom || isMatchedHomeroomTeacher || isHomeroomFromServer;
-    }, [isFutureDate, isMatchedHomeroomTeacher, isRouteHomeroom, isHomeroomFromServer]);
+        // Timetable-linked teaching days: server sets teacherTeachingThisClassToday when this teacher has a period.
+        return isRouteHomeroom || isMatchedHomeroomTeacher || isHomeroomFromServer || teachesThisClassToday;
+    }, [isFutureDate, isMatchedHomeroomTeacher, isRouteHomeroom, isHomeroomFromServer, teachesThisClassToday]);
 
     const prefetchAdjacentDays = useCallback((date: Date) => {
         if (!classId) return;

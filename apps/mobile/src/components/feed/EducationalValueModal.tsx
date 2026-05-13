@@ -14,15 +14,12 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Haptics } from '@/services/haptics';
-
-const { width } = Dimensions.get('window');
 
 export interface EducationalValue {
   accuracy: number;

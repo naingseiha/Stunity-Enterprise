@@ -387,6 +387,104 @@ const hydrateHomeroomTeachers = async <T extends { homeroomTeacherId?: string | 
   }));
 };
 
+type MyClassesYear = { id: string; name: string; isCurrent: boolean; status?: string | null };
+
+/**
+ * Classes tied to a teacher profile for GET /classes/my (homeroom, TeacherClass, or TimetableEntry).
+ * Sets hasTimetableAssignment so clients can split "my teaching" vs other linked classes.
+ */
+const buildMyClassesForTeacherProfile = async (params: {
+  teacherId: string;
+  schoolId: string;
+  selectedYear: MyClassesYear;
+  myRole: string;
+}) => {
+  const { teacherId, schoolId, selectedYear, myRole } = params;
+
+  const teacherClasses = await prisma.class.findMany({
+    where: {
+      schoolId,
+      academicYearId: selectedYear.id,
+      OR: [
+        { homeroomTeacherId: teacherId },
+        { teacherClasses: { some: { teacherId } } },
+        { timetableEntries: { some: { teacherId } } },
+      ],
+    },
+    select: {
+      id: true,
+      classId: true,
+      name: true,
+      grade: true,
+      section: true,
+      track: true,
+      capacity: true,
+      homeroomTeacherId: true,
+      academicYear: {
+        select: {
+          id: true,
+          name: true,
+          isCurrent: true,
+          status: true,
+        },
+      },
+      homeroomTeacher: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          englishFirstName: true,
+          englishLastName: true,
+          customFields: true,
+        },
+      },
+      _count: {
+        select: {
+          studentClasses: {
+            where: {
+              status: 'ACTIVE',
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+  });
+
+  const hydratedTeacherClasses = await hydrateHomeroomTeachers(teacherClasses, schoolId);
+  const classIds = hydratedTeacherClasses.map((c) => c.id);
+  const timetableRows =
+    classIds.length === 0
+      ? []
+      : await prisma.timetableEntry.findMany({
+          where: {
+            teacherId,
+            academicYearId: selectedYear.id,
+            classId: { in: classIds },
+          },
+          select: { classId: true },
+          distinct: ['classId'],
+        });
+  const timetableClassIdSet = new Set(timetableRows.map((r) => r.classId));
+
+  return hydratedTeacherClasses.map((c) => ({
+    id: c.id,
+    classId: c.classId,
+    name: c.name,
+    grade: c.grade,
+    section: c.section,
+    track: c.track,
+    capacity: c.capacity,
+    academicYear: c.academicYear,
+    homeroomTeacher: c.homeroomTeacher,
+    studentCount: c._count.studentClasses,
+    myRole,
+    isHomeroom: c.homeroomTeacherId === teacherId,
+    linkedTeacherId: teacherId,
+    hasTimetableAssignment: timetableClassIdSet.has(c.id),
+  }));
+};
+
 const getScopedUserRecord = async (userId: string, schoolId: string): Promise<ScopedUserRecord | null> =>
   prisma.user.findFirst({
     where: {
@@ -1080,88 +1178,12 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         });
       }
 
-      const teacherClasses = await prisma.class.findMany({
-        where: {
-          schoolId,
-          academicYearId: selectedYear.id,
-          OR: [
-            { homeroomTeacherId: userRecord.teacherId },
-            { teacherClasses: { some: { teacherId: userRecord.teacherId } } },
-            { timetableEntries: { some: { teacherId: userRecord.teacherId } } },
-          ],
-        },
-        select: {
-          id: true,
-          classId: true,
-          name: true,
-          grade: true,
-          section: true,
-          track: true,
-          capacity: true,
-          homeroomTeacherId: true,
-          academicYear: {
-            select: {
-              id: true,
-              name: true,
-              isCurrent: true,
-              status: true,
-            },
-          },
-          homeroomTeacher: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              englishFirstName: true,
-              englishLastName: true,
-              customFields: true,
-            },
-          },
-          _count: {
-            select: {
-              studentClasses: {
-                where: {
-                  status: 'ACTIVE',
-                },
-              },
-            },
-          },
-        },
-        orderBy: [{ grade: 'asc' }, { section: 'asc' }],
-      });
-
-      const hydratedTeacherClasses = await hydrateHomeroomTeachers(teacherClasses, schoolId);
-      const classIds = hydratedTeacherClasses.map((c) => c.id);
-      const timetableRows =
-        classIds.length === 0
-          ? []
-          : await prisma.timetableEntry.findMany({
-              where: {
-                teacherId: userRecord.teacherId,
-                academicYearId: selectedYear.id,
-                classId: { in: classIds },
-              },
-              select: { classId: true },
-              distinct: ['classId'],
-            });
-      const timetableClassIdSet = new Set(timetableRows.map((r) => r.classId));
-
-      const classes = hydratedTeacherClasses.map((c) => ({
-        id: c.id,
-        classId: c.classId,
-        name: c.name,
-        grade: c.grade,
-        section: c.section,
-        track: c.track,
-        capacity: c.capacity,
-        academicYear: c.academicYear,
-        homeroomTeacher: c.homeroomTeacher,
-        studentCount: c._count.studentClasses,
+      const classes = await buildMyClassesForTeacherProfile({
+        teacherId: userRecord.teacherId,
+        schoolId,
+        selectedYear,
         myRole: 'TEACHER',
-        isHomeroom: c.homeroomTeacherId === userRecord.teacherId,
-        linkedTeacherId: userRecord.teacherId,
-        hasTimetableAssignment: timetableClassIdSet.has(c.id),
-      }));
+      });
 
       return res.json({
         success: true,
@@ -1317,6 +1339,27 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
     }
 
     if (CLASS_ADMIN_ROLES.has(role)) {
+      // School admins who are also linked to a Teacher record need the same scoped list + timetable flags
+      // as TEACHER users; otherwise hasTimetableAssignment is missing and mobile shows everything as "other".
+      if (userRecord.teacherId) {
+        const classes = await buildMyClassesForTeacherProfile({
+          teacherId: userRecord.teacherId,
+          schoolId,
+          selectedYear,
+          myRole: role,
+        });
+
+        return res.json({
+          success: true,
+          data: classes,
+          meta: {
+            role,
+            linked: true,
+            currentAcademicYear: selectedYear,
+          },
+        });
+      }
+
       const classes = await prisma.class.findMany({
         where: {
           schoolId,

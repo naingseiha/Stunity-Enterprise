@@ -1,16 +1,15 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@/components/common/Loading';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const FEATURED_CARD_WIDTH = SCREEN_WIDTH * 0.88;
 const FEATURED_CARD_GAP = 16;
 const TOP_CATEGORY_LIMIT = 6;
 
 // Header content skeleton — matches renderHeader() output:
 //   Suggested courses (horizontal scroll) → Category grid → Stats row
 export const LearnHeaderSkeleton = React.memo(function LearnHeaderSkeleton() {
-  const cardW = FEATURED_CARD_WIDTH;
+  const { width } = useWindowDimensions();
+  const cardW = width * 0.88;
   return (
     <View>
       {/* ─ Suggested courses ─ */}

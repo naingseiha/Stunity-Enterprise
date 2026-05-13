@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 interface CelebrationConfettiProps {
   count?: number;
@@ -12,11 +12,12 @@ const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'
 
 export default function CelebrationConfetti({
   count = 90,
-  origin = { x: Dimensions.get('window').width / 2, y: -10 },
+  origin: originProp,
   fallSpeed = 3000,
   fadeOut = true,
 }: CelebrationConfettiProps) {
-  const { width, height } = Dimensions.get('window');
+  const { width, height } = useWindowDimensions();
+  const origin = originProp ?? { x: width / 2, y: -10 };
   const pieces = useMemo(
     () =>
       Array.from({ length: count }, (_, index) => {
@@ -34,7 +35,7 @@ export default function CelebrationConfetti({
           duration: fallSpeed + Math.random() * 900,
         };
       }),
-    [count, fallSpeed, width]
+    [count, fallSpeed, width, height]
   );
 
   useEffect(() => {

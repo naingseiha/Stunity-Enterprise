@@ -5,22 +5,20 @@
  * Includes confetti, level badge, and XP progress
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   Animated,
-  Dimensions,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { CelebrationConfetti } from '@/components/common';
-
-const { width } = Dimensions.get('window');
 
 interface LevelUpModalProps {
   visible: boolean;
@@ -33,6 +31,8 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   newLevel,
   onClose,
 }) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const styles = useMemo(() => createLevelUpStyles(windowWidth), [windowWidth]);
   const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -73,7 +73,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
     >
       <View style={styles.overlay}>
         {/* Confetti */}
-        <CelebrationConfetti count={150} origin={{ x: width / 2, y: -10 }} fadeOut />
+        <CelebrationConfetti count={150} origin={{ x: windowWidth / 2, y: -10 }} fadeOut />
 
         {/* Content */}
         <View style={styles.container}>
@@ -149,7 +149,8 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function createLevelUpStyles(w: number) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    width: width - 48,
+    width: w - 48,
     borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -264,4 +265,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-});
+  });
+}

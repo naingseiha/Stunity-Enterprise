@@ -7,15 +7,13 @@
  * - Engagement stats from real UserStats
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { UserStats } from '@/types';
 import type { QuizAttempt, UserAchievement, Streak } from '@/services/stats';
 import { useThemeContext } from '@/contexts';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ActivityTabProps {
     stats: UserStats | null;
@@ -30,6 +28,8 @@ interface ActivityTabProps {
 
 function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; recentAttempts: QuizAttempt[] }) {
     const { colors, isDark } = useThemeContext();
+    const { width: windowWidth } = useWindowDimensions();
+    const [gridInnerWidth, setGridInnerWidth] = useState(0);
     const today = new Date();
     const cells: { intensity: number; date: string }[] = [];
 
@@ -73,7 +73,10 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
         }
     };
 
-    const cellSize = (SCREEN_WIDTH - 80 - 6 * 6) / 7;
+    const cellSize =
+        gridInnerWidth > 0
+            ? (gridInnerWidth - 6 * 6) / 7
+            : Math.max(8, (windowWidth - 80 - 6 * 6) / 7);
 
     return (
         <View style={[gridStyles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -83,7 +86,13 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
                     {totalActive === 1 ? useTranslation().t('profile.activity.activeDay', { count: totalActive }) : useTranslation().t('profile.activity.activeDays', { count: totalActive })}
                 </Text>
             </View>
-            <View style={gridStyles.grid}>
+            <View
+                style={gridStyles.grid}
+                onLayout={(e) => {
+                    const w = Math.floor(e.nativeEvent.layout.width);
+                    if (w > 0) setGridInnerWidth(w);
+                }}
+            >
                 {cells.map((cell, i) => (
                     <View
                         key={i}

@@ -17,8 +17,8 @@ import {
   TextInput,
   StyleSheet,
   Alert,
-  Animated as RNAnimated,
-  Dimensions,
+  Animated as   RNAnimated,
+  useWindowDimensions,
   SafeAreaView,
   StatusBar,
 } from 'react-native';
@@ -31,7 +31,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
 import { normalizeQuiz, NormalizedQuiz, NormalizedQuizQuestion } from '@/utils/quiz';
 
-const { width } = Dimensions.get('window');
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 type QuizQuestion = NormalizedQuizQuestion;
@@ -44,6 +43,8 @@ interface UserAnswer {
 }
 
 export function TakeQuizScreen() {
+  const { width: windowWidth } = useWindowDimensions();
+  const styles = useMemo(() => createTakeQuizStyles(windowWidth), [windowWidth]);
   const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
@@ -849,7 +850,8 @@ export function TakeQuizScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createTakeQuizStyles(w: number) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#0F172A',
@@ -1377,7 +1379,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   loadingGradient: {
-    width: width - 64,
+    width: w - 64,
     borderRadius: 24,
     padding: 40,
     alignItems: 'center',
@@ -1511,4 +1513,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
-});
+  });
+}

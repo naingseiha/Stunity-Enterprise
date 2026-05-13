@@ -21,6 +21,7 @@ import { MyClassSummary } from '@/api/classes';
 import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -100,6 +101,8 @@ const SchoolClassCard = React.memo(
     // Highlight teaching classes with a brand border like in the screenshot
     const isTeaching = accent === 'teaching';
     const cardBorderColor = isTeaching ? '#22C55E' : (isDark ? '#334155' : '#E2E8F0');
+    const { male: maleCount, female: femaleCount } = getClassGenderCounts(item);
+    const studentTotal = getSafeStudentCount(item);
 
     return (
       <TouchableOpacity
@@ -128,7 +131,7 @@ const SchoolClassCard = React.memo(
                   {isKhmer ? 'ប្រុស' : t('common.male')}
                 </Text>
                 <Text style={styles.genderStatValue}>
-                  {(item as any).maleCount ?? Math.floor(item.studentCount * 0.45)}
+                  {maleCount}
                 </Text>
               </View>
               <View style={styles.genderStat}>
@@ -136,7 +139,7 @@ const SchoolClassCard = React.memo(
                   {isKhmer ? 'ស្រី' : t('common.female')}
                 </Text>
                 <Text style={styles.genderStatValue}>
-                  {(item as any).femaleCount ?? (item.studentCount - Math.floor(item.studentCount * 0.45))}
+                  {femaleCount}
                 </Text>
               </View>
             </View>
@@ -155,8 +158,8 @@ const SchoolClassCard = React.memo(
               <Ionicons name="people" size={14} color={COLORS.textSecondary} />
               <Text style={styles.footerChipText}>
                 {isKhmer 
-                  ? `សិស្ស៖ ${item.studentCount} នាក់` 
-                  : t('classes.directory.studentCount', { count: item.studentCount })}
+                  ? `សិស្ស៖ ${studentTotal} នាក់` 
+                  : t('classes.directory.studentCount', { count: studentTotal })}
               </Text>
             </View>
 
@@ -189,6 +192,10 @@ export default function ClassDirectoryScreen() {
   const teacherSectionFilter = route.params?.teacherSectionFilter as 'teaching' | 'other' | undefined;
   const user = useAuthStore((state) => state.user);
   const isAdminOrStaff = CLASS_ADMIN_ROLES.has(String(user?.role || '').toUpperCase());
+  const hasLinkedTeacherProfile = Boolean(user?.teacherId || user?.teacher?.id);
+  /** Admin/staff linked to a Teacher row uses timetable-scoped lists like TEACHER (not full-school getClasses). */
+  const useTeacherDirectoryMode =
+    user?.role === 'TEACHER' || (isAdminOrStaff && hasLinkedTeacherProfile);
   const classCacheScopeKey = getClassCacheScopeKey(user);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -201,20 +208,20 @@ export default function ClassDirectoryScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const directoryTitle = useMemo(() => {
-    if (user?.role === 'TEACHER' && teacherSectionFilter === 'teaching') {
+    if (useTeacherDirectoryMode && teacherSectionFilter === 'teaching') {
       return t('clubs.screen.teacherSectionTeaching');
     }
-    if (user?.role === 'TEACHER' && teacherSectionFilter === 'other') {
+    if (useTeacherDirectoryMode && teacherSectionFilter === 'other') {
       return t('clubs.screen.teacherSectionOther');
     }
     return t('classes.directory.title');
-  }, [t, teacherSectionFilter, user?.role]);
+  }, [t, teacherSectionFilter, useTeacherDirectoryMode]);
 
   const listSections = useMemo((): ClassDirSection[] => {
-    if (isAdminOrStaff) {
+    if (isAdminOrStaff && !useTeacherDirectoryMode) {
       return [{ title: t('classes.directory.sectionAll'), data: classes }];
     }
-    if (user?.role === 'TEACHER') {
+    if (useTeacherDirectoryMode) {
       const normalizedQuery = searchQuery.trim().toLowerCase();
       const filterByQuery = (rows: MyClassSummary[]) => {
         if (!normalizedQuery) return rows;
@@ -275,7 +282,16 @@ export default function ClassDirectoryScreen() {
       return sections.length > 0 ? sections : [{ title: t('clubs.screen.schoolClasses'), data: classes }];
     }
     return [{ title: t('clubs.screen.myClassesSection'), data: classes }];
-  }, [classes, isAdminOrStaff, searchQuery, teacherAllClasses, teacherMyClasses, teacherSectionFilter, t, user?.role]);
+  }, [
+    classes,
+    isAdminOrStaff,
+    searchQuery,
+    teacherAllClasses,
+    teacherMyClasses,
+    teacherSectionFilter,
+    t,
+    useTeacherDirectoryMode,
+  ]);
 
   const fetchAcademicYears = useCallback(async () => {
     try {
@@ -292,7 +308,7 @@ export default function ClassDirectoryScreen() {
     try {
       setLoading(true);
       setError(null);
-      if (isAdminOrStaff) {
+      if (isAdminOrStaff && !useTeacherDirectoryMode) {
         const data = await classesApi.getClasses({
           search: query,
           academicYearId: yearId || undefined,
@@ -301,7 +317,7 @@ export default function ClassDirectoryScreen() {
         return;
       }
 
-      if (user?.role === 'TEACHER') {
+      if (useTeacherDirectoryMode) {
         const [myRows, allRows] = await Promise.all([
           classesApi.getMyClasses({
             academicYearId: yearId || undefined,
@@ -347,7 +363,16 @@ export default function ClassDirectoryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [classCacheScopeKey, isAdminOrStaff, selectedYearId, t, user?.role]);
+  }, [
+    classCacheScopeKey,
+    isAdminOrStaff,
+    selectedYearId,
+    t,
+    useTeacherDirectoryMode,
+    user?.role,
+    user?.teacherId,
+    user?.teacher?.id,
+  ]);
 
   useEffect(() => {
     fetchAcademicYears();
@@ -359,11 +384,11 @@ export default function ClassDirectoryScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    if (!isAdminOrStaff) {
+    if (!isAdminOrStaff || hasLinkedTeacherProfile) {
       classesApi.invalidateMyClassesCache();
     }
     fetchClasses(searchQuery, selectedYearId);
-  }, [fetchClasses, isAdminOrStaff, searchQuery, selectedYearId]);
+  }, [fetchClasses, hasLinkedTeacherProfile, isAdminOrStaff, searchQuery, selectedYearId]);
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
@@ -398,8 +423,7 @@ export default function ClassDirectoryScreen() {
       linkedStudentId: item.linkedStudentId,
       linkedTeacherId: item.linkedTeacherId,
       homeroomTeacherId: item.homeroomTeacher?.id,
-      teacherClassAccess:
-        user?.role === 'TEACHER' && !isAdminOrStaff ? teacherAccess : undefined,
+      teacherClassAccess: useTeacherDirectoryMode ? teacherAccess : undefined,
       initialSummary: {
         id: item.id,
         name: item.name,
@@ -539,7 +563,7 @@ export default function ClassDirectoryScreen() {
               />
             )}
             ListHeaderComponent={
-              user?.role === 'TEACHER' && !isAdminOrStaff && !teacherSectionFilter ? (
+              useTeacherDirectoryMode && !teacherSectionFilter ? (
                 <Text style={[styles.dirFootnote, isKhmer && styles.khmerInlineText]}>
                   {t('classes.directory.footnoteTeacher')}
                 </Text>

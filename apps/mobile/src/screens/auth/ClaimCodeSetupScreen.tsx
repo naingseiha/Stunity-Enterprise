@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Dimensions,
   Modal,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -23,9 +23,7 @@ import { authApi } from '@/api/client';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BRAND_TEAL = '#09CFF7';
-const SCANNER_SIZE = SCREEN_WIDTH * 0.72;
 
 function parseClaimCodeFromScan(rawData: string): string | null {
   const trimmed = rawData?.trim();
@@ -61,6 +59,8 @@ function QRScannerModal({
   onBrowse: () => void;
 }) {
   const { t } = useTranslation();
+  const { width: windowWidth } = useWindowDimensions();
+  const scanStyles = useMemo(() => createScanStyles(windowWidth), [windowWidth]);
   const [permission, requestPermission] = useCameraPermissions();
   const scannedRef = useRef(false); // prevent multiple fires per scan
 
@@ -626,89 +626,92 @@ const rowStyles = StyleSheet.create({
 
 const OVERLAY_COLOR = 'rgba(0,0,0,0.65)';
 
-const scanStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  hint: {
-    color: '#D1D5DB',
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  cameraWrapper: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH,
-    position: 'relative',
-  },
-  camera: { ...StyleSheet.absoluteFillObject },
-  overlay: { ...StyleSheet.absoluteFillObject },
-  overlayTop: { width: '100%', height: (SCREEN_WIDTH - SCANNER_SIZE) / 2, backgroundColor: OVERLAY_COLOR },
-  overlayMiddleRow: { flexDirection: 'row', height: SCANNER_SIZE },
-  overlaySide: { flex: 1, backgroundColor: OVERLAY_COLOR },
-  scanHole: {
-    width: SCANNER_SIZE,
-    height: SCANNER_SIZE,
-    position: 'relative',
-  },
-  overlayBottom: { width: '100%', flex: 1, backgroundColor: OVERLAY_COLOR },
+function createScanStyles(screenW: number) {
+  const scannerSize = screenW * 0.72;
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#000',
+      alignItems: 'center',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 16,
+    },
+    closeBtn: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    hint: {
+      color: '#D1D5DB',
+      fontSize: 14,
+      textAlign: 'center',
+      lineHeight: 20,
+      paddingHorizontal: 24,
+      marginBottom: 24,
+    },
+    cameraWrapper: {
+      width: screenW,
+      height: screenW,
+      position: 'relative',
+    },
+    camera: { ...StyleSheet.absoluteFillObject },
+    overlay: { ...StyleSheet.absoluteFillObject },
+    overlayTop: { width: '100%', height: (screenW - scannerSize) / 2, backgroundColor: OVERLAY_COLOR },
+    overlayMiddleRow: { flexDirection: 'row', height: scannerSize },
+    overlaySide: { flex: 1, backgroundColor: OVERLAY_COLOR },
+    scanHole: {
+      width: scannerSize,
+      height: scannerSize,
+      position: 'relative',
+    },
+    overlayBottom: { width: '100%', flex: 1, backgroundColor: OVERLAY_COLOR },
 
-  // Corner decorations
-  corner: { position: 'absolute', width: 24, height: 24, borderColor: BRAND_TEAL, borderWidth: 3 },
-  cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 4 },
-  cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 4 },
-  cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 4 },
-  cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 4 },
+    // Corner decorations
+    corner: { position: 'absolute', width: 24, height: 24, borderColor: BRAND_TEAL, borderWidth: 3 },
+    cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 4 },
+    cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 4 },
+    cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 4 },
+    cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 4 },
 
-  footerHint: {
-    color: '#6B7280',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    paddingHorizontal: 32,
-    marginTop: 28,
-    marginBottom: 20,
-  },
-  galleryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  galleryBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    footerHint: {
+      color: '#6B7280',
+      fontSize: 13,
+      textAlign: 'center',
+      lineHeight: 18,
+      paddingHorizontal: 32,
+      marginTop: 28,
+      marginBottom: 20,
+    },
+    galleryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 24,
+      gap: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.2)',
+    },
+    galleryBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
-  permissionText: { color: '#fff', fontSize: 16, textAlign: 'center', marginBottom: 24, paddingHorizontal: 32 },
-  permBtn: {
-    backgroundColor: BRAND_TEAL,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 14,
-    marginBottom: 8,
-  },
-  permBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
-});
+    permissionText: { color: '#fff', fontSize: 16, textAlign: 'center', marginBottom: 24, paddingHorizontal: 32 },
+    permBtn: {
+      backgroundColor: BRAND_TEAL,
+      paddingHorizontal: 32,
+      paddingVertical: 14,
+      borderRadius: 14,
+      marginBottom: 8,
+    },
+    permBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
+  });
+}

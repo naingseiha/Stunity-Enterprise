@@ -20,7 +20,6 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,8 +39,6 @@ interface PostAnalyticsModalProps {
 }
 
 type Period = '24h' | '7d' | '30d';
-
-const { width } = Dimensions.get('window');
 
 // ─── Skeleton block ───────────────────────────────────────────────────────────
 const Skeleton: React.FC<{ w?: number | string; h?: number; r?: number; style?: any }> = ({ w = '100%', h = 14, r = 8, style }) => (

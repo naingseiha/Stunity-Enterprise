@@ -34,6 +34,10 @@ import { ProfileStackScreenProps } from '@/navigation/types';
 import { fetchProfile, updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { authApi } from '@/api/client';
 import { useThemeContext } from '@/contexts';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+
+/** Phone cover height — matches ProfileScreen `COVER_HEIGHT` for consistency */
+const PHONE_COVER_HEIGHT = 220;
 
 type NavigationProp = ProfileStackScreenProps<'EditProfile'>['navigation'];
 
@@ -227,7 +231,17 @@ export default function EditProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, updateUser } = useAuthStore();
   const { colors, isDark } = useThemeContext();
-  const s = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const layout = useLayoutBreakpoint();
+  const coverHeight = layout.isLargeTablet
+    ? 400
+    : layout.isTablet
+      ? 340
+      : PHONE_COVER_HEIGHT;
+  const avatarRing = layout.isLargeTablet ? 200 : layout.isTablet ? 186 : 168;
+  const avatarSize = layout.isLargeTablet ? 192 : layout.isTablet ? 176 : 160;
+  const avatarOverlap = -Math.round((avatarRing / 168) * 90);
+
+  const s = useMemo(() => createStyles(colors, isDark, layout.isTablet), [colors, isDark, layout.isTablet]);
   const coverPlaceholderColors = useMemo<[string, string, string]>(
     () => (isDark ? [colors.surfaceVariant, colors.card, colors.background] : ['#BAE6FD', '#E0F2FE', '#F0F9FF']),
     [colors.background, colors.card, colors.surfaceVariant, isDark]
@@ -710,7 +724,7 @@ export default function EditProfileScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={s.headerTitle}>{t('profile.editProfileTitle')}</Text>
+        <Text style={[s.headerTitle, layout.isTablet && s.headerTitleTablet]}>{t('profile.editProfileTitle')}</Text>
 
         <TouchableOpacity onPress={handleSave} disabled={saveDisabled}>
           <LinearGradient
@@ -734,14 +748,17 @@ export default function EditProfileScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={s.scrollContent}
+          contentContainerStyle={[
+            s.scrollContent,
+            layout.isTablet && { paddingHorizontal: 28 },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* ── Cover + Avatar ────────────────────────────── */}
-          <Animated.View style={s.photoSection}>
+          <Animated.View style={[s.photoSection, layout.isTablet && s.photoSectionTablet]}>
             <TouchableOpacity
-              style={s.coverTouch}
+              style={[s.coverTouch, { height: coverHeight }, layout.isTablet && s.coverTouchTablet]}
               onPress={() => coverUri ? openProfileMedia('cover') : pickCoverPhoto()}
               disabled={uploadingCover || isProfileReadOnly}
               activeOpacity={0.85}
@@ -757,7 +774,11 @@ export default function EditProfileScreen() {
                     style={s.coverPlaceholder}
                   />
                   <View style={s.coverPlaceholderContent}>
-                    <Ionicons name="image-outline" size={28} color={isDark ? colors.textSecondary : '#0284C7'} />
+                    <Ionicons
+                      name="image-outline"
+                      size={layout.isTablet ? 36 : 28}
+                      color={isDark ? colors.textSecondary : '#0284C7'}
+                    />
                   </View>
                 </>
               )}
@@ -775,7 +796,7 @@ export default function EditProfileScreen() {
               </TouchableOpacity>
             </TouchableOpacity>
 
-            <View style={s.avatarWrap}>
+            <View style={[s.avatarWrap, { marginTop: avatarOverlap }]}>
               <TouchableOpacity
                 onPress={() => profileUri ? openProfileMedia('avatar') : pickProfilePhoto()}
                 disabled={uploadingPhoto || isProfileReadOnly}
@@ -787,7 +808,11 @@ export default function EditProfileScreen() {
                   size="3xl"
                   showBorder
                   gradientBorder="blue"
-                  style={s.avatarImage}
+                  style={{
+                    width: avatarSize,
+                    height: avatarSize,
+                    borderRadius: avatarSize / 2,
+                  }}
                 />
                 <TouchableOpacity
                   style={s.avatarBadge}
@@ -1067,7 +1092,7 @@ export default function EditProfileScreen() {
   );
 }
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean, isTablet: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 
   // ── Header ────────────────────────────────────────────
@@ -1083,6 +1108,9 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: colors.text,
+  },
+  headerTitleTablet: {
+    fontSize: 20,
   },
   saveBtn: {
     paddingHorizontal: 20,
@@ -1105,13 +1133,19 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 14,
     overflow: 'visible',
   },
+  photoSectionTablet: {
+    borderRadius: 20,
+    marginBottom: 28,
+  },
   coverTouch: {
-    height: 200,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: isDark ? colors.surfaceVariant : '#E0F2FE',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  coverTouchTablet: {
+    borderRadius: 20,
   },
   coverImage: {
     width: '100%',
@@ -1140,12 +1174,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   avatarWrap: {
     alignItems: 'center',
-    marginTop: -70,
-  },
-  avatarImage: {
-    width: 156,
-    height: 156,
-    borderRadius: 78,
   },
   avatarBadge: {
     position: 'absolute',

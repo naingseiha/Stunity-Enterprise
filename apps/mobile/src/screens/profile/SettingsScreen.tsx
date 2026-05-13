@@ -20,7 +20,6 @@ import {
     StatusBar,
     Linking,
     Platform,
-    Dimensions,
     Animated,
     TextInput,
     ActivityIndicator,
@@ -55,8 +54,6 @@ import {
     type ServerConfigSnapshot,
 } from '@/services/serverConfig';
 import StunityLogo from '../../../assets/Stunity.svg';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ── Types ────────────────────────────────────────────────────────
 

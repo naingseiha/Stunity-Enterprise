@@ -4,8 +4,8 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -27,9 +27,9 @@ export const COLORS = {
 export const CLUBS_PAGE_SIZE = 20;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const BannerCarousel = React.memo(({ navigation }: any) => {
+  const { width: windowWidth } = useWindowDimensions();
   const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState(0);
   
@@ -63,7 +63,7 @@ export const BannerCarousel = React.memo(({ navigation }: any) => {
              onPress={() => {
                if(b.route === 'Leaderboard') navigation.navigate('Leaderboard');
              }} 
-             style={{ width: SCREEN_WIDTH, paddingHorizontal: 12 }}
+             style={{ width: windowWidth, paddingHorizontal: 12 }}
           >
             <LinearGradient
               colors={b.colors as [string, string]}
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   shortcutItem: {
     alignItems: 'center',
-    width: (SCREEN_WIDTH - 32) / 4,
+    width: '23%' as any,
   },
   shortcutOuter: {
     width: 68,

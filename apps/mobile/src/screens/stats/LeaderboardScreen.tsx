@@ -1,5 +1,5 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -7,7 +7,9 @@ import {
     TouchableOpacity,
     RefreshControl,
     StatusBar,
-    Dimensions, Animated} from 'react-native';
+    Animated,
+    useWindowDimensions,
+} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -21,8 +23,6 @@ import { User } from '@/types';
 import { fetchLeaderboard } from '@/api/profileApi';
 import { formatNumber } from '@/utils';
 
-const { width } = Dimensions.get('window');
-
 // Custom colors for podium
 const PODIUM_COLORS = {
     1: { grad: ['#FEF3C7', '#FDE68A', '#F59E0B'], border: '#F59E0B', text: '#B45309', icon: 'medal' },
@@ -31,6 +31,8 @@ const PODIUM_COLORS = {
 };
 
 export function LeaderboardScreen() {
+    const { width: windowWidth } = useWindowDimensions();
+    const styles = useMemo(() => createLeaderboardStyles(windowWidth), [windowWidth]);
     const navigation = useNavigation();
     const [users, setUsers] = useState<User[]>([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -166,9 +168,9 @@ export function LeaderboardScreen() {
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <Skeleton width={120} height={120} borderRadius={60} />
                     <View style={{ marginTop: 24, gap: 16 }}>
-                        <Skeleton width={width - 48} height={70} borderRadius={16} />
-                        <Skeleton width={width - 48} height={70} borderRadius={16} />
-                        <Skeleton width={width - 48} height={70} borderRadius={16} />
+                        <Skeleton width={windowWidth - 48} height={70} borderRadius={16} />
+                        <Skeleton width={windowWidth - 48} height={70} borderRadius={16} />
+                        <Skeleton width={windowWidth - 48} height={70} borderRadius={16} />
                     </View>
                 </View>
             </SafeAreaView>
@@ -206,7 +208,8 @@ export function LeaderboardScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+function createLeaderboardStyles(w: number) {
+    return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
@@ -260,7 +263,7 @@ const styles = StyleSheet.create({
     },
     podiumItem: {
         alignItems: 'center',
-        width: width / 3.2,
+        width: w / 3.2,
     },
     podiumAvatarWrapper: {
         position: 'relative',
@@ -373,4 +376,5 @@ const styles = StyleSheet.create({
         color: '#94A3B8',
         marginTop: 2,
     },
-});
+    });
+}

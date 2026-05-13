@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -18,8 +17,6 @@ import type { MainStackParamList } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizPlay'>;
-
-const { width } = Dimensions.get('window');
 
 export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
   const { t } = useTranslation();

@@ -6,7 +6,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     RefreshControl,
-    Dimensions,
     Platform,
     FlatList, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +19,6 @@ import { Haptics } from '@/services/haptics';
 import { useLeaderboardStore } from '../../stores';
 import { LeaderboardEntry } from '../../api/leaderboard';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type LeaderboardTab = 'ALL_TIME' | 'WEEKLY';
 
 const getRankBadgeProps = (rank: number) => {

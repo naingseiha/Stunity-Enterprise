@@ -45,6 +45,7 @@ import { Shadows } from "@/config";
 import { useAuthStore, useFeedStore } from "@/stores";
 import { User, UserStats, Education, Experience, Certification } from "@/types";
 import { formatNumber } from "@/utils";
+import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
 import { ProfileStackScreenProps } from "@/navigation/types";
 import {
   fetchProfile as apiFetchProfile,
@@ -220,6 +221,15 @@ export default function ProfileScreen() {
   const route = useRoute<RouteProp>();
   const { user: currentUser } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const layout = useLayoutBreakpoint();
+  const coverHeight = layout.isLargeTablet
+    ? 400
+    : layout.isTablet
+      ? 340
+      : COVER_HEIGHT;
+  const avatarRing = layout.isLargeTablet ? 200 : layout.isTablet ? 186 : 168;
+  const avatarSize = layout.isLargeTablet ? 192 : layout.isTablet ? 176 : 160;
+  const contentOverlap = -Math.round((avatarRing / 168) * 90);
 
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentUser?.id;
@@ -746,22 +756,28 @@ export default function ProfileScreen() {
           {/* Cover shimmer — exact same height as real screen */}
           <View
             style={{
-              height: COVER_HEIGHT,
+              height: coverHeight,
               backgroundColor: colors.surfaceVariant,
             }}
           />
 
-          {/* Content container — matches real marginTop: -90 */}
-          <View style={[styles.contentContainer]}>
+          {/* Content container — matches real marginTop overlap */}
+          <View style={[styles.contentContainer, { marginTop: contentOverlap }]}>
             {/* Avatar — centred, white ring, overlapping cover */}
             <View style={styles.avatarSection}>
               <View
                 style={[
                   styles.avatarWrapper,
-                  { backgroundColor: colors.surfaceVariant, shadowOpacity: 0 },
+                  {
+                    backgroundColor: colors.surfaceVariant,
+                    shadowOpacity: 0,
+                    width: avatarRing,
+                    height: avatarRing,
+                    borderRadius: avatarRing / 2,
+                  },
                 ]}
               >
-                <Skeleton width={160} height={160} borderRadius={80} />
+                <Skeleton width={avatarSize} height={avatarSize} borderRadius={avatarSize / 2} />
               </View>
             </View>
 
@@ -936,6 +952,7 @@ export default function ProfileScreen() {
           getItemType={(item: any) => item.type}
           contentContainerStyle={{
             paddingBottom: Math.max(insets.bottom, 20) + 100,
+            paddingHorizontal: layout.isTablet ? 20 : 0,
           }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -943,7 +960,7 @@ export default function ProfileScreen() {
           ListHeaderComponent={
             <>
               {/* Cover Photo Section */}
-              <View style={styles.coverSection}>
+              <View style={[styles.coverSection, { height: coverHeight }]}>
                 {(profile as any)?.coverPhotoUrl ? (
                   <TouchableOpacity
                     style={StyleSheet.absoluteFill}
@@ -1129,7 +1146,12 @@ export default function ProfileScreen() {
               </View>
 
               {/* Profile Content */}
-              <View style={styles.contentContainer}>
+              <View
+                style={[
+                  styles.contentContainer,
+                  { marginTop: contentOverlap },
+                ]}
+              >
                 {/* Avatar Section */}
                 <Animated.View style={styles.avatarSection}>
                   <View
@@ -1138,14 +1160,17 @@ export default function ProfileScreen() {
                       {
                         backgroundColor: colors.card,
                         shadowOpacity: isDark ? 0 : 0.08,
+                        width: avatarRing,
+                        height: avatarRing,
+                        borderRadius: avatarRing / 2,
                       },
                     ]}
                   >
                     <TouchableOpacity
                       style={{
-                        width: 160,
-                        height: 160,
-                        borderRadius: 80,
+                        width: avatarSize,
+                        height: avatarSize,
+                        borderRadius: avatarSize / 2,
                         overflow: "hidden",
                         backgroundColor: colors.surfaceVariant,
                       }}
@@ -1164,7 +1189,7 @@ export default function ProfileScreen() {
                         size="3xl"
                         showBorder={false}
                         gradientBorder="none"
-                        style={{ width: 160, height: 160 }}
+                        style={{ width: avatarSize, height: avatarSize }}
                       />
                       {uploadingPhoto && (
                         <View
@@ -1211,7 +1236,13 @@ export default function ProfileScreen() {
                 {/* Name & Bio — Frosted glass card */}
                 <Animated.View style={styles.nameSection}>
                   <View style={styles.nameRow}>
-                    <Text style={[styles.name, { color: colors.text }]}>
+                    <Text
+                      style={[
+                        styles.name,
+                        { color: colors.text },
+                        layout.isTablet && { fontSize: 28, letterSpacing: -0.6 },
+                      ]}
+                    >
                       {fullName}
                     </Text>
                     {profile.isVerified && (

@@ -9,16 +9,16 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * Navigated to from the Profile screen header or menu.
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Share,
   Platform,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,9 +27,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuthStore } from '@/stores';
 
-const { width: SW } = Dimensions.get('window');
-const CARD_WIDTH = SW - 48;
-const QR_SIZE = CARD_WIDTH * 0.52;
 const BRAND_TEAL = '#09CFF7';
 
 // Role → readable label + gradient colours
@@ -51,6 +48,10 @@ export default function MyQRCardScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
   const qrRef = useRef<any>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = windowWidth - 48;
+  const qrSize = cardWidth * 0.52;
+  const styles = useMemo(() => createMyQRCardStyles(cardWidth), [cardWidth]);
 
   if (!user) return null;
 
@@ -158,7 +159,7 @@ export default function MyQRCardScreen() {
               <View style={styles.qrWrapper}>
                 <QRCode
                   value={qrPayload}
-                  size={QR_SIZE}
+                  size={qrSize}
                   color="#0F172A"
                   backgroundColor="#FFFFFF"
                   getRef={(c) => { qrRef.current = c; }}
@@ -200,7 +201,8 @@ export default function MyQRCardScreen() {
 
 const CARD_RADIUS = 24;
 
-const styles = StyleSheet.create({
+function createMyQRCardStyles(cardWidth: number) {
+  return StyleSheet.create({
   root: { flex: 1 },
   safe: { flex: 1, alignItems: 'center' },
 
@@ -224,10 +226,10 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
 
   // Glow effect behind card
-  cardWrapper: { alignItems: 'center', justifyContent: 'center', width: CARD_WIDTH },
+  cardWrapper: { alignItems: 'center', justifyContent: 'center', width: cardWidth },
   cardGlow: {
     position: 'absolute',
-    width: CARD_WIDTH - 20,
+    width: cardWidth - 20,
     height: '100%',
     borderRadius: CARD_RADIUS + 8,
     opacity: 0.25,
@@ -235,7 +237,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    width: CARD_WIDTH,
+    width: cardWidth,
     borderRadius: CARD_RADIUS,
     overflow: 'hidden',
     backgroundColor: '#fff',
@@ -323,4 +325,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   tipText: { color: '#64748B', fontSize: 12, fontWeight: '500' },
-});
+  });
+}

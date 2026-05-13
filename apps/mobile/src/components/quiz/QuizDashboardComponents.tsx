@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, ScrollView, Animated, Easing,
+    View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Animated, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,8 +11,6 @@ import { formatNumber } from '@/utils';
 import { QuizItem } from '@/services/quiz';
 import { Avatar } from '@/components/common';
 import { useTranslation } from 'react-i18next';
-
-const { width } = Dimensions.get('window');
 
 // --------------- Types -------------------
 interface ActionButtonProps {

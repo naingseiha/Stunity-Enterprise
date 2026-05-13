@@ -7,6 +7,8 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  */
 
 import React, { useState, useRef } from 'react';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 import {
   View,
   Text,
@@ -39,6 +41,7 @@ type NavigationProp = AuthStackScreenProps<'Login'>['navigation'];
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const layout = useLayoutBreakpoint();
   const { login, logout, isLoading, error, clearError } = useAuthStore();
   const { t } = useTranslation();
 
@@ -135,10 +138,15 @@ export default function LoginScreen() {
           style={{ flex: 1 }}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              layout.isTablet && { paddingTop: 8, paddingBottom: 40 },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <AuthTabletShell layout={layout} variant="auth">
+            <>
             {/* Back */}
             <Animated.View>
               <TouchableOpacity
@@ -154,8 +162,8 @@ export default function LoginScreen() {
             <Animated.View
               style={styles.header}
             >
-              <StunityLogo width={140} height={140} style={{ marginBottom: 12 }} />
-              <Text style={styles.title}>{t('auth.signInToStunity')}</Text>
+              <StunityLogo width={layout.isTablet ? 120 : 140} height={layout.isTablet ? 120 : 140} style={{ marginBottom: 12 }} />
+              <Text style={[styles.title, layout.isTablet && styles.titleTablet]}>{t('auth.signInToStunity')}</Text>
             </Animated.View>
 
             {/* Error */}
@@ -323,6 +331,8 @@ export default function LoginScreen() {
                 </Text>
               </TouchableOpacity>
             </Animated.View>
+            </>
+            </AuthTabletShell>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -363,6 +373,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.gray[900],
     letterSpacing: -0.3,
+  },
+  titleTablet: {
+    fontSize: 28,
+    letterSpacing: -0.4,
   },
 
   // ── Error ─────────────────────────────────────────────

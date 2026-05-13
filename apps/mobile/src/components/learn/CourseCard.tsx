@@ -16,8 +16,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,9 +34,6 @@ import { Course } from '@/types';
 import { formatNumber } from '@/utils';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
 
 // Level config - Updated Beginner to Cyan/Teal
 const LEVEL_CONFIG: Record<string, { gradient: [string, string]; icon: keyof typeof Ionicons.glyphMap; labelKey: string }> = {
@@ -81,9 +78,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   progress,
   completedLessons,
 }) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = useMemo(() => (windowWidth - 48) / 2, [windowWidth]);
   const { t } = useTranslation();
   const { colors, isDark } = useThemeContext();
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const styles = useMemo(() => createStyles(colors, isDark, cardWidth), [colors, isDark, cardWidth]);
   const isCompact = variant === 'compact';
   const isRow = variant === 'row';
   const levelRef = (course.level || 'ALL_LEVELS').toUpperCase().replace(' ', '_');
@@ -370,7 +369,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   );
 };
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean, cardWidth: number) => StyleSheet.create({
   container: {
     backgroundColor: isDark ? colors.card : '#F0FDFA',
     borderRadius: 20,
@@ -393,7 +392,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     backgroundColor: isDark ? colors.card : '#F0FDFA',
   },
   compactContainer: {
-    width: CARD_WIDTH,
+    width: cardWidth,
     marginBottom: 0,
     borderRadius: 16,
   },

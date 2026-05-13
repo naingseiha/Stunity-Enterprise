@@ -10,24 +10,22 @@
  * - Facebook/Instagram-style experience
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   Modal,
   View,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
   Platform,
   ScrollView,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from 'react-native';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface ImageViewerModalProps {
   visible: boolean;
@@ -42,36 +40,38 @@ export default function ImageViewerModal({
   initialIndex = 0,
   onClose,
 }: ImageViewerModalProps) {
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const styles = useMemo(() => createImageViewerStyles(screenW, screenH), [screenW, screenH]);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Reset to initial index when modal opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       setActiveIndex(initialIndex);
       // Scroll to initial index after a small delay to ensure layout is ready
       setTimeout(() => {
         scrollViewRef.current?.scrollTo({
-          x: initialIndex * SCREEN_WIDTH,
+          x: initialIndex * screenW,
           animated: false,
         });
       }, 100);
     }
-  }, [visible, initialIndex]);
+  }, [visible, initialIndex, screenW]);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
+    const index = Math.round(offsetX / screenW);
     setActiveIndex(index);
-  };
+  }, [screenW]);
 
-  const scrollToIndex = (index: number) => {
+  const scrollToIndex = useCallback((index: number) => {
     scrollViewRef.current?.scrollTo({
-      x: index * SCREEN_WIDTH,
+      x: index * screenW,
       animated: true,
     });
     setActiveIndex(index);
-  };
+  }, [screenW]);
 
   return (
     <Modal
@@ -94,7 +94,7 @@ export default function ImageViewerModal({
           onScroll={handleScroll}
           scrollEventThrottle={16}
           decelerationRate="fast"
-          snapToInterval={SCREEN_WIDTH}
+          snapToInterval={screenW}
           snapToAlignment="center"
           style={styles.scrollView}
         >
@@ -153,7 +153,8 @@ export default function ImageViewerModal({
   );
 }
 
-const styles = StyleSheet.create({
+function createImageViewerStyles(SCREEN_WIDTH: number, SCREEN_HEIGHT: number) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -228,4 +229,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     width: 24,
   },
-});
+  });
+}

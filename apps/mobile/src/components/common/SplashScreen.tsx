@@ -5,8 +5,8 @@
  * Smooth logo entrance with spring + breathing, staggered bouncing dots.
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Image } from 'react-native';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -20,9 +20,6 @@ import Animated, {
   interpolate,
   cancelAnimation,
 } from 'react-native-reanimated';
-
-const { width } = Dimensions.get('window');
-const LOGO_WIDTH = Math.min(width * 0.75, 320);
 
 interface SplashScreenProps {
   onComplete?: () => void;
@@ -69,6 +66,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   onComplete,
   duration = 1400,
 }) => {
+  const { width } = useWindowDimensions();
+  const logoWidth = useMemo(() => Math.min(width * 0.75, 320), [width]);
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -174,7 +173,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         <Animated.View style={logoStyle}>
           <Image
             source={require('../../../assets/Stunity.png')}
-            style={styles.logo}
+            style={[styles.logo, { width: logoWidth }]}
             resizeMode="contain"
           />
         </Animated.View>
@@ -201,7 +200,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: LOGO_WIDTH,
     height: 100,
   },
   dotsRow: {

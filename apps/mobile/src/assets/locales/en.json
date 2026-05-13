@@ -53,7 +53,9 @@
     "yes": "Yes",
     "no": "No",
     "continue": "Continue",
-    "next": "Next"
+    "next": "Next",
+    "male": "Male",
+    "female": "Female"
   },
   "auth": {
     "title": "Welcome Back",
@@ -1685,6 +1687,7 @@
       "seeAllOtherCount": "See all other classes ({{count}})",
       "teacherSectionTeaching": "My teaching classes",
       "teacherSectionOther": "Other linked classes",
+      "teacherSectionClassCount": "{{count}} classes",
       "myClassesSection": "My classes",
       "communityClubs": "Community Clubs",
       "todaysClubs": "Today's Clubs",

@@ -28,7 +28,6 @@ import {
   ActivityIndicator,
   Animated,
   Alert,
-  Dimensions,
   Platform,
   RefreshControl,
   ScrollView,
@@ -38,6 +37,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -94,8 +94,6 @@ const TAB_COLOR_PALETTES: Record<TabType, TabColorPalette> = {
   paths: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
 };
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const FEATURED_CARD_WIDTH = SCREEN_WIDTH * 0.88;
 const FEATURED_CARD_GAP = 16;
 
 interface FeaturedCourseTheme {
@@ -247,11 +245,13 @@ type ListItem =
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LearnScreen() {
+  const { width: windowWidth } = useWindowDimensions();
+  const featuredCardWidth = useMemo(() => windowWidth * 0.88, [windowWidth]);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<LearnStackScreenProps<'LearnHub'>['route']>();
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const styles = useMemo(() => createStyles(colors, isDark, featuredCardWidth), [colors, isDark, featuredCardWidth]);
   const isKhmer = i18n.language?.startsWith('km');
   const { openSidebar } = useNavigationContext();
 
@@ -571,7 +571,7 @@ export default function LearnScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.featuredHorizontalScroll}
-              snapToInterval={FEATURED_CARD_WIDTH + FEATURED_CARD_GAP}
+              snapToInterval={featuredCardWidth + FEATURED_CARD_GAP}
               snapToAlignment="start"
               decelerationRate="fast"
             >
@@ -757,6 +757,8 @@ export default function LearnScreen() {
     colors.border,
     colors.textSecondary,
     isDark,
+    featuredCardWidth,
+    styles,
   ]);
 
   // ── Stable handler ref — avoids new arrow functions in renderItem on every render
@@ -1046,7 +1048,8 @@ export default function LearnScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1124,7 +1127,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontWeight: '500',
   },
   featuredCardWrap: {
-    width: FEATURED_CARD_WIDTH, // Keep it scrollable width
+    width: featuredCardWidth, // Keep it scrollable width
     borderRadius: 24,
     backgroundColor: colors.card,
     shadowOffset: { width: 0, height: 8 },

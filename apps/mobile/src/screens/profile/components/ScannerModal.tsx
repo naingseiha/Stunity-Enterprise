@@ -1,6 +1,6 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, SafeAreaView, useWindowDimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,6 +11,8 @@ interface ScannerModalProps {
 }
 
 export function ScannerModal({ isVisible, onClose, onScan }: ScannerModalProps) {
+  const { width } = useWindowDimensions();
+  const styles = useMemo(() => createScannerStyles(width), [width]);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
@@ -93,10 +95,9 @@ export function ScannerModal({ isVisible, onClose, onScan }: ScannerModalProps) 
   );
 }
 
-const { width } = Dimensions.get('window');
-const frameSize = width * 0.7;
-
-const styles = StyleSheet.create({
+function createScannerStyles(windowWidth: number) {
+  const frameSize = windowWidth * 0.7;
+  return StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: '#fff' 
@@ -190,4 +191,5 @@ const styles = StyleSheet.create({
     color: '#fff', 
     fontWeight: '600' 
   }
-});
+  });
+}

@@ -13,6 +13,8 @@ import { RootStackParamList } from './types';
 import { useAuthStore } from '@/stores';
 import { useThemeContext } from '@/contexts';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { getTabletSceneStyle } from '@/utils/layout';
 
 // Import navigators
 import AuthNavigator from './AuthNavigator';
@@ -46,6 +48,8 @@ const MainStackScreen = () => (
 
 const RootNavigator: React.FC = () => {
   const { colors, isDark } = useThemeContext();
+  const layout = useLayoutBreakpoint();
+  const tabletScene = getTabletSceneStyle(layout);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const user = useAuthStore((state) => state.user);
@@ -89,6 +93,7 @@ const RootNavigator: React.FC = () => {
           animation: 'slide_from_right',
           gestureEnabled: true,
           gestureDirection: 'horizontal',
+          contentStyle: tabletScene ?? {},
         }}
       >
         {!isAuthenticated ? (
