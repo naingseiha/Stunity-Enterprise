@@ -1,58 +1,65 @@
-# Documentation Index
+# Documentation index
 
-**Last Verified:** March 22, 2026
+**Last verified:** May 13, 2026
 
-Use the root [`README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/README.md) as the main entrypoint. This file is the index for deeper documentation inside `docs/`.
+Use the root [README.md](../README.md) as the main entrypoint. This file indexes deeper material under `docs/`.
 
-## Current Docs
+## Current status (read first)
 
-These are the active project-level docs:
+| Document | Purpose |
+|----------|---------|
+| [CURRENT_SITUATION.md](CURRENT_SITUATION.md) | Verified repo and API reality |
+| [current/DEVELOPER_GUIDE.md](current/DEVELOPER_GUIDE.md) | Local setup, ports, repo orientation |
+| [current/PROJECT_STATUS.md](current/PROJECT_STATUS.md) | Verified vs partial vs gaps |
+| [current/CURRENT_FEATURES.md](current/CURRENT_FEATURES.md) | Feature matrix |
+| [current/NEXT_IMPLEMENTATION.md](current/NEXT_IMPLEMENTATION.md) | Roadmap |
 
-| Doc | Purpose |
-|---|---|
-| [`CURRENT_SITUATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/CURRENT_SITUATION.md) | Verified current repo and API reality |
-| [`current/DEVELOPER_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/DEVELOPER_GUIDE.md) | Setup, runtime map, repo orientation |
-| [`current/PROJECT_STATUS.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/PROJECT_STATUS.md) | Current verified status and known gaps |
-| [`current/CURRENT_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/CURRENT_FEATURES.md) | High-signal feature matrix |
-| [`current/NEXT_IMPLEMENTATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/NEXT_IMPLEMENTATION.md) | Current roadmap |
+## Deployment and operations
 
-## Deep Dives
+| Document | Purpose |
+|----------|---------|
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | **Primary** production runbook: Supabase, Cloud Run, Vercel, R2, EAS, CI, RLS |
+| [deployment/README.md](deployment/README.md) | Index of deploy scripts, mobile runbooks, and supplemental setup notes |
+| [DATABASE_SAFETY.md](DATABASE_SAFETY.md) | Guards around destructive DB commands |
+| [LOCAL_DEVELOPMENT_AND_PRODUCTION.md](LOCAL_DEVELOPMENT_AND_PRODUCTION.md) | Local vs production conventions |
 
-Use these when working on a specific subsystem:
+## Domain guides (product reference)
 
-### Platform
+Long-form guides live in **[guides/](guides/README.md)** (education model, onboarding flexibility, Cambodia reporting blueprint, course/learn architecture).
 
-- [`DATABASE_SAFETY.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DATABASE_SAFETY.md)
-- [`LOCAL_DEVELOPMENT_AND_PRODUCTION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md)
-- [`DEPLOYMENT_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DEPLOYMENT_GUIDE.md)
+## Deep dives (by subsystem)
 
-### Social And Learning
+### Social and learning
 
-- [`FEED_SYSTEM.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/FEED_SYSTEM.md)
-- [`REALTIME_ARCHITECTURE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/REALTIME_ARCHITECTURE.md)
-- [`FEED_MEDIA_UPLOAD.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/FEED_MEDIA_UPLOAD.md)
-- [`AI_INTEGRATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/AI_INTEGRATION.md)
-- [`deep-dives/learn-service.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/deep-dives/learn-service.md)
+- [FEED_SYSTEM.md](FEED_SYSTEM.md)
+- [REALTIME_ARCHITECTURE.md](REALTIME_ARCHITECTURE.md)
+- [FEED_MEDIA_UPLOAD.md](FEED_MEDIA_UPLOAD.md)
+- [AI_INTEGRATION.md](AI_INTEGRATION.md)
+- [deep-dives/learn-service.md](deep-dives/learn-service.md)
 
-### School Management
+### School management
 
-- [`MOBILE_API_INTEGRATION_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/MOBILE_API_INTEGRATION_GUIDE.md)
-- [`SCHOOL_SOCIAL_INTEGRATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/SCHOOL_SOCIAL_INTEGRATION.md)
-- [`TIMETABLE_SYSTEM.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/TIMETABLE_SYSTEM.md)
+- [MOBILE_API_INTEGRATION_GUIDE.md](MOBILE_API_INTEGRATION_GUIDE.md)
+- [SCHOOL_SOCIAL_INTEGRATION.md](SCHOOL_SOCIAL_INTEGRATION.md)
+- [TIMETABLE_SYSTEM.md](TIMETABLE_SYSTEM.md)
 
-### Admin And Enterprise
+### Admin and enterprise
 
-- [`SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md)
-- [`admin-system/ADMIN_PERMISSION_SYSTEM.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/admin-system/ADMIN_PERMISSION_SYSTEM.md)
-- [`admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md)
+- [SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md](SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md)
+- [admin-system/ADMIN_PERMISSION_SYSTEM.md](admin-system/ADMIN_PERMISSION_SYSTEM.md)
+- [admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md](admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md)
 
-### Long-Term Vision
+### Planning (active)
 
-- [`future-implementation/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/future-implementation/README.md)
-- [`stunity-vision/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/stunity-vision/README.md)
+- [POLYGLOT_ARCHITECTURE_PLAN.md](POLYGLOT_ARCHITECTURE_PLAN.md) — long-term i18n / polyglot direction
+
+## Vision and future implementation
+
+- [stunity-vision/README.md](stunity-vision/README.md)
+- [future-implementation/README.md](future-implementation/README.md)
 
 ## Archive
 
-Historical plans, completed milestone notes, and older evaluations live in [`archive/`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/archive).
+Historical notes, session summaries, and completed milestones: [archive/](archive/). Recent moves from root/`docs` are summarized in [archive/completed-milestones-2026-05/README.md](archive/completed-milestones-2026-05/README.md).
 
-Do not use archived docs as the source of truth unless you are intentionally researching historical context.
+Do not use archived docs as source of truth unless you are researching history on purpose.

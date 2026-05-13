@@ -1,5 +1,7 @@
 # Stunity Enterprise — Production Deployment Guide
 
+Also see **[deployment/README.md](deployment/README.md)** for a compact index of deploy scripts, mobile runbooks, and supplemental setup notes.
+
 This guide covers Google Cloud Run (backend microservices), Vercel (web), Supabase (database), and Expo EAS (iOS / Android).
 
 ## Infrastructure requirements

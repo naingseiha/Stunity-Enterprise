@@ -73,7 +73,7 @@ Related migrations:
 - `20260409174000_optimize_post_feed_indexes`
 - `20260409183500_denormalize_post_school_scope`
 
-See `/docs/FEED_PERFORMANCE_OPTIMIZATION_2026-04-09.md` for the full implementation summary.
+See [docs/archive/completed-milestones-2026-05/FEED_PERFORMANCE_OPTIMIZATION_2026-04-09.md](../../docs/archive/completed-milestones-2026-05/FEED_PERFORMANCE_OPTIMIZATION_2026-04-09.md) for the dated implementation summary.
 
 ## Deployment
 

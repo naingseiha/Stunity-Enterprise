@@ -2090,7 +2090,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                   '⚠️ [FeedStore] No real-time events received 30s after SUBSCRIBED.\n' +
                   '  → Check Supabase dashboard: is RLS enabled on the `posts` table?\n' +
                   '  → Run: ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;\n' +
-                  '  → See implementation_plan.md for full details.'
+                  '  → See docs/DEPLOYMENT_GUIDE.md (Database / RLS checklist) and docs/REALTIME_ARCHITECTURE.md.'
                 );
               }
               if (!_receivedAnyEvent) {
