@@ -1,7 +1,11 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
@@ -19,7 +23,7 @@ const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
 async function main() {
-  const localPath = '/Users/naingseiha/Documents/projects/Stunity-Enterprise/scripts/admin/newton_portrait.jpg';
+  const localPath = path.join(__dirname, 'newton_portrait.jpg');
   const key = 'scholars/isaac_newton_official.jpg';
 
   console.log(`📤 Uploading Isaac Newton portrait to R2...`);
