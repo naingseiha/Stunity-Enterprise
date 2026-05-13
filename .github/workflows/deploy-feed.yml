@@ -73,8 +73,19 @@ jobs:
           docker push ${{ env.IMAGE }}:${{ github.sha }}
           docker push ${{ env.IMAGE }}:latest
 
+      # Defaults match scripts/deploy-cloud-run.sh (see docs/DEPLOYMENT_GUIDE.md).
+      # Repository Variables (optional): CORS_ORIGIN, CLOUD_RUN_MIN_INSTANCES, CLOUD_RUN_CPU_THROTTLING
       - name: Deploy to Cloud Run
+        env:
+          CORS_ORIGIN_INPUT: ${{ vars.CORS_ORIGIN }}
+          MIN_INSTANCES_INPUT: ${{ vars.CLOUD_RUN_MIN_INSTANCES }}
+          CPU_THROTTLE_INPUT: ${{ vars.CLOUD_RUN_CPU_THROTTLING }}
         run: |
+          CORS_ORIGIN="${CORS_ORIGIN_INPUT:-*}"
+          MIN_INSTANCES="${MIN_INSTANCES_INPUT:-0}"
+          CPU_THROTTLE="${CPU_THROTTLE_INPUT:-true}"
+          THROTTLE_FLAG="--cpu-throttling"
+          if [ "$CPU_THROTTLE" = "false" ]; then THROTTLE_FLAG="--no-cpu-throttling"; fi
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.IMAGE }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
@@ -82,10 +93,10 @@ jobs:
             --port 8080 \
             --memory 512Mi \
             --cpu 1 \
-            --min-instances 0 \
+            --min-instances "$MIN_INSTANCES" \
             --max-instances 5 \
             --concurrency 80 \
             --timeout 300s \
-            --cpu-throttling \
-            --update-env-vars "NODE_ENV=production,CORS_ORIGIN=*" \
+            "$THROTTLE_FLAG" \
+            --update-env-vars "NODE_ENV=production,CORS_ORIGIN=${CORS_ORIGIN}" \
             --allow-unauthenticated

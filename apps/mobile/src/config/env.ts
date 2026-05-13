@@ -252,8 +252,12 @@ const production: EnvironmentConfig = {
   analyticsKey: process.env.EXPO_PUBLIC_ANALYTICS_KEY || '',
   enableDebugMode: false,
   enableCrashlytics: true,
-  appStoreUrl: 'https://apps.apple.com/app/stunity/id123456789',
-  playStoreUrl: 'https://play.google.com/store/apps/details?id=app.stunity.mobile',
+  appStoreUrl:
+    process.env.EXPO_PUBLIC_APP_STORE_URL?.trim() ||
+    'https://stunity.com',
+  playStoreUrl:
+    process.env.EXPO_PUBLIC_PLAY_STORE_URL?.trim() ||
+    'https://play.google.com/store/apps/details?id=app.stunity.mobile',
 };
 
 const environments: Record<Environment, EnvironmentConfig> = {
@@ -315,11 +319,18 @@ export const applyRuntimeApiHostOverride = (nextHost: string | null): boolean =>
   return true;
 };
 
-// App-wide constants
+// App-wide constants (version/build mirror app.json via Expo config when available)
+const resolvedBuild =
+  Constants.expoConfig?.ios?.buildNumber != null
+    ? String(Constants.expoConfig.ios.buildNumber)
+    : Constants.expoConfig?.android?.versionCode != null
+      ? String(Constants.expoConfig.android.versionCode)
+      : '1';
+
 export const APP_CONFIG = {
   APP_NAME: 'Stunity',
-  APP_VERSION: '1.0.0',
-  BUILD_NUMBER: '1',
+  APP_VERSION: Constants.expoConfig?.version ?? '1.0.0',
+  BUILD_NUMBER: resolvedBuild,
 
   // API Settings
   API_TIMEOUT: 120000, // 120 seconds (increased for AI backoff-retries)

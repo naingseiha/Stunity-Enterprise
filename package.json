@@ -25,6 +25,7 @@
     "db:generate": "npx prisma generate --schema=packages/database/prisma/schema.prisma",
     "db:push": "tsx scripts/db-safety-check.ts && cd packages/database && npx prisma db push",
     "db:migrate": "tsx scripts/db-safety-check.ts && cd packages/database && npx prisma migrate dev",
+    "deploy:list-changed-services": "bash scripts/list-changed-cloud-run-services.sh",
     "seed:all": "tsx scripts/db-safety-check.ts && cd packages/database && npx prisma db seed && cd ../.. && npm run seed:test-data && npm run seed:school-management",
     "seed:courses": "tsx scripts/seed-courses.ts",
     "seed:real-courses": "tsx scripts/seed-real-courses.ts",

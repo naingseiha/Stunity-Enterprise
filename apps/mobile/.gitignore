@@ -41,7 +41,8 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
-# EAS
+# EAS / Play upload keystore (never commit real credentials.json)
+credentials.json
 .easignore
 
 # IDE

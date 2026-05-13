@@ -47,7 +47,14 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction): voi
   }
 
   try {
-    const user = jwt.verify(token, JWT_SECRET) as { id: string; email: string; role: string };
+    const user = jwt.verify(token, JWT_SECRET) as {
+      id: string;
+      email?: string;
+      role: string;
+      schoolId?: string;
+      teacherId?: string;
+      parentId?: string;
+    };
     req.user = user;
     next();
   } catch {

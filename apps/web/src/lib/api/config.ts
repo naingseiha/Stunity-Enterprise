@@ -36,3 +36,11 @@ if (
     '[api/config] NEXT_PUBLIC_ATTENDANCE_SERVICE_URL is not set; attendance API calls will use http://localhost:3008 (incorrect for production).'
   );
 }
+if (
+  process.env.NODE_ENV === 'production' &&
+  !(process.env.NEXT_PUBLIC_LEARN_SERVICE_URL || '').trim()
+) {
+  console.warn(
+    '[api/config] NEXT_PUBLIC_LEARN_SERVICE_URL is not set; Learn hub API calls will use http://localhost:3018 (incorrect for production).'
+  );
+}

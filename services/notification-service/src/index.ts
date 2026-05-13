@@ -8,9 +8,13 @@ import path from 'path';
 
 // Load environment variables from root .env
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-const hasExplicitServiceToken = Boolean(process.env.NOTIFICATION_SERVICE_AUTH_TOKEN);
-if (process.env.NODE_ENV === 'production' && !hasExplicitServiceToken) {
-  throw new Error('FATAL: NOTIFICATION_SERVICE_AUTH_TOKEN must be set in production.');
+// Cloud Run deploy script always sets JWT_SECRET; use it as the service token when the
+// dedicated notification token is omitted so the container can bind to PORT without extra env wiring.
+if (!process.env.NOTIFICATION_SERVICE_AUTH_TOKEN && process.env.JWT_SECRET) {
+  process.env.NOTIFICATION_SERVICE_AUTH_TOKEN = process.env.JWT_SECRET;
+}
+if (process.env.NODE_ENV === 'production' && !process.env.NOTIFICATION_SERVICE_AUTH_TOKEN) {
+  throw new Error('FATAL: NOTIFICATION_SERVICE_AUTH_TOKEN or JWT_SECRET must be set in production.');
 }
 // Import routes after env is loaded so Prisma gets the correct DATABASE_URL.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
