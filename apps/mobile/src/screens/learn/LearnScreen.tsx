@@ -58,6 +58,7 @@ import { CourseCard } from '@/components/learn/CourseCard';
 import { PathCard } from '@/components/learn/PathCard';
 import { LearnHeaderSkeleton, CourseCardSkeleton, skeletonStyles } from '@/components/learn/LearnSkeletons';
 import { useTranslation } from 'react-i18next';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
@@ -245,13 +246,26 @@ type ListItem =
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LearnScreen() {
-  const { width: windowWidth } = useWindowDimensions();
-  const featuredCardWidth = useMemo(() => windowWidth * 0.88, [windowWidth]);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const layout = useLayoutBreakpoint();
+  const isThreeColumnTablet = layout.isTablet && windowWidth > windowHeight && windowWidth >= 1180;
+  const isPortraitTablet = layout.isTablet && windowHeight >= windowWidth && windowWidth >= 820;
+  const isLearnRailTablet = isThreeColumnTablet || isPortraitTablet;
+  const tabletContentWidth = layout.isTablet ? Math.min(windowWidth, layout.isLargeTablet ? 1100 : 900) : windowWidth;
+  const featuredCardWidth = useMemo(
+    () => {
+      if (!layout.isTablet) return windowWidth * 0.88;
+      return isThreeColumnTablet
+        ? Math.min(tabletContentWidth * 0.42, 420)
+        : Math.min(tabletContentWidth * 0.72, 680);
+    },
+    [isThreeColumnTablet, layout.isTablet, tabletContentWidth, windowWidth],
+  );
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<LearnStackScreenProps<'LearnHub'>['route']>();
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
-  const styles = useMemo(() => createStyles(colors, isDark, featuredCardWidth), [colors, isDark, featuredCardWidth]);
+  const styles = useMemo(() => createStyles(colors, isDark, featuredCardWidth, layout.isTablet, layout.isLargeTablet, isThreeColumnTablet, isPortraitTablet), [colors, isDark, featuredCardWidth, layout.isTablet, layout.isLargeTablet, isThreeColumnTablet, isPortraitTablet]);
   const isKhmer = i18n.language?.startsWith('km');
   const { openSidebar } = useNavigationContext();
 
@@ -658,7 +672,7 @@ export default function LearnScreen() {
         )}
 
         {/* Category grid */}
-        <View style={styles.categorySurface}>
+        {!isLearnRailTablet && <View style={styles.categorySurface}>
           <View style={styles.categorySection}>
             <View style={styles.categoryHeaderRow}>
               <View style={styles.categoryHeaderInfo}>
@@ -716,10 +730,10 @@ export default function LearnScreen() {
               })}
             </View>
           </View>
-        </View>
+        </View>}
 
         {/* Stat cards */}
-        {stats && (
+        {stats && !isLearnRailTablet && (
           <View style={styles.statsSection}>
             <View style={styles.statsSectionHeader}>
               <Text style={styles.statsSectionTitle}>{t('learn.learningSnapshot')}</Text>
@@ -751,6 +765,7 @@ export default function LearnScreen() {
     selectedCategory,
     showAllCategories,
     canToggleCategoryList,
+    isLearnRailTablet,
     isKhmer,
     t,
     colors.card,
@@ -760,6 +775,104 @@ export default function LearnScreen() {
     featuredCardWidth,
     styles,
   ]);
+
+  const learnStatCards = useMemo(() => stats ? [
+    { key: 'enrolled', value: `${stats.enrolledCourses}`, label: t('learn.stats.enrolled'), icon: 'book' as const, color: '#2563EB' },
+    { key: 'completed', value: `${stats.completedCourses}`, label: t('learn.stats.completed'), icon: 'checkmark-circle' as const, color: '#059669' },
+    { key: 'hours', value: `${stats.hoursLearned}h`, label: t('learn.stats.hours'), icon: 'time' as const, color: '#D97706' },
+    { key: 'streak', value: `${stats.currentStreak}`, label: t('learn.stats.streak'), icon: 'flame' as const, color: '#EA580C' },
+  ] : [], [stats, t]);
+
+  const renderTabletLeftRail = useCallback(() => {
+    if (!isLearnRailTablet) return null;
+
+    return (
+      <View style={styles.tabletLeftRail}>
+        <View style={styles.tabletRailCard}>
+          <Text style={styles.tabletRailTitle}>{t('learn.exploreCategories')}</Text>
+          {visibleCategoryItems.slice(0, 8).map((category) => {
+            const isActive = selectedCategory === category.name;
+            const label = t(getCategoryTranslationKey(category.name), category.name);
+            return (
+              <TouchableOpacity
+                key={category.name}
+                style={[styles.tabletCategoryRow, isActive && styles.tabletCategoryRowActive]}
+                onPress={() => setSelectedCategory(category.name)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.tabletCategoryIcon, { backgroundColor: category.iconBackground }]}>
+                  <Ionicons name={category.icon} size={17} color={category.iconColor} />
+                </View>
+                <View style={styles.tabletCategoryText}>
+                  <Text numberOfLines={1} style={[styles.tabletCategoryLabel, isActive && { color: category.iconColor }]}>{label}</Text>
+                  <Text style={styles.tabletCategoryCount}>{t('learn.courseCount', { count: category.count })}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {isPortraitTablet && learnStatCards.length > 0 && (
+          <View style={styles.tabletRailCard}>
+            <Text style={styles.tabletRailTitle}>{t('learn.learningSnapshot')}</Text>
+            <View style={styles.tabletStatsGrid}>
+              {learnStatCards.map((item) => (
+                <View key={item.key} style={styles.tabletStatTile}>
+                  <Ionicons name={item.icon} size={17} color={item.color} />
+                  <Text style={styles.tabletStatValue}>{item.value}</Text>
+                  <Text style={styles.tabletStatLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  }, [isLearnRailTablet, isPortraitTablet, learnStatCards, selectedCategory, styles, t, visibleCategoryItems]);
+
+  const renderTabletRightRail = useCallback(() => {
+    if (!isThreeColumnTablet) return null;
+
+    return (
+      <View style={styles.tabletRightRail}>
+        {learnStatCards.length > 0 && (
+          <View style={styles.tabletRailCard}>
+            <Text style={styles.tabletRailTitle}>{t('learn.learningSnapshot')}</Text>
+            <View style={styles.tabletStatsGrid}>
+              {learnStatCards.map((item) => (
+                <View key={item.key} style={styles.tabletStatTile}>
+                  <Ionicons name={item.icon} size={17} color={item.color} />
+                  <Text style={styles.tabletStatValue}>{item.value}</Text>
+                  <Text style={styles.tabletStatLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {suggestedCourses.length > 0 && (
+          <View style={styles.tabletRailCard}>
+            <Text style={styles.tabletRailTitle}>{t('learn.suggestedCourses')}</Text>
+            {suggestedCourses.slice(0, 3).map(({ course, icon }) => (
+              <TouchableOpacity
+                key={course.id}
+                style={styles.tabletCourseRow}
+                onPress={() => handleCoursePress(course.id)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.tabletCourseIcon}>
+                  <Ionicons name={icon} size={18} color="#0891B2" />
+                </View>
+                <View style={styles.tabletCourseText}>
+                  <Text numberOfLines={2} style={styles.tabletCourseTitle}>{course.title}</Text>
+                  <Text numberOfLines={1} style={styles.tabletCourseMeta}>{course.category} · {formatDuration(course.duration)}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  }, [handleCoursePress, isThreeColumnTablet, learnStatCards, styles, suggestedCourses, t]);
 
   // ── Stable handler ref — avoids new arrow functions in renderItem on every render
   // (same pattern as FeedScreen uses for handlersRef)
@@ -1014,15 +1127,17 @@ export default function LearnScreen() {
         })}
       </ScrollView>
 
-      <Animated.View style={[styles.animatedTabContent, tabContentAnimatedStyle]}>
+      <Animated.View style={[styles.animatedTabContent, layout.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
+        {renderTabletLeftRail()}
         {/* ── FlashList ── */}
         {/* @ts-ignore FlashList types omit some valid props */}
         <FlashList
+          style={isLearnRailTablet ? styles.tabletCenterList : undefined}
           data={listData}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           getItemType={getItemType}
-          ListHeaderComponent={renderHeader}
+          ListHeaderComponent={isThreeColumnTablet ? null : renderHeader}
           estimatedItemSize={320}
           overrideItemLayout={overrideItemLayout}
           drawDistance={600}
@@ -1042,13 +1157,14 @@ export default function LearnScreen() {
             />
           }
         />
+        {renderTabletRightRail()}
       </Animated.View>
     </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number) =>
+const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number, isTablet: boolean, isLargeTablet: boolean, isThreeColumnTablet: boolean, isPortraitTablet: boolean) =>
   StyleSheet.create({
   container: {
     flex: 1,
@@ -1070,6 +1186,9 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number) =
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    width: '100%',
+    maxWidth: isTablet ? (isLargeTablet ? 1100 : 900) : undefined,
+    alignSelf: 'center',
   },
   topBarActions: {
     flexDirection: 'row',
@@ -1095,6 +1214,9 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number) =
     gap: 10,
     borderWidth: 1,
     borderColor: colors.border,
+    width: isTablet ? '100%' : undefined,
+    maxWidth: isTablet ? (isLargeTablet ? 1068 : 868) : undefined,
+    alignSelf: isTablet ? 'center' : undefined,
   },
   searchInput: {
     flex: 1,
@@ -1298,6 +1420,8 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number) =
   },
   tabsScroll: {
     maxHeight: 68,
+    maxWidth: isTablet ? (isLargeTablet ? 1100 : 900) : undefined,
+    alignSelf: isTablet ? 'center' : undefined,
   },
   tabButton: {
     paddingHorizontal: 15,
@@ -1335,10 +1459,136 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number) =
   },
   listContent: {
     paddingTop: 4,
-    paddingBottom: 40,
+    paddingBottom: isTablet ? 64 : 40,
+    paddingHorizontal: isTablet ? 12 : 0,
   },
   animatedTabContent: {
     flex: 1,
+    flexDirection: (isThreeColumnTablet || isPortraitTablet) ? 'row' : 'column',
+    gap: (isThreeColumnTablet || isPortraitTablet) ? 14 : 0,
+    paddingHorizontal: (isThreeColumnTablet || isPortraitTablet) ? 8 : 0,
+  },
+  tabletContentShell: {
+    width: '100%',
+    maxWidth: isThreeColumnTablet ? undefined : isPortraitTablet ? 980 : isLargeTablet ? 980 : 900,
+    alignSelf: 'center',
+  },
+  tabletLeftRail: {
+    width: isPortraitTablet ? 238 : 260,
+    paddingTop: 8,
+  },
+  tabletRightRail: {
+    width: 280,
+    paddingTop: 8,
+    gap: 14,
+  },
+  tabletCenterList: {
+    flex: 1,
+    minWidth: 0,
+  },
+  tabletRailCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: 14,
+  },
+  tabletRailTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  tabletCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 14,
+    marginBottom: 8,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+  },
+  tabletCategoryRowActive: {
+    backgroundColor: isDark ? 'rgba(20,184,166,0.16)' : '#ECFEFF',
+  },
+  tabletCategoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabletCategoryText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  tabletCategoryLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  tabletCategoryCount: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textTertiary,
+  },
+  tabletStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tabletStatTile: {
+    width: '48%',
+    minHeight: 82,
+    borderRadius: 14,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  tabletStatValue: {
+    marginTop: 4,
+    fontSize: 18,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  tabletStatLabel: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textTertiary,
+    textAlign: 'center',
+  },
+  tabletCourseRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  tabletCourseIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: isDark ? colors.surfaceVariant : '#ECFEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabletCourseText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  tabletCourseTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  tabletCourseMeta: {
+    marginTop: 3,
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
   headerContent: {
     marginBottom: 6,

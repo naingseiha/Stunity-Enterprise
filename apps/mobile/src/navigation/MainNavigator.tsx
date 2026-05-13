@@ -30,7 +30,6 @@ import { Colors, Typography, Shadows } from "@/config";
 import { Sidebar } from "@/components/navigation";
 import TabletTabRail from "@/components/navigation/TabletTabRail";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
-import { getTabletSceneStyle } from "@/utils/layout";
 import {
   NavigationProvider,
   useNavigationContext,
@@ -479,14 +478,11 @@ const MainNavigatorContent = () => {
     [navigation],
   );
 
-  const tabletScene = getTabletSceneStyle(layout);
-
   return (
     <>
       <Tab.Navigator
         sceneContainerStyle={{
           backgroundColor: colors.background,
-          ...(tabletScene || {}),
         }}
         tabBar={
           layout.isTablet
@@ -701,16 +697,13 @@ function MainTabsScreenWrapper() {
 }
 
 function MainStackNavigatorTabletAware() {
-  const layout = useLayoutBreakpoint();
-  const tabletScene = getTabletSceneStyle(layout);
-
   return (
     <MainStack.Navigator
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
         gestureEnabled: true,
-        contentStyle: tabletScene ?? {},
+        contentStyle: { flex: 1 },
       }}
     >
         <MainStack.Screen name="MainTabs" component={MainTabsScreenWrapper} />

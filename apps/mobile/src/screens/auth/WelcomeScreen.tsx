@@ -9,6 +9,7 @@ import {
   Animated,
   StatusBar,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,13 +26,244 @@ import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 // Brand Colors (Exact SVG Matches)
 const BRAND_TEAL = '#09CFF7';
 const BRAND_YELLOW = '#FFA600';
+const INK = '#0F172A';
+const MUTED = '#64748B';
+
+const enterpriseTrustItems = [
+  { icon: 'business-outline', label: 'Built for schools and learning teams' },
+  { icon: 'shield-checkmark-outline', label: 'Secure student and parent access' },
+  { icon: 'analytics-outline', label: 'Operational insights in one workspace' },
+] as const;
 
 function createStyles(width: number, height: number, isTablet: boolean) {
   const headerFrac = isTablet ? 0.34 : 0.42;
+  const isEnterpriseTablet = isTablet && width >= 900;
+  const isPortraitTablet = isTablet && height >= width;
   return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: '#fff',
+    },
+    tabletContainer: {
+      flex: 1,
+      backgroundColor: '#F8FAFC',
+    },
+    portraitTabletContainer: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+    },
+    tabletBackground: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    portraitScrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 0,
+      paddingBottom: 0,
+    },
+    portraitShell: {
+      flex: 1,
+      width: '100%',
+      alignSelf: 'center',
+      justifyContent: 'space-between',
+    },
+    portraitHero: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: Math.min(height * 0.47, 520),
+      paddingHorizontal: 42,
+      paddingTop: Platform.OS === 'ios' ? 54 : 64,
+      paddingBottom: 58,
+      overflow: 'hidden',
+    },
+    portraitLogoPlate: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    portraitTitle: {
+      marginTop: 38,
+      color: INK,
+      fontSize: 44,
+      lineHeight: 52,
+      fontWeight: '900',
+      letterSpacing: 0,
+      textAlign: 'center',
+    },
+    portraitSubtitle: {
+      marginTop: 16,
+      color: MUTED,
+      fontSize: 18,
+      lineHeight: 28,
+      fontWeight: '600',
+      textAlign: 'center',
+      maxWidth: 560,
+    },
+    portraitActionCard: {
+      width: '100%',
+      maxWidth: 680,
+      alignSelf: 'center',
+      paddingHorizontal: 42,
+      paddingTop: 44,
+      paddingBottom: 20,
+    },
+    portraitActionTitle: {
+      color: INK,
+      fontSize: 24,
+      lineHeight: 30,
+      fontWeight: '900',
+      textAlign: 'center',
+      marginBottom: 22,
+    },
+    portraitFooter: {
+      paddingTop: 24,
+      paddingBottom: 22,
+      alignItems: 'center',
+    },
+    portraitWave: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: -1,
+    },
+    tabletScrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: isEnterpriseTablet ? 42 : 28,
+      paddingTop: Platform.OS === 'ios' ? 34 : 40,
+      paddingBottom: 34,
+    },
+    tabletShell: {
+      flex: 1,
+      width: '100%',
+      maxWidth: 1100,
+      alignSelf: 'center',
+      justifyContent: 'center',
+    },
+    tabletGrid: {
+      flexDirection: isEnterpriseTablet ? 'row' : 'column',
+      alignItems: 'center',
+      gap: isEnterpriseTablet ? 42 : 22,
+      minHeight: isEnterpriseTablet ? Math.min(height - 110, 900) : undefined,
+    },
+    enterprisePanel: {
+      flex: isEnterpriseTablet ? 1 : undefined,
+      width: '100%',
+      maxWidth: 510,
+      paddingRight: isEnterpriseTablet ? 4 : 0,
+    },
+    logoPlate: {
+      minHeight: 92,
+      paddingHorizontal: 24,
+      paddingVertical: 18,
+      borderRadius: 28,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: 14 },
+          shadowOpacity: 0.08,
+          shadowRadius: 28,
+        },
+        android: { elevation: 6 },
+      }),
+    },
+    heroCopy: {
+      paddingTop: 44,
+      paddingBottom: 30,
+      maxWidth: 500,
+    },
+    eyebrow: {
+      color: '#0284C7',
+      fontSize: 13,
+      fontWeight: '900',
+      letterSpacing: 1.1,
+      textTransform: 'uppercase',
+      marginBottom: 16,
+    },
+    heroTitle: {
+      color: INK,
+      fontSize: isEnterpriseTablet ? 45 : 34,
+      lineHeight: isEnterpriseTablet ? 54 : 42,
+      fontWeight: '900',
+      letterSpacing: 0,
+      marginBottom: 18,
+    },
+    heroSubtitle: {
+      color: MUTED,
+      fontSize: isEnterpriseTablet ? 18 : 15,
+      lineHeight: isEnterpriseTablet ? 29 : 23,
+      fontWeight: '600',
+      maxWidth: 480,
+    },
+    trustList: {
+      gap: 13,
+      maxWidth: 440,
+    },
+    trustItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    trustIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: '#E0F7FE',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    trustText: {
+      flex: 1,
+      color: '#334155',
+      fontSize: 15,
+      lineHeight: 21,
+      fontWeight: '700',
+    },
+    actionPanel: {
+      flex: isEnterpriseTablet ? 0.82 : undefined,
+      width: '100%',
+      maxWidth: 460,
+      borderRadius: 30,
+      backgroundColor: '#FFFFFF',
+      padding: isEnterpriseTablet ? 32 : 24,
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: 18 },
+          shadowOpacity: 0.08,
+          shadowRadius: 28,
+        },
+        android: { elevation: 7 },
+      }),
+    },
+    actionPanelInner: {
+      width: '100%',
+      maxWidth: 440,
+      alignSelf: 'center',
+    },
+    actionBadge: {
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 999,
+      backgroundColor: '#F1F5F9',
+      marginBottom: 22,
+    },
+    actionBadgeText: {
+      color: '#475569',
+      fontSize: 12,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
     },
     splitRoot: {
       flex: 1,
@@ -72,9 +304,9 @@ function createStyles(width: number, height: number, isTablet: boolean) {
     languageSwitch: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
       borderRadius: 20,
       borderWidth: 1,
       borderColor: '#E2E8F0',
@@ -127,19 +359,19 @@ function createStyles(width: number, height: number, isTablet: boolean) {
     },
     introContainer: {
       alignItems: 'center',
-      marginBottom: 32,
+      marginBottom: isEnterpriseTablet ? 24 : 32,
     },
     introTitle: {
-      fontSize: isTablet ? 28 : 24,
-      fontWeight: '800',
-      color: '#0F172A',
+      fontSize: isEnterpriseTablet ? 30 : isTablet ? 28 : 24,
+      fontWeight: '900',
+      color: INK,
       marginBottom: 8,
       textAlign: 'center',
-      letterSpacing: -0.5,
+      letterSpacing: 0,
     },
     introSubtitle: {
       fontSize: isTablet ? 16 : 15,
-      color: '#64748B',
+      color: MUTED,
       textAlign: 'center',
       lineHeight: isTablet ? 24 : 22,
       paddingHorizontal: 10,
@@ -148,19 +380,19 @@ function createStyles(width: number, height: number, isTablet: boolean) {
       width: '100%',
     },
     button: {
-      height: 64,
+      height: isPortraitTablet ? 76 : isEnterpriseTablet ? 58 : 64,
       borderRadius: 999,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
     },
     outlineButton: {
-      borderWidth: 2,
-      borderColor: 'rgba(9, 207, 247, 0.15)',
-      backgroundColor: 'white',
+      borderWidth: 1.5,
+      borderColor: '#BAE6FD',
+      backgroundColor: '#F8FAFC',
     },
     buttonText: {
-      fontSize: 18,
+      fontSize: isPortraitTablet ? 21 : 18,
       fontWeight: '700',
       letterSpacing: -0.2,
     },
@@ -178,7 +410,7 @@ function createStyles(width: number, height: number, isTablet: boolean) {
       elevation: 4,
     },
     spacing: {
-      height: 16,
+      height: isPortraitTablet ? 18 : 16,
     },
     dividerContainer: {
       flexDirection: 'row',
@@ -201,7 +433,7 @@ function createStyles(width: number, height: number, isTablet: boolean) {
     },
     portalButton: {
       width: '100%',
-      height: 64,
+      height: isPortraitTablet ? 76 : isEnterpriseTablet ? 58 : 64,
       borderRadius: 999,
       overflow: 'hidden',
       borderWidth: 1.5,
@@ -214,9 +446,9 @@ function createStyles(width: number, height: number, isTablet: boolean) {
       alignItems: 'center',
     },
     portalIconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: isPortraitTablet ? 52 : 44,
+      height: isPortraitTablet ? 52 : 44,
+      borderRadius: isPortraitTablet ? 26 : 22,
       backgroundColor: '#fff',
       alignItems: 'center',
       justifyContent: 'center',
@@ -232,7 +464,7 @@ function createStyles(width: number, height: number, isTablet: boolean) {
       paddingRight: 8,
     },
     portalText: {
-      fontSize: 16,
+      fontSize: isPortraitTablet ? 19 : 16,
       fontWeight: '700',
       color: '#B45309',
     },
@@ -364,6 +596,8 @@ export default function WelcomeScreen() {
   };
 
   const isSplitTablet = layout.isTablet && width > height;
+  const isTabletPortrait = layout.isTablet && height >= width;
+  const isEnterpriseTablet = layout.isTablet && width > height && width >= 900;
   const leftPanelW = Math.max(320, Math.floor(width / 2));
   const logoWidthPx = isSplitTablet
     ? Math.min(leftPanelW * 0.82, 400)
@@ -372,23 +606,26 @@ export default function WelcomeScreen() {
       : width * 0.7;
   const logoHeightPx = logoWidthPx * (0.25 / 0.7);
 
-  const renderActionBlocks = () => (
+  const renderActionBlocks = ({ showIntro = true, compact = false } = {}) => (
     <>
       <Animated.View
         style={[
           styles.actionCenter,
+          compact && { flex: 0, paddingTop: 0 },
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>{t('common.welcome')}</Text>
-          <Text style={styles.introSubtitle}>
-            <AutoI18nText i18nKey="auto.mobile.screens_auth_WelcomeScreen.k_d8bb1080" />
-          </Text>
-        </View>
+        {showIntro ? (
+          <View style={styles.introContainer}>
+            <Text style={styles.introTitle}>{t('common.welcome')}</Text>
+            <Text style={styles.introSubtitle}>
+              <AutoI18nText i18nKey="auto.mobile.screens_auth_WelcomeScreen.k_d8bb1080" />
+            </Text>
+          </View>
+        ) : null}
 
         <PremiumButton
           primary
@@ -443,6 +680,19 @@ export default function WelcomeScreen() {
     </>
   );
 
+  const renderEnterpriseTrustList = () => (
+    <View style={styles.trustList}>
+      {enterpriseTrustItems.map((item) => (
+        <View key={item.label} style={styles.trustItem}>
+          <View style={styles.trustIcon}>
+            <Ionicons name={item.icon} size={18} color="#0891B2" />
+        </View>
+          <Text style={styles.trustText}>{item.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+
   const languageAndModal = (
     <>
       <SafeAreaView style={styles.languageSwitchContainer}>
@@ -450,8 +700,9 @@ export default function WelcomeScreen() {
           style={styles.languageSwitch}
           onPress={() => setShowLanguageSelector(true)}
         >
+          <Ionicons name="language-outline" size={16} color="#64748B" />
           <Text style={styles.languageSwitchText}>
-            {i18n.language === 'km' ? '🇰🇭 ភាសាខ្មែរ' : '🇺🇸 English'}
+            {i18n.language === 'km' ? 'ភាសាខ្មែរ' : 'English'}
           </Text>
           <Ionicons name="chevron-down" size={14} color="#64748B" />
         </TouchableOpacity>
@@ -462,6 +713,124 @@ export default function WelcomeScreen() {
       />
     </>
   );
+
+  if (isTabletPortrait) {
+    const portraitLogoWidth = Math.min(width * 0.56, 460);
+    const portraitLogoHeight = portraitLogoWidth * (0.25 / 0.7);
+
+    return (
+      <View style={styles.portraitTabletContainer}>
+        <StatusBar barStyle="dark-content" />
+        {languageAndModal}
+
+        <ScrollView
+          bounces={false}
+          contentContainerStyle={styles.portraitScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <SafeAreaView style={styles.portraitShell}>
+            <LinearGradient
+              colors={['#FFFFFF', '#EDFDFF', '#D2F7FC']}
+              locations={[0, 0.48, 1]}
+              style={styles.portraitHero}
+            >
+              <View style={styles.portraitWave}>
+                <WavyDivider waveWidth={width} styles={styles} />
+              </View>
+              <Animated.View
+                style={[
+                  styles.portraitLogoPlate,
+                  {
+                    transform: [{ scale: logoScale }],
+                  },
+                ]}
+              >
+                <StunityLogo width={portraitLogoWidth} height={portraitLogoHeight} />
+              </Animated.View>
+
+              <Text style={styles.portraitTitle}>Welcome to Stunity</Text>
+              <Text style={styles.portraitSubtitle}>
+                Excellence in education, connecting students, teachers, and parents in one seamless enterprise platform.
+              </Text>
+            </LinearGradient>
+
+            <View style={styles.portraitActionCard}>
+              <Text style={styles.portraitActionTitle}>Choose how to continue</Text>
+              {renderActionBlocks({ showIntro: false, compact: true })}
+            </View>
+          </SafeAreaView>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (isEnterpriseTablet) {
+    const tabletLogoWidth = Math.min(width * 0.28, 260);
+    const tabletLogoHeight = tabletLogoWidth * (0.25 / 0.7);
+
+    return (
+      <View style={styles.tabletContainer}>
+        <StatusBar barStyle="dark-content" />
+        <LinearGradient
+          colors={['#F8FAFC', '#F0FDFF', '#FFFFFF']}
+          locations={[0, 0.5, 1]}
+          style={styles.tabletBackground}
+        />
+        {languageAndModal}
+
+        <ScrollView
+          bounces={false}
+          contentContainerStyle={styles.tabletScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <SafeAreaView style={styles.tabletShell}>
+            <Animated.View
+              style={[
+                styles.tabletGrid,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <View style={styles.enterprisePanel}>
+                <Animated.View
+                  style={[
+                    styles.logoPlate,
+                    {
+                      transform: [{ scale: logoScale }],
+                    },
+                  ]}
+                >
+                  <StunityLogo width={tabletLogoWidth} height={tabletLogoHeight} />
+                </Animated.View>
+
+                <View style={styles.heroCopy}>
+                  <Text style={styles.eyebrow}>Stunity Enterprise</Text>
+                  <Text style={styles.heroTitle}>One beautiful workspace for your school community.</Text>
+                  <Text style={styles.heroSubtitle}>
+                    Connect students, teachers, parents, classes, learning content, and daily operations in a secure tablet-ready platform.
+                  </Text>
+                </View>
+
+                {renderEnterpriseTrustList()}
+              </View>
+
+              <SafeAreaView style={styles.actionPanel} edges={['left', 'right']}>
+                <View style={styles.actionPanelInner}>
+                  <View style={styles.actionBadge}>
+                    <Ionicons name="sparkles-outline" size={15} color="#0284C7" />
+                    <Text style={styles.actionBadgeText}>Start here</Text>
+                  </View>
+                  {renderActionBlocks()}
+                </View>
+              </SafeAreaView>
+            </Animated.View>
+          </SafeAreaView>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (isSplitTablet) {
     return (

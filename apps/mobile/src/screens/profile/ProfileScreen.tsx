@@ -25,6 +25,7 @@ import {
   ActivityIndicator,
   Animated,
   InteractionManager,
+  useWindowDimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
@@ -222,13 +223,37 @@ export default function ProfileScreen() {
   const { user: currentUser } = useAuthStore();
   const insets = useSafeAreaInsets();
   const layout = useLayoutBreakpoint();
-  const coverHeight = layout.isLargeTablet
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isThreeColumnTablet =
+    layout.isTablet && windowWidth > windowHeight && windowWidth >= 1180;
+  const isProfileRailTablet = layout.isTablet && windowWidth >= 900;
+  const coverHeight = isThreeColumnTablet
+    ? 260
+    : isProfileRailTablet
+      ? 300
+    : layout.isLargeTablet
     ? 400
     : layout.isTablet
       ? 340
       : COVER_HEIGHT;
-  const avatarRing = layout.isLargeTablet ? 200 : layout.isTablet ? 186 : 168;
-  const avatarSize = layout.isLargeTablet ? 192 : layout.isTablet ? 176 : 160;
+  const avatarRing = isThreeColumnTablet
+    ? 164
+    : isProfileRailTablet
+      ? 176
+    : layout.isLargeTablet
+      ? 200
+      : layout.isTablet
+        ? 186
+        : 168;
+  const avatarSize = isThreeColumnTablet
+    ? 154
+    : isProfileRailTablet
+      ? 166
+    : layout.isLargeTablet
+      ? 192
+      : layout.isTablet
+        ? 176
+        : 160;
   const contentOverlap = -Math.round((avatarRing / 168) * 90);
 
   const userId = route.params?.userId;
@@ -943,7 +968,49 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <FlashList
+        <View style={[styles.profileBody, isProfileRailTablet && styles.profileThreeColumnBody]}>
+          {isProfileRailTablet && (
+            <View style={styles.profileLeftRail}>
+              <View style={[styles.profileRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.profileRailIdentity}>
+                  <Avatar
+                    uri={(profile as any).profilePhotoUrl || (profile as any).avatar}
+                    name={fullName}
+                    size="xl"
+                  />
+                  <View style={styles.profileRailIdentityText}>
+                    <Text numberOfLines={1} style={[styles.profileRailName, { color: colors.text }]}>{fullName}</Text>
+                    <Text numberOfLines={1} style={[styles.profileRailRole, { color: colors.textSecondary }]}>
+                      {profile.role || t("profile.student")}
+                    </Text>
+                  </View>
+                </View>
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <TouchableOpacity
+                      key={tab.id}
+                      style={[
+                        styles.profileRailTab,
+                        { backgroundColor: colors.surfaceVariant },
+                        isActive && styles.profileRailTabActive,
+                      ]}
+                      onPress={() => setActiveTab(tab.id as any)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name={tab.icon as any} size={18} color={isActive ? BRAND_TEAL_DARK : colors.textSecondary} />
+                      <Text style={[styles.profileRailTabText, { color: isActive ? BRAND_TEAL_DARK : colors.text }]}>
+                        {tab.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <FlashList
+          style={layout.isTablet ? [styles.tabletListShell, isProfileRailTablet && styles.tabletCenterList] : undefined}
           data={profileListData}
           keyExtractor={(item) => item.key}
           showsVerticalScrollIndicator={false}
@@ -952,7 +1019,7 @@ export default function ProfileScreen() {
           getItemType={(item: any) => item.type}
           contentContainerStyle={{
             paddingBottom: Math.max(insets.bottom, 20) + 100,
-            paddingHorizontal: layout.isTablet ? 20 : 0,
+            paddingHorizontal: layout.isTablet ? (isProfileRailTablet ? 0 : 24) : 0,
           }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -2131,7 +2198,58 @@ export default function ProfileScreen() {
               </Animated.View>
             )
           }
-        />
+          />
+
+          {isThreeColumnTablet && (
+            <View style={styles.profileRightRail}>
+              <View style={[styles.profileRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.profileRailTitle, { color: colors.text }]}>{t("profile.insights", "Profile Insights")}</Text>
+                <View style={styles.profileRailStatsGrid}>
+                  <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
+                    <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{stats.posts}</Text>
+                    <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>{t("profile.posts")}</Text>
+                  </View>
+                  <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
+                    <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{stats.followers}</Text>
+                    <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>{t("profile.followers")}</Text>
+                  </View>
+                  <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
+                    <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{quizStats?.level ?? profile.level ?? 1}</Text>
+                    <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>Level</Text>
+                  </View>
+                  <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
+                    <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{streak?.currentStreak ?? 0}</Text>
+                    <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>Streak</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.profileRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.profileRailTitle, { color: colors.text }]}>{t("profile.quickActions", "Quick Actions")}</Text>
+                <TouchableOpacity
+                  style={[styles.profileRailButton, { backgroundColor: colors.surfaceVariant }]}
+                  onPress={isOwnProfile ? handleEditProfile : handleFollow}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name={isOwnProfile ? "create-outline" : isFollowing ? "person-remove-outline" : "person-add-outline"} size={18} color={BRAND_TEAL_DARK} />
+                  <Text style={[styles.profileRailButtonText, { color: colors.text }]}>
+                    {isOwnProfile ? t("profile.editProfile") : isFollowing ? t("profile.following") : t("profile.follow")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.profileRailButton, { backgroundColor: colors.surfaceVariant }]}
+                  onPress={() => navigation.navigate("ProfileVisitors", { initialVisitors: recentProfileVisitors })}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="eye-outline" size={18} color={BRAND_TEAL_DARK} />
+                  <Text style={[styles.profileRailButtonText, { color: colors.text }]}>
+                    {t("profile.profileVisitors", "Profile Visitors")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
         <ImageViewerModal
           visible={viewerState.visible}
           images={viewerState.images}
@@ -2149,6 +2267,121 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F0F4F8",
+  },
+  tabletListShell: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
+  },
+  profileBody: {
+    flex: 1,
+  },
+  profileThreeColumnBody: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 14,
+    paddingHorizontal: 8,
+    paddingTop: 14,
+  },
+  tabletCenterList: {
+    flex: 1,
+    maxWidth: undefined,
+    alignSelf: "stretch",
+  },
+  profileLeftRail: {
+    width: 260,
+    flexShrink: 0,
+  },
+  profileRightRail: {
+    width: 280,
+    flexShrink: 0,
+    paddingRight: 8,
+    gap: 14,
+  },
+  profileRailCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+  },
+  profileRailIdentity: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  profileRailIdentityText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  profileRailName: {
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  profileRailRole: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "capitalize",
+  },
+  profileRailTab: {
+    minHeight: 50,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  profileRailTabActive: {
+    backgroundColor: "#ECFEFF",
+  },
+  profileRailTabText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  profileRailTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    marginBottom: 12,
+  },
+  profileRailStatsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  profileRailStatTile: {
+    width: "48%",
+    minHeight: 78,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+  },
+  profileRailStatValue: {
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  profileRailStatLabel: {
+    marginTop: 3,
+    fontSize: 11,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  profileRailButton: {
+    height: 48,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  profileRailButtonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800",
   },
   errorContainer: {
     flex: 1,

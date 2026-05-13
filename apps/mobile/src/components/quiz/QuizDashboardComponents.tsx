@@ -452,10 +452,11 @@ const CATEGORIES = [
     { titleKey: 'quiz.dashboard.categories.english', rawTitle: 'English', count: 8, icon: 'book' as const, colors: ['#7F1D1D', '#FCA5A5'] as [string, string] },
 ];
 
-export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: string) => void }) => {
+export const CategoryGrid = ({ onCategoryPress, variant = 'default' }: { onCategoryPress: (cat: string) => void; variant?: 'default' | 'rail' }) => {
     const { t } = useTranslation();
+    const isRail = variant === 'rail';
     return (
-        <View style={styles.categoryWrap}>
+        <View style={[styles.categoryWrap, isRail && styles.categoryWrapRail]}>
             <Animated.View>
                 <View style={styles.categoryHeader}>
                     <Text style={styles.categoryTitle}>{t('quiz.dashboard.browseCategories')}</Text>
@@ -466,7 +467,7 @@ export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: strin
                 </View>
             </Animated.View>
 
-            <View style={styles.categoryGrid}>
+            <View style={[styles.categoryGrid, isRail && styles.categoryGridRail]}>
                 {CATEGORIES.map((cat, i) => (
                     <CategoryCard
                         key={i}
@@ -476,6 +477,7 @@ export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: strin
                         colors={cat.colors}
                         onPress={() => onCategoryPress(cat.rawTitle)}
                         delay={580 + i * 50}
+                        rail={isRail}
                     />
                 ))}
             </View>
@@ -483,13 +485,13 @@ export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: strin
     );
 };
 
-const CategoryCard = ({ title, subTitle, icon, colors, onPress, delay = 0 }: CategoryCardProps) => {
+const CategoryCard = ({ title, subTitle, icon, colors, onPress, delay = 0, rail = false }: CategoryCardProps & { rail?: boolean }) => {
     const scale = React.useRef(new Animated.Value(1)).current;
     const pressStyle = { transform: [{ scale }] };
 
     return (
         <Animated.View
-            style={styles.catCardWrap}
+            style={[styles.catCardWrap, rail && styles.catCardWrapRail]}
         >
             <Animated.View style={pressStyle}>
                 <TouchableOpacity
@@ -498,7 +500,7 @@ const CategoryCard = ({ title, subTitle, icon, colors, onPress, delay = 0 }: Cat
                     onPressIn={() => { Animated.spring(scale, { toValue: 0.95, friction: 5, tension: 200, useNativeDriver: true }).start(); }}
                     onPressOut={() => { Animated.spring(scale, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }).start(); }}
                 >
-                    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.catCardBg}>
+                    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.catCardBg, rail && styles.catCardBgRail]}>
                         <Ionicons name={icon} size={52} color="rgba(255,255,255,0.18)" style={styles.catIcon} />
                         <View style={styles.catCardContent}>
                             <Text style={styles.catTitle}>{title}</Text>
@@ -1049,6 +1051,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 40,
     },
+    categoryWrapRail: {
+        marginTop: 0,
+        paddingHorizontal: 0,
+        paddingBottom: 0,
+    },
     categoryHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1076,8 +1083,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         gap: 12,
     },
+    categoryGridRail: {
+        flexDirection: 'column',
+        flexWrap: 'nowrap',
+        gap: 10,
+    },
     catCardWrap: {
         width: '47.5%',
+    },
+    catCardWrapRail: {
+        width: '100%',
     },
     catCardBg: {
         borderRadius: 20,
@@ -1087,6 +1102,10 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
+    },
+    catCardBgRail: {
+        height: 78,
+        borderRadius: 18,
     },
     catCardContent: {
         zIndex: 2,

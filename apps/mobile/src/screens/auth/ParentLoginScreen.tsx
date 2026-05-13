@@ -29,6 +29,8 @@ import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 
 const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
@@ -38,6 +40,7 @@ type NavigationProp = AuthStackScreenProps<'ParentLogin'>['navigation'];
 export default function ParentLoginScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const layout = useLayoutBreakpoint();
   const { parentLogin, logout, isLoading, error, clearError } = useAuthStore();
 
   const [phone, setPhone] = useState('');
@@ -77,10 +80,15 @@ export default function ParentLoginScreen() {
           style={{ flex: 1 }}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              layout.isTablet && styles.scrollContentTablet,
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <AuthTabletShell layout={layout} variant="auth">
+              <>
             {/* Back Button */}
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -92,8 +100,8 @@ export default function ParentLoginScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-              <StunityLogo width={140} height={140} style={{ marginBottom: 12 }} />
-              <Text style={styles.title}>{t('auth.parentLogin.title')}</Text>
+              <StunityLogo width={layout.isTablet ? 120 : 140} height={layout.isTablet ? 120 : 140} style={{ marginBottom: 12 }} />
+              <Text style={[styles.title, layout.isTablet && styles.titleTablet]}>{t('auth.parentLogin.title')}</Text>
             </View>
 
             {/* Error Message */}
@@ -107,9 +115,9 @@ export default function ParentLoginScreen() {
             {/* Form */}
             <View>
               {/* Phone Input */}
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, layout.isTablet && styles.inputWrapperTablet]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, layout.isTablet && styles.inputTablet]}
                   placeholder={t('auth.parentLogin.phonePlaceholder')}
                   value={phone}
                   onChangeText={setPhone}
@@ -122,10 +130,10 @@ export default function ParentLoginScreen() {
               </View>
 
               {/* Password Input */}
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, layout.isTablet && styles.inputWrapperTablet]}>
                 <TextInput
                   ref={passwordRef}
-                  style={styles.input}
+                  style={[styles.input, layout.isTablet && styles.inputTablet]}
                   placeholder={t('common.password')}
                   value={password}
                   onChangeText={setPassword}
@@ -165,9 +173,9 @@ export default function ParentLoginScreen() {
                   colors={isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.signInButton}
+                  style={[styles.signInButton, layout.isTablet && styles.signInButtonTablet]}
                 >
-                  <Text style={styles.signInText}>
+                  <Text style={[styles.signInText, layout.isTablet && styles.signInTextTablet]}>
                     {isLoading ? t('auth.parentLogin.signingIn') : t('auth.login')}
                   </Text>
                 </LinearGradient>
@@ -184,11 +192,11 @@ export default function ParentLoginScreen() {
             {/* School Portal Switch */}
             <View style={styles.oauthRow}>
               <TouchableOpacity
-                style={[styles.oauthButton, styles.portalSwitchButton]}
+                style={[styles.oauthButton, styles.portalSwitchButton, layout.isTablet && styles.portalSwitchButtonTablet]}
                 onPress={() => navigation.navigate('Login')}
               >
                 <Ionicons name="business-outline" size={22} color={BRAND_TEAL} />
-                <Text style={styles.portalSwitchText}>{t('auth.parentLogin.studentTeacherPortal')}</Text>
+                <Text style={[styles.portalSwitchText, layout.isTablet && styles.portalSwitchTextTablet]}>{t('auth.parentLogin.studentTeacherPortal')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -219,6 +227,8 @@ export default function ParentLoginScreen() {
                 {t('auth.noAccount')} <Text style={styles.footerLink}>{t('auth.signup')}</Text>
               </Text>
             </TouchableOpacity>
+              </>
+            </AuthTabletShell>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -233,6 +243,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 24,
+  },
+  scrollContentTablet: {
+    paddingTop: 8,
+    paddingBottom: 40,
   },
   backButton: {
     width: 40,
@@ -250,6 +264,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.gray[900],
     letterSpacing: -0.3,
+  },
+  titleTablet: {
+    fontSize: 28,
+    letterSpacing: -0.4,
   },
   errorBanner: {
     flexDirection: 'row',
@@ -278,11 +296,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 12,
   },
+  inputWrapperTablet: {
+    height: 60,
+    borderRadius: 30,
+    paddingHorizontal: 24,
+    marginBottom: 14,
+  },
   input: {
     flex: 1,
     fontSize: 16,
     color: Colors.gray[900],
     height: '100%',
+  },
+  inputTablet: {
+    fontSize: 17,
   },
   eyeButton: {
     padding: 4,
@@ -313,11 +340,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  signInButtonTablet: {
+    height: 60,
+    borderRadius: 30,
+  },
   signInText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+  signInTextTablet: {
+    fontSize: 17,
   },
   divider: {
     flexDirection: 'row',
@@ -358,10 +392,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  portalSwitchButtonTablet: {
+    height: 60,
+    borderRadius: 30,
+    paddingHorizontal: 22,
+  },
   portalSwitchText: {
     fontSize: 14,
     fontWeight: '600',
     color: Colors.gray[700],
+  },
+  portalSwitchTextTablet: {
+    fontSize: 15,
   },
   devButton: {
     flexDirection: 'row',

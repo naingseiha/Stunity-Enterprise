@@ -2,9 +2,9 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
 import type { LayoutBreakpoint } from '@/utils/layout';
 
-const FORM_NARROW = 480;
-const FORM_STANDARD = 520;
-const FORM_WIDE = 640;
+const FORM_NARROW = 520;
+const FORM_STANDARD = 600;
+const FORM_WIDE = 720;
 
 type Props = {
   layout: LayoutBreakpoint;
@@ -48,12 +48,13 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     flexGrow: 1,
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 28,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
     width: '100%',
     ...Platform.select({
       ios: {
@@ -71,7 +72,7 @@ const styles = StyleSheet.create({
   },
   cardLarge: {
     borderRadius: 32,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 32,
   },
 });

@@ -56,6 +56,7 @@ import RenderPostItem from './RenderPostItem';
 import { statsAPI } from '@/services/stats';
 import { getFeedMediaAspectRatio, getFeedMediaBucket } from '@/utils/feedMediaLayout';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
 const INITIAL_FEED_NOTICE_MS = 2800;
 const INITIAL_FEED_STILL_WORKING_MS = 9000;
 const LIST_DRAW_DISTANCE = Platform.OS === 'android' ? 520 : 720;
@@ -302,7 +303,16 @@ export default function FeedScreen() {
   const layout = useLayoutBreakpoint();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { colors, isDark } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const isWideTablet = layout.isTablet && windowWidth > windowHeight && windowWidth >= 1000;
+  const isThreeColumnTablet = isWideTablet && windowWidth >= 1180;
+  const threeColumnAvailableWidth = windowWidth - TABLET_TAB_RAIL_WIDTH;
+  const threeColumnSideSpace = 270 + 270 + 20 + 20;
+  const feedColumnWidth = layout.isTablet
+    ? isThreeColumnTablet
+      ? Math.max(760, threeColumnAvailableWidth - threeColumnSideSpace)
+      : Math.min(layout.contentColumnWidth, isWideTablet ? 650 : layout.isLargeTablet ? 760 : 680)
+    : windowWidth;
+  const styles = React.useMemo(() => createStyles(colors, isDark, layout.isTablet, layout.isLargeTablet, isWideTablet, isThreeColumnTablet, feedColumnWidth), [colors, isDark, layout.isTablet, layout.isLargeTablet, isWideTablet, isThreeColumnTablet, feedColumnWidth]);
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { openSidebar } = useNavigationContext();
@@ -866,9 +876,9 @@ export default function FeedScreen() {
       return;
     }
 
-    const mediaHeight = (layout.contentColumnWidth - 28) * getFeedMediaAspectRatio(postData);
+    const mediaHeight = (feedColumnWidth - 28) * getFeedMediaAspectRatio(postData);
     slot.size = Math.round(ESTIMATED_MEDIA_BASE_SIZE + mediaHeight);
-  }, [layout.contentColumnWidth]);
+  }, [feedColumnWidth]);
 
   const renderFooter = useCallback(() => {
     if (!isLoadingPosts || pendingSubjectFilter) return null;
@@ -923,6 +933,150 @@ export default function FeedScreen() {
       />
     );
   }, [isLoadingPosts, pendingSubjectFilter, handleCreatePost, renderInitialLoadNotice, t]);
+
+  const renderTabletSideRail = useCallback(() => {
+    if (!isWideTablet) return null;
+
+    const displayName = user
+      ? `${user.lastName || ''} ${user.firstName || ''}`.trim() || t('common.profile')
+      : t('common.profile');
+
+    return (
+      <View style={styles.sideRail}>
+        <View style={styles.sideRailCard}>
+          <View style={styles.sideRailProfileRow}>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={displayName}
+              size="lg"
+              gradientBorder="blue"
+              showBorder
+            />
+            <View style={styles.sideRailProfileText}>
+              <Text style={styles.sideRailEyebrow}>{getGreeting(t)}</Text>
+              <Text style={styles.sideRailName} numberOfLines={1}>{displayName}</Text>
+            </View>
+          </View>
+
+          <View style={styles.sideRailStats}>
+            <View style={styles.sideRailStat}>
+              <Text style={styles.sideRailStatValue}>{learningStats.level}</Text>
+              <Text style={styles.sideRailStatLabel}>{t('feed.level')}</Text>
+            </View>
+            <View style={styles.sideRailStat}>
+              <Text style={styles.sideRailStatValue}>{learningStats.currentStreak}</Text>
+              <Text style={styles.sideRailStatLabel}>{t('feed.dayStreak')}</Text>
+            </View>
+            <View style={styles.sideRailStat}>
+              <Text style={styles.sideRailStatValue}>{learningStats.completedLessons}</Text>
+              <Text style={styles.sideRailStatLabel}>{t('feed.lessons')}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sideRailCard}>
+          <Text style={styles.sideRailTitle}>{t('feed.shareLearning')}</Text>
+          <TouchableOpacity style={styles.sideRailAction} onPress={handleAskQuestion} activeOpacity={0.75}>
+            <Ionicons name="help-circle-outline" size={20} color="#0EA5E9" />
+            <Text style={styles.sideRailActionText}>{t('feed.ask')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sideRailAction} onPress={handleCreateQuiz} activeOpacity={0.75}>
+            <Ionicons name="bulb-outline" size={20} color="#10B981" />
+            <Text style={styles.sideRailActionText}>{t('feed.quiz')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sideRailAction} onPress={handleCreatePoll} activeOpacity={0.75}>
+            <Ionicons name="bar-chart-outline" size={20} color="#8B5CF6" />
+            <Text style={styles.sideRailActionText}>{t('feed.poll')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sideRailAction} onPress={handleCreateResource} activeOpacity={0.75}>
+            <Ionicons name="book-outline" size={20} color="#EC4899" />
+            <Text style={styles.sideRailActionText}>{t('feed.resource')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }, [
+    isWideTablet,
+    user,
+    t,
+    styles,
+    learningStats,
+    handleAskQuestion,
+    handleCreateQuiz,
+    handleCreatePoll,
+    handleCreateResource,
+  ]);
+
+  const renderTabletLeftRail = useCallback(() => {
+    if (!isThreeColumnTablet) return null;
+
+    const displayName = user
+      ? `${user.lastName || ''} ${user.firstName || ''}`.trim() || t('common.profile')
+      : t('common.profile');
+    const roleLabel = user?.role ? String(user.role).toLowerCase() : t('common.profile');
+
+    return (
+      <View style={styles.leftRail}>
+        <View style={styles.leftProfileCard}>
+          <LinearGradient
+            colors={['#F7B733', '#F59E0B']}
+            style={styles.leftProfileCover}
+          />
+          <View style={styles.leftProfileAvatar}>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={displayName}
+              size="xl"
+              gradientBorder="gold"
+              showBorder
+            />
+          </View>
+          <Text style={styles.leftProfileName} numberOfLines={1}>{displayName}</Text>
+          <Text style={styles.leftProfileRole} numberOfLines={1}>{roleLabel}</Text>
+          <TouchableOpacity
+            style={styles.leftProfileLink}
+            onPress={() => navigation.getParent()?.navigate('ProfileTab')}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="person-outline" size={15} color={colors.primary} />
+            <Text style={styles.leftProfileLinkText}>{t('common.profile')}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.leftMetricGrid}>
+            <View style={styles.leftMetric}>
+              <Ionicons name="flash-outline" size={16} color="#F59E0B" />
+              <Text style={styles.leftMetricValue}>{learningStats.currentStreak}</Text>
+              <Text style={styles.leftMetricLabel}>{t('feed.dayStreak')}</Text>
+            </View>
+            <View style={styles.leftMetric}>
+              <Ionicons name="radio-button-on-outline" size={16} color="#3B82F6" />
+              <Text style={styles.leftMetricValue}>{learningStats.totalPoints}</Text>
+              <Text style={styles.leftMetricLabel}>{t('feed.xp')}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.leftMenuCard}>
+          <View style={[styles.leftMenuItem, styles.leftMenuItemActive]}>
+            <Ionicons name="trending-up-outline" size={20} color="#F59E0B" />
+            <Text style={[styles.leftMenuText, styles.leftMenuTextActive]}>Feed</Text>
+          </View>
+          <TouchableOpacity style={styles.leftMenuItem} activeOpacity={0.75}>
+            <Ionicons name="bookmark-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.leftMenuText}>Saved</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.leftMenuItem} activeOpacity={0.75}>
+            <Ionicons name="book-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.leftMenuText}>My Posts</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.leftMenuItem} activeOpacity={0.75}>
+            <Ionicons name="analytics-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.leftMenuText}>Analytics</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }, [isThreeColumnTablet, user, t, styles, colors.primary, colors.textSecondary, learningStats, navigation]);
 
   return (
     <View style={styles.container}>
@@ -1006,6 +1160,8 @@ export default function FeedScreen() {
       )}
 
       <View style={styles.feedBody}>
+        {renderTabletLeftRail()}
+
         <View style={styles.feedListColumn}>
         {/* FlashList — cell recycling for smooth 60fps scrolling */}
         <FlashList
@@ -1036,7 +1192,7 @@ export default function FeedScreen() {
           // ── FlashList performance props for 120Hz smooth scrolling ──
           // @ts-ignore - The types for FlashList in this version omit estimatedItemSize, but it is supported and critical for performance.
           estimatedItemSize={420}
-          estimatedListSize={{ height: windowHeight, width: windowWidth }}
+          estimatedListSize={{ height: windowHeight, width: feedColumnWidth }}
           drawDistance={LIST_DRAW_DISTANCE}
           getItemType={getItemType}
           overrideItemLayout={overrideItemLayout}
@@ -1045,6 +1201,8 @@ export default function FeedScreen() {
           decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
         />
         </View>
+
+        {renderTabletSideRail()}
 
         {isFilterTransitioning && (
           <Animated.View
@@ -1087,7 +1245,7 @@ export default function FeedScreen() {
   );
 }
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTablet: boolean, isWideTablet: boolean, isThreeColumnTablet: boolean, feedColumnWidth: number) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1103,8 +1261,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: isTablet ? 24 : 16,
+    paddingVertical: isTablet ? 12 : 10,
+    width: '100%',
+    maxWidth: isTablet ? 1100 : undefined,
+    alignSelf: 'center',
   },
   headerLogo: {
     height: 30,
@@ -1156,13 +1317,222 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   feedBody: {
     flex: 1,
     position: 'relative',
+    alignItems: isTablet ? 'center' : 'stretch',
+    flexDirection: isWideTablet ? 'row' : 'column',
+    justifyContent: isThreeColumnTablet ? 'flex-start' : isWideTablet ? 'center' : 'flex-start',
+    gap: isThreeColumnTablet ? 10 : isWideTablet ? 20 : 0,
+    paddingLeft: isThreeColumnTablet ? 4 : isWideTablet ? 24 : 0,
+    paddingRight: isThreeColumnTablet ? 16 : isWideTablet ? 24 : 0,
   },
   feedListColumn: {
     flex: 1,
     width: '100%',
+    maxWidth: isTablet ? feedColumnWidth : undefined,
+    alignSelf: 'center',
+  },
+  leftRail: {
+    width: 270,
+    alignSelf: 'flex-start',
+    paddingTop: 22,
+    gap: 14,
+  },
+  leftProfileCard: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: isDark ? 0 : 0.05,
+        shadowRadius: 18,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  leftProfileCover: {
+    height: 118,
+    width: '100%',
+  },
+  leftProfileAvatar: {
+    marginTop: -42,
+    marginBottom: 10,
+  },
+  leftProfileName: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: colors.text,
+    paddingHorizontal: 16,
+  },
+  leftProfileRole: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F59E0B',
+    textTransform: 'capitalize',
+  },
+  leftProfileLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  leftProfileLinkText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  leftMetricGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    padding: 12,
+    gap: 10,
+  },
+  leftMetric: {
+    flex: 1,
+    minHeight: 76,
+    borderRadius: 14,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  leftMetricValue: {
+    marginTop: 3,
+    fontSize: 17,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  leftMetricLabel: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textTertiary,
+    textAlign: 'center',
+  },
+  leftMenuCard: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  leftMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  leftMenuItemActive: {
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
+  },
+  leftMenuText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textSecondary,
+  },
+  leftMenuTextActive: {
+    color: '#F59E0B',
+  },
+  sideRail: {
+    width: isThreeColumnTablet ? 270 : 300,
+    alignSelf: 'flex-start',
+    paddingTop: 22,
+    gap: 14,
+  },
+  sideRailCard: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: isDark ? 0 : 0.05,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  sideRailProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sideRailProfileText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  sideRailEyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textTertiary,
+    marginBottom: 2,
+  },
+  sideRailName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  sideRailStats: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 16,
+  },
+  sideRailStat: {
+    flex: 1,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+    borderRadius: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  sideRailStatValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  sideRailStatLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textTertiary,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  sideRailTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  sideRailAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+    marginBottom: 8,
+  },
+  sideRailActionText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: isTablet ? 120 : 100,
+    paddingTop: isTablet ? 10 : 0,
   },
   filterLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1176,6 +1546,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   filterLoadingContent: {
     width: '100%',
+    maxWidth: isTablet ? feedColumnWidth : undefined,
     alignItems: 'center',
   },
   filterSkeletonWrap: {
@@ -1220,7 +1591,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderTopColor: isDark ? 'rgba(148,163,184,0.1)' : 'rgba(226,232,240,0.6)',
   },
   headerSection: {
-    paddingTop: 8,
+    paddingTop: isTablet ? 12 : 8,
     paddingBottom: 0,
   },
   postWrapper: {
@@ -1242,39 +1613,39 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   // ── Create Post Card ──
   createPostCard: {
     backgroundColor: colors.card,
-    marginHorizontal: 12,
-    marginTop: 6,
-    marginBottom: 12,
-    paddingTop: 16,
-    paddingBottom: 8,
-    borderRadius: 16,
+    marginHorizontal: isTablet ? 10 : 12,
+    marginTop: isTablet ? 10 : 6,
+    marginBottom: isTablet ? 16 : 12,
+    paddingTop: isTablet ? 18 : 16,
+    paddingBottom: isTablet ? 10 : 8,
+    borderRadius: isTablet ? 18 : 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
   createPostRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingHorizontal: isTablet ? 18 : 16,
+    gap: isTablet ? 14 : 12,
   },
   createPostInputFake: {
     flex: 1,
     backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: isTablet ? 18 : 16,
+    paddingVertical: isTablet ? 12 : 10,
 
     borderColor: isDark ? colors.border : '#CCFBF1',
   },
   createPostPlaceholder: {
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     color: colors.textTertiary,
     fontWeight: '500',
   },
   createPostMediaButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: isTablet ? 42 : 38,
+    height: isTablet ? 42 : 38,
+    borderRadius: isTablet ? 21 : 19,
     backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1287,8 +1658,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   quickActionsInCard: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingHorizontal: isTablet ? 14 : 12,
+    paddingBottom: isTablet ? 14 : 12,
     gap: 4,
   },
   inCardAction: {
@@ -1296,7 +1667,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: isTablet ? 10 : 8,
     gap: 7,
     borderRadius: 12,
   },
@@ -1324,15 +1695,15 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'center',
   },
   inCardActionText: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     fontWeight: '700',
     letterSpacing: 0.1,
   },
   footer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: isTablet ? 10 : 16,
   },
   skeletonContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: isTablet ? 10 : 16,
     paddingTop: 12,
   },
   initialLoadNotice: {

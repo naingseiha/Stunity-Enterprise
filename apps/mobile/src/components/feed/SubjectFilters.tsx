@@ -119,7 +119,7 @@ const SubjectFilterChip = React.memo(function SubjectFilterChip({
   return (
     <Pressable
       onPress={handlePress}
-      style={styles.categoryItem}
+      style={[styles.categoryItem, { width: Math.max(68, Math.min(92, label.length * 7 + 28)) }]}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: isActive, busy: isPending }}
@@ -217,13 +217,13 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingHorizontal: 12,
+    paddingLeft: 12,
+    paddingRight: 28,
     paddingVertical: 4,
-    gap: 4,
+    gap: 6,
   },
   categoryItem: {
     alignItems: 'center',
-    width: 64,
     gap: 5,
     position: 'relative',
   },

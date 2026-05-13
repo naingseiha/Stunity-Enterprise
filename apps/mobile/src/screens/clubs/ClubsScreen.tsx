@@ -52,6 +52,7 @@ import { BannerCarousel, ShortcutItem, COLORS, CLUBS_PAGE_SIZE } from '@/compone
 import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 import { useTranslation } from 'react-i18next';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
 import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
@@ -222,12 +223,19 @@ export default function ClubsScreen() {
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
   const layoutBreakpoint = useLayoutBreakpoint();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isThreeColumnTablet = layoutBreakpoint.isTablet && windowWidth > windowHeight && windowWidth >= 1180;
+  const isPortraitTablet = layoutBreakpoint.isTablet && windowHeight >= windowWidth && windowWidth >= 820;
+  const isClubRailTablet = isThreeColumnTablet || isPortraitTablet;
+  const threeColumnAvailableWidth = windowWidth - TABLET_TAB_RAIL_WIDTH;
+  const threeColumnCenterWidth = Math.max(620, threeColumnAvailableWidth - 260 - 280 - 28);
   /** Measured width of the school-classes band (matches on-screen column, not raw window width). */
   const [schoolClassesBandWidth, setSchoolClassesBandWidth] = useState(0);
   const gridConfig = useMemo(() => {
     const contentW = layoutBreakpoint.isTablet
-      ? Math.min(windowWidth, layoutBreakpoint.contentColumnWidth)
+      ? isThreeColumnTablet
+        ? threeColumnCenterWidth
+        : Math.min(windowWidth, layoutBreakpoint.contentColumnWidth)
       : windowWidth;
     const gridHPad = 12;
     const basisW =
@@ -236,8 +244,8 @@ export default function ClubsScreen() {
         : contentW;
     const innerW = Math.max(0, basisW - gridHPad * 2);
     /** Target ~3 columns on iPad class screens; tune min card width so measured innerW yields 3 cols when space allows. */
-    const MIN_CLASS_COL_W = 200;
-    const cols = layoutBreakpoint.isTablet
+    const MIN_CLASS_COL_W = isPortraitTablet ? 320 : 200;
+    const cols = layoutBreakpoint.isTablet && !isThreeColumnTablet
       ? Math.min(3, Math.max(1, Math.floor(innerW / MIN_CLASS_COL_W)))
       : 1;
     /** Wider gutters between columns/rows on multi-column grids (also drives `gap` on the flex wrap). */
@@ -246,7 +254,7 @@ export default function ClubsScreen() {
     const classPreviewCount = cols === 1 ? 6 : cols * 3;
     const teacherSectionCount = cols === 1 ? 3 : cols * 2;
     return { cols, contentW, gap, cellW, classPreviewCount, teacherSectionCount, gridHPad };
-  }, [layoutBreakpoint.isTablet, layoutBreakpoint.contentColumnWidth, windowWidth, schoolClassesBandWidth]);
+  }, [isPortraitTablet, isThreeColumnTablet, layoutBreakpoint.isTablet, layoutBreakpoint.contentColumnWidth, windowWidth, schoolClassesBandWidth, threeColumnCenterWidth]);
   const user = useAuthStore((state) => state.user);
   const initialClubsPage = clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE });
   const initialAcademicYears = classesApi.getCachedAcademicYears() || [];
@@ -307,6 +315,13 @@ export default function ClubsScreen() {
     user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
   );
   const canUseDisciplineWorkbench = Boolean(isAdminOrStaff || user?.role === 'TEACHER');
+  const clubListColumns = isThreeColumnTablet || isPortraitTablet ? 1 : gridConfig.cols;
+  const shortcutItems = useMemo(() => [
+    { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
+    { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: isDark ? '#3A1720' : '#FFF1F2' },
+    { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: isDark ? '#3B2B09' : '#FEF3C7' },
+    { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
+  ], [isDark, t]);
 
   const teacherClassSplit = useMemo(() => {
     const eligible =
@@ -852,18 +867,12 @@ export default function ClubsScreen() {
 
   // ── Header ────────────────────────────────────────────────────────────────
   const renderHeader = useCallback(() => {
-    const shortcuts = [
-      { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
-      { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: isDark ? '#3A1720' : '#FFF1F2' },
-      { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: isDark ? '#3B2B09' : '#FEF3C7' },
-      { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
-    ];
-
     return (
       <View style={styles.listHeader}>
         {/* Shortcuts */}
-        <View style={styles.shortcutsRow}>
-          {shortcuts.map((s) => {
+        {!isClubRailTablet && (
+          <View style={styles.shortcutsRow}>
+          {shortcutItems.map((s) => {
             const isActive = selectedFilter === s.id;
             return (
               <ShortcutItem
@@ -874,13 +883,14 @@ export default function ClubsScreen() {
               />
             );
           })}
-        </View>
+          </View>
+        )}
 
         {/* Banner Carousel */}
         <BannerCarousel navigation={navigation} />
 
         {/* School Classes Section */}
-        {(canViewSchoolClasses || isAdminOrStaff) && (
+        {(canViewSchoolClasses || isAdminOrStaff) && !isClubRailTablet && (
           <View
             style={styles.schoolClassesSection}
             onLayout={(e) => {
@@ -1224,6 +1234,8 @@ export default function ClubsScreen() {
     handleClassPress,
     handleCreateClub,
     handleFilterChange,
+    isClubRailTablet,
+    isThreeColumnTablet,
     loadAdminClasses,
     loadSchoolClasses,
     loadingAdminClasses,
@@ -1234,7 +1246,7 @@ export default function ClubsScreen() {
     searchQuery,
     selectedFilter,
     colors,
-    isDark,
+    shortcutItems,
     isKhmer,
     t,
     user?.role,
@@ -1243,12 +1255,90 @@ export default function ClubsScreen() {
     gridConfig,
   ]);
 
+  const renderTabletLeftRail = useCallback(() => {
+    if (!isClubRailTablet) return null;
+    return (
+      <View style={styles.tabletLeftRail}>
+        <View style={[styles.tabletRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.tabletRailTitle, { color: colors.text }]}>Clubs</Text>
+          {shortcutItems.map((s) => {
+            const isActive = selectedFilter === s.id;
+            return (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.tabletShortcutRow, { backgroundColor: colors.surfaceVariant }, isActive && { backgroundColor: s.bgInner }]}
+                onPress={() => s.id === 'create' ? handleCreateClub() : handleFilterChange(s.id as ClubFilter)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={s.icon as any} size={19} color={s.color} />
+                <Text style={[styles.tabletShortcutText, { color: isActive ? s.color : colors.text }]}>{s.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {(canViewSchoolClasses || isAdminOrStaff) && (
+          <View style={[styles.tabletRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.tabletRailTitle, { color: colors.text }]}>{t('clubs.screen.schoolClasses')}</Text>
+            {previewClasses.slice(0, isPortraitTablet ? 5 : 3).map((classItem, index) => (
+              <TouchableOpacity
+                key={classItem.id}
+                style={[styles.tabletClassRow, { backgroundColor: colors.surfaceVariant }]}
+                onPress={() => handleClassPress(classItem)}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.tabletClassIcon, { backgroundColor: CLASS_THEMES[index % CLASS_THEMES.length].soft }]}>
+                  <Ionicons name="school-outline" size={17} color={CLASS_THEMES[index % CLASS_THEMES.length].accent} />
+                </View>
+                <View style={styles.tabletClassText}>
+                  <Text numberOfLines={1} style={[styles.tabletClassName, { color: colors.text }]}>{classItem.name}</Text>
+                  <Text numberOfLines={1} style={[styles.tabletClassMeta, { color: colors.textSecondary }]}>
+                    {t('classes.directory.gradeShort', { grade: classItem.grade })} · {getSafeStudentCount(classItem)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.tabletRailButton, { backgroundColor: colors.surfaceVariant }]}
+              onPress={() => navigation.navigate('ClassDirectory')}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.tabletRailButtonText, { color: COLORS.primaryDark }]}>View directory</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }, [canViewSchoolClasses, colors, handleClassPress, handleCreateClub, handleFilterChange, isAdminOrStaff, isClubRailTablet, isPortraitTablet, navigation, previewClasses, selectedFilter, shortcutItems, styles, t]);
+
+  const renderTabletRightRail = useCallback(() => {
+    if (!isThreeColumnTablet) return null;
+    return (
+      <View style={styles.tabletRightRail}>
+        <View style={[styles.tabletRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.tabletRailTitle, { color: colors.text }]}>{t('clubs.screen.schoolClasses')}</Text>
+          <View style={styles.tabletRailStatRow}>
+            <Text style={[styles.tabletRailStatValue, { color: colors.text }]}>{previewClasses.length}</Text>
+            <Text style={[styles.tabletRailStatLabel, { color: colors.textSecondary }]}>Classes</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.tabletRailButton, { backgroundColor: colors.surfaceVariant }]}
+            onPress={() => navigation.navigate('ClassDirectory')}
+          >
+            <Text style={[styles.tabletRailButtonText, { color: COLORS.primaryDark }]}>View directory</Text>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }, [colors, isThreeColumnTablet, navigation, previewClasses.length, styles, t]);
+
   // ── Render item (memoized card) — padded cells when multi-column grid ───────
   const renderClubCard = useCallback(
     ({ item }: { item: Club }) => (
       <View
         style={
-          gridConfig.cols > 1
+          clubListColumns > 1
             ? {
                 flex: 1,
                 paddingHorizontal: 6,
@@ -1266,7 +1356,7 @@ export default function ClubsScreen() {
         />
       </View>
     ),
-    [gridConfig.cols, joinedClubSet, busyClubId, handleClubPress, handleToggleMembership]
+    [clubListColumns, joinedClubSet, busyClubId, handleClubPress, handleToggleMembership]
   );
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -1382,15 +1472,17 @@ export default function ClubsScreen() {
           </View>
         </View>
       </SafeAreaView>
-      <View style={styles.safeArea}>
+      <View style={[styles.safeArea, isClubRailTablet && styles.tabletThreeColumnBody]}>
+        {renderTabletLeftRail()}
         {/* @ts-ignore FlashList types omit some valid props */}
         <FlashList
-          key={`club-cols-${gridConfig.cols}`}
+          style={layoutBreakpoint.isTablet ? [styles.tabletListShell, isClubRailTablet && styles.tabletCenterList] : undefined}
+          key={`club-cols-${clubListColumns}`}
           data={filteredClubs}
           keyExtractor={keyExtractor}
           renderItem={renderClubCard}
-          numColumns={gridConfig.cols}
-          estimatedItemSize={gridConfig.cols > 1 ? 210 : 180}
+          numColumns={clubListColumns}
+          estimatedItemSize={clubListColumns > 1 ? 210 : 180}
           drawDistance={600}
           getItemType={getItemType}
           ListHeaderComponent={renderHeader}
@@ -1411,6 +1503,7 @@ export default function ClubsScreen() {
             />
           }
         />
+        {renderTabletRightRail()}
       </View>
     </View>
   );
@@ -1427,6 +1520,116 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 40,
+  },
+  tabletListShell: {
+    width: '100%',
+    maxWidth: 900,
+    alignSelf: 'center',
+  },
+  tabletThreeColumnBody: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    paddingHorizontal: 8,
+    paddingTop: 14,
+  },
+  tabletCenterList: {
+    flex: 1,
+    maxWidth: undefined,
+    alignSelf: 'stretch',
+  },
+  tabletLeftRail: {
+    width: 238,
+    flexShrink: 0,
+  },
+  tabletRightRail: {
+    width: 280,
+    flexShrink: 0,
+    paddingRight: 8,
+  },
+  tabletRailCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
+  },
+  tabletRailTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: 12,
+  },
+  tabletShortcutRow: {
+    minHeight: 50,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  tabletShortcutText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  tabletRailStatRow: {
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    marginBottom: 12,
+  },
+  tabletRailStatValue: {
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  tabletRailStatLabel: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  tabletRailButton: {
+    height: 46,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tabletRailButtonText: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  tabletClassRow: {
+    minHeight: 58,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  tabletClassIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabletClassText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  tabletClassName: {
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  tabletClassMeta: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '700',
   },
   listHeader: {
     paddingBottom: 16,
@@ -1455,6 +1658,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#DBEAFE',
+    width: '100%',
+    maxWidth: 1180,
+    alignSelf: 'center',
   },
   topBarActions: {
     flexDirection: 'row',
@@ -1914,7 +2120,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   schoolClassesGrid: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     marginTop: 8,
   },
   schoolClassesGridTight: {
@@ -1936,7 +2142,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1.5,
     borderColor: '#E8EDF5',
-    padding: 16,
+    padding: 18,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -1945,13 +2151,13 @@ const styles = StyleSheet.create({
   schoolClassMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   schoolClassBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1996,9 +2202,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   schoolClassIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

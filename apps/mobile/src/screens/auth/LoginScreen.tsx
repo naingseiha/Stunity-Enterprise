@@ -177,9 +177,9 @@ export default function LoginScreen() {
             {/* Form */}
             <Animated.View>
               {/* Email or Phone */}
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, layout.isTablet && styles.inputWrapperTablet]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, layout.isTablet && styles.inputTablet]}
                   placeholder={t('common.email') + ' or Phone'}
                   value={identifier}
                   onChangeText={setIdentifier}
@@ -193,10 +193,10 @@ export default function LoginScreen() {
               </View>
 
               {/* Password */}
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, layout.isTablet && styles.inputWrapperTablet]}>
                 <TextInput
                   ref={passwordRef}
-                  style={styles.input}
+                  style={[styles.input, layout.isTablet && styles.inputTablet]}
                   placeholder={t('common.password')}
                   value={password}
                   onChangeText={setPassword}
@@ -237,9 +237,9 @@ export default function LoginScreen() {
                   colors={isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.signInButton}
+                  style={[styles.signInButton, layout.isTablet && styles.signInButtonTablet]}
                 >
-                  <Text style={styles.signInText}>
+                  <Text style={[styles.signInText, layout.isTablet && styles.signInTextTablet]}>
                     {isLoading ? 'Signing in...' : t('common.login')}
                   </Text>
                 </LinearGradient>
@@ -409,11 +409,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 12,
   },
+  inputWrapperTablet: {
+    height: 60,
+    borderRadius: 30,
+    paddingHorizontal: 24,
+    marginBottom: 14,
+  },
   input: {
     flex: 1,
     fontSize: 16,
     color: Colors.gray[900],
     height: '100%',
+  },
+  inputTablet: {
+    fontSize: 17,
   },
   eyeButton: {
     padding: 4,
@@ -448,11 +457,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  signInButtonTablet: {
+    height: 60,
+    borderRadius: 30,
+  },
   signInText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+  signInTextTablet: {
+    fontSize: 17,
   },
 
   // ── Divider ───────────────────────────────────────────

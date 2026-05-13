@@ -160,8 +160,8 @@ export default function RegisterScreen() {
         <View style={[s.stepIconBg, { backgroundColor: '#ECFEFF' }]}>
           <Ionicons name="person" size={22} color={BRAND_TEAL} />
         </View>
-        <Text style={s.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_049d0bd9" /></Text>
-        <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_09b9d621" /></Text>
+        <Text style={[s.stepTitle, layout.isTablet && s.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_049d0bd9" /></Text>
+        <Text style={[s.stepSubtitle, layout.isTablet && s.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_09b9d621" /></Text>
       </View>
 
       <View style={s.formSection}>
@@ -174,6 +174,7 @@ export default function RegisterScreen() {
           leftIcon="person-outline"
           returnKeyType="next"
           onSubmitEditing={() => lastNameRef.current?.focus()}
+          style={layout.isTablet ? s.inputTablet : undefined}
         />
 
         <Input
@@ -186,12 +187,13 @@ export default function RegisterScreen() {
           leftIcon="person-outline"
           returnKeyType="next"
           onSubmitEditing={handleNextStep}
+          style={layout.isTablet ? s.inputTablet : undefined}
         />
       </View>
 
       <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
-        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
-          <Text style={s.ctaText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
+        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.ctaButton, layout.isTablet && s.ctaButtonTablet]}>
+          <Text style={[s.ctaText, layout.isTablet && s.ctaTextTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
@@ -223,8 +225,8 @@ export default function RegisterScreen() {
         <View style={[s.stepIconBg, { backgroundColor: '#FEF3C7' }]}>
           <Ionicons name="people" size={22} color="#F59E0B" />
         </View>
-        <Text style={s.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_4ec6c861" /></Text>
-        <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_0073c7e3" /></Text>
+        <Text style={[s.stepTitle, layout.isTablet && s.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_4ec6c861" /></Text>
+        <Text style={[s.stepSubtitle, layout.isTablet && s.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_0073c7e3" /></Text>
       </View>
 
       <View style={[s.rolesContainer, layout.isTablet && s.rolesContainerTablet]}>
@@ -257,8 +259,8 @@ export default function RegisterScreen() {
       </View>
 
       <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
-        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
-          <Text style={s.ctaText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
+        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.ctaButton, layout.isTablet && s.ctaButtonTablet]}>
+          <Text style={[s.ctaText, layout.isTablet && s.ctaTextTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
@@ -274,8 +276,8 @@ export default function RegisterScreen() {
         <View style={[s.stepIconBg, { backgroundColor: '#ECFDF5' }]}>
           <Ionicons name="lock-closed" size={22} color="#10B981" />
         </View>
-        <Text style={s.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_15dd52f9" /></Text>
-        <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_b28c66ea" /></Text>
+        <Text style={[s.stepTitle, layout.isTablet && s.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_15dd52f9" /></Text>
+        <Text style={[s.stepSubtitle, layout.isTablet && s.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_b28c66ea" /></Text>
       </View>
 
       <View style={s.formSection}>
@@ -291,6 +293,7 @@ export default function RegisterScreen() {
           leftIcon="mail-outline"
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
+          style={layout.isTablet ? s.inputTablet : undefined}
         />
 
         <Input
@@ -302,6 +305,7 @@ export default function RegisterScreen() {
           leftIcon="call-outline"
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
+          style={layout.isTablet ? s.inputTablet : undefined}
         />
 
         <Input
@@ -316,6 +320,7 @@ export default function RegisterScreen() {
           hint={password ? (passwordValidation.isValid ? '✓ Password meets requirements' : passwordValidation.errors[0]) : 'At least 8 characters, 1 uppercase, 1 number'}
           returnKeyType="next"
           onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+          style={layout.isTablet ? s.inputTablet : undefined}
         />
 
         <Input
@@ -330,6 +335,7 @@ export default function RegisterScreen() {
           error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
           returnKeyType="done"
           onSubmitEditing={handleRegister}
+          style={layout.isTablet ? s.inputTablet : undefined}
         />
       </View>
 
@@ -384,14 +390,14 @@ export default function RegisterScreen() {
           colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#10B981', '#059669']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={s.ctaButton}
+          style={[s.ctaButton, layout.isTablet && s.ctaButtonTablet]}
         >
           {isLoading ? (
-            <Text style={s.ctaText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_588edc3c" /></Text>
+            <Text style={[s.ctaText, layout.isTablet && s.ctaTextTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_588edc3c" /></Text>
           ) : (
             <>
               <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={[s.ctaText, { marginLeft: 8 }]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_ddf8711e" /></Text>
+              <Text style={[s.ctaText, layout.isTablet && s.ctaTextTablet, { marginLeft: 8 }]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_ddf8711e" /></Text>
             </>
           )}
         </LinearGradient>
@@ -584,10 +590,18 @@ const s = StyleSheet.create({
     color: Colors.gray[900],
     letterSpacing: -0.5,
   },
+  stepTitleTablet: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
   stepSubtitle: {
     fontSize: 14,
     color: Colors.gray[500],
     marginTop: 4,
+  },
+  stepSubtitleTablet: {
+    fontSize: 16,
+    lineHeight: 22,
   },
 
   // ── Glass Card ────────────────────────────────────────
@@ -618,11 +632,22 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  ctaButtonTablet: {
+    height: 60,
+    borderRadius: 30,
+  },
   ctaText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
     letterSpacing: 0.3,
+  },
+  ctaTextTablet: {
+    fontSize: 17,
+  },
+  inputTablet: {
+    height: 62,
+    fontSize: 17,
   },
 
   // ── Roles ─────────────────────────────────────────────

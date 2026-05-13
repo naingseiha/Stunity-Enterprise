@@ -30,6 +30,8 @@ import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { authApi } from '@/api/client';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 
 type NavigationProp = AuthStackScreenProps<'ParentRegister'>['navigation'];
 
@@ -39,6 +41,7 @@ const BRAND_TEAL_DARK = '#00B8DB';
 export default function ParentRegisterScreen() {
     const { t: autoT } = useTranslation();
     const navigation = useNavigation<NavigationProp>();
+    const layout = useLayoutBreakpoint();
     const { parentRegister, login, isLoading, error, clearError } = useAuthStore();
 
     const [step, setStep] = useState(1);
@@ -179,20 +182,28 @@ export default function ParentRegisterScreen() {
                 {renderWave(1, "M0,224L80,213.3C160,203,320,181,480,181.3C640,181,800,203,960,181.3C1120,160,1280,96,1360,64L1440,32L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z")}
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    layout.isTablet && styles.scrollContentTablet,
+                ]}
+                showsVerticalScrollIndicator={false}
+            >
+                <AuthTabletShell layout={layout} variant="register">
+                <>
                 <Animated.View style={{ opacity: fadeAnim }}>
                     {step === 1 && (
                         <View>
                             <View style={styles.stepHeader}>
                                 <Ionicons name="person-outline" size={32} color={BRAND_TEAL} />
-                                <Text style={styles.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_c8320c84" /></Text>
-                                <Text style={styles.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_cec767ac" /></Text>
+                                <Text style={[styles.stepTitle, layout.isTablet && styles.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_c8320c84" /></Text>
+                                <Text style={[styles.stepSubtitle, layout.isTablet && styles.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_cec767ac" /></Text>
                             </View>
 
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_0396ab9c" /></Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, layout.isTablet && styles.inputTablet]}
                                     placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_cb9c7b3d")}
                                     value={firstName}
                                     onChangeText={setFirstName}
@@ -205,7 +216,7 @@ export default function ParentRegisterScreen() {
                                 <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_4047dee5" /></Text>
                                 <TextInput
                                     ref={lastNameRef}
-                                    style={styles.input}
+                                    style={[styles.input, layout.isTablet && styles.inputTablet]}
                                     placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_6264b3b4")}
                                     value={lastName}
                                     onChangeText={setLastName}
@@ -218,7 +229,7 @@ export default function ParentRegisterScreen() {
                                 <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_59e32b34" /></Text>
                                 <TextInput
                                     ref={phoneRef}
-                                    style={styles.input}
+                                    style={[styles.input, layout.isTablet && styles.inputTablet]}
                                     placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_a08978b7")}
                                     value={phone}
                                     onChangeText={setPhone}
@@ -229,8 +240,8 @@ export default function ParentRegisterScreen() {
                             </View>
 
                             <TouchableOpacity onPress={handleNext} style={styles.primaryButton}>
-                                <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={styles.buttonGradient}>
-                                    <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_005de1f7" /></Text>
+                                <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={[styles.buttonGradient, layout.isTablet && styles.buttonGradientTablet]}>
+                                    <Text style={[styles.buttonText, layout.isTablet && styles.buttonTextTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_005de1f7" /></Text>
                                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -241,15 +252,15 @@ export default function ParentRegisterScreen() {
                         <View>
                             <View style={styles.stepHeader}>
                                 <Ionicons name="lock-closed-outline" size={32} color={BRAND_TEAL} />
-                                <Text style={styles.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_ea6c4c81" /></Text>
-                                <Text style={styles.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_61cfdc99" /></Text>
+                                <Text style={[styles.stepTitle, layout.isTablet && styles.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_ea6c4c81" /></Text>
+                                <Text style={[styles.stepSubtitle, layout.isTablet && styles.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_61cfdc99" /></Text>
                             </View>
 
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_d883fa67" /></Text>
                                 <TextInput
                                     ref={passwordRef}
-                                    style={styles.input}
+                                    style={[styles.input, layout.isTablet && styles.inputTablet]}
                                     placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_423ec93f")}
                                     value={password}
                                     onChangeText={setPassword}
@@ -263,7 +274,7 @@ export default function ParentRegisterScreen() {
                                 <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_206af880" /></Text>
                                 <TextInput
                                     ref={confirmPasswordRef}
-                                    style={styles.input}
+                                    style={[styles.input, layout.isTablet && styles.inputTablet]}
                                     placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_d69d6fa8")}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
@@ -274,8 +285,8 @@ export default function ParentRegisterScreen() {
                             </View>
 
                             <TouchableOpacity onPress={handleNext} style={styles.primaryButton}>
-                                <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={styles.buttonGradient}>
-                                    <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_005de1f7" /></Text>
+                                <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={[styles.buttonGradient, layout.isTablet && styles.buttonGradientTablet]}>
+                                    <Text style={[styles.buttonText, layout.isTablet && styles.buttonTextTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_005de1f7" /></Text>
                                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -288,15 +299,15 @@ export default function ParentRegisterScreen() {
                                 <View style={styles.stepIconWrap}>
                                     <Ionicons name="link-outline" size={32} color={BRAND_TEAL} />
                                 </View>
-                                <Text style={styles.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_6e82593f" /></Text>
-                                <Text style={styles.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_1176abbb" /></Text>
+                                <Text style={[styles.stepTitle, layout.isTablet && styles.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_6e82593f" /></Text>
+                                <Text style={[styles.stepSubtitle, layout.isTablet && styles.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_1176abbb" /></Text>
                             </View>
 
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_f07b6714" /></Text>
                                 <View style={styles.codeRow}>
                                     <TextInput
-                                        style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                                        style={[styles.input, layout.isTablet && styles.inputTablet, { flex: 1, marginBottom: 0 }]}
                                         placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_990b5658")}
                                         value={claimCode}
                                         onChangeText={(t) => { setClaimCode(t.toUpperCase()); setIsCodeValidated(false); }}
@@ -334,8 +345,8 @@ export default function ParentRegisterScreen() {
                                 style={[styles.primaryButton, isLoading && { opacity: 0.7 }]}
                                 disabled={isLoading}
                             >
-                                <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={styles.buttonGradient}>
-                                    <Text style={styles.buttonText}>{isLoading ? 'Creating Account...' : 'Complete Registration'}</Text>
+                                <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={[styles.buttonGradient, layout.isTablet && styles.buttonGradientTablet]}>
+                                    <Text style={[styles.buttonText, layout.isTablet && styles.buttonTextTablet]}>{isLoading ? 'Creating Account...' : 'Complete Registration'}</Text>
                                     {!isLoading && <Ionicons name="checkmark" size={20} color="#fff" />}
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -353,6 +364,8 @@ export default function ParentRegisterScreen() {
                 >
                     <Text style={styles.footerText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_18a803dd" /> <Text style={styles.footerLink}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_c932d8fb" /></Text></Text>
                 </TouchableOpacity>
+                </>
+                </AuthTabletShell>
             </ScrollView>
         </View>
     );
@@ -402,6 +415,12 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 40,
     },
+    scrollContentTablet: {
+        flexGrow: 1,
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        paddingBottom: 48,
+    },
     stepHeader: {
         alignItems: 'center',
         marginBottom: 32,
@@ -422,10 +441,18 @@ const styles = StyleSheet.create({
         color: Colors.gray[900],
         marginTop: 12,
     },
+    stepTitleTablet: {
+        fontSize: 28,
+        lineHeight: 34,
+    },
     stepSubtitle: {
         fontSize: 14,
         color: Colors.gray[500],
         marginTop: 4,
+    },
+    stepSubtitleTablet: {
+        fontSize: 16,
+        lineHeight: 22,
     },
     inputGroup: {
         marginBottom: 20,
@@ -446,6 +473,12 @@ const styles = StyleSheet.create({
         color: Colors.gray[900],
         borderWidth: 1,
         borderColor: '#E2E8F0',
+    },
+    inputTablet: {
+        height: 62,
+        borderRadius: 31,
+        paddingHorizontal: 26,
+        fontSize: 17,
     },
     codeRow: {
         flexDirection: 'row',
@@ -481,10 +514,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 10,
     },
+    buttonGradientTablet: {
+        height: 64,
+    },
     buttonText: {
         fontSize: 16,
         fontWeight: '700',
         color: '#fff',
+    },
+    buttonTextTablet: {
+        fontSize: 17,
     },
     studentCard: {
         flexDirection: 'row',

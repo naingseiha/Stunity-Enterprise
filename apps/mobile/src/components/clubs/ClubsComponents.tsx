@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -29,9 +28,9 @@ export const CLUBS_PAGE_SIZE = 20;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const BannerCarousel = React.memo(({ navigation }: any) => {
-  const { width: windowWidth } = useWindowDimensions();
   const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
   
   const banners = [
     { id: '1', title: t('clubs.banner.rankingTitle'), subtitle: t('clubs.banner.rankingSubtitle'), eyebrow: t('clubs.banner.weeklyLeaderboard'), icon: 'star-shooting', colors: ['#09CFF7', '#06A8CC'], route: 'Leaderboard' },
@@ -47,8 +46,13 @@ export const BannerCarousel = React.memo(({ navigation }: any) => {
     }
   };
 
+  const slideWidth = Math.max(containerWidth, 1);
+
   return (
-    <View style={styles.bannerContainer}>
+    <View
+      style={styles.bannerContainer}
+      onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
+    >
       <ScrollView
         horizontal
         pagingEnabled
@@ -63,7 +67,7 @@ export const BannerCarousel = React.memo(({ navigation }: any) => {
              onPress={() => {
                if(b.route === 'Leaderboard') navigation.navigate('Leaderboard');
              }} 
-             style={{ width: windowWidth, paddingHorizontal: 12 }}
+             style={[styles.bannerSlide, { width: slideWidth }]}
           >
             <LinearGradient
               colors={b.colors as [string, string]}
@@ -76,13 +80,13 @@ export const BannerCarousel = React.memo(({ navigation }: any) => {
               <View style={styles.bannerDecorCircle3} />
               <View style={styles.bannerLeft}>
                 <View style={styles.bannerIconWrapper}>
-                  <MaterialCommunityIcons name={b.icon as any} size={42} color="#FFFFFF" />
+                  <MaterialCommunityIcons name={b.icon as any} size={34} color="#FFFFFF" />
                 </View>
               </View>
               <View style={styles.bannerRight}>
                 <Text style={styles.bannerEyebrow}>{b.eyebrow}</Text>
-                <Text style={styles.bannerTitle}>{b.title}</Text>
-                <Text style={styles.bannerSubtitle}>{b.subtitle}</Text>
+                <Text style={styles.bannerTitle} numberOfLines={2}>{b.title}</Text>
+                <Text style={styles.bannerSubtitle} numberOfLines={2}>{b.subtitle}</Text>
               </View>
               <View style={styles.bannerAction}>
                 <Ionicons name="arrow-forward" size={18} color={b.colors[1]} />
@@ -125,91 +129,105 @@ export const ShortcutItem = React.memo(({ s, isActive, onPress }: any) => {
 
 const styles = StyleSheet.create({
   bannerContainer: {
-    height: 160,
-    marginBottom: 20,
+    height: 178,
+    marginBottom: 18,
+    width: '100%',
+  },
+  bannerSlide: {
+    paddingHorizontal: 12,
   },
   bannerGradient: {
-    height: 120,
-    borderRadius: 24,
+    height: 136,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   bannerDecorCircle1: {
     position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -48,
+    right: -34,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
   },
   bannerDecorCircle2: {
     position: 'absolute',
-    bottom: -30,
-    left: 40,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    bottom: -50,
+    left: 70,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
   },
   bannerDecorCircle3: {
     position: 'absolute',
-    top: 10,
-    left: -10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  bannerLeft: {
-    marginRight: 16,
-  },
-  bannerIconWrapper: {
+    top: 18,
+    left: -18,
     width: 64,
     height: 64,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+  },
+  bannerLeft: {
+    marginRight: 14,
+  },
+  bannerIconWrapper: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   bannerRight: {
     flex: 1,
+    minWidth: 0,
   },
   bannerEyebrow: {
     fontSize: 10,
     fontWeight: '900',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.78)',
     letterSpacing: 1,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   bannerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 19,
+    lineHeight: 23,
+    fontWeight: '900',
     color: '#FFFFFF',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   bannerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600',
+    fontSize: 13,
+    lineHeight: 17,
+    color: 'rgba(255, 255, 255, 0.86)',
+    fontWeight: '700',
   },
   bannerAction: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.96)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 10,
   },
   paginationRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginTop: 12,
+    marginTop: 10,
   },
   dot: {
     width: 6,

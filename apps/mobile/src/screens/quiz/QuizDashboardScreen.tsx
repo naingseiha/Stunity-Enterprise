@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, StatusBar, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, StatusBar, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,11 +19,16 @@ import {
     CategoryGrid,
     RecommendedQuizzesSection,
 } from '@/components/quiz/QuizDashboardComponents';
+import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 
 const BACKGROUND_COLOR = '#0F172A';
 
 export default function QuizDashboardScreen() {
     const navigation = useNavigation<any>();
+    const layout = useLayoutBreakpoint();
+    const { width, height } = useWindowDimensions();
+    const isThreeColumnTablet = layout.isTablet && width > height && width >= 1180;
+    const isPortraitTablet = layout.isTablet && height >= width && width >= 820;
     const { user } = useAuthStore();
 
     const [refreshing, setRefreshing] = useState(false);
@@ -118,57 +123,129 @@ export default function QuizDashboardScreen() {
             <SafeAreaView edges={['top']} style={styles.safeArea}>
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        layout.isTablet && styles.scrollContentTablet,
+                    ]}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A78BFA" />
                     }
                 >
-                    {/* 1. Header */}
-                    <QuizHeader points={userStats.points} />
-
-                    {/* 2. Streak Card */}
-                    <StreakCard streak={userStats.streak} longestStreak={userStats.longestStreak} />
-
-                    {/* 3. Quick Stats */}
-                    <QuickStatsRow
-                        quizzesTaken={userStats.quizzesTaken}
-                        winRate={userStats.winRate}
-                        bestStreak={userStats.longestStreak}
-                    />
-
-                    {/* 4. King of the Quiz Banner */}
-                    <KingBanner
-                        onAvatarsPress={() => navigation.navigate('Leaderboard')}
-                        liveCount={238}
-                        topPlayer={topPlayer}
-                    />
-
-                    {/* 5. Main Action Buttons */}
-                    <ActionGrid
-                        onJoin={() => navigation.navigate('LiveQuizJoin')}
-                        onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
-                        onManage={() => navigation.navigate('QuizStudio')}
-                        onLeaderboard={() => navigation.navigate('Leaderboard')}
-                        onAchievements={() => navigation.navigate('Achievements')}
-                    />
-
-                    {/* 6. Daily Quiz Call to Action */}
-                    <DailyQuizCard
-                        onPress={handleDailyQuizPress}
-                        dailyQuiz={dailyQuiz}
-                    />
-
-                    {/* 7. Recommended Quizzes */}
-                    {recommendedQuizzes.length > 0 && (
-                        <RecommendedQuizzesSection
-                            quizzes={recommendedQuizzes}
-                            onQuizPress={handleQuizPress}
-                            onSeeAll={() => navigation.navigate('BrowseQuizzes')}
-                        />
+                    {isThreeColumnTablet ? (
+                        <View style={styles.threeColumnLayout}>
+                            <View style={styles.leftColumn}>
+                                <QuizHeader points={userStats.points} />
+                                <StreakCard streak={userStats.streak} longestStreak={userStats.longestStreak} />
+                                <QuickStatsRow
+                                    quizzesTaken={userStats.quizzesTaken}
+                                    winRate={userStats.winRate}
+                                    bestStreak={userStats.longestStreak}
+                                />
+                            </View>
+                            <View style={styles.centerColumn}>
+                                <KingBanner
+                                    onAvatarsPress={() => navigation.navigate('Leaderboard')}
+                                    liveCount={238}
+                                    topPlayer={topPlayer}
+                                />
+                                <ActionGrid
+                                    onJoin={() => navigation.navigate('LiveQuizJoin')}
+                                    onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
+                                    onManage={() => navigation.navigate('QuizStudio')}
+                                    onLeaderboard={() => navigation.navigate('Leaderboard')}
+                                    onAchievements={() => navigation.navigate('Achievements')}
+                                />
+                                <DailyQuizCard
+                                    onPress={handleDailyQuizPress}
+                                    dailyQuiz={dailyQuiz}
+                                />
+                                {recommendedQuizzes.length > 0 && (
+                                    <RecommendedQuizzesSection
+                                        quizzes={recommendedQuizzes}
+                                        onQuizPress={handleQuizPress}
+                                        onSeeAll={() => navigation.navigate('BrowseQuizzes')}
+                                    />
+                                )}
+                            </View>
+                            <View style={styles.rightColumn}>
+                                <CategoryGrid onCategoryPress={handleCategoryPress} />
+                            </View>
+                        </View>
+                    ) : isPortraitTablet ? (
+                        <>
+                            <QuizHeader points={userStats.points} />
+                            <View style={styles.portraitTabletLayout}>
+                                <View style={styles.portraitMainColumn}>
+                                    <KingBanner
+                                        onAvatarsPress={() => navigation.navigate('Leaderboard')}
+                                        liveCount={238}
+                                        topPlayer={topPlayer}
+                                    />
+                                    <ActionGrid
+                                        onJoin={() => navigation.navigate('LiveQuizJoin')}
+                                        onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
+                                        onManage={() => navigation.navigate('QuizStudio')}
+                                        onLeaderboard={() => navigation.navigate('Leaderboard')}
+                                        onAchievements={() => navigation.navigate('Achievements')}
+                                    />
+                                    <DailyQuizCard
+                                        onPress={handleDailyQuizPress}
+                                        dailyQuiz={dailyQuiz}
+                                    />
+                                    {recommendedQuizzes.length > 0 && (
+                                        <RecommendedQuizzesSection
+                                            quizzes={recommendedQuizzes}
+                                            onQuizPress={handleQuizPress}
+                                            onSeeAll={() => navigation.navigate('BrowseQuizzes')}
+                                        />
+                                    )}
+                                </View>
+                                <View style={styles.portraitSideColumn}>
+                                    <StreakCard streak={userStats.streak} longestStreak={userStats.longestStreak} />
+                                    <QuickStatsRow
+                                        quizzesTaken={userStats.quizzesTaken}
+                                        winRate={userStats.winRate}
+                                        bestStreak={userStats.longestStreak}
+                                    />
+                                    <CategoryGrid onCategoryPress={handleCategoryPress} variant="rail" />
+                                </View>
+                            </View>
+                        </>
+                    ) : (
+                        <>
+                            <QuizHeader points={userStats.points} />
+                            <StreakCard streak={userStats.streak} longestStreak={userStats.longestStreak} />
+                            <QuickStatsRow
+                                quizzesTaken={userStats.quizzesTaken}
+                                winRate={userStats.winRate}
+                                bestStreak={userStats.longestStreak}
+                            />
+                            <KingBanner
+                                onAvatarsPress={() => navigation.navigate('Leaderboard')}
+                                liveCount={238}
+                                topPlayer={topPlayer}
+                            />
+                            <ActionGrid
+                                onJoin={() => navigation.navigate('LiveQuizJoin')}
+                                onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
+                                onManage={() => navigation.navigate('QuizStudio')}
+                                onLeaderboard={() => navigation.navigate('Leaderboard')}
+                                onAchievements={() => navigation.navigate('Achievements')}
+                            />
+                            <DailyQuizCard
+                                onPress={handleDailyQuizPress}
+                                dailyQuiz={dailyQuiz}
+                            />
+                            {recommendedQuizzes.length > 0 && (
+                                <RecommendedQuizzesSection
+                                    quizzes={recommendedQuizzes}
+                                    onQuizPress={handleQuizPress}
+                                    onSeeAll={() => navigation.navigate('BrowseQuizzes')}
+                                />
+                            )}
+                            <CategoryGrid onCategoryPress={handleCategoryPress} />
+                        </>
                     )}
-
-                    {/* 8. Browse Categories */}
-                    <CategoryGrid onCategoryPress={handleCategoryPress} />
                 </ScrollView>
             </SafeAreaView>
         </View>
@@ -185,5 +262,39 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 40,
+    },
+    scrollContentTablet: {
+        width: '100%',
+        maxWidth: 1180,
+        alignSelf: 'center',
+        paddingHorizontal: 24,
+        paddingBottom: 72,
+    },
+    portraitTabletLayout: {
+        flexDirection: 'row',
+        gap: 14,
+        alignItems: 'flex-start',
+    },
+    portraitMainColumn: {
+        flex: 1,
+        minWidth: 0,
+    },
+    portraitSideColumn: {
+        width: 300,
+    },
+    threeColumnLayout: {
+        flexDirection: 'row',
+        gap: 16,
+        alignItems: 'flex-start',
+    },
+    leftColumn: {
+        width: 300,
+    },
+    centerColumn: {
+        flex: 1,
+        minWidth: 0,
+    },
+    rightColumn: {
+        width: 300,
     },
 });
