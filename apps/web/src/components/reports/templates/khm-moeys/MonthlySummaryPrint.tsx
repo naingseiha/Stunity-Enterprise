@@ -421,6 +421,110 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
           height: 40px;
         }
 
+        /* Modern Analytics Cards */
+        .khmer-monthly-analytics-container {
+          margin-top: 15px;
+          margin-bottom: 20px;
+          page-break-inside: avoid;
+        }
+
+        .khmer-analytics-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+
+        .khmer-analytics-card {
+          border: 1.5px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 8px 12px;
+          text-align: center;
+          background: #f8fafc;
+        }
+
+        .khmer-analytics-card.total { border-left: 4px solid #3b82f6; background: #eff6ff; }
+        .khmer-analytics-card.passed { border-left: 4px solid #10b981; background: #ecfdf5; }
+        .khmer-analytics-card.failed { border-left: 4px solid #ef4444; background: #fef2f2; }
+
+        .card-header {
+          font-family: var(--khmer-report-moul);
+          font-size: 9px;
+          color: #64748b;
+          margin-bottom: 4px;
+        }
+
+        .card-value {
+          font-size: 20px;
+          font-weight: 800;
+          color: #1e293b;
+          line-height: 1;
+        }
+
+        .card-footer {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 4px;
+          font-size: 9px;
+          color: #475569;
+          font-weight: 600;
+        }
+
+        .khmer-analytics-title {
+          font-family: var(--khmer-report-moul);
+          font-size: 10px;
+          margin-bottom: 8px;
+          color: #1e293b;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 4px;
+        }
+
+        .khmer-grade-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 8px;
+        }
+
+        .khmer-grade-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 6px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: white;
+        }
+
+        .grade-letter {
+          font-size: 20px;
+          font-weight: 900;
+          line-height: 1;
+        }
+
+        .grade-info {
+          text-align: left;
+        }
+
+        .grade-count {
+          font-size: 11px;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        .grade-female {
+          font-size: 8px;
+          color: #64748b;
+          white-space: nowrap;
+        }
+
+        .grade-a { border-top: 3px solid #ca8a04; }
+        .grade-b { border-top: 3px solid #2563eb; }
+        .grade-c { border-top: 3px solid #16a34a; }
+        .grade-d { border-top: 3px solid #ea580c; }
+        .grade-e { border-top: 3px solid #64748b; }
+        .grade-f { border-top: 3px solid #dc2626; }
+
         @media print {
           @page {
             size: A4 portrait;
@@ -609,34 +713,62 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
             </table>
 
             {isLastPage && (
-              <>
-                <div className="khmer-monthly-stats">
-                  <div className="khmer-monthly-stats-row">
-                    <div>
-                      <span className="khmer-monthly-stats-label">សិស្សសរុប៖ </span>
-                      <span className="khmer-monthly-count-blue">{report.statistics.totalStudents} នាក់</span>
-                      <span> / </span>
-                      <span className="khmer-monthly-stats-label">ស្រី៖ </span>
-                      <span className="khmer-monthly-count-pink">{report.statistics.femaleStudents} នាក់</span>
+              <div className="khmer-monthly-analytics-container">
+                {/* 1. General Summary Cards */}
+                <div className="khmer-analytics-grid">
+                  <div className="khmer-analytics-card total">
+                    <div className="card-header">សិស្សសរុប (Total)</div>
+                    <div className="card-value">{report.statistics.totalStudents}</div>
+                    <div className="card-footer">
+                      <span>ស្រី៖ {report.statistics.femaleStudents}</span>
+                      <span>ប្រុស៖ {report.statistics.totalStudents - report.statistics.femaleStudents}</span>
                     </div>
-
-                    <div>
-                      <span className="khmer-monthly-stats-label">ជាប់៖ </span>
-                      <span className="khmer-monthly-count-green">{report.statistics.passedStudents} នាក់</span>
-                      <span> / </span>
-                      <span className="khmer-monthly-stats-label">ស្រី៖ </span>
-                      <span className="khmer-monthly-count-pink">{report.statistics.passedFemaleStudents} នាក់</span>
+                  </div>
+                  <div className="khmer-analytics-card passed">
+                    <div className="card-header">ជាប់ (Passed)</div>
+                    <div className="card-value">{report.statistics.passedStudents}</div>
+                    <div className="card-footer">
+                      <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
+                      <span>ប្រុស៖ {report.statistics.passedStudents - report.statistics.passedFemaleStudents}</span>
                     </div>
-
-                    <div>
-                      <span className="khmer-monthly-stats-label">ធ្លាក់៖ </span>
-                      <span className="khmer-monthly-count-orange">{report.statistics.failedStudents} នាក់</span>
-                      <span> / </span>
-                      <span className="khmer-monthly-stats-label">ស្រី៖ </span>
-                      <span className="khmer-monthly-count-pink">{report.statistics.failedFemaleStudents} នាក់</span>
+                  </div>
+                  <div className="khmer-analytics-card failed">
+                    <div className="card-header">ធ្លាក់ (Failed)</div>
+                    <div className="card-value">{report.statistics.failedStudents}</div>
+                    <div className="card-footer">
+                      <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
+                      <span>ប្រុស៖ {report.statistics.failedStudents - report.statistics.failedFemaleStudents}</span>
                     </div>
                   </div>
                 </div>
+
+                {/* 2. Grade Distribution Cards */}
+                <div className="khmer-analytics-title">កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
+                <div className="khmer-grade-grid">
+                  {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
+                    const count = report.students.filter(s => s.gradeLevel === grade).length;
+                    const femaleCount = report.students.filter(s => s.gradeLevel === grade && (s.gender === 'F' || s.gender === 'ស្រី' || s.gender === 'Female')).length;
+                    const colorMap = {
+                      A: '#ca8a04', // Yellow/Gold
+                      B: '#2563eb', // Blue
+                      C: '#16a34a', // Green
+                      D: '#ea580c', // Orange
+                      E: '#64748b', // Slate
+                      F: '#dc2626'  // Red
+                    };
+                    return (
+                      <div key={grade} className={`khmer-grade-card grade-${grade.toLowerCase()}`}>
+                        <div className="grade-letter" style={{ color: colorMap[grade] }}>{grade}</div>
+                        <div className="grade-info">
+                          <div className="grade-count">{count} <span className="unit text-xs">នាក់</span></div>
+                          <div className="grade-female">ស្រី៖ {femaleCount}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
                 <div className="khmer-monthly-signatures">
                   <div>
