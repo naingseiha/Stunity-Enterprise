@@ -239,17 +239,61 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                       A: '#ca8a04', B: '#2563eb', C: '#16a34a', D: '#ea580c', E: '#64748b', F: '#dc2626'
                     };
                     return (
-                      <div key={grade} style={{ border: '1px solid #e2e8f0', borderRadius: 6, padding: 6, display: 'flex', alignItems: 'center', gap: 8, background: 'white', borderTop: `3px solid ${borderColors[grade]}` }}>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: colorMap[grade], lineHeight: 1 }}>{grade}</div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b' }}>{count} <span style={{ fontSize: 8, fontWeight: 400 }}>នាក់</span></div>
-                          <div style={{ fontSize: 8, color: '#64748b', whiteSpace: 'nowrap' }}>ស្រី៖ {femaleCount}</div>
-                        </div>
+              <>
+                <div style={{ marginTop: 15, marginBottom: 20 }}>
+                  {/* 1. General Summary Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 15 }}>
+                    <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#eff6ff', borderLeft: '4px solid #3b82f6' }}>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>សិស្សសរុប (Total)</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.totalStudents}</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
+                        <span>ស្រី៖ {report.statistics.femaleStudents}</span>
+                        <span>ប្រុស៖ {report.statistics.totalStudents - report.statistics.femaleStudents}</span>
                       </div>
-                    );
-                  })}
+                    </div>
+                    <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#ecfdf5', borderLeft: '4px solid #10b981' }}>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ជាប់ (Passed)</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.passedStudents}</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
+                        <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
+                        <span>ប្រុស៖ {report.statistics.passedStudents - report.statistics.passedFemaleStudents}</span>
+                      </div>
+                    </div>
+                    <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#fef2f2', borderLeft: '4px solid #ef4444' }}>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ធ្លាក់ (Failed)</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.failedStudents}</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
+                        <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
+                        <span>ប្រុស៖ {report.statistics.failedStudents - report.statistics.failedFemaleStudents}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Grade Distribution Cards */}
+                  <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
+                    {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
+                      const count = report.students.filter(s => s.gradeLevel === grade).length;
+                      const femaleCount = report.students.filter(s => s.gradeLevel === grade && (s.gender === 'F' || s.gender === 'ស្រី' || s.gender === 'Female')).length;
+                      const colorMap = {
+                        A: '#ca8a04', B: '#2563eb', C: '#16a34a', D: '#ea580c', E: '#64748b', F: '#dc2626'
+                      };
+                      const borderColors = {
+                        A: '#ca8a04', B: '#2563eb', C: '#16a34a', D: '#ea580c', E: '#64748b', F: '#dc2626'
+                      };
+                      return (
+                        <div key={grade} style={{ border: '1px solid #e2e8f0', borderRadius: 6, padding: 6, display: 'flex', alignItems: 'center', gap: 8, background: 'white', borderTop: `3px solid ${borderColors[grade]}` }}>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: colorMap[grade], lineHeight: 1 }}>{grade}</div>
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b' }}>{count} <span style={{ fontSize: 8, fontWeight: 400 }}>នាក់</span></div>
+                            <div style={{ fontSize: 8, color: '#64748b', whiteSpace: 'nowrap' }}>ស្រី៖ {femaleCount}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 14, textAlign: 'center' }}>
                   <div>
                     <p style={{ margin: '0 0 4px' }}>{signatureDate}</p>
@@ -263,7 +307,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                     <p style={{ margin: 0, color: '#2563eb', fontWeight: 700 }}>{teacherName}</p>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         );

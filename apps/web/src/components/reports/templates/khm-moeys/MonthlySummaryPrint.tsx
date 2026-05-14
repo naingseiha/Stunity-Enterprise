@@ -713,61 +713,58 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
             </table>
 
             {isLastPage && (
-              <div className="khmer-monthly-analytics-container">
-                {/* 1. General Summary Cards */}
-                <div className="khmer-analytics-grid">
-                  <div className="khmer-analytics-card total">
-                    <div className="card-header">សិស្សសរុប (Total)</div>
-                    <div className="card-value">{report.statistics.totalStudents}</div>
-                    <div className="card-footer">
-                      <span>ស្រី៖ {report.statistics.femaleStudents}</span>
-                      <span>ប្រុស៖ {report.statistics.totalStudents - report.statistics.femaleStudents}</span>
+              <>
+                <div className="khmer-monthly-analytics-container">
+                  {/* 1. General Summary Cards */}
+                  <div className="khmer-analytics-grid">
+                    <div className="khmer-analytics-card total">
+                      <div className="card-header">សិស្សសរុប (Total)</div>
+                      <div className="card-value">{report.statistics.totalStudents}</div>
+                      <div className="card-footer">
+                        <span>ស្រី៖ {report.statistics.femaleStudents}</span>
+                        <span>ប្រុស៖ {report.statistics.totalStudents - report.statistics.femaleStudents}</span>
+                      </div>
+                    </div>
+                    <div className="khmer-analytics-card passed">
+                      <div className="card-header">ជាប់ (Passed)</div>
+                      <div className="card-value">{report.statistics.passedStudents}</div>
+                      <div className="card-footer">
+                        <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
+                        <span>ប្រុស៖ {report.statistics.passedStudents - report.statistics.passedFemaleStudents}</span>
+                      </div>
+                    </div>
+                    <div className="khmer-analytics-card failed">
+                      <div className="card-header">ធ្លាក់ (Failed)</div>
+                      <div className="card-value">{report.statistics.failedStudents}</div>
+                      <div className="card-footer">
+                        <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
+                        <span>ប្រុស៖ {report.statistics.failedStudents - report.statistics.failedFemaleStudents}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="khmer-analytics-card passed">
-                    <div className="card-header">ជាប់ (Passed)</div>
-                    <div className="card-value">{report.statistics.passedStudents}</div>
-                    <div className="card-footer">
-                      <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
-                      <span>ប្រុស៖ {report.statistics.passedStudents - report.statistics.passedFemaleStudents}</span>
-                    </div>
-                  </div>
-                  <div className="khmer-analytics-card failed">
-                    <div className="card-header">ធ្លាក់ (Failed)</div>
-                    <div className="card-value">{report.statistics.failedStudents}</div>
-                    <div className="card-footer">
-                      <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
-                      <span>ប្រុស៖ {report.statistics.failedStudents - report.statistics.failedFemaleStudents}</span>
-                    </div>
+
+                  {/* 2. Grade Distribution Cards */}
+                  <div className="khmer-analytics-title">កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
+                  <div className="khmer-grade-grid">
+                    {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
+                      const count = report.students.filter(s => s.gradeLevel === grade).length;
+                      const femaleCount = report.students.filter(s => s.gradeLevel === grade && (s.gender === 'F' || s.gender === 'ស្រី' || s.gender === 'Female')).length;
+                      const colorMap = {
+                        A: '#ca8a04', B: '#2563eb', C: '#16a34a', D: '#ea580c', E: '#64748b', F: '#dc2626'
+                      };
+                      return (
+                        <div key={grade} className={`khmer-grade-card grade-${grade.toLowerCase()}`}>
+                          <div className="grade-letter" style={{ color: colorMap[grade] }}>{grade}</div>
+                          <div className="grade-info">
+                            <div className="grade-count">{count} <span className="unit text-xs">នាក់</span></div>
+                            <div className="grade-female">ស្រី៖ {femaleCount}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* 2. Grade Distribution Cards */}
-                <div className="khmer-analytics-title">កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
-                <div className="khmer-grade-grid">
-                  {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
-                    const count = report.students.filter(s => s.gradeLevel === grade).length;
-                    const femaleCount = report.students.filter(s => s.gradeLevel === grade && (s.gender === 'F' || s.gender === 'ស្រី' || s.gender === 'Female')).length;
-                    const colorMap = {
-                      A: '#ca8a04', // Yellow/Gold
-                      B: '#2563eb', // Blue
-                      C: '#16a34a', // Green
-                      D: '#ea580c', // Orange
-                      E: '#64748b', // Slate
-                      F: '#dc2626'  // Red
-                    };
-                    return (
-                      <div key={grade} className={`khmer-grade-card grade-${grade.toLowerCase()}`}>
-                        <div className="grade-letter" style={{ color: colorMap[grade] }}>{grade}</div>
-                        <div className="grade-info">
-                          <div className="grade-count">{count} <span className="unit text-xs">នាក់</span></div>
-                          <div className="grade-female">ស្រី៖ {femaleCount}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
                 <div className="khmer-monthly-signatures">
                   <div>
                     <p>{signatureDate}</p>
@@ -782,7 +779,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                     <p className="signature-name">{teacherName}</p>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         );
