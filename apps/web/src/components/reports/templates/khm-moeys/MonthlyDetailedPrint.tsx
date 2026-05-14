@@ -240,7 +240,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                       <td className="nm">{student.studentName}</td>
                       {isGradeWide && settings.showClassName && <td>{student.className}</td>}
                       {columnSubjects.map((subject) => (
-                        <td key={subject.id}>{formatScore(student.grades[subject.id], 1)}</td>
+                        <td key={subject.id}>{formatScore(student.grades[subject.id], 0)}</td>
                       ))}
                       {settings.showAttendance && (
                         <>

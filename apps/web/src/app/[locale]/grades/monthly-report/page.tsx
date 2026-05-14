@@ -217,6 +217,12 @@ export default function KhmerMonthlyReportPage() {
     if (reportFormat === 'semester-1') {
       setSelectedMonthNumber(2);
     }
+    
+    // Summary hides subjects, Detailed shows them
+    setSettings(prev => ({
+      ...prev,
+      showSubjects: reportFormat === 'detailed'
+    }));
   }, [reportFormat]);
 
   useEffect(() => {

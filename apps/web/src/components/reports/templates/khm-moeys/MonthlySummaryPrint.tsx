@@ -602,7 +602,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                       )}
                       {settings.showSubjects &&
                         columnSubjects.map((subject) => (
-                        <td key={subject.id}>{formatScore(student.grades[subject.id], 1)}</td>
+                        <td key={subject.id}>{formatScore(student.grades[subject.id], 0)}</td>
                       ))}
                       {settings.showTotal && <td className="summary-cell"><strong>{formatScore(student.totalScore, 0)}</strong></td>}
                       {settings.showAverage && <td className="summary-cell"><strong>{formatScore(student.average, 2)}</strong></td>}
