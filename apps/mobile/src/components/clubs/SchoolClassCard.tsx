@@ -3,48 +3,61 @@ import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   Pressable,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Club } from '@/api/clubs';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
+import type { MyClassSummary } from '@/api/classes';
+import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const CLUB_TYPE_META: Record<
-  Club['type'],
-  { labelKey: string; icon: keyof typeof Ionicons.glyphMap; accent: string; soft: string }
-> = {
-  CASUAL_STUDY_GROUP: { labelKey: 'clubs.types.studyGroup', icon: 'people',  accent: '#8B5CF6', soft: '#F3E8FF' }, // Purple
-  STRUCTURED_CLASS:   { labelKey: 'clubs.types.class',      icon: 'school',  accent: '#06A8CC', soft: '#E0F9FD' }, // Brand Teal
-  PROJECT_GROUP:      { labelKey: 'clubs.types.project',    icon: 'rocket',  accent: '#F59E0B', soft: '#FEF3C7' }, // Amber
-  EXAM_PREP:          { labelKey: 'clubs.types.examPrep',   icon: 'book',    accent: '#6366F1', soft: '#E0E7FF' }, // Indigo
+const CLASS_THEMES = [
+  { accent: '#06A8CC', soft: '#E0F9FD', icon: 'school-outline'      as const }, // Brand Teal
+  { accent: '#6366F1', soft: '#EEF2FF', icon: 'library-outline'     as const }, // Indigo
+  { accent: '#F59E0B', soft: '#FEF3C7', icon: 'ribbon-outline'      as const }, // Amber
+  { accent: '#EC4899', soft: '#FDF2F8', icon: 'star-outline'        as const }, // Pink
+  { accent: '#10B981', soft: '#D1FAE5', icon: 'leaf-outline'        as const }, // Emerald
+  { accent: '#8B5CF6', soft: '#F3E8FF', icon: 'extension-puzzle-outline' as const }, // Violet
+];
+
+const formatTeacherDisplayName = (
+  teacher?: MyClassSummary['homeroomTeacher'] | null,
+  preferEnglish = false
+): string => {
+  if (!teacher) return '';
+  const nativeName = [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim();
+  const englishName = [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ').trim();
+  return (preferEnglish ? englishName || nativeName : nativeName || englishName) || '';
 };
 
-interface ClubCardProps {
-  item: Club;
-  isJoined: boolean;
-  isBusy: boolean;
-  onPress: (club: Club) => void;
-  onToggleMembership: (clubId: string) => void;
+interface SchoolClassCardProps {
+  item: MyClassSummary;
+  index: number;
+  onPress: (item: MyClassSummary) => void;
+  orderNumber?: number;
 }
 
-export const ClubCard = React.memo(function ClubCard({
+export const SchoolClassCard = React.memo(function SchoolClassCard({
   item,
-  isJoined,
-  isBusy,
+  index,
   onPress,
-  onToggleMembership,
-}: ClubCardProps) {
+  orderNumber,
+}: SchoolClassCardProps) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const isKhmer = i18n.language?.startsWith('km');
-  const typeMeta = CLUB_TYPE_META[item.type] || CLUB_TYPE_META.CASUAL_STUDY_GROUP;
-  const memberCount = item.memberCount || 0;
+  const theme = CLASS_THEMES[index % CLASS_THEMES.length];
+  
+  const teacherName = item.homeroomTeacher
+    ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)
+    : t('classes.directory.notAssigned');
+    
+  const { male: maleCount, female: femaleCount } = getClassGenderCounts(item);
+  const studentTotal = getSafeStudentCount(item);
   
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -52,8 +65,8 @@ export const ClubCard = React.memo(function ClubCard({
   const handlePressIn = () => { scale.value = withSpring(0.97, { damping: 15 }); };
   const handlePressOut = () => { scale.value = withSpring(1, { damping: 15 }); };
 
-  // Calculate progress based on member count (clamped for visual purposes)
-  const memberProgress = Math.min(100, Math.max(15, (memberCount / 20) * 100));
+  // Mock momentum/progress for visual parity
+  const classMomentum = Math.min(100, Math.max(15, (studentTotal / 50) * 100));
 
   return (
     <AnimatedPressable
@@ -68,82 +81,67 @@ export const ClubCard = React.memo(function ClubCard({
       >
         {/* Header Section */}
         <View style={styles.header}>
-          <View style={[styles.iconBox, { backgroundColor: isDark ? `${typeMeta.accent}25` : typeMeta.soft }]}>
-            <Ionicons name={typeMeta.icon} size={20} color={typeMeta.accent} />
+          <View style={[styles.iconBox, { backgroundColor: isDark ? `${theme.accent}25` : theme.soft }]}>
+            <Ionicons name="school" size={20} color={theme.accent} />
           </View>
           
           <View style={styles.titleWrap}>
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-              {item.description || t(typeMeta.labelKey)}
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              {t('classes.directory.gradeShort', { grade: item.grade })} • {item.section || 'A'}
             </Text>
           </View>
           
-          <View style={[styles.scorePill, { backgroundColor: typeMeta.accent }]}>
-            <Text style={styles.scoreValue}>{memberCount}</Text>
-            <Text style={styles.scoreLabel}>{isKhmer ? 'សមាជិក' : 'members'}</Text>
+          <View style={[styles.scorePill, { backgroundColor: theme.accent }]}>
+            <Text style={styles.scoreValue}>{studentTotal}</Text>
+            <Text style={styles.scoreLabel}>{isKhmer ? 'សិស្ស' : 'students'}</Text>
           </View>
         </View>
 
         {/* Progress Bar Section */}
         <View style={[styles.momentumTrack, { backgroundColor: isDark ? colors.border : '#F8FAFC' }]}>
           <LinearGradient
-            colors={[typeMeta.accent, `${typeMeta.accent}CC`]}
+            colors={[theme.accent, `${theme.accent}CC`]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={[styles.momentumFill, { width: `${memberProgress}%` }]}
+            style={[styles.momentumFill, { width: `${classMomentum}%` }]}
           />
         </View>
 
         {/* Stats Row Section */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{memberCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'សមាជិក' : 'MEMBERS'}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{maleCount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ប្រុស' : 'MALE'}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ប្រកាស' : 'POSTS'}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{femaleCount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ស្រី' : 'FEMALE'}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {item.mode === 'PUBLIC' ? '0' : '1'}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ព្រឹត្តិការណ៍' : 'EVENTS'}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{studentTotal}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'សរុប' : 'TOTAL'}</Text>
           </View>
         </View>
 
         {/* Signal Chips Section */}
         <View style={styles.signalRow}>
-          <View style={[styles.signalChip, { backgroundColor: isDark ? `${typeMeta.accent}15` : `${typeMeta.soft}80` }]}>
-            <Ionicons name="apps" size={13} color={typeMeta.accent} />
-            <Text style={[styles.signalText, { color: typeMeta.accent }]}>
-              {t(typeMeta.labelKey)}
+          <View style={[styles.signalChip, { backgroundColor: isDark ? `${theme.accent}15` : `${theme.soft}80` }]}>
+            <Ionicons name="person" size={13} color={theme.accent} />
+            <Text style={[styles.signalText, { color: theme.accent }]} numberOfLines={1}>
+              {teacherName}
             </Text>
           </View>
-          
-          <Pressable 
-            onPress={() => onToggleMembership(item.id)}
-            disabled={isBusy}
-          >
-            <View style={[
-              styles.signalChip, 
-              { backgroundColor: isJoined ? (isDark ? '#063A2C' : '#ECFDF5') : (isDark ? '#172554' : '#EFF6FF') }
-            ]}>
-              {isBusy ? (
-                <ActivityIndicator size="small" color={isJoined ? '#059669' : '#2563EB'} style={{ width: 13, height: 13 }} />
-              ) : (
-                <Ionicons name={isJoined ? "checkmark-circle" : "add-circle"} size={13} color={isJoined ? "#059669" : "#2563EB"} />
-              )}
-              <Text style={[styles.signalText, { color: isJoined ? '#059669' : '#2563EB' }]}>
-                {isJoined ? (isKhmer ? 'បានចូលរួម' : 'JOINED') : (isKhmer ? 'ចូលរួម' : 'JOIN NOW')}
-              </Text>
-            </View>
-          </Pressable>
+          <View style={[styles.signalChip, { backgroundColor: isDark ? '#063A2C' : '#ECFDF5' }]}>
+            <Ionicons name="checkmark-circle" size={13} color="#059669" />
+            <Text style={[styles.signalText, { color: '#059669' }]}>
+              {isKhmer ? 'សកម្ម' : 'ACTIVE'}
+            </Text>
+          </View>
         </View>
       </LinearGradient>
     </AnimatedPressable>

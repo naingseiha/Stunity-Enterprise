@@ -188,13 +188,9 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         const message =
           `❌ [API] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status || error.code} (Target: ${error.config?.baseURL || 'unknown-base-url'})`;
 
-        // Avoid React Native red "Console Error" screens for expected client errors (4xx),
-        // while still surfacing true server/network failures loudly.
-        if (status && status < 500) {
-          console.warn(message);
-        } else {
-          console.error(message);
-        }
+        // Keep recoverable API failures out of React Native's redbox overlay in dev.
+        // Screens handle rejected requests via local error/empty states.
+        console.warn(message);
       }
 
       // Transform error to consistent format

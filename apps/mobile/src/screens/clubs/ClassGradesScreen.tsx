@@ -766,62 +766,86 @@ export default function ClassGradesScreen() {
 
     return (
       <View style={styles.studentCard}>
-        <View style={styles.studentRankBadge}>
-          <Text style={styles.studentRankText}>{index + 1}</Text>
-        </View>
-        
-        <View style={styles.studentInfo}>
-          {item.photoUrl ? (
-            <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '20' }]}>
-              <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>
-                {item.firstName?.[0] || 'S'}
+        <View style={styles.cardHeader}>
+          <View style={styles.studentInfo}>
+            {item.photoUrl ? (
+              <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '15' }]}>
+                <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>
+                  {item.firstName?.[0] || 'S'}
+                </Text>
+              </View>
+            )}
+            <View style={styles.studentNameContainer}>
+              <Text style={styles.studentName} numberOfLines={1}>
+                {[item.lastName, item.firstName].filter(Boolean).join(' ')}
               </Text>
+              {item.englishFirstName || item.englishLastName ? (
+                <Text style={styles.englishName} numberOfLines={1}>
+                  {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
+                </Text>
+              ) : (
+                <Text style={styles.studentId}>{t('classScreens.grades.idValue', { id: item.studentId || t('classScreens.grades.na') })}</Text>
+              )}
             </View>
-          )}
+          </View>
           
-          <View style={styles.studentNameContainer}>
-            <Text style={styles.studentName} numberOfLines={1}>
-              {[item.lastName, item.firstName].filter(Boolean).join(' ')}
-            </Text>
-            {item.englishFirstName || item.englishLastName ? (
-              <Text style={styles.englishName} numberOfLines={1}>
-                {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
-              </Text>
-            ) : null}
-            <Text style={styles.studentId}>{t('classScreens.grades.idValue', { id: item.studentId || t('classScreens.grades.na') })}</Text>
-          </View>
+          <TouchableOpacity style={styles.detailsBtn} activeOpacity={0.7}>
+            <Text style={styles.detailsBtnText}>{t('common.details')}</Text>
+            <Ionicons name="chevron-forward" size={14} color={COLORS.primaryDark} />
+          </TouchableOpacity>
         </View>
-        
-        <View style={styles.scoreSection}>
-          <View style={[
-            styles.scoreInputWrapper, 
-            isModified && styles.scoreInputWrapperModified,
-            isSaved && styles.scoreInputWrapperSaved
-          ]}>
-            <TextInput
-              style={[
-                styles.scoreInput,
-                isSaved && styles.scoreInputSaved
-              ]}
-              value={currentScore}
-              onChangeText={(val) => handleScoreChange(studentId, val)}
-              keyboardType="decimal-pad"
-              placeholder="-"
-              placeholderTextColor={COLORS.textMuted}
-              maxLength={5}
-              editable={isTeacher && scoreEditingEnabled && !saving && !scoreRowsLoading}
-              selectTextOnFocus
-            />
-            {isSaved && (
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={styles.saveIcon} />
-            )}
-            {isModified && (
-              <View style={styles.modifiedDot} />
-            )}
+
+        <View style={[styles.cardDivider, { backgroundColor: '#F8FAFC' }]} />
+
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#6366F1' }]}>{index + 1}</Text>
+            <Text style={styles.statLabel}>{t('classScreens.grades.rank')}</Text>
           </View>
-          <Text style={styles.maxScore}>/ {maxScore}</Text>
+          
+          <View style={[styles.verticalDivider, { backgroundColor: '#F1F5F9' }]} />
+          
+          <View style={[styles.statItem, { flex: 2 }]}>
+            <View style={styles.scoreInteractionArea}>
+              <View style={[
+                styles.scoreInputWrapper, 
+                isModified && styles.scoreInputWrapperModified,
+                isSaved && styles.scoreInputWrapperSaved
+              ]}>
+                <TextInput
+                  style={[
+                    styles.scoreInput,
+                    isSaved && styles.scoreInputSaved
+                  ]}
+                  value={currentScore}
+                  onChangeText={(val) => handleScoreChange(studentId, val)}
+                  keyboardType="decimal-pad"
+                  placeholder="-"
+                  placeholderTextColor={COLORS.textMuted}
+                  maxLength={5}
+                  editable={isTeacher && scoreEditingEnabled && !saving && !scoreRowsLoading}
+                  selectTextOnFocus
+                />
+                {isSaved && (
+                  <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={styles.saveIcon} />
+                )}
+                {isModified && (
+                  <View style={styles.modifiedDot} />
+                )}
+              </View>
+              <Text style={styles.statLabel}>/ {maxScore}</Text>
+            </View>
+            <Text style={styles.statLabelText}>{t('classScreens.grades.score')}</Text>
+          </View>
+
+          <View style={[styles.verticalDivider, { backgroundColor: '#F1F5F9' }]} />
+
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#F59E0B' }]}>{item.studentId || '—'}</Text>
+            <Text style={styles.statLabel}>{t('common.id')}</Text>
+          </View>
         </View>
       </View>
     );
@@ -1334,10 +1358,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryDark, 
     borderColor: COLORS.primaryDark,
     shadowColor: COLORS.primaryDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   chipText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '600' },
   chipTextActive: { color: COLORS.surface, fontWeight: '700' },
@@ -1411,10 +1435,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226,232,240,0.95)',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   summaryLabel: {
     fontSize: 12,
@@ -1445,24 +1469,82 @@ const styles = StyleSheet.create({
   
   list: { paddingTop: 4, gap: 12, paddingBottom: 40 },
   studentCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
     backgroundColor: COLORS.surface,
-    padding: 16,
     marginHorizontal: 16,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: 'rgba(226,232,240,0.95)',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.055,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
-  studentCardHighlight: {
-    borderColor: COLORS.primaryDark,
-    backgroundColor: '#F0F9FF',
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingBottom: 12,
+  },
+  detailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primaryDark + '10',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  detailsBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+  },
+  cardDivider: {
+    height: 1,
+    width: '100%',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    color: COLORS.textMuted,
+  },
+  statLabelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 6,
+    textTransform: 'uppercase',
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  verticalDivider: {
+    width: 1,
+    height: 30,
+    alignSelf: 'center',
+  },
+  scoreInteractionArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   studentRankBadge: {
     width: 24,
@@ -1477,9 +1559,9 @@ const styles = StyleSheet.create({
   
   studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   avatar: { 
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: 'center', 
     alignItems: 'center', 
     marginRight: 12 
@@ -1488,7 +1570,7 @@ const styles = StyleSheet.create({
   studentNameContainer: { flex: 1, paddingRight: 8 },
   studentName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 1 },
   englishName: { fontSize: 11, fontWeight: '600', color: COLORS.primaryDark, textTransform: 'uppercase', marginBottom: 2 },
-  studentId: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
+  studentId: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600' },
   
   scoreSection: { flexDirection: 'row', alignItems: 'center' },
   scoreInputWrapper: {
@@ -1497,9 +1579,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.inputBg,
     borderWidth: 1.5,
     borderColor: COLORS.border,
-    borderRadius: 16,
-    height: 48,
-    width: 70,
+    borderRadius: 12,
+    height: 36,
+    width: 60,
     paddingHorizontal: 4,
   },
   scoreInputWrapperModified: {

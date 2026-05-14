@@ -48,6 +48,7 @@ import { useNavigationContext, useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import StunityLogo from '../../../assets/Stunity.svg';
 import { ClubCard } from '@/components/clubs/ClubCard';
+import { SchoolClassCard } from '@/components/clubs/SchoolClassCard';
 import { BannerCarousel, ShortcutItem, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
 import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 import { useTranslation } from 'react-i18next';
@@ -110,109 +111,6 @@ const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getStat
 const getClassCacheScopeKey = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
   user?.id || `${user?.role || 'anonymous'}:${user?.schoolId || 'no-school'}`;
 
-const SchoolClassCard = React.memo(
-  ({
-    item,
-    index,
-    onPress,
-    orderNumber,
-  }: {
-    item: MyClassSummary;
-    index: number;
-    onPress: (item: MyClassSummary) => void;
-    orderNumber?: number;
-  }) => {
-    const { t, i18n } = useTranslation();
-    const { colors, isDark } = useThemeContext();
-    const isKhmer = i18n.language?.startsWith('km');
-    const theme = CLASS_THEMES[index % CLASS_THEMES.length];
-    const classCode = getClassCode(item.name);
-    const teacherName = item.homeroomTeacher
-      ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)
-      : t('classes.directory.notAssigned');
-    const { male: maleCount, female: femaleCount } = getClassGenderCounts(item);
-    const studentTotal = getSafeStudentCount(item);
-    const scale = useSharedValue(1);
-    const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-    return (
-      <AnimatedPressable
-        style={animStyle}
-        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
-        onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
-        onPress={() => onPress(item)}
-      >
-        <View style={[styles.schoolClassCard, {
-          backgroundColor: isDark ? colors.card : '#FFFFFF',
-          borderColor: isDark ? colors.border : '#E8EDF5',
-        }]}>
-          <View style={styles.schoolClassMainRow}>
-            {/* Circle badge like in screenshot */}
-            <View style={[styles.schoolClassBadge, { backgroundColor: '#22C55E' }]}>
-              <Text style={styles.schoolClassBadgeText}>{orderNumber}</Text>
-            </View>
-
-            <View style={styles.schoolClassTextCenter}>
-              <View style={styles.schoolClassTitleLine}>
-                <Text style={[styles.schoolClassName, { color: isDark ? colors.text : '#0F172A' }]} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <View style={styles.schoolClassGradePill}>
-                  <Text style={styles.schoolClassGradeText}>
-                    {t('classes.directory.gradeShort', { grade: item.grade })}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.genderStatsRow}>
-                <View style={styles.genderStat}>
-                  <Text style={[styles.genderStatText, { color: '#6366F1' }]}>
-                    {isKhmer ? 'ប្រុស' : t('common.male')}
-                  </Text>
-                  <Text style={styles.genderStatValue}>
-                    {maleCount}
-                  </Text>
-                </View>
-                <View style={styles.genderStat}>
-                  <Text style={[styles.genderStatText, { color: '#EC4899' }]}>
-                    {isKhmer ? 'ស្រី' : t('common.female')}
-                  </Text>
-                  <Text style={styles.genderStatValue}>
-                    {femaleCount}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Icon box like in screenshot */}
-            <View style={[styles.schoolClassIconBox, { backgroundColor: isDark ? `${theme.accent}25` : theme.soft }]}>
-              <Ionicons name="school" size={20} color={theme.accent} />
-            </View>
-          </View>
-
-          <View style={styles.schoolClassFooter}>
-            <View style={styles.schoolClassChips}>
-              <View style={styles.schoolClassChip}>
-                <Ionicons name="people" size={13} color={COLORS.textSecondary} />
-                <Text style={styles.schoolClassChipText}>
-                  {isKhmer ? `សិស្ស៖ ${studentTotal} នាក់` : studentTotal}
-                </Text>
-              </View>
-              <View style={[styles.schoolClassChip, { flex: 1 }]}>
-                <Ionicons name="person" size={13} color={COLORS.textSecondary} />
-                <Text style={styles.schoolClassChipText} numberOfLines={1}>
-                  {isKhmer ? 'គ្រូប្រចាំថ្នាក់៖ ' : ''}{teacherName}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.schoolClassChevron}>
-              <Ionicons name="chevron-forward" size={14} color={COLORS.textSecondary} />
-            </View>
-          </View>
-        </View>
-      </AnimatedPressable>
-    );
-  }
-);
 
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -1032,12 +930,7 @@ export default function ClubsScreen() {
             ) : isTeacherClassLayout ? (
               <View style={styles.teacherTwoSectionWrap}>
                 {teacherClassSplit.teaching.length > 0 ? (
-                  <View
-                    style={[
-                      styles.teacherSectionCard,
-                      { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9', borderColor: colors.border },
-                    ]}
-                  >
+                  <View style={styles.teacherSectionCard}>
                     <View style={styles.teacherSectionCardHeader}>
                       <View style={[styles.teacherSectionIconBubble, { backgroundColor: '#0EA5E9' }]}>
                         <Ionicons name="ribbon-outline" size={20} color="#FFFFFF" />
@@ -1078,26 +971,21 @@ export default function ClubsScreen() {
                     </View>
                     {teacherClassSplit.teaching.length > gridConfig.teacherSectionCount ? (
                       <TouchableOpacity
-                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard]}
                         onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.seeAllGridText, { color: COLORS.primaryDark }, isKhmer && styles.khmerInlineText]}>
+                        <Text style={[styles.seeAllGridText, isKhmer && styles.khmerInlineText]}>
                           {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
                         </Text>
-                        <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
+                        <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
                       </TouchableOpacity>
                     ) : null}
                   </View>
                 ) : null}
 
                 {teacherOtherClasses.length > 0 ? (
-                  <View
-                    style={[
-                      styles.teacherSectionCard,
-                      { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9', borderColor: colors.border },
-                    ]}
-                  >
+                  <View style={styles.teacherSectionCard}>
                     <View style={styles.teacherSectionCardHeader}>
                       <View style={[styles.teacherSectionIconBubble, { backgroundColor: '#6366F1' }]}>
                         <Ionicons name="layers-outline" size={20} color="#FFFFFF" />
@@ -1138,14 +1026,14 @@ export default function ClubsScreen() {
                     </View>
                     {teacherOtherClasses.length > gridConfig.teacherSectionCount ? (
                       <TouchableOpacity
-                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard]}
                         onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.seeAllGridText, { color: COLORS.primaryDark }, isKhmer && styles.khmerInlineText]}>
+                        <Text style={[styles.seeAllGridText, isKhmer && styles.khmerInlineText]}>
                           {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
                         </Text>
-                        <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
+                        <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -1179,16 +1067,16 @@ export default function ClubsScreen() {
 
                 {previewClasses.length > gridConfig.classPreviewCount && (
                   <TouchableOpacity
-                    style={[styles.seeAllSectionRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                    style={styles.seeAllSectionRow}
                     onPress={() => { navigation.navigate('ClassDirectory'); }}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.seeAllGridText, { color: COLORS.primaryDark }]}>
+                    <Text style={styles.seeAllGridText}>
                       {isAdminOrStaff
                         ? t('clubs.screen.seeAllCount', { count: previewClasses.length })
                         : t('clubs.screen.seeAllMyClassesCount', { count: previewClasses.length })}
                     </Text>
-                    <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
+                    <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1473,6 +1361,14 @@ export default function ClubsScreen() {
         </View>
       </SafeAreaView>
       <View style={[styles.safeArea, isClubRailTablet && styles.tabletThreeColumnBody]}>
+        <LinearGradient
+          colors={
+            isDark
+              ? ["#000000", "#061512", "#000000"]
+              : ["#FFFFFF", "#F5F0FF", "#EEF7FF"]
+          }
+          style={StyleSheet.absoluteFill}
+        />
         {renderTabletLeftRail()}
         {/* @ts-ignore FlashList types omit some valid props */}
         <FlashList
@@ -1925,15 +1821,13 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   teacherSectionCard: {
-    marginHorizontal: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingTop: 14,
-    paddingBottom: 10,
-    paddingHorizontal: 12,
+    marginHorizontal: 0,
+    paddingTop: 10,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
   },
   teacherSeeAllInCard: {
-    marginHorizontal: 0,
+    marginHorizontal: 16,
     marginTop: 8,
   },
   teacherSectionCardHeader: {
@@ -1941,7 +1835,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginBottom: 12,
-    paddingHorizontal: 2,
+    paddingHorizontal: 16,
   },
   teacherSectionIconBubble: {
     width: 40,
@@ -2120,7 +2014,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   schoolClassesGrid: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     marginTop: 8,
   },
   schoolClassesGridTight: {
@@ -2135,7 +2029,7 @@ const styles = StyleSheet.create({
   },
   gridItemWrapper: {
     width: '100%',
-    marginBottom: 10,
+    marginBottom: 0,
   },
   schoolClassCard: {
     backgroundColor: '#FFFFFF',
@@ -2285,15 +2179,18 @@ const styles = StyleSheet.create({
   seeAllSectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: 12,
-    marginTop: 10,
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#06A8CC',
+    shadowColor: '#06A8CC',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   seeAllGridBtn: {
     width: '100%',
@@ -2308,9 +2205,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   seeAllGridText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginRight: 8,
     textAlign: 'center',
   },
   classListCard: {

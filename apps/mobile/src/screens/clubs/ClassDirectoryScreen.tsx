@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -21,6 +22,7 @@ import { MyClassSummary } from '@/api/classes';
 import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { SchoolClassCard } from '@/components/clubs/SchoolClassCard';
 import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
 
 const COLORS = {
@@ -79,109 +81,6 @@ type ClassDirSection = {
   teacherAccess?: 'teaching' | 'other';
 };
 
-const SchoolClassCard = React.memo(
-  ({
-    item,
-    index,
-    onPress,
-    orderNumber,
-    accent,
-  }: {
-    item: MyClassSummary;
-    index: number;
-    onPress: (item: MyClassSummary) => void;
-    orderNumber?: number;
-    accent?: 'teaching' | 'other';
-  }) => {
-    const { t, i18n } = useTranslation();
-    const { isDark } = useThemeContext();
-    const isKhmer = i18n.language?.startsWith('km');
-    const theme = CLASS_THEMES[index % CLASS_THEMES.length];
-    
-    // Highlight teaching classes with a brand border like in the screenshot
-    const isTeaching = accent === 'teaching';
-    const cardBorderColor = isTeaching ? '#22C55E' : (isDark ? '#334155' : '#E2E8F0');
-    const { male: maleCount, female: femaleCount } = getClassGenderCounts(item);
-    const studentTotal = getSafeStudentCount(item);
-
-    return (
-      <TouchableOpacity
-        style={[styles.classCard, { borderColor: cardBorderColor }]}
-        onPress={() => onPress(item)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.classMainRow}>
-          {/* Circular number badge - like the green "1, 2, 3" in screenshot */}
-          <View style={[styles.orderBadge, { backgroundColor: '#22C55E' }]}>
-            <Text style={styles.orderBadgeText}>{orderNumber}</Text>
-          </View>
-
-          <View style={styles.classTextCenter}>
-            <View style={styles.titleWithGrade}>
-              <Text style={styles.className} numberOfLines={1}>{item.name}</Text>
-              <View style={styles.gradePill}>
-                <Text style={styles.gradePillText}>
-                  {t('classes.directory.gradeShort', { grade: item.grade })}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.genderStatsRow}>
-              <View style={styles.genderStat}>
-                <Text style={[styles.genderStatText, { color: '#6366F1' }]}>
-                  {isKhmer ? 'ប្រុស' : t('common.male')}
-                </Text>
-                <Text style={styles.genderStatValue}>
-                  {maleCount}
-                </Text>
-              </View>
-              <View style={styles.genderStat}>
-                <Text style={[styles.genderStatText, { color: '#EC4899' }]}>
-                  {isKhmer ? 'ស្រី' : t('common.female')}
-                </Text>
-                <Text style={styles.genderStatValue}>
-                  {femaleCount}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Icon box on the right - like the graduation cap in screenshot */}
-          <View style={[styles.classIconBox, { backgroundColor: isDark ? `${theme.accent}25` : theme.soft }]}>
-            <Ionicons name="school" size={22} color={theme.accent} />
-          </View>
-        </View>
-
-        <View style={styles.classCardFooter}>
-          {/* Split chips row at the bottom */}
-          <View style={styles.footerChipsRow}>
-            <View style={styles.footerChip}>
-              <Ionicons name="people" size={14} color={COLORS.textSecondary} />
-              <Text style={styles.footerChipText}>
-                {isKhmer 
-                  ? `សិស្ស៖ ${studentTotal} នាក់` 
-                  : t('classes.directory.studentCount', { count: studentTotal })}
-              </Text>
-            </View>
-
-            {item.homeroomTeacher && (
-              <View style={[styles.footerChip, { flex: 1 }]}>
-                <Ionicons name="person" size={14} color={COLORS.textSecondary} />
-                <Text style={styles.footerChipText} numberOfLines={1}>
-                  {isKhmer ? 'គ្រូប្រចាំថ្នាក់៖ ' : ''}{formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Small chevron arrow on the right */}
-          <View style={styles.chevronWrap}>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-);
 
 export default function ClassDirectoryScreen() {
   const { t, i18n } = useTranslation();
@@ -501,6 +400,14 @@ export default function ClassDirectoryScreen() {
       </SafeAreaView>
 
       <View style={styles.content}>
+        <LinearGradient
+          colors={
+            isDark
+              ? ["#000000", "#061512", "#000000"]
+              : ["#FFFFFF", "#F5F0FF", "#EEF7FF"]
+          }
+          style={StyleSheet.absoluteFill}
+        />
         {loading && !refreshing ? (
           <ScrollView style={styles.skeletonContainer} showsVerticalScrollIndicator={false}>
             {[1, 2, 3, 4, 5].map((key) => (
@@ -558,7 +465,6 @@ export default function ClassDirectoryScreen() {
                 item={item}
                 index={index}
                 orderNumber={index + 1}
-                accent={section.teacherAccess}
                 onPress={(row) => handleClassPress(row, section.teacherAccess)}
               />
             )}
@@ -659,7 +565,7 @@ const styles = StyleSheet.create({
   yearPillTextActive: { color: '#FFF' },
 
   content: { flex: 1 },
-  list: { padding: 12, paddingBottom: 40 },
+  list: { paddingVertical: 12, paddingBottom: 40 },
   dirFootnote: {
     fontSize: 12,
     color: COLORS.textMuted,
@@ -668,8 +574,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionHeading: {
-    paddingHorizontal: 4,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 8,
   },
   sectionHeadingText: {
