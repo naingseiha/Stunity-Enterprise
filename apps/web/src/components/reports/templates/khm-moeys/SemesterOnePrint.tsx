@@ -250,7 +250,6 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                   })}
                 </div>
               </div>
-            )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 14, textAlign: 'center' }}>
                   <div>
                     <p style={{ margin: '0 0 4px' }}>{signatureDate}</p>

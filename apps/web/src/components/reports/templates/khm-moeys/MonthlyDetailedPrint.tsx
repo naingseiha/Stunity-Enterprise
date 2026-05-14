@@ -323,7 +323,6 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                   })}
                 </div>
               </div>
-            )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 12, textAlign: 'center' }}>
                   <div>
                     <div>{signatureDate}</div>

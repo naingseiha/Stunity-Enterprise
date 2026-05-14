@@ -768,8 +768,6 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                   })}
                 </div>
               </div>
-            )}
-
                 <div className="khmer-monthly-signatures">
                   <div>
                     <p>{signatureDate}</p>
@@ -784,7 +782,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                     <p className="signature-name">{teacherName}</p>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         );
