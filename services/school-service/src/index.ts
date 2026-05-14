@@ -497,6 +497,8 @@ app.get('/api/info', (req: Request, res: Response) => {
       'GET /schools/:schoolId/onboarding/status - Get onboarding status',
       'PUT /schools/:schoolId/onboarding/step - Update onboarding step',
       'POST /schools/:schoolId/onboarding/complete - Mark onboarding complete',
+      'GET /schools/:schoolId/profile - Get school profile with extended metadata',
+      'PUT /schools/:schoolId/profile - Update school profile and base metadata',
     ],
   });
 });
@@ -930,6 +932,117 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
       error: 'Failed to register school',
       details: error.message,
     });
+  }
+});
+
+// --- School Profile Endpoints ---
+
+// GET /schools/:schoolId/profile - Get school profile with extended metadata
+app.get('/schools/:schoolId/profile', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      include: {
+        profile: true,
+      },
+    });
+
+    if (!school) {
+      return res.status(404).json({ success: false, error: 'School not found' });
+    }
+
+    // Merge base school data with profile data for the frontend form
+    const profileData = {
+      name: school.name,
+      email: school.email,
+      phone: school.phone || '',
+      address: school.address || '',
+      website: school.website || '',
+      logoUrl: school.logo || '',
+      schoolType: school.schoolType,
+      nameKh: school.profile?.nameKh || '',
+      officeName: school.profile?.officeName || '',
+      province: school.profile?.province || '',
+      district: school.profile?.district || '',
+      commune: school.profile?.commune || '',
+      village: school.profile?.village || '',
+      stampUrl: school.profile?.stampUrl || '',
+      vision: school.profile?.vision || '',
+      mission: school.profile?.mission || '',
+      slogan: school.profile?.slogan || '',
+      establishedYear: school.profile?.establishedYear || '',
+    };
+
+    res.json({ success: true, data: profileData });
+  } catch (error: any) {
+    console.error('Error fetching school profile:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch school profile', message: error.message });
+  }
+});
+
+// PUT /schools/:schoolId/profile - Update school profile and base metadata
+app.put('/schools/:schoolId/profile', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const data = req.body;
+
+    // Update School base fields and SchoolProfile in a transaction
+    const updatedSchool = await prisma.$transaction(async (tx) => {
+      // 1. Update base School model
+      const s = await tx.school.update({
+        where: { id: schoolId },
+        data: {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          website: data.website,
+          logo: data.logoUrl,
+          schoolType: data.schoolType,
+        },
+      });
+
+      // 2. Upsert SchoolProfile
+      await tx.schoolProfile.upsert({
+        where: { schoolId },
+        create: {
+          schoolId,
+          nameKh: data.nameKh,
+          officeName: data.officeName,
+          province: data.province,
+          district: data.district,
+          commune: data.commune,
+          village: data.village,
+          stampUrl: data.stampUrl,
+          vision: data.vision,
+          mission: data.mission,
+          slogan: data.slogan,
+          establishedYear: data.establishedYear,
+        },
+        update: {
+          nameKh: data.nameKh,
+          officeName: data.officeName,
+          province: data.province,
+          district: data.district,
+          commune: data.commune,
+          village: data.village,
+          stampUrl: data.stampUrl,
+          vision: data.vision,
+          mission: data.mission,
+          slogan: data.slogan,
+          establishedYear: data.establishedYear,
+        },
+      });
+
+      return s;
+    });
+
+    res.json({ success: true, data: updatedSchool });
+  } catch (error: any) {
+    console.error('Error updating school profile:', error);
+    res.status(500).json({ success: false, error: 'Failed to update school profile', message: error.message });
   }
 });
 

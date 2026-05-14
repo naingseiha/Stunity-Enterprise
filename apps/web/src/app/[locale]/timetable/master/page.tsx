@@ -8,6 +8,7 @@ import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
+import { schoolAPI } from '@/lib/api/school';
 import { AcademicYear, getAcademicYearsAuto } from '@/lib/api/academic-years';
 import {
   periodAPI,
@@ -567,22 +568,26 @@ export default function MasterTimetablePage() {
       const s = userData.school || { id: userData.user.schoolId, name: 'School' };
       setSchool(s);
 
-      // Hydrate official report metadata from school profile
-      const savedMetadata = localStorage.getItem(`school_profile_${s.id}`);
-      if (savedMetadata) {
+      // Hydrate official report metadata from school profile synchronized on backend
+      const fetchSchoolProfile = async () => {
         try {
-          const metadata = JSON.parse(savedMetadata);
-          setPrintSettings(prev => ({
-            ...prev,
-            officeName: metadata.officeName || prev.officeName,
-            clusterName: metadata.province ? `ខេត្ត៖ ${metadata.province}` : prev.clusterName,
-            schoolName: metadata.nameKh || metadata.name || s.name || prev.schoolName,
-            logoUrl: metadata.logoUrl || s.logoUrl || '',
-          }));
+          const res = await schoolAPI.getProfile(s.id);
+          if (res.success && res.data) {
+            const metadata = res.data;
+            setPrintSettings(prev => ({
+              ...prev,
+              officeName: metadata.officeName || prev.officeName,
+              clusterName: metadata.province ? `ខេត្ត៖ ${metadata.province}` : prev.clusterName,
+              schoolName: metadata.nameKh || metadata.name || s.name || prev.schoolName,
+              logoUrl: metadata.logoUrl || s.logoUrl || '',
+            }));
+          }
         } catch (e) {
-          console.error('Failed to parse school profile metadata', e);
+          console.error('Failed to fetch school profile metadata', e);
         }
-      }
+      };
+
+      fetchSchoolProfile();
     }
 
     loadInitialData();
