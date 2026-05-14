@@ -422,21 +422,15 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         }
 
         @media print {
-          body * {
-            visibility: hidden !important;
-          }
-
-          .khmer-monthly-print,
-          .khmer-monthly-print * {
-            visibility: visible !important;
+          @page {
+            size: A4 portrait;
+            margin: 0;
           }
 
           .khmer-monthly-print {
             display: block !important;
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            background: white;
+            width: 100% !important;
+            background: white !important;
           }
 
           .khmer-monthly-page {

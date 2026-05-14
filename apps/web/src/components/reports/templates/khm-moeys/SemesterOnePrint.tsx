@@ -94,12 +94,8 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
         .moeys-semester-table th, .moeys-semester-table td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
         .moeys-semester-table .name { text-align: left; min-width: 120px; }
         @media print {
-          body * { visibility: hidden !important; }
-          .khmer-monthly-print, .khmer-monthly-print * { visibility: visible !important; }
-          .khmer-monthly-print { display: block !important; position: absolute; inset: 0; width: 100%; background: white; }
-          .moeys-semester-page { box-shadow: none !important; page-break-after: always; }
-          .moeys-semester-page:last-child { page-break-after: auto; }
           @page { size: A4 portrait; margin: 0; }
+          .khmer-monthly-print { display: block !important; width: 100% !important; background: white !important; }
         }
       `}</style>
 

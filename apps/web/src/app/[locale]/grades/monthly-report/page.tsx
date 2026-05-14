@@ -487,7 +487,7 @@ export default function KhmerMonthlyReportPage() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)]">
       <UnifiedNavigation user={user} school={school} />
 
-      <div className="lg:ml-64 min-h-screen print:hidden">
+      <div className="lg:ml-64 min-h-screen">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
           <AnimatedContent>
             {/* Hero / Configuration */}
@@ -1085,6 +1085,35 @@ export default function KhmerMonthlyReportPage() {
       )}
 
 
+      <style>{`
+        @media print {
+          body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          
+          /* Hide all UI elements */
+          nav, aside, .UnifiedNavigation, .PageSkeleton, .print\\:hidden { 
+            display: none !important; 
+          }
+          
+          /* Reset layout wrappers */
+          .lg\\:ml-64 { margin-left: 0 !important; width: 100% !important; }
+          main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+
+          /* Hide UI-only sections like settings and hero */
+          section, .mx-auto.max-w-2xl {
+            display: none !important;
+          }
+
+          /* Specifically show the preview container even if inside hidden parents (overriding display: none on parents is hard, so we ensure the path is clear) */
+          /* But since we only hide 'section' and 'mx-auto.max-w-2xl', and the report is in a plain 'div', it should stay visible. */
+          
+          .khmer-report-preview-container {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -124,12 +124,8 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
         .detailed-table th, .detailed-table td { border: 1px solid #000; padding: 1px 2px; text-align: center; }
         .detailed-table .nm { text-align: left; word-break: break-word; }
         @media print {
-          body * { visibility: hidden !important; }
-          .khmer-monthly-print, .khmer-monthly-print * { visibility: visible !important; }
-          .khmer-monthly-print { display: block !important; position: absolute; inset: 0; width: 100%; background: white; }
-          .detailed-page { box-shadow: none !important; }
-          .detailed-table { table-layout: fixed !important; }
           @page { size: A4 portrait; margin: 0; }
+          .khmer-monthly-print { display: block !important; width: 100% !important; background: white !important; }
         }
       `}</style>
 
