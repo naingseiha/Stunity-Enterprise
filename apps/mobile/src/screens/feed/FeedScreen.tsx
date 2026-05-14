@@ -132,11 +132,12 @@ const FilterLoadingSkeleton = React.memo(function FilterLoadingSkeleton({
 interface PerformanceCardProps {
   stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number; xpProgress: number; xpToNextLevel: number; avgScore: number; };
   user: { firstName: string; lastName: string; profilePictureUrl?: string } | null;
+  avatarUri?: string | null;
   onPress: () => void;
 }
 
 // ─── PerformanceCard ──────────────────────────────────────────────────────────
-const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
+const PerformanceCard = React.memo(function PerformanceCard({ stats, user, avatarUri, onPress }: PerformanceCardProps) {
   const { colors, isDark } = useThemeContext();
   const perfCardStyles = React.useMemo(() => createPerfCardStyles(colors, isDark), [colors, isDark]);
   const { t } = useTranslation();
@@ -238,7 +239,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           {/* ── Avatar ── */}
           <View style={perfCardStyles.avatarWrap}>
             <Avatar
-              uri={user?.profilePictureUrl}
+              uri={avatarUri || user?.profilePictureUrl}
               name={user ? `${user.lastName} ${user.firstName}` : (t('messages.you') || 'User')}
               size="xl"
               gradientBorder="blue"
@@ -373,8 +374,13 @@ export default function FeedScreen() {
   const filterFetchInFlightRef = useRef(false);
   const queuedSubjectFilterRef = useRef<string | null>(null);
   const filterOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const lastProfilePictureUrlRef = useRef<string | null>(null);
   postsRef.current = feedItems;
   pendingPostsRef.current = pendingPosts;
+  if (user?.profilePictureUrl) {
+    lastProfilePictureUrlRef.current = user.profilePictureUrl;
+  }
+  const stableProfilePictureUrl = user?.profilePictureUrl || lastProfilePictureUrlRef.current;
   const displayedFeedItems = optimisticFilterItems || feedItems;
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
   const isFilterTransitioning = !!pendingSubjectFilter;
@@ -748,6 +754,7 @@ export default function FeedScreen() {
       <PerformanceCard
         stats={learningStats}
         user={user}
+        avatarUri={stableProfilePictureUrl}
         onPress={() => navigation.getParent()?.navigate('ProfileTab')}
       />
 
@@ -763,7 +770,7 @@ export default function FeedScreen() {
       {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
         <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.8} style={styles.createPostRow}>
-          <Avatar uri={user?.profilePictureUrl} name={user ? `${user.lastName} ${user.firstName}` : (t('common.profile') || 'User')} size="md" variant="post" />
+          <Avatar uri={stableProfilePictureUrl} name={user ? `${user.lastName} ${user.firstName}` : (t('common.profile') || 'User')} size="md" variant="post" />
           <View style={styles.createPostInputFake}>
             <Text style={styles.createPostPlaceholder}>{t('feed.shareLearning')}</Text>
           </View>
@@ -802,7 +809,7 @@ export default function FeedScreen() {
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, pendingSubjectFilter, handleSubjectFilterChange, navigation, t, colors.border, colors.primary]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, pendingSubjectFilter, handleSubjectFilterChange, navigation, t, colors.border, colors.primary]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({

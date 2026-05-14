@@ -58,6 +58,8 @@ const BORDER_WIDTH: Record<AvatarSize, number> = {
   '3xl': 4,
 };
 
+const IMAGE_TRANSITION_MS = 0;
+
 // Beautiful gradient presets - Instagram story style
 const GRADIENT_PRESETS: Record<GradientPreset, string[]> = {
   purple: ['#6366F1', '#8B5CF6', '#A855F7'],
@@ -198,7 +200,7 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
                 style={styles.image}
                 contentFit="cover"
                 allowDownscaling
-                transition={150} // Faster transition for avatars
+                transition={IMAGE_TRANSITION_MS}
                 cachePolicy="memory-disk" // Cache avatars aggressively
                 priority="normal" // Lower priority than feed images
                 recyclingKey={`${imageUri}-${size}`} // Reuse across list, but differentiate by size
@@ -256,7 +258,7 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
           style={styles.image}
           contentFit="cover"
           allowDownscaling
-          transition={150}
+          transition={IMAGE_TRANSITION_MS}
           cachePolicy="memory-disk"
           recyclingKey={`${imageUri}-${size}`}
         />

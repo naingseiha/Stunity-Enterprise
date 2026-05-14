@@ -90,6 +90,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   const translateX = useRef(new Animated.Value(-slideDistance)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const pendingAfterCloseRef = useRef<(() => void) | null>(null);
+  const isAndroid = Platform.OS === 'android';
 
   useEffect(() => {
     if (!visible && !rendered) {
@@ -131,6 +132,10 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
   useEffect(() => {
     if (visible) {
+      if (isAndroid && !rendered) {
+        translateX.setValue(-slideDistance);
+        backdropOpacity.setValue(0);
+      }
       setRendered(true);
       translateX.stopAnimation();
       backdropOpacity.stopAnimation();
@@ -151,7 +156,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     } else if (rendered) {
       animateClose();
     }
-  }, [animateClose, backdropOpacity, isDark, rendered, translateX, visible]);
+  }, [animateClose, backdropOpacity, isAndroid, isDark, rendered, slideDistance, translateX, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -483,15 +488,8 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
   if (!rendered) return null;
 
-  return (
-    <Modal
-      visible={rendered}
-      transparent
-      animationType="none"
-      presentationStyle="overFullScreen"
-      statusBarTranslucent
-      onRequestClose={() => requestClose()}
-    >
+  const sidebarContent = (
+    <>
       <View style={styles.modalRoot}>
         <Animated.View
           pointerEvents="none"
@@ -505,7 +503,9 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             },
           ]}
         >
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} translucent={false} />
+      {!isAndroid ? (
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} translucent={false} />
+      ) : null}
 
       <View style={[styles.safeArea, { paddingTop: modalTopPadding }]}>
         <View style={styles.header}>
@@ -618,26 +618,44 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       </View>
         </Animated.View>
       </View>
+    </>
+  );
+
+  if (isAndroid) {
+    return sidebarContent;
+  }
+
+  return (
+    <Modal
+      visible={rendered}
+      transparent
+      animationType="none"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={() => requestClose()}
+    >
+      {sidebarContent}
     </Modal>
   );
 }
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   modalRoot: {
-    flex: 1,
+    ...(Platform.OS === 'android' ? StyleSheet.absoluteFillObject : null),
+    flex: Platform.OS === 'android' ? undefined : 1,
     backgroundColor: 'transparent',
+    zIndex: Platform.OS === 'android' ? 9999 : undefined,
+    elevation: Platform.OS === 'android' ? 9999 : undefined,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#000000',
   },
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.background,
+    zIndex: 10000,
+    elevation: 10000,
   },
   safeArea: {
     flex: 1,

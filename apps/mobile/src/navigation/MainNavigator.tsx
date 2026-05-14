@@ -479,7 +479,7 @@ const MainNavigatorContent = () => {
   );
 
   return (
-    <>
+    <View style={styles.navigatorRoot}>
       <Tab.Navigator
         sceneContainerStyle={{
           backgroundColor: colors.background,
@@ -680,7 +680,7 @@ const MainNavigatorContent = () => {
         onClose={closeSidebar}
         onNavigate={handleNavigate}
       />
-    </>
+    </View>
   );
 };
 
@@ -758,6 +758,10 @@ const MainNavigator = () => {
 
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create({
+    navigatorRoot: {
+      flex: 1,
+      position: "relative",
+    },
     tabIconContainer: {
       alignItems: "center",
       justifyContent: "center",
