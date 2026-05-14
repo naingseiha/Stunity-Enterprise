@@ -837,71 +837,7 @@ export default function KhmerMonthlyReportPage() {
               </header>
 
               <div className="space-y-6 p-5">
-                {/* Document info */}
-                <div>
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="rounded-md bg-sky-100 p-1 text-sky-700">
-                      <FileText className="h-3.5 w-3.5" />
-                    </span>
-                    <h3 className="text-sm font-semibold text-slate-800">Document info</h3>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {(
-                      [
-                        ['reportTitle', 'reportTitle'],
-                        ['examSession', 'examSession'],
-                        ['reportDate', 'reportDate'],
-                        ['principalName', 'principal'],
-                        ['teacherName', 'teacher'],
-                      ] as const
-                    ).map(([key, labelKey]) => (
-                      <label className="block" key={key}>
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t(labelKey)}
-                        </span>
-                        <input
-                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={settings[key as keyof typeof DEFAULT_SETTINGS] as string}
-                          onChange={(event) =>
-                            updateSetting(key as keyof typeof DEFAULT_SETTINGS, event.target.value as never)
-                          }
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Location */}
-                <div>
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="rounded-md bg-emerald-100 p-1 text-emerald-700">
-                      <MapPin className="h-3.5 w-3.5" />
-                    </span>
-                    <h3 className="text-sm font-semibold text-slate-800">Location</h3>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {(
-                      [
-                        ['province', 'province'],
-                        ['examCenter', 'examCenter'],
-                        ['roomNumber', 'roomNumber'],
-                      ] as const
-                    ).map(([key, labelKey]) => (
-                      <label className="block" key={key}>
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t(labelKey)}
-                        </span>
-                        <input
-                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={settings[key as keyof typeof DEFAULT_SETTINGS] as string}
-                          onChange={(event) =>
-                            updateSetting(key as keyof typeof DEFAULT_SETTINGS, event.target.value as never)
-                          }
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Layout & columns */}
                 <div>
