@@ -14,6 +14,7 @@ module.exports = {
         'moul': ['"Metal"', 'serif'],
         'poppins': ['"Poppins"', 'sans-serif'],
         'inter': ['"Inter"', 'sans-serif'],
+        'tacteng': ['"Tacteng"', 'serif'],
       },
       colors: {
         stunity: {

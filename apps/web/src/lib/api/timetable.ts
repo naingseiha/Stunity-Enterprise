@@ -100,6 +100,15 @@ export interface MasterTimetableClassStat {
   name: string;
   grade: number;
   section: string | null;
+  homeroomTeacher?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    englishFirstName?: string | null;
+    englishLastName?: string | null;
+    khmerName?: string | null;
+    email?: string | null;
+  } | null;
   entryCount: number;
   totalSlots: number;
   coverage: number;
@@ -111,6 +120,8 @@ export interface MasterTimetableStats {
   totalSlots: number;
   filledSlots: number;
   coverage: number;
+  periods?: Period[];
+  entries?: TimetableEntry[];
   secondary: {
     classes: number;
     slots: number;

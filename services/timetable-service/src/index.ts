@@ -2548,7 +2548,7 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'academicYearId is required' });
     }
 
-    const cacheKey = `${schoolId}:timetable:master-stats:${academicYearId as string}`;
+    const cacheKey = `${schoolId}:timetable:master-stats:v2:${academicYearId as string}`;
     const cachedResponse = readTimetableCache(cacheKey);
     if (cachedResponse) {
       return res.json(cachedResponse);
@@ -2562,28 +2562,36 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
           name: true,
           grade: true,
           section: true,
+          homeroomTeacherId: true,
         },
         orderBy: [{ grade: 'asc' }, { section: 'asc' }, { name: 'asc' }],
       }),
       db.timetableEntry.groupBy({
         by: ['classId'],
         where: { schoolId, academicYearId: academicYearId as string },
-        _count: { id: true },
+          _count: { id: true },
       }),
-      db.period.count({
+      db.period.findMany({
         where: { schoolId, isBreak: false },
+        orderBy: { order: 'asc' },
       }),
       db.teacher.count({
         where: { schoolId },
       }),
       db.timetableEntry.findMany({
         where: { schoolId, academicYearId: academicYearId as string },
-        select: {
-          id: true,
-          classId: true,
-          teacherId: true,
-          periodId: true,
-          dayOfWeek: true,
+        include: {
+          subject: true,
+          teacher: true,
+          period: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+              grade: true,
+              section: true,
+            },
+          },
         },
       }),
       (db as any).timetableConflictException.findMany({
@@ -2594,6 +2602,42 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
 
     const entriesByClass = new Map<string, number>(
       classEntryCounts.map((entry) => [entry.classId, entry._count.id])
+    );
+    const homeroomTeacherIds = Array.from(
+      new Set(classes.map((cls) => cls.homeroomTeacherId).filter((id): id is string => Boolean(id)))
+    );
+    const homeroomTeachers = homeroomTeacherIds.length > 0
+      ? await db.teacher.findMany({
+          where: { schoolId, id: { in: homeroomTeacherIds } },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
+            email: true,
+            customFields: true,
+          },
+        })
+      : [];
+    const homeroomTeacherById = new Map(
+      homeroomTeachers.map((teacher) => {
+        const regional = teacher.customFields && typeof teacher.customFields === 'object'
+          ? (teacher.customFields as any).regional
+          : null;
+        return [
+          teacher.id,
+          {
+            id: teacher.id,
+            firstName: teacher.firstName,
+            lastName: teacher.lastName,
+            englishFirstName: teacher.englishFirstName,
+            englishLastName: teacher.englishLastName,
+            khmerName: regional?.khmerName || null,
+            email: teacher.email,
+          },
+        ];
+      })
     );
     const conflictsByClass = new Map<string, number>();
     const teacherSlotMap = new Map<string, typeof timetableEntries>();
@@ -2632,7 +2676,8 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       (sum, entry) => sum + entry._count.id,
       0
     );
-    const totalSlots = classes.length * periods * 6; // 6 days
+    const periodCount = periods.length;
+    const totalSlots = classes.length * periodCount * 6; // 6 days
 
     const secondaryGrades = new Set(['7', '8', '9']);
     const highSchoolGrades = new Set(['10', '11', '12']);
@@ -2643,7 +2688,7 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
 
     const classSummaries = classes.map((cls) => {
       const entryCount = entriesByClass.get(cls.id) || 0;
-      const classTotalSlots = periods * 6;
+      const classTotalSlots = periodCount * 6;
       const grade = String(cls.grade);
 
       if (secondaryGrades.has(grade)) {
@@ -2660,6 +2705,7 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
         name: cls.name,
         grade: typeof cls.grade === 'string' ? parseInt(cls.grade, 10) : cls.grade,
         section: cls.section || null,
+        homeroomTeacher: cls.homeroomTeacherId ? homeroomTeacherById.get(cls.homeroomTeacherId) || null : null,
         entryCount,
         totalSlots: classTotalSlots,
         coverage: classTotalSlots > 0 ? Math.round((entryCount / classTotalSlots) * 100) : 0,
@@ -2667,8 +2713,8 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       };
     });
 
-    const secondarySlots = secondaryClassCount * periods * 6;
-    const highSchoolSlots = highSchoolClassCount * periods * 6;
+    const secondarySlots = secondaryClassCount * periodCount * 6;
+    const highSchoolSlots = highSchoolClassCount * periodCount * 6;
 
     const responseBody = {
       data: {
@@ -2676,6 +2722,8 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
         totalSlots,
         filledSlots,
         coverage: totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
+        periods,
+        entries: timetableEntries,
         secondary: {
           classes: secondaryClassCount,
           slots: secondarySlots,

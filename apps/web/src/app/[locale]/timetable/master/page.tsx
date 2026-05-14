@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Clock3,
   Download,
+  Eye,
   Filter,
   Grid3X3,
   Layers3,
@@ -42,12 +43,13 @@ import {
   XCircle,
   type LucideIcon,
 } from 'lucide-react';
-import {
+import TimetablePrint from '@/components/timetable/TimetablePrint';
+import { 
   DAYS,
   DAY_LABELS,
-  type DayOfWeek,
-  type GradeLevel,
-  getGradeLevel,
+  type DayOfWeek, 
+  type GradeLevel, 
+  getGradeLevel 
 } from '@/components/timetable/types';
 
 type ViewMode = 'grid' | 'classes' | 'workload';
@@ -56,6 +58,7 @@ type CoverageFilter = 'all' | 'ready' | 'watch' | 'action';
 type ConflictFilter = 'all' | 'conflicts' | 'clear';
 type SlotFilter = 'all' | 'has-empty' | 'fully-booked';
 type GenerationScope = 'filtered' | 'level' | 'all';
+type PrintScope = 'current' | 'class' | 'teacher' | 'grade' | 'all-classes' | 'all-teachers';
 
 interface ClassStats {
   id: string;
@@ -384,6 +387,10 @@ export default function MasterTimetablePage() {
   const [conflictFilter, setConflictFilter] = useState<ConflictFilter>('all');
   const [slotFilter, setSlotFilter] = useState<SlotFilter>('all');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [isPrintMode, setIsPrintMode] = useState(false);
+  const [printScope, setPrintScope] = useState<PrintScope>('current');
+  const [selectedPrintId, setSelectedPrintId] = useState<string>('');
   const [generationScope, setGenerationScope] = useState<GenerationScope>('filtered');
   const [generationOptions, setGenerationOptions] = useState({
     balanceWorkload: true,
@@ -394,6 +401,11 @@ export default function MasterTimetablePage() {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingGrid, setLoadingGrid] = useState(false);
   const [error, setError] = useState('');
+  const [printSettings, setPrintSettings] = useState({
+    officeName: 'ការិយាល័យអប់រំយុវជន និងកីឡានៃរដ្ឋបាល',
+    clusterName: 'កម្រងសាលារៀន',
+    gradeRange: 'ថ្នាក់ទី ១, ២, ៣',
+  });
 
   const hydrateClassTimetables = useCallback(async (yearId: string, classList: ClassStats[]) => {
     setLoadingGrid(true);
@@ -952,11 +964,15 @@ export default function MasterTimetablePage() {
                     Export
                   </button>
                   <button
-                    onClick={() => window.print()}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-950 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-slate-100 dark:border-gray-200 dark:bg-gray-950 dark:text-gray-100"
+                    onClick={() => setIsPrintMode(!isPrintMode)}
+                    className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold shadow-sm transition ${
+                      isPrintMode 
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' 
+                        : 'border-slate-950 bg-white text-slate-950 hover:bg-slate-100 dark:border-gray-200 dark:bg-gray-950 dark:text-gray-100'
+                    }`}
                   >
                     <Printer className="h-4 w-4" />
-                    Print
+                    {isPrintMode ? 'Close Print' : 'Print Report'}
                   </button>
                 </div>
               </div>
@@ -1286,6 +1302,12 @@ export default function MasterTimetablePage() {
                       {generationState.running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                       Auto-generate
                     </button>
+                    {generationState.running && (
+                      <GenerationProgress
+                        state={generationState}
+                        onStop={() => setGenerationState((s) => ({ ...s, running: false }))}
+                      />
+                    )}
                   </div>
 
                   {generationState.running || generationState.message ? (
@@ -1314,6 +1336,203 @@ export default function MasterTimetablePage() {
               ) : null}
             </section>
           </AnimatedContent>
+
+          {isPrintMode && (
+            <section className="mt-8 border-t border-slate-200 pt-8">
+              <div className="rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 print:hidden">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                      <Printer className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-white">របាយការណ៍កាលវិភាគ (Timetable Report Workspace)</h3>
+                      <p className="text-xs text-slate-500">Preview and print high-quality timetable reports</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-black transition-all"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Print Now
+                  </button>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">វិសាលភាព (Scope)</label>
+                    <select 
+                      value={printScope}
+                      onChange={(e) => setPrintScope(e.target.value as any)}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    >
+                      <option value="current">តាមតម្រងបច្ចុប្បន្ន (Filtered View)</option>
+                      <option value="class">តាមថ្នាក់ជាក់លាក់ (Specific Class)</option>
+                      <option value="teacher">តាមគ្រូជាក់លាក់ (Specific Teacher)</option>
+                      <option value="all-classes">គ្រប់ថ្នាក់ទាំងអស់ (All Classes)</option>
+                      <option value="all-teachers">គ្រប់គ្រូទាំងអស់ (All Teachers)</option>
+                    </select>
+                  </div>
+
+                  {(printScope === 'class' || printScope === 'teacher') && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        ជ្រើសរើស {printScope === 'class' ? 'ថ្នាក់' : 'គ្រូ'}
+                      </label>
+                      <select 
+                        value={selectedPrintId}
+                        onChange={(e) => setSelectedPrintId(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        <option value="">ជ្រើសរើស...</option>
+                        {printScope === 'class' ? (
+                          classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+                        ) : (
+                          teacherWorkloads.map(t => <option key={t.id} value={t.id}>{formatWorkloadTeacherName(t)}</option>)
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">ឈ្មោះការិយាល័យ (Office Name)</label>
+                    <input 
+                      type="text"
+                      value={printSettings.officeName}
+                      onChange={(e) => setPrintSettings(prev => ({ ...prev, officeName: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">ឈ្មោះកម្រង (Cluster Name)</label>
+                    <input 
+                      type="text"
+                      value={printSettings.clusterName}
+                      onChange={(e) => setPrintSettings(prev => ({ ...prev, clusterName: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">កម្រិតថ្នាក់ (Grade Range)</label>
+                    <input 
+                      type="text"
+                      value={printSettings.gradeRange}
+                      onChange={(e) => setPrintSettings(prev => ({ ...prev, gradeRange: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 space-y-8">
+                <div className="flex items-center justify-center gap-2 text-slate-400 print:hidden">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm font-medium">Preview Area</span>
+                </div>
+                
+                <div className="flex flex-col items-center gap-8 bg-slate-100 rounded-[2rem] p-8 min-h-[500px] print:bg-transparent print:p-0">
+                  {(() => {
+                    const items: any[] = [];
+                    if (printScope === 'current') {
+                      filteredClasses.forEach(cls => {
+                        items.push({
+                          entries: entriesByClass[cls.id] || [],
+                          title: `កាលវិភាគសិក្សា - ${cls.name}`,
+                          classLabel: `ថ្នាក់៖ ${cls.name} | គ្រូបន្ទុក៖ ${formatTeacherName(cls.homeroomTeacher)}`,
+                          teacherName: formatTeacherName(cls.homeroomTeacher),
+                        });
+                      });
+                    } else if (printScope === 'class' && selectedPrintId) {
+                      const cls = classes.find(c => c.id === selectedPrintId);
+                      if (cls) {
+                        items.push({
+                          entries: entriesByClass[cls.id] || [],
+                          title: `កាលវិភាគសិក្សា - ${cls.name}`,
+                          classLabel: `ថ្នាក់៖ ${cls.name} | គ្រូបន្ទុក៖ ${formatTeacherName(cls.homeroomTeacher)}`,
+                          teacherName: formatTeacherName(cls.homeroomTeacher),
+                        });
+                      }
+                    } else if (printScope === 'teacher' && selectedPrintId) {
+                      const teacher = teacherWorkloads.find(t => t.id === selectedPrintId);
+                      if (teacher) {
+                        const teacherEntries = Object.values(entriesByClass).flat().filter(e => e.teacherId === selectedPrintId);
+                        items.push({
+                          entries: teacherEntries,
+                          title: `កាលវិភាគបង្រៀនគ្រូ`,
+                          classLabel: `គ្រូ៖ ${formatWorkloadTeacherName(teacher)}`,
+                          teacherName: formatWorkloadTeacherName(teacher),
+                        });
+                      }
+                    } else if (printScope === 'all-classes') {
+                      classes.forEach(cls => {
+                        items.push({
+                          entries: entriesByClass[cls.id] || [],
+                          title: `កាលវិភាគសិក្សា - ${cls.name}`,
+                          classLabel: `ថ្នាក់៖ ${cls.name} | គ្រូបន្ទុក៖ ${formatTeacherName(cls.homeroomTeacher)}`,
+                          teacherName: formatTeacherName(cls.homeroomTeacher),
+                        });
+                      });
+                    } else if (printScope === 'all-teachers') {
+                      teacherWorkloads.forEach(teacher => {
+                        const teacherEntries = Object.values(entriesByClass).flat().filter(e => e.teacherId === teacher.id);
+                        if (teacherEntries.length > 0) {
+                          items.push({
+                            entries: teacherEntries,
+                            title: `កាលវិភាគបង្រៀនគ្រូ`,
+                            classLabel: `គ្រូ៖ ${formatWorkloadTeacherName(teacher)}`,
+                            teacherName: formatWorkloadTeacherName(teacher),
+                          });
+                        }
+                      });
+                    }
+
+                    if (items.length === 0) {
+                      return <div className="text-slate-400 italic py-20 print:hidden">No preview items available. Select a scope and valid ID.</div>;
+                    }
+
+                    return items.map((item, index) => (
+                      <div key={index} className="print:page-break-after-always print:m-0 print:p-0">
+                        <TimetablePrint 
+                          entries={item.entries}
+                          periods={periods}
+                          title={item.title}
+                          schoolName={school?.name}
+                          logoUrl={school?.logoUrl}
+                          officeName={printSettings.officeName}
+                          clusterName={printSettings.clusterName}
+                          gradeRange={printSettings.gradeRange}
+                          academicYear={selectedYear?.name || ''}
+                          classLabel={item.classLabel}
+                          teacherName={item.teacherName}
+                        />
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <style jsx global>{`
+            @media print {
+              body { background: white !important; margin: 0 !important; padding: 0 !important; }
+              .print\\:hidden { display: none !important; }
+              .print\\:page-break-after-always { page-break-after: always; }
+              
+              /* Hide all UI elements except the print workspace reports */
+              nav, aside, .UnifiedNavigation, .PageSkeleton { display: none !important; }
+              .lg\\:ml-64 { margin-left: 0 !important; width: 100% !important; }
+              main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+              
+              /* Hide everything in main except the print mode section */
+              main > *:not(section:has(.timetable-print-container)) {
+                display: none !important;
+              }
+            }
+          `}</style>
 
           {error ? (
             <AnimatedContent delay={0.06}>
