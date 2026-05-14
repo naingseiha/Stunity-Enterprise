@@ -27,9 +27,9 @@ export default function TimetablePrint({
   subTitle,
   schoolName,
   logoUrl,
-  officeName = 'ការិយាល័យអប់រំយុវជន និងកីឡានៃរដ្ឋបាល',
-  clusterName = 'កម្រងសាលារៀន',
-  gradeRange = 'ថ្នាក់ទី ១, ២, ៣',
+  officeName = 'មន្ទីរអប់រំយុជន និងកីឡា',
+  clusterName = 'ខេត្ត៖ សៀមរាប',
+  gradeRange = '',
   academicYear,
   classLabel,
   teacherName,
@@ -47,6 +47,7 @@ export default function TimetablePrint({
 
   return (
     <div className="timetable-print-container">
+      <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet" />
       <style>{`
         .timetable-print-container {
           background: #f1f5f9;
@@ -58,6 +59,14 @@ export default function TimetablePrint({
         }
 
         @media print {
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           .timetable-print-container {
             background: white;
             padding: 0;
@@ -67,12 +76,18 @@ export default function TimetablePrint({
           }
           .print-page {
             box-shadow: none !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             padding: 10mm !important;
+            width: 210mm !important;
+            height: 296.5mm !important;
+            min-height: 296.5mm !important;
+            max-height: 296.5mm !important;
+            overflow: hidden !important;
           }
         }
 
         .print-page {
+          box-sizing: border-box;
           width: 210mm;
           min-height: 297mm;
           padding: 15mm 10mm;
@@ -84,7 +99,7 @@ export default function TimetablePrint({
         }
 
         .khmer-moul {
-          font-family: "Metal", "Moul", serif;
+          font-family: 'Moul', "Metal", "Moul", serif;
           font-weight: 400;
         }
 
@@ -111,6 +126,7 @@ export default function TimetablePrint({
           display: flex;
           flex-direction: column;
           gap: 2px;
+          padding-top: 15px;
           font-size: 11px;
           max-width: 60%;
         }
@@ -190,7 +206,7 @@ export default function TimetablePrint({
         .footer-container {
           display: flex;
           justify-content: space-between;
-          margin-top: 40px;
+          margin-top: 60px;
           font-size: 11px;
         }
 
@@ -200,14 +216,13 @@ export default function TimetablePrint({
         }
 
         .signature-space {
-          height: 50px;
+          height: 100px;
         }
 
         .teacher-signature-name {
           color: #2563eb;
-          font-family: "Metal", "Moul", serif;
+          font-family: 'Moul', "Metal", "Moul", serif;
           font-size: 16px;
-          font-style: italic;
           margin-top: 15px;
         }
       `}</style>
@@ -217,37 +232,33 @@ export default function TimetablePrint({
         <div className="header-container">
           <div className="header-left">
             <div className="flex items-center gap-2 mb-1">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" style={{ width: 55, height: 55, objectFit: 'contain' }} />
-              ) : (
-                <img src="/logo.png" alt="Logo" style={{ width: 55, height: 55, objectFit: 'contain' }} />
+              {logoUrl && (
+                <img src={logoUrl} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
               )}
             </div>
-            <div className="khmer-moul" style={{ color: '#2563eb', fontSize: '12px' }}>{officeName}</div>
-            <div className="khmer-moul" style={{ color: '#2563eb', fontSize: '11px' }}>{clusterName}</div>
-            <div className="khmer-moul" style={{ color: '#2563eb', fontSize: '11px' }}>{schoolName || 'សាលាបឋមសិក្សា'}</div>
-            <div className="khmer-battambang" style={{ color: '#2563eb', fontSize: '10px' }}>{gradeRange}</div>
+            <div className="khmer-moul" style={{ color: '#2563eb', fontSize: '11px', lineHeight: '1.6' }}>{officeName}</div>
+            <div className="khmer-moul" style={{ color: '#2563eb', fontSize: '11px', lineHeight: '1.6' }}>{clusterName}</div>
+            <div className="khmer-moul" style={{ color: '#2563eb', fontSize: '11px', lineHeight: '1.6' }}>{schoolName || 'សាលាបឋមសិក្សា'}</div>
           </div>
 
           <div className="header-right">
-            <div className="khmer-moul" style={{ fontSize: '14px' }}>ព្រះរាជាណាចក្រកម្ពុជា</div>
-            <div className="khmer-moul" style={{ fontSize: '14px' }}>ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
-            <div className="symbol-font" style={{ fontSize: 32, color: '#dc2626', marginTop: 2 }}>3</div>
+            <div className="khmer-moul" style={{ fontSize: '13px', lineHeight: '1.8' }}>ព្រះរាជាណាចក្រកម្ពុជា</div>
+            <div className="khmer-moul" style={{ fontSize: '13px', lineHeight: '1.8' }}>ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
+            <div className="symbol-font" style={{ fontSize: 28, color: '#dc2626', marginTop: 0 }}>3</div>
           </div>
         </div>
 
         {/* Title Section */}
         <div className="main-title">
-          <h1 className="khmer-moul title-red">{title}</h1>
-          <h2 className="khmer-moul subtitle-red">{academicYear}</h2>
+          <h1 className="khmer-moul title-red" style={{ fontSize: '24px' }}>{title}</h1>
+          {subTitle && (
+            <h2 className="khmer-moul title-red" style={{ fontSize: '16px', marginTop: '4px' }}>{subTitle}</h2>
+          )}
+          <h2 className="khmer-moul subtitle-red" style={{ fontSize: '13px', marginTop: '6px' }}>{academicYear}</h2>
         </div>
 
-        {/* Info Line */}
-        {classLabel && (
-          <div className="class-info-line">
-            {classLabel}
-          </div>
-        )}
+        {/* Info Line Removed as per user request */}
+
 
         {/* Timetable Table */}
         <table className="timetable-table">
@@ -319,7 +330,7 @@ export default function TimetablePrint({
             <div style={{ marginTop: 8 }}>ថ្ងៃសៅរ៍ ៥រោច ខែកត្តិក ឆ្នាំថោះ បញ្ចស័ក ព.ស.២៥៦៧</div>
             <div style={{ marginBottom: 5 }}>ព្រៃជ្រាប,ថ្ងៃទី ២ ខែ ធ្នូ ឆ្នាំ២០២៣</div>
             <div className="font-bold khmer-moul" style={{ fontSize: '13px', marginTop: 10 }}>គ្រូទទួលបន្ទុកថ្នាក់</div>
-            
+            <div style={{ height: '60px' }}></div>
             <div className="teacher-signature-name">{teacherName}</div>
           </div>
         </div>

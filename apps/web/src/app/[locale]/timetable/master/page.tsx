@@ -402,9 +402,11 @@ export default function MasterTimetablePage() {
   const [loadingGrid, setLoadingGrid] = useState(false);
   const [error, setError] = useState('');
   const [printSettings, setPrintSettings] = useState({
-    officeName: 'ការិយាល័យអប់រំយុវជន និងកីឡានៃរដ្ឋបាល',
-    clusterName: 'កម្រងសាលារៀន',
-    gradeRange: 'ថ្នាក់ទី ១, ២, ៣',
+    officeName: 'មន្ទីរអប់រំយុជន និងកីឡា',
+    clusterName: 'ខេត្ត៖ សៀមរាប',
+    gradeRange: '',
+    schoolName: '',
+    logoUrl: '',
   });
 
   const hydrateClassTimetables = useCallback(async (yearId: string, classList: ClassStats[]) => {
@@ -562,7 +564,25 @@ export default function MasterTimetablePage() {
     const userData = TokenManager.getUserData();
     if (userData?.user) {
       setUser(userData.user);
-      setSchool(userData.school || { id: userData.user.schoolId, name: 'School' });
+      const s = userData.school || { id: userData.user.schoolId, name: 'School' };
+      setSchool(s);
+
+      // Hydrate official report metadata from school profile
+      const savedMetadata = localStorage.getItem(`school_profile_${s.id}`);
+      if (savedMetadata) {
+        try {
+          const metadata = JSON.parse(savedMetadata);
+          setPrintSettings(prev => ({
+            ...prev,
+            officeName: metadata.officeName || prev.officeName,
+            clusterName: metadata.province ? `ខេត្ត៖ ${metadata.province}` : prev.clusterName,
+            schoolName: metadata.nameKh || metadata.name || s.name || prev.schoolName,
+            logoUrl: metadata.logoUrl || s.logoUrl || '',
+          }));
+        } catch (e) {
+          console.error('Failed to parse school profile metadata', e);
+        }
+      }
     }
 
     loadInitialData();
@@ -1338,7 +1358,7 @@ export default function MasterTimetablePage() {
           </AnimatedContent>
 
           {isPrintMode && (
-            <section className="mt-8 border-t border-slate-200 pt-8">
+            <section className="mt-8 border-t border-slate-200 pt-8 print:border-none print:mt-0 print:pt-0">
               <div className="rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 print:hidden">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                   <div className="flex items-center gap-3">
@@ -1396,6 +1416,16 @@ export default function MasterTimetablePage() {
                   )}
 
                   <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">ឈ្មោះសាលារៀន (School Name)</label>
+                    <input 
+                      type="text"
+                      value={printSettings.schoolName || school?.name || ''}
+                      onChange={(e) => setPrintSettings(prev => ({ ...prev, schoolName: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">ឈ្មោះការិយាល័យ (Office Name)</label>
                     <input 
                       type="text"
@@ -1432,16 +1462,15 @@ export default function MasterTimetablePage() {
                   <Eye className="h-4 w-4" />
                   <span className="text-sm font-medium">Preview Area</span>
                 </div>
-                
-                <div className="flex flex-col items-center gap-8 bg-slate-100 rounded-[2rem] p-8 min-h-[500px] print:bg-transparent print:p-0">
+                <div className="flex flex-col items-center gap-8 bg-slate-100 rounded-[2rem] p-8 min-h-[500px] print:block print:bg-transparent print:p-0 print:m-0 print:gap-0">
                   {(() => {
                     const items: any[] = [];
                     if (printScope === 'current') {
                       filteredClasses.forEach(cls => {
                         items.push({
                           entries: entriesByClass[cls.id] || [],
-                          title: `កាលវិភាគសិក្សា - ${cls.name}`,
-                          classLabel: `ថ្នាក់៖ ${cls.name} | គ្រូបន្ទុក៖ ${formatTeacherName(cls.homeroomTeacher)}`,
+                          title: 'កាលវិភាគសិក្សា',
+                          subTitle: `ថ្នាក់៖ ${cls.name}`,
                           teacherName: formatTeacherName(cls.homeroomTeacher),
                         });
                       });
@@ -1450,8 +1479,8 @@ export default function MasterTimetablePage() {
                       if (cls) {
                         items.push({
                           entries: entriesByClass[cls.id] || [],
-                          title: `កាលវិភាគសិក្សា - ${cls.name}`,
-                          classLabel: `ថ្នាក់៖ ${cls.name} | គ្រូបន្ទុក៖ ${formatTeacherName(cls.homeroomTeacher)}`,
+                          title: 'កាលវិភាគសិក្សា',
+                          subTitle: `ថ្នាក់៖ ${cls.name}`,
                           teacherName: formatTeacherName(cls.homeroomTeacher),
                         });
                       }
@@ -1461,8 +1490,8 @@ export default function MasterTimetablePage() {
                         const teacherEntries = Object.values(entriesByClass).flat().filter(e => e.teacherId === selectedPrintId);
                         items.push({
                           entries: teacherEntries,
-                          title: `កាលវិភាគបង្រៀនគ្រូ`,
-                          classLabel: `គ្រូ៖ ${formatWorkloadTeacherName(teacher)}`,
+                          title: 'កាលវិភាគបង្រៀនគ្រូ',
+                          subTitle: `គ្រូ៖ ${formatWorkloadTeacherName(teacher)}`,
                           teacherName: formatWorkloadTeacherName(teacher),
                         });
                       }
@@ -1470,8 +1499,8 @@ export default function MasterTimetablePage() {
                       classes.forEach(cls => {
                         items.push({
                           entries: entriesByClass[cls.id] || [],
-                          title: `កាលវិភាគសិក្សា - ${cls.name}`,
-                          classLabel: `ថ្នាក់៖ ${cls.name} | គ្រូបន្ទុក៖ ${formatTeacherName(cls.homeroomTeacher)}`,
+                          title: 'កាលវិភាគសិក្សា',
+                          subTitle: `ថ្នាក់៖ ${cls.name}`,
                           teacherName: formatTeacherName(cls.homeroomTeacher),
                         });
                       });
@@ -1481,8 +1510,8 @@ export default function MasterTimetablePage() {
                         if (teacherEntries.length > 0) {
                           items.push({
                             entries: teacherEntries,
-                            title: `កាលវិភាគបង្រៀនគ្រូ`,
-                            classLabel: `គ្រូ៖ ${formatWorkloadTeacherName(teacher)}`,
+                            title: 'កាលវិភាគបង្រៀនគ្រូ',
+                            subTitle: `គ្រូ៖ ${formatWorkloadTeacherName(teacher)}`,
                             teacherName: formatWorkloadTeacherName(teacher),
                           });
                         }
@@ -1499,13 +1528,13 @@ export default function MasterTimetablePage() {
                           entries={item.entries}
                           periods={periods}
                           title={item.title}
-                          schoolName={school?.name}
-                          logoUrl={school?.logoUrl}
+                          subTitle={item.subTitle}
+                          schoolName={printSettings.schoolName || school?.name}
+                          logoUrl={printSettings.logoUrl || school?.logoUrl}
                           officeName={printSettings.officeName}
                           clusterName={printSettings.clusterName}
                           gradeRange={printSettings.gradeRange}
                           academicYear={selectedYear?.name || ''}
-                          classLabel={item.classLabel}
                           teacherName={item.teacherName}
                         />
                       </div>
