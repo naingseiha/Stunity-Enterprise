@@ -9,6 +9,7 @@ export interface MonthlySummaryPrintProps {
   report: KhmerMonthlyReportData;
   /** When provided (e.g. user hid some subjects), table columns follow this list */
   subjects?: KhmerMonthlyReportSubject[];
+  schoolProfile?: any;
   settings: {
     province: string;
     examCenter: string;
@@ -42,7 +43,7 @@ function isPassed(gradeLevel: string, average: number) {
   return ['A', 'B', 'C', 'D', 'E'].includes(gradeLevel) && average >= 25;
 }
 
-export default function MonthlySummaryPrint({ report, settings, subjects: subjectsProp }: MonthlySummaryPrintProps) {
+export default function MonthlySummaryPrint({ report, settings, subjects: subjectsProp, schoolProfile }: MonthlySummaryPrintProps) {
   const columnSubjects = sortSubjectsByOrder(subjectsProp ?? report.subjects, report.grade);
 
   const pages = paginateKhmerMonthlyReport(
@@ -61,6 +62,12 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
     formatReportDate((report.school?.name || settings.examCenter || '').split(',')[0]?.trim() || 'ស្វាយធំ');
   const monthLine =
     report.period?.month ? `ខែ${report.period.month}` : '';
+
+  // Use school profile data for dynamic header
+  const officeName = schoolProfile?.officeName || settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា';
+  const clusterName = schoolProfile?.province ? `ខេត្ត៖ ${schoolProfile.province}` : settings.province;
+  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter;
+  const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 
   return (
     <div className="khmer-monthly-print">
@@ -85,6 +92,48 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         :root {
           --khmer-report-heading-font: "Metal", "Moul", "Khmer OS Muol Light", "Khmer OS Muol", serif;
           --khmer-report-body-font: "Battambang", "Khmer OS Siemreap", "Khmer OS Siem Reap", "Khmer OS", serif;
+          --khmer-report-moul: 'Moul', "Metal", "Khmer OS Muol Light", serif;
+        }
+
+        .khmer-monthly-header-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 5mm;
+          padding: 0 2mm;
+        }
+
+        .khmer-monthly-header-left {
+          text-align: left;
+          flex: 1;
+        }
+
+        .khmer-monthly-header-right {
+          text-align: center;
+          width: 200px;
+        }
+
+        .khmer-moul-branding {
+          font-family: var(--khmer-report-moul);
+          color: #2563eb;
+          font-size: 11px;
+          line-height: 1.8;
+          margin: 0;
+        }
+
+        .khmer-kingdom-text {
+          font-family: var(--khmer-report-moul);
+          font-size: 13px;
+          line-height: 1.8;
+          margin: 0;
+        }
+
+        .khmer-symbol-3 {
+          font-family: "Tacteing", serif;
+          font-size: 28px;
+          color: #dc2626;
+          margin-top: 0;
+          line-height: 1;
         }
 
         .khmer-monthly-print {
@@ -456,16 +505,22 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
           <div className="khmer-monthly-page" key={`khmer-monthly-page-${pageIndex}`}>
             {isFirstPage && (
               <div className="khmer-monthly-header">
-                <div className="khmer-monthly-header-row">
-                  <div className="khmer-monthly-school-info">
-                    <p>{settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប'}</p>
-                    <p>{settings.examCenter || report.school?.name || 'វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ'}</p>
+                <div className="khmer-monthly-header-container">
+                  <div className="khmer-monthly-header-left">
+                    {logoUrl && (
+                      <div style={{ marginBottom: '8px' }}>
+                        <img src={logoUrl} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+                      </div>
+                    )}
+                    <p className="khmer-moul-branding">{officeName}</p>
+                    <p className="khmer-moul-branding">{clusterName}</p>
+                    <p className="khmer-moul-branding">{schoolName}</p>
                   </div>
 
-                  <div className="khmer-monthly-kingdom">
-                    <p>ព្រះរាជាណាចក្រកម្ពុជា</p>
-                    <p>ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
-                    <p className="khmer-monthly-symbol">3</p>
+                  <div className="khmer-monthly-header-right">
+                    <p className="khmer-kingdom-text">ព្រះរាជាណាចក្រកម្ពុជា</p>
+                    <p className="khmer-kingdom-text">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
+                    <p className="khmer-symbol-3">3</p>
                   </div>
                 </div>
 

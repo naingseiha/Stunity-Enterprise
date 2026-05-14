@@ -14,8 +14,8 @@ function isMoeysTemplate(template?: string) {
  * Dispatches print layout by API `report.template` + `report.format`.
  * Non-MOEYS templates fall back to summary layout until implemented.
  */
-export default function MonthlyReportPrint(props: MonthlySummaryPrintProps) {
-  const { report } = props;
+export default function MonthlyReportPrint(props: MonthlySummaryPrintProps & { schoolProfile?: any }) {
+  const { report, schoolProfile } = props;
   const format: MonthlyReportFormat = report.format ?? 'summary';
 
   if (!isMoeysTemplate(report.template)) {
@@ -23,12 +23,12 @@ export default function MonthlyReportPrint(props: MonthlySummaryPrintProps) {
   }
 
   if (format === 'semester-1') {
-    return <SemesterOnePrint report={report} settings={props.settings} />;
+    return <SemesterOnePrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
   }
 
   if (format === 'detailed') {
-    return <MonthlyDetailedPrint {...props} />;
+    return <MonthlyDetailedPrint {...props} schoolProfile={schoolProfile} />;
   }
 
-  return <MonthlySummaryPrint {...props} />;
+  return <MonthlySummaryPrint {...props} schoolProfile={schoolProfile} />;
 }

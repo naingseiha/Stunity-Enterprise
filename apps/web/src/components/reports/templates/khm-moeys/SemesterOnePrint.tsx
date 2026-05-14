@@ -12,7 +12,7 @@ function hasSemester(student: KhmerMonthlyReportStudent): student is KhmerMonthl
 }
 
 /** Semester 1 result sheet (SchoolManagementApp parity — pre-semester avg + exam + final) */
-export default function SemesterOnePrint({ report, settings }: Omit<MonthlySummaryPrintProps, 'subjects'>) {
+export default function SemesterOnePrint({ report, settings, schoolProfile }: Omit<MonthlySummaryPrintProps, 'subjects'> & { schoolProfile?: any }) {
   const rows = report.students.filter(hasSemester);
   const pages = paginateKhmerMonthlyReport(rows, settings.firstPageStudentCount, settings.nextPageStudentCount);
   const isGradeWide = report.scope === 'grade';
@@ -25,6 +25,12 @@ export default function SemesterOnePrint({ report, settings }: Omit<MonthlySumma
     settings.reportDate?.trim() ||
     formatReportDate((report.school?.name || settings.examCenter || '').split(',')[0]?.trim() || 'ស្វាយធំ');
 
+  // Use school profile data for dynamic header
+  const officeName = schoolProfile?.officeName || settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា';
+  const clusterName = schoolProfile?.province ? `ខេត្ត៖ ${schoolProfile.province}` : settings.province;
+  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter;
+  const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
+
   return (
     <div className="khmer-monthly-print">
       <style>{`
@@ -34,6 +40,48 @@ export default function SemesterOnePrint({ report, settings }: Omit<MonthlySumma
         :root {
           --khmer-report-heading-font: "Metal", "Moul", "Khmer OS Muol Light", serif;
           --khmer-report-body-font: "Battambang", "Khmer OS Siemreap", serif;
+          --khmer-report-moul: 'Moul', "Metal", "Khmer OS Muol Light", serif;
+        }
+
+        .khmer-monthly-header-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 5mm;
+          padding: 0 2mm;
+        }
+
+        .khmer-monthly-header-left {
+          text-align: left;
+          flex: 1;
+        }
+
+        .khmer-monthly-header-right {
+          text-align: center;
+          width: 200px;
+        }
+
+        .khmer-moul-branding {
+          font-family: var(--khmer-report-moul);
+          color: #2563eb;
+          font-size: 11px;
+          line-height: 1.8;
+          margin: 0;
+        }
+
+        .khmer-kingdom-text {
+          font-family: var(--khmer-report-moul);
+          font-size: 13px;
+          line-height: 1.8;
+          margin: 0;
+        }
+
+        .khmer-symbol-3 {
+          font-family: "Tacteing", serif;
+          font-size: 28px;
+          color: #dc2626;
+          margin-top: 0;
+          line-height: 1;
         }
         .khmer-monthly-print { display: none; }
         .moeys-semester-page {
@@ -61,22 +109,26 @@ export default function SemesterOnePrint({ report, settings }: Omit<MonthlySumma
         return (
           <div className="moeys-semester-page" key={`sem-${pageIndex}`}>
             {isFirst && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ paddingTop: 14, fontSize: 10, lineHeight: 1.4 }}>
-                    <p style={{ margin: 0 }}>{settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប'}</p>
-                    <p style={{ margin: 0, fontWeight: 700 }}>{settings.examCenter || report.school?.name || ''}</p>
+              <div className="khmer-monthly-header">
+                <div className="khmer-monthly-header-container">
+                  <div className="khmer-monthly-header-left">
+                    {logoUrl && (
+                      <div style={{ marginBottom: '8px' }}>
+                        <img src={logoUrl} alt="Logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+                      </div>
+                    )}
+                    <p className="khmer-moul-branding">{officeName}</p>
+                    <p className="khmer-moul-branding">{clusterName}</p>
+                    <p className="khmer-moul-branding">{schoolName}</p>
                   </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <p style={{ margin: 0, fontFamily: 'var(--khmer-report-heading-font)', fontSize: 14, fontWeight: 600 }}>
-                      ព្រះរាជាណាចក្រកម្ពុជា
-                    </p>
-                    <p style={{ margin: 0, fontFamily: 'var(--khmer-report-heading-font)', fontSize: 14, fontWeight: 600 }}>
-                      ជាតិ សាសនា ព្រះមហាក្សត្រ
-                    </p>
-                    <p style={{ margin: 0, color: '#dc2626', fontFamily: 'Tacteing, serif', fontSize: 24 }}>3</p>
+
+                  <div className="khmer-monthly-header-right">
+                    <p className="khmer-kingdom-text">ព្រះរាជាណាចក្រកម្ពុជា</p>
+                    <p className="khmer-kingdom-text">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
+                    <p className="khmer-symbol-3">3</p>
                   </div>
                 </div>
+
                 <div style={{ textAlign: 'center', marginTop: 4 }}>
                   <h1 style={{ margin: 0, fontSize: 16, fontFamily: 'var(--khmer-report-heading-font)', fontWeight: 600 }}>{reportTitle}</h1>
                   <p style={{ margin: '4px 0 0', fontSize: 12, fontFamily: 'var(--khmer-report-heading-font)' }}>

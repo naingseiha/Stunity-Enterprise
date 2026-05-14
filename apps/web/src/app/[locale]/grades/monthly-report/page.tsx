@@ -31,6 +31,7 @@ import MonthlyReportPrint from '@/components/reports/MonthlyReportPrint';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
 import { TokenManager } from '@/lib/api/auth';
+import { schoolAPI } from '@/lib/api/school';
 import { gradeAPI, type KhmerMonthlyReportData, type MonthlyReportFormat } from '@/lib/api/grades';
 import { formatEducationModelLabel } from '@/lib/educationModel';
 import {
@@ -110,6 +111,7 @@ export default function KhmerMonthlyReportPage() {
   const [reportFormat, setReportFormat] = useState<MonthlyReportFormat>('summary');
   const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [schoolProfile, setSchoolProfile] = useState<any>(null);
   const [tablePage, setTablePage] = useState(0);
   const [tableSort, setTableSort] = useState<{
     field: 'rank' | 'total' | 'average' | 'absent';
@@ -130,10 +132,25 @@ export default function KhmerMonthlyReportPage() {
     const data = TokenManager.getUserData();
     setUser(data.user);
     setSchool(data.school);
-    setSettings((current) => ({
-      ...current,
-      examCenter: data.school?.name || current.examCenter,
-    }));
+
+    const fetchSchoolProfile = async () => {
+      if (!data.school?.id) return;
+      try {
+        const res = await schoolAPI.getProfile(data.school.id);
+        if (res.success && res.data) {
+          setSchoolProfile(res.data);
+          setSettings((current) => ({
+            ...current,
+            province: res.data.province ? `ខេត្ត${res.data.province}` : current.province,
+            examCenter: res.data.nameKh || res.data.name || data.school?.name || current.examCenter,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch school profile:', err);
+      }
+    };
+
+    fetchSchoolProfile();
     setLoading(false);
   }, [locale, router]);
 
@@ -1224,7 +1241,14 @@ export default function KhmerMonthlyReportPage() {
         </div>
       )}
 
-      {report && <MonthlyReportPrint report={report} settings={settings} subjects={visibleSubjects} />}
+      {report && (
+        <MonthlyReportPrint 
+          report={report} 
+          settings={settings} 
+          subjects={visibleSubjects}
+          schoolProfile={schoolProfile}
+        />
+      )}
     </div>
   );
 }
