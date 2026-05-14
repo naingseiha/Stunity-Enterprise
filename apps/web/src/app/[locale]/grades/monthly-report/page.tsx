@@ -993,220 +993,57 @@ export default function KhmerMonthlyReportPage() {
               </div>
             </section>
 
-            {/* Preview */}
-            <section className="mt-5 rounded-2xl border border-slate-200 bg-white">
-              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/35 px-5 py-4">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">{t('previewTitle')}</h2>
-                  <p className="mt-0.5 text-xs text-slate-500">{t('previewHint')}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                    <Users className="h-3.5 w-3.5" />
-                    {report?.students.length ?? 0}
-                  </span>
-                  {report && (
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowColumnMenu((s) => !s)}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        Columns
-                      </button>
-                      {showColumnMenu && (
-                        <div
-                          role="menu"
-                          className="absolute right-0 z-10 mt-2 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
-                        >
-                          {tableColumns.map((col) => {
-                            const hidden = hiddenTableColumns.has(col.id);
-                            return (
-                              <button
-                                key={col.id}
-                                role="menuitemcheckbox"
-                                aria-checked={!hidden}
-                                onClick={() => toggleTableColumn(col.id)}
-                                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
-                              >
-                                <span>{col.label}</span>
-                                <span
-                                  className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
-                                    hidden ? 'border-slate-300 bg-white' : 'border-blue-600 bg-blue-600 text-white'
-                                  }`}
-                                >
-                                  {!hidden && <CheckCircle2 className="h-3 w-3" />}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+            {/* Preview Section - Using the actual print layout as preview */}
+            <div className="mt-8 pb-20">
+              {loadingReport && (
+                <div className="mx-auto max-w-[210mm] animate-pulse rounded-2xl border border-slate-200 bg-white p-10 shadow-sm">
+                  <div className="mb-8 flex justify-between">
+                    <div className="h-20 w-20 rounded bg-slate-100" />
+                    <div className="space-y-3">
+                      <div className="h-4 w-40 rounded bg-slate-100" />
+                      <div className="h-4 w-32 rounded bg-slate-100" />
                     </div>
-                  )}
-                </div>
-              </header>
-
-              <div className="p-5">
-                {loadingReport && (
-                  <div className="overflow-hidden rounded-xl border border-slate-200">
-                    <div className="grid grid-cols-7 gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2">
-                      {Array.from({ length: 7 }).map((_, i) => (
-                        <div key={i} className="h-3 rounded bg-slate-200/80" />
-                      ))}
-                    </div>
-                    {Array.from({ length: 6 }).map((_, row) => (
-                      <div
-                        key={row}
-                        className="grid animate-pulse grid-cols-7 gap-3 border-b border-slate-100 px-3 py-3"
-                      >
-                        {Array.from({ length: 7 }).map((_, col) => (
-                          <div key={col} className="h-3 rounded bg-slate-100" />
-                        ))}
-                      </div>
+                  </div>
+                  <div className="space-y-4">
+                    {Array.from({ length: 15 }).map((_, i) => (
+                      <div key={i} className="h-8 w-full rounded bg-slate-50" />
                     ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {!report && !loadingReport && (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-10 text-center">
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-blue-700">
-                      <Inbox className="h-5 w-5" />
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-slate-700">{t('empty')}</p>
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate(false)}
-                      disabled={!canGenerate}
-                      className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <FileText className="h-4 w-4" />
-                      {t('generate')}
-                    </button>
+              {!report && !loadingReport && (
+                <div className="mx-auto max-w-2xl rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-16 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-blue-700 shadow-sm">
+                    <FileText className="h-7 w-7" />
                   </div>
-                )}
+                  <h3 className="mt-4 text-lg font-semibold text-slate-900">{t('generateTitle') || 'Ready to generate report'}</h3>
+                  <p className="mt-2 text-sm text-slate-500 max-w-xs mx-auto">
+                    {t('generateDesc') || 'Select your filters above and click generate to view the official print-ready report.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleGenerate(false)}
+                    disabled={!canGenerate}
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {t('generate')}
+                  </button>
+                </div>
+              )}
 
-                {report && !loadingReport && (
-                  <div className="overflow-hidden rounded-xl border border-slate-200">
-                    <div className="max-h-[520px] overflow-auto">
-                      <table className="min-w-full text-sm">
-                        <thead className="sticky top-0 z-[1] bg-emerald-50 text-left text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
-                          <tr>
-                            {tableColumns.map((col) => {
-                              if (hiddenTableColumns.has(col.id)) return null;
-                              const sortField = sortableColumns[col.id];
-                              const align =
-                                col.align === 'right'
-                                  ? 'text-right'
-                                  : col.align === 'center'
-                                  ? 'text-center'
-                                  : 'text-left';
-                              return (
-                                <th
-                                  key={col.id}
-                                  className={`whitespace-nowrap border-b border-emerald-100 px-3 py-2.5 ${align}`}
-                                >
-                                  {sortField ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSort(sortField)}
-                                      className="inline-flex items-center gap-1 hover:text-slate-900"
-                                    >
-                                      {col.label}
-                                      <SortIcon field={sortField} />
-                                    </button>
-                                  ) : (
-                                    col.label
-                                  )}
-                                </th>
-                              );
-                            })}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
-                          {pagedStudents.map((student) => (
-                            <tr key={student.studentId} className="transition hover:bg-slate-50/80">
-                              {!hiddenTableColumns.has('rank') && (
-                                <td className="whitespace-nowrap px-3 py-2.5 font-medium text-slate-900">
-                                  {student.rank}
-                                </td>
-                              )}
-                              {!hiddenTableColumns.has('student') && (
-                                <td className="px-3 py-2.5">
-                                  <div className="font-medium text-slate-900">{student.studentName}</div>
-                                  <div className="text-xs text-slate-500">
-                                    {student.studentCode || student.studentId}
-                                  </div>
-                                </td>
-                              )}
-                              {scope !== 'class' && !hiddenTableColumns.has('class') && (
-                                <td className="whitespace-nowrap px-3 py-2.5 text-slate-600">
-                                  {student.className}
-                                </td>
-                              )}
-                              {!hiddenTableColumns.has('total') && (
-                                <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-slate-800">
-                                  {student.totalScore}
-                                </td>
-                              )}
-                              {!hiddenTableColumns.has('average') && (
-                                <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-slate-800">
-                                  {student.average}
-                                </td>
-                              )}
-                              {!hiddenTableColumns.has('gradeLevel') && (
-                                <td className="whitespace-nowrap px-3 py-2.5 text-center">
-                                  <span className="inline-flex h-6 min-w-[28px] items-center justify-center rounded-md border border-blue-100 bg-blue-50 px-1.5 text-xs font-semibold text-blue-700">
-                                    {student.gradeLevel}
-                                  </span>
-                                </td>
-                              )}
-                              {!hiddenTableColumns.has('absent') && (
-                                <td className="whitespace-nowrap px-3 py-2.5 text-center text-slate-600">
-                                  {student.absent + student.permission}
-                                </td>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/60 px-3 py-2">
-                      <span className="text-xs text-slate-600">
-                        {tablePage * PAGE_SIZE + 1}–
-                        {Math.min((tablePage + 1) * PAGE_SIZE, sortedStudents.length)} of{' '}
-                        {sortedStudents.length}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setTablePage((p) => Math.max(0, p - 1))}
-                          disabled={tablePage === 0}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Previous page"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <span className="px-2 text-xs font-medium text-slate-700">
-                          {tablePage + 1} / {totalPages}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setTablePage((p) => Math.min(totalPages - 1, p + 1))}
-                          disabled={tablePage >= totalPages - 1}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Next page"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
+              {report && !loadingReport && (
+                <div className="khmer-report-preview-container mx-auto">
+                  <MonthlyReportPrint 
+                    report={report} 
+                    settings={settings} 
+                    subjects={visibleSubjects}
+                    schoolProfile={schoolProfile}
+                  />
+                </div>
+              )}
+            </div>
           </AnimatedContent>
         </main>
       </div>
@@ -1247,14 +1084,7 @@ export default function KhmerMonthlyReportPage() {
         </div>
       )}
 
-      {report && (
-        <MonthlyReportPrint 
-          report={report} 
-          settings={settings} 
-          subjects={visibleSubjects}
-          schoolProfile={schoolProfile}
-        />
-      )}
+
     </div>
   );
 }

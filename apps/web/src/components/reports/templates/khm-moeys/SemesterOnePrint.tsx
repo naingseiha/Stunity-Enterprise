@@ -83,7 +83,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
           margin-top: 0;
           line-height: 1;
         }
-        .khmer-monthly-print { display: none; }
+        .khmer-monthly-print { display: block; }
         .moeys-semester-page {
           width: 210mm; margin: 0 auto 32px; padding: 5mm 3mm; background: #fff; color: #000;
           font-family: var(--khmer-report-body-font); font-size: ${settings.tableFontSize}px;

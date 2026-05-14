@@ -137,7 +137,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         }
 
         .khmer-monthly-print {
-          display: none;
+          display: block;
         }
 
         .khmer-monthly-page {
