@@ -253,7 +253,7 @@ export default function AssignmentsListScreen() {
       setAssignments(Array.isArray(assignmentRows) ? assignmentRows : []);
       setMembers(Array.isArray(memberRows) ? memberRows : []);
     } catch (err: any) {
-      console.error('Failed to fetch assignments:', err);
+      if (__DEV__) { console.error('Failed to fetch assignments:', err); }
       setError(err.message || 'Failed to load assignments');
     } finally {
       setLoading(false);

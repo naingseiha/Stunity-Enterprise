@@ -74,7 +74,7 @@ export default function ProfileVisitorsScreen() {
           return Array.from(byId.values());
         });
       } catch (error) {
-        console.error("Failed to load profile visitors:", error);
+        if (__DEV__) { console.error("Failed to load profile visitors:", error); }
       } finally {
         setLoading(false);
         setRefreshing(false);

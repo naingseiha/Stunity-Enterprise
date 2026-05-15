@@ -1,10 +1,10 @@
-import { API_BASE_URL } from './config';
+import { SCHOOL_SERVICE_URL } from './config';
 import { TokenManager } from './auth';
 
 export const schoolAPI = {
   getProfile: async (schoolId: string) => {
     const token = TokenManager.getAccessToken();
-    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/profile`, {
+    const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/profile`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -21,7 +21,7 @@ export const schoolAPI = {
 
   updateProfile: async (schoolId: string, data: any) => {
     const token = TokenManager.getAccessToken();
-    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/profile`, {
+    const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/profile`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

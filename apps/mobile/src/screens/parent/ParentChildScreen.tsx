@@ -58,7 +58,7 @@ export default function ParentChildScreen() {
         const data = await res.json();
         setStudent(data.data || data);
       } catch (e) {
-        console.error('Failed to fetch student:', e);
+        if (__DEV__) { console.error('Failed to fetch student:', e); }
       } finally {
         setLoading(false);
       }

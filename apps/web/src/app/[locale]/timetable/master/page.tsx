@@ -326,6 +326,47 @@ function MetricCard({
   );
 }
 
+function GenerationProgress({
+  state,
+  onStop,
+}: {
+  state: GenerationState;
+  onStop: () => void;
+}) {
+  const percent = state.total > 0 ? Math.round((state.current / state.total) * 100) : 0;
+
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
+            Generating
+          </p>
+          <p className="mt-1 text-sm font-bold text-emerald-950 dark:text-emerald-100">
+            {state.message || 'Preparing timetable'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onStop}
+          className="rounded-lg border border-emerald-300 px-2.5 py-1.5 text-xs font-black text-emerald-800 transition hover:bg-white dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-gray-900"
+        >
+          Stop
+        </button>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white dark:bg-gray-900">
+        <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${percent}%` }} />
+      </div>
+      <div className="mt-2 flex justify-between text-xs font-bold text-emerald-800 dark:text-emerald-200">
+        <span>
+          {state.current}/{state.total}
+        </span>
+        <span>{percent}%</span>
+      </div>
+    </div>
+  );
+}
+
 function ControlLabel({ children }: { children: ReactNode }) {
   return <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{children}</span>;
 }

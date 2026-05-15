@@ -73,7 +73,7 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
       
       setLoading(false);
     } catch (err: any) {
-      console.error('Load winners error:', err);
+      if (__DEV__) { console.error('Load winners error:', err); }
     }
   };
 

@@ -766,86 +766,62 @@ export default function ClassGradesScreen() {
 
     return (
       <View style={styles.studentCard}>
-        <View style={styles.cardHeader}>
-          <View style={styles.studentInfo}>
-            {item.photoUrl ? (
-              <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '15' }]}>
-                <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>
-                  {item.firstName?.[0] || 'S'}
-                </Text>
-              </View>
-            )}
-            <View style={styles.studentNameContainer}>
-              <Text style={styles.studentName} numberOfLines={1}>
-                {[item.lastName, item.firstName].filter(Boolean).join(' ')}
-              </Text>
-              {item.englishFirstName || item.englishLastName ? (
-                <Text style={styles.englishName} numberOfLines={1}>
-                  {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
-                </Text>
-              ) : (
-                <Text style={styles.studentId}>{t('classScreens.grades.idValue', { id: item.studentId || t('classScreens.grades.na') })}</Text>
-              )}
-            </View>
-          </View>
-          
-          <TouchableOpacity style={styles.detailsBtn} activeOpacity={0.7}>
-            <Text style={styles.detailsBtnText}>{t('common.details')}</Text>
-            <Ionicons name="chevron-forward" size={14} color={COLORS.primaryDark} />
-          </TouchableOpacity>
+        <View style={styles.studentRankBadge}>
+          <Text style={styles.studentRankText}>{index + 1}</Text>
         </View>
-
-        <View style={[styles.cardDivider, { backgroundColor: '#F8FAFC' }]} />
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#6366F1' }]}>{index + 1}</Text>
-            <Text style={styles.statLabel}>{t('classScreens.grades.rank')}</Text>
-          </View>
-          
-          <View style={[styles.verticalDivider, { backgroundColor: '#F1F5F9' }]} />
-          
-          <View style={[styles.statItem, { flex: 2 }]}>
-            <View style={styles.scoreInteractionArea}>
-              <View style={[
-                styles.scoreInputWrapper, 
-                isModified && styles.scoreInputWrapperModified,
-                isSaved && styles.scoreInputWrapperSaved
-              ]}>
-                <TextInput
-                  style={[
-                    styles.scoreInput,
-                    isSaved && styles.scoreInputSaved
-                  ]}
-                  value={currentScore}
-                  onChangeText={(val) => handleScoreChange(studentId, val)}
-                  keyboardType="decimal-pad"
-                  placeholder="-"
-                  placeholderTextColor={COLORS.textMuted}
-                  maxLength={5}
-                  editable={isTeacher && scoreEditingEnabled && !saving && !scoreRowsLoading}
-                  selectTextOnFocus
-                />
-                {isSaved && (
-                  <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={styles.saveIcon} />
-                )}
-                {isModified && (
-                  <View style={styles.modifiedDot} />
-                )}
-              </View>
-              <Text style={styles.statLabel}>/ {maxScore}</Text>
+        
+        <View style={styles.studentInfo}>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '20' }]}>
+              <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>
+                {item.firstName?.[0] || 'S'}
+              </Text>
             </View>
-            <Text style={styles.statLabelText}>{t('classScreens.grades.score')}</Text>
+          )}
+          
+          <View style={styles.studentNameContainer}>
+            <Text style={styles.studentName} numberOfLines={1}>
+              {[item.lastName, item.firstName].filter(Boolean).join(' ')}
+            </Text>
+            {item.englishFirstName || item.englishLastName ? (
+              <Text style={styles.englishName} numberOfLines={1}>
+                {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
+              </Text>
+            ) : null}
+            <Text style={styles.studentId}>{t('classScreens.grades.idValue', { id: item.studentId || t('classScreens.grades.na') })}</Text>
           </View>
-
-          <View style={[styles.verticalDivider, { backgroundColor: '#F1F5F9' }]} />
-
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#F59E0B' }]}>{item.studentId || '—'}</Text>
-            <Text style={styles.statLabel}>{t('common.id')}</Text>
+        </View>
+        
+        <View style={styles.scoreSection}>
+          <View style={[
+            styles.scoreInputWrapper, 
+            isModified && styles.scoreInputWrapperModified,
+            isSaved && styles.scoreInputWrapperSaved
+          ]}>
+            <TextInput
+              style={[
+                styles.scoreInput,
+                isSaved && styles.scoreInputSaved
+              ]}
+              value={currentScore}
+              onChangeText={(val) => handleScoreChange(studentId, val)}
+              keyboardType="decimal-pad"
+              placeholder="-"
+              placeholderTextColor={COLORS.textMuted}
+              maxLength={5}
+              editable={isTeacher && scoreEditingEnabled && !saving && !scoreRowsLoading}
+              selectTextOnFocus
+            />
+            {isSaved && (
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={styles.saveIcon} />
+            )}
+            {isModified && (
+              <View style={styles.modifiedDot} />
+            )}
           </View>
+          <Text style={styles.maxScore}>/ {maxScore}</Text>
         </View>
       </View>
     );
@@ -900,7 +876,7 @@ export default function ClassGradesScreen() {
               />
               <View style={styles.scoreHeroGlow} />
               <View style={styles.scoreHeroIcon}>
-                <Ionicons name="bar-chart" size={22} color="#FFFFFF" />
+                <Ionicons name="bar-chart" size={26} color="#FFFFFF" />
               </View>
               <View style={styles.scoreHeroCopy}>
                 <Text style={styles.scoreHeroLabel}>{className || t('classScreens.grades.classScores')}</Text>
@@ -908,7 +884,7 @@ export default function ClassGradesScreen() {
                 <View style={styles.scoreHeroMetaRow}>
                   <Text style={styles.scoreHeroMeta}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
                   {scoreRowsLoading ? (
-                    <ActivityIndicator size="small" color="rgba(255,255,255,0.78)" />
+                    <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
                   ) : null}
                 </View>
               </View>
@@ -1245,15 +1221,15 @@ const styles = StyleSheet.create({
   saveBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
   filterSection: { paddingVertical: 4 },
   scoreHero: {
-    minHeight: 128,
+    height: 140,
     borderRadius: 28,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 18,
-    padding: 18,
     overflow: 'hidden',
+    padding: 24,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
+    marginHorizontal: 16,
+    marginTop: 8,
     shadowColor: '#0E7490',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.24,
@@ -1265,50 +1241,25 @@ const styles = StyleSheet.create({
     width: 170,
     height: 170,
     borderRadius: 85,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    top: -50,
     right: -50,
-    top: -70,
   },
   scoreHeroIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
-    alignItems: 'center',
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.24)',
-    marginRight: 14,
-  },
-  scoreHeroCopy: {
-    flex: 1,
-  },
-  scoreHeroLabel: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.7,
-  },
-  scoreHeroTitle: {
-    marginTop: 5,
-    color: '#FFFFFF',
-    fontSize: 23,
-    fontWeight: '900',
-    letterSpacing: -0.6,
-  },
-  scoreHeroMeta: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  scoreHeroMetaRow: {
-    marginTop: 5,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginRight: 18,
   },
+  scoreHeroCopy: { flex: 1 },
+  scoreHeroLabel: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
+  scoreHeroTitle: { fontSize: 26, color: '#FFFFFF', fontWeight: '900', marginBottom: 6 },
+  scoreHeroMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scoreHeroMeta: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
+  
   sectionLabel: { 
     fontSize: 13, 
     fontWeight: '700', 
@@ -1469,7 +1420,11 @@ const styles = StyleSheet.create({
   
   list: { paddingTop: 4, gap: 12, paddingBottom: 40 },
   studentCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
     backgroundColor: COLORS.surface,
+    padding: 16,
     marginHorizontal: 16,
     borderRadius: 22,
     borderWidth: 1,
@@ -1479,72 +1434,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 1,
-    marginBottom: 12,
-    overflow: 'hidden',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    paddingBottom: 12,
-  },
-  detailsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.primaryDark + '10',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  detailsBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.primaryDark,
-  },
-  cardDivider: {
-    height: 1,
-    width: '100%',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    color: COLORS.textMuted,
-  },
-  statLabelText: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 6,
-    textTransform: 'uppercase',
-    color: COLORS.textMuted,
-    textAlign: 'center',
-  },
-  verticalDivider: {
-    width: 1,
-    height: 30,
-    alignSelf: 'center',
-  },
-  scoreInteractionArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  studentCardHighlight: {
+    borderColor: COLORS.primaryDark,
+    backgroundColor: '#F0F9FF',
   },
   studentRankBadge: {
     width: 24,
@@ -1559,9 +1452,9 @@ const styles = StyleSheet.create({
   
   studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   avatar: { 
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center', 
     alignItems: 'center', 
     marginRight: 12 
@@ -1570,7 +1463,7 @@ const styles = StyleSheet.create({
   studentNameContainer: { flex: 1, paddingRight: 8 },
   studentName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 1 },
   englishName: { fontSize: 11, fontWeight: '600', color: COLORS.primaryDark, textTransform: 'uppercase', marginBottom: 2 },
-  studentId: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600' },
+  studentId: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
   
   scoreSection: { flexDirection: 'row', alignItems: 'center' },
   scoreInputWrapper: {
@@ -1579,9 +1472,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.inputBg,
     borderWidth: 1.5,
     borderColor: COLORS.border,
-    borderRadius: 12,
-    height: 36,
-    width: 60,
+    borderRadius: 16,
+    height: 48,
+    width: 70,
     paddingHorizontal: 4,
   },
   scoreInputWrapperModified: {

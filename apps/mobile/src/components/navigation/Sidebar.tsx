@@ -49,6 +49,7 @@ import {
   getUserCardOrientationPreference,
   getUserCardStylePreference,
 } from '@/services/userCardPreferences';
+import { canUseTeacherAttendance } from '@/utils/attendanceAccess';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 
@@ -197,9 +198,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   const isPrismDesign = selectedDesignId === 'prism';
   const isLuxeDesign = selectedDesignId === 'luxe';
   const cardLastFour = cardNumber.replace(/\s/g, '').slice(-4).padStart(4, '0');
-  /** Teacher portal: TEACHER role or User.teacherId / nested teacher (auth now returns both). */
-  const canAccessTeacherAttendance =
-    role === 'TEACHER' || Boolean(user?.teacher?.id || user?.teacherId);
+  const canAccessTeacherAttendance = canUseTeacherAttendance(user);
   const attendanceMenuItem: MenuItem | null = canAccessTeacherAttendance
     ? {
       key: 'attendance',

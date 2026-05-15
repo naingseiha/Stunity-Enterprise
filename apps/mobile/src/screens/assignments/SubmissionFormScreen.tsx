@@ -83,7 +83,7 @@ export default function SubmissionFormScreen() {
                 ]
               );
             } catch (err: any) {
-              console.error('Failed to submit assignment:', err);
+              if (__DEV__) { console.error('Failed to submit assignment:', err); }
               Alert.alert('Error', err.message || 'Failed to submit assignment. Please try again.');
             } finally {
               setSubmitting(false);
@@ -146,7 +146,7 @@ export default function SubmissionFormScreen() {
           }
         }
       } catch (err: any) {
-        console.error('File picker error:', err);
+        if (__DEV__) { console.error('File picker error:', err); }
         Alert.alert('Error', 'Failed to pick file. Please try again.');
       } finally {
         setUploading(false);

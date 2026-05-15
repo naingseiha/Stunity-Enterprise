@@ -2,6 +2,19 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Poppins, Inter, Moul } from 'next/font/google';
 import ClientProviders from '@/components/ClientProviders';
+import { constructMetadata } from '@/lib/metadata';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return constructMetadata({
+    title: locale === 'km' ? 'ស្ទូនិធី - ប្រព័ន្ធគ្រប់គ្រងសាលារៀនទំនើប' : 'Stunity - Modern School Management',
+    description: locale === 'km' 
+      ? 'ស្ទូនិធី គឺជាប្រព័ន្ធគ្រប់គ្រងសាលារៀន និងការសិក្សាសង្គមដ៏ទំនើបបំផុត។'
+      : 'Stunity is the most advanced school management and social learning platform.',
+  });
+}
+
 
 const poppins = Poppins({
   weight: ['400', '500', '600', '700'],

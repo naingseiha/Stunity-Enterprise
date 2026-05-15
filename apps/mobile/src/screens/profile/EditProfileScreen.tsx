@@ -516,7 +516,7 @@ export default function EditProfileScreen() {
         updateUser({ profilePictureUrl: photoUrl });
         Alert.alert(t('common.success'), t('profile.uploadSuccess'));
       } catch (error) {
-        console.error('Upload profile photo error:', error);
+        if (__DEV__) { console.error('Upload profile photo error:', error); }
         setLocalProfilePic(null);
         Alert.alert(t('common.error'), t('profile.uploadErrorMsg'));
       } finally {
@@ -579,7 +579,7 @@ export default function EditProfileScreen() {
         updateUser({ coverPhotoUrl: photoUrl } as any);
         Alert.alert(t('common.success'), t('profile.uploadSuccess'));
       } catch (error) {
-        console.error('Upload cover photo error:', error);
+        if (__DEV__) { console.error('Upload cover photo error:', error); }
         setLocalCoverPic(null);
         Alert.alert(t('common.error'), t('profile.coverUploadErrorMsg'));
       } finally {
@@ -690,7 +690,7 @@ export default function EditProfileScreen() {
         { text: t('common.ok'), onPress: () => navigation.goBack() },
       ]);
     } catch (error: any) {
-      console.error('Failed to save profile:', error);
+      if (__DEV__) { console.error('Failed to save profile:', error); }
       Alert.alert(t('common.error'), error?.response?.data?.error || t('common.error'));
     } finally {
       setSaving(false);

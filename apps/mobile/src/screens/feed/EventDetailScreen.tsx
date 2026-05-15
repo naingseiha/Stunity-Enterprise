@@ -81,7 +81,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
       const data = await getCalendarEvent(eventId);
       setEvent(data);
     } catch (error) {
-      console.error('Failed to load event detail:', error);
+      if (__DEV__) { console.error('Failed to load event detail:', error); }
       Alert.alert(
         t('common.error', 'Error'),
         t('profile.userCard.eventsLoadFailed', 'Unable to load event details right now.')
@@ -109,7 +109,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
       await rsvpCalendarEvent(eventId, nextStatus);
       await loadEvent();
     } catch (error: any) {
-      console.error('Failed to RSVP on detail:', error);
+      if (__DEV__) { console.error('Failed to RSVP on detail:', error); }
       Alert.alert(t('common.error', 'Error'), error?.message || 'Unable to update RSVP.');
     } finally {
       setRsvpLoading(null);
@@ -122,7 +122,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
     try {
       await Linking.openURL(event.virtualLink);
     } catch (error) {
-      console.error('Failed to open virtual link:', error);
+      if (__DEV__) { console.error('Failed to open virtual link:', error); }
       Alert.alert(t('common.error', 'Error'), 'Unable to open event link.');
     }
   }, [event?.virtualLink, t]);

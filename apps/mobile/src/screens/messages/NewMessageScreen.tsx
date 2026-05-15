@@ -93,7 +93,7 @@ export default function NewMessageScreen() {
                 userId: contact.id,
             });
         } catch (error) {
-            console.error('Failed to open conversation:', error);
+            if (__DEV__) { console.error('Failed to open conversation:', error); }
         } finally {
             setLoading(false);
         }

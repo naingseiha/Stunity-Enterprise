@@ -58,7 +58,7 @@ export default function GradeSubmissionScreen() {
         setFeedback(data.feedback);
       }
     } catch (err: any) {
-      console.error('Failed to fetch submission:', err);
+      if (__DEV__) { console.error('Failed to fetch submission:', err); }
       setError(err.message || t('assignments.grade.loadFailed'));
     } finally {
       setLoading(false);
@@ -113,7 +113,7 @@ export default function GradeSubmissionScreen() {
         ]
       );
     } catch (err: any) {
-      console.error('Failed to save grade:', err);
+      if (__DEV__) { console.error('Failed to save grade:', err); }
       Alert.alert(t('common.error'), err.message || t('assignments.grade.saveFailed'));
     } finally {
       setSaving(false);

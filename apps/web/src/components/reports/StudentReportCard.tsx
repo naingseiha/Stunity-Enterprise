@@ -1,6 +1,7 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import Image from 'next/image';
 import { StudentReportCard as ReportCardType, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { downloadStudentReportCardPDF } from '@/lib/pdf/reportCardPdf';
 import { User, Calendar, Trophy, TrendingUp, CheckCircle, XCircle, Clock, FileText, Download } from 'lucide-react';
@@ -59,7 +60,7 @@ export default function StudentReportCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {showPhoto && student.photoUrl ? (
-              <img src={student.photoUrl} alt={student.khmerName} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800 shadow-lg" />
+              <Image src={student.photoUrl} alt={student.khmerName} width={56} height={56} className="w-14 h-14 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800 shadow-lg" />
             ) : (
               <div className="w-14 h-14 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center border border-blue-500/20 shadow-inner">
                 <User className="w-7 h-7 text-blue-600 dark:text-blue-400" />
@@ -97,9 +98,11 @@ export default function StudentReportCard({
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 relative z-10">
           <div className="flex items-center gap-8">
             {showPhoto && student.photoUrl ? (
-              <img 
+              <Image 
                 src={student.photoUrl} 
                 alt={student.khmerName} 
+                width={112}
+                height={112}
                 className="w-28 h-28 rounded-3xl object-cover ring-4 ring-white/10 shadow-2xl group-hover:scale-105 transition-transform duration-700" 
               />
             ) : (

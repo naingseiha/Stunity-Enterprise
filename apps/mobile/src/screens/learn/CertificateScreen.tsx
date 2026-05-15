@@ -29,7 +29,7 @@ export default function CertificateScreen({ route, navigation }: Props) {
       const res = await getCertificate(courseId);
       setData(res);
     } catch (err) {
-      console.error(err);
+      if (__DEV__) { console.error(err); }
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function CertificateScreen({ route, navigation }: Props) {
         url: `https://stunity.com/verify/${data.verificationCode}`,
       });
     } catch (error) {
-      console.error(error);
+      if (__DEV__) { console.error(error); }
     }
   };
 

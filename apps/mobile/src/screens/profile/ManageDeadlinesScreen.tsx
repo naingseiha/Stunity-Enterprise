@@ -43,7 +43,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                 setDeadlines(response.data.data);
             }
         } catch (error) {
-            console.error('Failed to fetch deadlines:', error);
+            if (__DEV__) { console.error('Failed to fetch deadlines:', error); }
         } finally {
             setLoading(false);
         }
@@ -78,7 +78,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                 Alert.alert('Success', 'Deadline added!');
             }
         } catch (error) {
-            console.error('Failed to add deadline:', error);
+            if (__DEV__) { console.error('Failed to add deadline:', error); }
             Alert.alert('Error', 'Failed to add deadline.');
         } finally {
             setIsSubmitting(false);
@@ -92,7 +92,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                 setDeadlines(deadlines.filter(dl => dl.id !== id));
             }
         } catch (error) {
-            console.error('Failed to delete deadline:', error);
+            if (__DEV__) { console.error('Failed to delete deadline:', error); }
             Alert.alert('Error', 'Failed to delete deadline.');
         }
     };

@@ -71,7 +71,7 @@ export default function ParentChildReportCardScreen() {
         const arr = Array.isArray(raw) ? raw : raw?.gradeSummary || raw?.subjects || [];
         setSummary(arr);
       } catch (e) {
-        console.error('Failed to fetch report:', e);
+        if (__DEV__) { console.error('Failed to fetch report:', e); }
       } finally {
         setLoading(false);
       }

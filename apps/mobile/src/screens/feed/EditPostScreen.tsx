@@ -41,7 +41,7 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
   if (localUris.length === 0) return [];
 
   try {
-    console.log('📤 [EditPost] Uploading', localUris.length, 'images...');
+    if (__DEV__) { console.log('📤 [EditPost] Uploading', localUris.length, 'images...'); }
 
     const { Config } = await import('@/config/env');
     const { tokenService } = await import('@/services/token');
@@ -60,7 +60,7 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
     });
 
     // 1. Ask backend for direct R2 Presigned upload tickets
-    console.log(`🎟️ [EditPost] Requesting ${mappedRequests.length} Presigned URLs...`);
+    if (__DEV__) { console.log(`🎟️ [EditPost] Requesting ${mappedRequests.length} Presigned URLs...`); }
     const ticketRes = await fetch(`${Config.feedUrl}/presigned-url`, {
       method: 'POST',
       headers: {
@@ -85,7 +85,7 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
       const reqMeta = mappedRequests.find(r => r.uri === uri);
       const ticket = tickets[mappedRequests.indexOf(reqMeta!)];
 
-      console.log(`📤 [EditPost] Direct PUT to Cloudflare R2: ${reqMeta?.originalName}`);
+      if (__DEV__) { console.log(`📤 [EditPost] Direct PUT to Cloudflare R2: ${reqMeta?.originalName}`); }
 
       try {
         const response = await FileSystem.uploadAsync(
@@ -106,15 +106,15 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
 
         uploadedUrls.push(ticket.publicUrl);
       } catch (err: any) {
-        console.error('❌ [EditPost] Direct R2 Upload failed:', err);
+        if (__DEV__) { console.error('❌ [EditPost] Direct R2 Upload failed:', err); }
         throw new Error(`Direct upload failed: ${err.message}`);
       }
     }
 
-    console.log('✅ [EditPost] Upload successful:', uploadedUrls.length, 'images');
+    if (__DEV__) { console.log('✅ [EditPost] Upload successful:', uploadedUrls.length, 'images'); }
     return uploadedUrls;
   } catch (error) {
-    console.error('❌ [EditPost] Upload failed:', error);
+    if (__DEV__) { console.error('❌ [EditPost] Upload failed:', error); }
     throw error;
   }
 };

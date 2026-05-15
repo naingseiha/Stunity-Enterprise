@@ -150,6 +150,8 @@ export interface KhmerMonthlyReportData {
   school?: {
     id: string;
     name: string;
+    logo?: string | null;
+    logoUrl?: string | null;
     address?: string | null;
     countryCode?: string | null;
     defaultLanguage?: string | null;

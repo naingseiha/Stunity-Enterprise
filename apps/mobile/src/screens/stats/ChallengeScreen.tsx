@@ -35,7 +35,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
       const data = await statsAPI.getMyChallenges();
       setChallenges(data);
     } catch (error: any) {
-      console.error('Load challenges error:', error);
+      if (__DEV__) { console.error('Load challenges error:', error); }
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -57,7 +57,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
       const session = await liveQuizAPI.getSessionStatus(sessionCode);
       setParticipants(session.participants);
     } catch (err: any) {
-      console.error('Load participants error:', err);
+      if (__DEV__) { console.error('Load participants error:', err); }
     }
   };
 

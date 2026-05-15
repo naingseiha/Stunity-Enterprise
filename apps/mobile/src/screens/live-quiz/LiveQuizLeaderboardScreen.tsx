@@ -82,7 +82,7 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
       
       setLoading(false);
     } catch (err: any) {
-      console.error('Load leaderboard error:', err);
+      if (__DEV__) { console.error('Load leaderboard error:', err); }
     }
   };
 
@@ -100,7 +100,7 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
         });
       }
     } catch (err: any) {
-      console.error('Continue error:', err);
+      if (__DEV__) { console.error('Continue error:', err); }
     }
   };
 

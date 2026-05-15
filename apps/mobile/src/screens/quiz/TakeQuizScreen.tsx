@@ -245,12 +245,12 @@ export function TakeQuizScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      console.log('📤 [QUIZ] Submitting quiz with answers:', answers);
+      if (__DEV__) { console.log('📤 [QUIZ] Submitting quiz with answers:', answers); }
 
       // Submit to API
       const response = await quizService.submitQuiz(quiz.id, answers);
 
-      console.log('✅ [QUIZ] Submission successful:', response);
+      if (__DEV__) { console.log('✅ [QUIZ] Submission successful:', response); }
 
       // Small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -266,8 +266,8 @@ export function TakeQuizScreen() {
         attemptId: response.attemptId,
       });
     } catch (error: any) {
-      console.error('❌ [QUIZ] Quiz submission error:', error);
-      console.error('❌ [QUIZ] Error response:', error.response?.data);
+      if (__DEV__) { console.error('❌ [QUIZ] Quiz submission error:', error); }
+      if (__DEV__) { console.error('❌ [QUIZ] Error response:', error.response?.data); }
 
       const errorMessage = error.response?.data?.error
         || error.message

@@ -63,7 +63,7 @@ export default function ParentChildGradesScreen() {
         const arr = Array.isArray(data) ? data : data?.data || [];
         setGrades(Array.isArray(arr) ? arr : []);
       } catch (e) {
-        console.error('Failed to fetch grades:', e);
+        if (__DEV__) { console.error('Failed to fetch grades:', e); }
       } finally {
         setLoading(false);
       }

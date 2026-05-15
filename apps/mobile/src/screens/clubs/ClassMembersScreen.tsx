@@ -74,7 +74,7 @@ export default function ClassMembersScreen() {
       const data = await classesApi.getClassStudents(classId, force);
       setStudents(data || []);
     } catch (e) {
-      console.error(e);
+      if (__DEV__) { console.error(e); }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -112,7 +112,7 @@ export default function ClassMembersScreen() {
         });
       }
     } catch (err: any) {
-      console.error(err);
+      if (__DEV__) { console.error(err); }
     } finally {
       setLoading(false);
     }

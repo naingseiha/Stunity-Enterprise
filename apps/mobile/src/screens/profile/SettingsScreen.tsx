@@ -253,7 +253,7 @@ export default function SettingsScreen() {
                 const mergedPreferences = await saveAppPreferences(remotePreferences);
                 applyPreferences(mergedPreferences);
             } catch (error) {
-                console.warn('Failed to load app settings:', error);
+                if (__DEV__) { console.warn('Failed to load app settings:', error); }
             }
         };
 

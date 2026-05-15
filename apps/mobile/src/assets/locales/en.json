@@ -55,7 +55,10 @@
     "continue": "Continue",
     "next": "Next",
     "male": "Male",
-    "female": "Female"
+    "female": "Female",
+    "details": "Details",
+    "id": "ID",
+    "na": "N/A"
   },
   "auth": {
     "title": "Welcome Back",
@@ -1734,7 +1737,7 @@
     "classSchedule": "Class Schedule",
     "classTeachers": "Class Teachers",
     "teacher": "Teacher",
-    "teacherName": "Teacher {{name}}",
+    "teacherName": "{{name}}",
     "homeroomTeacher": "Homeroom Teacher",
     "classSession": "Class Session",
     "subject": "Subject",
@@ -2076,6 +2079,55 @@
       "phone": "Phone",
       "email": "Email",
       "address": "Address"
+    },
+    "grades": {
+      "rank": "Rank",
+      "score": "Score",
+      "idValue": "ID: {{id}}",
+      "na": "N/A",
+      "scoreImport": "Score Import",
+      "selectSubject": "Select Subject",
+      "academicMonth": "Academic Month",
+      "classScores": "Class Scores",
+      "maxPts": "Max: {{max}} pts",
+      "noSubjects": "No subjects found",
+      "studentListCount": "Student List ({{count}})",
+      "performanceOverview": "Performance Overview",
+      "subject": "Subject",
+      "subjects": "Subjects",
+      "passRate": "Pass Rate",
+      "loadFailed": "Failed to load grades",
+      "loading": "Loading grades...",
+      "saveFailed": "Failed to save scores",
+      "updated": "Scores updated successfully",
+      "unsavedTitle": "Unsaved Changes",
+      "unsavedMessage": "You have unsaved scores. Do you want to save them before leaving?",
+      "keepEditing": "Keep Editing",
+      "discard": "Discard",
+      "saveScores": "Save Scores",
+      "sheet": {
+        "currentStatus": "Current Status:",
+        "lockAction": "Lock Sheet",
+        "reopenAction": "Reopen Sheet",
+        "submitAction": "Submit Sheet",
+        "readOnlyHint": "This sheet is read-only because it has been submitted or locked.",
+        "status": {
+          "draft": "Draft",
+          "submitted": "Submitted",
+          "locked": "Locked"
+        },
+        "submitTitle": "Submit Grade Sheet",
+        "submitMessage": "Are you sure you want to submit this grade sheet? You won't be able to edit it afterwards.",
+        "submitSuccess": "Grade sheet submitted successfully",
+        "submitFailed": "Failed to submit grade sheet",
+        "lockTitle": "Lock Grade Sheet",
+        "lockMessage": "Are you sure you want to lock this grade sheet?",
+        "lockSuccess": "Grade sheet locked successfully",
+        "reopenTitle": "Reopen Grade Sheet",
+        "reopenMessage": "Are you sure you want to reopen this grade sheet?",
+        "reopenSuccess": "Grade sheet reopened successfully",
+        "lockedSheetSave": "Cannot save scores on a locked sheet"
+      }
     }
   },
   "clubScreens": {

@@ -77,7 +77,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
       
       setLoading(false);
     } catch (err: any) {
-      console.error('Load question error:', err);
+      if (__DEV__) { console.error('Load question error:', err); }
     }
   };
 
@@ -105,7 +105,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
         }
       }
     } catch (err: any) {
-      console.error('Poll error:', err);
+      if (__DEV__) { console.error('Poll error:', err); }
     }
   };
 
@@ -151,7 +151,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
         useNativeDriver: true,
       }).start();
     } catch (err: any) {
-      console.error('Submit error:', err);
+      if (__DEV__) { console.error('Submit error:', err); }
     }
   };
 
@@ -160,7 +160,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
       await liveQuizAPI.nextQuestion(sessionCode);
       // Will update via polling
     } catch (err: any) {
-      console.error('Next question error:', err);
+      if (__DEV__) { console.error('Next question error:', err); }
     }
   };
 

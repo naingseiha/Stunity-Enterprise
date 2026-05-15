@@ -5,6 +5,7 @@ import { useEffect, useState, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { LucideIcon } from 'lucide-react';
 import {
   GraduationCap,
@@ -347,7 +348,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                           <div className="flex items-start gap-4">
                             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400 overflow-hidden">
                               {checkIn.teacher?.photoUrl ? (
-                                <img src={checkIn.teacher.photoUrl} alt={autoT("auto.web.app_locale_dashboard_page.k_e1320e51")} className="w-full h-full object-cover" />
+                                <Image src={checkIn.teacher.photoUrl} alt={checkIn.teacher.firstName} width={40} height={40} className="w-full h-full object-cover" />
                               ) : (
                                 <UserPlus className="w-5 h-5" />
                               )}

@@ -199,7 +199,7 @@ export default function ClassDirectoryScreen() {
       const current = data.find(y => y.isCurrent);
       if (current) setSelectedYearId(current.id);
     } catch (err) {
-      console.error('Failed to fetch academic years', err);
+      if (__DEV__) { console.error('Failed to fetch academic years', err); }
     }
   }, []);
 

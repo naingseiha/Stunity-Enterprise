@@ -632,7 +632,7 @@ export default function FeedScreen() {
       }
       await sharePost(post.id);
     } catch (error) {
-      console.error('Share failed:', error);
+      if (__DEV__) { console.error('Share failed:', error); }
     }
   }, [sharePost]);
 
@@ -663,7 +663,7 @@ export default function FeedScreen() {
       setValuePostId(null);
       setValuePostData(null);
     } catch (error: any) {
-      console.error('❌ Failed to submit value:', error);
+      if (__DEV__) { console.error('❌ Failed to submit value:', error); }
       Alert.alert(t('common.error'), t('quiz.takeQuiz.errorSubmitting'));
     } finally {
       setIsValueSubmitting(false);

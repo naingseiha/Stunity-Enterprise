@@ -120,7 +120,7 @@ export default function ClubDetailsScreen() {
         throw clubData.reason || membersData.reason;
       }
     } catch (err: any) {
-      console.error('Failed to fetch club details:', err);
+      if (__DEV__) { console.error('Failed to fetch club details:', err); }
       setError(err?.message || t('clubScreens.details.loadFailed'));
     } finally {
       setLoading(false);
@@ -154,7 +154,7 @@ export default function ClubDetailsScreen() {
       }
       await fetchClubDetails();
     } catch (err: any) {
-      console.error('Failed to join club:', err);
+      if (__DEV__) { console.error('Failed to join club:', err); }
       if (club.mode === 'INVITE_ONLY') {
         Alert.alert(t('clubScreens.details.inviteRequired'), err?.message || t('clubScreens.details.inviteOnlyMessage'));
       } else if (club.mode === 'APPROVAL_REQUIRED') {
@@ -175,7 +175,7 @@ export default function ClubDetailsScreen() {
       await clubsApi.leaveClub(clubId);
       await fetchClubDetails();
     } catch (err: any) {
-      console.error('Failed to leave club:', err);
+      if (__DEV__) { console.error('Failed to leave club:', err); }
       Alert.alert(t('common.error'), err?.message || t('clubScreens.details.leaveFailed'));
     } finally {
       setJoiningLoading(false);

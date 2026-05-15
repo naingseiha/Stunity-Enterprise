@@ -5,6 +5,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useTransition, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Home,
   GraduationCap,
@@ -788,9 +789,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 className="flex items-center gap-2 group relative"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
               >
-                <img
+                <Image
                   src="/Stunity.png"
                   alt={autoT("auto.web.components_UnifiedNavigation.k_afe8796c")}
+                  width={120}
+                  height={32}
                   className="h-8 w-auto object-contain transition-all duration-200 group-hover:opacity-80"
                 />
               </Link>
@@ -940,7 +943,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 >
                   <div suppressHydrationWarning className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden">
                     {isHydrated && user?.profilePictureUrl ? (
-                      <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+                      <Image src={user.profilePictureUrl} alt={user.firstName} width={32} height={32} className="w-full h-full object-cover" />
                     ) : (
                       <>
                         {user?.firstName?.[0]}{user?.lastName?.[0]}
@@ -957,7 +960,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       <div className="flex items-center gap-3">
                         <div suppressHydrationWarning className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold shadow-md overflow-hidden">
                           {isHydrated && user?.profilePictureUrl ? (
-                            <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+                            <Image src={user.profilePictureUrl} alt={user.firstName} width={32} height={32} className="w-full h-full object-cover" />
                           ) : (
                             <>
                               {user?.firstName?.[0]}{user?.lastName?.[0]}

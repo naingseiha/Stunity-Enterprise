@@ -1072,7 +1072,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
       {showResetModal && selectedTeacher ? (
         <AdminResetPasswordModal
           user={{
-            id: selectedTeacher.id,
+            id: selectedTeacher.user?.id || selectedTeacher.id,
             name: `${selectedTeacher.lastName} ${selectedTeacher.firstName}`,
             email: selectedTeacher.email ?? undefined,
           }}

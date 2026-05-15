@@ -43,7 +43,7 @@ export function QuizStudioScreen() {
             const data = await quizService.getMyCreatedQuizzes();
             setQuizzes(data);
         } catch (e) {
-            console.warn('Failed to load created quizzes:', e);
+            if (__DEV__) { console.warn('Failed to load created quizzes:', e); }
         } finally {
             setLoading(false);
         }
@@ -69,7 +69,7 @@ export function QuizStudioScreen() {
                 isHost: true
             });
         } catch (e) {
-            console.error('Failed to start live session:', e);
+            if (__DEV__) { console.error('Failed to start live session:', e); }
             // Alert could be added here
         }
     };

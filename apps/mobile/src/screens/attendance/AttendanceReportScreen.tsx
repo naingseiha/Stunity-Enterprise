@@ -21,6 +21,7 @@ import { attendanceService, REQUEST_TIMEOUT_CODE } from '@/services/attendance';
 import { useAuthStore } from '@/stores';
 import { Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
+import { canUseTeacherAttendance, getTeacherAttendanceLookupId } from '@/utils/attendanceAccess';
 
 const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
@@ -178,6 +179,8 @@ export const AttendanceReportScreen = () => {
     const [summary, setSummary] = useState<any>(null);
     const [summaryError, setSummaryError] = useState<string | null>(null);
     const skipFirstFocusBustRef = useRef(true);
+    const useTeacherSummary = canUseTeacherAttendance(user);
+    const teacherSummaryLookupId = getTeacherAttendanceLookupId(user);
 
     const fetchSummary = useCallback(async (opts?: { bustCache?: boolean }) => {
         if (!user?.id) {
@@ -188,8 +191,13 @@ export const AttendanceReportScreen = () => {
             setSummaryError(null);
             let result;
             const bust = { bustCache: opts?.bustCache ?? false };
-            if (user.role === 'TEACHER') {
-                result = await attendanceService.getTeacherSummary(user.id, undefined, undefined, bust);
+            if (!user.schoolId) {
+                setSummary(null);
+                setSummaryError(t('attendance.notLinkedMsg'));
+                return;
+            }
+            if (useTeacherSummary && teacherSummaryLookupId) {
+                result = await attendanceService.getTeacherSummary(teacherSummaryLookupId, undefined, undefined, bust);
             } else {
                 const studentRecordId =
                     user.role === 'STUDENT'
@@ -233,7 +241,7 @@ export const AttendanceReportScreen = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [user?.id, user?.role, t]);
+    }, [teacherSummaryLookupId, t, useTeacherSummary, user]);
 
     useEffect(() => {
         setLoading(true);
@@ -292,7 +300,7 @@ export const AttendanceReportScreen = () => {
         );
     }
 
-    const isTeacher = user?.role === 'TEACHER';
+    const isTeacher = useTeacherSummary;
     const dateLocale = i18n.language === 'km' ? 'km-KH' : 'en-US';
 
     const totals = (summary?.stats?.totals || summary?.totals) || {

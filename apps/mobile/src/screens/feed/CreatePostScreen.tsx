@@ -500,7 +500,7 @@ export default function CreatePostScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } catch (error: any) {
-      console.error('Post creation error:', error);
+      if (__DEV__) { console.error('Post creation error:', error); }
       Alert.alert(t('common.error'), error.message || t('feed.createPost.failedCreatePost'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {

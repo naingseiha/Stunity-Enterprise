@@ -85,7 +85,7 @@ export default function CommentsScreen() {
           const incoming = payload.new as any;
           // Skip own comments — addComment() already optimistically added them to state
           if (incoming?.authorId === user?.id) return;
-          console.log('💬 [Comments] New comment from other user:', incoming?.id);
+          if (__DEV__) { console.log('💬 [Comments] New comment from other user:', incoming?.id); }
           fetchComments(postId);
         }
       )
@@ -110,7 +110,7 @@ export default function CommentsScreen() {
         }
       )
       .subscribe((status) => {
-        console.log('💬 [Comments] Subscription:', status);
+        if (__DEV__) { console.log('💬 [Comments] Subscription:', status); }
       });
 
     return () => {

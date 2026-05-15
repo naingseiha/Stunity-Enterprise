@@ -54,7 +54,7 @@ export default function SubmissionsListScreen() {
       setSubmissions(submissionsData);
       setStatistics(statsData);
     } catch (err: any) {
-      console.error('Failed to fetch submissions:', err);
+      if (__DEV__) { console.error('Failed to fetch submissions:', err); }
       setError(err.message || t('assignments.submissions.loadFailed'));
     } finally {
       setLoading(false);

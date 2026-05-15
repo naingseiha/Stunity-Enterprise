@@ -314,7 +314,7 @@ export default function SearchScreen() {
             }
         } catch (error) {
             if (requestId === searchRequestIdRef.current && !controller.signal.aborted) {
-                console.error('Search failed:', error);
+                if (__DEV__) { console.error('Search failed:', error); }
             }
         } finally {
             if (requestId === searchRequestIdRef.current) {

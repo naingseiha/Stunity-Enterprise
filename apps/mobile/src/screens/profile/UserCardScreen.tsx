@@ -88,7 +88,7 @@ export default function UserCardScreen({ navigation }: Props) {
       const nextProfile = await fetchProfile('me');
       setProfile(nextProfile);
     } catch (error) {
-      console.error('Failed to load user card profile:', error);
+      if (__DEV__) { console.error('Failed to load user card profile:', error); }
       if (!authUser) {
         Alert.alert(
           t('common.error', 'Error'),
@@ -119,7 +119,7 @@ export default function UserCardScreen({ navigation }: Props) {
         setSelectedDesignId(designId);
       })
       .catch((error) => {
-        console.error('Failed to load card preferences on card screen:', error);
+        if (__DEV__) { console.error('Failed to load card preferences on card screen:', error); }
       });
 
     return () => {
@@ -225,7 +225,7 @@ export default function UserCardScreen({ navigation }: Props) {
         message: `${fullName} • ${roleText}\n${institutionName}\n${verificationCode}`,
       });
     } catch (error) {
-      console.error('Failed to share card:', error);
+      if (__DEV__) { console.error('Failed to share card:', error); }
       Alert.alert(t('common.error', 'Error'), t('profile.userCard.shareFailed', 'Unable to share this card right now.'));
     }
   }, [currentProfile, fullName, institutionName, roleText, t, verificationCode]);
@@ -239,7 +239,7 @@ export default function UserCardScreen({ navigation }: Props) {
     try {
       await saveUserCardStylePreference(styleId);
     } catch (error) {
-      console.error('Failed to persist card style on card screen:', error);
+      if (__DEV__) { console.error('Failed to persist card style on card screen:', error); }
       setSelectedStyleId(previousStyleId);
       Alert.alert(
         t('common.error', 'Error'),
@@ -257,7 +257,7 @@ export default function UserCardScreen({ navigation }: Props) {
     try {
       await saveUserCardDesignPreference(designId);
     } catch (error) {
-      console.error('Failed to persist card design on card screen:', error);
+      if (__DEV__) { console.error('Failed to persist card design on card screen:', error); }
       setSelectedDesignId(previousDesignId);
       Alert.alert(
         t('common.error', 'Error'),
@@ -275,7 +275,7 @@ export default function UserCardScreen({ navigation }: Props) {
     try {
       await saveUserCardOrientationPreference(orientation);
     } catch (error) {
-      console.error('Failed to persist card orientation on card screen:', error);
+      if (__DEV__) { console.error('Failed to persist card orientation on card screen:', error); }
       setSelectedOrientation(previousOrientation);
       Alert.alert(
         t('common.error', 'Error'),

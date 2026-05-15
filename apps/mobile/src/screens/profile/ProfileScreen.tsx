@@ -380,7 +380,7 @@ export default function ProfileScreen() {
           return;
         }
 
-        console.error("Failed to load profile about data:", error);
+        if (__DEV__) { console.error("Failed to load profile about data:", error); }
         setEducation([]);
         setExperiences([]);
         setCertifications([]);
@@ -457,7 +457,7 @@ export default function ProfileScreen() {
           return;
         }
 
-        console.error("Failed to load profile:", error);
+        if (__DEV__) { console.error("Failed to load profile:", error); }
         if (isOwnProfile && currentUser) {
           setProfile(currentUser);
         }
@@ -507,7 +507,7 @@ export default function ProfileScreen() {
 
     const viewedAt = Date.now();
     trackProfileView(userId, "profile_screen").catch((error) => {
-      console.log("Profile view tracking skipped:", error?.message || error);
+      if (__DEV__) { console.log("Profile view tracking skipped:", error?.message || error); }
     });
 
     return () => {
@@ -565,7 +565,7 @@ export default function ProfileScreen() {
         );
       }
     } catch (error) {
-      console.error("Follow/unfollow failed:", error);
+      if (__DEV__) { console.error("Follow/unfollow failed:", error); }
     }
   }, [isFollowing, userId]);
 
@@ -611,7 +611,7 @@ export default function ProfileScreen() {
           prev ? { ...prev, profilePictureUrl: photoUrl } : prev,
         );
       } catch (e) {
-        console.error("Profile photo upload failed:", e);
+        if (__DEV__) { console.error("Profile photo upload failed:", e); }
         // Rollback on error if needed, but usually the old one is still in currentUser
         Alert.alert(t("profile.uploadError"), t("profile.uploadErrorMsg"));
         setProfile(isOwnProfile ? currentUser : null);
@@ -657,7 +657,7 @@ export default function ProfileScreen() {
           prev ? { ...prev, coverPhotoUrl: photoUrl } : prev,
         );
       } catch (e) {
-        console.error("Cover photo upload failed:", e);
+        if (__DEV__) { console.error("Cover photo upload failed:", e); }
         Alert.alert(t("profile.uploadError"), t("profile.coverUploadErrorMsg"));
         setProfile(isOwnProfile ? currentUser : null);
       } finally {

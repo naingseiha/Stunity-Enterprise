@@ -36,7 +36,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
       const data = await getQAThreads(courseId, lessonId);
       setThreads(data);
     } catch (err) {
-      console.error(err);
+      if (__DEV__) { console.error(err); }
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
       const detailed = await getQAThreadDetail(t.id);
       setSelectedThread(detailed);
     } catch (err) {
-      console.error(err);
+      if (__DEV__) { console.error(err); }
     }
   };
 
@@ -62,7 +62,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
       setIsCreating(false);
       fetchThreads();
     } catch (err) {
-      console.error(err);
+      if (__DEV__) { console.error(err); }
     } finally {
       setPosting(false);
     }
@@ -77,7 +77,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
       // Refresh thread
       loadThread(selectedThread);
     } catch (err) {
-      console.error(err);
+      if (__DEV__) { console.error(err); }
     } finally {
       setPosting(false);
     }

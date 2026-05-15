@@ -62,7 +62,7 @@ export default function AssignmentDetailScreen() {
         setMembers(Array.isArray(membersResult.value) ? membersResult.value : []);
       }
     } catch (err: any) {
-      console.error('Failed to fetch assignment:', err);
+      if (__DEV__) { console.error('Failed to fetch assignment:', err); }
       setError(err.message || t('classScreens.assignmentDetail.alertTitle'));
     } finally {
       setLoading(false);

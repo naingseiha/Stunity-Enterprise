@@ -114,7 +114,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
       const data = await statsAPI.getUserStats(userId);
       setStats(data);
     } catch (error: any) {
-      console.error('Load stats error:', error);
+      if (__DEV__) { console.error('Load stats error:', error); }
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -132,7 +132,7 @@ export default function EventsScreen({ navigation }: Props) {
       setEvents(eventsResponse.events || []);
       setUpcomingEvents(upcoming || []);
     } catch (error) {
-      console.error('Failed to load events:', error);
+      if (__DEV__) { console.error('Failed to load events:', error); }
       Alert.alert(
         t('common.error', 'Error'),
         t('profile.userCard.eventsLoadFailed', 'Unable to load events right now. Please try again.')
@@ -170,7 +170,7 @@ export default function EventsScreen({ navigation }: Props) {
       await rsvpCalendarEvent(eventId, nextStatus);
       applyRSVPUpdate(eventId, nextStatus);
     } catch (error: any) {
-      console.error('Failed to RSVP:', error);
+      if (__DEV__) { console.error('Failed to RSVP:', error); }
       Alert.alert(
         t('common.error', 'Error'),
         error?.message || t('profile.userCard.rsvpFailed', 'Unable to update RSVP right now.')

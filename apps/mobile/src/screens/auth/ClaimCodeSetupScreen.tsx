@@ -275,7 +275,7 @@ export default function ClaimCodeSetupScreen() {
         }
       }
     } catch (error) {
-      console.error('Gallery scan error:', error);
+      if (__DEV__) { console.error('Gallery scan error:', error); }
       Alert.alert(t('common.error'), t('auth.claimCodeSetup.alerts.scanImageFailed'));
     } finally {
       setIsBrowsing(false);

@@ -422,6 +422,16 @@ async function getLightweightTeachersPayload(
         createdAt: true,
         updatedAt: true,
         customFields: true,
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+            isActive: true,
+            lastLogin: true,
+            role: true,
+          },
+        },
         homeroomClass: {
           select: {
             id: true,
@@ -494,6 +504,16 @@ async function getLightweightTeachersPayload(
         createdAt: true,
         updatedAt: true,
         customFields: true,
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+            isActive: true,
+            lastLogin: true,
+            role: true,
+          },
+        },
       };
 
   const [total, teachers] = await Promise.all([
@@ -520,6 +540,8 @@ async function getLightweightTeachersPayload(
     subjects: subjectTeachers.map((sa: any) => sa.subject),
     teacherClasses: teacherClasses.map((tc: any) => tc.class),
     teachingClasses: teacherClasses.map((tc: any) => tc.class),
+    hasLoginAccount: !!teacher.user,
+    canLogin: teacher.user?.isActive || false,
     };
   });
 

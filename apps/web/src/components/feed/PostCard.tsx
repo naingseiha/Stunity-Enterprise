@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import MediaGallery, { MediaLightbox } from './MediaGallery';
@@ -478,9 +479,11 @@ export default function PostCard({
               className="flex-shrink-0"
             >
               {post.author.profileImage ? (
-                <img
+                <Image
                   src={post.author.profileImage}
                   alt={getDisplayName(post.author.firstName, post.author.lastName)}
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#F9A825] transition-all"
                 />
               ) : (

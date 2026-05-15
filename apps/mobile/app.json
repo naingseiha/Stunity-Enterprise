@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.stunity.mobile",
-      "buildNumber": "7",
+      "buildNumber": "9",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Stunity needs camera access to take photos for posts and profile pictures.",
@@ -32,7 +32,7 @@
     "android": {
       "package": "app.stunity.mobile",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 12,
+      "versionCode": 14,
       "icon": "./assets/android-icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-adaptive-foreground.png",

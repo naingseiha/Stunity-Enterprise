@@ -249,7 +249,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 /** School-level attendance dashboards, exports — not teachers/students/parents */
-const SCHOOL_ATTENDANCE_OPS_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN']);
+const SCHOOL_ATTENDANCE_OPS_ROLES = new Set(['ADMIN', 'STAFF', 'SCHOOL_ADMIN', 'SUPER_ADMIN']);
 
 function requireSchoolAttendanceOpsRole(req: AuthRequest, res: Response, next: NextFunction) {
   const role = req.user?.role;

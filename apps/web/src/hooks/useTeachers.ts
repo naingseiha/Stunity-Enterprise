@@ -28,6 +28,16 @@ export interface Teacher {
   photoUrl?: string | null;
   schoolId: string;
   isActive: boolean;
+  hasLoginAccount?: boolean;
+  canLogin?: boolean;
+  user?: {
+    id: string;
+    phone?: string | null;
+    email?: string | null;
+    isActive?: boolean | null;
+    lastLogin?: string | null;
+    role?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
   subjects?: Array<{ id: string; name: string }>;

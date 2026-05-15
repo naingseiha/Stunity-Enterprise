@@ -78,7 +78,7 @@ export const AchievementsScreen: React.FC<Props> = ({ navigation }) => {
       setAchievements(allData);
       setUserAchievements(userData);
     } catch (error) {
-      console.error('Failed to load achievements:', error);
+      if (__DEV__) { console.error('Failed to load achievements:', error); }
       // Fallback mock data if API fails
       // setAchievements(MOCK_ACHIEVEMENTS);
     } finally {

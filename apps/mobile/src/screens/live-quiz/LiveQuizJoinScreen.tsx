@@ -60,7 +60,7 @@ export function LiveQuizJoinScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      console.error('Join session error:', error);
+      if (__DEV__) { console.error('Join session error:', error); }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       const message = error.response?.data?.error || t('liveQuiz.join.failedJoinSession');

@@ -165,7 +165,7 @@ export const InstructorDashboardScreen = () => {
       const stats = await learnApi.getInstructorStats();
       setData(stats);
     } catch (error) {
-      console.error('Error loading instructor stats:', error);
+      if (__DEV__) { console.error('Error loading instructor stats:', error); }
     } finally {
       setLoading(false);
       setRefreshing(false);

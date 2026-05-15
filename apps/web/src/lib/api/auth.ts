@@ -283,7 +283,7 @@ export async function adminResetPassword(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ userId, newPassword }),
+    body: JSON.stringify({ userId, newPassword, activateAccount: true }),
   });
 
   if (!response.ok) {

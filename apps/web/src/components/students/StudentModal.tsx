@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { X, Upload, Camera, User, Users, BookOpen, FileText, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
@@ -68,7 +69,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
     }
     setActiveTab(sections[0]?.id ?? 'personal');
     setError('');
-  }, [student]);
+  }, [student, sections]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -188,7 +189,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="group relative flex-shrink-0">
             {photoPreview ? (
               <>
-                <img src={photoPreview} alt="Student" className="h-16 w-16 rounded-[1rem] border border-slate-200 object-cover shadow-sm dark:border-gray-700" />
+                <Image src={photoPreview} alt="Student" width={64} height={64} unoptimized className="h-16 w-16 rounded-[1rem] border border-slate-200 object-cover shadow-sm dark:border-gray-700" />
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 flex items-center justify-center rounded-[1rem] bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                   <Camera className="h-5 w-5 text-white" />
                 </button>

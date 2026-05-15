@@ -377,7 +377,7 @@ export default function PostDetailScreen() {
         setIsFollowingAuthor(res.data.isFollowing);
       }
     } catch (error) {
-      console.error('Follow error:', error);
+      if (__DEV__) { console.error('Follow error:', error); }
       Alert.alert('Error', 'Failed to update follow status. Please try again.');
     } finally {
       setFollowLoading(false);
@@ -408,7 +408,7 @@ export default function PostDetailScreen() {
       setValued(true);
       setIsValueModalVisible(false);
     } catch (error) {
-      console.error('Failed to submit value:', error);
+      if (__DEV__) { console.error('Failed to submit value:', error); }
       Alert.alert('Error', 'Failed to submit educational value. Please try again.');
     } finally {
       setIsValueSubmitting(false);

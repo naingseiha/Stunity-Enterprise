@@ -2,9 +2,25 @@ import React from 'react';
 import { type Period } from '@/lib/api/timetable';
 import { DAY_LABELS, type DayOfWeek, type TimetableEntry } from './types';
 
+type PrintPeriod = Period & {
+  nameKh?: string;
+};
+
+type PrintTimetableEntry = TimetableEntry & {
+  subject?: {
+    name?: string | null;
+    nameKh?: string | null;
+  } | null;
+  teacher?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    khmerName?: string | null;
+  } | null;
+};
+
 interface TimetablePrintProps {
-  entries: TimetableEntry[];
-  periods: Period[];
+  entries: PrintTimetableEntry[];
+  periods: PrintPeriod[];
   title: string;
   subTitle?: string;
   schoolName?: string;
@@ -38,7 +54,7 @@ export default function TimetablePrint({
   showDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
 }: TimetablePrintProps) {
   // Group entries by period and day
-  const entryMap = new Map<string, TimetableEntry>();
+  const entryMap = new Map<string, PrintTimetableEntry>();
   entries.forEach((entry) => {
     entryMap.set(`${entry.periodId}|${entry.dayOfWeek}`, entry);
   });
@@ -300,10 +316,14 @@ export default function TimetablePrint({
                       <td key={day} className="khmer-battambang">
                         {entry ? (
                           <>
-                            <div className="font-bold" style={{ fontSize: '11px' }}>{entry.subject?.nameKh || entry.subject?.name}</div>
-                            {entry.teacher && (
+                            <div className="font-bold" style={{ fontSize: '11px' }}>
+                              {entry.subject?.nameKh || entry.subject?.name || entry.subjectName || ''}
+                            </div>
+                            {(entry.teacher || entry.teacherName) && (
                               <div style={{ fontSize: '9px', marginTop: 3 }}>
-                                {entry.teacher.khmerName || `${entry.teacher.firstName} ${entry.teacher.lastName}`}
+                                {entry.teacher?.khmerName ||
+                                  entry.teacherName ||
+                                  `${entry.teacher?.firstName || ''} ${entry.teacher?.lastName || ''}`.trim()}
                               </div>
                             )}
                           </>

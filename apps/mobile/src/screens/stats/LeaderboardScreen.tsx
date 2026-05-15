@@ -43,7 +43,7 @@ export function LeaderboardScreen() {
             const data = await fetchLeaderboard(50);
             setUsers(data);
         } catch (error) {
-            console.error('Failed to load leaderboard:', error);
+            if (__DEV__) { console.error('Failed to load leaderboard:', error); }
         } finally {
             setLoading(false);
             setRefreshing(false);

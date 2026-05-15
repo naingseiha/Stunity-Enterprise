@@ -186,7 +186,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                   setTags(newTags);
                 }
               } catch (e) {
-                console.error(e);
+                if (__DEV__) { console.error(e); }
               } finally {
                 setIsAiLoading(false);
               }

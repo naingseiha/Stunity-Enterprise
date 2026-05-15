@@ -75,7 +75,7 @@ export default function QuizDashboardScreen() {
                 setTopPlayer(leaderboardData[0]);
             }
         } catch (e) {
-            console.warn('⚠️ [QuizDashboard] Failed to load quiz data:', e);
+            if (__DEV__) { console.warn('⚠️ [QuizDashboard] Failed to load quiz data:', e); }
         }
     }, []);
 

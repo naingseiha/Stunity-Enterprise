@@ -370,7 +370,7 @@ export default function ClubsScreen() {
       const current = data.find((y) => y.isCurrent);
       if (current) setSelectedYearId(current.id);
     } catch (err) {
-      console.error('Failed to load academic years', err);
+      if (__DEV__) { console.error('Failed to load academic years', err); }
     }
   }, [user?.schoolId]);
 
@@ -427,7 +427,7 @@ export default function ClubsScreen() {
       const data = await classesApi.getClasses({ search: query });
       setAdminClasses(data);
     } catch (err) {
-      console.error('Failed to load admin classes', err);
+      if (__DEV__) { console.error('Failed to load admin classes', err); }
     } finally {
       setLoadingAdminClasses(false);
     }

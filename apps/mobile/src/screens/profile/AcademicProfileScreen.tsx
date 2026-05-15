@@ -34,7 +34,7 @@ export const AcademicProfileScreen = ({ navigation }: Props) => {
                     setProfile(response.data.data);
                 }
             } catch (error) {
-                console.error('Failed to fetch academic profile:', error);
+                if (__DEV__) { console.error('Failed to fetch academic profile:', error); }
             } finally {
                 setLoading(false);
             }

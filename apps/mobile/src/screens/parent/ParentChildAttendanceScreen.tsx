@@ -68,7 +68,7 @@ export default function ParentChildAttendanceScreen() {
         const arr = data?.data ?? data;
         setRecords(Array.isArray(arr) ? arr : []);
       } catch (e) {
-        console.error('Failed to fetch attendance:', e);
+        if (__DEV__) { console.error('Failed to fetch attendance:', e); }
         setRecords([]);
       } finally {
         setLoading(false);

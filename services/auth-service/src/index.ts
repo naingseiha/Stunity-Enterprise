@@ -402,8 +402,9 @@ export const authorize = (roles: string[]) => {
 
 /**
  * 🛡️ Admin Password Reset
- * Allows School Admins (same school) or Super Admins (any school) to manually reset 
- * passwords for users (Student/Parent) who may not have email access.
+ * Allows School Admins (same school) or Super Admins (any school) to manually reset
+ * passwords for users who may not have email access. The target can be either
+ * a User id or a linked Student/Teacher/Parent profile id.
  */
 app.post(
   '/auth/admin/reset-password',
@@ -422,10 +423,10 @@ app.post(
       const { userId, newPassword } = req.body;
       const requester = req.user!;
 
-      // 1. Authorization: User must be an ADMIN or SUPER_ADMIN
-      // SUPER_ADMIN = platform admin (full access), ADMIN = school admin (school-scoped)
+      // 1. Authorization: User must be a school/platform admin
+      // SUPER_ADMIN = platform admin (full access), ADMIN/SCHOOL_ADMIN = school-scoped
       const isSuper = requester.role === 'SUPER_ADMIN';
-      const isAdmin = requester.role === 'ADMIN' || isSuper;
+      const isAdmin = requester.role === 'ADMIN' || requester.role === 'SCHOOL_ADMIN' || isSuper;
 
       if (!isAdmin) {
         return res.status(403).json({
@@ -435,8 +436,15 @@ app.post(
       }
 
       // 2. Fetch target user
-      const targetUser = await prisma.user.findUnique({
-        where: { id: userId },
+      const targetUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: userId },
+            { studentId: userId },
+            { teacherId: userId },
+            { parentId: userId },
+          ],
+        },
       });
 
       if (!targetUser) {
@@ -456,9 +464,10 @@ app.post(
       const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
       await prisma.user.update({
-        where: { id: userId },
+        where: { id: targetUser.id },
         data: {
           password: hashedPassword,
+          isActive: true,
           isDefaultPassword: true,  // Trigger force-change on mobile/web
           passwordChangedAt: new Date(),
           failedAttempts: 0,        // Unlock account if it was locked

@@ -93,7 +93,7 @@ export default function LoginScreen() {
         Alert.alert('Success', 'Biometric authentication successful!');
       }
     } catch (error) {
-      console.error('Biometric error:', error);
+      if (__DEV__) { console.error('Biometric error:', error); }
     }
   };
 

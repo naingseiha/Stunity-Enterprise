@@ -220,7 +220,7 @@ export default function BrowseQuizzesScreen() {
       setPage(newPage);
       pageRef.current = newPage;
     } catch (e) {
-      console.warn('[BrowseQuizzes] Load error:', e);
+      if (__DEV__) { console.warn('[BrowseQuizzes] Load error:', e); }
     } finally {
       if (requestId === currentRequestId.current) {
         setLoading(false);

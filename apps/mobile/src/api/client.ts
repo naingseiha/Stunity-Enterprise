@@ -295,7 +295,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 401:
       return {
         code: 'UNAUTHORIZED',
-        message: data?.message || 'Session expired. Please log in again.',
+        message: data?.error || data?.message || 'Session expired. Please log in again.',
       };
     case 403:
       return {
@@ -311,6 +311,11 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
       return {
         code: 'CONFLICT',
         message: data?.error || data?.message || 'A conflict occurred with the current state.',
+      };
+    case 423:
+      return {
+        code: 'ACCOUNT_LOCKED',
+        message: data?.error || data?.message || 'Account locked. Try again later.',
       };
     case 422:
       return {
@@ -333,7 +338,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     default:
       return {
         code: 'UNKNOWN_ERROR',
-        message: data?.message || 'An unexpected error occurred.',
+        message: data?.error || data?.message || 'An unexpected error occurred.',
       };
   }
 };
