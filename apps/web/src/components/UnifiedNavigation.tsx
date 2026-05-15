@@ -36,6 +36,7 @@ import {
   Gamepad2,
   LayoutDashboard,
   Globe,
+  School,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
@@ -395,6 +396,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
           ? [{ name: 'Discipline Delegations', icon: Shield, path: `/${locale}/admin/discipline`, prefetch: null, skeleton: 'table' as const }]
           : []),
         { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: 'locations', skeleton: 'table' as const },
+        { name: 'School Profile', icon: School, path: `/${locale}/settings/school-profile`, prefetch: null, skeleton: 'form' as const },
         { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: 'academic-years', skeleton: 'table' as const },
       ],
     },

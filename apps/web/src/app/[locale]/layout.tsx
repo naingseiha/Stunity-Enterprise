@@ -1,6 +1,6 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { Poppins, Inter } from 'next/font/google';
+import { Poppins, Inter, Moul } from 'next/font/google';
 import ClientProviders from '@/components/ClientProviders';
 
 const poppins = Poppins({
@@ -12,6 +12,12 @@ const poppins = Poppins({
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+});
+
+const moul = Moul({
+  weight: '400',
+  subsets: ['khmer'],
+  variable: '--font-moul',
 });
 
 export default async function LocaleLayout(
@@ -33,7 +39,7 @@ export default async function LocaleLayout(
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${poppins.variable} ${inter.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${poppins.variable} ${inter.variable} ${moul.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
