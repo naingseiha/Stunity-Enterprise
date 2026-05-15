@@ -27,7 +27,8 @@ export interface Teacher {
   salary?: number | null;
   photoUrl?: string | null;
   schoolId: string;
-  isActive: boolean;
+  // NOTE: Teacher model has no isActive field — only User does.
+  // Use teacher.user?.isActive or teacher.hasLoginAccount instead.
   hasLoginAccount?: boolean;
   canLogin?: boolean;
   user?: {
@@ -66,6 +67,7 @@ interface TeachersResponse {
     totalPages: number;
   };
 }
+
 
 function transformTeachers(data: any[]): Teacher[] {
   return (data || []).map((teacher: any) => {

@@ -19,6 +19,7 @@ import {
   Home,
   MapPin,
   Navigation,
+  Pencil,
   Plus,
   RefreshCw,
   Settings,
@@ -141,6 +142,14 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
   const [newLng, setNewLng] = useState('');
   const [newRadius, setNewRadius] = useState('50');
 
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingId, setEditingId] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editLat, setEditLat] = useState('');
+  const [editLng, setEditLng] = useState('');
+  const [editRadius, setEditRadius] = useState('50');
+
   const { locations, isLoading, mutate } = useSchoolLocations();
 
   useEffect(() => {
@@ -162,6 +171,76 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
     setNewLng('');
     setNewRadius('50');
     setError('');
+  };
+
+  const openEditModal = (loc: { id: string; name: string; latitude: number; longitude: number; radius: number }) => {
+    setEditingId(loc.id);
+    setEditName(loc.name);
+    setEditLat(String(loc.latitude));
+    setEditLng(String(loc.longitude));
+    setEditRadius(String(loc.radius));
+    setError('');
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingId('');
+    setEditName('');
+    setEditLat('');
+    setEditLng('');
+    setEditRadius('50');
+    setError('');
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!editName || !editLat || !editLng || !editRadius) {
+      setError('Please fill all fields');
+      return;
+    }
+
+    const lat = parseFloat(editLat);
+    const lng = parseFloat(editLng);
+    const rad = parseInt(editRadius, 10);
+
+    if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(rad)) {
+      setError('Latitude, longitude, and radius must be valid numbers');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const token = TokenManager.getAccessToken();
+
+      const response = await fetch(`${ATTENDANCE_SERVICE_URL}/attendance/locations/${editingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editName,
+          latitude: lat,
+          longitude: lng,
+          radius: rad,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        closeEditModal();
+        setSuccessMessage('Location updated successfully');
+        await mutate();
+        window.setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(data.message || 'Failed to update location');
+      }
+    } catch (err: any) {
+      setError(`Error updating location: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCreateLocation = async () => {
@@ -469,14 +548,24 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                                 </p>
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteLocation(loc.id, loc.name)}
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-rose-100 bg-rose-50 text-rose-600 transition-all hover:border-rose-200 hover:text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
-                              title={autoT("auto.web.locale_settings_locations_page.k_7c45995c")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(loc)}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-sky-100 bg-sky-50 text-sky-600 transition-all hover:border-sky-200 hover:bg-sky-100 hover:text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300 dark:hover:bg-sky-500/20"
+                                title="Edit location"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLocation(loc.id, loc.name)}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-rose-100 bg-rose-50 text-rose-600 transition-all hover:border-rose-200 hover:text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+                                title={autoT("auto.web.locale_settings_locations_page.k_7c45995c")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
 
                           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -624,6 +713,125 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
               >
                 {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_da274de1" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showEditModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-xl overflow-hidden rounded-[1.35rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,252,0.98)_100%)] shadow-[0_40px_110px_-40px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/80 animate-in slide-in-from-bottom-4 duration-200 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/95 dark:ring-gray-800/70">
+            <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit Location
+                  </div>
+                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Update Campus Location</h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    Adjust the name, coordinates, or geofence radius for this location.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-950 text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-5 px-6 py-6">
+              {error ? (
+                <div className="flex items-start gap-3 rounded-[0.95rem] border border-rose-100 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              ) : null}
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Location Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
+                  placeholder="e.g. Main Campus, Building A"
+                  className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-950 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:placeholder:text-gray-500"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editLat}
+                    onChange={(event) => setEditLat(event.target.value)}
+                    placeholder="11.5564"
+                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-950 px-4 py-3 font-mono text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editLng}
+                    onChange={(event) => setEditLng(event.target.value)}
+                    placeholder="104.9282"
+                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-950 px-4 py-3 font-mono text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[1rem] border border-sky-100 bg-sky-50/80 p-4 dark:border-sky-500/20 dark:bg-sky-500/10">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">Geofence Radius</p>
+                    <p className="mt-1 text-sm font-semibold text-sky-900 dark:text-sky-200">
+                      {editRadius} meters — check-in zone size
+                    </p>
+                  </div>
+                  <Navigation className="h-5 w-5 text-sky-600 dark:text-sky-300" />
+                </div>
+                <input
+                  type="range"
+                  min="20"
+                  max="500"
+                  step="10"
+                  value={editRadius}
+                  onChange={(event) => setEditRadius(event.target.value)}
+                  className="mt-4 w-full accent-sky-600"
+                />
+                <div className="mt-2 flex justify-between text-[10px] font-semibold text-sky-700/70 dark:text-sky-300/70">
+                  <span>20m (tight)</span>
+                  <span>250m (medium)</span>
+                  <span>500m (wide)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-950/40 px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeEditModal}
+                disabled={submitting}
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 hover:text-slate-900 dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateLocation}
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+                Save Changes
               </button>
             </div>
           </div>

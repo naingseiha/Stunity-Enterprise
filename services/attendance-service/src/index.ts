@@ -2741,6 +2741,77 @@ app.delete('/attendance/locations/:id', authenticateToken, async (req: AuthReque
   }
 });
 
+// PATCH /attendance/locations/:id - Update a location's name, coordinates, and/or radius
+app.patch('/attendance/locations/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.schoolId!;
+
+    const location = await prisma.schoolLocation.findFirst({
+      where: { id, schoolId, isActive: true },
+    });
+
+    if (!location) {
+      return res.status(404).json({ success: false, message: 'Location not found' });
+    }
+
+    const { name, latitude, longitude, radius } = req.body;
+
+    const updatedData: {
+      name?: string;
+      latitude?: number;
+      longitude?: number;
+      radius?: number;
+    } = {};
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ success: false, message: 'Name must be a non-empty string' });
+      }
+      updatedData.name = name.trim();
+    }
+
+    if (latitude !== undefined) {
+      const lat = parseFloat(latitude);
+      if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+        return res.status(400).json({ success: false, message: 'Latitude must be a valid number between -90 and 90' });
+      }
+      updatedData.latitude = lat;
+    }
+
+    if (longitude !== undefined) {
+      const lng = parseFloat(longitude);
+      if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+        return res.status(400).json({ success: false, message: 'Longitude must be a valid number between -180 and 180' });
+      }
+      updatedData.longitude = lng;
+    }
+
+    if (radius !== undefined) {
+      const rad = parseFloat(radius);
+      if (Number.isNaN(rad) || rad < 10) {
+        return res.status(400).json({ success: false, message: 'Radius must be a valid number of at least 10 meters' });
+      }
+      updatedData.radius = rad;
+    }
+
+    if (Object.keys(updatedData).length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid fields to update' });
+    }
+
+    const updated = await prisma.schoolLocation.update({
+      where: { id },
+      data: updatedData,
+    });
+
+    clearSchoolLocationsCache(schoolId);
+
+    res.json({ success: true, message: 'Location updated successfully', data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to update location', error: error.message });
+  }
+});
+
 // ==================== E. Geofenced Teacher Attendance ====================
 
 function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {

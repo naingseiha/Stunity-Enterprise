@@ -96,17 +96,11 @@ type TeacherStatus = {
 };
 
 function getTeacherStatus(teacher: Teacher, t?: any): TeacherStatus {
-  if (!teacher.isActive) {
-    return {
-      label: t ? t('inactive') : 'Inactive',
-      helper: t ? t('profileDisabled') : 'Profile disabled',
-      tone: 'rose',
-      needsAction: true,
-      pillClass:
-        'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
-    };
-  }
+  // NOTE: The Teacher DB model has NO isActive field — only the User model does.
+  // Checking teacher.isActive was always undefined (falsy), which is why ALL teachers
+  // were incorrectly shown as "Inactive". The correct logic is below.
 
+  // Draft: no position and no contact info at all
   if (!teacher.position && !teacher.email && !teacher.phoneNumber) {
     return {
       label: t ? t('draft') : 'Draft',
@@ -118,6 +112,7 @@ function getTeacherStatus(teacher: Teacher, t?: any): TeacherStatus {
     };
   }
 
+  // Incomplete: has contact info but no position/role
   if (!teacher.position) {
     return {
       label: t ? t('incomplete') : 'Incomplete',
@@ -129,6 +124,19 @@ function getTeacherStatus(teacher: Teacher, t?: any): TeacherStatus {
     };
   }
 
+  // Inactive: has a linked user account but it has been suspended
+  if (teacher.hasLoginAccount && teacher.user?.isActive === false) {
+    return {
+      label: t ? t('inactive') : 'Inactive',
+      helper: 'Login account suspended',
+      tone: 'rose',
+      needsAction: true,
+      pillClass:
+        'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
+    };
+  }
+
+  // Verified: profile complete and account (if linked) is active
   return {
     label: t ? t('verified') : 'Verified',
     helper: t ? t('operationalReady') : 'Operational ready',
@@ -138,6 +146,7 @@ function getTeacherStatus(teacher: Teacher, t?: any): TeacherStatus {
       'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
   };
 }
+
 
 function GenderBadge({ gender }: { gender: string }) {
   const isMale = gender.toUpperCase() === 'MALE';
