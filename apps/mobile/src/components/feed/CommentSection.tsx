@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * CommentSection Component
  * 
@@ -39,7 +38,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   onDeleteComment,
   currentUserId,
 }) => {
-    const { t: autoT } = useTranslation();
+    const { t } = useTranslation();
   const { colors } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const [newComment, setNewComment] = useState('');
@@ -102,7 +101,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.components_feed_CommentSection.k_d2005f61" /></Text>
+          <Text style={styles.emptyText}>{t('feed.sections.noComments')}</Text>
         </View>
       )}
 
@@ -110,7 +109,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder={autoT("auto.mobile.components_feed_CommentSection.k_20055741")}
+          placeholder={t('feed.sections.writeComment')}
           placeholderTextColor={colors.textTertiary}
           value={newComment}
           onChangeText={setNewComment}

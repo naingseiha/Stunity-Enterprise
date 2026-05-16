@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * Bookmarks Screen
  * 
@@ -32,6 +32,7 @@ import { Post } from '@/types';
 import { Colors, Shadows } from '@/config';
 
 export default function BookmarksScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -141,7 +142,7 @@ export default function BookmarksScreen() {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_975dfa7a" /></Text>
+          <Text style={styles.loadingText}>{t('screens.bookmarks.loading')}</Text>
         </View>
       );
     }
@@ -156,9 +157,9 @@ export default function BookmarksScreen() {
             <Ionicons name="bookmark-outline" size={56} color={colors.primary} />
           </LinearGradient>
         </View>
-        <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_d0bf1974" /></Text>
+        <Text style={styles.emptyTitle}>{t('screens.bookmarks.emptyTitle')}</Text>
         <Text style={styles.emptySubtitle}>
-          <AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_6626eb61" />
+          {t('screens.bookmarks.emptyDesc')}
         </Text>
         <TouchableOpacity 
           onPress={navigateToFeedHome}
@@ -168,7 +169,7 @@ export default function BookmarksScreen() {
             colors={['#0066FF', '#0052CC']}
             style={styles.emptyButtonGradient}
           >
-            <Text style={styles.emptyButtonText}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_6b51e6c7" /></Text>
+            <Text style={styles.emptyButtonText}>{t('screens.bookmarks.explore')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -185,7 +186,7 @@ export default function BookmarksScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_3da750b5" /></Text>
+        <Text style={styles.headerTitle}>{t('screens.bookmarks.title')}</Text>
         <View style={styles.headerRight}>
           {bookmarkedPosts.length > 0 && (
             <View style={styles.countBadge}>

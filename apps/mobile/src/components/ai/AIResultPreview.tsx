@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * AIResultPreview
  * 
@@ -33,6 +33,7 @@ export function AIResultPreview({
     onDiscard,
     isRegenerating = false,
 }: AIResultPreviewProps) {
+    const { t } = useTranslation();
     const { colors } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors), [colors]);
 
@@ -46,7 +47,7 @@ export function AIResultPreview({
                         <Ionicons name="close" size={24} color={colors.textSecondary} />
                     </TouchableOpacity>
                     <View style={styles.titleWrap}>
-                        <Ionicons name="sparkles" size={18} color="#8B5CF6" style={{ marginRight: 6 }} /><Text style={styles.title}>{title}</Text>
+                        <Ionicons name="sparkles" size={18} color="#8B5CF6" style={{ marginRight: 6 }} /><Text style={styles.title}>{title || t('common.ai.resultTitle')}</Text>
                     </View>
                     <View style={{ width: 44 }} />
                 </View>
@@ -56,7 +57,7 @@ export function AIResultPreview({
                         <Text style={styles.previewText}>{content}</Text>
                     </View>
                     <Text style={styles.disclaimer}>
-                        <AutoI18nText i18nKey="auto.mobile.components_ai_AIResultPreview.k_2920eadb" />
+                        {t('common.ai.disclaimer')}
                     </Text>
                 </ScrollView>
 
@@ -71,7 +72,7 @@ export function AIResultPreview({
                     >
                         <Ionicons name="refresh" size={20} color={colors.textSecondary} />
                         <Text style={styles.btnSecondaryText}>
-                            {isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                            {isRegenerating ? t('common.ai.regenerating') : t('common.ai.regenerate')}
                         </Text>
                     </TouchableOpacity>
 
@@ -83,12 +84,11 @@ export function AIResultPreview({
                         }}
                         disabled={isRegenerating}
                     >
-                        <LinearGradient
                             colors={['#8B5CF6', '#3B82F6']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={StyleSheet.absoluteFillObject}
-                        /><Ionicons name="checkmark-circle" size={20} color="#FFFFFF" /><Text style={styles.btnPrimaryText}><AutoI18nText i18nKey="auto.mobile.components_ai_AIResultPreview.k_e928957f" /></Text>
+                        /><Ionicons name="checkmark-circle" size={20} color="#FFFFFF" /><Text style={styles.btnPrimaryText}>{t('common.ai.useDraft')}</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

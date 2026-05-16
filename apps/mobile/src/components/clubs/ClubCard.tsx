@@ -83,7 +83,7 @@ export const ClubCard = React.memo(function ClubCard({
           
           <View style={[styles.scorePill, { backgroundColor: typeMeta.accent }]}>
             <Text style={styles.scoreValue}>{memberCount}</Text>
-            <Text style={styles.scoreLabel}>{isKhmer ? 'សមាជិក' : 'members'}</Text>
+            <Text style={styles.scoreLabel}>{t('clubs.members')}</Text>
           </View>
         </View>
 
@@ -97,23 +97,22 @@ export const ClubCard = React.memo(function ClubCard({
           />
         </View>
 
-        {/* Stats Row Section */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.text }]}>{memberCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'សមាជិក' : 'MEMBERS'}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('clubs.membersCaps')}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ប្រកាស' : 'POSTS'}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('clubs.postsCaps')}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.text }]}>
               {item.mode === 'PUBLIC' ? '0' : '1'}
             </Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ព្រឹត្តិការណ៍' : 'EVENTS'}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('clubs.eventsCaps')}</Text>
           </View>
         </View>
 
@@ -140,7 +139,7 @@ export const ClubCard = React.memo(function ClubCard({
                 <Ionicons name={isJoined ? "checkmark-circle" : "add-circle"} size={13} color={isJoined ? "#059669" : "#2563EB"} />
               )}
               <Text style={[styles.signalText, { color: isJoined ? '#059669' : '#2563EB' }]}>
-                {isJoined ? (isKhmer ? 'បានចូលរួម' : 'JOINED') : (isKhmer ? 'ចូលរួម' : 'JOIN NOW')}
+                {isJoined ? t('clubs.joined') : t('clubs.joinNow')}
               </Text>
             </View>
           </Pressable>

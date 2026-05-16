@@ -23,8 +23,12 @@
     "delete": "Delete",
     "error": "An error occurred",
     "success": "Success",
+    "viewAll": "View all",
+    "seeAll": "See all",
+    "browseCourses": "Browse courses",
+    "clearSearch": "Clear search",
+    "people": "People",
     "languageChanged": "Language changed successfully",
-    "search": "Search...",
     "done": "Done",
     "view": "View",
     "unknown": "Unknown",
@@ -66,6 +70,21 @@
     "female": "Female",
     "active": "Active",
     "inactive": "Inactive",
+    "search": {
+      "placeholder": "Search posts or people...",
+      "recent": "Recent",
+      "clearAll": "Clear All",
+      "noResults": "No results found",
+      "noResultsSub": "Try adjusting your filters or search term",
+      "everything": "Everything",
+      "posts": "Posts",
+      "people": "People",
+      "trending": "Trending topics",
+      "exploreByType": "Explore by type",
+      "noResultsYet": "No results yet",
+      "resultsSummary": "{{postCount}} posts · {{userCount}} people",
+      "questionsCount": "questions"
+    },
     "noResults": "No results found",
     "noAcademicYear": "No academic year selected",
     "academicYear": "Academic Year",
@@ -76,7 +95,31 @@
     "student": "Student",
     "school": "School",
     "darkMode": "Dark Mode",
-    "lightMode": "Light Mode"
+    "lightMode": "Light Mode",
+    "postTypes": {
+      "all": "All",
+      "course": "Courses",
+      "quiz": "Quizzes",
+      "question": "Questions",
+      "resource": "Resources",
+      "tutorial": "Tutorials",
+      "research": "Research",
+      "project": "Projects",
+      "poll": "Poll",
+      "assignment": "Assignment",
+      "exam": "Exam"
+    },
+    "roles": {
+      "teacher": "Teacher",
+      "admin": "Admin",
+      "staff": "Staff",
+      "student": "Student"
+    },
+    "sort": {
+      "top": "Top",
+      "recent": "Recent",
+      "popular": "Popular"
+    }
   },
   "landing": {
     "hero": {
@@ -139,7 +182,17 @@
     "parentPortal": "Parent Portal Access",
     "forParents": "FOR PARENTS",
     "termsOfService": "Terms of Service",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "welcome": {
+      "title": "Welcome to Stunity",
+      "chooseHowToContinue": "Choose how to continue",
+      "oneWorkspace": "One beautiful workspace for your school community.",
+      "connectAll": "Connect students, teachers, parents, classes, learning content, and daily operations in a secure tablet-ready platform.",
+      "builtForSchools": "Built for schools and learning teams",
+      "secureAccess": "Secure student and parent access",
+      "operationalInsights": "Operational insights in one workspace",
+      "startHere": "Start here"
+    }
   },
   "passwordReset": {
     "forgotTitle": "Forgot Password?",
@@ -394,6 +447,20 @@
     "track": "Track",
     "capacity": "Capacity",
     "manage": "Manage",
+    "directory": {
+      "title": "Class Directory",
+      "searchPlaceholder": "Search by name, grade, track...",
+      "fetching": "Fetching classes...",
+      "loadFailed": "Failed to load directory. Tap to retry.",
+      "sectionAll": "All School Classes",
+      "myClassesSection": "My Classes",
+      "schoolClasses": "School Classes",
+      "emptyTitle": "No classes found",
+      "emptySubtitle": "Try adjusting your search or filters.",
+      "footnoteTeacher": "Teaching assignments are based on the published timetable.",
+      "maleCount": "{count} M",
+      "femaleCount": "{count} F"
+    },
     "roster": "Roster",
     "class": "Class",
     "teacher": "Teacher",
@@ -652,7 +719,6 @@
     "shareLearning": "Share your learning...",
     "ask": "Ask",
     "quiz": "Quiz",
-    "poll": "Poll",
     "resource": "Resource",
     "newPost": "1 New Post",
     "newPosts": "{{count}} New Posts",
@@ -700,13 +766,24 @@
       "viewClub": "View Club",
       "readMore": "Read More",
       "joinTeam": "Join Team",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "like": "Like post",
+      "comment": "Comment on post",
+      "rateValue": "Rate educational value",
+      "notInterested": "Not interested"
     },
+    "viewsCount": "{{count}} post views",
     "time": {
       "left": "left",
       "expired": "Expired",
       "h": "h",
-      "d": "d"
+      "d": "d",
+      "m": "m"
+    },
+    "poll": {
+      "openVoting": "Open voting",
+      "finalResults": "Final results",
+      "timeLeft": "{{count}}{{unit}} left"
     },
     "live": "LIVE",
     "repostConfirm": "Repost {{name}}'s post to your feed?",
@@ -720,6 +797,52 @@
     "progress": "Progress",
     "stepsCompleted": "{{completed}}/{{total}} steps completed",
     "academicMatch": "Academic Match",
+    "detail": {
+      "title": "Post Details",
+      "viewsFormatted": "{{views}} post views",
+      "lastAttempt": "Last score: {{score}}%",
+      "passedSuffix": " (Passed)",
+      "notPassedSuffix": " (Failed)",
+      "retakeQuiz": "Retake Quiz",
+      "startQuiz": "Start Quiz",
+      "loadError": "Unable to load post",
+      "loadErrorSubtitle": "Check your connection and try again.",
+      "fetching": "Loading post details..."
+    },
+    "sections": {
+      "due": "Due: ",
+      "dueSoon": "Due soon: ",
+      "testKnowledge": "Test your knowledge",
+      "completeQuiz": "Complete this quiz to earn XP and badges",
+      "questions": "Questions",
+      "time": "Time",
+      "points": "Points",
+      "progress": "Learning Progress",
+      "comments": "Comments",
+      "writeReply": "Write a reply...",
+      "writeComment": "Write a comment...",
+      "replyingTo": "Replying to",
+      "loadingComments": "Loading comments...",
+      "noComments": "No comments yet",
+      "beFirst": "Be the first to share your thoughts!",
+      "verifyAnswer": "Verify Answer",
+      "verifiedAnswer": "Verified Answer",
+      "delete": "Delete",
+      "newStudyClub": "New Study Club",
+      "joinCommunity": "Join the community and learn together",
+      "scorePercent": "Score: {{score}}%",
+      "passed": "PASSED",
+      "notPassed": "FAILED",
+      "viewResults": "View Results",
+      "retake": "Retake",
+      "takeQuizNow": "Take Quiz Now",
+      "upcomingEvent": "Upcoming Event",
+      "dateTbd": "Date TBD",
+      "defaultCampus": "Main Campus",
+      "memberCount": "{{count}} members",
+      "verifiedClub": "Verified Club",
+      "minutesShort": "{{count}} min"
+    },
     "filters": {
       "allPosts": "All Posts",
       "articles": "Articles",
@@ -1322,9 +1445,6 @@
       "sessionActive": "Active",
       "sessionDetails": "Details",
       "liveAttendanceLabel": "Live attendance",
-      "monitorKpiCompliant": "Compliant",
-      "monitorKpiAttention": "Needs attention",
-      "monitorLateHint": "Late threshold",
       "pulseTitle": "Attendance pulse",
       "markingProgressLabel": "Marking progress",
       "markingLiveStatus": "Live tracking active",
@@ -1388,6 +1508,45 @@
       "monitorStatus_PRESENT_LATE": "Late"
     }
   },
+  "clubs": {
+    "members": "members",
+    "membersCaps": "MEMBERS",
+    "postsCaps": "POSTS",
+    "eventsCaps": "EVENTS",
+    "joined": "JOINED",
+    "joinNow": "JOIN NOW",
+    "screen": {
+      "schoolClasses": "School Classes",
+      "disciplineWorkbench": "Discipline Workbench",
+      "disciplineWorkbenchSubtitle": "Mark delegated attendance quickly (A / P / L / E)",
+      "searchClassesPlaceholder": "Search classes...",
+      "updatingClasses": "Updating classes...",
+      "noClassesDirectory": "No classes in directory",
+      "noLinkedChildClasses": "No classes linked to your children",
+      "noClassesYear": "No classes for this academic year",
+      "teacherSectionTeaching": "My Teaching Classes",
+      "teacherSectionOther": "Other Classes",
+      "teacherSectionClassCount": "{{count}} classes",
+      "seeAllTeachingCount": "See all {{count}} teaching classes",
+      "shortcuts": {
+        "allClubs": "All Clubs",
+        "myClubs": "My Clubs",
+        "discover": "Discover",
+        "create": "Create"
+      }
+    },
+    "banner": {
+      "rankingTitle": "Global Ranking",
+      "rankingSubtitle": "Top performers this week",
+      "weeklyLeaderboard": "Weekly Leaderboard",
+      "studyGroupsTitle": "Study Groups",
+      "studyGroupsSubtitle": "Join peers and learn together",
+      "newClubs": "New Clubs",
+      "examTitle": "Exam Preparation",
+      "examSubtitle": "Master your subjects",
+      "examPrep": "Exam Prep"
+    }
+  },
   "profile": {
     "title": "Profile",
     "viewProfile": "View Profile",
@@ -1417,7 +1576,17 @@
       "projects": "Projects",
       "leaderboard": "Leaderboard",
       "leaderboardSub": "See where you rank globally",
-      "badgesChallenge": "Complete challenges to earn badges"
+      "badgesChallenge": "Complete challenges to earn badges",
+      "performanceTitle": "Profile Performance",
+      "discoverySub": "Discovery from learners, peers, and career interest",
+      "score": "score",
+      "views30d": "30d views",
+      "uniqueViewers": "unique viewers",
+      "thisWeek": "this week",
+      "trend": "trend",
+      "learningCreator": "learning creator",
+      "recentVisitors": "Recent visitors",
+      "last30Days": "Last 30 days"
     },
     "posts": "Posts",
     "about": {

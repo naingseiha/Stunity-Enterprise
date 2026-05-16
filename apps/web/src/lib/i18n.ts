@@ -1,4 +1,6 @@
+import type { AbstractIntlMessages } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
+import { applyFlatTranslationOverrides, getTranslationCacheTag } from './translation-merge';
 
 const DEFAULT_LOCALE = 'en';
 const DEFAULT_CONFIGURABLE_LOCALES = [
@@ -50,39 +52,33 @@ export default getRequestConfig(async ({ requestLocale }) => {
   // Load local messages
   const localMessages = await loadLocalMessages(locale);
 
-  // Try to load remote overrides (OTA)
-  let remoteMessages = {};
+  // Load remote overrides from Supabase (via auth service)
+  let remoteMessages: Record<string, string> = {};
   try {
     const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
     const response = await fetch(`${AUTH_SERVICE_URL}/auth/translations/web/${locale}`, {
-      next: { revalidate: 60 } // Revalidate frequently so admin OTA edits appear quickly
+      next: {
+        revalidate: 60,
+        tags: [getTranslationCacheTag('web', locale)],
+      },
     });
     if (response.ok) {
       const { data } = await response.json();
-      remoteMessages = data || {};
+      if (data && typeof data === 'object') {
+        remoteMessages = data as Record<string, string>;
+      }
     }
   } catch (error) {
     console.warn('⚠️ Failed to fetch OTA translations:', error);
   }
 
-  // Merge: Remote (DB) values override local defaults
-  // Note: remoteMessages is expected to be a flat key-value object (e.g. "common.login": "...")
-  // We need to unflatten it or just trust that next-intl handles flat keys if appropriately formatted.
-  // Actually, next-intl expects a nested object, so we'll unflatten.
-  
-  const merged = { ...localMessages };
-  Object.entries(remoteMessages).forEach(([key, value]) => {
-    const parts = key.split('.');
-    let current: any = merged;
-    for (let i = 0; i < parts.length - 1; i++) {
-       if (!current[parts[i]]) current[parts[i]] = {};
-       current = current[parts[i]];
-    }
-    current[parts[parts.length - 1]] = value;
-  });
+  const messages = applyFlatTranslationOverrides(
+    localMessages as Record<string, unknown>,
+    remoteMessages
+  ) as AbstractIntlMessages;
 
   return {
     locale,
-    messages: merged,
+    messages,
   };
 });

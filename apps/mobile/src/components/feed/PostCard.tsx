@@ -97,10 +97,10 @@ const POST_TYPE_CONFIG: Record<string, {
 };
 
 // Difficulty level configurations
-const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; labelKh: string; color: string; bgColor: string; icon: string }> = {
-  BEGINNER: { label: 'Beginner', labelKh: 'ចាប់ផ្តើម', color: '#10B981', bgColor: '#D1FAE5', icon: 'leaf' },
-  INTERMEDIATE: { label: 'Intermediate', labelKh: 'មធ្យម', color: '#0EA5E9', bgColor: '#E0F2FE', icon: 'flash' },
-  ADVANCED: { label: 'Advanced', labelKh: 'កម្រិតខ្ពស់', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
+const DIFFICULTY_CONFIG: Record<DifficultyLevel, { labelKey: string; color: string; bgColor: string; icon: string }> = {
+  BEGINNER: { labelKey: 'feed.difficulty.beginner', color: '#10B981', bgColor: '#D1FAE5', icon: 'leaf' },
+  INTERMEDIATE: { labelKey: 'feed.difficulty.intermediate', color: '#0EA5E9', bgColor: '#E0F2FE', icon: 'flash' },
+  ADVANCED: { labelKey: 'feed.difficulty.advanced', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
 };
 
 // Vibrant gradients for Quiz cards to make them pop
@@ -279,15 +279,17 @@ const ViewStatsIndicator = React.memo<{
   disabled?: boolean;
   styles: any;
   colors: any;
-}>(({ count, onPress, disabled = true, styles, colors }) => (
-  <Pressable
-    onPress={disabled ? undefined : onPress}
-    disabled={disabled}
-    hitSlop={8}
-    accessibilityRole={disabled ? undefined : 'button'}
-    accessibilityLabel={`${formatNumber(count)} post views`}
-    style={styles.viewStatPressable}
-  >
+}>(({ count, onPress, disabled = true, styles, colors }) => {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole={disabled ? undefined : 'button'}
+      accessibilityLabel={t('feed.viewsCount', { count: formatNumber(count) })}
+      style={styles.viewStatPressable}
+    >
     <View style={styles.viewStatInner}>
       <Ionicons name="stats-chart" size={18} color="#0D9488" />
       <Text style={[styles.viewStatText, { color: colors.textSecondary }]}>
@@ -295,14 +297,16 @@ const ViewStatsIndicator = React.memo<{
       </Text>
     </View>
   </Pressable>
-));
+)});
 
 const ActionBar = React.memo<ActionBarProps>(({
   liked, likeCount, valued, commentCount, shareCount, viewCount,
   onLike, onComment, onRepost, onShare, onValue, onViewStats, canOpenStats,
   styles, colors,
-}) => (
-  <View style={styles.actionBar}>
+}) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.actionBar}>
     <View style={styles.actionBarLeft}>
       <AnimatedActionButton
         icon="heart-outline"
@@ -313,7 +317,7 @@ const ActionBar = React.memo<ActionBarProps>(({
         activeColor="#EF4444"
         onPress={onLike}
         styles={styles}
-        accessibilityLabel="Like post"
+        accessibilityLabel={t('feed.actions.like')}
       />
       <AnimatedActionButton
         icon="chatbubble-outline"
@@ -322,7 +326,7 @@ const ActionBar = React.memo<ActionBarProps>(({
         activeColor="#1D9BF0"
         onPress={onComment}
         styles={styles}
-        accessibilityLabel="Comment on post"
+        accessibilityLabel={t('feed.actions.comment')}
       />
       <AnimatedActionButton
         icon="repeat-outline"
@@ -332,7 +336,7 @@ const ActionBar = React.memo<ActionBarProps>(({
         onPress={onRepost}
         size={26}
         styles={styles}
-        accessibilityLabel="Repost"
+        accessibilityLabel={t('feed.repost')}
       />
       <AnimatedActionButton
         icon="paper-plane-outline"
@@ -341,7 +345,7 @@ const ActionBar = React.memo<ActionBarProps>(({
         onPress={onShare}
         size={23}
         styles={styles}
-        accessibilityLabel="Share post"
+        accessibilityLabel={t('common.share')}
       />
     </View>
     <View style={styles.actionBarRight}>
@@ -360,11 +364,11 @@ const ActionBar = React.memo<ActionBarProps>(({
         activeColor="#8B5CF6"
         onPress={onValue}
         styles={styles}
-        accessibilityLabel="Rate educational value"
+        accessibilityLabel={t('feed.actions.rateValue')}
       />
     </View>
   </View>
-));
+)});
 
 // LIVE badge — isolated so animation only runs on LIVE posts
 const LiveBadge = React.memo<{ viewers?: number; t: any; styles: any }>(({ viewers, t, styles }) => {
@@ -659,7 +663,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
         key: 'not-interested',
         icon: 'eye-off-outline',
         color: '#F97316',
-        label: t('feed.actions.notInterested', 'Not interested'),
+        label: t('feed.actions.notInterested'),
         onPress: handleNotInterested,
       });
     }

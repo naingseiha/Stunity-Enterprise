@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * AchievementUnlockModal
  * 
@@ -32,6 +32,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
   achievement,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
   const styles = useMemo(() => createAchievementUnlockStyles(windowWidth), [windowWidth]);
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -101,7 +102,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
             </TouchableOpacity>
 
             {/* Title */}
-            <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.components_achievements_AchievementUnlockModal.k_28de69f6" /></Text>
+            <Text style={styles.title}>{t('common.achievement.unlockTitle')}</Text>
 
             {/* Badge */}
             <Animated.View
@@ -147,7 +148,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonGradient}
               >
-                <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.components_achievements_AchievementUnlockModal.k_ca9b6885" /></Text>
+                <Text style={styles.buttonText}>{t('common.achievement.awesome')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </LinearGradient>

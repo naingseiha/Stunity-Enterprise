@@ -107,7 +107,7 @@ const PostHeader = ({
           </View>
 
           <View style={styles.metaRow}>
-            <Text style={styles.timeText}>{formatRelativeTime(createdAt)}</Text>
+            <Text style={styles.timeText}>{formatRelativeTime(createdAt, t)}</Text>
 
             {/* Visibility */}
             <Text style={styles.metaDot}>•</Text>

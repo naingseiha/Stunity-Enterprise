@@ -59,6 +59,22 @@ const BORDER_WIDTH: Record<AvatarSize, number> = {
 };
 
 const IMAGE_TRANSITION_MS = 0;
+const MAX_AVATAR_URI_CACHE_ENTRIES = 160;
+const avatarUriCache = new Map<string, string>();
+
+const getAvatarCacheKey = (name: string, size: AvatarSize, variant: AvatarVariant) =>
+  `${variant}:${size}:${name.trim().toLowerCase()}`;
+
+const rememberAvatarUri = (key: string, value: string) => {
+  if (avatarUriCache.has(key)) {
+    avatarUriCache.delete(key);
+  }
+  avatarUriCache.set(key, value);
+  if (avatarUriCache.size > MAX_AVATAR_URI_CACHE_ENTRIES) {
+    const oldestKey = avatarUriCache.keys().next().value;
+    if (oldestKey) avatarUriCache.delete(oldestKey);
+  }
+};
 
 // Beautiful gradient presets - Instagram story style
 const GRADIENT_PRESETS: Record<GradientPreset, string[]> = {
@@ -146,10 +162,25 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
   const backgroundGradient = isPostVariant
     ? getPostGradientColors(name)
     : getGradientColors(name);
+  const avatarCacheKey = React.useMemo(() => getAvatarCacheKey(name, size, variant), [name, size, variant]);
   const imageUri = React.useMemo(
     () => cdnAvatar(uri, size === 'xs' || size === 'sm' || size === 'md' ? 'sm' : size === 'lg' || size === 'xl' ? 'md' : 'lg'),
     [uri, size]
   );
+  const lastImageUriRef = React.useRef<string>('');
+  if (imageUri) {
+    lastImageUriRef.current = imageUri;
+    rememberAvatarUri(avatarCacheKey, imageUri);
+  }
+  const displayImageUri = imageUri || lastImageUriRef.current || avatarUriCache.get(avatarCacheKey) || '';
+  const imageSource = React.useMemo(
+    () => (displayImageUri ? { uri: displayImageUri, cacheKey: displayImageUri } : undefined),
+    [displayImageUri]
+  );
+  React.useEffect(() => {
+    if (!displayImageUri) return;
+    Image.prefetch(displayImageUri, 'memory-disk').catch(() => { });
+  }, [displayImageUri]);
 
   // Determine gradient colors
   const getGradientBorderColors = (): string[] => {
@@ -194,16 +225,17 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
               },
             ]}
           >
-            {imageUri ? (
+            {imageSource ? (
               <Image
-                source={{ uri: imageUri }}
+                source={imageSource}
                 style={styles.image}
                 contentFit="cover"
+                placeholder={imageSource}
+                placeholderContentFit="cover"
                 allowDownscaling
                 transition={IMAGE_TRANSITION_MS}
                 cachePolicy="memory-disk" // Cache avatars aggressively
-                priority="normal" // Lower priority than feed images
-                recyclingKey={`${imageUri}-${size}`} // Reuse across list, but differentiate by size
+                priority="high"
               />
             ) : (
               <LinearGradient
@@ -252,15 +284,17 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
 
   return (
     <View style={[styles.container, containerStyle, style]}>
-      {imageUri ? (
+      {imageSource ? (
         <Image
-          source={{ uri: imageUri }}
+          source={imageSource}
           style={styles.image}
           contentFit="cover"
+          placeholder={imageSource}
+          placeholderContentFit="cover"
           allowDownscaling
           transition={IMAGE_TRANSITION_MS}
           cachePolicy="memory-disk"
-          recyclingKey={`${imageUri}-${size}`}
+          priority="high"
         />
       ) : (
         <LinearGradient

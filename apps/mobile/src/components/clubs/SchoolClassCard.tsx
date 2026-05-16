@@ -96,7 +96,7 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
           
           <View style={[styles.scorePill, { backgroundColor: theme.accent }]}>
             <Text style={styles.scoreValue}>{studentTotal}</Text>
-            <Text style={styles.scoreLabel}>{isKhmer ? 'សិស្ស' : 'students'}</Text>
+            <Text style={styles.scoreLabel}>{t('common.student')}</Text>
           </View>
         </View>
 
@@ -110,21 +110,20 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
           />
         </View>
 
-        {/* Stats Row Section */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.text }]}>{maleCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ប្រុស' : 'MALE'}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('common.male')}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.text }]}>{femaleCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'ស្រី' : 'FEMALE'}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('common.female')}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.text }]}>{studentTotal}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{isKhmer ? 'សរុប' : 'TOTAL'}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('common.total')}</Text>
           </View>
         </View>
 
@@ -139,7 +138,7 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
           <View style={[styles.signalChip, { backgroundColor: isDark ? '#063A2C' : '#ECFDF5' }]}>
             <Ionicons name="checkmark-circle" size={13} color="#059669" />
             <Text style={[styles.signalText, { color: '#059669' }]}>
-              {isKhmer ? 'សកម្ម' : 'ACTIVE'}
+              {t('common.active')}
             </Text>
           </View>
         </View>

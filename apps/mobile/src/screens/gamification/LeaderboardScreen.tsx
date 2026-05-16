@@ -1,4 +1,3 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     View,
@@ -63,7 +62,7 @@ const LeaderboardRow = React.memo(({ item }: { item: LeaderboardEntry }) => {
                     <Text style={styles.userName} numberOfLines={1}>
                         {item.user.firstName} {item.user.lastName}
                     </Text>
-                    <Text style={styles.userStats}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {item.level}  •  {item.xp.toLocaleString()} XP</Text>
+                    <Text style={styles.userStats}>{useTranslation().t('screens.leaderboard.lvl')} {item.level}  •  {item.xp.toLocaleString()} XP</Text>
                 </View>
 
                 {isTop3 && (
@@ -151,10 +150,10 @@ export const LeaderboardScreen = ({ navigation }: any) => {
 
     const renderHeader = useCallback(() => (
         <Animated.View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitleMain}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_49e3a225" /></Text>
-            <Text style={styles.headerSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_08ef8bfb" /></Text>
+            <Text style={styles.headerTitleMain}>{t('screens.leaderboard.globalTitle')}</Text>
+            <Text style={styles.headerSubtitle}>{t('screens.leaderboard.globalSubtitle')}</Text>
         </Animated.View>
-    ), []);
+    ), [t]);
 
     return (
         <View style={styles.container}>
@@ -176,7 +175,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                     >
                         <Ionicons name="chevron-back" size={24} color="#FFF" />
                     </TouchableOpacity>
-                    <Text style={styles.navTitle}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_826c3dd0" /></Text>
+                    <Text style={styles.navTitle}>{t('screens.leaderboard.title')}</Text>
                     <View style={{ width: 40 }} />
                 </View>
 
@@ -211,7 +210,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                 {isLoading && !isRefreshing && visibleLeaderboard.length === 0 ? (
                     <View style={styles.loadingContainer}>
                         <Ionicons name="trophy-outline" size={48} color="rgba(255,255,255,0.2)" />
-                        <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_2df13328" /></Text>
+                        <Text style={styles.loadingText}>{t('screens.leaderboard.fetchingRanks')}</Text>
                     </View>
                 ) : (
                     <FlatList
@@ -253,10 +252,10 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                 </View>
                                 <View style={styles.userInfo}>
                                     <Text style={[styles.userName, { color: '#FFF' }]} numberOfLines={1}>
-                                        <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_57f1a860" />
+                                        {t('screens.leaderboard.you')}
                                     </Text>
                                     <Text style={[styles.userStats, { color: 'rgba(255,255,255,0.8)' }]}>
-                                        <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {visibleStanding.level || 1}  •  {Number(visibleStanding.xp || visibleStanding._sum?.xpEarned || 0).toLocaleString()} XP
+                                        {t('screens.leaderboard.lvl')} {visibleStanding.level || 1}  •  {Number(visibleStanding.xp || visibleStanding._sum?.xpEarned || 0).toLocaleString()} XP
                                     </Text>
                                 </View>
                                 <View style={styles.glowEffect}>

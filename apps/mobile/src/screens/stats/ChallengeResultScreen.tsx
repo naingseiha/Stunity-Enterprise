@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 import React, { useRef, useEffect } from 'react';
 import {
   View,
@@ -21,6 +21,7 @@ import { CelebrationConfetti } from '@/components/common';
 type Props = NativeStackScreenProps<MainStackParamList, 'ChallengeResult'>;
 
 export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { challenge } = route.params;
   const userId = useAuthStore((state) => state.user?.id ?? '');
   
@@ -87,7 +88,7 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.placeholder} />
-            <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_25643d76" /></Text>
+            <Text style={styles.headerTitle}>{t('screens.challengeResult.title')}</Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={handleClose}
@@ -123,14 +124,14 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
               />
             </LinearGradient>
             <Text style={styles.resultText}>
-              {isDraw ? 'Draw!' : isWinner ? 'You Won!' : 'You Lost'}
+              {isDraw ? t('screens.challengeResult.draw') : isWinner ? t('screens.challengeResult.win') : t('screens.challengeResult.lose')}
             </Text>
             <Text style={styles.resultSubtext}>
               {isDraw
-                ? 'Both scored the same'
+                ? t('screens.challengeResult.drawDesc')
                 : isWinner
-                ? 'Great job! Keep it up!'
-                : "Don't give up, try again!"}
+                ? t('screens.challengeResult.winDesc')
+                : t('screens.challengeResult.loseDesc')}
             </Text>
           </Animated.View>
 
@@ -150,7 +151,7 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
               <View style={styles.scoreAvatar}>
                 <Ionicons name="person" size={32} color="#8b5cf6" />
               </View>
-              <Text style={styles.scoreLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_75d95bd3" /></Text>
+              <Text style={styles.scoreLabel}>{t('screens.challengeResult.yourScore')}</Text>
               <Text style={styles.scoreValue}>{userScore ?? 0}</Text>
               {isWinner && !isDraw && (
                 <View style={styles.winnerBadge}>
@@ -177,7 +178,7 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
               <View style={styles.scoreAvatar}>
                 <Ionicons name="person" size={32} color="#8b5cf6" />
               </View>
-              <Text style={styles.scoreLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_e937e268" /></Text>
+              <Text style={styles.scoreLabel}>{t('screens.challengeResult.opponent')}</Text>
               <Text style={styles.scoreValue}>{opponentScore ?? 0}</Text>
               {!isWinner && !isDraw && (
                 <View style={styles.winnerBadge}>
@@ -189,11 +190,11 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
 
           {/* Stats */}
           <View style={styles.statsSection}>
-            <Text style={styles.statsTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_1aecc8cc" /></Text>
+            <Text style={styles.statsTitle}>{t('screens.challengeResult.matchStats')}</Text>
             
             <View style={styles.statRow}>
               <Ionicons name="calendar" size={20} color="rgba(255, 255, 255, 0.8)" />
-              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_2e4bc78a" /></Text>
+              <Text style={styles.statLabel}>{t('screens.challengeResult.date')}</Text>
               <Text style={styles.statValue}>
                 {challenge.completedAt
                   ? new Date(challenge.completedAt).toLocaleDateString()
@@ -203,7 +204,7 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
 
             <View style={styles.statRow}>
               <Ionicons name="time" size={20} color="rgba(255, 255, 255, 0.8)" />
-              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_f22a60a3" /></Text>
+              <Text style={styles.statLabel}>{t('screens.challengeResult.duration')}</Text>
               <Text style={styles.statValue}>
                 {challenge.completedAt && challenge.createdAt
                   ? `${Math.round(
@@ -217,9 +218,9 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
 
             <View style={[styles.statRow, { borderBottomWidth: 0 }]}>
               <Ionicons name="analytics" size={20} color="rgba(255, 255, 255, 0.8)" />
-              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_aae640c3" /></Text>
+              <Text style={styles.statLabel}>{t('screens.challengeResult.scoreDiff')}</Text>
               <Text style={styles.statValue}>
-                {Math.abs((userScore ?? 0) - (opponentScore ?? 0))} <AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_1d299591" />
+                {Math.abs((userScore ?? 0) - (opponentScore ?? 0))} {t('screens.challengeResult.pts')}
               </Text>
             </View>
           </View>
@@ -234,13 +235,13 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
                 end={{ x: 1, y: 0 }}
               >
                 <Ionicons name="refresh" size={24} color="#FFF" />
-                <Text style={styles.actionButtonText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_f2b53dfd" /></Text>
+                <Text style={styles.actionButtonText}>{t('screens.challengeResult.rematch')}</Text>
               </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.doneButton} onPress={handleClose}>
               <View style={styles.doneButtonContent}>
-                <Text style={styles.doneButtonText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeResultScreen.k_13e2d931" /></Text>
+                <Text style={styles.doneButtonText}>{t('screens.challengeResult.done')}</Text>
               </View>
             </TouchableOpacity>
           </View>

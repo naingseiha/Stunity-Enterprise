@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * Post Analytics Modal
  *
@@ -90,6 +90,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
   onClose,
   postId,
 }) => {
+  const { t } = useTranslation();
   const { colors: themeColors } = useThemeContext();
   const styles = React.useMemo(() => createStyles(themeColors), [themeColors]);
   const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics, feedItems } = useFeedStore();
@@ -167,11 +168,11 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
           <View style={styles.headerCenter}>
             <View style={styles.headerIconRow}>
               <Ionicons name="bar-chart" size={18} color="rgba(255,255,255,0.9)" />
-              <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_ab39018f" /></Text>
+              <Text style={styles.headerTitle}>{t('feed.analytics.title')}</Text>
             </View>
             {analytics && (
               <Text style={styles.headerSubtitle}>
-                {formatNumber(analytics.totalViews)} <AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_e25254b3" /> {analytics.engagementRate.toFixed(1)}<AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_492ec613" />
+                {formatNumber(analytics.totalViews)} {t('feed.analytics.views')} · {analytics.engagementRate.toFixed(1)}% {t('feed.analytics.engagement')}
               </Text>
             )}
           </View>
@@ -192,7 +193,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
               onPress={() => { Haptics.selectionAsync(); setPeriod(p); }}
             >
               <Text style={[styles.periodTabText, period === p && styles.periodTabTextActive]}>
-                {p === '24h' ? 'Last 24h' : p === '7d' ? 'Last 7 days' : 'Last 30 days'}
+                {p === '24h' ? t('feed.analytics.last24h') : p === '7d' ? t('feed.analytics.last7d') : t('feed.analytics.last30d')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -210,7 +211,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Ionicons name="eye" size={22} color="#0EA5E9" />
                 </View>
                 <Text style={styles.heroValue}>{formatNumber(periodViews)}</Text>
-                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_e362579e" /></Text>
+                <Text style={styles.heroLabel}>{t('feed.analytics.totalViews')}</Text>
               </LinearGradient>
 
               <LinearGradient colors={['#F0FDF4', '#DCFCE7']} style={styles.heroCard}>
@@ -218,7 +219,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Ionicons name="people" size={22} color="#10B981" />
                 </View>
                 <Text style={[styles.heroValue, { color: '#059669' }]}>{formatNumber(analytics.uniqueViewers)}</Text>
-                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_c0bf72ae" /></Text>
+                <Text style={styles.heroLabel}>{t('feed.analytics.uniqueViewers')}</Text>
               </LinearGradient>
 
               <LinearGradient colors={['#FFF7ED', '#FED7AA']} style={styles.heroCard}>
@@ -226,27 +227,27 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Ionicons name="flash" size={22} color="#D97706" />
                 </View>
                 <Text style={[styles.heroValue, { color: '#D97706' }]}>{analytics.engagementRate.toFixed(1)}%</Text>
-                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_a7f799e4" /></Text>
+                <Text style={styles.heroLabel}>{t('feed.analytics.engagement')}</Text>
               </LinearGradient>
 
               <LinearGradient colors={['#F5F3FF', '#EDE9FE']} style={styles.heroCard}>
                 <View style={[styles.heroIconWrap, { backgroundColor: '#DDD6FE' }]}>
                   <Ionicons name="time" size={22} color="#7C3AED" />
                 </View>
-                <Text style={[styles.heroValue, { color: '#7C3AED' }]}>{analytics.avgDuration}<AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_4b8609fc" /></Text>
-                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_3b6efc26" /></Text>
+                <Text style={[styles.heroValue, { color: '#7C3AED' }]}>{analytics.avgDuration}s</Text>
+                <Text style={styles.heroLabel}>{t('feed.analytics.avgDuration')}</Text>
               </LinearGradient>
             </View>
 
             {/* ── Engagement Breakdown ───────────────────────────────── */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_a7f799e4" /></Text>
+              <Text style={styles.sectionTitle}>{t('feed.analytics.engagement')}</Text>
               <View style={styles.engagementGrid}>
                 {[
-                  { icon: 'heart', color: '#EF4444', bg: '#FEE2E2', value: analytics.likes, sub: `+${analytics.likes24h} today`, label: 'Likes' },
-                  { icon: 'chatbubble', color: '#3B82F6', bg: '#DBEAFE', value: analytics.comments, sub: `+${analytics.comments24h} today`, label: 'Comments' },
-                  { icon: 'arrow-redo', color: '#10B981', bg: '#D1FAE5', value: analytics.shares, sub: 'total reposts', label: 'Reposts' },
-                  { icon: 'bookmark', color: '#0EA5E9', bg: '#E0F2FE', value: analytics.bookmarks, sub: 'saved', label: 'Bookmarks' },
+                  { icon: 'heart', color: '#EF4444', bg: '#FEE2E2', value: analytics.likes, sub: `+${analytics.likes24h} today`, label: t('feed.analytics.likes') },
+                  { icon: 'chatbubble', color: '#3B82F6', bg: '#DBEAFE', value: analytics.comments, sub: `+${analytics.comments24h} today`, label: t('feed.analytics.comments') },
+                  { icon: 'arrow-redo', color: '#10B981', bg: '#D1FAE5', value: analytics.shares, sub: 'total reposts', label: t('feed.analytics.reposts') },
+                  { icon: 'bookmark', color: '#0EA5E9', bg: '#E0F2FE', value: analytics.bookmarks, sub: 'saved', label: t('feed.analytics.bookmarks') },
                 ].map(item => (
                   <View key={item.label} style={[styles.engagCard, Shadows.sm]}>
                     <View style={[styles.engagIcon, { backgroundColor: item.bg }]}>
@@ -263,7 +264,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             {/* ── 7-Day Trend Chart ─────────────────────────────────── */}
             {analytics.dailyViews?.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_0f6c048d" /></Text>
+                <Text style={styles.sectionTitle}>{t('feed.analytics.trend')}</Text>
                 <View style={[styles.chartCard, Shadows.sm]}>
                   {/* Y-axis max label */}
                   {(() => {
@@ -301,7 +302,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             {/* ── Traffic Sources ───────────────────────────────────── */}
             {analytics.viewsBySource && Object.keys(analytics.viewsBySource).length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_e7f3fe80" /></Text>
+                <Text style={styles.sectionTitle}>{t('feed.analytics.sources')}</Text>
                 {Object.entries(analytics.viewsBySource)
                   .sort(([, a], [, b]) => b - a)
                   .map(([source, views]) => {
@@ -334,7 +335,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             {/* ── Algorithm Relevance ───────────────────────────────── */}
             {algoScore && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_9e8bc29e" /></Text>
+                <Text style={styles.sectionTitle}>{t('feed.analytics.algoHealth')}</Text>
                 <LinearGradient colors={['#F8FAFF', '#EFF6FF']} style={[styles.algoCard, Shadows.sm]}>
                   <View style={styles.algoTop}>
                     <LinearGradient colors={['#0EA5E9', '#6366F1']} style={styles.algoScoreCircle}>
@@ -342,8 +343,8 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                       <Text style={styles.algoScoreSub}>/ 100</Text>
                     </LinearGradient>
                     <View style={styles.algoTopText}>
-                      <Text style={styles.algoTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_f0e3c928" /></Text>
-                      <Text style={styles.algoSubtitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_686fd050" /></Text>
+                      <Text style={styles.algoTitle}>{t('feed.analytics.relevanceScore')}</Text>
+                      <Text style={styles.algoSubtitle}>{t('feed.analytics.aiCalculated')}</Text>
                     </View>
                   </View>
 
@@ -371,10 +372,10 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
         ) : (
           <View style={styles.errorState}>
             <Ionicons name="bar-chart-outline" size={56} color="#D1D5DB" />
-            <Text style={styles.errorText}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_0bce2dae" /></Text>
+            <Text style={styles.errorText}>{t('feed.analytics.loadError')}</Text>
             <TouchableOpacity onPress={handleRefresh} style={styles.retryBtn}>
               <Ionicons name="refresh" size={16} color="#fff" />
-              <Text style={styles.retryBtnText}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_03f1520d" /></Text>
+              <Text style={styles.retryBtnText}>{t('feed.analytics.retry')}</Text>
             </TouchableOpacity>
           </View>
         )}

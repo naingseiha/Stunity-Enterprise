@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * NetworkStatus Component
  *
@@ -22,6 +22,7 @@ interface NetworkStatusProps {
 }
 
 export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
+  const { t } = useTranslation();
   const [isConnected, setIsConnected] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
   const translateY = useRef(new Animated.Value(-100)).current;
@@ -114,11 +115,11 @@ export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
           color="#fff"
         />
         <Text style={styles.text}>
-          {isConnected ? 'Back online! 🎉' : 'No internet connection'}
+          {isConnected ? t('common.network.online') : t('common.network.offline')}
         </Text>
         {!isConnected && onRetry && (
           <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-            <Text style={styles.retryText}><AutoI18nText i18nKey="auto.mobile.components_common_NetworkStatus.k_9234fd34" /></Text>
+            <Text style={styles.retryText}>{t('common.network.retry')}</Text>
           </TouchableOpacity>
         )}
       </View>

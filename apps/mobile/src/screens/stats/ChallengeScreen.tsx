@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -21,6 +21,7 @@ import type { MainStackParamList } from '@/navigation/types';
 type Props = NativeStackScreenProps<MainStackParamList, 'Challenges'>;
 
 export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,10 +110,10 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
           <View style={styles.opponentInfo}>
             <Text style={styles.opponentLabel}>
-              {isChallenger ? 'Challenging' : 'Challenge from'}
+              {isChallenger ? t('screens.challenges.challenging') : t('screens.challenges.challengeFrom')}
             </Text>
             <Text style={styles.opponentName}>
-              {isChallenger ? 'Opponent' : 'Challenger'}
+              {isChallenger ? t('screens.challenges.opponent') : t('screens.challenges.challenger')}
             </Text>
           </View>
           {isCompleted && (
@@ -126,7 +127,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
         {(isActive || isCompleted) && (
           <View style={styles.scoresSection}>
             <View style={styles.scoreBox}>
-              <Text style={styles.scoreLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_dd6735ca" /></Text>
+              <Text style={styles.scoreLabel}>{t('screens.challenges.yourScore')}</Text>
               <Text style={styles.scoreValue}>
                 {isChallenger
                   ? challenge.challengerScore ?? '-'
@@ -138,7 +139,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <View style={styles.scoreBox}>
               <Text style={styles.scoreLabel}>
-                {isChallenger ? 'Opponent' : 'Challenger'}
+                {isChallenger ? t('screens.challenges.opponent') : t('screens.challenges.challenger')}
               </Text>
               <Text style={styles.scoreValue}>
                 {isChallenger
@@ -163,7 +164,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
                 end={{ x: 1, y: 0 }}
               >
                 <Ionicons name="checkmark" size={20} color="#FFF" />
-                <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_07517b58" /></Text>
+                <Text style={styles.buttonText}>{t('screens.challenges.accept')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           )}
@@ -180,7 +181,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
                 end={{ x: 1, y: 0 }}
               >
                 <Ionicons name="play" size={20} color="#FFF" />
-                <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_e1a02f86" /></Text>
+                <Text style={styles.buttonText}>{t('screens.challenges.start')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           )}
@@ -197,7 +198,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
                 end={{ x: 1, y: 0 }}
               >
                 <Ionicons name="eye" size={20} color="#FFF" />
-                <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_510258fe" /></Text>
+                <Text style={styles.buttonText}>{t('screens.challenges.viewResults')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           )}
@@ -206,7 +207,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Expiry */}
         {isPending && (
           <Text style={styles.expiryText}>
-            <AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_0807792a" /> {new Date(challenge.expiresAt).toLocaleDateString()}
+            {t('screens.challenges.expires')} {new Date(challenge.expiresAt).toLocaleDateString()}
           </Text>
         )}
       </View>
@@ -231,7 +232,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Ionicons name="chevron-back" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_cfcd475f" /></Text>
+          <Text style={styles.headerTitle}>{t('screens.challenges.title')}</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => Alert.alert('Coming Soon', 'Create challenge feature')}
@@ -250,14 +251,14 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
           {loading ? (
             <View style={styles.loadingContainer}>
               <Ionicons name="trophy" size={48} color="#FFF" />
-              <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_f1541589" /></Text>
+              <Text style={styles.loadingText}>{t('screens.challenges.loading')}</Text>
             </View>
           ) : challenges.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="trophy-outline" size={64} color="rgba(255, 255, 255, 0.5)" />
-              <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_7d739dc8" /></Text>
+              <Text style={styles.emptyTitle}>{t('screens.challenges.emptyTitle')}</Text>
               <Text style={styles.emptyText}>
-                <AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_d3371e9d" />
+                {t('screens.challenges.emptyDesc')}
               </Text>
               <TouchableOpacity
                 style={styles.createButton}
@@ -268,7 +269,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
                   style={styles.createButtonGradient}
                 >
                   <Ionicons name="add-circle" size={24} color="#FFF" />
-                  <Text style={styles.createButtonText}><AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_663989f7" /></Text>
+                  <Text style={styles.createButtonText}>{t('screens.challenges.newChallenge')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -278,7 +279,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
               {pendingChallenges.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>
-                    <AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_cd60ddf4" />{pendingChallenges.length})
+                    {t('screens.challenges.pendingCount', { count: pendingChallenges.length })}
                   </Text>
                   {pendingChallenges.map(renderChallenge)}
                 </View>
@@ -288,7 +289,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
               {activeChallenges.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>
-                    <AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_8e80a70e" />{activeChallenges.length})
+                    {t('screens.challenges.activeCount', { count: activeChallenges.length })}
                   </Text>
                   {activeChallenges.map(renderChallenge)}
                 </View>
@@ -298,7 +299,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
               {completedChallenges.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>
-                    <AutoI18nText i18nKey="auto.mobile.screens_stats_ChallengeScreen.k_b97789d5" />{completedChallenges.length})
+                    {t('screens.challenges.completedCount', { count: completedChallenges.length })}
                   </Text>
                   {completedChallenges.map(renderChallenge)}
                 </View>

@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -22,6 +22,7 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
   onPress,
   compact = false,
 }) => {
+  const { t } = useTranslation();
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -117,10 +118,10 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
             </Animated.View>
 
             <View>
-              <Text style={styles.streakLabel}><AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_f9192829" /></Text>
+              <Text style={styles.streakLabel}>{t('common.streak.label')}</Text>
               <View style={styles.streakCountRow}>
                 <Text style={styles.streakNumber}>{streak.currentStreak}</Text>
-                <Text style={styles.streakDays}><AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_806d2450" /></Text>
+                <Text style={styles.streakDays}>{t('common.streak.days')}</Text>
               </View>
             </View>
           </View>
@@ -130,14 +131,14 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
             {streak.freezesAvailable > 0 && (
               <View style={styles.freezeBadge}>
                 <Ionicons name="snow" size={12} color="#60A5FA" />
-                <Text style={styles.freezeText}>{streak.freezesAvailable} <AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_1d456948" /></Text>
+                <Text style={styles.freezeText}>{streak.freezesAvailable} {t('common.streak.freeze')}</Text>
               </View>
             )}
 
             {/* Best Streak */}
             <View style={styles.bestContainer}>
               <Ionicons name="trophy" size={12} color="rgba(255,255,255,0.6)" />
-              <Text style={styles.bestText}><AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_bfcab853" /> {streak.longestStreak}</Text>
+              <Text style={styles.bestText}>{t('common.streak.best')} {streak.longestStreak}</Text>
             </View>
           </View>
         </View>
@@ -146,8 +147,8 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
         <View style={styles.footer}>
           <Text style={styles.motivationText}>
             {isActive
-              ? (isOnFire ? "You're on fire! Keep it up! 🚀" : "Great start! Don't break the chain!")
-              : "Play a quiz to start your streak!"}
+              ? (isOnFire ? t('common.streak.motivationActive') : t('common.streak.motivationStart'))
+              : t('common.streak.motivationEmpty')}
           </Text>
         </View>
 

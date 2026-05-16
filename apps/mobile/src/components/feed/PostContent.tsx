@@ -339,7 +339,7 @@ const PostContent = ({
               color={DIFFICULTY_CONFIG[learningMeta.difficulty].color}
             />
             <Text style={[styles.difficultyText, { color: DIFFICULTY_CONFIG[learningMeta.difficulty].color }]}>
-              {DIFFICULTY_CONFIG[learningMeta.difficulty].label}
+              {t(DIFFICULTY_CONFIG[learningMeta.difficulty].labelKey)}
             </Text>
           </View>
         )}

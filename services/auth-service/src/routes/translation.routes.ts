@@ -242,9 +242,9 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
   router.post('/update', authenticate, authorize(LANGUAGE_MANAGEMENT_ROLES), async (req: Request, res: Response) => {
     console.log('HIT: POST /update');
     const { app: appName, locale, key, value } = req.body;
-    
-    if (!appName || !locale || !key) {
-      return res.status(400).json({ success: false, error: 'app, locale, and key are required' });
+
+    if (!appName || !locale || !key || typeof value !== 'string') {
+      return res.status(400).json({ success: false, error: 'app, locale, key, and value (string) are required' });
     }
 
     try {
@@ -298,8 +298,19 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         },
       });
       const previousByKey = new Map(previousRows.map((item) => [`${item.app}:${item.locale}:${item.key}`, item.value]));
+      const validTranslations = translations.filter(
+        (t: any) => t?.app && t?.locale && t?.key && typeof t?.value === 'string'
+      );
+
+      if (validTranslations.length !== translations.length) {
+        return res.status(400).json({
+          success: false,
+          error: 'Each translation must include app, locale, key, and value (string)',
+        });
+      }
+
       const results = await prisma.$transaction(
-        translations.map((t: any) => 
+        validTranslations.map((t: any) =>
           prisma.translation.upsert({
             where: { app_locale_key: { app: t.app, locale: t.locale, key: t.key } },
             update: { value: t.value },

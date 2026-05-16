@@ -28,19 +28,39 @@ export function normalize(size: number): number {
 /**
  * Format relative time (e.g., "2 hours ago", "Yesterday")
  */
-export function formatRelativeTime(date: string | Date): string {
+export function formatRelativeTime(date: string | Date, t?: (key: string, options?: any) => string): string {
   const now = new Date();
   const then = new Date(date);
   const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
 
-  if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 172800) return 'Yesterday';
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+  const translate = t || ((key: string) => {
+    const map: Record<string, string> = {
+      'feed.postCard.time.justNow': 'Just now',
+      'profile.activity.yesterday': 'Yesterday',
+    };
+    return map[key] || key;
+  });
 
-  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (seconds < 60) return translate('feed.postCard.time.justNow');
+  if (seconds < 3600) {
+    const count = Math.floor(seconds / 60);
+    return t ? t('feed.postCard.time.minutesAgo', { count }) : `${count}m ago`;
+  }
+  if (seconds < 86400) {
+    const count = Math.floor(seconds / 3600);
+    return t ? t('feed.postCard.time.hoursAgo', { count }) : `${count}h ago`;
+  }
+  if (seconds < 172800) return translate('profile.activity.yesterday');
+  if (seconds < 604800) {
+    const count = Math.floor(seconds / 86400);
+    return t ? t('feed.postCard.time.daysAgo', { count }) : `${count}d ago`;
+  }
+  if (seconds < 2592000) {
+    const count = Math.floor(seconds / 604800);
+    return t ? t('profile.activity.weeksAgo', { count }) : `${count}w ago`;
+  }
+
+  return then.toLocaleDateString(t ? undefined : 'en-US', { month: 'short', day: 'numeric' });
 }
 
 /**

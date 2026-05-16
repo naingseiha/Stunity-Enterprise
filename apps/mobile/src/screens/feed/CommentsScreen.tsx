@@ -41,7 +41,7 @@ import { supabase } from '@/lib/supabase';
 type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string } }, 'Comments'>;
 
 export default function CommentsScreen() {
-    const { t: autoT } = useTranslation();
+    const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<CommentsScreenRouteProp>();
   const { postId } = route.params;
@@ -176,7 +176,7 @@ export default function CommentsScreen() {
                 )}
                 {comment.author.role === 'TEACHER' && (
                   <View style={styles.teacherBadge}>
-                    <Text style={styles.teacherBadgeText}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_3faaaa6b" /></Text>
+                    <Text style={styles.teacherBadgeText}>{t('common.teacher')}</Text>
                   </View>
                 )}
 
@@ -184,7 +184,7 @@ export default function CommentsScreen() {
                 {comment.isVerifiedAnswer && (
                   <View style={styles.goldenCheckmarkContainer}>
                     <Ionicons name="checkmark-circle" size={16} color="#F59E0B" />
-                    <Text style={styles.goldenCheckmarkText}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_b78acfe9" /></Text>
+                    <Text style={styles.goldenCheckmarkText}>{t('feed.sections.verifiedAnswer')}</Text>
                   </View>
                 )}
               </View>
@@ -200,7 +200,7 @@ export default function CommentsScreen() {
                       style={styles.verifyButton}
                     >
                       <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
-                      <Text style={styles.verifyText}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_9d67a1d9" /></Text>
+                      <Text style={styles.verifyText}>{t('feed.sections.verifyAnswer')}</Text>
                     </TouchableOpacity>
                   )}
                   {isOwnComment && (
@@ -214,7 +214,7 @@ export default function CommentsScreen() {
                       ) : (
                         <>
                           <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                          <Text style={styles.deleteText}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_79f49c45" /></Text>
+                          <Text style={styles.deleteText}>{t('feed.sections.delete')}</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -253,8 +253,8 @@ export default function CommentsScreen() {
           <Ionicons name="chatbubbles-outline" size={44} color="#0066FF" />
         </View>
       </View>
-      <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_f7cfffcf" /></Text>
-      <Text style={styles.emptySubtitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_d858093c" /></Text>
+      <Text style={styles.emptyTitle}>{t('feed.sections.noComments')}</Text>
+      <Text style={styles.emptySubtitle}>{t('feed.sections.beFirst')}</Text>
     </Animated.View>
   );
 
@@ -275,7 +275,7 @@ export default function CommentsScreen() {
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_CommentsScreen.k_b5d8472a" /></Text>
+              <Text style={styles.headerTitle}>{t('feed.sections.comments')}</Text>
               {postComments.length > 0 && (
                 <View style={styles.commentCountBadge}>
                   <Text style={styles.commentCountText}>{postComments.length}</Text>
@@ -344,7 +344,7 @@ export default function CommentsScreen() {
             <View style={styles.inputField}>
               <TextInput
                 style={styles.input}
-                placeholder={autoT("auto.mobile.screens_feed_CommentsScreen.k_e3d65afb")}
+                placeholder={t("feed.sections.writeComment")}
                 placeholderTextColor="#A3A3A3"
                 value={newComment}
                 onChangeText={setNewComment}

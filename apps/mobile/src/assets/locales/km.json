@@ -25,7 +25,29 @@
     "loading": "កំពុងផ្ទុក...",
     "today": "ថ្ងៃនេះ",
     "all": "ទាំងអស់",
-    "search": "ស្វែងរក",
+    "search": {
+      "placeholder": "ស្វែងរកការបង្ហោះ មនុស្ស ប្រធានបទ...",
+      "recent": "ការស្វែងរកថ្មីៗ",
+      "clearAll": "សម្អាតទាំងអស់",
+      "noResults": "រកមិនឃើញលទ្ធផលសម្រាប់ \"{{query}}\"",
+      "tryDifferent": "សាកល្បងពាក្យគន្លឹះផ្សេង ឬពិនិត្យអក្ខរាវិរុទ្ធ។",
+      "posts": "ការបង្ហោះ",
+      "people": "មនុស្ស",
+      "topics": "ប្រធានបទ",
+      "top": "កំពូល",
+      "latest": "ថ្មីបំផុត",
+      "recent": "ថ្មីៗ",
+      "popular": "ពេញនិយម",
+      "relevant": "ពាក់ព័ន្ធ",
+      "all": "ទាំងអស់",
+      "resultsCount": "លទ្ធផល {{count}}",
+      "questionsCount": "សំណួរ {{count}}",
+      "startSearching": "ចាប់ផ្តើមស្វែងរក",
+      "startSearchingSub": "ស្វែងរកមនុស្ស ការបង្ហោះ និងមាតិកាអប់រំពីទូទាំងបណ្តាញ Stunity ។",
+      "trending": "ប្រធានបទកំពុងពេញនិយម",
+      "exploreByType": "ស្វែងរកតាមប្រភេទ",
+      "noResultsSub": "យើងរកមិនឃើញលទ្ធផលដែលត្រូវនឹងការស្វែងរករបស់អ្នកទេ។ សូមសាកល្បងពាក្យគន្លឹះផ្សេងទៀត។"
+    },
     "back": "ត្រឡប់ក្រោយ",
     "done": "រួចរាល់",
     "view": "មើល",
@@ -56,13 +78,163 @@
     "next": "បន្ទាប់",
     "male": "ប្រុស",
     "female": "ស្រី",
+    "total": "សរុប",
+    "student": "សិស្ស",
+    "active": "សកម្ម",
     "details": "ព័ត៌មានលម្អិត",
     "id": "លេខសម្គាល់",
-    "na": "N/A"
+    "na": "N/A",
+    "info": "ព័ត៌មាន",
+    "title": "ចំណងជើង",
+    "user": "អ្នកប្រើប្រាស់",
+    "seeAll": "មើលទាំងអស់",
+    "retry": "ព្យាយាមម្តងទៀត",
+    "noData": "មិនមានទិន្នន័យទេ",
+    "more": "បន្ថែម",
+    "description": "ការពិពណ៌នា",
+    "clearSearch": "សម្អាតការស្វែងរក",
+    "browseCourses": "រុករកវគ្គសិក្សា",
+    "appName": "Stunity",
+    "ai": {
+      "generateWithAi": "បង្កើតដោយប្រើ AI",
+      "topic": "ប្រធានបទ",
+      "gradeLevel": "កម្រិតថ្នាក់",
+      "difficulty": "កម្រិតពិបាក",
+      "numItems": "ចំនួន {{label}}",
+      "generating": "កំពុងបង្កើត...",
+      "generateNow": "បង្កើតឥឡូវនេះ",
+      "placeholderQuiz": "ឧទាហរណ៍៖ វដ្តទឹក ការធ្វើរស្មីសំយោគ...",
+      "placeholderPoll": "ឧទាហរណ៍៖ វិធីសាស្ត្រសិក្សាល្អបំផុតសម្រាប់ការប្រឡង...",
+      "placeholderDefault": "ប្រធានបទ",
+      "questions": "សំណួរ",
+      "options": "ជម្រើស",
+      "weeks": "សប្តាហ៍",
+      "items": "ធាតុ",
+      "easy": "ស្រួល",
+      "medium": "មធ្យម",
+      "hard": "ពិបាក",
+      "grade6": "ថ្នាក់ទី ៦",
+      "grade7": "ថ្នាក់ទី ៧",
+      "grade8": "ថ្នាក់ទី ៨",
+      "grade9": "ថ្នាក់ទី ៩",
+      "grade10": "ថ្នាក់ទី ១០",
+      "grade11": "ថ្នាក់ទី ១១",
+      "grade12": "ថ្នាក់ទី ១២",
+      "university": "សកលវិទ័យាល័យ",
+      "resultTitle": "សេចក្តីព្រាង AI",
+      "disclaimer": "AI អាចមានកំហុស។ សូមពិនិត្យឡើងវិញមុនពេលទទួលយក។",
+      "useDraft": "ប្រើប្រាស់សេចក្តីព្រាង",
+      "regenerate": "បង្កើតឡើងវិញ",
+      "regenerating": "កំពុងបង្កើតឡើងវិញ..."
+    },
+    "errorBoundary": {
+      "title": "អូយ មានអ្វីមួយខុសហើយ",
+      "subtitle": "កម្មវិធីបានជួបប្រទះបញ្ហាដែលមិនបានរំពឹងទុក។ ក្រុមការងាររបស់យើងត្រូវបានជូនដំណឹងរួចហើយ។",
+      "tryAgain": "ព្យាយាមម្តងទៀត"
+    },
+    "network": {
+      "online": "ត្រឡប់មកប្រើអនឡាញវិញហើយ! 🎉",
+      "offline": "គ្មានការតភ្ជាប់អ៊ីនធឺណិតទេ",
+      "retry": "ព្យាយាមម្តងទៀត"
+    },
+    "media": {
+      "viewFull": "មើលរូបភាពពេញ"
+    },
+    "streak": {
+      "label": "កំណត់ត្រាបន្ត",
+      "days": "ថ្ងៃ",
+      "freeze": "បង្កក",
+      "best": "ល្អបំផុត៖",
+      "motivationActive": "អ្នកកំពុងតែឡើងកម្តៅហើយ! បន្តទៀត! 🚀",
+      "motivationStart": "ការចាប់ផ្តើមដ៏ល្អ! កុំឱ្យដាច់ខ្សែសង្វាក់!",
+      "motivationEmpty": "លេងកម្រងសំណួរដើម្បីចាប់ផ្តើមកំណត់ត្រារបស់អ្នក!"
+    },
+    "achievement": {
+      "unlockTitle": "សមិទ្ធផលថ្មី!",
+      "awesome": "អស្ចារ្យណាស់!"
+    },
+    "app": {
+      "version": "ជំនាន់ {{version}}"
+    }
+  },
+  "screens": {
+    "leaderboard": {
+      "title": "តារាងចំណាត់ថ្នាក់",
+      "points": "ពិន្ទុ",
+      "level": "កម្រិត",
+      "globalTitle": "តារាងចំណាត់ថ្នាក់សកល",
+      "globalSubtitle": "ប្រកួតប្រជែងជាមួយសិស្សទូទាំងពិភពលោក",
+      "fetchingRanks": "កំពុងទាញយកចំណាត់ថ្នាក់...",
+      "you": "អ្នក",
+      "lvl": "កម្រិត"
+    },
+    "challenges": {
+      "title": "ការប្រកួតប្រជែង",
+      "yourScore": "ពិន្ទុរបស់អ្នក",
+      "accept": "ទទួលយកការប្រកួត",
+      "start": "ចាប់ផ្តើមការប្រកួត",
+      "viewResults": "មើលលទ្ធផល",
+      "expires": "ផុតកំណត់៖",
+      "loading": "កំពុងទាញយកការប្រកួត...",
+      "emptyTitle": "មិនមានការប្រកួតទេ",
+      "emptyDesc": "អ្នកមិនមានការប្រកួតណាមួយដែលកំពុងដំណើរការទេ។ ចាប់ផ្តើមមួយដើម្បីប្រកួតជាមួយមិត្តភក្តិ!",
+      "newChallenge": "ការប្រកួតថ្មី",
+      "pendingCount": "កំពុងរង់ចាំ ({{count}})",
+      "activeCount": "កំពុងដំណើរការ ({{count}})",
+      "completedCount": "បានបញ្ចប់ ({{count}})",
+      "challenging": "កំពុងប្រកួតជាមួយ",
+      "challengeFrom": "ការប្រកួតពី",
+      "opponent": "គូប្រកួត",
+      "challenger": "អ្នកបបួលប្រកួត"
+    },
+    "challengeResult": {
+      "title": "លទ្ធផលការប្រកួត",
+      "yourScore": "ពិន្ទុរបស់អ្នក",
+      "opponent": "គូប្រកួត",
+      "matchStats": "ស្ថិតិនៃការប្រកួត",
+      "date": "កាលបរិច្ឆេទ",
+      "duration": "រយៈពេល",
+      "scoreDiff": "គម្លាតពិន្ទុ",
+      "pts": "ពិន្ទុ",
+      "rematch": "ប្រកួតម្តងទៀត",
+      "done": "រួចរាល់",
+      "draw": "ស្មើ!",
+      "win": "អ្នកឈ្នះ!",
+      "lose": "អ្នកចាញ់",
+      "drawDesc": "អ្នកទាំងពីរមានពិន្ទុស្មើគ្នា",
+      "winDesc": "ធ្វើបានល្អណាស់! បន្តទៀត!",
+      "loseDesc": "កុំបោះបង់ ព្យាយាមម្តងទៀត!"
+    },
+    "stats": {
+      "title": "ការវិភាគ",
+      "loading": "កំពុងទាញយកស្ថិតិ...",
+      "level": "កម្រិត",
+      "xpToLevel": "XP ដល់កម្រិត",
+      "quizzes": "កម្រងសំណួរ",
+      "avgScore": "ពិន្ទុមធ្យម",
+      "streak": "កំណត់ត្រាបន្ត",
+      "winRate": "អត្រាឈ្នះ",
+      "performance": "សមិទ្ធផល",
+      "showing": "បង្ហាញ",
+      "recentAttempts": "ការព្យាយាមថ្មីៗ",
+      "details": "ព័ត៌មានលម្អិត",
+      "totalPoints": "ពិន្ទុសរុប",
+      "correctAnswers": "ចម្លើយត្រឹមត្រូវ",
+      "bestStreak": "កំណត់ត្រាល្អបំផុត"
+    },
+    "bookmarks": {
+      "title": "ចំណាំ",
+      "loading": "កំពុងស្វែងរកចំណាំរបស់អ្នក...",
+      "emptyTitle": "មិនទាន់មានចំណាំនៅឡើយទេ",
+      "emptyDesc": "រក្សាទុកការបង្ហោះដែលអ្នកចង់មើលម្តងទៀតដោយចុចលើរូបតំណាងចំណាំ។",
+      "explore": "ស្វែងរកមាតិកា"
+    }
   },
   "auth": {
     "title": "ស្វាគមន៍ត្រឡប់មកវិញ",
     "subtitle": "ចូលគណនីដើម្បីបន្ត",
+    "login": "ចូលគណនី",
+    "signup": "ចុះឈ្មោះ",
     "forgotPassword": "ភ្លេចលេខសម្ងាត់?",
     "noAccount": "មិនទាន់មានគណនី?",
     "alreadyHaveAccount": "មានគណនីរួចហើយ?",
@@ -239,6 +411,15 @@
     "achievements": "សមិទ្ធផល"
   },
   "feed": {
+    "postCard": {
+      "time": {
+        "justNow": "អម្បាញ់មិញ",
+        "minutesAgo": "{{count}} នាទីមុន",
+        "hoursAgo": "{{count}} ម៉ោងមុន",
+        "daysAgo": "{{count}} ថ្ងៃមុន"
+      },
+      "pollVotes": "បោះឆ្នោត {{count}}"
+    },
     "greetingMorning": "អរុណសួស្ដី",
     "greetingAfternoon": "ទិវាសួស្ដី",
     "greetingEvening": "សាយ័ណ្ហសួស្ដី",
@@ -253,7 +434,12 @@
     "shareLearning": "ចែករំលែកការសិក្សារបស់អ្នក...",
     "ask": "សួរ",
     "quiz": "កម្រងសំណួរ",
-    "poll": "ការស្ទង់មតិ",
+    "poll": {
+      "label": "ការស្ទង់មតិ",
+      "openVoting": "ការបោះឆ្នោតបើកចំហ",
+      "finalResults": "លទ្ធផលចុងក្រោយ",
+      "timeLeft": "នៅសល់ {{count}}{{unit}}"
+    },
     "resource": "ធនធាន",
     "newPost": "មាន ១ ការបង្ហោះថ្មី",
     "newPosts": "មាន {{count}} ការបង្ហោះថ្មី",
@@ -280,9 +466,15 @@
       "geography": "ភូមិវិទ្យា",
       "literature": "អក្សរសាស្ត្រ",
       "economics": "សេដ្ឋកិច្ច",
-      "psychology": "ចិត្តវិទ្យា"
+      "psychology": "ចិត្តវិទ្យា",
+      "examPrep": "ត្រៀមប្រឡង",
+      "essayWriting": "ការសរសេរតែងសេចក្តី",
+      "research": "ការស្រាវជ្រាវ",
+      "scholarship": "អាហារូបករណ៍",
+      "studyGroup": "ក្រុមសិក្សា"
     },
     "postTypes": {
+      "all": "ទាំងអស់",
       "article": "អត្ថបទ",
       "question": "សំណួរ",
       "announcement": "ការប្រកាស",
@@ -683,7 +875,21 @@
       "dateTbd": "កាលបរិច្ឆេទមិនទាន់កំណត់",
       "defaultCampus": "ទីតាំង Stunity",
       "memberCount": "សមាជិក {{count}}",
-      "verifiedClub": "ក្លឹបបានផ្ទៀងផ្ទាត់"
+      "verifiedClub": "ក្លឹបបានផ្ទៀងផ្ទាត់",
+      "questions": "សំណួរ",
+      "questionsCount": "សំណួរ {{count}}",
+      "comments": "មតិយោបល់",
+      "writeComment": "សរសេរមតិយោបល់...",
+      "noComments": "មិនទាន់មានមតិយោបល់នៅឡើយទេ",
+      "beFirst": "ក្លាយជាអ្នកដំបូងគេ!",
+      "beFirstComment": "ក្លាយជាអ្នកដំបូងដែលចែករំលែកមតិយោបល់!",
+      "replyingTo": "កំពុងឆ្លើយតបទៅកាន់ {{name}}",
+      "delete": "លុប",
+      "loadingComments": "កំពុងផ្ទុកមតិយោបល់...",
+      "progress": "វឌ្ឍនភាព",
+      "verifiedAnswer": "ចម្លើយបានផ្ទៀងផ្ទាត់",
+      "verifyAnswer": "សម្គាល់ថាជាចម្លើយ",
+      "writeReply": "សរសេរការឆ្លើយតប..."
     },
     "detail": {
       "loadError": "មិនអាចផ្ទុកការបង្ហោះបាន",
@@ -694,7 +900,52 @@
       "passedSuffix": " · ជាប់ ✓",
       "notPassedSuffix": " · មិនជាប់",
       "retakeQuiz": "ធ្វើកម្រងសំណួរម្តងទៀត",
-      "startQuiz": "ចាប់ផ្តើមកម្រងសំណួរ"
+      "startQuiz": "ចាប់ផ្តើមកម្រងសំណួរ",
+      "joinTeam": "ចូលរួមក្រុម",
+      "manageTeam": "គ្រប់គ្រងក្រុម",
+      "editPost": "កែសម្រួលការបង្ហោះ",
+      "deletePost": "លុបការបង្ហោះ",
+      "reportPost": "រាយការណ៍ការបង្ហោះ",
+      "copyLink": "ចម្លងតំណភ្ជាប់",
+      "fetching": "កំពុងផ្ទុកការបង្ហោះ...",
+      "title": "ការបង្ហោះ",
+      "analytics": {
+        "title": "ការអនុវត្តការបង្ហោះ",
+        "views": "ការមើល",
+        "engagement": "ការចូលរួម",
+        "totalViews": "ការមើលសរុប",
+        "uniqueViewers": "អ្នកមើលប្លែកៗ",
+        "avgDuration": "រយៈពេលមធ្យម",
+        "trend": "និន្នាការមើល ៧ ថ្ងៃ",
+        "sources": "ប្រភពចរាចរណ៍",
+        "algoHealth": "សុខភាពក្បួនដោះស្រាយ",
+        "relevanceScore": "ពិន្ទុភាពពាក់ព័ន្ធ",
+        "aiCalculated": "គណនាដោយ Stunity AI",
+        "loadError": "មិនអាចផ្ទុកការវិភាគបានទេ",
+        "retry": "ព្យាយាមម្តងទៀត",
+        "last24h": "២៤ ម៉ោងចុងក្រោយ",
+        "last7d": "៧ ថ្ងៃចុងក្រោយ",
+        "last30d": "៣០ ថ្ងៃចុងក្រោយ",
+        "likes": "ការចូលចិត្ត",
+        "comments": "មតិយោបល់",
+        "reposts": "ការបង្ហោះបន្ត",
+        "bookmarks": "ការចំណាំ"
+      },
+      "educationalValue": {
+        "title": "តម្លៃអប់រំ",
+        "rateSubtitle": "តើអ្នកវាយតម្លៃការបង្ហោះនេះយ៉ាងដូចម្តេច",
+        "difficulty": "កម្រិតពិបាក",
+        "recommend": "ខ្ញុំណែនាំការបង្ហោះនេះដល់អ្នកដទៃ",
+        "averageRating": "ការវាយតម្លៃមធ្យម៖",
+        "submit": "ដាក់ស្នើការវាយតម្លៃ",
+        "accuracy": "ភាពត្រឹមត្រូវ",
+        "helpfulness": "អត្ថប្រយោជន៍",
+        "clarity": "ភាពច្បាស់លាស់",
+        "depth": "ជម្រៅ",
+        "easy": "ស្រួល",
+        "justRight": "សមល្មម",
+        "hard": "ពិបាក"
+      }
     },
     "editPost": {
       "title": "កែសម្រួលការបង្ហោះ",
@@ -725,9 +976,27 @@
     "bounty": "រង្វាន់",
     "answerCount_one": "{{count}} ចម្លើយ",
     "answerCount_other": "{{count}} ចម្លើយ",
+    "answerCount": "{{count}} ចម្លើយ",
+    "viewsCount": "មើល {{count}} ដង",
     "progress": "វឌ្ឍនភាព",
     "stepsCompleted": "បានបញ្ចប់ {{completed}}/{{total}} ជំហាន",
-    "academicMatch": "ត្រូវនឹងការសិក្សា"
+    "academicMatch": "ត្រូវនឹងការសិក្សា",
+    "actions": {
+      "like": "ចូលចិត្ត",
+      "comment": "មតិយោបល់",
+      "notInterested": "មិនចាប់អារម្មណ៍",
+      "rateValue": "វាយតម្លៃ"
+    },
+    "time": {
+      "left": "នៅសល់",
+      "expired": "ផុតកំណត់",
+      "h": "ម៉ោង",
+      "d": "ថ្ងៃ",
+      "m": "នាទី"
+    },
+    "suggestions": {
+      "passScore": "ពិន្ទុជាប់៖ {{score}}%"
+    }
   },
   "attendance": {
     "title": "វត្តមាន",
@@ -900,6 +1169,7 @@
   "profile": {
     "title": "ព័ត៌មានផ្ទាល់ខ្លួន",
     "editProfile": "កែសម្រួលព័ត៌មានផ្ទាល់ខ្លួន",
+    "myQR": "កាត QR របស់ខ្ញុំ",
     "performance": {
       "title": "ការអនុវត្ត",
       "level": "កម្រិត",
@@ -926,7 +1196,17 @@
       "projects": "គម្រោង",
       "leaderboard": "តារាងចំណាត់ថ្នាក់",
       "leaderboardSub": "មើលចំណាត់ថ្នាក់របស់អ្នកជាសកល",
-      "badgesChallenge": "បំពេញការប្រឈមដើម្បីទទួលបានផ្លាកសញ្ញា"
+      "badgesChallenge": "បំពេញការប្រឈមដើម្បីទទួលបានផ្លាកសញ្ញា",
+      "performanceTitle": "ការអនុវត្តព័ត៌មានផ្ទាល់ខ្លួន",
+      "discoverySub": "ការរកឃើញពីអ្នកសិក្សា មិត្តភក្តិ និងចំណាប់អារម្មណ៍អាជីព",
+      "score": "ពិន្ទុ",
+      "views30d": "ការមើល ៣០ ថ្ងៃ",
+      "uniqueViewers": "អ្នកមើលប្លែកៗ",
+      "thisWeek": "សប្តាហ៍នេះ",
+      "trend": "និន្នាការ",
+      "learningCreator": "អ្នកបង្កើតការសិក្សា",
+      "recentVisitors": "អ្នកចូលមើលថ្មីៗ",
+      "last30Days": "៣០ ថ្ងៃចុងក្រោយ"
     },
     "posts": "ការបង្ហោះ",
     "empty": {
@@ -1698,7 +1978,9 @@
       "noJoined": "មិនទាន់បានចូលរួមក្លឹប",
       "noFound": "រកមិនឃើញក្លឹប",
       "exploreMore": "ស្វែងរកក្លឹបបន្ថែមដើម្បីចូលរួម។",
-      "loadingMore": "កំពុងផ្ទុកក្លឹបបន្ថែម..."
+      "loadingMore": "កំពុងផ្ទុកក្លឹបបន្ថែម...",
+      "disciplineWorkbench": "កន្លែងគ្រប់គ្រងវិន័យ",
+      "disciplineWorkbenchSubtitle": "គ្រប់គ្រងវត្តមាន និងកំណត់ត្រាវិន័យរបស់សិស្ស"
     },
     "alerts": {
       "requestPending": "សំណើរបស់អ្នកកំពុងរង់ចាំការអនុម័ត។",
@@ -1923,58 +2205,57 @@
       "emptyClass": "មិនមានសមាជិកក្នុងថ្នាក់នេះទេ។"
     },
     "grades": {
-      "loadFailed": "ផ្ទុកទិន្នន័យថ្នាក់មិនបានសម្រេច",
-      "applyOneScore": "សូមបញ្ចូលយ៉ាងហោចណាស់ពិន្ទុមួយមុនរក្សាទុក។",
-      "updated": "បានធ្វើបច្ចុប្បន្នភាពពិន្ទុដោយជោគជ័យ",
+      "rank": "ចំណាត់ថ្នាក់",
+      "score": "ពិន្ទុ",
+      "idValue": "អត្តលេខ: {{id}}",
+      "na": "N/A",
+      "scoreImport": "បញ្ចូលពិន្ទុ",
+      "selectSubject": "ជ្រើសរើសមុខវិជ្ជា",
+      "academicMonth": "ខែសិក្សា",
+      "classScores": "ពិន្ទុថ្នាក់",
+      "maxPts": "ពិន្ទុអតិបរមា: {{max}}",
+      "noSubjects": "រកមិនឃើញមុខវិជ្ជា",
+      "studentListCount": "បញ្ជីឈ្មោះសិស្ស ({{count}})",
+      "performanceOverview": "ទិដ្ឋភាពទូទៅនៃលទ្ធផល",
+      "subject": "មុខវិជ្ជា",
+      "subjects": "មុខវិជ្ជា",
+      "passRate": "អត្រាជាប់",
+      "loadFailed": "ផ្ទុកពិន្ទុមិនបានសម្រេច",
+      "loading": "កំពុងផ្ទុកពិន្ទុ...",
       "saveFailed": "រក្សាទុកពិន្ទុមិនបានសម្រេច",
-      "unsavedTitle": "ការផ្លាស់ប្តូរមិនទាន់រក្សាទុក",
-      "unsavedMessage": "អ្នកមានពិន្ទុមិនទាន់រក្សាទុក។ បើចាកចេញឥឡូវ ការផ្លាស់ប្តូរនឹងបាត់។",
+      "updated": "បានអាប់ដេតពិន្ទុដោយជោគជ័យ",
+      "unsavedTitle": "មិនទាន់បានរក្សាទុក",
+      "unsavedMessage": "អ្នកមានពិន្ទុដែលមិនទាន់រក្សាទុក។ តើអ្នកចង់រក្សាទុកមុនពេលចាកចេញទេ?",
       "keepEditing": "បន្តកែសម្រួល",
       "discard": "បោះបង់",
       "saveScores": "រក្សាទុកពិន្ទុ",
-      "idValue": "លេខសម្គាល់៖ {{id}}",
-      "na": "N/A",
-      "scoreImport": "បញ្ចូលពិន្ទុ",
-      "classScoresWithName": "ពិន្ទុ {{className}}",
-      "classScores": "ពិន្ទុថ្នាក់",
-      "selectSubject": "ជ្រើសមុខវិជ្ជា",
-      "noSubjects": "មិនមានមុខវិជ្ជាដែលបានចាត់ឱ្យអ្នកក្នុងថ្នាក់នេះទេ។",
-      "academicMonth": "ខែសិក្សា",
-      "loading": "កំពុងផ្ទុកពិន្ទុ...",
-      "classAvg": "មធ្យមថ្នាក់",
-      "passRate": "អត្រាជាប់",
-      "students": "សិស្ស",
-      "subjects": "មុខវិជ្ជា",
-      "performanceOverview": "ទិដ្ឋភាពលទ្ធផល",
-      "semesterSnapshot": "សង្ខេបឆមាស",
-      "emptyReport": "មិនទាន់មានរបាយការណ៍ពិន្ទុសម្រាប់ថ្នាក់នេះទេ។",
-      "studentListCount": "បញ្ជីសិស្ស ({{count}})",
-      "maxPts": "អតិបរមា៖ {{max}} ពិន្ទុ",
-      "emptyStudents": "មិនមានសិស្សក្នុងថ្នាក់នេះទេ។",
       "sheet": {
-        "currentStatus": "សន្លឹកពិន្ទុប្រចាំខែ៖",
-        "readOnlyHint": "សន្លឹកប្រចាំខែនេះត្រូវបានដាក់ស្នើ ឬចាក់សោរួច។ មិនអាចកែបញ្ចូលពិន្ទុរហូតដល់មានអ្នកគ្រប់គ្រងបើកឡើងវិញ។",
-        "submitAction": "ដាក់ស្នើសន្លឹក",
-        "lockAction": "ចាក់សោសន្លឹក",
-        "reopenAction": "បើកឡើងវិញ (រក្សាទុកជាព្រាង)",
-        "submitTitle": "ដាក់ស្នើសន្លឹកពិន្ទុប្រចាំខែ",
-        "submitMessage": "បន្ទាប់ពីដាក់ស្នើ អ្នកនឹងមិនអាចកែបញ្ចូលពិន្ទុសម្រាប់មុខវិជ្ជា និងខែនេះទេ រហូតដល់អ្នកគ្រប់គ្រងបើកឡើងវិញ។",
-        "submitSuccess": "បានដាក់ស្នើសន្លឹកប្រចាំខែ។",
-        "submitFailed": "ដាក់ស្នើមិនបានសម្រេច",
-        "lockTitle": "ចាក់សោសន្លឹកប្រចាំខែ",
-        "lockMessage": "ការចាក់សោរាស្តារបស់គ្រូមិនឱ្យកែតម្រូវពិន្ទុរហូតដល់បើកឡើងវិញ។",
-        "lockSuccess": "បានចាក់សោសន្លឹកប្រចាំខែ។",
-        "reopenTitle": "បើកសន្លឹកប្រចាំខែឡើងវិញ",
-        "reopenMessage": "ការបើកឡើងវិញត្រលប់សន្លឹកទៅរបៀបព្រាង ដើម្បីឱ្យគ្រូកែពិន្ទុបានម្តងទៀត។",
-        "reopenSuccess": "បានបើកសន្លឹកប្រចាំខែទៅរបៀបព្រាងវិញ។",
-        "lockedSheetSave": "មិនអាចកែតម្រូវសន្លឹកប្រចាំខែនេះបាននៅពេលនេះទេ។",
+        "currentStatus": "ស្ថានភាពបច្ចុប្បន្ន:",
+        "lockAction": "បិទតារាងពិន្ទុ",
+        "reopenAction": "បើកតារាងពិន្ទុឡើងវិញ",
+        "submitAction": "បញ្ជូនតារាងពិន្ទុ",
+        "readOnlyHint": "តារាងពិន្ទុនេះសម្រាប់តែមើលប៉ុណ្ណោះ ព្រោះវាត្រូវបានបញ្ជូន ឬបិទរួចហើយ។",
         "status": {
           "draft": "ព្រាង",
-          "submitted": "បានដាក់ស្នើ",
-          "locked": "ចាក់សោ",
-          "unknown": "មិនច្បាស់លាស់"
-        }
-      }
+          "submitted": "បានបញ្ជូន",
+          "locked": "បានបិទ"
+        },
+        "submitTitle": "បញ្ជូនតារាងពិន្ទុ",
+        "submitMessage": "តើអ្នកពិតជាចង់បញ្ជូនតារាងពិន្ទុនេះមែនទេ? អ្នកនឹងមិនអាចកែប្រែបានទេបន្ទាប់ពីបញ្ជូន។",
+        "submitSuccess": "បានបញ្ជូនតារាងពិន្ទុដោយជោគជ័យ",
+        "submitFailed": "បញ្ជូនតារាងពិន្ទុមិនបានសម្រេច",
+        "lockTitle": "បិទតារាងពិន្ទុ",
+        "lockMessage": "តើអ្នកពិតជាចង់បិទតារាងពិន្ទុនេះមែនទេ?",
+        "lockSuccess": "បានបិទតារាងពិន្ទុដោយជោគជ័យ",
+        "reopenTitle": "បើកតារាងពិន្ទុឡើងវិញ",
+        "reopenMessage": "តើអ្នកពិតជាចង់បើកតារាងពិន្ទុនេះឡើងវិញមែនទេ?",
+        "reopenSuccess": "បានបើកតារាងពិន្ទុឡើងវិញដោយជោគជ័យ",
+        "lockedSheetSave": "មិនអាចរក្សាទុកពិន្ទុលើតារាងដែលបានបិទទេ"
+      },
+      "applyOneScore": "សូមបញ្ជូលពិន្ទុយ៉ាងហោចណាស់មួយមុនពេលរក្សាទុក។",
+      "classScoresWithName": "ពិន្ទុថ្នាក់ {{className}}",
+      "emptyReport": "មិនមានរបាយការណ៍ពិន្ទុសម្រាប់ថ្នាក់នេះនៅឡើយទេ។",
+      "emptyStudents": "រកមិនឃើញសិស្សក្នុងថ្នាក់នេះទេ។"
     },
     "assignments": {
       "header": "កិច្ចការ",
@@ -2079,55 +2360,6 @@
       "phone": "ទូរស័ព្ទ",
       "email": "អ៊ីមែល",
       "address": "អាសយដ្ឋាន"
-    },
-    "grades": {
-      "rank": "ចំណាត់ថ្នាក់",
-      "score": "ពិន្ទុ",
-      "idValue": "អត្តលេខ: {{id}}",
-      "na": "N/A",
-      "scoreImport": "បញ្ចូលពិន្ទុ",
-      "selectSubject": "ជ្រើសរើសមុខវិជ្ជា",
-      "academicMonth": "ខែសិក្សា",
-      "classScores": "ពិន្ទុថ្នាក់",
-      "maxPts": "ពិន្ទុអតិបរមា: {{max}}",
-      "noSubjects": "រកមិនឃើញមុខវិជ្ជា",
-      "studentListCount": "បញ្ជីឈ្មោះសិស្ស ({{count}})",
-      "performanceOverview": "ទិដ្ឋភាពទូទៅនៃលទ្ធផល",
-      "subject": "មុខវិជ្ជា",
-      "subjects": "មុខវិជ្ជា",
-      "passRate": "អត្រាជាប់",
-      "loadFailed": "ផ្ទុកពិន្ទុមិនបានសម្រេច",
-      "loading": "កំពុងផ្ទុកពិន្ទុ...",
-      "saveFailed": "រក្សាទុកពិន្ទុមិនបានសម្រេច",
-      "updated": "បានអាប់ដេតពិន្ទុដោយជោគជ័យ",
-      "unsavedTitle": "មិនទាន់បានរក្សាទុក",
-      "unsavedMessage": "អ្នកមានពិន្ទុដែលមិនទាន់រក្សាទុក។ តើអ្នកចង់រក្សាទុកមុនពេលចាកចេញទេ?",
-      "keepEditing": "បន្តកែសម្រួល",
-      "discard": "បោះបង់",
-      "saveScores": "រក្សាទុកពិន្ទុ",
-      "sheet": {
-        "currentStatus": "ស្ថានភាពបច្ចុប្បន្ន:",
-        "lockAction": "បិទតារាងពិន្ទុ",
-        "reopenAction": "បើកតារាងពិន្ទុឡើងវិញ",
-        "submitAction": "បញ្ជូនតារាងពិន្ទុ",
-        "readOnlyHint": "តារាងពិន្ទុនេះសម្រាប់តែមើលប៉ុណ្ណោះ ព្រោះវាត្រូវបានបញ្ជូន ឬបិទរួចហើយ។",
-        "status": {
-          "draft": "ព្រាង",
-          "submitted": "បានបញ្ជូន",
-          "locked": "បានបិទ"
-        },
-        "submitTitle": "បញ្ជូនតារាងពិន្ទុ",
-        "submitMessage": "តើអ្នកពិតជាចង់បញ្ជូនតារាងពិន្ទុនេះមែនទេ? អ្នកនឹងមិនអាចកែប្រែបានទេបន្ទាប់ពីបញ្ជូន។",
-        "submitSuccess": "បានបញ្ជូនតារាងពិន្ទុដោយជោគជ័យ",
-        "submitFailed": "បញ្ជូនតារាងពិន្ទុមិនបានសម្រេច",
-        "lockTitle": "បិទតារាងពិន្ទុ",
-        "lockMessage": "តើអ្នកពិតជាចង់បិទតារាងពិន្ទុនេះមែនទេ?",
-        "lockSuccess": "បានបិទតារាងពិន្ទុដោយជោគជ័យ",
-        "reopenTitle": "បើកតារាងពិន្ទុឡើងវិញ",
-        "reopenMessage": "តើអ្នកពិតជាចង់បើកតារាងពិន្ទុនេះឡើងវិញមែនទេ?",
-        "reopenSuccess": "បានបើកតារាងពិន្ទុឡើងវិញដោយជោគជ័យ",
-        "lockedSheetSave": "មិនអាចរក្សាទុកពិន្ទុលើតារាងដែលបានបិទទេ"
-      }
     }
   },
   "clubScreens": {
@@ -2503,7 +2735,8 @@
       "submitAnswer": "ដាក់ស្នើចម្លើយ",
       "nextQuestion": "សំណួរបន្ទាប់",
       "waitingNextQuestion": "កំពុងរង់ចាំសំណួរបន្ទាប់...",
-      "pointsEarned": "+{{count}} ពិន្ទុ"
+      "pointsEarned": "+{{count}} ពិន្ទុ",
+      "secondsShort": "វិ."
     },
     "leaderboard": {
       "title": "តារាងពិន្ទុ",
@@ -2566,6 +2799,7 @@
   },
   "messages": {
     "title": "សារ",
+    "chat": "ជជែក",
     "search": "ស្វែងរកការសន្ទនា...",
     "you": "អ្នក",
     "youPrefix": "អ្នក៖ ",
@@ -2616,10 +2850,10 @@
         "k_debed3df": "Overdue",
         "k_f9f4ddf2": "You are viewing as",
         "k_cc6cd2a8": "New Assignment",
-        "k_36caf787": "Title",
-        "k_bea7e48a": "Type",
-        "k_e9dd416e": "Description",
-        "k_02af2969": "Instructions",
+        "k_36caf787": "ចំណងជើង",
+        "k_bea7e48a": "ប្រភេទ",
+        "k_e9dd416e": "ការពិពណ៌នា",
+        "k_02af2969": "សេចក្តីណែនាំ",
         "k_647181f1": "Max points",
         "k_aac6e6ef": "Due (YYYY-MM-DD HH:mm)",
         "k_70eea436": "Publish now (otherwise save as draft)",
@@ -2633,7 +2867,7 @@
       },
       "screens_assignments_SubmissionFormScreen": {
         "k_0721d4f6": "Submit Assignment",
-        "k_6883aa4c": "Submit",
+        "k_6883aa4c": "ដាក់ស្នើ",
         "k_eeafc075": "Write your answer below or attach files. You can do both.",
         "k_71f31062": "Your Answer",
         "k_b5f3984d": "characters",
@@ -2671,8 +2905,8 @@
         "k_cec767ac": "Basic information to get started",
         "k_0396ab9c": "First Name",
         "k_4047dee5": "Last Name",
-        "k_59e32b34": "Phone Number",
-        "k_005de1f7": "Continue",
+        "k_59e32b34": "លេខទូរស័ព្ទ",
+        "k_005de1f7": "បន្ត",
         "k_ea6c4c81": "Security",
         "k_61cfdc99": "Set up your account password",
         "k_d883fa67": "New Password",
@@ -2691,9 +2925,9 @@
         "k_990b5658": "STNT-1234-5678"
       },
       "screens_auth_RegisterScreen": {
-        "k_049d0bd9": "Personal Information",
+        "k_049d0bd9": "ព័ត៌មានផ្ទាល់ខ្លួន",
         "k_09b9d621": "Let's start with your name",
-        "k_2cab7586": "Continue",
+        "k_2cab7586": "បន្ត",
         "k_92f9ea6c": "Have a School Code? Use it here",
         "k_4ec6c861": "Choose Your Role",
         "k_0073c7e3": "Select your primary role",
@@ -2717,7 +2951,7 @@
         "k_2615ad34": "your.email@organization.edu",
         "k_b25c6ca0": "Phone (optional if you have email)",
         "k_bb0083eb": "e.g. 012345678",
-        "k_fd4de7da": "Password",
+        "k_fd4de7da": "លេខសម្ងាត់",
         "k_c46e788b": "Create a strong password",
         "k_167447b2": "Confirm Password",
         "k_fc3cf43b": "Re-enter your password"
@@ -2733,10 +2967,10 @@
         "k_3da750b5": "Saved Posts"
       },
       "screens_feed_CommentsScreen": {
-        "k_3faaaa6b": "Teacher",
+        "k_3faaaa6b": "គ្រូ",
         "k_b78acfe9": "Verified Answer",
         "k_9d67a1d9": "Mark Verified",
-        "k_79f49c45": "Delete",
+        "k_79f49c45": "លុប",
         "k_f7cfffcf": "No comments yet",
         "k_d858093c": "Be the first to share your thoughts!",
         "k_b5d8472a": "Comments",
@@ -2764,7 +2998,7 @@
         "k_095cd9e7": "My Posts"
       },
       "screens_feed_PostDetailScreen": {
-        "k_aea974ec": "Loading...",
+        "k_aea974ec": "កំពុងទាញយក...",
         "k_a376a749": "Loading post...",
         "k_84b83bdb": "Share",
         "k_b71cbb7b": "Edit Post",
@@ -2788,7 +3022,7 @@
         "k_986fbbfe": "Recent Searches",
         "k_f9d87fdb": "Clear All",
         "k_b0e2c843": "Try Searching",
-        "k_1971f0d9": "Posts",
+        "k_1971f0d9": "ការបង្ហោះ",
         "k_1b794a4d": "People",
         "k_dc975d59": "Searching...",
         "k_5bd00d2d": "ស្វែងរក"
@@ -2819,7 +3053,7 @@
         "k_b06c7433": "SECTION"
       },
       "screens_learn_CreateCourseScreen": {
-        "k_d22dde48": "Question"
+        "k_d22dde48": "សំណួរ"
       },
       "screens_learn_LessonViewerScreen": {
         "k_1fe2023e": "Weight:",
@@ -2836,7 +3070,7 @@
         "k_98f2b79c": "No data available yet",
         "k_75a561e4": "Publish courses to see your dashboard analytics",
         "k_5d584190": "Total Revenue",
-        "k_112c74c1": "Total Students",
+        "k_112c74c1": "សិស្សសរុប",
         "k_a2887aa4": "Avg Rating",
         "k_c00b51e6": "Active Courses"
       },
@@ -2844,29 +3078,29 @@
         "k_eb5b0f82": "s"
       },
       "screens_messages_NewMessageScreen": {
-        "k_3d7ee034": "New Message",
+        "k_3d7ee034": "សារថ្មី",
         "k_f9d8da19": "Search contacts..."
       },
       "screens_parent_ParentChildGradesScreen": {
-        "k_f7894d74": "Loading...",
+        "k_f7894d74": "កំពុងទាញយក...",
         "k_1305df96": "Grades",
-        "k_5be65d3f": "All",
-        "k_39f4873d": "Average",
+        "k_5be65d3f": "ទាំងអស់",
+        "k_39f4873d": "មធ្យម",
         "k_02196336": "Highest",
         "k_bc058b88": "Pass Rate",
         "k_6344c2b5": "No Grades Available",
         "k_fbd9a408": "Grades will appear once they are published."
       },
       "screens_parent_ParentChildReportCardScreen": {
-        "k_023e817f": "Loading...",
+        "k_023e817f": "កំពុងទាញយក...",
         "k_39a31991": "Report Card",
         "k_64964716": "STUDENT REPORT CARD",
-        "k_5206c73a": "Student",
+        "k_5206c73a": "សិស្ស",
         "k_f616a17a": "Khmer Name",
-        "k_7ce03c48": "Class",
+        "k_7ce03c48": "ថ្នាក់",
         "k_5ef5997b": "Overall",
-        "k_bff011d3": "Subjects",
-        "k_4c08935b": "Status",
+        "k_bff011d3": "មុខវិជ្ជា",
+        "k_4c08935b": "ស្ថានភាព",
         "k_ce45b21c": "No Grades Available",
         "k_5cef7c01": "Report cards will appear once grades are published.",
         "k_7a87c0be": "Generated on",
@@ -2891,7 +3125,7 @@
       "screens_profile_ManageDeadlinesScreen": {
         "k_72d0995f": "Deadlines",
         "k_f963bcbe": "Add New Deadline",
-        "k_45d8e191": "Title",
+        "k_45d8e191": "ចំណងជើង",
         "k_bf53cf51": "Date (YYYY-MM-DD)",
         "k_d339207c": "Related Topics (comma separated)",
         "k_5c08b17e": "Add Deadline",
@@ -2929,9 +3163,9 @@
         "k_4df7f8cf": "No about information yet"
       },
       "screens_profile_SettingsScreen": {
-        "k_08c3240d": "Posts",
+        "k_08c3240d": "ការបង្ហោះ",
         "k_af08410a": "Courses",
-        "k_9de751d4": "Level",
+        "k_9de751d4": "កម្រិត",
         "k_4d45e52f": "Edit Profile",
         "k_c25d9739": "Server Connection",
         "k_86440483": "Dev Mode",
@@ -2978,12 +3212,12 @@
         "k_75d95bd3": "You",
         "k_e937e268": "Opponent",
         "k_1aecc8cc": "Challenge Stats",
-        "k_2e4bc78a": "Completed",
+        "k_2e4bc78a": "បានបញ្ចប់",
         "k_f22a60a3": "Duration",
         "k_aae640c3": "Difference",
         "k_1d299591": "points",
         "k_f2b53dfd": "Rematch",
-        "k_13e2d931": "Done"
+        "k_13e2d931": "រួចរាល់"
       },
       "screens_stats_ChallengeScreen": {
         "k_dd6735ca": "You",
@@ -3002,8 +3236,8 @@
       },
       "screens_stats_LeaderboardScreen": {
         "k_a75d838f": "pts",
-        "k_0e50cac5": "Level",
-        "k_edc9cb8d": "Leaderboard",
+        "k_0e50cac5": "កម្រិត",
+        "k_edc9cb8d": "តារាងពិន្ទុ",
         "k_c9f815bb": "Top Scholars"
       },
       "screens_stats_StatsScreen": {
@@ -3033,7 +3267,7 @@
         "k_3195a2f3": "Difficulty",
         "k_74638b72": "Number of",
         "k_5f39480c": "AI is thinking...",
-        "k_5ac50fc2": "Generate"
+        "k_5ac50fc2": "បង្កើត"
       },
       "components_ai_AIResultPreview": {
         "k_2920eadb": "Remember to review AI-generated content before posting. You can edit it after accepting.",
@@ -3048,7 +3282,7 @@
         "k_2739d87c": "Tap to see full"
       },
       "components_common_NetworkStatus": {
-        "k_9234fd34": "Retry"
+        "k_9234fd34": "ព្យាយាមម្តងទៀត"
       },
       "components_feed_CommentSection": {
         "k_d2005f61": "No comments yet",
@@ -3099,7 +3333,7 @@
       },
       "components_streak_StreakWidget": {
         "k_f9192829": "Current Streak",
-        "k_806d2450": "days",
+        "k_806d2450": "ថ្ងៃ",
         "k_1d456948": "Freezes",
         "k_bfcab853": "Best:"
       },
@@ -3110,5 +3344,6 @@
         "k_310b987f": "AI is processing your content..."
       }
     }
-  }
+  },
+  "activity": {}
 }

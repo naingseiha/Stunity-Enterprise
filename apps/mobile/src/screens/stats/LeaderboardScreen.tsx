@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     View,
@@ -31,6 +31,7 @@ const PODIUM_COLORS = {
 };
 
 export function LeaderboardScreen() {
+    const { t } = useTranslation();
     const { width: windowWidth } = useWindowDimensions();
     const styles = useMemo(() => createLeaderboardStyles(windowWidth), [windowWidth]);
     const navigation = useNavigation();
@@ -95,7 +96,7 @@ export function LeaderboardScreen() {
                     <Text style={[styles.podiumName, { fontSize: 18, marginTop: 16 }]} numberOfLines={1}>{first.firstName} {first.lastName}</Text>
                     <View style={[styles.pointsBadge, { backgroundColor: '#F0F9FF' }]}>
                         <Ionicons name="star" size={14} color="#0EA5E9" />
-                        <Text style={[styles.pointsText, { fontSize: 14, color: '#0369A1', fontWeight: '700' }]}>{formatNumber(first.totalPoints || 0)} <AutoI18nText i18nKey="auto.mobile.screens_stats_LeaderboardScreen.k_a75d838f" /></Text>
+                        <Text style={[styles.pointsText, { fontSize: 14, color: '#0369A1', fontWeight: '700' }]}>{formatNumber(first.totalPoints || 0)} {t('screens.leaderboard.points')}</Text>
                     </View>
                 </Animated.View>
 
@@ -142,13 +143,13 @@ export function LeaderboardScreen() {
                         </View>
                         <View style={styles.levelRow}>
                             <Ionicons name="school-outline" size={12} color="#6B7280" />
-                            <Text style={styles.levelText}><AutoI18nText i18nKey="auto.mobile.screens_stats_LeaderboardScreen.k_0e50cac5" /> {item.level || 1}</Text>
+                            <Text style={styles.levelText}>{t('screens.leaderboard.level')} {item.level || 1}</Text>
                         </View>
                     </View>
 
                     <View style={styles.scoreCol}>
                         <Text style={styles.scoreNum}>{formatNumber(item.totalPoints || 0)}</Text>
-                        <Text style={styles.scoreLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_LeaderboardScreen.k_a75d838f" /></Text>
+                        <Text style={styles.scoreLabel}>{t('screens.leaderboard.points')}</Text>
                     </View>
                 </TouchableOpacity>
             </Animated.View>
@@ -162,7 +163,7 @@ export function LeaderboardScreen() {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                         <Ionicons name="chevron-back" size={24} color="#0F172A" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_LeaderboardScreen.k_edc9cb8d" /></Text>
+                    <Text style={styles.headerTitle}>{t('screens.leaderboard.title')}</Text>
                     <View style={{ width: 40 }} />
                 </View>
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -186,7 +187,7 @@ export function LeaderboardScreen() {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                         <Ionicons name="chevron-back" size={24} color="#0F172A" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_LeaderboardScreen.k_c9f815bb" /></Text>
+                    <Text style={styles.headerTitle}>{t('screens.leaderboard.title')}</Text>
                     <TouchableOpacity style={styles.iconBtn}>
                         <Ionicons name="information-circle-outline" size={24} color="#0F172A" />
                     </TouchableOpacity>

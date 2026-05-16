@@ -1,8 +1,8 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { withTranslation, WithTranslation } from 'react-i18next';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 
-interface Props {
+interface Props extends WithTranslation {
     children: ReactNode;
     fallback?: ReactNode;
 }
@@ -41,9 +41,9 @@ class ErrorBoundary extends Component<Props, State> {
             if (this.props.fallback) return this.props.fallback;
             return (
                 <View style={styles.container}>
-                    <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.components_common_ErrorBoundary.k_9fc09b1c" /></Text>
+                    <Text style={styles.title}>{this.props.t('common.errorBoundary.title')}</Text>
                     <Text style={styles.subtitle}>
-                        <AutoI18nText i18nKey="auto.mobile.components_common_ErrorBoundary.k_147f9724" />
+                        {this.props.t('common.errorBoundary.subtitle')}
                     </Text>
                     <ScrollView style={styles.errorBox}>
                         <Text style={styles.errorText}>
@@ -56,7 +56,7 @@ class ErrorBoundary extends Component<Props, State> {
                         )}
                     </ScrollView>
                     <TouchableOpacity style={styles.button} onPress={this.handleReset}>
-                        <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.components_common_ErrorBoundary.k_d8814e16" /></Text>
+                        <Text style={styles.buttonText}>{this.props.t('common.errorBoundary.tryAgain')}</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -114,4 +114,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ErrorBoundary;
+export default withTranslation()(ErrorBoundary);

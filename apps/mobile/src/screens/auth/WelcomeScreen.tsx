@@ -30,9 +30,9 @@ const INK = '#0F172A';
 const MUTED = '#64748B';
 
 const enterpriseTrustItems = [
-  { icon: 'business-outline', label: 'Built for schools and learning teams' },
-  { icon: 'shield-checkmark-outline', label: 'Secure student and parent access' },
-  { icon: 'analytics-outline', label: 'Operational insights in one workspace' },
+  { icon: 'business-outline', key: 'builtForSchools' },
+  { icon: 'shield-checkmark-outline', key: 'secureAccess' },
+  { icon: 'analytics-outline', key: 'operationalInsights' },
 ] as const;
 
 function createStyles(width: number, height: number, isTablet: boolean) {
@@ -683,11 +683,11 @@ export default function WelcomeScreen() {
   const renderEnterpriseTrustList = () => (
     <View style={styles.trustList}>
       {enterpriseTrustItems.map((item) => (
-        <View key={item.label} style={styles.trustItem}>
+        <View key={item.key} style={styles.trustItem}>
           <View style={styles.trustIcon}>
             <Ionicons name={item.icon} size={18} color="#0891B2" />
         </View>
-          <Text style={styles.trustText}>{item.label}</Text>
+          <Text style={styles.trustText}>{t(`auth.welcome.${item.key}`)}</Text>
         </View>
       ))}
     </View>
@@ -748,14 +748,14 @@ export default function WelcomeScreen() {
                 <StunityLogo width={portraitLogoWidth} height={portraitLogoHeight} />
               </Animated.View>
 
-              <Text style={styles.portraitTitle}>Welcome to Stunity</Text>
+              <Text style={styles.portraitTitle}>{t('auth.welcome.title')}</Text>
               <Text style={styles.portraitSubtitle}>
-                Excellence in education, connecting students, teachers, and parents in one seamless enterprise platform.
+                {t('auth.welcome.connectAll')}
               </Text>
             </LinearGradient>
 
             <View style={styles.portraitActionCard}>
-              <Text style={styles.portraitActionTitle}>Choose how to continue</Text>
+              <Text style={styles.portraitActionTitle}>{t('auth.welcome.chooseHowToContinue')}</Text>
               {renderActionBlocks({ showIntro: false, compact: true })}
             </View>
           </SafeAreaView>
@@ -806,10 +806,10 @@ export default function WelcomeScreen() {
                 </Animated.View>
 
                 <View style={styles.heroCopy}>
-                  <Text style={styles.eyebrow}>Stunity Enterprise</Text>
-                  <Text style={styles.heroTitle}>One beautiful workspace for your school community.</Text>
+                  <Text style={styles.eyebrow}>{t('common.appName')}</Text>
+                  <Text style={styles.heroTitle}>{t('auth.welcome.oneWorkspace')}</Text>
                   <Text style={styles.heroSubtitle}>
-                    Connect students, teachers, parents, classes, learning content, and daily operations in a secure tablet-ready platform.
+                    {t('auth.welcome.connectAll')}
                   </Text>
                 </View>
 
@@ -820,7 +820,7 @@ export default function WelcomeScreen() {
                 <View style={styles.actionPanelInner}>
                   <View style={styles.actionBadge}>
                     <Ionicons name="sparkles-outline" size={15} color="#0284C7" />
-                    <Text style={styles.actionBadgeText}>Start here</Text>
+                    <Text style={styles.actionBadgeText}>{t('auth.welcome.startHere')}</Text>
                   </View>
                   {renderActionBlocks()}
                 </View>

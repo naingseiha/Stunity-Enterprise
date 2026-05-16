@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * Educational Value Modal
  *
@@ -116,6 +116,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
   onSubmit,
   isSubmitting = false,
 }) => {
+  const { t } = useTranslation();
   const [value, setValue] = useState<EducationalValue>(INITIAL_VALUE);
 
   useEffect(() => {
@@ -181,9 +182,9 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 <Ionicons name="diamond" size={18} color="#8B5CF6" />
               </View>
               <View>
-                <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_f560a88d" /></Text>
+                <Text style={styles.title}>{t('feed.educationalValue.title')}</Text>
                 <Text style={styles.subtitle}>
-                  <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_d51a8139" /> {postType.toLowerCase()}?
+                  {t('feed.educationalValue.rateSubtitle')} {t(`feed.postTypes.${postType.toLowerCase()}`)}?
                 </Text>
               </View>
             </View>
@@ -198,7 +199,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               <StarRow
                 key={dim.key}
                 icon={dim.icon}
-                label={dim.label}
+                label={t(`feed.educationalValue.${dim.key}`)}
                 color={dim.color}
                 rating={value[dim.key] as number}
                 onRate={(n) => handleRate(dim.key, n)}
@@ -208,7 +209,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
 
           {/* ── Difficulty ─────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_72180c56" /></Text>
+            <Text style={styles.sectionLabel}>{t('feed.educationalValue.difficulty')}</Text>
             <View style={styles.difficultyRow}>
               {DIFFICULTY_OPTIONS.map((opt) => {
                 const active = value.difficulty === opt.value;
@@ -232,7 +233,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                         active && { color: opt.color, fontWeight: '700' },
                       ]}
                     >
-                      {opt.label}
+                      {t(`feed.educationalValue.${opt.value === 'too_easy' ? 'easy' : opt.value === 'just_right' ? 'justRight' : 'hard'}`)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -253,7 +254,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 color={value.recommend ? '#6366F1' : '#D1D5DB'}
               />
               <Text style={[styles.recommendText, value.recommend && styles.recommendTextActive]}>
-                <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_b19ef6f4" />
+                {t('feed.educationalValue.recommend')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -264,7 +265,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               <Animated.View style={styles.summaryRow}>
                 <Ionicons name="analytics" size={18} color="#8B5CF6" />
                 <Text style={styles.summaryText}>
-                  <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_f4c4708e" /> <Text style={styles.summaryBold}>{averageRating}/5.0</Text>
+                  {t('feed.educationalValue.averageRating')} <Text style={styles.summaryBold}>{averageRating}/5.0</Text>
                 </Text>
               </Animated.View>
             )}
@@ -291,7 +292,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                       color={isComplete ? '#fff' : '#9CA3AF'}
                     />
                     <Text style={[styles.submitText, !isComplete && styles.submitTextDisabled]}>
-                      <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_7b751b3b" />
+                      {t('feed.educationalValue.submit')}
                     </Text>
                   </>
                 )}

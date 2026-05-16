@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * AIPromptModal
  * 
@@ -36,12 +36,13 @@ export function AIPromptModal({
     onClose,
     onGenerate,
     type = 'quiz',
-    title = 'Generate with AI',
+    title,
 }: AIPromptModalProps) {
+    const { t } = useTranslation();
     const { colors, isDark } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [topic, setTopic] = useState('');
-    const [gradeLevel, setGradeLevel] = useState('Grade 8');
+    const [gradeLevel, setGradeLevel] = useState('grade8');
     const [difficulty, setDifficulty] = useState('MEDIUM');
     const [count, setCount] = useState(5);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -73,7 +74,7 @@ export function AIPromptModal({
 
     const isCountRelevant = type === 'quiz' || type === 'poll' || type === 'course';
     const isDifficultyRelevant = type === 'quiz';
-    const countLabel = type === 'quiz' ? 'Questions' : type === 'poll' ? 'Options' : type === 'course' ? 'Weeks' : 'Items';
+    const countLabel = t(`common.ai.${type === 'quiz' ? 'questions' : type === 'poll' ? 'options' : type === 'course' ? 'weeks' : 'items'}`);
     const countMax = type === 'quiz' ? 20 : type === 'poll' ? 6 : type === 'course' ? 12 : 10;
 
     return (
@@ -93,7 +94,7 @@ export function AIPromptModal({
                             {/* Header */}
                             <View style={styles.header}>
                                 <View style={styles.headerTitleWrap}>
-                                    <Ionicons name="sparkles" size={20} color="#8B5CF6" style={{ marginRight: 8 }} /><Text style={styles.title}>{title}</Text>
+                                    <Ionicons name="sparkles" size={20} color="#8B5CF6" style={{ marginRight: 8 }} /><Text style={styles.title}>{title || t('common.ai.generateWithAi')}</Text>
                                 </View>
                                 <TouchableOpacity onPress={onClose} style={styles.closeBtn} disabled={isGenerating}>
                                     <Ionicons name="close" size={24} color={colors.textTertiary} />
@@ -102,13 +103,13 @@ export function AIPromptModal({
 
                             {/* Input Area */}
                             <View style={styles.content}>
-                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_5bc267ce" /></Text>
+                                <Text style={styles.label}>{t('common.ai.topic')}</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder={
-                                        type === 'quiz' ? "e.g., The Water Cycle, Photosynthesis..." :
-                                            type === 'poll' ? "e.g., Best study methods for finals..." :
-                                                "Topic"
+                                        type === 'quiz' ? t('common.ai.placeholderQuiz') :
+                                            type === 'poll' ? t('common.ai.placeholderPoll') :
+                                                t('common.ai.placeholderDefault')
                                     }
                                     value={topic}
                                     onChangeText={setTopic}
@@ -119,23 +120,23 @@ export function AIPromptModal({
                                     editable={!isGenerating}
                                 />
 
-                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_10802226" /></Text>
+                                <Text style={styles.label}>{t('common.ai.gradeLevel')}</Text>
                                 <View style={styles.chipsContainer}>
-                                    {GRADE_LEVELS.slice(0, 5).map(grade => (
+                                    {['grade6', 'grade7', 'grade8', 'grade9', 'grade10'].map(grade => (
                                         <TouchableOpacity
                                             key={grade}
                                             style={[styles.chip, gradeLevel === grade && styles.chipActive]}
                                             onPress={() => { Haptics.selectionAsync(); setGradeLevel(grade); }}
                                             disabled={isGenerating}
                                         >
-                                            <Text style={[styles.chipText, gradeLevel === grade && styles.chipTextActive]}>{grade}</Text>
+                                            <Text style={[styles.chipText, gradeLevel === grade && styles.chipTextActive]}>{t(`common.ai.${grade}`)}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
 
                                 {isDifficultyRelevant ? (
                                     <>
-                                        <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_3195a2f3" /></Text>
+                                        <Text style={styles.label}>{t('common.ai.difficulty')}</Text>
                                         <View style={styles.chipsContainer}>
                                             {DIFFICULTIES.map(diff => (
                                                 <TouchableOpacity
@@ -145,7 +146,7 @@ export function AIPromptModal({
                                                     disabled={isGenerating}
                                                 >
                                                     <Text style={[styles.chipText, difficulty === diff && styles.chipTextActive]}>
-                                                        {diff.charAt(0) + diff.slice(1).toLowerCase()}
+                                                        {t(`common.ai.${diff.toLowerCase()}`)}
                                                     </Text>
                                                 </TouchableOpacity>
                                             ))}
@@ -155,7 +156,7 @@ export function AIPromptModal({
 
                                 {isCountRelevant && (
                                     <View style={styles.counterRow}>
-                                        <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_74638b72" /> {countLabel}</Text>
+                                        <Text style={styles.label}>{t('common.ai.numItems', { label: countLabel })}</Text>
                                         <View style={styles.counter}>
                                             <TouchableOpacity
                                                 style={styles.counterBtn}
@@ -193,12 +194,12 @@ export function AIPromptModal({
                                     {isGenerating ? (
                                         <View style={styles.generatingState}>
                                             <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 8 }} />
-                                            <Text style={styles.generateBtnText}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_5f39480c" /></Text>
+                                            <Text style={styles.generateBtnText}>{t('common.ai.generating')}</Text>
                                         </View>
                                     ) : (
                                         <View style={styles.generatingState}>
                                             <Ionicons name="sparkles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                            <Text style={styles.generateBtnText}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_5ac50fc2" /></Text>
+                                            <Text style={styles.generateBtnText}>{t('common.ai.generateNow')}</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>

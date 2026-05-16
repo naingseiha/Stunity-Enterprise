@@ -74,48 +74,48 @@ type SearchCacheEntry = {
     timestamp: number;
 };
 
-const POST_FILTERS: Array<{ key: PostFilter; label: string; icon: IoniconName; color: string; bg: string }> = [
-    { key: 'ALL', label: 'All', icon: 'sparkles-outline', color: ColorScale.primary[700], bg: ColorScale.primary[50] },
-    { key: 'COURSE', label: 'Courses', icon: 'school-outline', color: ColorScale.primary[800], bg: ColorScale.primary[100] },
-    { key: 'QUIZ', label: 'Quizzes', icon: 'flash-outline', color: ColorScale.secondary[800], bg: ColorScale.secondary[100] },
-    { key: 'QUESTION', label: 'Questions', icon: 'help-circle-outline', color: ColorScale.teal[800], bg: ColorScale.teal[100] },
-    { key: 'RESOURCE', label: 'Resources', icon: 'library-outline', color: ColorScale.teal[700], bg: ColorScale.teal[50] },
-    { key: 'TUTORIAL', label: 'Tutorials', icon: 'play-circle-outline', color: ColorScale.secondary[700], bg: ColorScale.secondary[50] },
-    { key: 'RESEARCH', label: 'Research', icon: 'flask-outline', color: ColorScale.primary[900], bg: ColorScale.primary[100] },
-    { key: 'PROJECT', label: 'Projects', icon: 'construct-outline', color: ColorScale.primary[600], bg: ColorScale.primary[50] },
+const POST_FILTERS: Array<{ key: PostFilter; labelKey: string; icon: IoniconName; color: string; bg: string }> = [
+    { key: 'ALL', labelKey: 'all', icon: 'sparkles-outline', color: ColorScale.primary[700], bg: ColorScale.primary[50] },
+    { key: 'COURSE', labelKey: 'course', icon: 'school-outline', color: ColorScale.primary[800], bg: ColorScale.primary[100] },
+    { key: 'QUIZ', labelKey: 'quiz', icon: 'flash-outline', color: ColorScale.secondary[800], bg: ColorScale.secondary[100] },
+    { key: 'QUESTION', labelKey: 'question', icon: 'help-circle-outline', color: ColorScale.teal[800], bg: ColorScale.teal[100] },
+    { key: 'RESOURCE', labelKey: 'resource', icon: 'library-outline', color: ColorScale.teal[700], bg: ColorScale.teal[50] },
+    { key: 'TUTORIAL', labelKey: 'tutorial', icon: 'play-circle-outline', color: ColorScale.secondary[700], bg: ColorScale.secondary[50] },
+    { key: 'RESEARCH', labelKey: 'research', icon: 'flask-outline', color: ColorScale.primary[900], bg: ColorScale.primary[100] },
+    { key: 'PROJECT', labelKey: 'project', icon: 'construct-outline', color: ColorScale.primary[600], bg: ColorScale.primary[50] },
 ];
 
-const SORT_OPTIONS: Array<{ key: SortMode; label: string; icon: IoniconName }> = [
-    { key: 'top', label: 'Top', icon: 'analytics-outline' },
-    { key: 'recent', label: 'Recent', icon: 'time-outline' },
-    { key: 'popular', label: 'Popular', icon: 'flame-outline' },
+const SORT_OPTIONS: Array<{ key: SortMode; labelKey: string; icon: IoniconName }> = [
+    { key: 'top', labelKey: 'top', icon: 'analytics-outline' },
+    { key: 'recent', labelKey: 'recent', icon: 'time-outline' },
+    { key: 'popular', labelKey: 'popular', icon: 'flame-outline' },
 ];
 
 const TOPIC_SUGGESTIONS = [
-    'Math',
-    'Physics',
-    'Exam prep',
-    'Essay writing',
-    'Programming',
-    'Research',
-    'Scholarship',
-    'Study group',
+    'math',
+    'physics',
+    'examPrep',
+    'essayWriting',
+    'programming',
+    'research',
+    'scholarship',
+    'studyGroup',
 ];
 
 const getPostTypeMeta = (type: PostType | string) => {
     const match = POST_FILTERS.find(filter => filter.key === type);
-    if (match) return match;
-    if (type === 'POLL') return { key: 'ALL' as const, label: 'Poll', icon: 'bar-chart-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
-    if (type === 'ASSIGNMENT') return { key: 'ALL' as const, label: 'Assignment', icon: 'clipboard-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
-    if (type === 'EXAM') return { key: 'ALL' as const, label: 'Exam', icon: 'document-text-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
-    return { key: 'ALL' as const, label: String(type || 'Post').replace(/_/g, ' '), icon: 'document-text-outline' as IoniconName, color: ColorScale.gray[700], bg: ColorScale.gray[100] };
+    if (match) return { ...match, labelKey: `feed.postTypes.${match.labelKey.toLowerCase()}` };
+    if (type === 'POLL') return { key: 'ALL' as const, labelKey: 'feed.postTypes.poll', icon: 'bar-chart-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
+    if (type === 'ASSIGNMENT') return { key: 'ALL' as const, labelKey: 'feed.postTypes.assignment', icon: 'clipboard-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
+    if (type === 'EXAM') return { key: 'ALL' as const, labelKey: 'feed.postTypes.exam', icon: 'document-text-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
+    return { key: 'ALL' as const, labelKey: 'common.post', icon: 'document-text-outline' as IoniconName, color: ColorScale.gray[700], bg: ColorScale.gray[100] };
 };
 
 const getRoleMeta = (role: string) => {
-    if (role === 'TEACHER') return { label: 'Teacher', icon: 'school-outline' as IoniconName, color: ColorScale.primary[800], bg: ColorScale.primary[100] };
-    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') return { label: 'Admin', icon: 'shield-checkmark-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
-    if (role === 'STAFF') return { label: 'Staff', icon: 'briefcase-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
-    return { label: 'Student', icon: 'reader-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
+    if (role === 'TEACHER') return { labelKey: 'common.roles.teacher', icon: 'school-outline' as IoniconName, color: ColorScale.primary[800], bg: ColorScale.primary[100] };
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') return { labelKey: 'common.roles.admin', icon: 'shield-checkmark-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
+    if (role === 'STAFF') return { labelKey: 'common.roles.staff', icon: 'briefcase-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
+    return { labelKey: 'common.roles.student', icon: 'reader-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
 };
 
 const normalizePostTypeLabel = (label: string) =>
@@ -136,7 +136,7 @@ interface SearchUser {
 }
 
 export default function SearchScreen() {
-    const { t: autoT } = useTranslation();
+    const { t } = useTranslation();
     const navigation = useNavigation();
     const inputRef = useRef<TextInput>(null);
     const insets = useSafeAreaInsets();
@@ -446,7 +446,7 @@ export default function SearchScreen() {
                         >
                             <Ionicons name={typeMeta.icon} size={11} color={typeMeta.color} />
                             <Text style={[styles.postTypeText, { color: typeMeta.color }]} numberOfLines={1}>
-                                {normalizePostTypeLabel(typeMeta.label)}
+                                {t(typeMeta.labelKey || '')}
                             </Text>
                         </LinearGradient>
                     </View>
@@ -468,25 +468,25 @@ export default function SearchScreen() {
                                     {questionCount > 0 && (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="help-circle" size={12} color="#D97706" />
-                                            <Text style={styles.quizInfoText}>{questionCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_99c80c8a" /></Text>
+                                            <Text style={styles.quizInfoText}>{questionCount} {t('common.search.questionsCount')}</Text>
                                         </View>
                                     )}
                                     {quiz?.timeLimit ? (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="timer-outline" size={12} color="#D97706" />
-                                            <Text style={styles.quizInfoText}>{quiz.timeLimit}<AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_e5af6899" /></Text>
+                                            <Text style={styles.quizInfoText}>{quiz.timeLimit} {t('feed.time.m')}</Text>
                                         </View>
                                     ) : null}
                                     {quiz?.passingScore ? (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="checkmark-circle" size={12} color="#10B981" />
-                                            <Text style={[styles.quizInfoText, { color: '#10B981' }]}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_e9cd1ebe" /> {quiz.passingScore}%</Text>
+                                            <Text style={[styles.quizInfoText, { color: '#10B981' }]}>{t('feed.suggestions.passScore', { score: quiz.passingScore })}</Text>
                                         </View>
                                     ) : null}
                                 </View>
                                 <TouchableOpacity style={styles.quizStartBtn} activeOpacity={0.8} onPress={() => handlePostPress(item)}>
                                     <Ionicons name="play" size={14} color="#fff" />
-                                    <Text style={styles.quizStartText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_74c69c56" /></Text>
+                                    <Text style={styles.quizStartText}>{t('feed.actions.takeQuiz')}</Text>
                                 </TouchableOpacity>
                             </View>
                         );
@@ -501,7 +501,7 @@ export default function SearchScreen() {
                                 </View>
                             ))}
                             {item.pollOptions.length > 2 && (
-                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 2} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f016a8c3" /></Text>
+                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 2} {t('common.more')}</Text>
                             )}
                         </View>
                     )}
@@ -572,7 +572,7 @@ export default function SearchScreen() {
                         </View>
                         <View style={[styles.rolePill, { backgroundColor: roleMeta.bg }]}>
                             <Ionicons name={roleMeta.icon} size={11} color={roleMeta.color} />
-                            <Text style={[styles.userResultRole, { color: roleMeta.color }]}>{roleMeta.label}</Text>
+                            <Text style={[styles.userResultRole, { color: roleMeta.color }]}>{t(roleMeta.labelKey)}</Text>
                         </View>
                     </View>
                     <View style={styles.userResultAction}>
@@ -592,9 +592,9 @@ export default function SearchScreen() {
                 style={styles.peoplePreview}
             >
                 <View style={styles.peoplePreviewHeader}>
-                    <Text style={styles.peoplePreviewTitle}>People</Text>
+                    <Text style={styles.peoplePreviewTitle}>{t('common.search.people')}</Text>
                     <TouchableOpacity onPress={() => setActiveScope('people')} style={styles.seeAllBtn}>
-                        <Text style={styles.seeAllText}>See all</Text>
+                        <Text style={styles.seeAllText}>{t('common.seeAll')}</Text>
                         <Ionicons name="arrow-forward" size={14} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
@@ -628,7 +628,7 @@ export default function SearchScreen() {
                                     <Text style={styles.peoplePreviewName} numberOfLines={1}>{name}</Text>
                                     <View style={[styles.peoplePreviewRole, { backgroundColor: roleMeta.bg }]}>
                                         <Ionicons name={roleMeta.icon} size={9} color={roleMeta.color} />
-                                        <Text style={[styles.peoplePreviewRoleText, { color: roleMeta.color }]} numberOfLines={1}>{roleMeta.label}</Text>
+                                        <Text style={[styles.peoplePreviewRoleText, { color: roleMeta.color }]} numberOfLines={1}>{t(roleMeta.labelKey)}</Text>
                                     </View>
                                 </TouchableOpacity>
                             </Animated.View>
@@ -661,10 +661,10 @@ export default function SearchScreen() {
                         </View>
                     </LinearGradient>
                     <Text style={styles.emptyTitle}>
-                        <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_d728da09" />
+                        {t('common.search.noResults')}
                     </Text>
                     <Text style={styles.emptySubtitle}>
-                        <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_bb6d714c" />
+                        {t('common.search.noResultsSub')}
                     </Text>
                     <View style={styles.emptyActions}>
                         <TouchableOpacity
@@ -676,7 +676,7 @@ export default function SearchScreen() {
                             }}
                         >
                             <Ionicons name="compass-outline" size={18} color="#fff" />
-                            <Text style={styles.emptyPrimaryBtnText}>Browse courses</Text>
+                            <Text style={styles.emptyPrimaryBtnText}>{t('common.browseCourses')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.emptyGhostBtn}
@@ -686,7 +686,7 @@ export default function SearchScreen() {
                                 handleClearQuery();
                             }}
                         >
-                            <Text style={styles.emptyGhostBtnText}>Clear search</Text>
+                            <Text style={styles.emptyGhostBtnText}>{t('common.clearSearch')}</Text>
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
@@ -722,9 +722,9 @@ export default function SearchScreen() {
                     >
                         {(
                             [
-                                { key: 'all' as const, label: 'Everything', icon: 'layers-outline' as IoniconName },
-                                { key: 'posts' as const, label: 'Posts', icon: 'newspaper-outline' as IoniconName },
-                                { key: 'people' as const, label: 'People', icon: 'people-outline' as IoniconName },
+                                { key: 'all' as const, labelKey: 'everything', icon: 'layers-outline' as IoniconName },
+                                { key: 'posts' as const, labelKey: 'posts', icon: 'newspaper-outline' as IoniconName },
+                                { key: 'people' as const, labelKey: 'people', icon: 'people-outline' as IoniconName },
                             ] as const
                         ).map((scope) => {
                             const active = activeScope === scope.key;
@@ -746,7 +746,7 @@ export default function SearchScreen() {
                                             active && styles.idleScopeChipTextActive,
                                         ]}
                                     >
-                                        {scope.label}
+                                        {t(`common.search.${scope.labelKey}`)}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -758,11 +758,11 @@ export default function SearchScreen() {
                     <View style={styles.sectionContainer}>
                         <View style={styles.recentHeader}>
                             <Text style={styles.recentTitle}>
-                                <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_986fbbfe" />
+                                {t('common.search.recent')}
                             </Text>
                             <TouchableOpacity onPress={clearRecentSearches} style={styles.clearAllBtn}>
                                 <Text style={styles.clearText}>
-                                    <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f9d87fdb" />
+                                    {t('common.search.clearAll')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -803,7 +803,7 @@ export default function SearchScreen() {
                         <LinearGradient colors={[ColorScale.primary[400], ColorScale.primary[600]]} style={styles.trendingIcon}>
                             <Ionicons name="trending-up" size={12} color="#fff" />
                         </LinearGradient>
-                        <Text style={styles.recentTitle}>Trending topics</Text>
+                        <Text style={styles.recentTitle}>{t('common.search.trending')}</Text>
                     </View>
                     <View style={styles.suggestionChips}>
                         {TOPIC_SUGGESTIONS.map((chip, index) => (
@@ -813,7 +813,7 @@ export default function SearchScreen() {
                                     onPress={() => handleRecentSearchPress(chip)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={styles.suggestionChipText}>{chip}</Text>
+                                    <Text style={styles.suggestionChipText}>{t(`feed.subjects.${chip}`)}</Text>
                                 </TouchableOpacity>
                             </Animated.View>
                         ))}
@@ -821,7 +821,7 @@ export default function SearchScreen() {
                 </View>
 
                 <View style={styles.discoverySection}>
-                    <Text style={styles.recentTitle}>Explore by type</Text>
+                    <Text style={styles.recentTitle}>{t('common.search.exploreByType')}</Text>
                     <View style={styles.discoveryGrid}>
                         {POST_FILTERS.slice(1, 7).map((filter) => (
                             <TouchableOpacity
@@ -837,7 +837,7 @@ export default function SearchScreen() {
                                     <Ionicons name={filter.icon} size={22} color={filter.color} />
                                 </LinearGradient>
                                 <Text style={styles.discoveryLabel} numberOfLines={2}>
-                                    {filter.label}
+                                    {t(`feed.postTypes.${filter.labelKey.toLowerCase()}`)}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -863,10 +863,8 @@ export default function SearchScreen() {
     const userCount = userResults.length;
     const resultSummary =
         postCount === 0 && userCount === 0
-            ? 'No results yet'
-            : `${postCount} post${postCount === 1 ? '' : 's'} · ${userCount} ${
-                  userCount === 1 ? 'person' : 'people'
-              }`;
+            ? t('common.search.noResultsYet')
+            : t('common.search.resultsSummary', { postCount, userCount });
     const skeletonAnimatedStyle = useAnimatedStyle(() => {
         return {
             opacity: 0.45 + (loadingPulse.value * (0.88 - 0.45))
@@ -944,7 +942,7 @@ export default function SearchScreen() {
                                     <TextInput
                                         ref={inputRef}
                                         style={styles.searchInput}
-                                        placeholder={autoT('auto.mobile.screens_feed_SearchScreen.k_5bd00d2d')}
+                                        placeholder={t('common.search.placeholder')}
                                         placeholderTextColor={colors.textTertiary}
                                         value={query}
                                         onChangeText={handleQueryChange}
@@ -990,19 +988,19 @@ export default function SearchScreen() {
                                             [
                                                 {
                                                     key: 'all',
-                                                    label: 'All',
+                                                    labelKey: 'everything',
                                                     count: postCount + userCount,
                                                     icon: 'sparkles-outline' as IoniconName,
                                                 },
                                                 {
                                                     key: 'posts',
-                                                    label: 'Posts',
+                                                    labelKey: 'posts',
                                                     count: postCount,
                                                     icon: 'newspaper-outline' as IoniconName,
                                                 },
                                                 {
                                                     key: 'people',
-                                                    label: 'People',
+                                                    labelKey: 'people',
                                                     count: userCount,
                                                     icon: 'people-outline' as IoniconName,
                                                 },
@@ -1028,7 +1026,7 @@ export default function SearchScreen() {
                                                         >
                                                             <Ionicons name={scope.icon} size={15} color="#fff" />
                                                             <Text style={styles.tabTextOnAccent} numberOfLines={1}>
-                                                                {scope.label}
+                                                                {t(`common.search.${scope.labelKey}`)}
                                                                 {scope.count > 0 ? ` · ${scope.count}` : ''}
                                                             </Text>
                                                         </LinearGradient>
@@ -1040,7 +1038,7 @@ export default function SearchScreen() {
                                                                 color={colors.textTertiary}
                                                             />
                                                             <Text style={styles.tabTextMuted} numberOfLines={1}>
-                                                                {scope.label}
+                                                                {t(`common.search.${scope.labelKey}`)}
                                                                 {scope.count > 0 ? ` ${scope.count}` : ''}
                                                             </Text>
                                                         </View>
@@ -1084,7 +1082,7 @@ export default function SearchScreen() {
                                                                 ]}
                                                                 numberOfLines={1}
                                                             >
-                                                                {filter.label}
+                                                                {t(`feed.postTypes.${filter.labelKey.toLowerCase()}`)}
                                                             </Text>
                                                         </TouchableOpacity>
                                                     );
@@ -1120,7 +1118,7 @@ export default function SearchScreen() {
                                                                         active && styles.sortPillLabelActive,
                                                                     ]}
                                                                 >
-                                                                    {option.label}
+                                                                    {t(`common.sort.${option.labelKey}`)}
                                                                 </Text>
                                                             </TouchableOpacity>
                                                         );

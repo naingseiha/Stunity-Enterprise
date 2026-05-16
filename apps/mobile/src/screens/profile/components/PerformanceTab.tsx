@@ -678,15 +678,15 @@ export default function PerformanceTab({
             </View>
             <View style={s.discoveryTitleWrap}>
               <Text style={[s.cardTitle, { color: colors.text }]}>
-                Profile Performance
+                {t("profile.performance.performanceTitle")}
               </Text>
               <Text style={[s.discoverySub, { color: colors.textSecondary }]}>
-                Discovery from learners, peers, and career interest
+                {t("profile.performance.discoverySub")}
               </Text>
             </View>
             <View style={s.scorePill}>
               <Text style={s.scorePillValue}>{profilePerformanceScore}</Text>
-              <Text style={s.scorePillLabel}>score</Text>
+              <Text style={s.scorePillLabel}>{t("profile.performance.score")}</Text>
             </View>
           </View>
 
@@ -712,7 +712,7 @@ export default function PerformanceTab({
               <Text
                 style={[s.discoveryStatLabel, { color: colors.textSecondary }]}
               >
-                30d views
+                {t("profile.performance.views30d")}
               </Text>
             </View>
             <View
@@ -725,7 +725,7 @@ export default function PerformanceTab({
               <Text
                 style={[s.discoveryStatLabel, { color: colors.textSecondary }]}
               >
-                unique viewers
+                {t("profile.performance.uniqueViewers")}
               </Text>
             </View>
             <View
@@ -738,7 +738,7 @@ export default function PerformanceTab({
               <Text
                 style={[s.discoveryStatLabel, { color: colors.textSecondary }]}
               >
-                this week
+                {t("profile.performance.thisWeek")}
               </Text>
             </View>
           </View>
@@ -751,7 +751,7 @@ export default function PerformanceTab({
               ]}
             >
               <Ionicons name="trending-up" size={13} color="#059669" />
-              <Text style={s.signalText}>{trendingProfileScore} trend</Text>
+              <Text style={s.signalText}>{trendingProfileScore} {t("profile.performance.trend")}</Text>
             </View>
             <View
               style={[
@@ -761,7 +761,7 @@ export default function PerformanceTab({
             >
               <Ionicons name="school" size={13} color="#2563EB" />
               <Text style={[s.signalText, { color: "#2563EB" }]}>
-                learning creator
+                {t("profile.performance.learningCreator")}
               </Text>
             </View>
           </View>
@@ -771,12 +771,12 @@ export default function PerformanceTab({
               <View style={s.visitorsHeader}>
                 <View>
                   <Text style={[s.visitorsTitle, { color: colors.text }]}>
-                    Recent visitors
+                    {t("profile.performance.recentVisitors")}
                   </Text>
                   <Text
                     style={[s.visitorsMeta, { color: colors.textSecondary }]}
                   >
-                    Loading
+                    {t("common.loading")}
                   </Text>
                 </View>
               </View>
@@ -819,12 +819,12 @@ export default function PerformanceTab({
               <View style={s.visitorsHeader}>
                 <View>
                   <Text style={[s.visitorsTitle, { color: colors.text }]}>
-                    Recent visitors
+                    {t("profile.performance.recentVisitors")}
                   </Text>
                   <Text
                     style={[s.visitorsMeta, { color: colors.textSecondary }]}
                   >
-                    Last 30 days
+                    {t("profile.performance.last30Days")}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -832,7 +832,7 @@ export default function PerformanceTab({
                   onPress={onViewProfileVisitors}
                   activeOpacity={0.76}
                 >
-                  <Text style={s.visitorsViewAllText}>View all</Text>
+                  <Text style={s.visitorsViewAllText}>{t("common.viewAll")}</Text>
                   <Ionicons name="chevron-forward" size={14} color="#0891B2" />
                 </TouchableOpacity>
               </View>

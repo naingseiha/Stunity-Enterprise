@@ -1,4 +1,4 @@
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * ImageCarousel Component
  * 
@@ -168,6 +168,7 @@ function ImageCarouselInner({
   fullBleed = false,
   contentWidth,
 }: ImageCarouselProps) {
+  const { t } = useTranslation();
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const IMAGE_WIDTH = useMemo(() => {
     // Parent `onLayout` wins (feed row + optional full-bleed detail container)
@@ -434,7 +435,7 @@ function ImageCarouselInner({
         <View style={styles.expandIndicator}>
           <View style={styles.expandBadge}>
             <Ionicons name="expand-outline" size={14} color="#fff" />
-            <Text style={styles.expandText}><AutoI18nText i18nKey="auto.mobile.components_common_ImageCarousel.k_2739d87c" /></Text>
+            <Text style={styles.expandText}>{t('common.media.viewFull')}</Text>
           </View>
         </View>
       )}

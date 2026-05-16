@@ -24,7 +24,29 @@
     "loading": "Loading...",
     "today": "Today",
     "all": "All",
-    "search": "Search",
+    "search": {
+      "placeholder": "Search posts, people, topics...",
+      "recent": "Recent searches",
+      "clearAll": "Clear all",
+      "noResults": "No results found for \"{{query}}\"",
+      "tryDifferent": "Try a different keyword or check for typos.",
+      "posts": "Posts",
+      "people": "People",
+      "topics": "Topics",
+      "top": "Top",
+      "latest": "Latest",
+      "recent": "Recent",
+      "popular": "Popular",
+      "relevant": "Relevant",
+      "all": "Everything",
+      "resultsCount": "{{count}} results",
+      "questionsCount": "{{count}} questions",
+      "startSearching": "Start Searching",
+      "startSearchingSub": "Find people, posts, and educational content from across the Stunity network.",
+      "trending": "Trending Topics",
+      "exploreByType": "Explore by Type",
+      "noResultsSub": "We couldn't find any results matching your search. Please try different keywords."
+    },
     "back": "Back",
     "done": "Done",
     "view": "View",
@@ -56,13 +78,163 @@
     "next": "Next",
     "male": "Male",
     "female": "Female",
+    "total": "Total",
+    "student": "Student",
+    "active": "Active",
     "details": "Details",
     "id": "ID",
-    "na": "N/A"
+    "na": "N/A",
+    "info": "Info",
+    "title": "Title",
+    "user": "User",
+    "seeAll": "See All",
+    "retry": "Retry",
+    "noData": "No data available",
+    "more": "More",
+    "description": "Description",
+    "clearSearch": "Clear search",
+    "browseCourses": "Browse Courses",
+    "appName": "Stunity",
+    "ai": {
+      "generateWithAi": "Generate with AI",
+      "topic": "Topic",
+      "gradeLevel": "Grade Level",
+      "difficulty": "Difficulty",
+      "numItems": "Number of {{label}}",
+      "generating": "Generating...",
+      "generateNow": "Generate Now",
+      "placeholderQuiz": "e.g., The Water Cycle, Photosynthesis...",
+      "placeholderPoll": "e.g., Best study methods for finals...",
+      "placeholderDefault": "Topic",
+      "questions": "Questions",
+      "options": "Options",
+      "weeks": "Weeks",
+      "items": "Items",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "grade6": "Grade 6",
+      "grade7": "Grade 7",
+      "grade8": "Grade 8",
+      "grade9": "Grade 9",
+      "grade10": "Grade 10",
+      "grade11": "Grade 11",
+      "grade12": "Grade 12",
+      "university": "University",
+      "resultTitle": "AI Draft",
+      "disclaimer": "AI can make mistakes. Please review before accepting.",
+      "useDraft": "Use Draft",
+      "regenerate": "Regenerate",
+      "regenerating": "Regenerating..."
+    },
+    "errorBoundary": {
+      "title": "Oops, something went wrong",
+      "subtitle": "The app encountered an unexpected error. Our team has been notified.",
+      "tryAgain": "Try Again"
+    },
+    "network": {
+      "online": "Back online! 🎉",
+      "offline": "No internet connection",
+      "retry": "Retry"
+    },
+    "media": {
+      "viewFull": "View full image"
+    },
+    "streak": {
+      "label": "STREAK",
+      "days": "days",
+      "freeze": "Freeze",
+      "best": "Best:",
+      "motivationActive": "You're on fire! Keep it up! 🚀",
+      "motivationStart": "Great start! Don't break the chain!",
+      "motivationEmpty": "Play a quiz to start your streak!"
+    },
+    "achievement": {
+      "unlockTitle": "New Achievement!",
+      "awesome": "Awesome!"
+    },
+    "app": {
+      "version": "Version {{version}}"
+    }
+  },
+  "screens": {
+    "leaderboard": {
+      "title": "Leaderboard",
+      "points": "pts",
+      "level": "Level",
+      "globalTitle": "Global Leaderboard",
+      "globalSubtitle": "Compete with students worldwide",
+      "fetchingRanks": "Fetching Ranks...",
+      "you": "You",
+      "lvl": "Lvl"
+    },
+    "challenges": {
+      "title": "Challenges",
+      "yourScore": "Your Score",
+      "accept": "Accept Challenge",
+      "start": "Start Challenge",
+      "viewResults": "View Results",
+      "expires": "Expires:",
+      "loading": "Loading Challenges...",
+      "emptyTitle": "No Challenges",
+      "emptyDesc": "You don't have any active challenges. Start one to compete with friends!",
+      "newChallenge": "New Challenge",
+      "pendingCount": "Pending ({{count}})",
+      "activeCount": "Active ({{count}})",
+      "completedCount": "Completed ({{count}})",
+      "challenging": "Challenging",
+      "challengeFrom": "Challenge from",
+      "opponent": "Opponent",
+      "challenger": "Challenger"
+    },
+    "challengeResult": {
+      "title": "Challenge Result",
+      "yourScore": "Your Score",
+      "opponent": "Opponent",
+      "matchStats": "Match Stats",
+      "date": "Date",
+      "duration": "Duration",
+      "scoreDiff": "Score Difference",
+      "pts": "pts",
+      "rematch": "Rematch",
+      "done": "Done",
+      "draw": "Draw!",
+      "win": "You Won!",
+      "lose": "You Lost",
+      "drawDesc": "Both scored the same",
+      "winDesc": "Great job! Keep it up!",
+      "loseDesc": "Don't give up, try again!"
+    },
+    "stats": {
+      "title": "Analytics",
+      "loading": "Loading Stats...",
+      "level": "LEVEL",
+      "xpToLevel": "XP to Level",
+      "quizzes": "Quizzes",
+      "avgScore": "Avg Score",
+      "streak": "Streak",
+      "winRate": "Win Rate",
+      "performance": "Performance",
+      "showing": "Showing",
+      "recentAttempts": "recent attempts",
+      "details": "Details",
+      "totalPoints": "Total Points",
+      "correctAnswers": "Correct Answers",
+      "bestStreak": "Best Streak"
+    },
+    "bookmarks": {
+      "title": "Bookmarks",
+      "loading": "Finding your bookmarks...",
+      "emptyTitle": "No Bookmarks Yet",
+      "emptyDesc": "Save posts you want to revisit later by tapping the bookmark icon on any post.",
+      "explore": "Explore Feed"
+    }
   },
   "auth": {
     "title": "Welcome Back",
     "subtitle": "Sign in to continue",
+    "login": "Login",
+    "signup": "Sign Up",
     "forgotPassword": "Forgot Password?",
     "noAccount": "Don't have an account?",
     "alreadyHaveAccount": "Already have an account?",
@@ -239,6 +411,15 @@
     "achievements": "Achievements"
   },
   "feed": {
+    "postCard": {
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{{count}}m ago",
+        "hoursAgo": "{{count}}h ago",
+        "daysAgo": "{{count}}d ago"
+      },
+      "pollVotes": "{{count}} votes"
+    },
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
@@ -253,7 +434,12 @@
     "shareLearning": "Share your learning...",
     "ask": "Ask",
     "quiz": "Quiz",
-    "poll": "Poll",
+    "poll": {
+      "label": "Poll",
+      "openVoting": "Open voting",
+      "finalResults": "Final results",
+      "timeLeft": "{{count}}{{unit}} left"
+    },
     "resource": "Resource",
     "newPost": "1 New Post",
     "newPosts": "{{count}} New Posts",
@@ -280,9 +466,15 @@
       "geography": "Geography",
       "literature": "Literature",
       "economics": "Economics",
-      "psychology": "Psychology"
+      "psychology": "Psychology",
+      "examPrep": "Exam prep",
+      "essayWriting": "Essay writing",
+      "research": "Research",
+      "scholarship": "Scholarship",
+      "studyGroup": "Study group"
     },
     "postTypes": {
+      "all": "All",
       "article": "Article",
       "question": "Question",
       "announcement": "Announcement",
@@ -683,7 +875,21 @@
       "dateTbd": "Date TBD",
       "defaultCampus": "Stunity Campus",
       "memberCount": "{{count}} Members",
-      "verifiedClub": "Verified Club"
+      "verifiedClub": "Verified Club",
+      "questions": "Questions",
+      "questionsCount": "{{count}} questions",
+      "comments": "Comments",
+      "writeComment": "Write a comment...",
+      "noComments": "No comments yet",
+      "beFirst": "Be the first!",
+      "beFirstComment": "Be the first to share your thoughts!",
+      "replyingTo": "Replying to {{name}}",
+      "delete": "Delete",
+      "loadingComments": "Loading comments...",
+      "progress": "Progress",
+      "verifiedAnswer": "Verified Answer",
+      "verifyAnswer": "Mark as Answer",
+      "writeReply": "Write a reply..."
     },
     "detail": {
       "loadError": "Couldn't load post",
@@ -694,7 +900,52 @@
       "passedSuffix": " · Passed ✓",
       "notPassedSuffix": " · Not passed",
       "retakeQuiz": "Retake Quiz",
-      "startQuiz": "Start Quiz"
+      "startQuiz": "Start Quiz",
+      "joinTeam": "Join Team",
+      "manageTeam": "Manage Team",
+      "editPost": "Edit Post",
+      "deletePost": "Delete Post",
+      "reportPost": "Report Post",
+      "copyLink": "Copy Link",
+      "fetching": "Loading post...",
+      "title": "Post",
+      "analytics": {
+        "title": "Post Performance",
+        "views": "views",
+        "engagement": "engagement",
+        "totalViews": "Total Views",
+        "uniqueViewers": "Unique Viewers",
+        "avgDuration": "Avg Duration",
+        "trend": "7-Day View Trend",
+        "sources": "Traffic Sources",
+        "algoHealth": "Algorithm Health",
+        "relevanceScore": "Relevance Score",
+        "aiCalculated": "Calculated by Stunity AI",
+        "loadError": "Couldn't load analytics",
+        "retry": "Try Again",
+        "last24h": "Last 24h",
+        "last7d": "Last 7 days",
+        "last30d": "Last 30 days",
+        "likes": "Likes",
+        "comments": "Comments",
+        "reposts": "Reposts",
+        "bookmarks": "Bookmarks"
+      },
+      "educationalValue": {
+        "title": "Educational Value",
+        "rateSubtitle": "How would you rate this",
+        "difficulty": "Difficulty",
+        "recommend": "I recommend this to others",
+        "averageRating": "Average Rating:",
+        "submit": "Submit Evaluation",
+        "accuracy": "Accuracy",
+        "helpfulness": "Helpfulness",
+        "clarity": "Clarity",
+        "depth": "Depth",
+        "easy": "Easy",
+        "justRight": "Just Right",
+        "hard": "Hard"
+      }
     },
     "editPost": {
       "title": "Edit Post",
@@ -725,9 +976,27 @@
     "bounty": "Bounty",
     "answerCount_one": "{{count}} answer",
     "answerCount_other": "{{count}} answers",
+    "answerCount": "{{count}} answers",
+    "viewsCount": "{{count}} views",
     "progress": "Progress",
     "stepsCompleted": "{{completed}}/{{total}} steps completed",
-    "academicMatch": "Academic Match"
+    "academicMatch": "Academic Match",
+    "actions": {
+      "like": "Like",
+      "comment": "Comment",
+      "notInterested": "Not Interested",
+      "rateValue": "Rate Value"
+    },
+    "time": {
+      "left": "left",
+      "expired": "Expired",
+      "h": "h",
+      "d": "d",
+      "m": "m"
+    },
+    "suggestions": {
+      "passScore": "Pass score: {{score}}%"
+    }
   },
   "attendance": {
     "title": "ATTENDANCE",
@@ -900,6 +1169,7 @@
   "profile": {
     "title": "Profile",
     "editProfile": "Edit Profile",
+    "myQR": "My QR Card",
     "performance": {
       "title": "Performance",
       "level": "LEVEL",
@@ -926,7 +1196,17 @@
       "projects": "Projects",
       "leaderboard": "Leaderboard",
       "leaderboardSub": "See where you rank globally",
-      "badgesChallenge": "Complete challenges to earn badges"
+      "badgesChallenge": "Complete challenges to earn badges",
+      "performanceTitle": "Profile Performance",
+      "discoverySub": "Discovery from learners, peers, and career interest",
+      "score": "score",
+      "views30d": "30d views",
+      "uniqueViewers": "unique viewers",
+      "thisWeek": "this week",
+      "trend": "trend",
+      "learningCreator": "learning creator",
+      "recentVisitors": "Recent visitors",
+      "last30Days": "Last 30 days"
     },
     "posts": "Posts",
     "empty": {
@@ -1646,6 +1926,12 @@
       "project": "Project",
       "examPrep": "Exam Prep"
     },
+    "members": "Members",
+    "membersCaps": "MEMBERS",
+    "postsCaps": "POSTS",
+    "eventsCaps": "EVENTS",
+    "joinNow": "Join Now",
+    "joined": "Joined",
     "card": {
       "defaultDescription": "{{type}} · Join to explore topics and connect with peers.",
       "beFirst": "Be first!",
@@ -1698,7 +1984,9 @@
       "noJoined": "No clubs joined yet",
       "noFound": "No clubs found",
       "exploreMore": "Explore more clubs to join.",
-      "loadingMore": "Loading more clubs..."
+      "loadingMore": "Loading more clubs...",
+      "disciplineWorkbench": "Discipline Workbench",
+      "disciplineWorkbenchSubtitle": "Manage student attendance and discipline records"
     },
     "alerts": {
       "requestPending": "Your request is pending approval.",
@@ -2127,7 +2415,11 @@
         "reopenMessage": "Are you sure you want to reopen this grade sheet?",
         "reopenSuccess": "Grade sheet reopened successfully",
         "lockedSheetSave": "Cannot save scores on a locked sheet"
-      }
+      },
+      "applyOneScore": "Please apply at least one score before saving.",
+      "classScoresWithName": "{{className}} Scores",
+      "emptyReport": "No grade report available for this class yet.",
+      "emptyStudents": "No students found in this class."
     }
   },
   "clubScreens": {
@@ -2503,7 +2795,8 @@
       "submitAnswer": "Submit Answer",
       "nextQuestion": "Next Question",
       "waitingNextQuestion": "Waiting for next question...",
-      "pointsEarned": "+{{count}} points"
+      "pointsEarned": "+{{count}} points",
+      "secondsShort": "s"
     },
     "leaderboard": {
       "title": "Leaderboard",
@@ -2566,6 +2859,7 @@
   },
   "messages": {
     "title": "Messages",
+    "chat": "Chat",
     "search": "Search conversations...",
     "you": "You",
     "youPrefix": "You: ",
@@ -3110,6 +3404,12 @@
       "screens_feed_CreatePostScreen": {
         "k_310b987f": "AI is processing your content..."
       }
+    }
+  },
+  "leaderboard": {
+    "tabs": {
+      "allTime": "All time",
+      "weekly": "Weekly"
     }
   }
 }

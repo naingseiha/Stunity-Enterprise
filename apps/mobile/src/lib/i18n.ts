@@ -22,7 +22,7 @@ type RuntimeLocale = string;
 const DYNAMIC_TRANSLATIONS_KEY = 'dynamic-translations';
 const DYNAMIC_TRANSLATIONS_ETAG_KEY = 'dynamic-translations-etag';
 const DYNAMIC_TRANSLATION_LOCALES_KEY = 'dynamic-translation-locales';
-const FOREGROUND_TRANSLATION_SYNC_INTERVAL_MS = 60 * 1000;
+const FOREGROUND_TRANSLATION_SYNC_INTERVAL_MS = 30 * 1000;
 let lastForegroundTranslationSyncAt = 0;
 const getAuthServiceUrl = () => Config.authUrl.replace(/\/$/, '');
 
@@ -80,37 +80,28 @@ const rememberDynamicLocale = async (locale: RuntimeLocale) => {
   await AsyncStorage.setItem(DYNAMIC_TRANSLATION_LOCALES_KEY, JSON.stringify(locales));
 };
 
-const buildNestedTranslations = (source: Record<string, unknown>): Record<string, unknown> => {
+/** Converts flat dot-notation keys from the API into a nested i18next resource tree. */
+const nestFlatTranslations = (flat: Record<string, unknown>): Record<string, unknown> => {
   const nested: Record<string, unknown> = {};
 
-  const assignPath = (path: string, value: unknown) => {
-    const parts = path.split('.');
+  for (const [key, rawValue] of Object.entries(flat)) {
+    if (!key || rawValue === undefined || rawValue === null) continue;
+
+    const parts = key.split('.');
     let current: Record<string, unknown> = nested;
 
     for (let i = 0; i < parts.length - 1; i++) {
-      const key = parts[i];
-      const next = current[key];
-      if (typeof next !== 'object' || next === null || Array.isArray(next)) {
-        current[key] = {};
+      const part = parts[i];
+      const next = current[part];
+      if (!next || typeof next !== 'object' || Array.isArray(next)) {
+        current[part] = {};
       }
-      current = current[key] as Record<string, unknown>;
+      current = current[part] as Record<string, unknown>;
     }
 
-    current[parts[parts.length - 1]] = String(value);
-  };
+    current[parts[parts.length - 1]] = String(rawValue);
+  }
 
-  const walk = (obj: Record<string, unknown>, prefix = '') => {
-    Object.entries(obj).forEach(([key, value]) => {
-      const fullKey = prefix ? `${prefix}.${key}` : key;
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        walk(value as Record<string, unknown>, fullKey);
-      } else {
-        assignPath(fullKey, value);
-      }
-    });
-  };
-
-  walk(source);
   return nested;
 };
 
@@ -122,7 +113,7 @@ const applyLocaleTranslations = async (
   const normalizedLocale = normalizeLocale(locale);
   const baseLocale = getBaseLocale(normalizedLocale);
   const base = resources[baseLocale].translation as Record<string, unknown>;
-  const normalized = buildNestedTranslations(data);
+  const normalized = nestFlatTranslations(data);
 
   // Rebuild locale namespace to prevent stale overrides for removed keys.
   i18n.removeResourceBundle(normalizedLocale, 'translation');

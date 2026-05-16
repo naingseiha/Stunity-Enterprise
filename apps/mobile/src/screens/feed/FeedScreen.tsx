@@ -798,7 +798,7 @@ export default function FeedScreen() {
             <View style={[styles.quickActionIconShadow, { shadowColor: '#8B5CF6' }]}>
               <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={20} color="#FFFFFF" /></LinearGradient>
             </View>
-            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>{t('feed.poll')}</Text>
+            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
             <View style={[styles.quickActionIconShadow, { shadowColor: '#EC4899' }]}>
@@ -953,7 +953,7 @@ export default function FeedScreen() {
         <View style={styles.sideRailCard}>
           <View style={styles.sideRailProfileRow}>
             <Avatar
-              uri={user?.profilePictureUrl}
+              uri={stableProfilePictureUrl}
               name={displayName}
               size="lg"
               gradientBorder="blue"
@@ -993,7 +993,7 @@ export default function FeedScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.sideRailAction} onPress={handleCreatePoll} activeOpacity={0.75}>
             <Ionicons name="bar-chart-outline" size={20} color="#8B5CF6" />
-            <Text style={styles.sideRailActionText}>{t('feed.poll')}</Text>
+            <Text style={styles.sideRailActionText}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.sideRailAction} onPress={handleCreateResource} activeOpacity={0.75}>
             <Ionicons name="book-outline" size={20} color="#EC4899" />
@@ -1012,6 +1012,7 @@ export default function FeedScreen() {
     handleCreateQuiz,
     handleCreatePoll,
     handleCreateResource,
+    stableProfilePictureUrl,
   ]);
 
   const renderTabletLeftRail = useCallback(() => {
@@ -1031,7 +1032,7 @@ export default function FeedScreen() {
           />
           <View style={styles.leftProfileAvatar}>
             <Avatar
-              uri={user?.profilePictureUrl}
+              uri={stableProfilePictureUrl}
               name={displayName}
               size="xl"
               gradientBorder="gold"
@@ -1083,7 +1084,7 @@ export default function FeedScreen() {
         </View>
       </View>
     );
-  }, [isThreeColumnTablet, user, t, styles, colors.primary, colors.textSecondary, learningStats, navigation]);
+  }, [isThreeColumnTablet, user, t, styles, colors.primary, colors.textSecondary, learningStats, navigation, stableProfilePictureUrl]);
 
   return (
     <View style={styles.container}>
@@ -1203,8 +1204,9 @@ export default function FeedScreen() {
           drawDistance={LIST_DRAW_DISTANCE}
           getItemType={getItemType}
           overrideItemLayout={overrideItemLayout}
-          // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
-          removeClippedSubviews={Platform.OS === 'android'}
+          // Keep native image layers attached during refresh/pagination. Detaching
+          // clipped cells can make tiny avatar images visibly reconnect on Android.
+          removeClippedSubviews={false}
           decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
         />
         </View>

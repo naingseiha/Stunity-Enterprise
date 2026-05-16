@@ -864,10 +864,10 @@ export default function ClubsScreen() {
                 </View>
                 <View style={styles.disciplineWorkbenchBody}>
                   <Text style={[styles.disciplineWorkbenchTitle, { color: isDark ? '#ECFEFF' : '#0F172A' }, isKhmer && styles.khmerHeadingText]}>
-                    {isKhmer ? 'ផ្ទាំងវិន័យ និងវត្តមាន' : 'Discipline Workbench'}
+                    {t('clubs.screen.disciplineWorkbench')}
                   </Text>
                   <Text style={[styles.disciplineWorkbenchSubtitle, { color: isDark ? '#67E8F9' : '#0E7490' }, isKhmer && styles.khmerInlineText]}>
-                    {isKhmer ? 'សម្គាល់ A / P / L / E សម្រាប់ថ្នាក់ដែលបានផ្ទេរសិទ្ធិ' : 'Mark delegated attendance quickly (A / P / L / E)'}
+                    {t('clubs.screen.disciplineWorkbenchSubtitle')}
                   </Text>
                 </View>
                 <View style={[styles.disciplineWorkbenchArrow, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#FFFFFF' }]}>

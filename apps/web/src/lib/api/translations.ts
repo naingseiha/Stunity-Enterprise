@@ -85,6 +85,23 @@ export const translationApi = {
   },
 
   /**
+   * Bust Next.js translation caches after admin saves so web picks up DB changes immediately.
+   */
+  async revalidateCaches(payload: { locales: string[]; apps?: string[] }): Promise<{ success: boolean; revalidated?: string[] }> {
+    const token = TokenManager.getAccessToken();
+    const res = await fetch('/api/translations/revalidate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to revalidate translation caches');
+    return res.json();
+  },
+
+  /**
    * Sync default translations from local files to database
    */
   async sync(): Promise<{ success: boolean; count: number; created?: number; preserved?: number; scanned?: number }> {

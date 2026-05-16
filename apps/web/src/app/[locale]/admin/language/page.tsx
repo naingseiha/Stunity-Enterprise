@@ -268,8 +268,10 @@ export default function LanguageManagementPage() {
         const currentValue = editedValues[t.id] ?? t.value;
         const isEdited = editedValues[t.id] !== undefined && editedValues[t.id] !== t.value;
         const isGeneratedKey = t.key.startsWith('auto.');
+        // Match against saved value too so rows stay visible while clearing text during search.
         const matchesSearch = query.length === 0
           || t.key.toLowerCase().includes(query)
+          || t.value.toLowerCase().includes(query)
           || currentValue.toLowerCase().includes(query)
           || t.screen.toLowerCase().includes(query)
           || t.namespace.toLowerCase().includes(query)
@@ -280,9 +282,9 @@ export default function LanguageManagementPage() {
         const matchesNamespace = namespaceFilter === 'all' || t.namespace === namespaceFilter;
         const matchesScreen = screenFilter === 'all' || t.screen === screenFilter;
         const matchesValueStatus = valueStatusFilter === 'all'
+          || isEdited
           || (valueStatusFilter === 'empty' && currentValue.trim().length === 0)
-          || (valueStatusFilter === 'filled' && currentValue.trim().length > 0)
-          || (valueStatusFilter === 'edited' && isEdited);
+          || (valueStatusFilter === 'filled' && currentValue.trim().length > 0);
         const matchesKeyKind = keyKindFilter === 'all'
           || (keyKindFilter === 'generated' && isGeneratedKey)
           || (keyKindFilter === 'manual' && !isGeneratedKey);
@@ -353,6 +355,19 @@ export default function LanguageManagementPage() {
     setVisibleGroupLimit(GROUP_PAGE_SIZE);
   }, [appFilter, keyKindFilter, localeFilter, namespaceFilter, screenFilter, searchQuery, valueStatusFilter]);
 
+  const revalidateClientCaches = useCallback(async (updates: PendingUpdate[]) => {
+    if (updates.length === 0) return;
+
+    const locales = Array.from(new Set(updates.map((update) => update.locale)));
+    const apps = Array.from(new Set(updates.map((update) => update.app)));
+
+    try {
+      await translationApi.revalidateCaches({ locales, apps });
+    } catch (error) {
+      console.warn('Failed to revalidate translation caches:', error);
+    }
+  }, []);
+
   const applyUpdatesLocally = useCallback((updates: PendingUpdate[]) => {
     if (updates.length === 0) return;
 
@@ -398,6 +413,7 @@ export default function LanguageManagementPage() {
         value: update.value
       });
       applyUpdatesLocally([update]);
+      await revalidateClientCaches([update]);
       setStatus({ type: 'success', message: t('savedKey', { key: update.key }) });
       setTimeout(() => setStatus(null), 2500);
     } catch (error) {
@@ -428,6 +444,7 @@ export default function LanguageManagementPage() {
         value: update.value,
       });
       applyUpdatesLocally([update]);
+      await revalidateClientCaches([update]);
       setStatus({ type: 'success', message: t('resetKey', { key: update.key }) });
       setTimeout(() => setStatus(null), 2500);
     } catch (error) {
@@ -451,6 +468,7 @@ export default function LanguageManagementPage() {
         }))
       );
       applyUpdatesLocally(pendingUpdates);
+      await revalidateClientCaches(pendingUpdates);
       setStatus({ type: 'success', message: t('savedUpdates', { count: pendingUpdates.length }) });
       setTimeout(() => setStatus(null), 3000);
     } catch (error) {

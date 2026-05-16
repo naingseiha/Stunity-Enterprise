@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
 import {
   View,
@@ -71,6 +72,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
 }) => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const { t } = useTranslation();
 
   const [localVote, setLocalVote] = useState(userVotedOptionId);
   const hasVoted = !!localVote;
@@ -106,21 +108,21 @@ export const PollVoting: React.FC<PollVotingProps> = ({
 
   // Calculate time remaining string
   const getTimeRemaining = () => {
-    if (!endsAt) return 'Open voting';
+    if (!endsAt) return t('feed.poll.openVoting');
     const now = new Date();
     const end = new Date(endsAt);
     const diff = end.getTime() - now.getTime();
 
-    if (diff <= 0) return 'Final results';
+    if (diff <= 0) return t('feed.poll.finalResults');
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days > 0) return `${days} ${days === 1 ? 'day' : 'days'} left`;
+    if (days > 0) return t('feed.poll.timeLeft', { count: days, unit: days === 1 ? t('feed.time.d') : t('feed.time.d') });
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours > 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'} left`;
+    if (hours > 0) return t('feed.poll.timeLeft', { count: hours, unit: hours === 1 ? t('feed.time.h') : t('feed.time.h') });
 
     const minutes = Math.floor(diff / (1000 * 60));
-    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} left`;
+    return t('feed.poll.timeLeft', { count: minutes, unit: t('feed.time.m', 'm') });
   };
 
   const timeText = getTimeRemaining();
@@ -212,7 +214,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
       {/* Footer Info */}
       <View style={styles.footer}>
         <Text style={styles.voteCount}>
-          {totalVotes.toLocaleString()} {totalVotes === 1 ? 'vote' : 'votes'}
+          {t('feed.postCard.pollVotes', { count: totalVotes })}
         </Text>
         <Text style={styles.dot}>•</Text>
         <Text style={[styles.timeRemaining, isFinal && styles.finalText]}>
