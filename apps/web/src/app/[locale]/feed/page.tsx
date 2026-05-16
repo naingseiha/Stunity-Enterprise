@@ -119,6 +119,14 @@ const POST_TYPE_FILTERS = [
   { id: 'EVENT_CREATED', labelKey: 'filters.events', icon: Calendar },
 ];
 
+const TEACHER_QUIZ_ANALYTICS_ROLES = new Set([
+  'TEACHER',
+  'ADMIN',
+  'STAFF',
+  'SCHOOL_ADMIN',
+  'SUPER_ADMIN',
+]);
+
 const VIRTUALIZATION_DEFAULT_ITEM_HEIGHT = 640;
 const VIRTUALIZATION_ITEM_GAP = 12;
 const VIRTUALIZATION_THRESHOLD = 30;
@@ -1139,6 +1147,15 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
   const feedVirtualizer = useVirtualizedFeedList(filteredVirtualFeedEntries, activeTab === 'feed');
 
+  const findPostById = useCallback(
+    (postId: string): Post | undefined => {
+      const fromFeed = postsFromFeed.find((item) => item.id === postId);
+      if (fromFeed) return fromFeed;
+      return myPosts.find((item) => item.id === postId) ?? bookmarkedPosts.find((item) => item.id === postId);
+    },
+    [postsFromFeed, myPosts, bookmarkedPosts],
+  );
+
   // Show skeleton layout immediately for perceived performance
   if (!user) {
     return (
@@ -1173,23 +1190,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       </div>
     );
   }
-
-  const TEACHER_QUIZ_ANALYTICS_ROLES = new Set([
-    'TEACHER',
-    'ADMIN',
-    'STAFF',
-    'SCHOOL_ADMIN',
-    'SUPER_ADMIN',
-  ]);
-
-  const findPostById = useCallback(
-    (postId: string): Post | undefined => {
-      const fromFeed = postsFromFeed.find((item) => item.id === postId);
-      if (fromFeed) return fromFeed;
-      return myPosts.find((item) => item.id === postId) ?? bookmarkedPosts.find((item) => item.id === postId);
-    },
-    [postsFromFeed, myPosts, bookmarkedPosts],
-  );
 
   const handleViewAnalytics = (postId: string) => {
     const post = findPostById(postId);
