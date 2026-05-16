@@ -180,6 +180,7 @@ export function applyStreakToPerformanceCache(userId: string, streak: Streak) {
     avgScore: 0,
     winRate: 0,
     winStreak: 0,
+    currentStreak: patch.currentStreak ?? 0,
     correctAnswers: 0,
     totalAnswers: 0,
     ...patch,

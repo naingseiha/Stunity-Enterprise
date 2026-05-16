@@ -464,6 +464,7 @@ interface QuizSectionProps {
             score: number;
             passed: boolean;
             pointsEarned?: number;
+            submittedAt?: string;
             answers?: any[];
             results?: any[];
         } | null;

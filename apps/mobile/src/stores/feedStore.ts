@@ -1745,7 +1745,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                 id: attempt.id,
                 score: attempt.score,
                 passed: attempt.passed,
-                pointsEarned: attempt.pointsEarned,
+                pointsEarned: attempt.pointsEarned ?? 0,
                 submittedAt: attempt.submittedAt || new Date().toISOString(),
                 answers: attempt.answers,
                 results: attempt.results,

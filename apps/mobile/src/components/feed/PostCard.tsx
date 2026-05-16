@@ -287,7 +287,7 @@ const ViewStatsIndicator = React.memo<{
       disabled={disabled}
       hitSlop={8}
       accessibilityRole={disabled ? undefined : 'button'}
-      accessibilityLabel={t('feed.viewsCount', { count: formatNumber(count) })}
+      accessibilityLabel={t('feed.viewsCount', { count })}
       style={styles.viewStatPressable}
     >
     <View style={styles.viewStatInner}>

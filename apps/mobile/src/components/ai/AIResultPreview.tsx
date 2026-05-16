@@ -84,11 +84,16 @@ export function AIResultPreview({
                         }}
                         disabled={isRegenerating}
                     >
+                        <LinearGradient
                             colors={['#8B5CF6', '#3B82F6']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={StyleSheet.absoluteFillObject}
-                        /><Ionicons name="checkmark-circle" size={20} color="#FFFFFF" /><Text style={styles.btnPrimaryText}>{t('common.ai.useDraft')}</Text>
+                        />
+                        <View style={styles.btnPrimaryContent}>
+                            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                            <Text style={styles.btnPrimaryText}>{t('common.ai.useDraft')}</Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -182,6 +187,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     },
     btnPrimary: {
         backgroundColor: '#8B5CF6',
+    },
+    btnPrimaryContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
     },
     btnSecondaryText: {
         fontSize: 16,

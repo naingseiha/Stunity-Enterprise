@@ -170,7 +170,7 @@ export function QuizResultsScreen() {
 
         const userAnswer = userAnswerObj?.answer;
         const equivalentAnswer = areAnswersEquivalent(
-          question,
+          question as QuizQuestion,
           userAnswer,
           question.correctAnswer,
         );

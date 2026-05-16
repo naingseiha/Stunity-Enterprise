@@ -700,7 +700,9 @@ export default function FeedScreen() {
         stats={learningStats}
         user={user}
         avatarUri={stableProfilePictureUrl}
-        onPress={() => navigation.navigate('MyJoinedQuizzes')}
+        onPress={() =>
+          navigation.getParent()?.navigate('QuizTab', { screen: 'MyJoinedQuizzes' })
+        }
       />
 
       {/* Featured Categories */}
