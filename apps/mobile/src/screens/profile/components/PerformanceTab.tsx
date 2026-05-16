@@ -131,15 +131,15 @@ function visitorInitials(visitor: ProfileVisitor) {
   return `${first}${last}`.toUpperCase() || "?";
 }
 
-function relativeViewedAt(value: string) {
+function relativeViewedAt(value: string, t: any) {
   const viewedAt = new Date(value).getTime();
   const diffMs = Date.now() - viewedAt;
   const minutes = Math.max(0, Math.floor(diffMs / 60000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return t("feed.time.now") || "now";
+  if (minutes < 60) return `${minutes}${t("feed.time.m")}`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return `${hours}${t("feed.time.h")}`;
+  return `${Math.floor(hours / 24)}${t("feed.time.d")}`;
 }
 
 function StatCard({
@@ -807,13 +807,12 @@ export default function PerformanceTab({
                   </View>
                   <View style={s.visitorStats}>
                     <Text style={[s.visitorTime, { color: colors.text }]}>
-                      {relativeViewedAt(visitor.viewedAt)}
+                      {relativeViewedAt(visitor.viewedAt, t)}
                     </Text>
                     <Text
                       style={[s.visitorViews, { color: colors.textSecondary }]}
                     >
-                      {visitor.views30d} view
-                      {visitor.views30d === 1 ? "" : "s"}
+                      {t("feed.viewsCount", { count: visitor.views30d })}
                     </Text>
                   </View>
                 </View>

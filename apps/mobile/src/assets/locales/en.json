@@ -88,6 +88,7 @@
     "title": "Title",
     "user": "User",
     "seeAll": "See All",
+    "viewAll": "View All",
     "retry": "Retry",
     "noData": "No data available",
     "more": "More",
@@ -993,7 +994,8 @@
       "expired": "Expired",
       "h": "h",
       "d": "d",
-      "m": "m"
+      "m": "m",
+      "now": "now"
     },
     "suggestions": {
       "passScore": "Pass score: {{score}}%"
