@@ -70,7 +70,8 @@ The default local startup scripts use these ports:
 | 3011 | `messaging-service` | Conversations and messages |
 | 3012 | `club-service` | Clubs and membership |
 | 3013 | `notification-service` | Notifications |
-| 3014 | `analytics-service` | Live quiz, leaderboards, gamification |
+| 3014 | `analytics-service` | Live quiz, leaderboards, gamification, streak APIs |
+| 3018 | `learn-service` | Courses, sections, instructor hub |
 | 3020 | `ai-service` | Optional AI service |
 
 Three folders exist in [`services`](../../services) but are not part of the default local runtime today:

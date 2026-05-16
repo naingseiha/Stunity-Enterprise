@@ -3,72 +3,159 @@
 echo "🚀 Quick Start - Stunity Services"
 echo "=================================="
 
-PROJECT_DIR="/Users/naingseiha/Documents/projects/Stunity-Enterprise"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
 API_PORTS=(3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
 ADB_BIN="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Library/Android/sdk}}/platform-tools/adb"
 
+load_root_env() {
+  if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$PROJECT_DIR/.env"
+    set +a
+    echo "  📄 Loaded $PROJECT_DIR/.env"
+  else
+    echo "  ⚠️  No .env at repo root — copy .env.example → .env before starting services"
+  fi
+
+  # Align internal service auth with notification-service (streak-at-risk job, club push, etc.)
+  export NOTIFICATION_SERVICE_AUTH_TOKEN="${NOTIFICATION_SERVICE_AUTH_TOKEN:-${JWT_SECRET:-stunity-notification-dev-service-token}}"
+
+  # Canonical local service URLs for cross-service calls
+  export AUTH_SERVICE_URL="${AUTH_SERVICE_URL:-http://localhost:3001}"
+  export SCHOOL_SERVICE_URL="${SCHOOL_SERVICE_URL:-http://localhost:3002}"
+  export STUDENT_SERVICE_URL="${STUDENT_SERVICE_URL:-http://localhost:3003}"
+  export TEACHER_SERVICE_URL="${TEACHER_SERVICE_URL:-http://localhost:3004}"
+  export CLASS_SERVICE_URL="${CLASS_SERVICE_URL:-http://localhost:3005}"
+  export SUBJECT_SERVICE_URL="${SUBJECT_SERVICE_URL:-http://localhost:3006}"
+  export GRADE_SERVICE_URL="${GRADE_SERVICE_URL:-http://localhost:3007}"
+  export ATTENDANCE_SERVICE_URL="${ATTENDANCE_SERVICE_URL:-http://localhost:3008}"
+  export TIMETABLE_SERVICE_URL="${TIMETABLE_SERVICE_URL:-http://localhost:3009}"
+  export FEED_SERVICE_URL="${FEED_SERVICE_URL:-http://localhost:3010}"
+  export MESSAGING_SERVICE_URL="${MESSAGING_SERVICE_URL:-http://localhost:3011}"
+  export CLUB_SERVICE_URL="${CLUB_SERVICE_URL:-http://localhost:3012}"
+  export NOTIFICATION_SERVICE_URL="${NOTIFICATION_SERVICE_URL:-http://localhost:3013}"
+  export ANALYTICS_SERVICE_URL="${ANALYTICS_SERVICE_URL:-http://localhost:3014}"
+  export LEARN_SERVICE_URL="${LEARN_SERVICE_URL:-http://localhost:3018}"
+  export AI_SERVICE_URL="${AI_SERVICE_URL:-http://localhost:3020}"
+}
+
 # Helper function to start service with tsx (skips type checking)
-# Uses a subshell to avoid cd side-effects
 start_service() {
-    local service_path=$1
-    local port=$2
-    local log_file=$3
-    local name=$4
-    
-    echo "  ⚙️  Starting $name ($port)..."
-    (cd "$PROJECT_DIR/$service_path" && npx tsx src/index.ts > /tmp/$log_file 2>&1) &
+  local service_path=$1
+  local port=$2
+  local log_file=$3
+  local name=$4
+
+  echo "  ⚙️  Starting $name ($port)..."
+  (
+    cd "$PROJECT_DIR/$service_path" || exit 1
+    load_root_env >/dev/null 2>&1
+    export PORT="$port"
+    npx tsx src/index.ts >"/tmp/$log_file" 2>&1
+  ) &
 }
 
 start_web() {
-    echo "  ⚙️  Starting Web App (3000)..."
-    (cd "$PROJECT_DIR/apps/web" && npm run dev > /tmp/web.log 2>&1) &
+  echo "  ⚙️  Starting Web App (3000)..."
+  (
+    cd "$PROJECT_DIR/apps/web" || exit 1
+    load_root_env >/dev/null 2>&1
+    npm run dev > /tmp/web.log 2>&1
+  ) &
 }
 
 wait_for_port() {
-    local port=$1
-    local name=$2
-    local timeout=${3:-45}
-    local elapsed=0
+  local port=$1
+  local name=$2
+  local timeout=${3:-45}
+  local elapsed=0
 
-    while [ "$elapsed" -lt "$timeout" ]; do
-        if (echo > /dev/tcp/127.0.0.1/$port) >/dev/null 2>&1; then
-            echo "  ✅ $name is accepting connections on $port"
-            return 0
-        fi
-        sleep 1
-        elapsed=$((elapsed + 1))
-    done
+  while [ "$elapsed" -lt "$timeout" ]; do
+    if (echo > /dev/tcp/127.0.0.1/$port) >/dev/null 2>&1; then
+      echo "  ✅ $name is accepting connections on $port"
+      return 0
+    fi
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
 
-    echo "  ❌ $name did not open port $port within ${timeout}s - Check /tmp/*.log"
-    return 1
+  echo "  ❌ $name did not open port $port within ${timeout}s - Check /tmp/*.log"
+  return 1
+}
+
+wait_for_health() {
+  local url=$1
+  local name=$2
+  local timeout=${3:-30}
+  local elapsed=0
+
+  while [ "$elapsed" -lt "$timeout" ]; do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      echo "  ✅ $name health OK"
+      return 0
+    fi
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  echo "  ⚠️  $name health check timed out ($url)"
+  return 1
+}
+
+smoke_test_new_endpoints() {
+  echo ""
+  echo "🧪 Smoke-testing new gamification & quiz analytics endpoints..."
+
+  if curl -fsS -X POST \
+    "${NOTIFICATION_SERVICE_URL}/notifications/jobs/streak-at-risk" \
+    -H "Content-Type: application/json" \
+    -H "x-service-token: ${NOTIFICATION_SERVICE_AUTH_TOKEN}" \
+    -d '{}' >/tmp/streak-job-smoke.json 2>/dev/null; then
+    echo "  ✅ Notification streak-at-risk job: $(tr -d '\n' </tmp/streak-job-smoke.json | head -c 120)"
+  else
+    echo "  ⚠️  Notification streak-at-risk job failed — see /tmp/notification.log"
+  fi
+
+  if curl -fsS "${ANALYTICS_SERVICE_URL}/health" >/tmp/analytics-health.json 2>/dev/null; then
+    echo "  ✅ Analytics service health OK"
+  else
+    echo "  ⚠️  Analytics health failed — see /tmp/analytics.log"
+  fi
+
+  if curl -fsS "${FEED_SERVICE_URL}/health" >/tmp/feed-health.json 2>/dev/null; then
+    echo "  ✅ Feed service health OK (teacher quiz analytics + joined quizzes)"
+  else
+    echo "  ⚠️  Feed health failed — see /tmp/feed.log"
+  fi
 }
 
 configure_android_reverse() {
-    if [ ! -x "$ADB_BIN" ]; then
-        if command -v adb >/dev/null 2>&1; then
-            ADB_BIN="$(command -v adb)"
-        else
-            echo "  ℹ️  adb not found; skipping Android port forwarding"
-            return 0
-        fi
-    fi
-
-    if ! "$ADB_BIN" get-state >/dev/null 2>&1; then
-        echo "  ℹ️  No running Android emulator/device; skipping Android port forwarding"
-        return 0
-    fi
-
-    echo "  📱 Refreshing Android adb reverse tunnels..."
-    for port in "${API_PORTS[@]}"; do
-        "$ADB_BIN" reverse "tcp:${port}" "tcp:${port}" >/dev/null 2>&1 || true
-    done
-
-    if "$ADB_BIN" reverse --list 2>/dev/null | grep -q "tcp:3010"; then
-        echo "  ✅ Android can reach local services through 127.0.0.1"
+  if [ ! -x "$ADB_BIN" ]; then
+    if command -v adb >/dev/null 2>&1; then
+      ADB_BIN="$(command -v adb)"
     else
-        echo "  ⚠️  adb reverse did not report port 3010. Android emulator will need 10.0.2.2 fallback or a reload."
+      echo "  ℹ️  adb not found; skipping Android port forwarding"
+      return 0
     fi
+  fi
+
+  if ! "$ADB_BIN" get-state >/dev/null 2>&1; then
+    echo "  ℹ️  No running Android emulator/device; skipping Android port forwarding"
+    return 0
+  fi
+
+  echo "  📱 Refreshing Android adb reverse tunnels..."
+  for port in "${API_PORTS[@]}"; do
+    "$ADB_BIN" reverse "tcp:${port}" "tcp:${port}" >/dev/null 2>&1 || true
+  done
+
+  if "$ADB_BIN" reverse --list 2>/dev/null | grep -q "tcp:3010"; then
+    echo "  ✅ Android can reach local services through 127.0.0.1"
+  else
+    echo "  ⚠️  adb reverse did not report port 3010. Android emulator will need 10.0.2.2 fallback or a reload."
+  fi
 }
 
 # Kill all existing processes
@@ -82,17 +169,13 @@ for port in "${PORTS[@]}"; do
 done
 sleep 2
 
+load_root_env
+
 # Apply migrations so Postgres matches prisma/schema.prisma (e.g. new Subject columns).
 echo ""
 echo "📦 Applying database migrations..."
 (
   cd "$PROJECT_DIR/packages/database" || exit 1
-  if [ -f "$PROJECT_DIR/.env" ]; then
-    set -a
-    # shellcheck disable=SC1090
-    source "$PROJECT_DIR/.env"
-    set +a
-  fi
   npx prisma migrate deploy
 ) && echo "  ✅ Migrations applied" || {
   echo "  ⚠️  prisma migrate deploy failed (is PostgreSQL running and DATABASE_URL set in .env?)"
@@ -134,6 +217,7 @@ wait_for_port 3009 "Timetable Service" 45
 
 start_service "services/feed-service" 3010 "feed.log" "Feed Service"
 wait_for_port 3010 "Feed Service" 60
+wait_for_health "${FEED_SERVICE_URL}/health" "Feed Service" 30
 
 start_service "services/messaging-service" 3011 "messaging.log" "Messaging Service"
 wait_for_port 3011 "Messaging Service" 45
@@ -143,12 +227,15 @@ wait_for_port 3012 "Club Service" 45
 
 start_service "services/notification-service" 3013 "notification.log" "Notification Service"
 wait_for_port 3013 "Notification Service" 45
+wait_for_health "${NOTIFICATION_SERVICE_URL}/health" "Notification Service" 30
 
 start_service "services/analytics-service" 3014 "analytics.log" "Analytics Service"
 wait_for_port 3014 "Analytics Service" 60
+wait_for_health "${ANALYTICS_SERVICE_URL}/health" "Analytics Service" 30
 
 start_service "services/learn-service" 3018 "learn.log" "Learn Service"
 wait_for_port 3018 "Learn Service" 60
+wait_for_health "${LEARN_SERVICE_URL}/health" "Learn Service" 30
 
 start_service "services/ai-service" 3020 "ai.log" "AI Service"
 wait_for_port 3020 "AI Service" 45
@@ -173,6 +260,8 @@ for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 301
   fi
 done
 
+smoke_test_new_endpoints
+
 echo ""
 echo "🌐 Web App: http://localhost:3000"
 echo "🔐 Auth Service: http://localhost:3001"
@@ -180,10 +269,15 @@ echo "📱 Feed Service: http://localhost:3010"
 echo "💬 Messaging Service: http://localhost:3011"
 echo "🎓 Club Service: http://localhost:3012"
 echo "🔔 Notification Service: http://localhost:3013"
-echo "📊 Analytics Service: http://localhost:3014"
+echo "📊 Analytics Service: http://localhost:3014 (streaks, leaderboards, live quiz)"
 echo "📚 Learn Service: http://localhost:3018"
 echo "🤖 AI Service: http://localhost:3020"
+echo ""
+echo "🆕 Teacher Quiz Analytics (web): http://localhost:3000/en/teacher/quizzes/analytics"
+echo "🆕 Streak-at-risk job (dev): POST ${NOTIFICATION_SERVICE_URL}/notifications/jobs/streak-at-risk"
+echo "   Header: x-service-token: \$NOTIFICATION_SERVICE_AUTH_TOKEN (from .env JWT_SECRET)"
+echo ""
 echo "📝 Logs in: /tmp/*.log"
 echo ""
 echo "🔑 Shared dev login: admin@svaythom.edu.kh / SvaythomAdmin2026!"
-echo "📘 Docs: see README.md and docs/CURRENT_SITUATION.md for current reality"
+echo "📘 Docs: docs/current/LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md"

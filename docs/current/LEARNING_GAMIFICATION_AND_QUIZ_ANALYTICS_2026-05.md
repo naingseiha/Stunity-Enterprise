@@ -97,6 +97,14 @@ Redeploy when using teacher analytics or joined-quizzes API changes:
 - Mobile: `quiz.myJoined.*`, streak strings in `en.json` / `km.json`.
 - Web: `teacherQuizAnalytics` namespace; feed `postCard.viewQuizAnalytics`.
 
+## Local development
+
+`./quick-start.sh` starts all sixteen microservices (ports `3001`–`3014`, `3018`, `3020`) plus the web app on `3000`. It:
+
+- Loads root `.env` and exports `NOTIFICATION_SERVICE_AUTH_TOKEN` (falls back to `JWT_SECRET`)
+- Sets canonical `*_SERVICE_URL` values for cross-service calls
+- Smoke-tests notification streak-at-risk job, analytics health, and feed health after startup
+
 ## Optional follow-ups
 
 - Class-scoped analytics tied to gradebook / homeroom only.
