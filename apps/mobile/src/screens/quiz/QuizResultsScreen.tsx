@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { CelebrationConfetti } from '@/components/common';
+import { normalizeQuiz, type NormalizedQuizQuestion } from '@/utils/quiz';
 
 // Brand Colors
 const TEAL = '#09CFF7';
@@ -140,40 +141,80 @@ export function QuizResultsScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Merge manual calculation with API results if available
-  const calculatedResults = quiz.questions.map((question) => {
-    const userAnswerObj = answers.find((a) => a.questionId === question.id);
-    const apiResult = apiResults?.find((r) => r.questionId === question.id);
-    
-    const userAnswer = userAnswerObj?.answer;
-    const equivalentAnswer = areAnswersEquivalent(question, userAnswer, question.correctAnswer);
-    
-    let isCorrect = false;
-    let points = 0;
-    
-    if (apiResult) {
-      isCorrect = !!apiResult.correct || equivalentAnswer;
-      points = isCorrect ? question.points : 0;
-    } else {
-      isCorrect = equivalentAnswer;
-      points = isCorrect ? question.points : 0;
-    }
+  const normalizedQuiz = React.useMemo(
+    () => normalizeQuiz(quiz),
+    [quiz],
+  );
 
-    return {
-      question,
-      userAnswer,
-      isCorrect,
-      points
-    };
-  });
+  const questions: NormalizedQuizQuestion[] = normalizedQuiz?.questions ?? [];
 
-  const correctCount = calculatedResults.filter(r => r.isCorrect).length;
-  const incorrectCount = calculatedResults.length - correctCount;
+  const findUserAnswer = React.useCallback(
+    (question: NormalizedQuizQuestion, index: number) => {
+      const byId = answers.find((a) => a.questionId === question.id);
+      if (byId) return byId;
+      const byIndex = answers[index];
+      if (byIndex) return byIndex;
+      return answers.find((a) => String(a.questionId).includes(`-q-${index}-`));
+    },
+    [answers],
+  );
+
+  // Merge server grading with client-side fallback (legacy quizzes missing question ids)
+  const calculatedResults = React.useMemo(
+    () =>
+      questions.map((question, index) => {
+        const userAnswerObj = findUserAnswer(question, index);
+        const apiResult =
+          apiResults?.find((r) => r.questionId === question.id) ??
+          apiResults?.[index];
+
+        const userAnswer = userAnswerObj?.answer;
+        const equivalentAnswer = areAnswersEquivalent(
+          question,
+          userAnswer,
+          question.correctAnswer,
+        );
+
+        let isCorrect = false;
+        let points = 0;
+
+        if (apiResult) {
+          isCorrect = !!apiResult.correct || equivalentAnswer;
+        } else {
+          isCorrect = equivalentAnswer;
+        }
+        points = isCorrect ? question.points : 0;
+
+        return {
+          question,
+          userAnswer,
+          isCorrect,
+          points,
+        };
+      }),
+    [questions, findUserAnswer, apiResults],
+  );
+
+  const derivedCorrectCount = calculatedResults.filter((r) => r.isCorrect).length;
   const derivedPointsEarned = calculatedResults.reduce((sum, result) => sum + result.points, 0);
-  const possiblePoints = quiz.questions.reduce((sum, question) => sum + (question.points || 0), 0);
-  const scorePercentage = possiblePoints > 0 ? Math.round((derivedPointsEarned / possiblePoints) * 100) : (score || 0);
-  const isPassed = scorePercentage >= quiz.passingScore;
-  const totalPoints = derivedPointsEarned;
+  const possiblePoints = questions.reduce((sum, question) => sum + (question.points || 0), 0);
+  const derivedScorePercentage =
+    possiblePoints > 0 ? Math.round((derivedPointsEarned / possiblePoints) * 100) : 0;
+
+  const passingScore = normalizedQuiz?.passingScore ?? quiz.passingScore ?? 70;
+
+  // In view mode, trust persisted attempt score from the server (feed / latest attempt API).
+  const scorePercentage =
+    viewMode && typeof score === 'number' ? score : derivedScorePercentage || score || 0;
+  const isPassed =
+    viewMode && typeof passed === 'boolean'
+      ? passed
+      : scorePercentage >= passingScore;
+  const correctCount =
+    viewMode && apiResults?.length ? apiResults.filter((r) => r.correct).length : derivedCorrectCount;
+  const incorrectCount = Math.max(questions.length - correctCount, 0);
+  const totalPoints =
+    viewMode && typeof pointsEarned === 'number' ? pointsEarned : derivedPointsEarned;
 
   const formatAnswer = (type: string, answer: any, options?: string[]) => {
     if (answer === undefined || answer === null || answer === '') return t('quiz.results.skipped');

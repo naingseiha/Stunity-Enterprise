@@ -118,6 +118,46 @@ const createAnalyticsApi = (): AxiosInstance => {
 
 const analyticsApi = createAnalyticsApi();
 
+export interface PerformanceStatsSummary {
+  xp: number;
+  level: number;
+  xpProgress: number;
+  xpToNextLevel: number;
+  totalQuizzes: number;
+  totalPoints: number;
+  avgScore: number;
+  winRate: number;
+  winStreak: number;
+  correctAnswers: number;
+  totalAnswers: number;
+  currentStreak: number;
+  longestStreak?: number;
+  lastQuizDate?: string | null;
+  freezesAvailable?: number;
+  /** Mon=0 … Sun=6 for the current calendar week */
+  weekActivity?: boolean[];
+  studiedToday?: boolean;
+  streakAtRisk?: boolean;
+  recentScores: number[];
+}
+
+/** Normalize API streak (Prisma uses freezesTotal). */
+export function mapApiStreak(
+  raw: Record<string, unknown>,
+  userId?: string,
+): Streak {
+  return {
+    id: String(raw.id ?? ''),
+    userId: String(raw.userId ?? userId ?? ''),
+    currentStreak: Number(raw.currentStreak ?? 0),
+    longestStreak: Number(raw.longestStreak ?? 0),
+    lastQuizDate: raw.lastQuizDate ? String(raw.lastQuizDate) : null,
+    freezesAvailable: Number(raw.freezesAvailable ?? raw.freezesTotal ?? 0),
+    createdAt: String(raw.createdAt ?? new Date().toISOString()),
+    updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
+  };
+}
+
 export interface UserStats {
   id: string;
   userId: string;
@@ -184,6 +224,9 @@ export interface Streak {
   longestStreak: number;
   lastQuizDate: string | null;
   freezesAvailable: number;
+  weekActivity?: boolean[];
+  studiedToday?: boolean;
+  streakAtRisk?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -193,6 +236,9 @@ export interface StreakUpdateResult {
   streak: Streak;
   streakIncreased: boolean;
   achievementUnlocked: string | null;
+  weekActivity?: boolean[];
+  studiedToday?: boolean;
+  streakAtRisk?: boolean;
 }
 
 export interface Achievement {
@@ -222,13 +268,24 @@ class StatsService {
     return response.data.data;
   }
 
+  /** Fast aggregate for feed/profile performance cards (single request). */
+  async getUserStatsSummary(userId: string): Promise<PerformanceStatsSummary> {
+    const response = await analyticsApi.get(`/stats/${userId}/summary`);
+    return response.data.data;
+  }
+
   /**
    * Record quiz attempt and award XP
    */
   async recordAttempt(data: {
     quizId: string;
-    score: number;
+    /** @deprecated Use pointsEarned + scorePercent instead */
+    score?: number;
     totalPoints: number;
+    pointsEarned?: number;
+    scorePercent?: number;
+    passed?: boolean;
+    questionCount?: number;
     timeSpent: number;
     timeLimit?: number;
     type: 'solo' | 'live' | 'challenge';
@@ -352,7 +409,7 @@ class StatsService {
    */
   async getStreak(userId: string): Promise<Streak> {
     const response = await analyticsApi.get(`/streak/${userId}`);
-    return response.data.streak;
+    return mapApiStreak(response.data.streak, userId);
   }
 
   /**
@@ -360,15 +417,40 @@ class StatsService {
    */
   async updateStreak(): Promise<StreakUpdateResult> {
     const response = await analyticsApi.post('/streak/update');
-    return response.data;
+    const payload = response.data;
+    const streak = mapApiStreak(payload.streak);
+    return {
+      ...payload,
+      streak: {
+        ...streak,
+        weekActivity: payload.weekActivity ?? streak.weekActivity,
+        studiedToday: payload.studiedToday ?? streak.studiedToday,
+        streakAtRisk: payload.streakAtRisk ?? streak.streakAtRisk,
+      },
+    };
   }
 
   /**
    * Use streak freeze
    */
-  async useStreakFreeze(): Promise<Streak> {
+  async useStreakFreeze(): Promise<StreakUpdateResult> {
     const response = await analyticsApi.post('/streak/freeze');
-    return response.data.streak;
+    const payload = response.data;
+    const streak = mapApiStreak(payload.streak);
+    return {
+      success: payload.success,
+      streak: {
+        ...streak,
+        weekActivity: payload.weekActivity ?? streak.weekActivity,
+        studiedToday: payload.studiedToday ?? streak.studiedToday,
+        streakAtRisk: payload.streakAtRisk ?? streak.streakAtRisk,
+      },
+      streakIncreased: false,
+      achievementUnlocked: null,
+      weekActivity: payload.weekActivity,
+      studiedToday: payload.studiedToday,
+      streakAtRisk: payload.streakAtRisk,
+    };
   }
 
   /**

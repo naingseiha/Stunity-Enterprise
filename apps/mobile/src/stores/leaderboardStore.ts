@@ -6,31 +6,39 @@ import { leaderboardApi, LeaderboardEntry, UserStanding } from '../api/leaderboa
 interface LeaderboardState {
     globalLeaderboard: LeaderboardEntry[];
     weeklyLeaderboard: any[];
+    streakLeaderboard: LeaderboardEntry[];
     userGlobalStanding: UserStanding | null;
     userWeeklyStanding: any | null;
+    userStreakStanding: UserStanding | null;
     globalFetchedAt: number | null;
     weeklyFetchedAt: number | null;
+    streakFetchedAt: number | null;
     isLoading: boolean;
     isRefreshing: boolean;
     error: string | null;
 
     fetchGlobalLeaderboard: (isRefresh?: boolean) => Promise<void>;
     fetchWeeklyLeaderboard: (isRefresh?: boolean) => Promise<void>;
+    fetchStreakLeaderboard: (isRefresh?: boolean) => Promise<void>;
 }
 
 const LEADERBOARD_CACHE_TTL = 60_000;
 let globalLeaderboardInFlight: Promise<void> | null = null;
 let weeklyLeaderboardInFlight: Promise<void> | null = null;
+let streakLeaderboardInFlight: Promise<void> | null = null;
 
 export const useLeaderboardStore = create<LeaderboardState>()(
     persist(
         (set, get) => ({
             globalLeaderboard: [],
             weeklyLeaderboard: [],
+            streakLeaderboard: [],
             userGlobalStanding: null,
             userWeeklyStanding: null,
+            userStreakStanding: null,
             globalFetchedAt: null,
             weeklyFetchedAt: null,
+            streakFetchedAt: null,
             isLoading: false,
             isRefreshing: false,
             error: null,
@@ -120,6 +128,50 @@ export const useLeaderboardStore = create<LeaderboardState>()(
                     });
                 }
             },
+
+            fetchStreakLeaderboard: async (isRefresh = false) => {
+                const state = get();
+                const hasFreshCache =
+                    !isRefresh &&
+                    state.streakLeaderboard.length > 0 &&
+                    state.streakFetchedAt !== null &&
+                    Date.now() - state.streakFetchedAt < LEADERBOARD_CACHE_TTL;
+
+                if (hasFreshCache) return;
+                if (!isRefresh && streakLeaderboardInFlight) return streakLeaderboardInFlight;
+
+                try {
+                    if (isRefresh) {
+                        set({ isRefreshing: true, error: null });
+                    } else if (get().streakLeaderboard.length === 0) {
+                        set({ isLoading: true, error: null });
+                    }
+
+                    streakLeaderboardInFlight = leaderboardApi
+                        .getLearningStreakLeaderboard(50)
+                        .then((response) => {
+                            set({
+                                streakLeaderboard: response.leaderboard,
+                                userStreakStanding: response.userStanding,
+                                streakFetchedAt: Date.now(),
+                                isLoading: false,
+                                isRefreshing: false,
+                            });
+                        })
+                        .finally(() => {
+                            streakLeaderboardInFlight = null;
+                        });
+
+                    await streakLeaderboardInFlight;
+                } catch (error: any) {
+                    console.error('Fetch streak leaderboard error:', error);
+                    set({
+                        error: error.message || 'Failed to fetch streak leaderboard',
+                        isLoading: false,
+                        isRefreshing: false,
+                    });
+                }
+            },
         }),
         {
             name: 'leaderboard-storage',
@@ -131,6 +183,9 @@ export const useLeaderboardStore = create<LeaderboardState>()(
                 weeklyLeaderboard: state.weeklyLeaderboard,
                 userWeeklyStanding: state.userWeeklyStanding,
                 weeklyFetchedAt: state.weeklyFetchedAt,
+                streakLeaderboard: state.streakLeaderboard,
+                userStreakStanding: state.userStreakStanding,
+                streakFetchedAt: state.streakFetchedAt,
             }), // only persist some state to allow offline viewing
         }
     )

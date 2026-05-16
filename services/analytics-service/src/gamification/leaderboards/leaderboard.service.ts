@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 
 export type LeaderboardCategory =
     | 'TOTAL_XP'
+    | 'LEARNING_STREAK'
     | 'ACADEMIC_PERFORMANCE'
     | 'SOCIAL_ENGAGEMENT'
     | 'ATTENDANCE_RATE'
@@ -195,6 +196,15 @@ export class LeaderboardService {
 
             case 'ATTENDANCE_RATE': {
                 const streaks = await prisma.attendanceStreak.findMany({
+                    select: { userId: true, currentStreak: true },
+                    orderBy: { currentStreak: 'desc' },
+                });
+                return streaks.map((s) => ({ userId: s.userId, value: s.currentStreak }));
+            }
+
+            case 'LEARNING_STREAK': {
+                const streaks = await prisma.learningStreak.findMany({
+                    where: { currentStreak: { gt: 0 } },
                     select: { userId: true, currentStreak: true },
                     orderBy: { currentStreak: 'desc' },
                 });

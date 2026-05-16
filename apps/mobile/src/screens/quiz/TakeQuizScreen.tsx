@@ -29,6 +29,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Haptics } from '@/services/haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
+import { useFeedStore } from '@/stores';
 import { normalizeQuiz, NormalizedQuiz, NormalizedQuizQuestion } from '@/utils/quiz';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -249,6 +250,18 @@ export function TakeQuizScreen() {
 
       // Submit to API
       const response = await quizService.submitQuiz(quiz.id, answers);
+
+      const feedStore = useFeedStore.getState();
+      feedStore.patchQuizUserAttempt(quiz.id, {
+        id: response.attemptId,
+        score: response.score,
+        passed: response.passed,
+        pointsEarned: response.pointsEarned,
+        submittedAt: response.submittedAt,
+        answers,
+        results: response.results,
+      });
+      feedStore.fetchPosts(true).catch(() => { });
 
       if (__DEV__) { console.log('✅ [QUIZ] Submission successful:', response); }
 

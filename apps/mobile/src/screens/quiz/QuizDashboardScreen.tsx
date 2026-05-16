@@ -152,6 +152,7 @@ export default function QuizDashboardScreen() {
                                     onJoin={() => navigation.navigate('LiveQuizJoin')}
                                     onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
                                     onManage={() => navigation.navigate('QuizStudio')}
+                                    onMyJoined={() => navigation.navigate('MyJoinedQuizzes')}
                                     onLeaderboard={() => navigation.navigate('Leaderboard')}
                                     onAchievements={() => navigation.navigate('Achievements')}
                                 />
@@ -185,6 +186,7 @@ export default function QuizDashboardScreen() {
                                         onJoin={() => navigation.navigate('LiveQuizJoin')}
                                         onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
                                         onManage={() => navigation.navigate('QuizStudio')}
+                                        onMyJoined={() => navigation.navigate('MyJoinedQuizzes')}
                                         onLeaderboard={() => navigation.navigate('Leaderboard')}
                                         onAchievements={() => navigation.navigate('Achievements')}
                                     />
@@ -229,6 +231,7 @@ export default function QuizDashboardScreen() {
                                 onJoin={() => navigation.navigate('LiveQuizJoin')}
                                 onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
                                 onManage={() => navigation.navigate('QuizStudio')}
+                                onMyJoined={() => navigation.navigate('MyJoinedQuizzes')}
                                 onLeaderboard={() => navigation.navigate('Leaderboard')}
                                 onAchievements={() => navigation.navigate('Achievements')}
                             />

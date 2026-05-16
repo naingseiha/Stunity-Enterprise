@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
@@ -12,6 +12,8 @@ import { renderPostTitleText } from '@/utils/renderEmojiText';
 interface Props {
   quizzes: any[];
 }
+
+const KHMER_CHAR_RE = /[\u1780-\u17FF]/u;
 
 const QUIZ_BACKGROUNDS = [
   'https://images.unsplash.com/photo-1513258496099-48168024aec0?w=800&q=80',
@@ -36,7 +38,7 @@ const getAuthorName = (item: any) => {
 export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
 
   const handleQuizPress = useCallback((item: any) => {
@@ -70,6 +72,9 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
     const attemptCount = item.attemptCount || item.totalAttempts || 0;
     const authorName = getAuthorName(item);
     const background = item.thumbnailUrl || item.coverImageUrl || item.imageUrl || QUIZ_BACKGROUNDS[index % QUIZ_BACKGROUNDS.length];
+    const quizTitle = item.title || t('feed.postTypes.quiz');
+    const useKhmerTitleMetrics =
+      i18n.language?.toLowerCase().startsWith('km') || KHMER_CHAR_RE.test(quizTitle);
 
     return (
       <TouchableOpacity
@@ -79,53 +84,60 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
       >
         <Image source={{ uri: background }} style={styles.image} contentFit="cover" />
         <LinearGradient
-          colors={['rgba(7,12,22,0.05)', 'rgba(7,12,22,0.44)', 'rgba(7,12,22,0.92)']}
-          locations={[0, 0.42, 1]}
+          colors={['rgba(7,12,22,0.12)', 'rgba(7,12,22,0.5)', 'rgba(7,12,22,0.94)']}
+          locations={[0, 0.38, 1]}
           style={styles.gradient}
         />
 
-        <View style={styles.topRow}>
-          <View style={styles.typePill}>
-            <Ionicons name="school" size={12} color="#FFFFFF" />
-            <Text style={styles.typeText}>{t('feed.quiz', 'Quiz')}</Text>
-          </View>
-          <View style={styles.pointsPill}>
-            <Ionicons name="flash" size={12} color="#FDE68A" />
-            <Text style={styles.pointsText}>
-              {item.totalPoints || Math.max(questionCount * 10, 10)} XP
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.content}>
-          {renderPostTitleText(item.title || t('feed.postTypes.quiz'), styles.title, 2)}
-          <View style={styles.meta}>
-            <Ionicons name="help-circle" size={12} color="#E0F2FE" />
-            <Text style={styles.metaText}>{questionCount || '--'} {t('feed.sections.questions')}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Ionicons name="time" size={12} color="#E0F2FE" />
-            <Text style={styles.metaText}>
-              {item.timeLimit ? t('feed.sections.minutesShort', { count: item.timeLimit }) : '∞'}
-            </Text>
+        <View style={styles.overlay}>
+          <View style={styles.topRow}>
+            <View style={styles.typeBadge}>
+              <Ionicons name="school" size={14} color="#FFFFFF" />
+            </View>
+            <View style={styles.pointsPill}>
+              <Ionicons name="flash" size={12} color="#FDE68A" />
+              <Text style={styles.pointsText}>
+                {item.totalPoints || Math.max(questionCount * 10, 10)} XP
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.footerRow}>
-            <Text style={styles.authorText} numberOfLines={1}>
-              {authorName || t('feed.suggestedQuizzes')}
-            </Text>
-            <View style={styles.startButton}>
-              <Text style={styles.startText} numberOfLines={1}>{t('feed.sections.takeQuizNow')}</Text>
-              <Ionicons name="arrow-forward" size={12} color="#0F172A" />
+          <View style={styles.bottomBlock}>
+            <View style={styles.titleWrap}>
+              {renderPostTitleText(
+                quizTitle,
+                [styles.title, useKhmerTitleMetrics && styles.titleKhmer],
+                2,
+              )}
+            </View>
+            <View style={styles.meta}>
+              <Ionicons name="help-circle" size={12} color="#E0F2FE" />
+              <Text style={styles.metaText}>{questionCount || '--'} {t('feed.sections.questions')}</Text>
+              <Text style={styles.metaDot}>•</Text>
+              <Ionicons name="time" size={12} color="#E0F2FE" />
+              <Text style={styles.metaText}>
+                {item.timeLimit ? t('feed.sections.minutesShort', { count: item.timeLimit }) : '∞'}
+              </Text>
+              {attemptCount > 0 && (
+                <>
+                  <Text style={styles.metaDot}>•</Text>
+                  <Ionicons name="people" size={12} color="#E0F2FE" />
+                  <Text style={styles.metaText}>{attemptCount}</Text>
+                </>
+              )}
+            </View>
+
+            <View style={styles.footerRow}>
+              <Text style={styles.authorText} numberOfLines={1}>
+                {authorName || t('feed.suggestedQuizzes')}
+              </Text>
+              <View style={styles.startButton}>
+                <Text style={styles.startText} numberOfLines={1}>{t('feed.sections.takeQuizNow')}</Text>
+                <Ionicons name="arrow-forward" size={12} color="#0F172A" />
+              </View>
             </View>
           </View>
         </View>
-
-        {attemptCount > 0 && (
-          <View style={styles.socialProof}>
-            <Ionicons name="people" size={11} color="#F8FAFC" />
-            <Text style={styles.socialProofText}>{attemptCount}</Text>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -170,13 +182,15 @@ type QuizCarouselStyles = {
   card: ViewStyle;
   image: ImageStyle;
   gradient: ViewStyle;
+  overlay: ViewStyle;
   topRow: ViewStyle;
-  typePill: ViewStyle;
-  typeText: TextStyle;
+  typeBadge: ViewStyle;
   pointsPill: ViewStyle;
   pointsText: TextStyle;
-  content: ViewStyle;
+  bottomBlock: ViewStyle;
+  titleWrap: ViewStyle;
   title: TextStyle;
+  titleKhmer: TextStyle;
   meta: ViewStyle;
   metaText: TextStyle;
   metaDot: TextStyle;
@@ -184,8 +198,6 @@ type QuizCarouselStyles = {
   authorText: TextStyle;
   startButton: ViewStyle;
   startText: TextStyle;
-  socialProof: ViewStyle;
-  socialProofText: TextStyle;
 };
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCarouselStyles>({
@@ -234,7 +246,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
   },
   card: {
     width: 260,
-    height: 148,
+    height: 178,
     backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
@@ -253,63 +265,65 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
     right: 0,
     bottom: 0,
   },
+  overlay: {
+    flex: 1,
+    justifyContent: 'space-between',
+    padding: 10,
+  },
   topRow: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 30,
   },
-  typePill: {
-    flexDirection: 'row',
+  typeBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(15,23,42,0.54)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15,23,42,0.58)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  typeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   pointsPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(15,23,42,0.54)',
+    backgroundColor: 'rgba(15,23,42,0.58)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   pointsText: {
     fontSize: 11,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  content: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 12,
+  bottomBlock: {
+    gap: 6,
+  },
+  titleWrap: {
+    overflow: 'visible',
   },
   title: {
     fontSize: 14,
-    lineHeight: 24,
+    lineHeight: 22,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 4,
-    paddingTop: 3,
-    paddingBottom: 1,
-    textShadowColor: 'rgba(0,0,0,0.48)',
+    textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 4,
+  },
+  titleKhmer: {
+    lineHeight: 30,
+    paddingTop: Platform.OS === 'android' ? 4 : 6,
+    ...Platform.select({
+      android: { includeFontPadding: true, textAlignVertical: 'top' as const },
+      default: {},
+    }),
   },
   meta: {
     flexDirection: 'row',
@@ -331,7 +345,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    marginTop: 9,
+    marginTop: 2,
   },
   authorText: {
     flex: 1,
@@ -354,18 +368,5 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
     fontSize: 10,
     fontWeight: '900',
     color: '#0F172A',
-  },
-  socialProof: {
-    position: 'absolute',
-    right: 12,
-    bottom: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  socialProofText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#F8FAFC',
   },
 });

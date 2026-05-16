@@ -18,7 +18,7 @@ import { Haptics } from '@/services/haptics';
 import { useLeaderboardStore } from '../../stores';
 import { LeaderboardEntry } from '../../api/leaderboard';
 
-type LeaderboardTab = 'ALL_TIME' | 'WEEKLY';
+type LeaderboardTab = 'ALL_TIME' | 'WEEKLY' | 'STREAK';
 
 const getRankBadgeProps = (rank: number) => {
     switch (rank) {
@@ -29,7 +29,8 @@ const getRankBadgeProps = (rank: number) => {
     }
 };
 
-const LeaderboardRow = React.memo(({ item }: { item: LeaderboardEntry }) => {
+const LeaderboardRow = React.memo(({ item, showStreak = false }: { item: LeaderboardEntry; showStreak?: boolean }) => {
+    const { t } = useTranslation();
     const isTop3 = item.rank <= 3;
     const badge = getRankBadgeProps(item.rank);
 
@@ -62,7 +63,11 @@ const LeaderboardRow = React.memo(({ item }: { item: LeaderboardEntry }) => {
                     <Text style={styles.userName} numberOfLines={1}>
                         {item.user.firstName} {item.user.lastName}
                     </Text>
-                    <Text style={styles.userStats}>{useTranslation().t('screens.leaderboard.lvl')} {item.level}  •  {item.xp.toLocaleString()} XP</Text>
+                    <Text style={styles.userStats}>
+                      {showStreak
+                        ? t('leaderboard.streakDays', { count: item.xp })
+                        : `${t('screens.leaderboard.lvl')} ${item.level}  •  ${item.xp.toLocaleString()} XP`}
+                    </Text>
                 </View>
 
                 {isTop3 && (
@@ -81,12 +86,15 @@ export const LeaderboardScreen = ({ navigation }: any) => {
     const {
         globalLeaderboard,
         weeklyLeaderboard,
+        streakLeaderboard,
         userGlobalStanding,
         userWeeklyStanding,
+        userStreakStanding,
         isLoading,
         isRefreshing,
         fetchGlobalLeaderboard,
         fetchWeeklyLeaderboard,
+        fetchStreakLeaderboard,
     } = useLeaderboardStore();
     const [activeTab, setActiveTab] = useState<LeaderboardTab>('ALL_TIME');
 
@@ -100,8 +108,10 @@ export const LeaderboardScreen = ({ navigation }: any) => {
     useEffect(() => {
         if (activeTab === 'WEEKLY') {
             void fetchWeeklyLeaderboard();
+        } else if (activeTab === 'STREAK') {
+            void fetchStreakLeaderboard();
         }
-    }, [activeTab, fetchWeeklyLeaderboard]);
+    }, [activeTab, fetchWeeklyLeaderboard, fetchStreakLeaderboard]);
 
     const normalizedWeeklyLeaderboard = useMemo<LeaderboardEntry[]>(() => {
         return weeklyLeaderboard.map((entry: any) => {
@@ -131,29 +141,49 @@ export const LeaderboardScreen = ({ navigation }: any) => {
         });
     }, [weeklyLeaderboard]);
 
-    const visibleLeaderboard = activeTab === 'WEEKLY' ? normalizedWeeklyLeaderboard : globalLeaderboard;
-    const visibleStanding = activeTab === 'WEEKLY' ? userWeeklyStanding : userGlobalStanding;
+    const visibleLeaderboard =
+        activeTab === 'STREAK'
+            ? streakLeaderboard
+            : activeTab === 'WEEKLY'
+                ? normalizedWeeklyLeaderboard
+                : globalLeaderboard;
+    const visibleStanding =
+        activeTab === 'STREAK'
+            ? userStreakStanding
+            : activeTab === 'WEEKLY'
+                ? userWeeklyStanding
+                : userGlobalStanding;
 
     const onRefresh = useCallback(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (activeTab === 'WEEKLY') {
             void fetchWeeklyLeaderboard(true);
+        } else if (activeTab === 'STREAK') {
+            void fetchStreakLeaderboard(true);
         } else {
             void fetchGlobalLeaderboard(true);
         }
-    }, [activeTab, fetchGlobalLeaderboard, fetchWeeklyLeaderboard]);
+    }, [activeTab, fetchGlobalLeaderboard, fetchWeeklyLeaderboard, fetchStreakLeaderboard]);
 
     const renderLeaderboardItem = useCallback(({ item }: { item: LeaderboardEntry }) => (
-        <LeaderboardRow item={item} />
-    ), []);
+        <LeaderboardRow item={item} showStreak={activeTab === 'STREAK'} />
+    ), [activeTab]);
     const keyExtractor = useCallback((item: LeaderboardEntry) => `${activeTab}-${item.userId}`, [activeTab]);
 
     const renderHeader = useCallback(() => (
         <Animated.View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitleMain}>{t('screens.leaderboard.globalTitle')}</Text>
-            <Text style={styles.headerSubtitle}>{t('screens.leaderboard.globalSubtitle')}</Text>
+            <Text style={styles.headerTitleMain}>
+              {activeTab === 'STREAK'
+                ? t('profile.performance.learningStreak')
+                : t('screens.leaderboard.globalTitle')}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {activeTab === 'STREAK'
+                ? t('profile.performance.streakSubtitle')
+                : t('screens.leaderboard.globalSubtitle')}
+            </Text>
         </Animated.View>
-    ), [t]);
+    ), [activeTab, t]);
 
     return (
         <View style={styles.container}>
@@ -202,6 +232,17 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                         >
                             <Text style={[styles.tabText, activeTab === 'WEEKLY' && styles.activeTabText]}>
                                 {t('leaderboard.tabs.weekly', { defaultValue: 'Weekly' })}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === 'STREAK' && styles.activeTab]}
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                setActiveTab('STREAK');
+                            }}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'STREAK' && styles.activeTabText]}>
+                                {t('leaderboard.tabs.streak', { defaultValue: 'Streak' })}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -255,7 +296,11 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                         {t('screens.leaderboard.you')}
                                     </Text>
                                     <Text style={[styles.userStats, { color: 'rgba(255,255,255,0.8)' }]}>
-                                        {t('screens.leaderboard.lvl')} {visibleStanding.level || 1}  •  {Number(visibleStanding.xp || visibleStanding._sum?.xpEarned || 0).toLocaleString()} XP
+                                      {activeTab === 'STREAK'
+                                        ? t('leaderboard.streakDays', {
+                                            count: Number(visibleStanding.xp || visibleStanding.currentStreak || 0),
+                                          })
+                                        : `${t('screens.leaderboard.lvl')} ${visibleStanding.level || 1}  •  ${Number(visibleStanding.xp || visibleStanding._sum?.xpEarned || 0).toLocaleString()} XP`}
                                     </Text>
                                 </View>
                                 <View style={styles.glowEffect}>

@@ -22,6 +22,12 @@ import challengeRoutes from './gamification/routes/challenges.routes';
 import leaderboardRoutes from './gamification/routes/leaderboards.routes';
 import teamChallengeRoutes from './gamification/routes/team-challenges.routes';
 import shopRoutes from './gamification/routes/shop.routes';
+import {
+  buildWeekActivityFromDates,
+  computeStreakStatus,
+  getWeekStartMonday,
+  loadWeekActivityForUser,
+} from './utils/streakCalendar';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -718,6 +724,226 @@ const calculateXPForQuiz = (score: number, totalPoints: number, timeSpent: numbe
   return baseXP + accuracyBonus + speedBonus;
 };
 
+type FeedQuizAttempt = {
+  id: string;
+  quizId: string;
+  userId: string;
+  score: number;
+  pointsEarned: number;
+  passed: boolean;
+  submittedAt: Date;
+  answers: unknown;
+};
+
+const computeQuizPracticeFromFeedAttempts = (attempts: FeedQuizAttempt[]) => {
+  if (attempts.length === 0) return null;
+
+  const sorted = [...attempts].sort(
+    (a, b) => b.submittedAt.getTime() - a.submittedAt.getTime(),
+  );
+
+  const passedCount = attempts.filter((a) => a.passed).length;
+  const passRate = (passedCount / attempts.length) * 100;
+
+  let winStreak = 0;
+  for (const attempt of sorted) {
+    if (attempt.passed) winStreak += 1;
+    else break;
+  }
+
+  let correctAnswers = 0;
+  let totalAnswers = 0;
+  for (const attempt of attempts) {
+    const answerArr = Array.isArray(attempt.answers) ? attempt.answers : [];
+    const questionCount = answerArr.length;
+    totalAnswers += questionCount;
+    correctAnswers += Math.round((attempt.score / 100) * questionCount);
+  }
+
+  const avgScore =
+    attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length;
+
+  const estimatedXp = attempts.reduce((sum, attempt) => {
+    const answerArr = Array.isArray(attempt.answers) ? attempt.answers : [];
+    const maxPoints =
+      attempt.score > 0
+        ? Math.round(attempt.pointsEarned / (attempt.score / 100))
+        : Math.max(answerArr.length * 10, 10);
+    return sum + calculateXPForQuiz(attempt.pointsEarned, maxPoints, 0, 300);
+  }, 0);
+
+  const recentAttempts = sorted.slice(0, 10).map((attempt) => {
+    const answerArr = Array.isArray(attempt.answers) ? attempt.answers : [];
+    const questionCount = answerArr.length;
+    const maxPoints =
+      attempt.score > 0
+        ? Math.round(attempt.pointsEarned / (attempt.score / 100))
+        : questionCount * 10;
+
+    return {
+      id: attempt.id,
+      userId: attempt.userId,
+      quizId: attempt.quizId,
+      score: attempt.score,
+      totalPoints: maxPoints,
+      accuracy: attempt.score,
+      timeSpent: 0,
+      xpEarned: 0,
+      type: 'solo',
+      createdAt: attempt.submittedAt.toISOString(),
+    };
+  });
+
+  return {
+    passRate: Math.round(passRate * 10) / 10,
+    winStreak,
+    correctAnswers,
+    totalAnswers,
+    avgScore: Math.round(avgScore * 10) / 10,
+    totalQuizzes: attempts.length,
+    totalPoints: attempts.reduce((sum, attempt) => sum + attempt.pointsEarned, 0),
+    estimatedXp,
+    recentAttempts,
+  };
+};
+
+const resolveRecordAttemptScores = (body: {
+  score?: number;
+  totalPoints?: number;
+  scorePercent?: number;
+  pointsEarned?: number;
+  questionCount?: number;
+}) => {
+  const totalPoints = Math.max(1, Number(body.totalPoints) || 1);
+  const questionCount = Math.max(
+    1,
+    Number(body.questionCount) ||
+      (totalPoints >= 10 ? Math.round(totalPoints / 10) : 1),
+  );
+
+  let scorePercent = Number(body.scorePercent);
+  if (!Number.isFinite(scorePercent)) {
+    const rawScore = Number(body.score) || 0;
+    const pointsEarned = Number(body.pointsEarned);
+    if (Number.isFinite(pointsEarned) && pointsEarned <= totalPoints) {
+      scorePercent = totalPoints > 0 ? (pointsEarned / totalPoints) * 100 : 0;
+    } else if (rawScore >= 0 && rawScore <= 100) {
+      scorePercent = rawScore;
+    } else {
+      scorePercent = totalPoints > 0 ? (rawScore / totalPoints) * 100 : 0;
+    }
+  }
+
+  const pointsEarned = Number.isFinite(Number(body.pointsEarned))
+    ? Number(body.pointsEarned)
+    : Math.round((scorePercent / 100) * totalPoints);
+
+  const correctCount = Math.round((scorePercent / 100) * questionCount);
+
+  return {
+    totalPoints,
+    questionCount,
+    scorePercent: Math.max(0, Math.min(100, scorePercent)),
+    pointsEarned,
+    correctCount,
+  };
+};
+
+// GET /stats/:userId/summary - Lightweight stats for feed/profile cards (single round-trip)
+app.get('/stats/:userId/summary', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    let { userId } = req.params;
+    if (userId === 'current-user-id') {
+      userId = req.user!.id;
+    }
+
+    const [stats, feedAttempts, streak] = await Promise.all([
+      prisma.userStats.findUnique({ where: { userId } }),
+      prisma.quizAttempt.findMany({
+        where: { userId },
+        orderBy: { submittedAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          quizId: true,
+          userId: true,
+          score: true,
+          pointsEarned: true,
+          passed: true,
+          submittedAt: true,
+          answers: true,
+        },
+      }),
+      prisma.learningStreak.findUnique({ where: { userId } }),
+    ]);
+
+    const practice = computeQuizPracticeFromFeedAttempts(feedAttempts as FeedQuizAttempt[]);
+
+    let xp = stats?.xp ?? 0;
+    let level = stats?.level ?? 1;
+    let totalQuizzes = stats?.totalQuizzes ?? 0;
+    let avgScore = stats && stats.totalAnswers > 0
+      ? (stats.correctAnswers / stats.totalAnswers) * 100
+      : 0;
+
+    if (practice) {
+      avgScore = practice.avgScore;
+      totalQuizzes = Math.max(totalQuizzes, practice.totalQuizzes);
+      if ((stats?.xp ?? 0) === 0 && practice.estimatedXp > 0) {
+        xp = practice.estimatedXp;
+        level = calculateLevelFromXP(xp);
+      }
+    }
+
+    const xpToNextLevel = calculateXPForLevel(level);
+    const currentLevelXP = calculateCumulativeXPForLevel(level);
+    const xpProgress = Math.max(0, Math.min(xp - currentLevelXP, xpToNextLevel));
+
+    const recentScores = practice
+      ? practice.recentAttempts.map((attempt) => attempt.score).slice(0, 7)
+      : [];
+
+    const weekStart = getWeekStartMonday();
+    const weekActivity = buildWeekActivityFromDates(
+      feedAttempts
+        .filter((attempt) => new Date(attempt.submittedAt) >= weekStart)
+        .map((attempt) => new Date(attempt.submittedAt)),
+    );
+    const streakStatus = computeStreakStatus({
+      currentStreak: streak?.currentStreak ?? 0,
+      lastQuizDate: streak?.lastQuizDate ?? null,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        xp,
+        level,
+        xpProgress,
+        xpToNextLevel,
+        totalQuizzes,
+        totalPoints: practice?.totalPoints ?? stats?.totalPoints ?? 0,
+        avgScore: Math.round(avgScore * 10) / 10,
+        winRate: practice ? practice.passRate : 0,
+        winStreak: Math.max(stats?.winStreak ?? 0, practice?.winStreak ?? 0),
+        correctAnswers: practice?.correctAnswers ?? stats?.correctAnswers ?? 0,
+        totalAnswers: practice?.totalAnswers ?? stats?.totalAnswers ?? 0,
+        currentStreak: streak?.currentStreak ?? 0,
+        longestStreak: streak?.longestStreak ?? 0,
+        lastQuizDate: streak?.lastQuizDate ?? null,
+        freezesAvailable: streak?.freezesTotal ?? 0,
+        weekActivity,
+        studiedToday: streakStatus.studiedToday,
+        streakAtRisk: streakStatus.streakAtRisk,
+        recentScores,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get stats summary error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get stats summary' });
+  }
+});
+
 // GET /stats/:userId - Get user stats
 app.get('/stats/:userId', authenticateToken, async (req: Request, res: Response) => {
   try {
@@ -748,28 +974,68 @@ app.get('/stats/:userId', authenticateToken, async (req: Request, res: Response)
       });
     }
 
-    // Calculate additional metrics
-    const avgScore = stats.totalAnswers > 0
+    // Aggregate solo quiz practice from feed attempts (source of truth for profile card)
+    const feedAttempts = await prisma.quizAttempt.findMany({
+      where: { userId },
+      orderBy: { submittedAt: 'desc' },
+      take: 100,
+    });
+    const practice = computeQuizPracticeFromFeedAttempts(feedAttempts);
+
+    // Calculate additional metrics (fallback to analytics records)
+    let avgScore = stats.totalAnswers > 0
       ? (stats.correctAnswers / stats.totalAnswers) * 100
       : 0;
 
-    const winRate = stats.liveQuizTotal > 0
+    let winRate = stats.liveQuizTotal > 0
       ? (stats.liveQuizWins / stats.liveQuizTotal) * 100
       : 0;
 
-    const xpToNextLevel = calculateXPForLevel(stats.level);
-    const currentLevelXP = calculateCumulativeXPForLevel(stats.level);
-    const xpProgress = Math.max(0, Math.min(stats.xp - currentLevelXP, xpToNextLevel));
+    let winStreak = stats.winStreak;
+    let correctAnswers = stats.correctAnswers;
+    let totalAnswers = stats.totalAnswers;
+    let totalQuizzes = stats.totalQuizzes;
+    let totalPoints = stats.totalPoints;
+    let recentAttempts = stats.attempts;
+
+    if (practice) {
+      avgScore = practice.avgScore;
+      winRate = practice.passRate;
+      winStreak = Math.max(winStreak, practice.winStreak);
+      correctAnswers = practice.correctAnswers;
+      totalAnswers = practice.totalAnswers;
+      totalQuizzes = Math.max(totalQuizzes, practice.totalQuizzes);
+      totalPoints = Math.max(totalPoints, practice.totalPoints);
+      recentAttempts = practice.recentAttempts;
+    }
+
+    let xp = stats.xp;
+    let level = stats.level;
+    if (practice && stats.xp === 0 && practice.estimatedXp > 0) {
+      xp = practice.estimatedXp;
+      level = calculateLevelFromXP(xp);
+    }
+
+    const xpToNextLevel = calculateXPForLevel(level);
+    const currentLevelXP = calculateCumulativeXPForLevel(level);
+    const xpProgress = Math.max(0, Math.min(xp - currentLevelXP, xpToNextLevel));
 
     res.json({
       success: true,
       data: {
         ...stats,
+        xp,
+        level,
+        totalQuizzes,
+        totalPoints,
+        correctAnswers,
+        totalAnswers,
+        winStreak,
         avgScore: Math.round(avgScore * 10) / 10,
         winRate: Math.round(winRate * 10) / 10,
         xpToNextLevel,
         xpProgress,
-        recentAttempts: stats.attempts,
+        recentAttempts,
       },
     });
   } catch (error: any) {
@@ -785,7 +1051,28 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
     console.log('📝 [Analytics] Recording attempt for user:', userId);
     console.log('📝 [Analytics] Request body:', JSON.stringify(req.body, null, 2));
 
-    const { quizId, score, totalPoints, timeSpent, timeLimit, type, sessionCode, rank } = req.body;
+    const {
+      quizId,
+      score,
+      totalPoints,
+      timeSpent,
+      timeLimit,
+      type,
+      sessionCode,
+      rank,
+      scorePercent,
+      pointsEarned,
+      passed,
+      questionCount,
+    } = req.body;
+
+    const resolved = resolveRecordAttemptScores({
+      score,
+      totalPoints,
+      scorePercent,
+      pointsEarned,
+      questionCount,
+    });
 
     // Check max attempts
     if (quizId) {
@@ -808,9 +1095,14 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
       }
     }
 
-    // Calculate XP
-    const xpEarned = calculateXPForQuiz(score, totalPoints, timeSpent, timeLimit || 300);
-    const accuracy = totalPoints > 0 ? (score / totalPoints) * 100 : 0;
+    // Calculate XP from points earned vs max points
+    const xpEarned = calculateXPForQuiz(
+      resolved.pointsEarned,
+      resolved.totalPoints,
+      timeSpent,
+      timeLimit || 300,
+    );
+    const accuracy = resolved.scorePercent;
 
     console.log('📝 [Analytics] Calculated XP:', xpEarned);
     console.log('📝 [Analytics] Calculated Accuracy:', accuracy);
@@ -829,8 +1121,28 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
     const newLevel = calculateLevelFromXP(newXP);
     const leveledUp = newLevel > stats.level;
 
-    // Determine if win (for live quiz)
+    // Determine if win (for live quiz) or pass (for solo)
     const isWin = type === 'live' && rank === 1;
+    const didPass =
+      typeof passed === 'boolean'
+        ? passed
+        : type !== 'live' && resolved.scorePercent >= 60;
+
+    let nextWinStreak = stats.winStreak;
+    let nextBestStreak = stats.bestStreak;
+    if (type === 'live') {
+      if (isWin) {
+        nextWinStreak += 1;
+        nextBestStreak = Math.max(nextBestStreak, nextWinStreak);
+      } else {
+        nextWinStreak = 0;
+      }
+    } else if (didPass) {
+      nextWinStreak += 1;
+      nextBestStreak = Math.max(nextBestStreak, nextWinStreak);
+    } else {
+      nextWinStreak = 0;
+    }
 
     // Update user stats
     console.log('📝 [Analytics] Updating user stats...');
@@ -840,9 +1152,11 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
         xp: newXP,
         level: newLevel,
         totalQuizzes: { increment: 1 },
-        totalPoints: { increment: score },
-        correctAnswers: { increment: Math.floor((score / totalPoints) * 100) }, // This looks wrong if totalPoints IS NOT 100
-        totalAnswers: { increment: 100 }, // This looks wrong, should probably be passed in payload
+        totalPoints: { increment: resolved.pointsEarned },
+        correctAnswers: { increment: resolved.correctCount },
+        totalAnswers: { increment: resolved.questionCount },
+        winStreak: nextWinStreak,
+        bestStreak: nextBestStreak,
         liveQuizWins: type === 'live' && isWin ? { increment: 1 } : undefined,
         liveQuizTotal: type === 'live' ? { increment: 1 } : undefined,
       },
@@ -854,8 +1168,8 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
     const attemptData = {
       userId,
       quizId,
-      score,
-      totalPoints,
+      score: resolved.pointsEarned,
+      totalPoints: resolved.totalPoints,
       accuracy,
       timeSpent,
       rank,
@@ -1038,6 +1352,104 @@ app.get('/leaderboard/weekly', authenticateToken, async (req: Request, res: Resp
   } catch (error: any) {
     console.error('Weekly leaderboard error:', error);
     res.status(500).json({ success: false, error: 'Failed to get weekly leaderboard' });
+  }
+});
+
+// GET /leaderboard/learning-streak — Ranked by current learning streak days
+app.get('/leaderboard/learning-streak', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
+    const userId = req.user!.id;
+
+    const streaks = await prisma.learningStreak.findMany({
+      where: { currentStreak: { gt: 0 } },
+      orderBy: [{ currentStreak: 'desc' }, { longestStreak: 'desc' }],
+      take: limit,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const leaderboard = streaks.map((row, index) => ({
+      id: row.id,
+      userId: row.userId,
+      currentStreak: row.currentStreak,
+      longestStreak: row.longestStreak,
+      xp: row.currentStreak,
+      level: row.currentStreak,
+      totalQuizzes: 0,
+      totalPoints: 0,
+      correctAnswers: 0,
+      totalAnswers: 0,
+      liveQuizWins: 0,
+      liveQuizTotal: 0,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      rank: index + 1,
+      user: row.user,
+    }));
+
+    const myRow = await prisma.learningStreak.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    let userStanding = null;
+    if (myRow) {
+      const higherCount = await prisma.learningStreak.count({
+        where: {
+          OR: [
+            { currentStreak: { gt: myRow.currentStreak } },
+            {
+              currentStreak: myRow.currentStreak,
+              longestStreak: { gt: myRow.longestStreak },
+            },
+          ],
+        },
+      });
+      userStanding = {
+        ...myRow,
+        xp: myRow.currentStreak,
+        level: myRow.currentStreak,
+        totalQuizzes: 0,
+        totalPoints: 0,
+        correctAnswers: 0,
+        totalAnswers: 0,
+        liveQuizWins: 0,
+        liveQuizTotal: 0,
+        rank: myRow.currentStreak > 0 ? higherCount + 1 : null,
+        user: myRow.user,
+      };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        leaderboard,
+        userStanding,
+      },
+    });
+  } catch (error: any) {
+    console.error('Learning streak leaderboard error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get learning streak leaderboard' });
   }
 });
 
@@ -1331,11 +1743,17 @@ app.post('/streak/update', authenticateToken, async (req: Request, res: Response
         },
       });
 
+      const weekActivity = await loadWeekActivityForUser(prisma, userId);
+      const streakStatus = computeStreakStatus(newStreak);
+
       return res.json({
         success: true,
         streak: newStreak,
         streakIncreased: true,
         achievementUnlocked: null,
+        weekActivity,
+        studiedToday: streakStatus.studiedToday,
+        streakAtRisk: streakStatus.streakAtRisk,
       });
     }
 
@@ -1357,7 +1775,11 @@ app.post('/streak/update', authenticateToken, async (req: Request, res: Response
       const daysDiff = Math.floor((today.getTime() - lastQuiz.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysDiff === 0) {
-        // Same day, no change
+        // Same day — keep count, but ensure first quiz of the day counts as day 1
+        if (newCurrentStreak < 1) {
+          newCurrentStreak = 1;
+          streakIncreased = true;
+        }
       } else if (daysDiff === 1) {
         // Next day, increase streak
         newCurrentStreak = streak.currentStreak + 1;
@@ -1389,11 +1811,17 @@ app.post('/streak/update', authenticateToken, async (req: Request, res: Response
       },
     });
 
+    const weekActivity = await loadWeekActivityForUser(prisma, userId);
+    const streakStatus = computeStreakStatus(updatedStreak);
+
     res.json({
       success: true,
       streak: updatedStreak,
       streakIncreased,
       achievementUnlocked,
+      weekActivity,
+      studiedToday: streakStatus.studiedToday,
+      streakAtRisk: streakStatus.streakAtRisk,
     });
   } catch (error: any) {
     console.error('Update streak error:', error);
@@ -1421,11 +1849,20 @@ app.post('/streak/freeze', authenticateToken, async (req: Request, res: Response
       where: { userId },
       data: {
         freezesTotal: streak.freezesTotal - 1,
-        lastQuizDate: new Date(), // Extend last quiz date
+        lastQuizDate: new Date(),
       },
     });
 
-    res.json({ success: true, streak: updatedStreak });
+    const weekActivity = await loadWeekActivityForUser(prisma, userId);
+    const streakStatus = computeStreakStatus(updatedStreak);
+
+    res.json({
+      success: true,
+      streak: updatedStreak,
+      weekActivity,
+      studiedToday: streakStatus.studiedToday,
+      streakAtRisk: streakStatus.streakAtRisk,
+    });
   } catch (error: any) {
     console.error('Freeze streak error:', error);
     res.status(500).json({ success: false, error: 'Failed to freeze streak' });

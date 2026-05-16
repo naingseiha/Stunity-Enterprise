@@ -1,6 +1,6 @@
 # Project Status
 
-**Last Verified:** April 9, 2026
+**Last Verified:** May 16, 2026
 
 This status page reflects the current codebase, the March 22 live API smoke test, and the April 9 English-name implementation closeout.
 
@@ -33,6 +33,17 @@ Deployment reality:
 - These changes improve normal admin navigation and repeated page loads on web
 - Google Cloud Run free tier can still add cold-start latency after idle because services scale to zero
 - The code now reduces how often the admin panel wakes multiple services at once, but it does not remove Cloud Run cold starts entirely
+
+## May 16, 2026 Closeout (Learning gamification & quiz analytics)
+
+Delivered in this pass:
+
+- **Mobile:** Duolingo-style learning streak card, unified learner stats cache, My Joined Quizzes screen, learning-streak leaderboard tab, local streak-at-risk reminder, improved quiz list card readability and pill search.
+- **Web:** Teacher quiz analytics dashboard with period/class filters, CSV export, navigation and feed links to analytics.
+- **Backend:** Stats summary API, streak calendar utils, teacher analytics rollup, joined-quizzes lightweight list, notification streak-at-risk job.
+- **Ops:** `scripts/setup-streak-at-risk-scheduler.sh` and production deploy of `notification-service` for the cron endpoint.
+
+See [`LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md`](LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md).
 
 ## April 14, 2026 Closeout (Hierarchical Learning)
 

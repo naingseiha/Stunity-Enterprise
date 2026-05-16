@@ -430,6 +430,7 @@
     "level": "LEVEL",
     "xp": "XP",
     "lessons": "Lessons",
+    "quizzes": "Quizzes",
     "dayStreak": "Day Streak",
     "shareLearning": "Share your learning...",
     "ask": "Ask",
@@ -1185,11 +1186,28 @@
       "recentScores": "Recent Scores",
       "completeQuizzesHint": "Complete quizzes to see trends",
       "learningStreak": "Learning Streak",
+      "streakSubtitle": "Study daily to build momentum",
+      "currentStreak": "Current streak",
+      "streakToday": "Today",
+      "streakMilestone": "Next milestone · {{days}} days",
+      "streakMotivation": {
+        "empty": "Complete a quiz today to start your streak.",
+        "active": "Nice work — come back tomorrow to keep it going.",
+        "onFire": "You're on fire! Keep this momentum going.",
+        "doneToday": "Today's goal complete. See you tomorrow!",
+        "atRisk": "Complete a quiz today to protect your streak."
+      },
       "streak": "Streak",
       "day": "day",
       "days": "days",
       "bestStreak": "Best: {{count}} days",
       "freezes": "Freezes: {{count}}",
+      "useStreakFreeze": "Use streak freeze",
+      "streakFreezeTitle": "Use a streak freeze?",
+      "streakFreezeConfirm": "This protects your streak for today. You have {{count}} freeze(s) left.",
+      "streakFreezeSuccess": "Streak protected for today!",
+      "streakFreezeError": "Could not use streak freeze. Please try again.",
+      "leaderboardRank": "You're ranked #{{rank}} globally by XP",
       "overview": "Performance Overview",
       "studyHours": "Study Hours",
       "achievements": "Achievements",
@@ -1793,6 +1811,20 @@
         "history": "History",
         "tech": "Tech",
         "language": "Language"
+      }
+    },
+    "myJoined": {
+      "title": "My Quizzes",
+      "subtitle": "Quizzes you have taken",
+      "dashboardDesc": "Review scores and retake anytime",
+      "searchPlaceholder": "Search your quizzes...",
+      "viewResults": "Results",
+      "emptyTitle": "No quizzes yet",
+      "emptyMessage": "Take a quiz from the feed or browse tab to see it here.",
+      "filters": {
+        "all": "All",
+        "passed": "Passed",
+        "failed": "Failed"
       }
     },
     "dashboard": {
@@ -2846,6 +2878,10 @@
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
+    "streakAtRisk": {
+      "title": "Don't lose your streak!",
+      "body": "Complete a quiz today to keep your {{count}}-day learning streak."
+    },
     "empty": {
       "title": "No Notifications",
       "message": "You're all caught up! We'll notify you when something happens."
@@ -3409,7 +3445,10 @@
   "leaderboard": {
     "tabs": {
       "allTime": "All time",
-      "weekly": "Weekly"
-    }
+      "weekly": "Weekly",
+      "streak": "Streak"
+    },
+    "streakDays": "{{count}} day streak",
+    "streakDays_plural": "{{count}} day streak"
   }
 }

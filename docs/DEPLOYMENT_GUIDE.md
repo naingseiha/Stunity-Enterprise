@@ -109,6 +109,25 @@ The script prints a warning when `CORS_ORIGIN` is `*`.
 4. Smoke-test web and mobile against the live URLs.
 5. **Auth**: If provisioning changed, confirm password `ADMIN` / `SUPER_ADMIN` users use `accountType=SCHOOL_ONLY`; backfill legacy `SOCIAL_ONLY` rows before release to avoid login `401`.
 
+### Streak-at-risk push (Cloud Scheduler)
+
+The notification-service exposes a service-auth endpoint for evening streak reminders:
+
+- `POST /notifications/jobs/streak-at-risk` with header `x-service-token: $NOTIFICATION_SERVICE_AUTH_TOKEN`
+- Deploy script sets `NOTIFICATION_SERVICE_AUTH_TOKEN` from `NOTIFICATION_SERVICE_AUTH_TOKEN` or `JWT_SECRET` in root `.env`.
+
+One-time scheduler setup (project `stunity-enterprise`, region `us-central1`):
+
+```bash
+export GCP_PROJECT_ID="stunity-enterprise"
+export GCP_REGION="us-central1"
+export NOTIFICATION_SERVICE_URL="https://stunity-notification-service-mc7wnjp2kq-uc.a.run.app"
+export NOTIFICATION_SERVICE_AUTH_TOKEN="<your production service token>"
+./scripts/setup-streak-at-risk-scheduler.sh
+```
+
+Creates job `stunity-streak-at-risk-evening` (daily 19:00 `Asia/Phnom_Penh`). See [`docs/current/LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md`](current/LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md).
+
 ### Per-service Cloud Run environment
 
 Each service needs at least: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `NODE_ENV=production`, plus any service-specific secrets the Dockerfile/runtime expects.

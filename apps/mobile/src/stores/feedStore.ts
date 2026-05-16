@@ -187,6 +187,19 @@ interface FeedState {
   fetchStories: () => Promise<void>;
   createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any, topicTags?: string[], deadline?: string, questionBounty?: number, mediaMetadata?: MediaMetadata[]) => Promise<boolean>;
   updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; mediaMetadata?: MediaMetadata[]; mediaAspectRatio?: number; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
+  /** After a quiz submit/retake, show the newest attempt on feed quiz cards immediately. */
+  patchQuizUserAttempt: (
+    quizId: string,
+    attempt: {
+      id: string;
+      score: number;
+      passed: boolean;
+      pointsEarned?: number;
+      submittedAt?: string;
+      answers?: any[];
+      results?: any[];
+    },
+  ) => void;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
@@ -1715,6 +1728,41 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     } catch (error) {
       console.error('❌ [feedStore] Failed to update post:', error);
       return false;
+    }
+  },
+
+  patchQuizUserAttempt: (quizId, attempt) => {
+    set((state) => ({
+      feedItems: state.feedItems.map((item) => {
+        if (item.type !== 'POST' || item.data.quizData?.id !== quizId) return item;
+        return {
+          ...item,
+          data: {
+            ...item.data,
+            quizData: {
+              ...item.data.quizData!,
+              userAttempt: {
+                id: attempt.id,
+                score: attempt.score,
+                passed: attempt.passed,
+                pointsEarned: attempt.pointsEarned,
+                submittedAt: attempt.submittedAt || new Date().toISOString(),
+                answers: attempt.answers,
+                results: attempt.results,
+              },
+            },
+          },
+        };
+      }),
+    }));
+
+    const authState = useAuthStore.getState();
+    const posts = get()
+      .feedItems
+      .filter((item): item is { type: 'POST'; data: Post } => item.type === 'POST')
+      .map((item) => item.data);
+    if (authState.user?.id && posts.length > 0) {
+      cacheFeedPosts(posts, authState.user.id).catch(() => { });
     }
   },
 

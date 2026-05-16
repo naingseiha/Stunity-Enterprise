@@ -29,6 +29,7 @@ import {
 import { Colors, Typography, Shadows } from "@/config";
 import { Sidebar } from "@/components/navigation";
 import TabletTabRail from "@/components/navigation/TabletTabRail";
+import { ProfileTabIcon } from "@/components/navigation/ProfileTabIcon";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
 import {
   NavigationProvider,
@@ -113,6 +114,7 @@ import {
 } from "@/screens/quiz";
 import QuizDashboardScreen from "@/screens/quiz/QuizDashboardScreen";
 import BrowseQuizzesScreen from "@/screens/quiz/BrowseQuizzesScreen";
+import MyJoinedQuizzesScreen from "@/screens/quiz/MyJoinedQuizzesScreen";
 import { QuizStudioScreen } from "@/screens/quiz/QuizStudioScreen";
 import {
   LiveQuizJoinScreen,
@@ -367,12 +369,14 @@ const MainTabIcon = React.memo(function MainTabIcon({
   iconName,
   iconSize,
   styles,
+  children,
 }: {
   focused: boolean;
   color: string;
   iconName: keyof typeof Ionicons.glyphMap;
   iconSize: number;
   styles: ReturnType<typeof createStyles>;
+  children?: React.ReactNode;
 }) {
   const focusProgress = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
@@ -403,7 +407,9 @@ const MainTabIcon = React.memo(function MainTabIcon({
         { transform: [{ translateY }, { scale }] },
       ]}
     >
-      <Ionicons name={iconName} size={iconSize} color={color} />
+      {children ?? (
+        <Ionicons name={iconName} size={iconSize} color={color} />
+      )}
     </Animated.View>
   );
 });
@@ -554,7 +560,11 @@ const MainNavigatorContent = () => {
                 iconName={iconName}
                 iconSize={iconSize}
                 styles={styles}
-              />
+              >
+                {route.name === "ProfileTab" ? (
+                  <ProfileTabIcon focused={focused} color={color} />
+                ) : undefined}
+              </MainTabIcon>
             );
           },
         })}
@@ -714,6 +724,10 @@ function MainStackNavigatorTabletAware() {
         <MainStack.Screen
           name="BrowseQuizzes"
           component={BrowseQuizzesScreen}
+        />
+        <MainStack.Screen
+          name="MyJoinedQuizzes"
+          component={MyJoinedQuizzesScreen}
         />
         <MainStack.Screen name="QuizStudio" component={QuizStudioScreen} />
         <MainStack.Screen name="LiveQuizJoin" component={LiveQuizJoinScreen} />

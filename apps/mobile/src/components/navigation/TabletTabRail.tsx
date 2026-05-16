@@ -12,6 +12,7 @@ import { Haptics } from '@/services/haptics';
 import { useThemeContext } from '@/contexts';
 import type { MainStackParamList, MainTabParamList } from '@/navigation/types';
 import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
+import { ProfileTabIcon } from '@/components/navigation/ProfileTabIcon';
 
 type StackNav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -109,7 +110,11 @@ export default function TabletTabRail() {
             activeOpacity={0.75}
             hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
           >
-            <Ionicons name={iconName} size={cfg.size} color={color} />
+            {name === 'ProfileTab' ? (
+              <ProfileTabIcon focused={focused} color={color} />
+            ) : (
+              <Ionicons name={iconName} size={cfg.size} color={color} />
+            )}
           </TouchableOpacity>
         );
       })}

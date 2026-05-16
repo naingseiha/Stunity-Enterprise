@@ -250,8 +250,15 @@ export const KingBanner = ({
 
 // --------------- Action Grid -------------------
 export const ActionGrid = ({
-    onJoin, onLeaderboard, onAchievements, onCreate, onManage
-}: { onJoin: () => void; onLeaderboard: () => void; onAchievements: () => void; onCreate: () => void; onManage: () => void }) => {
+    onJoin, onLeaderboard, onAchievements, onCreate, onManage, onMyJoined,
+}: {
+    onJoin: () => void;
+    onLeaderboard: () => void;
+    onAchievements: () => void;
+    onCreate: () => void;
+    onManage: () => void;
+    onMyJoined: () => void;
+}) => {
     const { t } = useTranslation();
     return (
         <View style={styles.actionGridContainer}>
@@ -288,6 +295,32 @@ export const ActionGrid = ({
                     delay={510}
                 />
             </View>
+
+            <Animated.View>
+                <TouchableOpacity
+                    style={styles.manageBtnContainer}
+                    activeOpacity={0.8}
+                    onPress={onMyJoined}
+                >
+                    <LinearGradient
+                        colors={['#0F766E', '#0D9488']}
+                        style={styles.manageBtnGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    >
+                        <View style={styles.manageBtnContent}>
+                            <View style={styles.manageBtnIcon}>
+                                <Ionicons name="library" size={20} color="#99F6E4" />
+                            </View>
+                            <View style={styles.manageBtnTextWrap}>
+                                <Text style={styles.manageBtnTitle}>{t('quiz.myJoined.title')}</Text>
+                                <Text style={styles.manageBtnDesc}>{t('quiz.myJoined.dashboardDesc')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </Animated.View>
 
             {/* Manage Quizzes Full-Width Button */}
             <Animated.View>

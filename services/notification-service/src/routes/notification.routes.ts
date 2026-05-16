@@ -4,6 +4,7 @@ import { registerDeviceToken, sendNotification, unregisterDeviceToken } from '..
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireServiceAuth } from '../middleware/serviceAuth';
 import { prisma } from '../lib/prisma';
+import { runStreakAtRiskPushJob } from '../jobs/streakAtRiskJob';
 
 const router = Router();
 
@@ -11,6 +12,17 @@ const router = Router();
 router.post('/device-token', authenticateToken, registerDeviceToken);
 router.delete('/device-token', authenticateToken, unregisterDeviceToken);
 router.post('/send', requireServiceAuth, sendNotification);
+
+/** Cron / Cloud Scheduler: evening streak-at-risk push for active learners */
+router.post('/jobs/streak-at-risk', requireServiceAuth, async (_req: Request, res: Response) => {
+  try {
+    const result = await runStreakAtRiskPushJob();
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Streak at-risk job error:', error);
+    res.status(500).json({ success: false, error: 'Failed to run streak reminder job' });
+  }
+});
 
 function getAuthenticatedUser(req: Request) {
     return (req as AuthRequest).user;

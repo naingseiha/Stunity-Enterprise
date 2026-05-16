@@ -89,6 +89,7 @@ export type MainStackParamList = {
   Notifications: undefined;
   Messages: NavigatorScreenParams<MessagesStackParamList>;
   BrowseQuizzes: { category?: string; search?: string } | undefined;
+  MyJoinedQuizzes: undefined;
   QuizStudio: undefined;
 };
 
@@ -159,6 +160,7 @@ export type LearnStackParamList = {
 export type QuizStackParamList = {
   QuizDashboard: undefined;
   BrowseQuizzes: { category?: string; search?: string } | undefined;
+  MyJoinedQuizzes: undefined;
 };
 
 // Messages Stack

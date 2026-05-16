@@ -1,6 +1,6 @@
 # Current Features
 
-**Last Verified:** April 9, 2026
+**Last Verified:** May 16, 2026
 
 This is a high-signal feature matrix. It is intentionally shorter than older milestone docs and separates `live-verified` from `implemented in code`.
 
@@ -36,7 +36,11 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 | Mobile clubs/classes UX | Implemented in code | Screens, APIs, and navigation are wired |
 | Feed and post interactions | Implemented in code | Feed store, feed screens, and service routes are present |
 | Live quiz | Implemented in code | Mobile screens and analytics-service routes exist |
-| Leaderboards | Implemented in code | Mobile clients and analytics endpoints exist |
+| Leaderboards | Implemented in code | Mobile clients and analytics endpoints exist; includes learning-streak leaderboard tab |
+| Learning streaks (mobile) | Implemented in code | Streak card, stats cache, freeze, local evening reminder, week activity |
+| My Joined Quizzes (mobile) | Implemented in code | List screen, cached API, feed-style cards, pill search |
+| Teacher quiz analytics (web) | Implemented in code | Dashboard, class filter, CSV export, feed deep links |
+| Streak-at-risk push (server) | Implemented in code | `POST /notifications/jobs/streak-at-risk` + Cloud Scheduler script |
 | Web super admin area | Implemented in code | Dashboard, schools, users, analytics, health, settings pages exist |
 | Messaging conversations | Live-verified | Admin messaging access works, and seeded QA-school admin-parent messaging was validated without modifying `Svaythom High School` |
 | English split-name data model | Implemented in code | `englishFirstName`/`englishLastName` are wired in Student, Teacher, and User flows with validation in service write paths |
@@ -59,5 +63,6 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 
 ## Use This With
 
+- [`LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md`](LEARNING_GAMIFICATION_AND_QUIZ_ANALYTICS_2026-05.md) for May 2026 streak + quiz analytics details
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the latest verified gaps
 - [`NEXT_IMPLEMENTATION.md`](NEXT_IMPLEMENTATION.md) for what to work on next

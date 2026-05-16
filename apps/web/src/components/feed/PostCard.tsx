@@ -254,6 +254,9 @@ export default function PostCard({
   const clubPath = post.studyClubId ? `/${locale}/clubs/${post.studyClubId}` : null;
   const eventPath = `/${locale}/events`;
   const liveQuizPath = `/${locale}/live-quiz/host?quizId=${post.quiz?.id || post.id}`;
+  const quizAnalyticsPath = post.quiz?.id
+    ? `/${locale}/teacher/quizzes/analytics?quizId=${encodeURIComponent(post.quiz.id)}`
+    : `/${locale}/teacher/quizzes/analytics`;
 
   const prefetchPath = useCallback((path: string | null) => {
     if (!path) return;
@@ -740,6 +743,18 @@ export default function PostCard({
                 </Link>
               )}
             </div>
+            {isAuthor && post.quiz?.id ? (
+              <Link
+                href={quizAnalyticsPath}
+                prefetch={true}
+                onMouseEnter={() => prefetchPath(quizAnalyticsPath)}
+                onFocus={() => prefetchPath(quizAnalyticsPath)}
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-purple-300 bg-white px-3 py-2 text-sm font-semibold text-purple-700 transition hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-950/40 dark:text-purple-200 dark:hover:bg-purple-900/50"
+              >
+                <BarChart3 className="h-4 w-4" />
+                {tFeed('postCard.viewQuizAnalytics')}
+              </Link>
+            ) : null}
           </div>
         )}
 

@@ -92,6 +92,8 @@ export function transformPost(post: any): Post | null {
                     passed: post.quiz.userAttempt.passed,
                     pointsEarned: post.quiz.userAttempt.pointsEarned,
                     submittedAt: post.quiz.userAttempt.submittedAt,
+                    answers: post.quiz.userAttempt.answers,
+                    results: post.quiz.userAttempt.results,
                 } : undefined,
             } : undefined,
             learningMeta: post.learningMeta || {

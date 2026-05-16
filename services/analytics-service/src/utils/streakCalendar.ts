@@ -1,0 +1,64 @@
+/** Monday 00:00:00 local — start of the current calendar week */
+export function getWeekStartMonday(reference = new Date()): Date {
+  const d = new Date(reference);
+  d.setHours(0, 0, 0, 0);
+  const weekday = d.getDay();
+  const diff = weekday === 0 ? -6 : 1 - weekday;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+/** Mon=0 … Sun=6 — true when user had quiz activity that calendar day this week */
+export function buildWeekActivityFromDates(activityDates: Date[]): boolean[] {
+  const week = [false, false, false, false, false, false, false];
+  const weekStart = getWeekStartMonday();
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  for (const raw of activityDates) {
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) continue;
+    d.setHours(0, 0, 0, 0);
+    if (d < weekStart || d >= weekEnd) continue;
+    const index = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    week[index] = true;
+  }
+
+  return week;
+}
+
+export function computeStreakStatus(streak: {
+  currentStreak: number;
+  lastQuizDate: Date | string | null;
+}): { studiedToday: boolean; streakAtRisk: boolean } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!streak.lastQuizDate || streak.currentStreak <= 0) {
+    return { studiedToday: false, streakAtRisk: false };
+  }
+
+  const last = new Date(streak.lastQuizDate);
+  last.setHours(0, 0, 0, 0);
+
+  const studiedToday = last.getTime() === today.getTime();
+  const streakAtRisk = !studiedToday;
+
+  return { studiedToday, streakAtRisk };
+}
+
+export async function loadWeekActivityForUser(
+  prisma: { quizAttempt: { findMany: (args: object) => Promise<Array<{ submittedAt: Date }>> } },
+  userId: string,
+): Promise<boolean[]> {
+  const weekStart = getWeekStartMonday();
+  const attempts = await prisma.quizAttempt.findMany({
+    where: {
+      userId,
+      submittedAt: { gte: weekStart },
+    },
+    select: { submittedAt: true },
+  });
+
+  return buildWeekActivityFromDates(attempts.map((row) => row.submittedAt));
+}

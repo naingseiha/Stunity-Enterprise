@@ -9,12 +9,15 @@
 
 import React from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
+import { quizService } from '@/services';
+import { useFeedStore } from '@/stores';
+import { normalizeQuiz } from '@/utils/quiz';
 
 // ═══════════════════════════════════════════
 // Deadline Banner
@@ -482,8 +485,10 @@ export const QuizSection = React.memo<QuizSectionProps>(({
 }) => {
     const { t } = useTranslation();
     const navigation = useNavigation<any>();
+    const patchQuizUserAttempt = useFeedStore((s) => s.patchQuizUserAttempt);
     const { colors, isDark } = useThemeContext();
     const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const [isLoadingResults, setIsLoadingResults] = React.useState(false);
 
     const questionCount = quizData.questions?.length || 0;
 
@@ -502,11 +507,30 @@ export const QuizSection = React.memo<QuizSectionProps>(({
         });
     }, [quizData, postTitle, postContent, t, navigation]);
 
-    const handleViewResults = React.useCallback(() => {
-        if (!quizData.userAttempt) return;
+    const handleViewResults = React.useCallback(async () => {
+        if (!quizData.userAttempt || isLoadingResults) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        navigation.navigate('QuizResults', {
-            quiz: {
+        setIsLoadingResults(true);
+
+        try {
+            const latest = await quizService.getLatestQuizAttempt(quizData.id);
+            const attempt = latest || quizData.userAttempt;
+
+            patchQuizUserAttempt(quizData.id, {
+                id: attempt.id,
+                score: attempt.score,
+                passed: attempt.passed,
+                pointsEarned: attempt.pointsEarned,
+                submittedAt: attempt.submittedAt,
+                answers: attempt.answers,
+                results: attempt.results,
+            });
+
+            const userAnswers = Array.isArray(attempt.answers)
+                ? attempt.answers
+                : (quizData.userAttempt.answers || []);
+
+            const quizForResults = normalizeQuiz({
                 id: quizData.id,
                 title: postTitle || t('feed.postTypes.quiz'),
                 description: postContent,
@@ -514,16 +538,40 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                 timeLimit: quizData.timeLimit,
                 passingScore: quizData.passingScore,
                 totalPoints: quizData.totalPoints,
-            },
-            answers: quizData.userAttempt.answers || [],
-            score: quizData.userAttempt.score,
-            passed: quizData.userAttempt.passed,
-            pointsEarned: quizData.userAttempt.pointsEarned || 0,
-            results: quizData.userAttempt.results || [],
-            viewMode: true,
-            attemptId: quizData.userAttempt.id,
-        });
-    }, [quizData, postTitle, postContent, t, navigation]);
+            });
+
+            navigation.navigate('QuizResults', {
+                quiz: quizForResults ?? {
+                    id: quizData.id,
+                    title: postTitle || t('feed.postTypes.quiz'),
+                    description: postContent,
+                    questions: quizData.questions,
+                    timeLimit: quizData.timeLimit,
+                    passingScore: quizData.passingScore ?? 70,
+                    totalPoints: quizData.totalPoints ?? 0,
+                },
+                answers: userAnswers,
+                score: attempt.score,
+                passed: attempt.passed,
+                pointsEarned: attempt.pointsEarned || 0,
+                results: attempt.results || [],
+                viewMode: true,
+                attemptId: attempt.id,
+            });
+        } catch {
+            Alert.alert(t('common.error'), t('feed.sections.viewResultsError', 'Could not load your latest quiz results. Please try again.'));
+        } finally {
+            setIsLoadingResults(false);
+        }
+    }, [
+        quizData,
+        postTitle,
+        postContent,
+        t,
+        navigation,
+        patchQuizUserAttempt,
+        isLoadingResults,
+    ]);
 
     return (
         <View style={styles.quizSection}>
@@ -603,9 +651,14 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                     <View style={styles.quizActionRow}>
                         <TouchableOpacity
                             onPress={handleViewResults}
+                            disabled={isLoadingResults}
                             style={[styles.quizRoundedBtn, { backgroundColor: '#6366F1' + '12' }]}
                         >
-                            <Ionicons name="eye-outline" size={16} color="#6366F1" />
+                            {isLoadingResults ? (
+                                <ActivityIndicator size="small" color="#6366F1" />
+                            ) : (
+                                <Ionicons name="eye-outline" size={16} color="#6366F1" />
+                            )}
                             <Text style={[styles.quizRoundedBtnText, { color: '#6366F1' }]}>{t('feed.sections.viewResults')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity

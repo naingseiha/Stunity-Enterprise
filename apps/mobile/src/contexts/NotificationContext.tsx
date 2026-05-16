@@ -14,6 +14,7 @@ import {
     setAppPreference,
     type AppPreferences,
 } from '@/services/appPreferences';
+import { bindStreakReminderSync } from '@/services/streakReminders';
 
 /**
  * Push Notification Configuration
@@ -225,6 +226,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             unsubscribeFromNotifications();
         };
     }, [isAuthenticated, user?.id]);
+
+    // Schedule a local evening reminder when the learning streak is at risk.
+    useEffect(() => {
+        if (!isAuthenticated || !user?.id || !pushNotificationsEnabled) {
+            return bindStreakReminderSync(undefined);
+        }
+        return bindStreakReminderSync(user.id);
+    }, [isAuthenticated, user?.id, pushNotificationsEnabled]);
 
     // Request push permission on startup only if the persisted preference allows it.
     useEffect(() => {

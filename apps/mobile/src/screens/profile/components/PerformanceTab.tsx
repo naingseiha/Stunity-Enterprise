@@ -36,6 +36,7 @@ import type {
   Streak,
 } from "@/services/stats";
 import type { ProfileVisitor } from "@/api/profileApi";
+import { LearningStreakCard } from "@/components/streak";
 import type { UserStats as ProfileUserStats } from "@/types";
 import { Shadows } from "@/config";
 import { useThemeContext } from "@/contexts";
@@ -53,11 +54,14 @@ interface PerformanceTabProps {
   totalPoints: number;
   profile: any;
   recentVisitors?: ProfileVisitor[];
-  profileInsightsLoading?: boolean;
+  visitorsLoading?: boolean;
   onViewProfileVisitors?: () => void;
   onViewAchievements?: () => void;
   onViewLeaderboard?: () => void;
   onViewStats?: () => void;
+  onUseStreakFreeze?: () => void;
+  isFreezingStreak?: boolean;
+  leaderboardRank?: number | null;
 }
 
 // Premium Stat card config with subtle gradients and glassmorphism hints
@@ -412,69 +416,6 @@ function MiniLineChart({
   );
 }
 
-// ── Streak Weekly Dots ───────────────────────────────────────────
-
-function WeeklyDots({ streak }: { streak: Streak | null }) {
-  const { t } = useTranslation();
-  const { colors, isDark } = useThemeContext();
-  const days = [
-    t("attendance.days.mon").charAt(0),
-    t("attendance.days.tue").charAt(0),
-    t("attendance.days.wed").charAt(0),
-    t("attendance.days.thu").charAt(0),
-    t("attendance.days.fri").charAt(0),
-    t("attendance.days.sat").charAt(0),
-    t("attendance.days.sun").charAt(0),
-  ];
-  const today = new Date().getDay(); // 0=Sun
-  const mappedToday = today === 0 ? 6 : today - 1; // 0=Mon
-
-  return (
-    <View style={dotStyles.container}>
-      {days.map((day, i) => {
-        const isActive =
-          i <= mappedToday && streak && streak.currentStreak > mappedToday - i;
-        return (
-          <View key={i} style={dotStyles.dayColumn}>
-            <View
-              style={[
-                dotStyles.dot,
-                { backgroundColor: colors.surfaceVariant },
-                isActive && dotStyles.dotActive,
-                i === mappedToday && dotStyles.dotToday,
-              ]}
-            />
-            <Text
-              style={[
-                dotStyles.dayLabel,
-                { color: colors.textTertiary },
-                isActive && dotStyles.dayLabelActive,
-              ]}
-            >
-              {day}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-const dotStyles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  dayColumn: { alignItems: "center", gap: 6 },
-  dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#F0F4F8" },
-  dotActive: { backgroundColor: "#F97316" },
-  dotToday: { borderWidth: 2.5, borderColor: "#FB923C" },
-  dayLabel: { fontSize: 10, fontWeight: "600", color: "#D1D5DB" },
-  dayLabelActive: { color: "#F97316" },
-});
-
 // ── Main Performance Tab Component ───────────────────────────────
 
 export default function PerformanceTab({
@@ -487,11 +428,14 @@ export default function PerformanceTab({
   totalPoints,
   profile,
   recentVisitors = [],
-  profileInsightsLoading = false,
+  visitorsLoading = false,
   onViewProfileVisitors,
   onViewAchievements,
   onViewLeaderboard,
   onViewStats,
+  onUseStreakFreeze,
+  isFreezingStreak = false,
+  leaderboardRank = null,
 }: PerformanceTabProps) {
   const { t, i18n } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
@@ -574,12 +518,12 @@ export default function PerformanceTab({
                 </View>
                 <View>
                   <Text style={[s.xpStatValue, { color: colors.text }]}>
-                    {totalPoints.toLocaleString()}
+                    {(quizStats?.xp ?? 0).toLocaleString()}
                   </Text>
                   <Text
                     style={[s.xpStatLabel, { color: colors.textSecondary }]}
                   >
-                    {t("profile.performance.totalPoints")}
+                    {t("feed.xp")}
                   </Text>
                 </View>
               </View>
@@ -599,7 +543,7 @@ export default function PerformanceTab({
                   <Text
                     style={[s.xpStatLabel, { color: colors.textSecondary }]}
                   >
-                    {t("profile.performance.quizzesDone")}
+                    {t("feed.quizzes")}
                   </Text>
                 </View>
               </View>
@@ -610,16 +554,16 @@ export default function PerformanceTab({
                     { backgroundColor: isDark ? "#3B2B09" : "#FFF7ED" },
                   ]}
                 >
-                  <Ionicons name="star" size={14} color="#F59E0B" />
+                  <Ionicons name="flame" size={14} color="#F59E0B" />
                 </View>
                 <View>
                   <Text style={[s.xpStatValue, { color: colors.text }]}>
-                    {(quizStats?.avgScore ?? 0).toFixed(0)}%
+                    {streak?.currentStreak ?? 0}
                   </Text>
                   <Text
                     style={[s.xpStatLabel, { color: colors.textSecondary }]}
                   >
-                    {t("profile.performance.avgScore")}
+                    {t("feed.dayStreak")}
                   </Text>
                 </View>
               </View>
@@ -766,7 +710,7 @@ export default function PerformanceTab({
             </View>
           </View>
 
-          {profileInsightsLoading && recentVisitors.length === 0 && (
+          {visitorsLoading && recentVisitors.length === 0 && (
             <View style={[s.visitorsPanel, { borderColor: colors.border }]}>
               <View style={s.visitorsHeader}>
                 <View>
@@ -970,53 +914,11 @@ export default function PerformanceTab({
         )}
       </View>
 
-      {/* Streak Card */}
-      <View style={[s.card, cardStyle]}>
-        <View style={s.cardHeader}>
-          <View
-            style={[
-              s.cardHeaderIcon,
-              { backgroundColor: isDark ? "#3B2B09" : "#FFF7ED" },
-            ]}
-          >
-            <Ionicons name="flame" size={18} color="#F97316" />
-          </View>
-          <Text style={[s.cardTitle, { color: colors.text }]}>
-            {t("profile.performance.learningStreak")}
-          </Text>
-        </View>
-
-        <View style={s.streakRow}>
-          <View style={s.streakMain}>
-            <Text style={s.streakNumber}>{streak?.currentStreak ?? 0}</Text>
-            <Text style={s.streakUnit}>
-              {(streak?.currentStreak ?? 0) !== 1
-                ? t("profile.performance.days")
-                : t("profile.performance.day")}
-            </Text>
-          </View>
-          <View style={s.streakSide}>
-            <View style={s.streakSideRow}>
-              <Ionicons name="trophy" size={14} color="#F59E0B" />
-              <Text style={[s.streakSideText, { color: colors.textSecondary }]}>
-                {t("profile.performance.bestStreak", {
-                  count: streak?.longestStreak ?? 0,
-                })}
-              </Text>
-            </View>
-            <View style={s.streakSideRow}>
-              <Ionicons name="snow" size={14} color="#60A5FA" />
-              <Text style={[s.streakSideText, { color: colors.textSecondary }]}>
-                {t("profile.performance.freezes", {
-                  count: streak?.freezesAvailable ?? 0,
-                })}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <WeeklyDots streak={streak} />
-      </View>
+      <LearningStreakCard
+        streak={streak}
+        onUseFreeze={onUseStreakFreeze}
+        isFreezing={isFreezingStreak}
+      />
 
       {/* Core Stats Overview */}
       <View style={[s.card, cardStyle]}>
@@ -1180,7 +1082,9 @@ export default function PerformanceTab({
                 {t("profile.performance.leaderboard")}
               </Text>
               <Text style={s.leaderboardSub}>
-                {t("profile.performance.leaderboardSub")}
+                {leaderboardRank
+                  ? t("profile.performance.leaderboardRank", { rank: leaderboardRank })
+                  : t("profile.performance.leaderboardSub")}
               </Text>
             </View>
           </View>

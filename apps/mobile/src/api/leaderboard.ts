@@ -60,5 +60,15 @@ export const leaderboardApi = {
     getWeeklyLeaderboard: async (): Promise<{ weekStart: string; leaderboard: any[]; userStanding: any | null }> => {
         const response = await analyticsApi.get('/leaderboard/weekly');
         return response.data.data;
-    }
+    },
+
+    getLearningStreakLeaderboard: async (limit = 50): Promise<{
+        leaderboard: LeaderboardEntry[];
+        userStanding: UserStanding | null;
+    }> => {
+        const response = await analyticsApi.get('/leaderboard/learning-streak', {
+            params: { limit },
+        });
+        return response.data.data;
+    },
 };

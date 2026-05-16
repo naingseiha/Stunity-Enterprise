@@ -3,3 +3,4 @@
  */
 
 export { StreakWidget } from './StreakWidget';
+export { LearningStreakCard } from './LearningStreakCard';

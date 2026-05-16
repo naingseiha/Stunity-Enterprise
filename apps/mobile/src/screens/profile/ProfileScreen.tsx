@@ -30,6 +30,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { FlashList } from "@shopify/flash-list";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -43,7 +44,7 @@ import { Avatar, ImageViewerModal } from "@/components/common";
 import { Skeleton } from "@/components/common/Loading";
 import { useThemeContext } from "@/contexts";
 import { Shadows } from "@/config";
-import { useAuthStore, useFeedStore } from "@/stores";
+import { useAuthStore, useFeedStore, useLeaderboardStore } from "@/stores";
 import { User, UserStats, Education, Experience, Certification } from "@/types";
 import { formatNumber } from "@/utils";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
@@ -59,13 +60,27 @@ import {
   uploadCoverPhoto,
   updateProfile,
   trackProfileView,
-  fetchProfileVisitorsPreview,
   type ProfileVisitor,
 } from "@/api/profileApi";
 import {
+  fetchPerformanceStatsSummary,
+  fetchUserStatsCached,
+  getCachedPerformanceSummary,
+  invalidatePerformanceStatsCache,
+  mapSummaryToQuizUserStats,
+  applyStreakFreeze,
+} from "@/lib/performanceStatsCache";
+import { useLearnerStats } from "@/hooks/useLearnerStats";
+import { cancelStreakAtRiskReminder } from "@/services/streakReminders";
+import { Haptics } from "@/services/haptics";
+import {
+  fetchProfileVisitorsPreviewCached,
+  getCachedProfileVisitors,
+  invalidateProfileVisitorsCache,
+} from "@/lib/profileVisitorsCache";
+import {
   statsAPI,
   type UserStats as QuizUserStats,
-  type Streak,
   type UserAchievement,
   type Achievement,
 } from "@/services/stats";
@@ -272,8 +287,7 @@ export default function ProfileScreen() {
   const [recentProfileVisitors, setRecentProfileVisitors] = useState<
     ProfileVisitor[]
   >([]);
-  const [profileInsightsLoading, setProfileInsightsLoading] = useState(false);
-  const [streak, setStreak] = useState<Streak | null>(null);
+  const [visitorsLoading, setVisitorsLoading] = useState(false);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>(
     [],
   );
@@ -305,6 +319,86 @@ export default function ProfileScreen() {
   const requestIdRef = useRef(0);
   const analyticsRequestIdRef = useRef(0);
   const aboutRequestIdRef = useRef(0);
+  const loadProfileRef = useRef<((options?: { isRefresh?: boolean }) => Promise<void>) | null>(
+    null,
+  );
+
+  const resolveProfileUserId = useCallback((): string | null => {
+    if (isOwnProfile) {
+      return currentUser?.id ?? null;
+    }
+    return userId ?? null;
+  }, [currentUser?.id, isOwnProfile, userId]);
+
+  const profileStatsUserId = resolveProfileUserId() ?? undefined;
+  const { streak, syncStreakFromCache, refresh: refreshLearnerStats } =
+    useLearnerStats(profileStatsUserId);
+  const [freezingStreak, setFreezingStreak] = useState(false);
+  const fetchGlobalLeaderboard = useLeaderboardStore((s) => s.fetchGlobalLeaderboard);
+  const userGlobalStanding = useLeaderboardStore((s) => s.userGlobalStanding);
+
+  const handleUseStreakFreeze = useCallback(() => {
+    const resolvedId = resolveProfileUserId();
+    if (!resolvedId || !isOwnProfile) return;
+
+    Alert.alert(
+      t("profile.performance.streakFreezeTitle"),
+      t("profile.performance.streakFreezeConfirm", {
+        count: streak?.freezesAvailable ?? 0,
+      }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("profile.performance.useStreakFreeze"),
+          onPress: async () => {
+            setFreezingStreak(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            try {
+              await applyStreakFreeze(resolvedId);
+              await refreshLearnerStats(true);
+              await cancelStreakAtRiskReminder();
+              Alert.alert(
+                t("common.success"),
+                t("profile.performance.streakFreezeSuccess"),
+              );
+            } catch {
+              Alert.alert(
+                t("common.error"),
+                t("profile.performance.streakFreezeError"),
+              );
+            } finally {
+              setFreezingStreak(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [
+    isOwnProfile,
+    refreshLearnerStats,
+    resolveProfileUserId,
+    streak?.freezesAvailable,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      void fetchGlobalLeaderboard();
+    }
+  }, [fetchGlobalLeaderboard, isOwnProfile]);
+
+  const syncPerformanceFromCache = useCallback((resolvedUserId: string) => {
+    syncStreakFromCache(resolvedUserId);
+    const summary = getCachedPerformanceSummary(resolvedUserId);
+    if (summary) {
+      setQuizStats(mapSummaryToQuizUserStats(summary));
+    }
+    const visitors = getCachedProfileVisitors(resolvedUserId);
+    if (visitors && visitors.length > 0) {
+      setRecentProfileVisitors(visitors);
+      setVisitorsLoading(false);
+    }
+  }, [syncStreakFromCache]);
   const aboutLoadedRef = useRef(false);
   const loadingAboutRef = useRef(false);
   const interactionTaskRef = useRef<ReturnType<
@@ -319,13 +413,30 @@ export default function ProfileScreen() {
     loadingAboutRef.current = loadingAbout;
   }, [loadingAbout]);
 
-  const loadAnalytics = useCallback(
+  const loadAnalyticsFast = useCallback(
+    async (resolvedUserId: string) => {
+      syncPerformanceFromCache(resolvedUserId);
+
+      try {
+        await fetchPerformanceStatsSummary(resolvedUserId);
+      } catch {
+        // Keep cached / prior values
+      }
+
+      const summary = getCachedPerformanceSummary(resolvedUserId);
+      if (summary) {
+        setQuizStats(mapSummaryToQuizUserStats(summary));
+      }
+    },
+    [syncPerformanceFromCache],
+  );
+
+  const loadAnalyticsFull = useCallback(
     async (resolvedUserId: string, requestId: number) => {
       const analyticsRequestId = ++analyticsRequestIdRef.current;
 
-      const [qStats, streakData, uAch, allAch] = await Promise.all([
-        statsAPI.getUserStats(resolvedUserId).catch(() => null),
-        statsAPI.getStreak(resolvedUserId).catch(() => null),
+      const [qStats, uAch, allAch] = await Promise.all([
+        fetchUserStatsCached(resolvedUserId).catch(() => null),
         statsAPI.getUserAchievements(resolvedUserId).catch(() => []),
         statsAPI.getAchievements().catch(() => []),
       ]);
@@ -338,9 +449,31 @@ export default function ProfileScreen() {
       }
 
       if (qStats) setQuizStats(qStats);
-      if (streakData) setStreak(streakData);
       setUserAchievements(uAch || []);
       setAllAchievements(allAch || []);
+    },
+    [],
+  );
+
+  const loadProfileVisitors = useCallback(
+    async (resolvedUserId: string) => {
+      const cached = getCachedProfileVisitors(resolvedUserId);
+      if (cached && cached.length > 0) {
+        setRecentProfileVisitors(cached);
+        setVisitorsLoading(false);
+      } else {
+        setVisitorsLoading(true);
+      }
+
+      try {
+        const visitors = await fetchProfileVisitorsPreviewCached(resolvedUserId);
+        setRecentProfileVisitors(visitors);
+        setVisitorsLoading(false);
+      } catch {
+        const cachedAfterError = getCachedProfileVisitors(resolvedUserId);
+        setRecentProfileVisitors(cachedAfterError ?? []);
+        setVisitorsLoading(false);
+      }
     },
     [],
   );
@@ -401,9 +534,13 @@ export default function ProfileScreen() {
     async (options?: { isRefresh?: boolean }) => {
       const requestId = ++requestIdRef.current;
       const targetId = isOwnProfile ? "me" : userId!;
-      const resolvedUserId = isOwnProfile ? currentUser?.id || "me" : userId!;
+      const resolvedUserId = resolveProfileUserId();
       const showBlockingLoader =
         !options?.isRefresh && (!isOwnProfile || !currentUser);
+
+      if (isOwnProfile && !resolvedUserId) {
+        return;
+      }
 
       if (!isOwnProfile) {
         setProfile(null);
@@ -415,19 +552,20 @@ export default function ProfileScreen() {
         setLoading(true);
       }
 
-      try {
-        setProfileInsightsLoading(isOwnProfile);
-        // Resolve visitors as soon as the preview returns — do not defer the
-        // handler until after profile fetch; that made the card wait for the
-        // slower of the two even when the preview was already done.
+      if (options?.isRefresh && resolvedUserId) {
+        invalidatePerformanceStatsCache(resolvedUserId);
         if (isOwnProfile) {
-          void fetchProfileVisitorsPreview("me")
-            .catch(() => [] as ProfileVisitor[])
-            .then((visitors) => {
-              if (requestId !== requestIdRef.current) return;
-              setRecentProfileVisitors(visitors);
-              setProfileInsightsLoading(false);
-            });
+          invalidateProfileVisitorsCache(resolvedUserId);
+        }
+      }
+
+      try {
+        if (resolvedUserId) {
+          syncPerformanceFromCache(resolvedUserId);
+          void loadAnalyticsFast(resolvedUserId);
+          if (isOwnProfile) {
+            void loadProfileVisitors(resolvedUserId);
+          }
         }
 
         const profileData = await apiFetchProfile(targetId);
@@ -441,14 +579,16 @@ export default function ProfileScreen() {
         setIsFollowing(profileData.isFollowing || false);
         setLoading(false);
 
-        if (!isOwnProfile) {
-          setProfileInsightsLoading(false);
+        if (!isOwnProfile && resolvedUserId) {
+          void loadAnalyticsFast(resolvedUserId);
         }
 
         interactionTaskRef.current?.cancel();
         interactionTaskRef.current = InteractionManager.runAfterInteractions(
           () => {
-            loadAnalytics(resolvedUserId, requestId);
+            if (resolvedUserId) {
+              void loadAnalyticsFull(resolvedUserId, requestId);
+            }
             loadAboutData(targetId, requestId);
           },
         );
@@ -461,7 +601,7 @@ export default function ProfileScreen() {
         if (isOwnProfile && currentUser) {
           setProfile(currentUser);
         }
-        setProfileInsightsLoading(false);
+        setVisitorsLoading(false);
         setLoading(false);
       } finally {
         if (showBlockingLoader && requestId === requestIdRef.current) {
@@ -469,8 +609,20 @@ export default function ProfileScreen() {
         }
       }
     },
-    [currentUser, isOwnProfile, loadAboutData, loadAnalytics, userId],
+    [
+      currentUser,
+      isOwnProfile,
+      loadAboutData,
+      loadAnalyticsFast,
+      loadAnalyticsFull,
+      loadProfileVisitors,
+      resolveProfileUserId,
+      syncPerformanceFromCache,
+      userId,
+    ],
   );
+
+  loadProfileRef.current = loadProfile;
 
   useEffect(() => {
     setLoadingAbout(false);
@@ -478,10 +630,21 @@ export default function ProfileScreen() {
     setEducation([]);
     setExperiences([]);
     setCertifications([]);
-    setQuizStats(null);
-    setRecentProfileVisitors([]);
-    setProfileInsightsLoading(isOwnProfile);
-    setStreak(null);
+    const resolvedId = resolveProfileUserId();
+    const cachedSummary = resolvedId
+      ? getCachedPerformanceSummary(resolvedId)
+      : null;
+    const cachedVisitors = resolvedId
+      ? getCachedProfileVisitors(resolvedId)
+      : null;
+    setQuizStats(cachedSummary ? mapSummaryToQuizUserStats(cachedSummary) : null);
+    setRecentProfileVisitors(cachedVisitors ?? []);
+    setVisitorsLoading(
+      isOwnProfile && !!resolvedId && !(cachedVisitors && cachedVisitors.length > 0),
+    );
+    if (resolvedId) {
+      syncStreakFromCache(resolvedId);
+    }
     setUserAchievements([]);
     setAllAchievements([]);
 
@@ -493,12 +656,32 @@ export default function ProfileScreen() {
       setLoading(true);
     }
 
-    loadProfile();
+    if (resolvedId) {
+      void loadProfileRef.current?.();
+    }
 
     return () => {
       interactionTaskRef.current?.cancel();
     };
-  }, [currentUser, isOwnProfile, loadProfile, profileTargetKey]);
+  }, [currentUser?.id, isOwnProfile, profileTargetKey, resolveProfileUserId, syncStreakFromCache]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const resolvedId = resolveProfileUserId();
+      if (!resolvedId) return;
+      syncPerformanceFromCache(resolvedId);
+      void loadAnalyticsFast(resolvedId);
+      if (isOwnProfile) {
+        void loadProfileVisitors(resolvedId);
+      }
+    }, [
+      isOwnProfile,
+      loadAnalyticsFast,
+      loadProfileVisitors,
+      resolveProfileUserId,
+      syncPerformanceFromCache,
+    ]),
+  );
 
   useEffect(() => {
     if (isOwnProfile || !userId) {
@@ -517,6 +700,13 @@ export default function ProfileScreen() {
       }
     };
   }, [isOwnProfile, userId]);
+
+  useEffect(() => {
+    if (activeTab !== "performance") return;
+    const resolvedId = resolveProfileUserId();
+    if (!resolvedId) return;
+    syncPerformanceFromCache(resolvedId);
+  }, [activeTab, resolveProfileUserId, syncPerformanceFromCache]);
 
   useEffect(() => {
     if (activeTab === "about" && !aboutLoaded && !loadingAbout) {
@@ -741,6 +931,29 @@ export default function ProfileScreen() {
 
     return [{ key: `tab-${activeTab}`, type: activeTab }];
   }, [activeTab, profilePosts]);
+
+  // FlashList will not re-render tab cells when visitor/quiz state changes unless
+  // extraData changes — without this, the visitor skeleton stays until tab switch.
+  const profileListExtraData = useMemo(
+    () => ({
+      activeTab,
+      visitorsLoading,
+      recentProfileVisitors,
+      quizStats,
+      streak,
+      profileStats,
+      userAchievementsCount: userAchievements.length,
+    }),
+    [
+      activeTab,
+      visitorsLoading,
+      recentProfileVisitors,
+      quizStats,
+      streak,
+      profileStats,
+      userAchievements.length,
+    ],
+  );
 
   const tabContentAnimatedStyle = useMemo(
     () => ({
@@ -1012,6 +1225,7 @@ export default function ProfileScreen() {
           <FlashList
           style={layout.isTablet ? [styles.tabletListShell, isProfileRailTablet && styles.tabletCenterList] : undefined}
           data={profileListData}
+          extraData={profileListExtraData}
           keyExtractor={(item) => item.key}
           showsVerticalScrollIndicator={false}
           // @ts-ignore ignore type error with flash list sizes
@@ -1782,7 +1996,7 @@ export default function ProfileScreen() {
                     }
                     profile={profile}
                     recentVisitors={recentProfileVisitors}
-                    profileInsightsLoading={profileInsightsLoading}
+                    visitorsLoading={visitorsLoading}
                     onViewProfileVisitors={() =>
                       navigation.navigate("ProfileVisitors", {
                         initialVisitors: recentProfileVisitors,
@@ -1795,6 +2009,11 @@ export default function ProfileScreen() {
                       navigation.navigate("Leaderboard" as any)
                     }
                     onViewStats={() => navigation.navigate("Stats" as any)}
+                    onUseStreakFreeze={
+                      isOwnProfile ? handleUseStreakFreeze : undefined
+                    }
+                    isFreezingStreak={freezingStreak}
+                    leaderboardRank={userGlobalStanding?.rank ?? null}
                   />
                 )}
                 {activeTab === "about" && (

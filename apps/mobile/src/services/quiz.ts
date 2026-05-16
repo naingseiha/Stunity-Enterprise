@@ -8,7 +8,9 @@
  */
 
 import { quizApi } from '@/api/client';
-import { statsAPI } from '@/services/stats';
+import { invalidateJoinedQuizzesCache } from '@/lib/joinedQuizzesCache';
+import { recordQuizCompletionStats } from '@/lib/performanceStatsCache';
+import { useAuthStore } from '@/stores/authStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,8 +26,14 @@ export interface QuizUserAttempt {
   score: number;
   passed: boolean;
   pointsEarned: number;
-  answers?: any[];
-  results?: any[];
+  answers?: Array<{ questionId: string; answer: unknown }>;
+  results?: Array<{
+    questionId: string;
+    correct: boolean;
+    pointsEarned: number;
+    userAnswer?: unknown;
+    correctAnswer?: unknown;
+  }>;
   submittedAt?: string;
 }
 
@@ -39,11 +47,14 @@ export interface QuizItem {
   topicTags?: string[];
   author: QuizAuthor;
   questions: QuizQuestion[];
+  /** Set on list endpoints when full questions are omitted for performance */
+  questionCount?: number;
   timeLimit?: number | null;
   passingScore: number;
   totalPoints: number;
   userAttempt: QuizUserAttempt | null;
   attemptCount?: number;
+  lastAttemptAt?: string;
   createdAt: string;
 }
 
@@ -87,6 +98,13 @@ export interface BrowseQuizzesParams {
   limit?: number;
 }
 
+export interface MyJoinedQuizzesParams {
+  search?: string;
+  page?: number;
+  limit?: number;
+  status?: 'all' | 'passed' | 'failed';
+}
+
 export interface PaginatedQuizzes {
   data: QuizItem[];
   pagination: {
@@ -111,6 +129,24 @@ export interface QuizStatistics {
  * GET /quizzes — Browse all published quizzes
  * Supports category filter, search, and pagination.
  */
+/**
+ * GET /quizzes/my-joined — Quizzes the user has attempted (latest attempt each)
+ */
+export const fetchMyJoinedQuizzes = async (
+  params: MyJoinedQuizzesParams = {},
+): Promise<PaginatedQuizzes> => {
+  try {
+    const response = await quizApi.get('/quizzes/my-joined', { params });
+    return {
+      data: response.data.data || [],
+      pagination: response.data.pagination || { page: 1, limit: 20, total: 0, pages: 0 },
+    };
+  } catch (error: any) {
+    console.error('❌ [QUIZ API] My joined quizzes error:', error);
+    return { data: [], pagination: { page: 1, limit: 20, total: 0, pages: 0 } };
+  }
+};
+
 export const browseQuizzes = async (params: BrowseQuizzesParams = {}): Promise<PaginatedQuizzes> => {
   try {
     const response = await quizApi.get('/quizzes', { params });
@@ -191,23 +227,25 @@ export const submitQuiz = async (
 
   const result: QuizSubmissionResult = response.data.data;
 
-  // Fire-and-forget analytics: record XP + update streak
+  // Record XP + streak (awaited so profile/feed can update the same session)
   if (options.recordStats !== false) {
-    const timeSpent = options.timeSpent ?? 0;
-    const type = options.type ?? 'solo';
+    const userId = useAuthStore.getState().user?.id;
+    if (userId) {
+      const timeSpent = options.timeSpent ?? 0;
+      const type = options.type ?? 'solo';
 
-    Promise.all([
-      statsAPI.recordAttempt({
+      await recordQuizCompletionStats(userId, {
         quizId,
-        score: result.score,
+        pointsEarned: result.pointsEarned,
         totalPoints: result.totalPoints,
+        scorePercent: result.score,
+        passed: result.passed,
+        questionCount: answers.length,
         timeSpent,
         type,
-      }).catch(err => console.warn('⚠️ [QUIZ] recordAttempt failed:', err)),
-
-      statsAPI.updateStreak()
-        .catch(err => console.warn('⚠️ [QUIZ] updateStreak failed:', err)),
-    ]);
+      });
+      invalidateJoinedQuizzesCache();
+    }
   }
 
   return result;
@@ -232,6 +270,30 @@ export const getMyCreatedQuizzes = async (): Promise<QuizItem[]> => {
 };
 
 // ─── My Attempts ──────────────────────────────────────────────────────────────
+
+/**
+ * GET /quizzes/:id/attempts/latest — Most recent attempt for the current user
+ */
+export const getLatestQuizAttempt = async (quizId: string): Promise<QuizUserAttempt | null> => {
+  try {
+    const response = await quizApi.get(`/quizzes/${quizId}/attempts/latest`);
+    if (!response.data.success || !response.data.data) return null;
+    const attempt = response.data.data;
+    return {
+      id: attempt.id,
+      score: attempt.score,
+      passed: attempt.passed,
+      pointsEarned: attempt.pointsEarned,
+      answers: attempt.answers,
+      results: attempt.results,
+      submittedAt: attempt.submittedAt,
+    };
+  } catch (error: any) {
+    if (error?.response?.status === 404) return null;
+    console.error('❌ [QUIZ API] Latest attempt error:', error);
+    throw error;
+  }
+};
 
 /**
  * GET /quizzes/:id/attempts/my — Get current user's attempts for a quiz
@@ -292,6 +354,7 @@ export const quizService = {
   fetchQuizById,
   getMyCreatedQuizzes,
   submitQuiz,
+  getLatestQuizAttempt,
   getMyQuizAttempts,
   getQuizAttempts,
   getQuizAttemptDetails,

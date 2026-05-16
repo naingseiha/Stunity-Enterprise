@@ -47,13 +47,14 @@ import {
 import { Avatar, PostSkeleton, Skeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
-import { feedApi, learnApi } from '@/api/client';
+import { feedApi } from '@/api/client';
 import { Post, FeedItem } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext, useThemeContext } from '@/contexts';
 import RenderPostItem from './RenderPostItem';
-import { statsAPI } from '@/services/stats';
+import { useLearnerStats } from '@/hooks/useLearnerStats';
+import type { FeedPerformanceStats } from '@/lib/performanceStatsCache';
 import { getFeedMediaAspectRatio, getFeedMediaBucket } from '@/utils/feedMediaLayout';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
@@ -130,7 +131,7 @@ const FilterLoadingSkeleton = React.memo(function FilterLoadingSkeleton({
 });
 
 interface PerformanceCardProps {
-  stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number; xpProgress: number; xpToNextLevel: number; avgScore: number; };
+  stats: FeedPerformanceStats;
   user: { firstName: string; lastName: string; profilePictureUrl?: string } | null;
   avatarUri?: string | null;
   onPress: () => void;
@@ -151,7 +152,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, avata
 
   const rings = [
     { r: 55, sw: 10, pct: xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
-    { r: 42, sw: 8, pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
+    { r: 42, sw: 8, pct: Math.min(stats.completedQuizzes / Math.max(stats.completedQuizzes + 5, 10), 1), id: 'quiz', c1: '#34D399', c2: '#059669' },
     { r: 31, sw: 7, pct: Math.min(stats.avgScore / 100, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
   ];
 
@@ -220,13 +221,13 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, avata
               <View style={[perfCardStyles.statIcon, { backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#DBEAFE' }]}>
                 <Ionicons name="diamond" size={14} color="#2563EB" />
               </View>
-              <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>{t('feed.xp')}</Text></Text>
+              <Text style={perfCardStyles.statVal}>{stats.xp.toLocaleString()} <Text style={perfCardStyles.statLbl}>{t('feed.xp')}</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.16)' : '#D1FAE5' }]}>
                 <Ionicons name="checkmark-circle" size={14} color="#059669" />
               </View>
-              <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>{t('feed.lessons')}</Text></Text>
+              <Text style={perfCardStyles.statVal}>{stats.completedQuizzes} <Text style={perfCardStyles.statLbl}>{t('feed.quizzes')}</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: isDark ? 'rgba(249,115,22,0.16)' : '#FFEDD5' }]}>
@@ -349,16 +350,7 @@ export default function FeedScreen() {
   const [isValueSubmitting, setIsValueSubmitting] = useState(false);
   const [initialLoadNotice, setInitialLoadNotice] = useState<'hidden' | 'warming' | 'stillWorking'>('hidden');
 
-  // Learning stats for performance card
-  const [learningStats, setLearningStats] = useState({
-    currentStreak: 0,
-    totalPoints: 0,
-    completedLessons: 0,
-    level: 1,
-    xpProgress: 0,
-    xpToNextLevel: 250,
-    avgScore: 0,
-  });
+  const { stats: learningStats, refresh: refreshPerformanceStats } = useLearnerStats(user?.id);
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
   const flatListRef = React.useRef<FlashList<FeedItem> | null>(null);
@@ -430,59 +422,9 @@ export default function FeedScreen() {
   useEffect(() => {
     fetchPosts();
     initializeRecommendations();
-
-    // Fetch learning stats for performance card
-    const fetchLearningStats = async () => {
-      try {
-        const userId = useAuthStore.getState().user?.id;
-        if (!userId) return;
-
-        // Learning stats live in learn-service. Keep analytics fallback below for
-        // older accounts or temporary learn-service failures.
-        try {
-          const res = await learnApi.get('/courses/stats/my-learning');
-          if (res.data) {
-            setLearningStats({
-              currentStreak: res.data.currentStreak || 0,
-              totalPoints: res.data.totalPoints || 0,
-              completedLessons: res.data.completedLessons || 0,
-              level: res.data.level || 1,
-              xpProgress: res.data.xpProgress || 0,
-              xpToNextLevel: res.data.xpToNextLevel || 250,
-              avgScore: res.data.avgScore || 0,
-            });
-            return;
-          }
-        } catch (e) {
-          // Fallback to real analytics api
-        }
-
-        // Fetch using statsAPI
-        const [stats, streak] = await Promise.all([
-          statsAPI.getUserStats(userId).catch(() => null),
-          statsAPI.getStreak(userId).catch(() => null),
-        ]);
-
-        if (stats || streak) {
-          setLearningStats({
-            currentStreak: streak?.currentStreak || 0,
-            totalPoints: stats?.totalPoints || 0,
-            completedLessons: stats?.totalQuizzes || 0,
-            level: stats?.level || 1,
-            xpProgress: stats?.xpProgress || 0,
-            xpToNextLevel: stats?.xpToNextLevel || 250,
-            avgScore: stats?.avgScore || 0,
-          });
-        }
-      } catch (err) {
-        // Silent fail
-      }
-    };
-
-    fetchLearningStats();
   }, []);
 
-  // No useFocusEffect re-fetch — polling + realtime handle freshness
+  // No useFocusEffect re-fetch for posts — polling + realtime handle freshness
 
   // Real-time subscription & AppState lifecycle management
   useEffect(() => {
@@ -598,9 +540,12 @@ export default function FeedScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPosts(true, activeSubjectFilter);
+    await Promise.all([
+      fetchPosts(true, activeSubjectFilter),
+      refreshPerformanceStats(true),
+    ]);
     setRefreshing(false);
-  }, [activeSubjectFilter, fetchPosts]);
+  }, [activeSubjectFilter, fetchPosts, refreshPerformanceStats]);
 
   const handleLoadMore = useCallback(() => {
     if (!canTriggerEndReachedRef.current) return;
@@ -755,7 +700,7 @@ export default function FeedScreen() {
         stats={learningStats}
         user={user}
         avatarUri={stableProfilePictureUrl}
-        onPress={() => navigation.getParent()?.navigate('ProfileTab')}
+        onPress={() => navigation.navigate('MyJoinedQuizzes')}
       />
 
       {/* Featured Categories */}
@@ -975,8 +920,8 @@ export default function FeedScreen() {
               <Text style={styles.sideRailStatLabel}>{t('feed.dayStreak')}</Text>
             </View>
             <View style={styles.sideRailStat}>
-              <Text style={styles.sideRailStatValue}>{learningStats.completedLessons}</Text>
-              <Text style={styles.sideRailStatLabel}>{t('feed.lessons')}</Text>
+              <Text style={styles.sideRailStatValue}>{learningStats.completedQuizzes}</Text>
+              <Text style={styles.sideRailStatLabel}>{t('feed.quizzes')}</Text>
             </View>
           </View>
         </View>
@@ -1058,7 +1003,7 @@ export default function FeedScreen() {
             </View>
             <View style={styles.leftMetric}>
               <Ionicons name="radio-button-on-outline" size={16} color="#3B82F6" />
-              <Text style={styles.leftMetricValue}>{learningStats.totalPoints}</Text>
+              <Text style={styles.leftMetricValue}>{learningStats.xp}</Text>
               <Text style={styles.leftMetricLabel}>{t('feed.xp')}</Text>
             </View>
           </View>

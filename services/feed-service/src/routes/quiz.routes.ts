@@ -10,6 +10,10 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
+import { getLatestQuizAttemptForUser } from '../utils/quizAttempts';
+import { getUserJoinedQuizzesPage } from '../utils/joinedQuizzes';
+import { gradeQuizSubmission } from '../utils/quizGrading';
+import { normalizeQuizQuestionsForGrading } from '../utils/quizQuestions';
 
 const router = Router();
 
@@ -65,11 +69,6 @@ const isMultipleChoiceCorrect = (userAnswer: unknown, correctAnswer: unknown, op
   }
 
   return normalizeAnswerText(userAnswer) === normalizeAnswerText(correctAnswer);
-};
-
-const getQuestionPoints = (question: any): number => {
-  const points = Number(question?.points);
-  return Number.isFinite(points) && points > 0 ? points : 1;
 };
 
 // ========================================
@@ -256,6 +255,55 @@ router.get('/quizzes/daily', authenticateToken, async (req: AuthRequest, res: Re
   }
 });
 
+// GET /quizzes/my-joined — Quizzes the user has attempted (latest attempt per quiz)
+router.get('/quizzes/my-joined', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { search, page = '1', limit = '20', status = 'all' } = req.query as Record<string, string>;
+    const statusFilter =
+      status === 'passed' || status === 'failed' ? status : 'all';
+
+    const result = await getUserJoinedQuizzesPage(prisma, prismaRead, userId, req.user!.schoolId, {
+      page: parseInt(page, 10) || 1,
+      limit: parseInt(limit, 10) || 20,
+      search,
+      status: statusFilter,
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error('Get my joined quizzes error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch joined quizzes' });
+  }
+});
+
+// GET /quizzes/teacher/analytics — Dashboard rollup for quizzes authored by current user
+router.get('/quizzes/teacher/analytics', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const periodRaw = String(req.query.period || '30d');
+    const period =
+      periodRaw === '7d' || periodRaw === '30d' || periodRaw === '90d' || periodRaw === 'all'
+        ? periodRaw
+        : '30d';
+    const classId = typeof req.query.classId === 'string' && req.query.classId.trim()
+      ? req.query.classId.trim()
+      : null;
+
+    const { buildTeacherQuizAnalytics } = await import('../utils/teacherQuizAnalytics');
+    const data = await buildTeacherQuizAnalytics(prisma, userId, period, classId);
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('Teacher quiz analytics error:', error);
+    const status = error?.statusCode === 403 ? 403 : 500;
+    res.status(status).json({
+      success: false,
+      error: error?.message || 'Failed to load teacher quiz analytics',
+    });
+  }
+});
+
 // GET /quizzes/my-created — Get current user's authored quizzes (Quiz Studio)
 router.get('/quizzes/my-created', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -409,101 +457,13 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
 
     console.log('✅ [QUIZ SUBMIT] Quiz found:', { id: quiz.id, postId: quiz.postId });
 
-    // Parse questions from JSON
-    const questions = quiz.questions as any[];
-
-    const possiblePoints = questions.reduce((sum: number, question: any) => sum + getQuestionPoints(question), 0);
-
-    // Calculate score
-    let pointsEarned = 0;
-    const answerResults = answers.map((userAnswer: any) => {
-      const question = questions.find((q: any) => q.id === userAnswer.questionId);
-      if (!question) {
-        return { questionId: userAnswer.questionId, correct: false, pointsEarned: 0 };
-      }
-
-      let isCorrect = false;
-
-      // Check answer based on question type
-      if (question.type === 'MULTIPLE_CHOICE') {
-        isCorrect = isMultipleChoiceCorrect(userAnswer.answer, question.correctAnswer, question.options);
-
-        console.log('🔍 [QUIZ] MC Question:', {
-          questionId: question.id,
-          userAnswer: userAnswer.answer,
-          correctAnswer: question.correctAnswer,
-          options: question.options,
-          isCorrect
-        });
-      } else if (question.type === 'TRUE_FALSE') {
-        // Handle both string and boolean formats
-        const userAnswerStr = String(userAnswer.answer).toLowerCase();
-        const correctAnswerStr = String(question.correctAnswer).toLowerCase();
-        isCorrect = userAnswerStr === correctAnswerStr;
-      } else if (question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK') {
-        // Case-insensitive comparison, trimmed
-        const userAns = String(userAnswer.answer || '').toLowerCase().trim();
-        const correctAns = String(question.correctAnswer || '').toLowerCase().trim();
-        isCorrect = userAns === correctAns;
-      } else if (question.type === 'ORDERING') {
-        try {
-          // Parse user answer if string provided
-          const userOrder = typeof userAnswer.answer === 'string' ? JSON.parse(userAnswer.answer) : userAnswer.answer;
-          const correctOrder = question.options;
-
-          if (Array.isArray(userOrder) && Array.isArray(correctOrder)) {
-            isCorrect = JSON.stringify(userOrder) === JSON.stringify(correctOrder);
-          } else {
-            isCorrect = false;
-          }
-        } catch (e) {
-          isCorrect = false;
-        }
-      } else if (question.type === 'MATCHING') {
-        try {
-          const userMatches = typeof userAnswer.answer === 'string' ? JSON.parse(userAnswer.answer) : userAnswer.answer;
-          const correctMatches: Record<string, string> = {};
-          if (Array.isArray(question.options)) {
-            question.options.forEach((opt: string) => {
-              const parts = opt.split(':::');
-              if (parts.length === 2) {
-                correctMatches[parts[0]] = parts[1];
-              }
-            });
-          }
-
-          if (userMatches && typeof userMatches === 'object') {
-            const userKeys = Object.keys(userMatches);
-            const correctKeys = Object.keys(correctMatches);
-
-            if (userKeys.length !== correctKeys.length) {
-              isCorrect = false;
-            } else {
-              isCorrect = userKeys.every(key => userMatches[key] === correctMatches[key]);
-            }
-          } else {
-            isCorrect = false;
-          }
-        } catch (e) {
-          isCorrect = false;
-        }
-      }
-
-      const points = isCorrect ? getQuestionPoints(question) : 0;
-      pointsEarned += points;
-
-      return {
-        questionId: userAnswer.questionId,
-        correct: isCorrect,
-        pointsEarned: points,
-        userAnswer: userAnswer.answer,
-        correctAnswer: question.correctAnswer,
-      };
-    });
-
-    // Calculate percentage score
-    const score = possiblePoints > 0 ? Math.round((pointsEarned / possiblePoints) * 100) : 0;
-    const passed = score >= quiz.passingScore;
+    const graded = gradeQuizSubmission(
+      quiz.questions,
+      quizId,
+      answers,
+      quiz.passingScore,
+    );
+    const { score, passed, pointsEarned, totalPoints, results: answerResults } = graded;
 
     // Save quiz attempt
     const attempt = await prisma.quizAttempt.create({
@@ -517,20 +477,23 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
       },
     });
 
+    // Bust personalized feed cache so quiz cards show this attempt immediately.
+    await feedCache.invalidateUser(userId);
+
     // Return results based on visibility settings
     let resultsData: any = {
       attemptId: attempt.id,
       score,
       passed,
       pointsEarned,
-      totalPoints: possiblePoints,
+      totalPoints,
       submittedAt: attempt.submittedAt,
     };
 
     // Include detailed results if visibility allows
     if (quiz.resultsVisibility === 'IMMEDIATE' || quiz.resultsVisibility === 'AFTER_SUBMISSION') {
       resultsData.results = answerResults;
-      resultsData.questions = questions;
+      resultsData.questions = normalizeQuizQuestionsForGrading(quiz.questions, quizId);
     }
 
     res.json({
@@ -602,6 +565,43 @@ router.get('/quizzes/:id/attempts', authenticateToken, async (req: AuthRequest, 
   } catch (error: any) {
     console.error('Get attempts error:', error);
     res.status(500).json({ success: false, error: 'Failed to get attempts' });
+  }
+});
+
+// GET /quizzes/:id/attempts/latest - Current user's most recent attempt (for feed "View results")
+router.get('/quizzes/:id/attempts/latest', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const quizId = req.params.id;
+    const userId = req.user!.id;
+
+    const attempt = await getLatestQuizAttemptForUser(prisma, quizId, userId);
+    if (!attempt) {
+      return res.status(404).json({ success: false, error: 'No attempts yet' });
+    }
+
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      select: { questions: true, passingScore: true },
+    });
+
+    const storedAnswers = Array.isArray(attempt.answers)
+      ? (attempt.answers as Array<{ questionId: string; answer: unknown }>)
+      : [];
+
+    const graded = quiz
+      ? gradeQuizSubmission(quiz.questions, quizId, storedAnswers, quiz.passingScore)
+      : null;
+
+    res.json({
+      success: true,
+      data: {
+        ...attempt,
+        results: graded?.results ?? [],
+      },
+    });
+  } catch (error: any) {
+    console.error('Get latest quiz attempt error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get latest attempt' });
   }
 });
 

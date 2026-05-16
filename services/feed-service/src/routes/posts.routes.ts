@@ -11,6 +11,7 @@ import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../utils/feedCursor';
+import { getLatestQuizAttemptsByQuizIds } from '../utils/quizAttempts';
 
 const router = Router();
 const inFlightFeedResponses = new Map<string, Promise<{ payload: any; etag: string }>>();
@@ -454,19 +455,14 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
         ? prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId: req.user!.id }, select: { postId: true, optionId: true } })
         : Promise.resolve([]),
       quizPostIds.length > 0
-        ? prismaRead.quizAttempt.findMany({
-          where: { quizId: { in: quizPostIds }, userId: req.user!.id },
-          orderBy: { submittedAt: 'desc' },
-          distinct: ['quizId'],
-          select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
-        })
-        : Promise.resolve([]),
+        ? getLatestQuizAttemptsByQuizIds(prisma, req.user!.id, quizPostIds)
+        : Promise.resolve(new Map()),
     ]);
 
     const likedPostIds = new Set(userLikes.map(l => l.postId));
     const followingSet = new Set(userFollows.map(f => f.followingId));
     const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
-    const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
+    const quizAttempts = userQuizAttempts;
 
     const formattedPosts = pagePosts.map(post => ({
       ...post,
@@ -646,20 +642,19 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
           ? personalize('poll-vote lookup', prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId }, select: { postId: true, optionId: true } }), [] as any[])
           : Promise.resolve([]),
         quizPostIds.length > 0
-          ? personalize('quiz-attempt lookup', prismaRead.quizAttempt.findMany({
-            where: { quizId: { in: quizPostIds }, userId },
-            orderBy: { submittedAt: 'desc' },
-            distinct: ['quizId'],
-            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
-          }), [] as any[])
-          : Promise.resolve([]),
+          ? personalize(
+            'quiz-attempt lookup',
+            getLatestQuizAttemptsByQuizIds(prisma, userId, quizPostIds),
+            new Map(),
+          )
+          : Promise.resolve(new Map()),
       ]);
 
       const likedSet = new Set(userLikes.map(l => l.postId));
       const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
       const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
       const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
-      const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
+      const quizAttempts = userQuizAttempts;
 
       const formattedFeed = result.items.map(item => {
         if (item.type !== 'POST') return item;

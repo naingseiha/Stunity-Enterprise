@@ -66,10 +66,14 @@ async function getRecentProfileVisitors(
     cursor?: Date | null;
     excludeIds?: string[];
     windowDays?: number;
+    /** Skip per-visitor 30d count aggregation (faster preview cards). */
+    skipViewCounts?: boolean;
   } = {},
 ) {
   const limit = Math.min(Math.max(options.limit || 3, 1), 50);
-  const scanLimit = Math.min(Math.max(limit * 8, limit), 200);
+  const scanLimit = options.skipViewCounts
+    ? Math.min(limit * 4, 24)
+    : Math.min(Math.max(limit * 8, limit), 200);
   const since = new Date(
     Date.now() - (options.windowDays || 90) * 24 * 60 * 60 * 1000,
   );
@@ -117,20 +121,22 @@ async function getRecentProfileVisitors(
     return { visitors: [], nextCursor: null as string | null };
   }
 
-  const [users, viewCounts] = await Promise.all([
-    prismaRead.user.findMany({
-      where: { id: { in: viewerIds }, isActive: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        profilePictureUrl: true,
-        role: true,
-        headline: true,
-        professionalTitle: true,
-      },
-    }),
-    prismaRead.profileView.groupBy({
+  const users = await prismaRead.user.findMany({
+    where: { id: { in: viewerIds }, isActive: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      profilePictureUrl: true,
+      role: true,
+      headline: true,
+      professionalTitle: true,
+    },
+  });
+
+  const countsByViewerId = new Map<string, number>();
+  if (!options.skipViewCounts) {
+    const viewCounts = await prismaRead.profileView.groupBy({
       by: ["viewerId"],
       where: {
         profileUserId,
@@ -138,13 +144,13 @@ async function getRecentProfileVisitors(
         viewedAt: { gte: last30d },
       },
       _count: { _all: true },
-    }),
-  ]);
+    });
+    viewCounts.forEach((count) => {
+      countsByViewerId.set(count.viewerId, count._count._all);
+    });
+  }
 
   const usersById = new Map(users.map((user) => [user.id, user]));
-  const countsByViewerId = new Map(
-    viewCounts.map((count) => [count.viewerId, count._count._all]),
-  );
 
   const visitors = latestViews
     .map((view) => {
@@ -959,6 +965,7 @@ router.get(
       const { visitors } = await getRecentProfileVisitors(targetUserId, {
         limit: 3,
         windowDays: 30,
+        skipViewCounts: true,
       });
 
       res.json({ success: true, visitors });

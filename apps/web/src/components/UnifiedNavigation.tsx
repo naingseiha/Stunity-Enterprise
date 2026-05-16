@@ -38,6 +38,7 @@ import {
   LayoutDashboard,
   Globe,
   School,
+  Brain,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
@@ -341,6 +342,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
   const canOpenAttendanceDashboard = isSchoolAttendanceAdminRole(user?.role);
 
+  const canViewTeacherQuizAnalytics = useMemo(
+    () =>
+      ['TEACHER', 'ADMIN', 'STAFF', 'SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user?.role ?? '') ||
+      Boolean(user?.isSuperAdmin),
+    [user?.isSuperAdmin, user?.role]
+  );
+
   // Memoized school menu sections with grouped items
   const schoolMenuSections = useMemo<SchoolMenuSection[]>(() => [
     {
@@ -358,6 +366,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers', skeleton: 'table' as const },
         { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes', skeleton: 'cards' as const },
         { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: 'subjects', skeleton: 'table' as const },
+        ...(canViewTeacherQuizAnalytics
+          ? [{ name: 'Quiz Analytics', icon: Brain, path: `/${locale}/teacher/quizzes/analytics`, prefetch: null, skeleton: 'dashboard' as const }]
+          : []),
       ],
     },
     {
@@ -409,7 +420,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         ],
       }]
       : []),
-  ], [canManageTranslations, canOpenAttendanceDashboard, locale, tMonthlyReport]);
+  ], [canManageTranslations, canOpenAttendanceDashboard, canViewTeacherQuizAnalytics, locale, tMonthlyReport]);
 
   // Flatten for mobile menu compatibility
   const schoolMenuItems = useMemo(
@@ -1005,6 +1016,18 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         <span className="flex-1"><AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_ed5c09ec" /></span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
                       </Link>
+                      {canViewTeacherQuizAnalytics && (
+                        <Link
+                          href={`/${locale}/teacher/quizzes/analytics`}
+                          prefetch={true}
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
+                        >
+                          <Brain className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" />
+                          <span className="flex-1">Quiz Analytics</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                        </Link>
+                      )}
                       <Link
                         href={`/${locale}/settings`}
                         prefetch={true}
