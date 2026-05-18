@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { resolveReportAcademicStartYear } from '../report-utils';
 import * as L from './khm-moeys-logic';
 
-export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1';
+export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1' | 'semester-2';
 
 export interface MonthlyReportQuery {
   scope?: string;
@@ -23,6 +23,7 @@ function parseFormat(raw?: string): MonthlyReportFormat {
   const f = String(raw || 'summary').toLowerCase();
   if (f === 'detailed') return 'detailed';
   if (f === 'semester-1' || f === 'semester_1' || f === 'semester1') return 'semester-1';
+  if (f === 'semester-2' || f === 'semester_2' || f === 'semester2') return 'semester-2';
   return 'summary';
 }
 
@@ -457,7 +458,8 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
 
   const shared = await loadSharedContext(prisma, schoolId, query);
 
-  if (format === 'semester-1') {
+  if (format === 'semester-1' || format === 'semester-2') {
+    const isSem1 = format === 'semester-1';
     const examMonthNumber = shared.requestedMonthNumber;
     const examLabel = L.resolveKhmerMonthLabel(examMonthNumber, shared.monthParam);
     const examActualYear = L.resolveKhmerMonthlyReportPeriod(
@@ -467,8 +469,9 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
     );
 
     const preSnapshots: { monthNumber: number; label: string; year: number; students: RankedStudent[] }[] = [];
+    const preMonths = isSem1 ? L.MOEYS_SEMESTER_ONE_PRE_MONTHS : L.MOEYS_SEMESTER_TWO_PRE_MONTHS;
 
-    for (const m of L.MOEYS_SEMESTER_ONE_PRE_MONTHS) {
+    for (const m of preMonths) {
       const label = L.resolveKhmerMonthLabel(m, undefined);
       const actualYear = L.resolveKhmerMonthlyReportPeriod(
         shared.academicStartYear,

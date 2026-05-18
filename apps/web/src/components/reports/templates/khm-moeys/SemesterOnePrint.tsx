@@ -19,26 +19,30 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
   const classLabel = isGradeWide
     ? `កម្រិតថ្នាក់៖ ថ្នាក់ទី ${report.grade}`
     : report.class?.name || `ថ្នាក់ទី ${report.grade}`;
-  const reportTitle = settings.reportTitle || 'តារាងលទ្ធផលប្រចាំឆមាសទី១';
+  const isSem2 = report.format === 'semester-2';
+  const reportTitle = settings.reportTitle || (isSem2 ? 'តារាងលទ្ធផលប្រចាំឆមាសទី២' : 'តារាងលទ្ធផលប្រចាំឆមាសទី១');
   const teacherName = settings.teacherName || report.teacherName || '';
   const signatureDate =
     settings.reportDate?.trim() ||
     formatReportDate((report.school?.name || settings.examCenter || '').split(',')[0]?.trim() || 'ស្វាយធំ');
 
   // Use school profile data for dynamic header
-  const officeName = schoolProfile?.officeName || settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា';
-  const clusterName = schoolProfile?.province ? `ខេត្ត៖ ${schoolProfile.province}` : settings.province;
-  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter;
+  const officeName = 'មន្ទីរអប់រំ យុវជន និងកីឡា';
+  const provinceVal = schoolProfile?.province || settings.province || '';
+  const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
+  const clusterName = cleanProvince ? `ខេត្ត៖ ${cleanProvince}` : '';
+  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 
   return (
     <div className="khmer-monthly-print">
+      <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet" />
       <style>{`
         @font-face { font-family: "Khmer OS Muol Light"; src: local("Khmer OS Muol Light"), local("KhmerOSMuolLight"); }
         @font-face { font-family: "Khmer OS Bokor"; src: local("Khmer OS Bokor"), local("KhmerOSBokor"); }
-        @font-face { font-family: "Tacteing"; src: local("Tacteing"), local("TacteingA"); }
+        @font-face { font-family: "Tacteing"; src: local("Tacteing"), local("TacteingA"), local("Tacteng"), local("TactengA"); }
         :root {
-          --khmer-report-heading-font: "Metal", "Moul", "Khmer OS Muol Light", serif;
+          --khmer-report-heading-font: 'Moul', "Metal", "Khmer OS Muol Light", serif;
           --khmer-report-body-font: "Battambang", "Khmer OS Siemreap", serif;
           --khmer-report-moul: 'Moul', "Metal", "Khmer OS Muol Light", serif;
         }
@@ -54,6 +58,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
         .khmer-monthly-header-left {
           text-align: left;
           flex: 1;
+          padding-top: 45px;
         }
 
         .khmer-monthly-header-right {
@@ -77,7 +82,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
         }
 
         .khmer-symbol-3 {
-          font-family: "Tacteing", serif;
+          font-family: "Tacteing", "Tacteng", "tactieng", serif;
           font-size: 28px;
           color: #dc2626;
           margin-top: 0;
@@ -92,6 +97,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
         .moeys-semester-page:last-child { page-break-after: auto; }
         .moeys-semester-table { width: 100%; border-collapse: collapse; }
         .moeys-semester-table th, .moeys-semester-table td { border: 1px solid #000; padding: 2px 4px; text-align: center; }
+        .moeys-semester-table th { font-family: var(--khmer-report-heading-font); font-size: ${settings.tableFontSize + 1}px; }
         .moeys-semester-table .name { text-align: left; min-width: 120px; }
         @media print {
           @page { size: A4 portrait; margin: 0; }
@@ -141,7 +147,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
               <thead>
                 <tr>
                   <th rowSpan={2}>ល.រ</th>
-                  <th rowSpan={2}>គោត្តនាម និងនាម</th>
+                  <th rowSpan={2}>គោត្តនាម នាម</th>
                   {isGradeWide && settings.showClassName && <th rowSpan={2}>ថ្នាក់</th>}
                   <th colSpan={3}>អវត្តមាន</th>
                   <th colSpan={2}>លទ្ធផលប្រចាំខែឆមាស</th>
@@ -202,7 +208,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                   {/* 1. General Summary Cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 15 }}>
                     <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#eff6ff', borderLeft: '4px solid #3b82f6' }}>
-                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>សិស្សសរុប (Total)</div>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>សិស្សសរុប</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.totalStudents}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
                         <span>ស្រី៖ {report.statistics.femaleStudents}</span>
@@ -210,7 +216,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                       </div>
                     </div>
                     <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#ecfdf5', borderLeft: '4px solid #10b981' }}>
-                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ជាប់ (Passed)</div>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ជាប់</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.passedStudents}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
                         <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
@@ -218,7 +224,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                       </div>
                     </div>
                     <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#fef2f2', borderLeft: '4px solid #ef4444' }}>
-                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ធ្លាក់ (Failed)</div>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ធ្លាក់</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.failedStudents}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
                         <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
@@ -228,7 +234,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                   </div>
 
                   {/* 2. Grade Distribution Cards */}
-                  <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
+                  <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
                     {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
                       const count = report.students.filter(s => s.gradeLevel === grade).length;

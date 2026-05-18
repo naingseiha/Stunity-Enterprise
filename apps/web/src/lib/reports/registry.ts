@@ -12,5 +12,5 @@ export function normalizeReportTemplateId(template?: string | null): ReportTempl
 }
 
 export function getSupportedFormats(_templateId: string): MonthlyReportFormat[] {
-  return ['summary', 'detailed', 'semester-1'];
+  return ['summary', 'detailed', 'semester-1', 'semester-2'];
 }

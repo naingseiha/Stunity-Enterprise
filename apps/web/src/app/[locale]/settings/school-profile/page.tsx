@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { schoolAPI } from '@/lib/api/school';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -68,6 +69,79 @@ export default function SchoolProfilePage(props: { params: Promise<{ locale: str
     slogan: '',
     establishedYear: '',
   });
+
+  const resolveMediaUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/uploads/')) return `${FEED_SERVICE_URL}${url}`;
+    return url;
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const token = TokenManager.getAccessToken();
+    const formData = new FormData();
+    formData.append('files', file);
+
+    try {
+      setSubmitting(true);
+      setError('');
+      const res = await fetch(`${FEED_SERVICE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Failed to upload logo');
+      const data = await res.json();
+      if (data.success && data.data?.[0]?.url) {
+        setForm(prev => ({ ...prev, logoUrl: data.data[0].url }));
+        setSuccess('Logo uploaded successfully!');
+        window.setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Logo upload failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleStampUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const token = TokenManager.getAccessToken();
+    const formData = new FormData();
+    formData.append('files', file);
+
+    try {
+      setSubmitting(true);
+      setError('');
+      const res = await fetch(`${FEED_SERVICE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Failed to upload stamp');
+      const data = await res.json();
+      if (data.success && data.data?.[0]?.url) {
+        setForm(prev => ({ ...prev, stampUrl: data.data[0].url }));
+        setSuccess('Official stamp uploaded successfully!');
+        window.setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Stamp upload failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -211,12 +285,23 @@ export default function SchoolProfilePage(props: { params: Promise<{ locale: str
                     <div className="relative group mx-auto w-fit">
                       <div className="w-48 h-48 rounded-[3rem] bg-slate-50 dark:bg-gray-800 border-2 border-dashed border-slate-200 dark:border-gray-700 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-500 shadow-inner">
                         {form.logoUrl ? (
-                          <img src={form.logoUrl} alt="Logo Preview" className="w-full h-full object-contain p-6" />
+                          <img src={resolveMediaUrl(form.logoUrl)} alt="Logo Preview" className="w-full h-full object-contain p-6" />
                         ) : (
                           <School className="w-16 h-16 text-slate-300 dark:text-gray-600" />
                         )}
                       </div>
-                      <button type="button" className="absolute -bottom-2 -right-2 p-4 rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-slate-100 dark:border-gray-800 text-blue-600 dark:text-blue-400 hover:scale-110 transition-all">
+                      <input
+                        type="file"
+                        id="logo-upload"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('logo-upload')?.click()}
+                        className="absolute -bottom-2 -right-2 p-4 rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-slate-100 dark:border-gray-800 text-blue-600 dark:text-blue-400 hover:scale-110 transition-all"
+                      >
                         <Camera className="w-5 h-5" />
                       </button>
                     </div>
@@ -230,12 +315,23 @@ export default function SchoolProfilePage(props: { params: Promise<{ locale: str
                     <div className="relative group mx-auto w-fit">
                       <div className="w-48 h-48 rounded-full bg-slate-50 dark:bg-gray-800 border-2 border-dashed border-slate-200 dark:border-gray-700 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-500 shadow-inner">
                         {form.stampUrl ? (
-                          <img src={form.stampUrl} alt="Stamp Preview" className="w-full h-full object-contain p-8" />
+                          <img src={resolveMediaUrl(form.stampUrl)} alt="Stamp Preview" className="w-full h-full object-contain p-8" />
                         ) : (
                           <ShieldCheck className="w-16 h-16 text-slate-300 dark:text-gray-600" />
                         )}
                       </div>
-                      <button type="button" className="absolute -bottom-2 -right-2 p-4 rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-slate-100 dark:border-gray-800 text-red-600 dark:text-red-400 hover:scale-110 transition-all">
+                      <input
+                        type="file"
+                        id="stamp-upload"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleStampUpload}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('stamp-upload')?.click()}
+                        className="absolute -bottom-2 -right-2 p-4 rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-slate-100 dark:border-gray-800 text-red-600 dark:text-red-400 hover:scale-110 transition-all"
+                      >
                         <Camera className="w-5 h-5" />
                       </button>
                     </div>
@@ -374,7 +470,7 @@ export default function SchoolProfilePage(props: { params: Promise<{ locale: str
                   <h2 className="text-xl font-black text-slate-800 dark:text-white">Location & Contact Details</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
                   <div className="space-y-2">
                     <label className={labelClass}>Province (ខេត្ត៖)</label>
                     <input
@@ -403,6 +499,16 @@ export default function SchoolProfilePage(props: { params: Promise<{ locale: str
                       onChange={(e) => setForm({ ...form, commune: e.target.value })}
                       className={inputClass}
                       placeholder="e.g. ឃុំកណ្តែក"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className={labelClass}>Village (ភូមិ)</label>
+                    <input
+                      type="text"
+                      value={form.village || ''}
+                      onChange={(e) => setForm({ ...form, village: e.target.value })}
+                      className={inputClass}
+                      placeholder="e.g. ភូមិអញ្ចាញ"
                     />
                   </div>
                 </div>

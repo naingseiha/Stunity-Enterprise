@@ -69,7 +69,7 @@ type StoredPrintSettings = {
 };
 
 const DEFAULT_SETTINGS = {
-  province: 'ខេត្តកំពង់ចាម',
+  province: '',
   examCenter: '',
   roomNumber: '',
   reportTitle: '',
@@ -86,9 +86,9 @@ const DEFAULT_SETTINGS = {
   showClassName: true,
   showCircles: true,
   autoCircle: true,
-  firstPageStudentCount: 29,
+  firstPageStudentCount: 38,
   nextPageStudentCount: 34,
-  tableFontSize: 9,
+  tableFontSize: 10,
 };
 
 export default function KhmerMonthlyReportPage() {
@@ -108,7 +108,9 @@ export default function KhmerMonthlyReportPage() {
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedMonthNumber, setSelectedMonthNumber] = useState(2);
-  const [reportFormat, setReportFormat] = useState<MonthlyReportFormat>('summary');
+  const [reportType, setReportType] = useState<'monthly' | 'semester'>('monthly');
+  const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
+  const reportFormat: MonthlyReportFormat = reportType === 'monthly' ? 'detailed' : (selectedSemester === 1 ? 'semester-1' : 'semester-2');
   const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [schoolProfile, setSchoolProfile] = useState<any>(null);
@@ -160,9 +162,12 @@ export default function KhmerMonthlyReportPage() {
       const raw = localStorage.getItem(`${SETTINGS_STORAGE}:${school.id}`);
       if (!raw) return;
       const parsed = JSON.parse(raw) as StoredPrintSettings;
+      // Do NOT load province or examCenter from localStorage cache
+      // so they are always dynamically loaded from the school profile
+      const { province, examCenter, ...rest } = parsed;
       setSettings((prev) => ({
         ...prev,
-        ...parsed,
+        ...rest,
       }));
     } catch {
       /* ignore */
@@ -171,10 +176,9 @@ export default function KhmerMonthlyReportPage() {
 
   useEffect(() => {
     if (!school?.id || typeof window === 'undefined') return;
+    // Do NOT save province or examCenter in localStorage cache
     const { province, examCenter, ...rest } = settings;
     const payload: StoredPrintSettings = rest;
-    if (province) payload.province = province;
-    if (examCenter) payload.examCenter = examCenter;
     localStorage.setItem(`${SETTINGS_STORAGE}:${school.id}`, JSON.stringify(payload));
   }, [school?.id, settings]);
 
@@ -214,16 +218,10 @@ export default function KhmerMonthlyReportPage() {
   }, [grades, selectedGrade]);
 
   useEffect(() => {
-    if (reportFormat === 'semester-1') {
-      setSelectedMonthNumber(2);
+    if (reportType === 'semester') {
+      setSelectedMonthNumber(selectedSemester === 1 ? 2 : 7);
     }
-    
-    // Summary hides subjects, Detailed shows them
-    setSettings(prev => ({
-      ...prev,
-      showSubjects: reportFormat === 'detailed'
-    }));
-  }, [reportFormat]);
+  }, [reportType, selectedSemester]);
 
   useEffect(() => {
     setHiddenSubjects(new Set());
@@ -478,9 +476,8 @@ export default function KhmerMonthlyReportPage() {
   };
 
   const formatLabelMap = {
-    summary: t('formatSummary'),
-    detailed: t('formatDetailed'),
-    'semester-1': t('formatSemester1'),
+    monthly: t('formatMonthly'),
+    semester: t('formatSemester'),
   } as const;
 
   return (
@@ -517,17 +514,17 @@ export default function KhmerMonthlyReportPage() {
                         aria-label={t('formatLabel')}
                         className="inline-flex w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
                       >
-                        {(['summary', 'detailed', 'semester-1'] as const).map((fmt, idx) => (
+                        {(['monthly', 'semester'] as const).map((fmt, idx) => (
                           <button
                             key={fmt}
                             type="button"
                             role="tab"
-                            aria-pressed={reportFormat === fmt}
-                            onClick={() => setReportFormat(fmt)}
+                            aria-pressed={reportType === fmt}
+                            onClick={() => setReportType(fmt)}
                             className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                               idx > 0 ? 'border-l border-slate-200' : ''
                             } ${
-                              reportFormat === fmt
+                              reportType === fmt
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                             } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
@@ -619,7 +616,7 @@ export default function KhmerMonthlyReportPage() {
                       </label>
                     )}
 
-                    {reportFormat !== 'semester-1' ? (
+                    {reportType === 'monthly' ? (
                       <label className="block">
                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                           {t('monthLabel')}
@@ -637,14 +634,19 @@ export default function KhmerMonthlyReportPage() {
                         </select>
                       </label>
                     ) : (
-                      <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2.5">
+                      <label className="block">
                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t('formatSemester1')}
+                          {t('formatSemester')}
                         </span>
-                        <p className="mt-0.5 text-xs text-cyan-700">
-                          {t('monthsIncluded')}: {semesterMonthLabels.join(' · ')}
-                        </p>
-                      </div>
+                        <select
+                          className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          value={selectedSemester}
+                          onChange={(event) => setSelectedSemester(Number(event.target.value) as 1 | 2)}
+                        >
+                          <option value={1}>{t('formatSemester1')}</option>
+                          <option value={2}>{t('formatSemester2')}</option>
+                        </select>
+                      </label>
                     )}
                   </div>
 

@@ -22,13 +22,15 @@ export default function MonthlyReportPrint(props: MonthlySummaryPrintProps & { s
     return <MonthlySummaryPrint {...props} />;
   }
 
-  if (format === 'semester-1') {
+  if (format === 'semester-1' || format === 'semester-2') {
     return <SemesterOnePrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
   }
 
-  if (format === 'detailed') {
+  // If settings indicate subjects should be shown and there are subjects to show, render Detailed vertical table.
+  if (props.settings.showSubjects && report.subjects?.length > 0) {
     return <MonthlyDetailedPrint {...props} schoolProfile={schoolProfile} />;
   }
 
+  // Otherwise fallback to the standard compact Summary table
   return <MonthlySummaryPrint {...props} schoolProfile={schoolProfile} />;
 }

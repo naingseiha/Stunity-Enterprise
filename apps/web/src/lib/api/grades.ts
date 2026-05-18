@@ -119,7 +119,7 @@ export interface MonthlyReportSemesterOne {
   finalGrade: string;
 }
 
-export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1';
+export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1' | 'semester-2';
 
 export interface KhmerMonthlyReportStudent {
   studentId: string;

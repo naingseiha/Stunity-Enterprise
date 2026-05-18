@@ -21,6 +21,7 @@ export const KHMER_MONTH_LABELS: Record<number, string> = {
 
 /** Months averaged before the semester exam month (SchoolManagementApp parity) */
 export const MOEYS_SEMESTER_ONE_PRE_MONTHS = [11, 12, 1] as const;
+export const MOEYS_SEMESTER_TWO_PRE_MONTHS = [3, 4, 5, 6] as const;
 
 export const KHMER_SUBJECT_ORDER: Record<string, number> = {
   khmer: 1,

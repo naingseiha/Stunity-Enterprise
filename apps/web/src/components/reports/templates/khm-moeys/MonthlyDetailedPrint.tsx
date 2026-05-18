@@ -11,6 +11,10 @@ function formatScore(score: number | null | undefined, decimals = 1) {
   return Number(score).toFixed(decimals);
 }
 
+function isPassed(gradeLevel: string, average: number) {
+  return ['A', 'B', 'C', 'D', 'E'].includes(gradeLevel) && average >= 25;
+}
+
 /**
  * Detailed monthly layout: vertical subject headers (MOEYS / SchoolManagementApp style).
  */
@@ -28,9 +32,11 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
   const monthLine = report.period?.month ? `ខែ${report.period.month}` : '';
 
   // Use school profile data for dynamic header
-  const officeName = schoolProfile?.officeName || settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា';
-  const clusterName = schoolProfile?.province ? `ខេត្ត៖ ${schoolProfile.province}` : settings.province;
-  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter;
+  const officeName = 'មន្ទីរអប់រំ យុវជន និងកីឡា';
+  const provinceVal = schoolProfile?.province || settings.province || '';
+  const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
+  const clusterName = cleanProvince ? `ខេត្ត៖ ${cleanProvince}` : '';
+  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 
   const pages = paginateReports(
@@ -50,11 +56,12 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
 
   return (
     <div className="khmer-monthly-print">
+      <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet" />
       <style>{`
         @font-face { font-family: "Khmer OS Muol Light"; src: local("Khmer OS Muol Light"), local("KhmerOSMuolLight"); }
-        @font-face { font-family: "Tacteing"; src: local("Tacteing"), local("TacteingA"); }
+        @font-face { font-family: "Tacteing"; src: local("Tacteing"), local("TacteingA"), local("Tacteng"), local("TactengA"); }
         :root {
-          --khmer-report-heading-font: "Metal", "Moul", "Khmer OS Muol Light", serif;
+          --khmer-report-heading-font: 'Moul', "Metal", "Khmer OS Muol Light", serif;
           --khmer-report-body-font: "Battambang", "Khmer OS Siemreap", serif;
           --khmer-report-moul: 'Moul', "Metal", "Khmer OS Muol Light", serif;
         }
@@ -70,6 +77,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
         .khmer-monthly-header-left {
           text-align: left;
           flex: 1;
+          padding-top: 45px;
         }
 
         .khmer-monthly-header-right {
@@ -93,7 +101,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
         }
 
         .khmer-symbol-3 {
-          font-family: "Tacteing", serif;
+          font-family: "Tacteing", "Tacteng", "tactieng", serif;
           font-size: 28px;
           color: #dc2626;
           margin-top: 0;
@@ -122,7 +130,12 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
         }
         .detailed-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .detailed-table th, .detailed-table td { border: 1px solid #000; padding: 1px 2px; text-align: center; }
+        .detailed-table th { font-family: var(--khmer-report-heading-font); font-size: ${fs + 1}px; }
+        .detailed-table tbody tr { height: 20px; }
         .detailed-table .nm { text-align: left; word-break: break-word; }
+        .khmer-monthly-index-circle { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 18px; }
+        .khmer-monthly-index-circle::before { content: ""; position: absolute; width: 24px; height: 18px; border: 1.5px solid #dc2626; border-radius: 50%; }
+        .passed-name { background: #fef9c3; font-weight: 700; }
         @media print {
           @page { size: A4 portrait; margin: 0; }
           .khmer-monthly-print { display: block !important; width: 100% !important; background: white !important; }
@@ -155,10 +168,11 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                   </div>
                 </div>
 
-                <div style={{ textAlign: 'center', marginTop: 4 }}>
-                  <div style={{ fontSize: 15, fontFamily: 'var(--khmer-report-heading-font)', fontWeight: 600 }}>{reportTitle}</div>
+                <div style={{ textAlign: 'center', marginTop: -32 }}>
+                  <div style={{ fontSize: 15, fontFamily: 'var(--khmer-report-heading-font)', fontWeight: 600 }}>
+                    លទ្ធផលប្រឡង{monthLine ? `៖ ${monthLine}` : ''}
+                  </div>
                   <div style={{ fontSize: 11, marginTop: 2 }}>ឆ្នាំសិក្សា៖ {report.academicYear.label}</div>
-                  {monthLine ? <div style={{ fontSize: 11, marginTop: 2 }}>{monthLine}</div> : null}
                   <div style={{ fontSize: 11, fontWeight: 600, marginTop: 4 }}>{classLabel}</div>
                 </div>
               </div>
@@ -174,9 +188,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                   </th>
                   <th style={{ width: 72 }}>
                     <div style={{ fontSize: fs, lineHeight: 1.15, padding: '2px 0' }}>
-                      គោត្តនាម
-                      <br />
-                      និងនាម
+                      គោត្តនាម នាម
                     </div>
                   </th>
                   {isGradeWide && settings.showClassName && (
@@ -230,10 +242,11 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                     pageIndex === 0
                       ? index + 1
                       : settings.firstPageStudentCount + (pageIndex - 1) * settings.nextPageStudentCount + index + 1;
+                  const passed = settings.autoCircle && settings.showCircles && isPassed(student.gradeLevel, student.average);
                   return (
                     <tr key={student.studentId}>
-                      <td>{rowNum}</td>
-                      <td className="nm">{student.studentName}</td>
+                      <td>{passed ? <span className="khmer-monthly-index-circle">{rowNum}</span> : rowNum}</td>
+                      <td className={`nm ${passed ? 'passed-name' : ''}`}>{student.studentName}</td>
                       {isGradeWide && settings.showClassName && <td>{student.className}</td>}
                       {columnSubjects.map((subject) => (
                         <td key={subject.id}>{formatScore(student.grades[subject.id], 0)}</td>
@@ -275,7 +288,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                   {/* 1. General Summary Cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 15 }}>
                     <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#eff6ff', borderLeft: '4px solid #3b82f6' }}>
-                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>សិស្សសរុប (Total)</div>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>សិស្សសរុប</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.totalStudents}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
                         <span>ស្រី៖ {report.statistics.femaleStudents}</span>
@@ -283,7 +296,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                       </div>
                     </div>
                     <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#ecfdf5', borderLeft: '4px solid #10b981' }}>
-                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ជាប់ (Passed)</div>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ជាប់</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.passedStudents}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
                         <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
@@ -291,7 +304,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                       </div>
                     </div>
                     <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', textAlign: 'center', background: '#fef2f2', borderLeft: '4px solid #ef4444' }}>
-                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ធ្លាក់ (Failed)</div>
+                      <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 9, color: '#64748b', marginBottom: 4 }}>ធ្លាក់</div>
                       <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{report.statistics.failedStudents}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4, fontSize: 9, color: '#475569', fontWeight: 600 }}>
                         <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
@@ -301,7 +314,7 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                   </div>
 
                   {/* 2. Grade Distribution Cards */}
-                  <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
+                  <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
                     {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
                       const count = report.students.filter(s => s.gradeLevel === grade).length;

@@ -64,13 +64,16 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
     report.period?.month ? `ខែ${report.period.month}` : '';
 
   // Use school profile data for dynamic header
-  const officeName = schoolProfile?.officeName || settings.province || 'មន្ទីរអប់រំយុវជន និងកីឡា';
-  const clusterName = schoolProfile?.province ? `ខេត្ត៖ ${schoolProfile.province}` : settings.province;
-  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter;
+  const officeName = 'មន្ទីរអប់រំ យុវជន និងកីឡា';
+  const provinceVal = schoolProfile?.province || settings.province || '';
+  const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
+  const clusterName = cleanProvince ? `ខេត្ត៖ ${cleanProvince}` : '';
+  const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 
   return (
     <div className="khmer-monthly-print">
+      <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet" />
       <style>{`
         @font-face {
           font-family: "Khmer OS Muol Light";
@@ -86,11 +89,11 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         }
         @font-face {
           font-family: "Tacteing";
-          src: local("Tacteing"), local("TacteingA");
+          src: local("Tacteing"), local("TacteingA"), local("Tacteng"), local("TactengA");
         }
 
         :root {
-          --khmer-report-heading-font: "Metal", "Moul", "Khmer OS Muol Light", "Khmer OS Muol", serif;
+          --khmer-report-heading-font: 'Moul', "Metal", "Khmer OS Muol Light", "Khmer OS Muol", serif;
           --khmer-report-body-font: "Battambang", "Khmer OS Siemreap", "Khmer OS Siem Reap", "Khmer OS", serif;
           --khmer-report-moul: 'Moul', "Metal", "Khmer OS Muol Light", serif;
         }
@@ -106,6 +109,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         .khmer-monthly-header-left {
           text-align: left;
           flex: 1;
+          padding-top: 45px;
         }
 
         .khmer-monthly-header-right {
@@ -129,7 +133,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         }
 
         .khmer-symbol-3 {
-          font-family: "Tacteing", serif;
+          font-family: "Tacteing", "Tacteng", "tactieng", serif;
           font-size: 28px;
           color: #dc2626;
           margin-top: 0;
@@ -212,6 +216,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
 
         .khmer-monthly-title {
           text-align: center;
+          margin-top: -9mm;
           margin-bottom: 1.5mm;
         }
 
@@ -254,9 +259,13 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
           border: 1px solid #000;
         }
 
+        .khmer-monthly-table tbody tr {
+          height: 24px;
+        }
+
         .khmer-monthly-table th,
         .khmer-monthly-table td {
-          padding: 4px 6px;
+          padding: 2px 4px;
           text-align: center;
           vertical-align: middle;
           line-height: 1.25;
@@ -265,6 +274,8 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
         .khmer-monthly-table th {
           background: #f3f4f6;
           font-weight: 700;
+          font-family: var(--khmer-report-heading-font);
+          font-size: ${settings.tableFontSize + 1}px;
         }
 
         .khmer-monthly-table .attendance-head,
@@ -325,16 +336,16 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
           align-items: center;
           justify-content: center;
           min-width: 24px;
-          height: 24px;
+          height: 18px;
         }
 
         .khmer-monthly-index-circle::before {
           content: "";
           position: absolute;
           width: 24px;
-          height: 24px;
-          border: 2px solid #dc2626;
-          border-radius: 999px;
+          height: 18px;
+          border: 1.5px solid #dc2626;
+          border-radius: 50%;
         }
 
         .khmer-monthly-rank {
@@ -623,11 +634,8 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                 </div>
 
                 <div className="khmer-monthly-title">
-                  <h1>{reportTitle}</h1>
+                  <h1>លទ្ធផលប្រឡង{monthLine ? `៖ ${monthLine}` : ''}</h1>
                   <p>ឆ្នាំសិក្សា៖ {report.academicYear.label}</p>
-                  {monthLine ? (
-                    <p style={{ fontSize: '11px', margin: '2px 0 0', fontFamily: 'var(--khmer-report-heading-font)' }}>{monthLine}</p>
-                  ) : null}
                   <div className="khmer-monthly-class-line">{classLabel}</div>
                   {settings.roomNumber?.trim() ? (
                     <p style={{ fontSize: '11px', margin: '4px 0 0', fontFamily: 'var(--khmer-report-body-font)' }}>
@@ -645,7 +653,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
               <thead>
                 <tr>
                   <th rowSpan={settings.showAttendance ? 2 : 1} className="index-head">ល.រ</th>
-                  <th rowSpan={settings.showAttendance ? 2 : 1} className="name-head">គោត្តនាម និងនាម</th>
+                  <th rowSpan={settings.showAttendance ? 2 : 1} className="name-head">គោត្តនាម នាម</th>
                   {isGradeWide && settings.showClassName && (
                     <th rowSpan={settings.showAttendance ? 2 : 1} className="class-head">ថ្នាក់</th>
                   )}
@@ -718,7 +726,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                   {/* 1. General Summary Cards */}
                   <div className="khmer-analytics-grid">
                     <div className="khmer-analytics-card total">
-                      <div className="card-header">សិស្សសរុប (Total)</div>
+                      <div className="card-header">សិស្សសរុប</div>
                       <div className="card-value">{report.statistics.totalStudents}</div>
                       <div className="card-footer">
                         <span>ស្រី៖ {report.statistics.femaleStudents}</span>
@@ -726,7 +734,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                       </div>
                     </div>
                     <div className="khmer-analytics-card passed">
-                      <div className="card-header">ជាប់ (Passed)</div>
+                      <div className="card-header">ជាប់</div>
                       <div className="card-value">{report.statistics.passedStudents}</div>
                       <div className="card-footer">
                         <span>ស្រី៖ {report.statistics.passedFemaleStudents}</span>
@@ -734,7 +742,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                       </div>
                     </div>
                     <div className="khmer-analytics-card failed">
-                      <div className="card-header">ធ្លាក់ (Failed)</div>
+                      <div className="card-header">ធ្លាក់</div>
                       <div className="card-value">{report.statistics.failedStudents}</div>
                       <div className="card-footer">
                         <span>ស្រី៖ {report.statistics.failedFemaleStudents}</span>
@@ -744,7 +752,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                   </div>
 
                   {/* 2. Grade Distribution Cards */}
-                  <div className="khmer-analytics-title">កម្រិតលទ្ធផលសិក្សា (Grade Distribution)</div>
+                  <div className="khmer-analytics-title">កម្រិតលទ្ធផលសិក្សា</div>
                   <div className="khmer-grade-grid">
                     {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
                       const count = report.students.filter(s => s.gradeLevel === grade).length;
