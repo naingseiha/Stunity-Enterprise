@@ -529,7 +529,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   }, [handleLinkHover, router]);
 
   const beginNavigationFeedback = useCallback(
-    (path: string, skeleton: SchoolSkeletonType | null, hasSidebar = true, prefetchType?: SchoolPrefetchType) => {
+    (path: string, skeleton: SchoolSkeletonType | null, hasSidebar = true) => {
       const now = Date.now();
       const lastFeedback = navFeedbackDedupRef.current;
       if (lastFeedback && lastFeedback.path === path && now - lastFeedback.at < 350) {
@@ -539,13 +539,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
       setOptimisticPath(path);
       setTransitionSkeleton(skeleton ? { type: skeleton, hasSidebar } : null);
-      if (prefetchType) {
-        primeRoute(path, prefetchType);
-      } else {
-        router.prefetch(path);
-      }
+      router.prefetch(path);
     },
-    [primeRoute, router]
+    [router]
   );
 
   const warmSchoolServices = useCallback(() => {
@@ -758,9 +754,6 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     const warmSchoolData = () => {
       warmSchoolServices();
       schoolMenuItems.forEach((item) => router.prefetch(item.path));
-      [...new Set(schoolMenuItems.map((item) => item.prefetch).filter(Boolean))].forEach((prefetchType) => {
-        handleLinkHover(prefetchType as SchoolPrefetchType);
-      });
       warmedSchoolDataKeyRef.current = warmKey;
     };
 
@@ -792,10 +785,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               <Link
                 href={isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`}
                 prefetch={true}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   const targetPath = isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`;
                   setOptimisticPath(targetPath);
                   setTransitionSkeleton(isSchoolContext ? { type: 'dashboard', hasSidebar: true } : { type: 'cards', hasSidebar: false });
+                  router.push(targetPath);
                 }}
                 className="flex items-center gap-2 group relative"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
@@ -819,7 +814,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       key={item.name}
                       href={item.path}
                       prefetch={true}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
                         // Escape valve: if this item is already stuck in navigating state, clear it
                         if (optimisticPath === item.path && pathname !== item.path) {
                           setOptimisticPath(null);
@@ -829,6 +825,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                         const hasSidebar = item.name === 'School';
                         beginNavigationFeedback(item.path, skeletonType, hasSidebar);
+                        router.push(item.path);
                       }}
                       onMouseEnter={() => router.prefetch(item.path)}
                       onFocus={() => router.prefetch(item.path)}
@@ -1081,7 +1078,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     key={item.name}
                     href={item.path}
                     prefetch={true}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       // Escape valve: if this item is already stuck in navigating state, clear it
                       if (optimisticPath === item.path && pathname !== item.path) {
                         setOptimisticPath(null);
@@ -1093,6 +1091,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       const hasSidebar = item.name === 'School';
                       beginNavigationFeedback(item.path, skeletonType, hasSidebar);
                       setMobileMenuOpen(false);
+                      router.push(item.path);
                     }}
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-150
@@ -1154,14 +1153,16 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       prefetch={true}
                       onMouseEnter={() => primeRoute(item.path, item.prefetch)}
                       onFocus={() => primeRoute(item.path, item.prefetch)}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
                         // Escape valve: if this item is already stuck in navigating state, clear it
                         if (optimisticPath === item.path && pathname !== item.path) {
                           setOptimisticPath(null);
                           setTransitionSkeleton(null);
                           return;
                         }
-                        beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch);
+                        beginNavigationFeedback(item.path, item.skeleton, true);
+                        router.push(item.path);
                       }}
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300
