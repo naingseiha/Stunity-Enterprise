@@ -57,9 +57,6 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
     : report.class?.name || `ថ្នាក់ទី ${report.grade}`;
   const reportTitle = settings.reportTitle || 'បញ្ជីពិន្ទុប្រចាំខែ';
   const teacherName = settings.teacherName || report.teacherName || '';
-  const signatureDate =
-    settings.reportDate?.trim() ||
-    formatReportDate((report.school?.name || settings.examCenter || '').split(',')[0]?.trim() || 'ស្វាយធំ');
   const monthLine =
     report.period?.month ? `ខែ${report.period.month}` : '';
 
@@ -68,6 +65,9 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
   const provinceVal = schoolProfile?.province || settings.province || '';
   const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
   const clusterName = cleanProvince ? `ខេត្ត៖ ${cleanProvince}` : '';
+  const signatureDate =
+    settings.reportDate?.trim() ||
+    formatReportDate(cleanProvince || '');
   const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 

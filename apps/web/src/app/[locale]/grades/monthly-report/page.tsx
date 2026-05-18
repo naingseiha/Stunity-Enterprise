@@ -100,12 +100,12 @@ export default function KhmerMonthlyReportPage() {
   const [loading, setLoading] = useState(true);
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState('');
-  const [report, setReport] = useState<KhmerMonthlyReportData | null>(null);
+  const [reports, setReports] = useState<KhmerMonthlyReportData[]>([]);
   const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
 
   const [selectedYear, setSelectedYear] = useState('');
   const [scope, setScope] = useState<ReportScope>('class');
-  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedMonthNumber, setSelectedMonthNumber] = useState(2);
   const [reportType, setReportType] = useState<'monthly' | 'semester'>('monthly');
@@ -201,15 +201,18 @@ export default function KhmerMonthlyReportPage() {
   }, [classes]);
 
   useEffect(() => {
-    if (!selectedClass && classes[0]?.id) setSelectedClass(classes[0].id);
+    if (selectedClasses.length === 0 && classes[0]?.id) setSelectedClasses([classes[0].id]);
     if (!selectedGrade && grades[0]) setSelectedGrade(grades[0]);
-  }, [classes, grades, selectedClass, selectedGrade]);
+  }, [classes, grades, selectedClasses, selectedGrade]);
 
   useEffect(() => {
-    if (selectedClass && !classes.some((classItem) => classItem.id === selectedClass)) {
-      setSelectedClass(classes[0]?.id || '');
+    const validClasses = selectedClasses.filter(id => classes.some(c => c.id === id));
+    if (selectedClasses.length > 0 && validClasses.length === 0) {
+      setSelectedClasses(classes[0]?.id ? [classes[0].id] : []);
+    } else if (validClasses.length !== selectedClasses.length) {
+      setSelectedClasses(validClasses);
     }
-  }, [classes, selectedClass]);
+  }, [classes, selectedClasses]);
 
   useEffect(() => {
     if (selectedGrade && !grades.includes(selectedGrade)) {
@@ -226,7 +229,7 @@ export default function KhmerMonthlyReportPage() {
   useEffect(() => {
     setHiddenSubjects(new Set());
     setTablePage(0);
-  }, [report]);
+  }, [reports]);
 
   useEffect(() => {
     if (!school?.id) return;
@@ -243,28 +246,58 @@ export default function KhmerMonthlyReportPage() {
   }, []);
 
   const selectedYearData = allYears.find((year) => year.id === selectedYear);
-  const selectedClassData = classes.find((classItem) => classItem.id === selectedClass);
   const selectedMonthLabel = getKhmerMonthLabel(selectedMonthNumber);
   const selectedMonthDisplay = getKhmerMonthDisplayName(selectedMonthNumber, selectedMonthLabel);
   const academicStartYear = selectedYearData ? Number.parseInt(selectedYearData.name, 10) : new Date().getFullYear();
-  const canGenerate = selectedYear && (scope === 'class' ? selectedClass : selectedGrade);
+  const canGenerate = selectedYear && (scope === 'class' ? selectedClasses.length > 0 : selectedGrade);
   const educationModelLabel = formatEducationModelLabel(school?.educationModel || 'KHM_MOEYS');
 
   const templateQuery =
     school?.educationModel === 'CUSTOM' ? 'KHM_MOEYS' : undefined;
 
-  const sortedSubjects = useMemo(() => {
-    if (!report?.subjects?.length) return [];
-    return sortSubjectsByOrder(report.subjects, report.grade);
-  }, [report]);
+  const groupedClasses = useMemo(() => {
+    const groups: { [grade: string]: typeof classes } = {};
+    classes.forEach((classItem) => {
+      const g = classItem.grade || 'Other';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(classItem);
+    });
 
-  const visibleSubjects = useMemo(() => {
-    return sortedSubjects.filter((s) => !hiddenSubjects.has(s.id));
-  }, [sortedSubjects, hiddenSubjects]);
+    Object.keys(groups).forEach((g) => {
+      groups[g].sort((a, b) => a.name.localeCompare(b.name, 'km', { numeric: true }));
+    });
+
+    return Object.keys(groups)
+      .sort((a, b) => {
+        const numA = parseInt(a.replace(/\D/g, ''), 10);
+        const numB = parseInt(b.replace(/\D/g, ''), 10);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.localeCompare(b);
+      })
+      .map((g) => ({
+        grade: g,
+        classItems: groups[g],
+      }));
+  }, [classes]);
+
+  const sortedSubjects = useMemo(() => {
+    if (!reports.length) return [];
+    const subjectMap = new Map<string, NonNullable<KhmerMonthlyReportData['subjects']>[number]>();
+    reports.forEach((report) => {
+      report.subjects?.forEach((subject) => {
+        const key = subject.nameKh || subject.name;
+        if (!subjectMap.has(key)) {
+          subjectMap.set(key, subject);
+        }
+      });
+    });
+    return sortSubjectsByOrder(Array.from(subjectMap.values()), reports[0]?.grade || 10);
+  }, [reports]);
 
   const sortedStudents = useMemo(() => {
-    if (!report?.students?.length) return [];
-    const list = [...report.students];
+    const previewReport = reports[0];
+    if (!previewReport?.students?.length) return [];
+    const list = [...previewReport.students];
     const dir = tableSort.direction === 'asc' ? 1 : -1;
     list.sort((a, b) => {
       let aVal: number;
@@ -285,7 +318,7 @@ export default function KhmerMonthlyReportPage() {
       return (aVal - bVal) * dir;
     });
     return list;
-  }, [report, tableSort]);
+  }, [reports, tableSort]);
 
   const PAGE_SIZE = 20;
   const totalPages = Math.max(1, Math.ceil(sortedStudents.length / PAGE_SIZE));
@@ -301,19 +334,39 @@ export default function KhmerMonthlyReportPage() {
     setError('');
 
     try {
-      const data = await gradeAPI.getMonthlyReport({
-        scope,
-        classId: scope === 'class' ? selectedClass : undefined,
-        grade: scope === 'grade' ? selectedGrade : selectedClassData?.grade,
-        month: selectedMonthLabel,
-        monthNumber: selectedMonthNumber,
-        year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
-        academicYearId: selectedYear,
-        format: reportFormat,
-        template: templateQuery,
-        options: { forceFresh },
-      });
-      setReport(data);
+      if (scope === 'class') {
+        const promises = selectedClasses.map(async (classId) => {
+          const classData = classes.find((c) => c.id === classId);
+          return gradeAPI.getMonthlyReport({
+            scope,
+            classId,
+            grade: classData?.grade,
+            month: selectedMonthLabel,
+            monthNumber: selectedMonthNumber,
+            year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
+            academicYearId: selectedYear,
+            format: reportFormat,
+            template: templateQuery,
+            options: { forceFresh },
+          });
+        });
+        const results = await Promise.all(promises);
+        setReports(results.filter(Boolean));
+      } else {
+        const data = await gradeAPI.getMonthlyReport({
+          scope,
+          classId: undefined,
+          grade: selectedGrade,
+          month: selectedMonthLabel,
+          monthNumber: selectedMonthNumber,
+          year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
+          academicYearId: selectedYear,
+          format: reportFormat,
+          template: templateQuery,
+          options: { forceFresh },
+        });
+        setReports(data ? [data] : []);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to generate report');
     } finally {
@@ -325,11 +378,11 @@ export default function KhmerMonthlyReportPage() {
     setSettings((current) => ({ ...current, [key]: value }));
   };
 
-  const toggleSubject = (subjectId: string) => {
+  const toggleSubject = (subjectName: string) => {
     setHiddenSubjects((prev) => {
       const next = new Set(prev);
-      if (next.has(subjectId)) next.delete(subjectId);
-      else next.add(subjectId);
+      if (next.has(subjectName)) next.delete(subjectName);
+      else next.add(subjectName);
       return next;
     });
   };
@@ -372,7 +425,7 @@ export default function KhmerMonthlyReportPage() {
       } else if (key === 'r' && !isFormElement && event.shiftKey) {
         event.preventDefault();
         if (canGenerate && !loadingReport) handleGenerate(true);
-      } else if (key === 'p' && report) {
+      } else if (key === 'p' && reports.length > 0) {
         event.preventDefault();
         window.print();
       }
@@ -380,7 +433,7 @@ export default function KhmerMonthlyReportPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canGenerate, loadingReport, report]);
+  }, [canGenerate, loadingReport, reports]);
 
   if (loading) {
     return <PageSkeleton user={user} school={school} type="form" showFilters={false} />;
@@ -391,16 +444,16 @@ export default function KhmerMonthlyReportPage() {
   const metricCards = [
     {
       label: t('students'),
-      value: report?.statistics.totalStudents ?? '—',
-      note: report ? t('metricFemale', { count: report.statistics.femaleStudents }) : t('metricGenerate'),
+      value: reports[0]?.statistics.totalStudents ?? '—',
+      note: reports.length > 0 ? t('metricFemale', { count: reports[0].statistics.femaleStudents }) : t('metricGenerate'),
       Icon: Users,
       accent: 'border-blue-100 bg-blue-50/70 text-blue-700',
       iconTone: 'bg-blue-100 text-blue-700',
     },
     {
       label: t('passed'),
-      value: report?.statistics.passedStudents ?? '—',
-      note: report ? `${t('failed')}: ${report.statistics.failedStudents}` : t('metricPassNote'),
+      value: reports[0]?.statistics.passedStudents ?? '—',
+      note: reports.length > 0 ? `${t('failed')}: ${reports[0].statistics.failedStudents}` : t('metricPassNote'),
       Icon: CheckCircle2,
       accent: 'border-emerald-100 bg-emerald-50/70 text-emerald-700',
       iconTone: 'bg-emerald-100 text-emerald-700',
@@ -489,17 +542,47 @@ export default function KhmerMonthlyReportPage() {
           <AnimatedContent>
             {/* Hero / Configuration */}
             <section className="overflow-hidden rounded-2xl border border-blue-100 bg-white">
-              <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <div>
                 {/* Left: configuration */}
                 <div className="p-5 sm:p-7">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700">
-                      <FileText className="h-5 w-5" />
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between border-b border-slate-100 pb-5">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1 leading-none">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                          {t('eyebrow')}
+                        </h1>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1 leading-none">
-                      <h1 className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
-                        {t('eyebrow')}
-                      </h1>
+
+                    {/* Compact Horizontal Statistics Row */}
+                    <div className="grid grid-cols-3 gap-3 w-full lg:w-[480px]">
+                      {metricCards.map((card) => {
+                        const Icon = card.Icon;
+                        return (
+                          <div
+                            key={card.label}
+                            className={`flex items-center gap-2.5 rounded-xl border p-2 ${card.accent}`}
+                          >
+                            <span className={`rounded-lg p-1.5 ${card.iconTone} shrink-0`}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-500/80 truncate">
+                                {card.label}
+                              </span>
+                              <span className="block text-sm font-extrabold text-slate-900 leading-tight">
+                                {card.value}
+                              </span>
+                              <span className="block text-[9px] text-slate-500 truncate leading-none mt-0.5">
+                                {card.note}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -561,7 +644,7 @@ export default function KhmerMonthlyReportPage() {
                   </div>
 
                   {/* Filters */}
-                  <div className="mt-6 grid gap-4 md:grid-cols-3">
+                  <div className={`mt-6 grid gap-4 ${scope === 'class' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                     <label className="block">
                       <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {t('academicYear')}
@@ -579,25 +662,7 @@ export default function KhmerMonthlyReportPage() {
                       </select>
                     </label>
 
-                    {scope === 'class' ? (
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t('class')}
-                        </span>
-                        <select
-                          className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={selectedClass}
-                          onChange={(event) => setSelectedClass(event.target.value)}
-                          disabled={loadingClasses}
-                        >
-                          {classes.map((classItem) => (
-                            <option key={classItem.id} value={classItem.id}>
-                              {classItem.name} ({classItem._count?.students || 0})
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : (
+                    {scope === 'grade' && (
                       <label className="block">
                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                           {t('grade')}
@@ -650,6 +715,98 @@ export default function KhmerMonthlyReportPage() {
                     )}
                   </div>
 
+                  {scope === 'class' && (
+                    <div className="mt-5 block">
+                      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {t('class')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedClasses.length === classes.length) {
+                              setSelectedClasses([]);
+                            } else {
+                              setSelectedClasses(classes.map(c => c.id));
+                            }
+                          }}
+                          className="text-xs font-medium text-blue-600 transition hover:text-blue-700 active:scale-95"
+                        >
+                          {selectedClasses.length === classes.length ? t('deselectAll', { fallback: 'Deselect All' }) : t('selectAll', { fallback: 'Select All' })}
+                        </button>
+                      </div>
+
+                      {loadingClasses ? (
+                        <div className="text-sm text-slate-500 py-4 text-center">{t('loading')}</div>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          {groupedClasses.map(({ grade, classItems }) => {
+                            const gradeClassIds = classItems.map(c => c.id);
+                            const allSelected = gradeClassIds.every(id => selectedClasses.includes(id));
+
+                            return (
+                              <div key={grade} className="flex items-start gap-4 py-3.5 first:pt-1 last:pb-1">
+                                {/* Aligned Left Grade Indicator */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (allSelected) {
+                                      setSelectedClasses(prev => prev.filter(id => !gradeClassIds.includes(id)));
+                                    } else {
+                                      setSelectedClasses(prev => {
+                                        const filtered = prev.filter(id => !gradeClassIds.includes(id));
+                                        return [...filtered, ...gradeClassIds];
+                                      });
+                                    }
+                                  }}
+                                  className="w-20 shrink-0 text-left transition hover:opacity-80 active:scale-95"
+                                >
+                                  <span className={`inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-bold transition duration-150 ${
+                                    allSelected
+                                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    ថ្នាក់ទី {grade}
+                                  </span>
+                                </button>
+ 
+                                {/* Wrapping Class Chips on the Right */}
+                                <div className="flex flex-wrap gap-2">
+                                  {classItems.map((classItem) => {
+                                    const isSelected = selectedClasses.includes(classItem.id);
+                                    return (
+                                      <button
+                                        key={classItem.id}
+                                        type="button"
+                                        onClick={() => {
+                                          if (isSelected) {
+                                            setSelectedClasses(selectedClasses.filter(id => id !== classItem.id));
+                                          } else {
+                                            setSelectedClasses([...selectedClasses, classItem.id]);
+                                          }
+                                        }}
+                                        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 duration-100 ${
+                                          isSelected 
+                                            ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50 hover:from-blue-700 hover:to-indigo-700' 
+                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <span>{classItem.name}</span>
+                                        <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                                          ({classItem._count?.students || 0})
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {error && (
                     <div
                       role="alert"
@@ -667,17 +824,17 @@ export default function KhmerMonthlyReportPage() {
                       type="button"
                       onClick={() => handleGenerate(false)}
                       disabled={!canGenerate || loadingReport}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition-all shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-indigo-200/50 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100"
                     >
                       {loadingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                       {t('generate')}
-                      <kbd className="ml-1 hidden rounded border border-white/20 bg-white/10 px-1 text-[10px] text-white/80 sm:inline">⌘G</kbd>
+                      <kbd className="ml-1.5 hidden rounded border border-white/20 bg-white/10 px-1 text-[9px] text-white/80 sm:inline">⌘G</kbd>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleGenerate(true)}
                       disabled={!canGenerate || loadingReport}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
                     >
                       <RefreshCw className="h-4 w-4" />
                       {t('refresh')}
@@ -685,12 +842,12 @@ export default function KhmerMonthlyReportPage() {
                     <button
                       type="button"
                       onClick={() => window.print()}
-                      disabled={!report}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={reports.length === 0}
+                      className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-2.5 text-sm font-bold text-violet-700 transition hover:bg-violet-100 hover:border-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
                     >
                       <Printer className="h-4 w-4" />
                       {t('print')}
-                      <kbd className="ml-1 hidden rounded border border-slate-200 bg-slate-50 px-1 text-[10px] text-slate-500 sm:inline">⌘P</kbd>
+                      <kbd className="ml-1.5 hidden rounded border border-violet-200 bg-violet-100/50 px-1 text-[9px] text-violet-600 sm:inline">⌘P</kbd>
                     </button>
                     <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
                       {loadingReport ? (
@@ -698,11 +855,11 @@ export default function KhmerMonthlyReportPage() {
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           {t('loading')}
                         </span>
-                      ) : report ? (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-600">
+                      ) : reports.length > 0 ? (
+                        <div className="flex items-center gap-2 text-emerald-600">
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          {report.students.length} {t('students').toLowerCase()}
-                        </span>
+                          {reports[0].students.length} {t('students').toLowerCase()}
+                        </div>
                       ) : (
                         <span className="inline-flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
@@ -712,55 +869,11 @@ export default function KhmerMonthlyReportPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Right: context panel */}
-                <div className="flex flex-col gap-3 border-t border-blue-100 bg-blue-50/40 p-5 xl:border-l xl:border-t-0">
-                  <div className="rounded-lg border border-blue-100 bg-white p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {t('systemTemplate')}
-                      </span>
-                      <span className="rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
-                        {educationModelLabel}
-                      </span>
-                    </div>
-                    <select
-                      className="mt-2 h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm font-medium text-slate-700"
-                      value={school?.educationModel || 'KHM_MOEYS'}
-                      disabled
-                    >
-                      <option value="KHM_MOEYS">{t('templateMoeys')}</option>
-                    </select>
-                  </div>
-
-                  {metricCards.map((card) => {
-                    const Icon = card.Icon;
-                    return (
-                      <div
-                        key={card.label}
-                        className={`rounded-lg border p-3 ${card.accent}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            {card.label}
-                          </span>
-                          <span className={`rounded-md p-1 ${card.iconTone}`}>
-                            <Icon className="h-3.5 w-3.5" />
-                          </span>
-                        </div>
-                        <div className="mt-1.5 text-xl font-semibold text-slate-900">
-                          {card.value}
-                        </div>
-                        <div className="mt-0.5 text-xs text-slate-500">{card.note}</div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             </section>
 
             {/* Subject columns */}
-            {report && sortedSubjects.length > 0 && (
+            {reports.length > 0 && sortedSubjects.length > 0 && (
             <section className="mt-5 rounded-2xl border border-cyan-100 bg-cyan-50/40 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-semibold text-slate-800">{t('subjectColumns')}</span>
@@ -776,7 +889,7 @@ export default function KhmerMonthlyReportPage() {
                     <button
                       type="button"
                       className="font-medium text-slate-600 hover:underline"
-                      onClick={() => setHiddenSubjects(new Set(sortedSubjects.map((s) => s.id)))}
+                      onClick={() => setHiddenSubjects(new Set(sortedSubjects.map((s) => s.nameKh || s.name)))}
                     >
                       {t('hideAllSubjects')}
                     </button>
@@ -784,12 +897,13 @@ export default function KhmerMonthlyReportPage() {
                 </div>
                 <div className="mt-3 flex max-h-24 flex-wrap gap-2 overflow-y-auto">
                   {sortedSubjects.map((subject) => {
-                    const hidden = hiddenSubjects.has(subject.id);
+                    const subjectName = subject.nameKh || subject.name;
+                    const hidden = hiddenSubjects.has(subjectName);
                     return (
                       <button
-                        key={subject.id}
+                        key={subjectName}
                         type="button"
-                        onClick={() => toggleSubject(subject.id)}
+                        onClick={() => toggleSubject(subjectName)}
                         aria-pressed={!hidden}
                         className={`rounded-full border px-3 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
                           hidden
@@ -797,7 +911,7 @@ export default function KhmerMonthlyReportPage() {
                             : 'border-cyan-200 bg-white text-cyan-800 hover:bg-cyan-50'
                         }`}
                       >
-                        {subject.nameKh || subject.name}
+                        {subjectName}
                       </button>
                     );
                   })}
@@ -950,7 +1064,7 @@ export default function KhmerMonthlyReportPage() {
                 </div>
               )}
 
-              {!report && !loadingReport && (
+              {reports.length === 0 && !loadingReport && (
                 <div className="mx-auto max-w-2xl rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-16 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-blue-700 shadow-sm">
                     <FileText className="h-7 w-7" />
@@ -971,14 +1085,26 @@ export default function KhmerMonthlyReportPage() {
                 </div>
               )}
 
-              {report && !loadingReport && (
+              {reports.length > 0 && !loadingReport && (
                 <div className="khmer-report-preview-container mx-auto">
-                  <MonthlyReportPrint 
-                    report={report} 
-                    settings={settings} 
-                    subjects={visibleSubjects}
-                    schoolProfile={schoolProfile}
-                  />
+                  {reports.map((rep, idx) => {
+                    const repVisibleSubjects = rep.subjects?.filter(
+                      (s) => !hiddenSubjects.has(s.nameKh || s.name)
+                    );
+                    return (
+                      <div 
+                        key={rep.class?.id || idx} 
+                        style={{ pageBreakAfter: idx < reports.length - 1 ? 'always' : 'auto' }}
+                      >
+                        <MonthlyReportPrint 
+                          report={rep} 
+                          settings={settings} 
+                          subjects={repVisibleSubjects}
+                          schoolProfile={schoolProfile}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1012,7 +1138,7 @@ export default function KhmerMonthlyReportPage() {
             <button
               type="button"
               onClick={() => window.print()}
-              disabled={!report}
+              disabled={reports.length === 0}
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               title="Print (⌘P)"
             >

@@ -429,7 +429,7 @@ async function loadSharedContext(
 
   const homeroomTeacher = reportScope === 'class' ? selectedClasses[0].homeroomTeacher : null;
   const teacherName = homeroomTeacher
-    ? `${homeroomTeacher.firstName || ''} ${homeroomTeacher.lastName || ''}`.trim()
+    ? `${homeroomTeacher.lastName || ''} ${homeroomTeacher.firstName || ''}`.trim()
     : '';
 
   return {

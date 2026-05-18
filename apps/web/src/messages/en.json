@@ -6312,6 +6312,8 @@
     "templateMoeys": "Khmer system (MOEYS)",
     "scopeByClass": "By class",
     "scopeByGrade": "By grade",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
     "class": "Class",
     "grade": "Grade",
     "monthLabel": "Month / semester",

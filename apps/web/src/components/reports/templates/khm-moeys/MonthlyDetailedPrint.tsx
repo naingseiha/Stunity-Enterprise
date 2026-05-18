@@ -26,16 +26,16 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
     : report.class?.name || `ថ្នាក់ទី ${report.grade}`;
   const reportTitle = settings.reportTitle || 'តារាងលទ្ធផលប្រចាំខែ';
   const teacherName = settings.teacherName || report.teacherName || '';
-  const signatureDate =
-    settings.reportDate?.trim() ||
-    formatReportDate((report.school?.name || settings.examCenter || '').split(',')[0]?.trim() || 'ស្វាយធំ');
   const monthLine = report.period?.month ? `ខែ${report.period.month}` : '';
 
   // Use school profile data for dynamic header
-  const officeName = 'មន្ទីរអប់រំ យុវជន និងកីឡា';
+  const officeName = 'មន្ីរអប់រំ យុវជន និងកីឡា';
   const provinceVal = schoolProfile?.province || settings.province || '';
   const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
   const clusterName = cleanProvince ? `ខេត្ត៖ ${cleanProvince}` : '';
+  const signatureDate =
+    settings.reportDate?.trim() ||
+    formatReportDate(cleanProvince || '');
   const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 

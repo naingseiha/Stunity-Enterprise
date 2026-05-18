@@ -22,15 +22,15 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
   const isSem2 = report.format === 'semester-2';
   const reportTitle = settings.reportTitle || (isSem2 ? 'តារាងលទ្ធផលប្រចាំឆមាសទី២' : 'តារាងលទ្ធផលប្រចាំឆមាសទី១');
   const teacherName = settings.teacherName || report.teacherName || '';
-  const signatureDate =
-    settings.reportDate?.trim() ||
-    formatReportDate((report.school?.name || settings.examCenter || '').split(',')[0]?.trim() || 'ស្វាយធំ');
 
   // Use school profile data for dynamic header
   const officeName = 'មន្ទីរអប់រំ យុវជន និងកីឡា';
   const provinceVal = schoolProfile?.province || settings.province || '';
   const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
   const clusterName = cleanProvince ? `ខេត្ត៖ ${cleanProvince}` : '';
+  const signatureDate =
+    settings.reportDate?.trim() ||
+    formatReportDate(cleanProvince || '');
   const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
 
