@@ -42,6 +42,7 @@ import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
 import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
 import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
 import PerformanceCard from '@/components/feed/PerformanceCard';
+import SubjectFilters from '@/components/feed/SubjectFilters';
 import { useEventStream, SSEEvent } from '@/hooks/useEventStream';
 import {
   Users,
@@ -56,6 +57,7 @@ import {
   BarChart3,
   Megaphone,
   HelpCircle,
+  Lightbulb,
   Filter,
   Bookmark,
   Activity,
@@ -288,6 +290,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
   const [postTypeFilter, setPostTypeFilter] = useState('all');
+  const [activeSubjectFilter, setActiveSubjectFilter] = useState('ALL');
 
   // Feed state — ranked `GET /posts/feed` (mixed posts + carousels) or chronological fallback
   const [feedRows, setFeedRows] = useState<FeedRow[]>([]);
@@ -457,6 +460,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         mode: 'FOR_YOU',
         fields: 'minimal',
       });
+      if (activeSubjectFilter !== 'ALL') {
+        rankedParams.append('subject', activeSubjectFilter);
+      }
 
       let res = await fetch(`${FEED_API}/posts/feed?${rankedParams}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -494,7 +500,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     } finally {
       setLoadingPosts(false);
     }
-  }, [trackPostViewsBatch]);
+  }, [trackPostViewsBatch, activeSubjectFilter]);
 
   const fetchMorePosts = useCallback(async () => {
     if (loadingMoreRef.current || loadingMore || !hasMore) return;
@@ -506,7 +512,10 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     try {
       let res: Response;
       if (feedPaginationMode === 'chrono') {
-        const cursorParam = chronoCursor ? `&cursor=${encodeURIComponent(chronoCursor)}` : '';
+        let cursorParam = chronoCursor ? `&cursor=${encodeURIComponent(chronoCursor)}` : '';
+        if (activeSubjectFilter !== 'ALL') {
+          cursorParam += `&subject=${encodeURIComponent(activeSubjectFilter)}`;
+        }
         res = await fetch(`${FEED_API}/posts?limit=${POSTS_PER_PAGE}${cursorParam}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -517,6 +526,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
           mode: 'FOR_YOU',
           fields: 'minimal',
         });
+        if (activeSubjectFilter !== 'ALL') {
+          rankedParams.append('subject', activeSubjectFilter);
+        }
         res = await fetch(`${FEED_API}/posts/feed?${rankedParams}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -545,7 +557,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, feedPaginationMode, chronoCursor, trackPostViewsBatch]);
+  }, [loadingMore, hasMore, feedPaginationMode, chronoCursor, trackPostViewsBatch, activeSubjectFilter]);
 
   const fetchMyPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
@@ -632,7 +644,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     if (user) {
       fetchPosts();
     }
-  }, [user, fetchPosts]);
+  }, [user, activeSubjectFilter, fetchPosts]);
 
   useEffect(() => {
     if (!user) return;
@@ -1472,8 +1484,16 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               <PerformanceCard user={user} locale={locale} />
             </div>
 
-            {/* Create Post Box - LinkedIn Style */}
-            <div className="bg-white dark:bg-none dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-3 mb-3 transition-all duration-300 hover:border-[#F9A825]/30">
+            {/* Featured Categories */}
+            <div className="mb-3">
+              <SubjectFilters 
+                activeFilter={activeSubjectFilter} 
+                onFilterChange={(f) => setActiveSubjectFilter(f)} 
+              />
+            </div>
+
+            {/* Create Post Card — E-Learning Focused */}
+            <div className="bg-white dark:bg-none dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-3 transition-all duration-300 hover:border-[#F9A825]/30">
               <div className="flex items-center gap-3">
                 {user.profilePictureUrl ? (
                   <NextImage
@@ -1495,34 +1515,45 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   {tFeed('createPost.askMind')}
                 </button>
               </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-sky-50 dark:hover:bg-sky-900/20"
                 >
-                  <ImageIcon className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs font-medium hidden sm:inline">{tFeed('createPost.photo')}</span>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-sky-300 to-sky-500 shadow-md shadow-sky-500/20 group-hover:scale-110 transition-transform">
+                    <HelpCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-sky-500">{tFeed('ask')}</span>
                 </button>
+
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                 >
-                  <BarChart3 className="w-5 h-5 text-amber-500" />
-                  <span className="text-xs font-medium hidden sm:inline">{tFeed('poll')}</span>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <Lightbulb className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-500">{tFeed('quiz')}</span>
                 </button>
+
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-violet-50 dark:hover:bg-violet-900/20"
                 >
-                  <Megaphone className="w-5 h-5 text-rose-500" />
-                  <span className="text-xs font-medium hidden sm:inline">{tFeed('createPost.announce')}</span>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-400 to-violet-600 shadow-md shadow-violet-500/20 group-hover:scale-110 transition-transform">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-violet-500">{tFeed('postTypes.poll')}</span>
                 </button>
+
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-pink-50 dark:hover:bg-pink-900/20"
                 >
-                  <HelpCircle className="w-5 h-5 text-teal-500" />
-                  <span className="text-xs font-medium hidden sm:inline">{tFeed('ask')}</span>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600 shadow-md shadow-pink-500/20 group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-pink-500">{tFeed('resource')}</span>
                 </button>
               </div>
             </div>

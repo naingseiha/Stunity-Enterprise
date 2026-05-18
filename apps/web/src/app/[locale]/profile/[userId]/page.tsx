@@ -10,15 +10,17 @@ import {
   Award, Briefcase, GraduationCap, Star, Users, Eye, Heart,
   MessageCircle, BookmarkPlus, Share2, MoreHorizontal, Edit3,
   CheckCircle, Plus, ChevronRight, Zap, TrendingUp, Trophy,
-  Code, Palette, BookOpen, Target, Clock, Globe, Shield, Camera, Send
+  Code, Palette, BookOpen, Target, Clock, Globe, Shield, Camera, Send,
+  Flame, Diamond, BarChart2
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { FEED_SERVICE_URL, ANALYTICS_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import PostCard, { PostData } from '@/components/feed/PostCard';
 import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
+import { PerformanceTab } from '@/components/profile';
 
 import { useTranslations } from 'next-intl';
 // Types
@@ -177,6 +179,26 @@ interface CachedProfilePayload {
   posts: PostData[];
 }
 
+interface PerformanceStatsSummary {
+  xp: number;
+  level: number;
+  xpProgress: number;
+  xpToNextLevel: number;
+  totalQuizzes: number;
+  totalPoints: number;
+  avgScore: number;
+  winRate: number;
+  winStreak: number;
+  correctAnswers: number;
+  totalAnswers: number;
+  currentStreak: number;
+  longestStreak?: number;
+  recentScores: number[];
+  weekActivity?: boolean[];
+  freezesAvailable?: number;
+  studiedToday?: boolean;
+}
+
 // Skeleton Component - Use imported ProfileSkeleton instead
 // The ProfileSkeleton component provides a more polished loading experience
 
@@ -228,7 +250,8 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'posts' | 'skills' | 'experience' | 'education' | 'certifications' | 'projects'>('about');
+  const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
+  const [statsSummary, setStatsSummary] = useState<PerformanceStatsSummary | null>(null);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -263,6 +286,7 @@ export default function ProfilePage() {
       setPageReady(true);
     }
     fetchProfileData();
+    fetchStatsSummary();
   }, [profileCacheKey, userId]);
 
   const handleLogout = async () => {
@@ -343,10 +367,20 @@ export default function ProfilePage() {
 
       setLoading(false);
       setTimeout(() => setPageReady(true), 100);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching profile:', error);
       setLoading(false);
     }
+  };
+
+  const fetchStatsSummary = async () => {
+    try {
+      const res = await TokenManager.fetchWithAuth(`${ANALYTICS_SERVICE_URL}/stats/${userId}/summary`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.data) setStatsSummary(data.data);
+      }
+    } catch { /* use profile defaults */ }
   };
 
   const handleFollow = async () => {
@@ -741,326 +775,51 @@ export default function ProfilePage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 mt-3 overflow-x-auto"
-            style={{
-              animation: pageReady ? 'slideInUp 0.6s ease-out 0.1s forwards' : 'none',
-              opacity: pageReady ? 1 : 0,
-            }}
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mt-3 shadow-sm overflow-x-auto"
+            style={{ animation: pageReady ? 'slideInUp 0.6s ease-out 0.1s forwards' : 'none', opacity: pageReady ? 1 : 0 }}
           >
-            <div className="flex p-1">
+            <div className="flex p-1.5 gap-1">
               {([
-                { key: 'about', label: 'About', icon: BookOpen },
+                { key: 'performance', label: 'Performance', icon: BarChart2 },
                 { key: 'posts', label: 'Posts', icon: Send },
+                { key: 'about', label: 'About', icon: BookOpen },
                 { key: 'activity', label: 'Activity', icon: TrendingUp },
-                { key: 'skills', label: 'Skills', icon: Star },
-                { key: 'experience', label: 'Experience', icon: Briefcase },
-                { key: 'education', label: 'Education', icon: GraduationCap },
-                { key: 'certifications', label: 'Certifications', icon: Award },
-                { key: 'projects', label: 'Projects', icon: Code },
               ] as const).map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all rounded-lg ${
+                  className={`flex items-center gap-2 px-5 py-2.5 font-semibold text-sm whitespace-nowrap transition-all rounded-lg ${
                     activeTab === tab.key
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-white hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-800'
+                      ? 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
+                  <tab.icon className="w-4 h-4" />
                   {tab.label}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Content Grid - Education Style */}
-          <div className="grid md:grid-cols-3 gap-3 mt-3">
-            {/* Main Content - Left/Center */}
-            <div className="md:col-span-2 space-y-3">
-              {/* About Section */}
-              {activeTab === 'about' && (
-                <div 
-                  className="space-y-3"
-                  style={{
-                    animation: 'fadeInUpContent 0.5s ease-out forwards',
-                  }}
-                >
-                  {/* About Card - Always show */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c68a9e5f" /></h3>
-                      {profile.isOwnProfile && (
-                        <Link
-                          href={`/${locale}/profile/${userId}/edit?section=about`}
-                          className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors group"
-                        >
-                          <Edit3 className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-amber-500 transition-colors" />
-                        </Link>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      {profile.bio ? (
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            {profile.isOwnProfile ? 'Tell visitors about yourself, your background, and what you do.' : 'No bio added yet.'}
-                          </p>
-                          {profile.isOwnProfile && (
-                            <Link
-                              href={`/${locale}/profile/${userId}/edit?section=about`}
-                              className="inline-flex items-center gap-1 mt-3 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a6de73c3" />
-                            </Link>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Activity Snapshot Card */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_1d4451b7" /></h3>
-                      <button 
-                        onClick={() => setActiveTab('activity')}
-                        className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold transition-colors"
-                      >
-                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_252abe25" />
-                      </button>
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-semibold text-gray-900 dark:text-white">{profile.stats.posts} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7c6839f8" /></span>
-                        <span>·</span>
-                        <span>{profile.stats.followers} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_cc9fd9bf" /></span>
-                      </div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-                        {profile.firstName} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_78949a81" />
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Experience Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4f45591c" /></h3>
-                      <div className="flex items-center gap-2">
-                        {profile.isOwnProfile && (
-                          <Link
-                            href={`/${locale}/profile/${userId}/edit?section=experience`}
-                            className="p-2 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
-                          >
-                            <Plus className="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" />
-                          </Link>
-                        )}
-                        <button 
-                          onClick={() => setActiveTab('experience')}
-                          className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold transition-colors"
-                        >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_13f1be11" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {experiences.length === 0 ? (
-                        <div className="p-6 text-center">
-                          <Briefcase className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c6978a35" /></p>
-                          {profile.isOwnProfile && (
-                            <Link
-                              href={`/${locale}/profile/${userId}/edit?section=experience`}
-                              className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
-                            >
-                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_65941f72" />
-                            </Link>
-                          )}
-                        </div>
-                      ) : (
-                        experiences.slice(0, 2).map((exp) => (
-                          <div key={exp.id} className="p-4 flex gap-4">
-                            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Briefcase className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-900 dark:text-white">{exp.title}</h4>
-                              <p className="text-gray-600 dark:text-gray-400 text-sm">{exp.organization}</p>
-                              <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
-                                {formatDate(exp.startDate)} - {exp.isCurrent ? 'Present' : exp.endDate ? formatDate(exp.endDate) : 'N/A'}
-                                {exp.location && ` · ${exp.location}`}
-                              </p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Education Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2f51e06a" /></h3>
-                      <div className="flex items-center gap-2">
-                        {profile.isOwnProfile && (
-                          <Link
-                            href={`/${locale}/profile/${userId}/edit?section=education`}
-                            className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                          >
-                            <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                          </Link>
-                        )}
-                        <button 
-                          onClick={() => setActiveTab('education')}
-                          className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-medium"
-                        >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_13f1be11" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {education.length === 0 ? (
-                        <div className="p-6 text-center">
-                          <GraduationCap className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9578e35" /></p>
-                          {profile.isOwnProfile && (
-                            <Link
-                              href={`/${locale}/profile/${userId}/edit?section=education`}
-                              className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
-                            >
-                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_5f73ec0d" />
-                            </Link>
-                          )}
-                        </div>
-                      ) : (
-                        education.slice(0, 2).map((edu) => (
-                          <div key={edu.id} className="p-4 flex gap-4">
-                            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <GraduationCap className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
-                              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                {edu.degree}{edu.fieldOfStudy && `, ${edu.fieldOfStudy}`}
-                              </p>
-                              <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
-                                {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Skills Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_be9d0170" /></h3>
-                      <div className="flex items-center gap-2">
-                        {profile.isOwnProfile && (
-                          <Link
-                            href={`/${locale}/profile/${userId}/edit?section=skills`}
-                            className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                          >
-                            <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                          </Link>
-                        )}
-                        <button 
-                          onClick={() => setActiveTab('skills')}
-                          className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-medium"
-                        >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_13f1be11" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      {skills.length === 0 ? (
-                        <div className="text-center">
-                          <Star className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ca2efe8e" /></p>
-                          {profile.isOwnProfile && (
-                            <Link
-                              href={`/${locale}/profile/${userId}/edit?section=skills`}
-                              className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
-                            >
-                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_43891ff2" />
-                            </Link>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {skills.slice(0, 6).map((skill) => (
-                            <span 
-                              key={skill.id} 
-                              className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-orange-300 rounded-full text-sm font-medium"
-                            >
-                              {skill.skillName}
-                              {skill.endorsementCount > 0 && (
-                                <span className="ml-1 text-blue-500 dark:text-blue-400">· {skill.endorsementCount}</span>
-                              )}
-                            </span>
-                          ))}
-                          {skills.length > 6 && (
-                            <button 
-                              onClick={() => setActiveTab('skills')}
-                              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-sm"
-                            >
-                              +{skills.length - 6} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Interests & Languages */}
-                  {(profile.interests.length > 0 || profile.languages.length > 0) && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
-                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_5427d2ca" /></h3>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        {profile.interests.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f8b63e18" /></p>
-                            <div className="flex flex-wrap gap-2">
-                              {profile.interests.map((interest, i) => (
-                                <span key={i} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
-                                  {interest}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {profile.languages.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_722b35c1" /></p>
-                            <div className="flex flex-wrap gap-2">
-                              {profile.languages.map((lang, i) => (
-                                <span key={i} className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm">
-                                  {lang}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+          {/* Content Grid - Unified Learning Parity */}
+          <div className="grid md:grid-cols-3 gap-4 mt-4">
+            {/* Main Content Column */}
+            <div className="md:col-span-2 space-y-4">
+              
+              {/* 1. Performance Tab */}
+              {activeTab === 'performance' && (
+                <PerformanceTab 
+                  statsSummary={statsSummary} 
+                  achievements={achievements} 
+                  projectsCount={projects.length}
+                  profile={profile} 
+                  locale={locale} 
+                />
               )}
 
-              {/* Posts Section */}
+              {/* 2. Posts Tab */}
               {activeTab === 'posts' && (
-                <div 
-                  className="space-y-4"
-                  style={{
-                    animation: 'fadeInUpContent 0.5s ease-out forwards',
-                  }}
-                >
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   {loadingPosts ? (
                     <FeedSkeletonList count={3} />
                   ) : posts.length > 0 ? (
@@ -1076,12 +835,12 @@ export default function ProfilePage() {
                       />
                     ))
                   ) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 p-12 text-center">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
                       <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Send className="w-8 h-8 text-gray-400" />
+                        <Send className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f5c712a1" /></h3>
-                      <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No Posts Yet</h3>
+                      <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm">
                         {profile.isOwnProfile ? "You haven't shared anything with the community yet." : `${profile.firstName} hasn't shared any posts yet.`}
                       </p>
                     </div>
@@ -1089,670 +848,517 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Skills Section */}
-              {activeTab === 'skills' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_be9d0170" /></h3>
-                    {profile.isOwnProfile && (
-                      <Link
-                        href={`/${locale}/profile/${userId}/edit?section=skills`}
-                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      </Link>
-                    )}
-                  </div>
+              {/* 3. About Tab - Consolidated detailed e-learning portfolio lists */}
+              {activeTab === 'about' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   
-                  {skills.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Star className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ca2efe8e" /></p>
+                  {/* Biography Card */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-850/50">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white">Biography</h3>
                       {profile.isOwnProfile && (
                         <Link
-                          href={`/${locale}/profile/${userId}/edit?section=skills`}
-                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
+                          href={`/${locale}/profile/${userId}/edit?section=about`}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                         >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_73ee3ea9" />
+                          <Edit3 className="w-4 h-4 text-gray-400 group-hover:text-amber-500 transition-colors" />
                         </Link>
                       )}
                     </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {skills.map(skill => {
-                        const CategoryIcon = categoryIcons[skill.category] || Star;
-                        return (
-                          <div key={skill.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <CategoryIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-gray-900 dark:text-white">{skill.skillName}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${skillLevelColors[skill.level]}`}>
-                                      {skill.level}
-                                    </span>
-                                    {skill.yearsOfExp && (
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        · {skill.yearsOfExp} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_21317395" />
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {skill.endorsementCount > 0 && (
-                                  <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                    <Users className="w-4 h-4" />
-                                    {skill.endorsementCount} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_dba87eb2" />{skill.endorsementCount !== 1 ? 's' : ''}
-                                  </span>
-                                )}
-                                {!profile.isOwnProfile && (
-                                  <button className="px-3 py-1 border border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full text-sm font-medium transition-colors">
-                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_d0f01bed" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            {/* Endorsers avatars */}
-                            {skill.endorsements.length > 0 && (
-                              <div className="flex items-center gap-2 mt-3 ml-13">
-                                <div className="flex -space-x-2">
-                                  {skill.endorsements.slice(0, 3).map(e => (
-                                    <div
-                                      key={e.id}
-                                      className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 overflow-hidden"
-                                      title={`${e.endorser.lastName} ${e.endorser.firstName}`}
-                                    >
-                                      {e.endorser.profilePictureUrl ? (
-                                        <Image src={e.endorser.profilePictureUrl} alt="" width={24} height={24} className="object-cover" />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                                          {e.endorser.firstName[0]}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_802b35af" /> {skill.endorsements[0]?.endorser.firstName}
-                                  {skill.endorsementCount > 1 && ` and ${skill.endorsementCount - 1} other${skill.endorsementCount > 2 ? 's' : ''}`}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <div className="p-6">
+                      {profile.bio ? (
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm whitespace-pre-wrap">{profile.bio}</p>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">
+                            {profile.isOwnProfile ? 'Tell visitors about yourself, your background, and what you do.' : 'No bio added yet.'}
+                          </p>
+                          {profile.isOwnProfile && (
+                            <Link
+                              href={`/${locale}/profile/${userId}/edit?section=about`}
+                              className="inline-flex items-center gap-1 mt-3 text-amber-600 dark:text-amber-500 hover:underline text-xs font-bold"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Add Bio
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Experience Section */}
-              {activeTab === 'experience' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4f45591c" /></h3>
-                    {profile.isOwnProfile && (
-                      <Link
-                        href={`/${locale}/profile/${userId}/edit?section=experience`}
-                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      </Link>
-                    )}
                   </div>
 
-                  {experiences.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Briefcase className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c6978a35" /></p>
+                  {/* Consolidated Experience List */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-850/50">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        Experience
+                      </h3>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=experience`}
-                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                         >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_421a3573" />
+                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-amber-500" />
                         </Link>
                       )}
                     </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {experiences.map((exp) => (
-                        <div key={exp.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
-                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Briefcase className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-semibold text-gray-900 dark:text-white">{exp.title}</h4>
-                                <p className="text-gray-600 dark:text-gray-400">{exp.organization}</p>
-                                <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
-                                  {formatDate(exp.startDate)} - {exp.isCurrent ? 'Present' : exp.endDate ? formatDate(exp.endDate) : 'N/A'}
-                                  {exp.location && ` · ${exp.location}`}
-                                </p>
-                              </div>
-                              {exp.isCurrent && (
-                                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2da9f9b2" />
-                                </span>
-                              )}
+                    <div className="divide-y divide-gray-100 dark:divide-gray-750">
+                      {experiences.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500">
+                          <p className="text-xs">No experience items added yet.</p>
+                        </div>
+                      ) : (
+                        experiences.map((exp) => (
+                          <div key={exp.id} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-750/30 transition-colors">
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-750 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <Briefcase className="w-5 h-5 text-gray-500 dark:text-gray-450" />
                             </div>
-                            {exp.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-3">{exp.description}</p>
-                            )}
-                            {exp.skills.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-3">
-                                {exp.skills.slice(0, 4).map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
-                                    {skill}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h4 className="font-bold text-sm text-gray-900 dark:text-white">{exp.title}</h4>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mt-0.5">{exp.organization}</p>
+                                  <p className="text-gray-400 dark:text-gray-500 text-[11px] font-medium mt-1">
+                                    {formatDate(exp.startDate)} - {exp.isCurrent ? 'Present' : exp.endDate ? formatDate(exp.endDate) : ''}
+                                    {exp.location && ` · ${exp.location}`}
+                                  </p>
+                                </div>
+                                {exp.isCurrent && (
+                                  <span className="px-2 py-0.5 bg-green-50 dark:bg-green-950/55 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full border border-green-100 dark:border-green-900/30">
+                                    Current
                                   </span>
-                                ))}
-                                {exp.skills.length > 4 && (
-                                  <span className="text-xs text-gray-500">+{exp.skills.length - 4} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" /></span>
                                 )}
                               </div>
-                            )}
+                              {exp.description && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2.5 leading-relaxed">{exp.description}</p>
+                              )}
+                              {exp.skills.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-3">
+                                  {exp.skills.map((skill, idx) => (
+                                    <span key={idx} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-750 text-gray-600 dark:text-gray-400 rounded-md text-[10px] font-semibold">
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Education Section */}
-              {activeTab === 'education' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2f51e06a" /></h3>
-                    {profile.isOwnProfile && (
-                      <Link
-                        href={`/${locale}/profile/${userId}/edit?section=education`}
-                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      </Link>
-                    )}
                   </div>
 
-                  {education.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <GraduationCap className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9578e35" /></p>
+                  {/* Consolidated Education List */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-850/50">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-emerald-600" />
+                        Education
+                      </h3>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=education`}
-                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                         >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7cc413ca" />
+                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-amber-500" />
                         </Link>
                       )}
                     </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {education.map((edu) => (
-                        <div key={edu.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
-                          <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <GraduationCap className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
-                                {(edu.degree || edu.fieldOfStudy) && (
-                                  <p className="text-gray-600 dark:text-gray-400">
-                                    {edu.degree}{edu.fieldOfStudy && `, ${edu.fieldOfStudy}`}
-                                  </p>
-                                )}
-                                <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
-                                  {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : 'N/A'}
-                                  {edu.grade && ` · Grade: ${edu.grade}`}
-                                </p>
-                              </div>
-                              {edu.isCurrent && (
-                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2da9f9b2" />
-                                </span>
-                              )}
-                            </div>
-                            {edu.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{edu.description}</p>
-                            )}
-                            {edu.activities.length > 0 && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                <span className="font-medium"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7528b4d8" /></span> {edu.activities.join(', ')}
-                              </p>
-                            )}
-                            {edu.skills.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-3">
-                                {edu.skills.slice(0, 4).map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
-                                    {skill}
-                                  </span>
-                                ))}
-                                {edu.skills.length > 4 && (
-                                  <span className="text-xs text-gray-500">+{edu.skills.length - 4} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" /></span>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-750">
+                      {education.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500">
+                          <p className="text-xs">No education items added yet.</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Certifications Section */}
-              {activeTab === 'certifications' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2080bdd2" /></h3>
-                    {profile.isOwnProfile && (
-                      <Link
-                        href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      </Link>
-                    )}
-                  </div>
-
-                  {certifications.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Award className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_68f53476" /></p>
-                      {profile.isOwnProfile && (
-                        <Link
-                          href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                          className="inline-block mt-3 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium"
-                        >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2fa215a8" />
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {certifications.map((cert) => {
-                        const isExpired = cert.expiryDate && new Date(cert.expiryDate) < new Date();
-                        const expiresSoon = cert.expiryDate && !isExpired && 
-                          new Date(cert.expiryDate) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-                        
-                        return (
-                          <div key={cert.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
-                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              isExpired 
-                                ? 'bg-red-50 dark:bg-red-900/30' 
-                                : 'bg-amber-50 dark:bg-amber-900/30'
-                            }`}>
-                              <Award className={`w-6 h-6 ${isExpired ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`} />
+                      ) : (
+                        education.map((edu) => (
+                          <div key={edu.id} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-750/30 transition-colors">
+                            <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-450" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start justify-between">
                                 <div>
-                                  <h4 className="font-semibold text-gray-900 dark:text-white">{cert.name}</h4>
-                                  <p className="text-gray-600 dark:text-gray-400 text-sm">{cert.issuingOrg}</p>
-                                  <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
-                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_3071e8c8" /> {formatDate(cert.issueDate)}
-                                    {cert.expiryDate && ` · ${isExpired ? 'Expired' : 'Expires'} ${formatDate(cert.expiryDate)}`}
+                                  <h4 className="font-bold text-sm text-gray-900 dark:text-white">{edu.school}</h4>
+                                  {(edu.degree || edu.fieldOfStudy) && (
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mt-0.5">
+                                      {edu.degree}{edu.fieldOfStudy && ` · ${edu.fieldOfStudy}`}
+                                    </p>
+                                  )}
+                                  <p className="text-gray-400 dark:text-gray-500 text-[11px] font-medium mt-1">
+                                    {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : ''}
+                                    {edu.grade && ` · Grade: ${edu.grade}`}
                                   </p>
                                 </div>
-                                {isExpired ? (
-                                  <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
-                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_e8f3228a" />
+                                {edu.isCurrent && (
+                                  <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/55 text-blue-700 dark:text-blue-400 text-[10px] font-bold rounded-full border border-blue-100 dark:border-blue-900/30">
+                                    Enrolled
                                   </span>
-                                ) : expiresSoon ? (
-                                  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-medium rounded-full">
-                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ff8fb6a2" />
-                                  </span>
-                                ) : null}
+                                )}
                               </div>
-                              {cert.credentialId && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_58f2e0be" /> {cert.credentialId}
-                                </p>
+                              {edu.description && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">{edu.description}</p>
                               )}
-                              {cert.credentialUrl && (
-                                <a
-                                  href={cert.credentialUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 text-sm font-medium mt-2"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_36487e43" />
-                                </a>
+                              {edu.activities.length > 0 && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                                  <span className="text-gray-400">Activities:</span> {edu.activities.join(', ')}
+                                </p>
                               )}
                             </div>
                           </div>
-                        );
-                      })}
+                        ))
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Projects Section */}
-              {activeTab === 'projects' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_5b063313" /></h3>
-                    {profile.isOwnProfile && (
-                      <Link
-                        href={`/${locale}/profile/${userId}/edit?section=projects`}
-                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      </Link>
-                    )}
                   </div>
 
-                  {projects.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Code className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a84217b9" /></p>
+                  {/* Skills List */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-850/50">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Star className="w-4 h-4 text-amber-500" />
+                        Skills & Endorsements
+                      </h3>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=skills`}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
+                        >
+                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-amber-500" />
+                        </Link>
+                      )}
+                    </div>
+                    <div className="p-6">
+                      {skills.length === 0 ? (
+                        <p className="text-xs text-gray-500 text-center py-4">No skills listed yet.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2.5">
+                          {skills.map((skill) => (
+                            <span 
+                              key={skill.id} 
+                              className="px-3.5 py-2 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-gray-750 dark:to-gray-750 text-amber-800 dark:text-orange-300 rounded-full text-xs font-bold border border-amber-100 dark:border-gray-700 flex items-center gap-1 shadow-sm"
+                            >
+                              {skill.skillName}
+                              {skill.endorsementCount > 0 && (
+                                <span className="bg-amber-550/10 text-[10px] text-amber-600 font-extrabold px-1.5 py-0.5 rounded-full">
+                                  {skill.endorsementCount}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Consolidated Projects */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-850/50">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Code className="w-4 h-4 text-purple-600" />
+                        Projects
+                      </h3>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=projects`}
-                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                         >
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ecb284b0" />
+                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-amber-500" />
                         </Link>
                       )}
                     </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {projects.map(project => (
-                        <div key={project.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
-                          {project.mediaUrls.length > 0 ? (
-                            <div className="w-24 h-24 relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
-                              <Image src={project.mediaUrls[0]} alt={project.title} fill className="object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Code className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                  {project.title}
-                                  {project.isFeatured && (
-                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                  )}
-                                </h4>
-                                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                  {project.category} · {project.status}
-                                </p>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-750">
+                      {projects.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500">
+                          <p className="text-xs">No projects listed yet.</p>
+                        </div>
+                      ) : (
+                        projects.map(project => (
+                          <div key={project.id} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-750/30 transition-colors">
+                            {project.mediaUrls.length > 0 ? (
+                              <div className="w-16 h-16 relative bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden flex-shrink-0 border border-gray-200/50 dark:border-gray-700">
+                                <img src={project.mediaUrls[0]} alt={project.title} className="w-full h-full object-cover" />
                               </div>
-                              <div className="flex gap-1">
-                                {project.projectUrl && (
-                                  <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
-                                    <ExternalLink className="w-4 h-4 text-gray-500" />
-                                  </a>
-                                )}
-                                {project.githubUrl && (
-                                  <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
-                                    <Code className="w-4 h-4 text-gray-500" />
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{project.description}</p>
-                            {project.technologies.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {project.technologies.slice(0, 4).map((tech, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
-                                    {tech}
-                                  </span>
-                                ))}
-                                {project.technologies.length > 4 && (
-                                  <span className="text-xs text-gray-500">+{project.technologies.length - 4}</span>
-                                )}
+                            ) : (
+                              <div className="w-10 h-10 bg-purple-50 dark:bg-purple-950/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Code className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                               </div>
                             )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                                    {project.title}
+                                    {project.isFeatured && (
+                                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                    )}
+                                  </h4>
+                                  <p className="text-xs text-gray-550 dark:text-gray-400 font-semibold mt-0.5">
+                                    {project.category} · <span className="capitalize">{project.status.toLowerCase()}</span>
+                                  </p>
+                                </div>
+                                <div className="flex gap-1.5">
+                                  {project.projectUrl && (
+                                    <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="p-1 hover:bg-gray-100 dark:hover:bg-gray-750 rounded-lg text-gray-550 transition-colors">
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">{project.description}</p>
+                              {project.technologies.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2.5">
+                                  {project.technologies.map((tech, i) => (
+                                    <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-750 text-gray-600 dark:text-gray-450 rounded text-[10px]">
+                                      {tech}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Activity Section */}
-              {activeTab === 'activity' && (
-                <div className="space-y-3" style={{ animation: 'fadeInUpContent 0.5s ease-out forwards' }}>
-                  {/* Performance Stats */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-amber-500" />
-                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_25e13519" />
-                      </h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                        <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-amber-600">{profile.totalPoints.toLocaleString()}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_95e5417c" /></div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-sky-600"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2b73b8c7" />{profile.level}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8f7ab6b6" /></div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-green-600">{profile.currentStreak}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_9a989a1b" /></div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-purple-600">{profile.totalLearningHours}<AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_edc577da" /></div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_34871ded" /></div>
-                        </div>
-                      </div>
-
-                      {/* Profile Completeness */}
-                      {profile.isOwnProfile && profile.profileCompleteness < 100 && (
-                        <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-xl mb-6">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8a2f4f45" /></span>
-                            <span className="text-sm font-bold text-sky-600">{profile.profileCompleteness}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-gradient-to-r from-sky-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${profile.profileCompleteness}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Longest Streak */}
-                      {profile.longestStreak > 0 && (
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                          <Trophy className="w-5 h-5 text-amber-500" />
-                          <div>
-                            <span className="text-sm font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_3d68aa8a" /> {profile.longestStreak} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7f095b17" /></span>
-                            <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_bd03ec49" /></p>
-                          </div>
-                        </div>
+                        ))
                       )}
                     </div>
                   </div>
 
-                  {/* Activity Feed Stats */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_1d4451b7" /></h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_cc9fd9bf" /></p>
+                  {/* Consolidated Certifications */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-850/50">
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Award className="w-4 h-4 text-amber-500" />
+                        Certifications
+                      </h3>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=certifications`}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
+                        >
+                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-amber-500" />
+                        </Link>
+                      )}
                     </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-3 gap-4 mb-6">
-                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.postsThisMonth}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_aac93e1c" /></div>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-750">
+                      {certifications.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500">
+                          <p className="text-xs">No certifications items added yet.</p>
                         </div>
-                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalLikes}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_96f7306c" /></div>
+                      ) : (
+                        certifications.map((cert) => {
+                          const isExpired = cert.expiryDate && new Date(cert.expiryDate) < new Date();
+                          return (
+                            <div key={cert.id} className="p-5 flex gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-750/30 transition-colors">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                isExpired ? 'bg-red-50 dark:bg-red-950/30' : 'bg-amber-50 dark:bg-amber-950/30'
+                              }`}>
+                                <Award className={`w-5 h-5 ${isExpired ? 'text-red-500' : 'text-amber-600 dark:text-amber-450'}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <h4 className="font-bold text-sm text-gray-900 dark:text-white">{cert.name}</h4>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold mt-0.5">{cert.issuingOrg}</p>
+                                    <p className="text-gray-400 dark:text-gray-500 text-[11px] font-medium mt-1">
+                                      Issued: {formatDate(cert.issueDate)}
+                                      {cert.expiryDate && ` · ${isExpired ? 'Expired' : 'Expires'}: ${formatDate(cert.expiryDate)}`}
+                                    </p>
+                                  </div>
+                                  {isExpired && (
+                                    <span className="px-2 py-0.5 bg-red-50 dark:bg-red-950/55 text-red-700 dark:text-red-400 text-[10px] font-bold rounded-full border border-red-100 dark:border-red-900/30">
+                                      Expired
+                                    </span>
+                                  )}
+                                </div>
+                                {cert.credentialId && (
+                                  <p className="text-[10px] text-gray-400 mt-1.5 font-semibold">Cred ID: {cert.credentialId}</p>
+                                )}
+                                {cert.credentialUrl && (
+                                  <a 
+                                    href={cert.credentialUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="inline-flex items-center gap-1 mt-2.5 text-xs text-amber-600 dark:text-amber-500 hover:underline font-bold"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    View Credential
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Languages & Interests snapshot */}
+                  {(profile.interests.length > 0 || profile.languages.length > 0) && (
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden p-6 grid md:grid-cols-2 gap-6">
+                      {profile.interests.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Interests</p>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.interests.map((interest, i) => (
+                              <span key={i} className="px-3.5 py-1.5 bg-gray-50 dark:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold border border-gray-200/50 dark:border-gray-700 shadow-sm">
+                                {interest}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalViews}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8bfab878" /></div>
+                      )}
+                      {profile.languages.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Languages</p>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.languages.map((lang, i) => (
+                              <span key={i} className="px-3.5 py-1.5 bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400 rounded-full text-xs font-bold border border-green-100/30 dark:border-green-900/30 shadow-sm">
+                                {lang}
+                              </span>
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* 4. Activity Tab */}
+              {activeTab === 'activity' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  
+                  {/* Activity Stats overview */}
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all overflow-hidden p-6">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-5">
+                      <Zap className="w-5 h-5 text-amber-500" />
+                      Activity Overview
+                    </h3>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-gray-55 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-750">
+                        <div className="text-2xl font-black text-gray-900 dark:text-white">{profile.stats.postsThisMonth}</div>
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-1">Posts (Mo)</div>
                       </div>
+                      <div className="text-center p-4 bg-gray-55 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-750">
+                        <div className="text-2xl font-black text-gray-900 dark:text-white">{profile.stats.totalLikes}</div>
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-1">Total Likes</div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-55 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-750">
+                        <div className="text-2xl font-black text-gray-900 dark:text-white">{profile.stats.totalViews}</div>
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-1">Total Views</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 text-center">
                       <Link
                         href={`/${locale}/feed?author=${profile.id}`}
-                        className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium"
+                        className="inline-flex items-center gap-1 text-sm text-sky-600 hover:text-sky-700 font-bold"
                       >
-                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_be200d43" />
+                        Search Posts in Feed
                         <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </div>
                 </div>
               )}
+
             </div>
 
-            {/* Sidebar - Right */}
+            {/* Sidebar Column - Dynamic Desktop secondary panel */}
             <div className="space-y-4">
-              {/* Achievements Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-amber-500" />
-                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_36ba872b" />
-                  </h3>
+              
+              {/* Profile Completeness card */}
+              {profile.isOwnProfile && profile.profileCompleteness < 100 && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 overflow-hidden">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Completeness</span>
+                    <span className="text-sm font-extrabold text-sky-600">{profile.profileCompleteness}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-gray-750 rounded-full h-2 shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all duration-500"
+                      style={{ width: `${profile.profileCompleteness}%` }}
+                    />
+                  </div>
+                  <Link 
+                    href={`/${locale}/profile/me/edit`}
+                    className="block text-center text-xs text-sky-600 hover:underline font-bold mt-4"
+                  >
+                    Complete your e-learning profile
+                  </Link>
                 </div>
-                <div className="p-4">
-                  {achievements.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_d1be4e7f" /></p>
-                  ) : (
-                    <div className="space-y-2">
-                      {achievements.slice(0, 3).map(achievement => (
-                        <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${rarityColors[achievement.rarity]} flex items-center justify-center flex-shrink-0`}>
-                            {achievement.badgeUrl ? (
-                              <Image src={achievement.badgeUrl} alt="" width={20} height={20} />
-                            ) : (
-                              <Award className="w-4 h-4 text-white" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">{achievement.title}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{achievement.points} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_06e8829d" /></p>
-                          </div>
+              )}
+
+              {/* Achievements Snapshot */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4 text-sm uppercase tracking-wider text-gray-400">
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  Achievements
+                </h3>
+                {achievements.length === 0 ? (
+                  <p className="text-xs text-gray-500 text-center py-4">No achievements earned yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {achievements.slice(0, 3).map(achievement => (
+                      <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${rarityColors[achievement.rarity] || rarityColors.COMMON} flex items-center justify-center flex-shrink-0 text-sm shadow-sm`}>
+                          {achievement.badgeUrl ? (
+                            <img src={achievement.badgeUrl} alt="" className="w-5 h-5 object-contain" />
+                          ) : (
+                            <span>🏆</span>
+                          )}
                         </div>
-                      ))}
-                      {achievements.length > 3 && (
-                        <button className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm w-full text-center pt-2">
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f882195d" /> {achievements.length}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">{achievement.title}</h4>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">{achievement.rarity}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Recommendations Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Star className="w-4 h-4 text-purple-500" />
-                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_31870493" />
-                  </h3>
-                </div>
-                <div className="p-4">
-                  {recommendations.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a1a6f355" /></p>
-                  ) : (
-                    <div className="space-y-4">
-                      {recommendations.slice(0, 2).map(rec => (
-                        <div key={rec.id} className="pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex-shrink-0">
-                              {rec.author.profilePictureUrl ? (
-                                <Image src={rec.author.profilePictureUrl} alt="" width={32} height={32} className="object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                                  {rec.author.firstName[0]}
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {rec.author.lastName} {rec.author.firstName}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{rec.relationship}</p>
-                            </div>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4 text-sm uppercase tracking-wider text-gray-400">
+                  <Star className="w-4 h-4 text-indigo-500" />
+                  Recommendations
+                </h3>
+                {recommendations.length === 0 ? (
+                  <p className="text-xs text-gray-500 text-center py-4">No recommendations received yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {recommendations.slice(0, 2).map(rec => (
+                      <div key={rec.id} className="pb-4 border-b border-gray-100 dark:border-gray-750 last:border-0 last:pb-0">
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex-shrink-0">
+                            {rec.author.profilePictureUrl ? (
+                              <img src={rec.author.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                                {rec.author.firstName[0]}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_fa1fa5f8" />{rec.content}<AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9cb1ca7" /></p>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                              {rec.author.lastName} {rec.author.firstName}
+                            </p>
+                            <p className="text-[10px] text-gray-400 font-semibold">{rec.relationship}</p>
+                          </div>
                         </div>
-                      ))}
-                      {recommendations.length > 2 && (
-                        <button className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm w-full text-center font-medium">
-                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f882195d" /> {recommendations.length}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {!profile.isOwnProfile && (
-                    <button className="mt-4 w-full py-2.5 border-2 border-amber-500 text-amber-600 dark:text-amber-500 rounded-full text-sm font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
-                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a15f5ddf" /> {profile.firstName}
-                    </button>
-                  )}
-                </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-450 italic leading-relaxed">"{rec.content}"</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!profile.isOwnProfile && (
+                  <button className="mt-4 w-full py-2 border border-amber-500 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-full text-xs font-bold transition-all">
+                    Recommend {profile.firstName}
+                  </button>
+                )}
               </div>
 
-              {/* Profile Stats Card */}
-              <div 
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all"
-                style={{
-                  animation: pageReady ? 'fadeInUpContent 0.5s ease-out 0.4s forwards' : 'none',
-                  opacity: 0,
-                }}
-              >
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-amber-500" />
-                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7bf42743" />
-                  </h3>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8f7ab6b6" /></span>
-                    <span className="font-bold text-gray-900 dark:text-white">{profile.level}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_186a7e98" /></span>
-                    <span className="font-bold text-gray-900 dark:text-white">{profile.totalPoints.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_34871ded" /></span>
-                    <span className="font-bold text-gray-900 dark:text-white">{profile.totalLearningHours}<AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_edc577da" /></span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9741351" /></span>
-                    <span className="font-bold text-gray-900 dark:text-white">{profile.longestStreak} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7f095b17" /></span>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8a2f4f45" /></span>
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">{profile.profileCompleteness}%</span>
-                    </div>
-                    <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
-                        style={{ width: `${profile.profileCompleteness}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

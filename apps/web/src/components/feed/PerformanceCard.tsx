@@ -4,10 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Flame, Diamond, BookOpen, Trophy, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
-import { LEARN_SERVICE_URL } from '@/lib/api/config';
+import { ANALYTICS_SERVICE_URL } from '@/lib/api/config';
 import Link from 'next/link';
-
-const FEED_SERVICE = LEARN_SERVICE_URL;
 
 interface PerformanceCardProps {
   user: {
@@ -19,11 +17,20 @@ interface PerformanceCardProps {
   locale: string;
 }
 
-interface LearningStats {
-  currentStreak: number;
-  totalPoints: number;
-  completedLessons: number;
+interface PerformanceStatsSummary {
+  xp: number;
   level: number;
+  xpProgress: number;
+  xpToNextLevel: number;
+  totalQuizzes: number;
+  totalPoints: number;
+  avgScore: number;
+  winRate: number;
+  winStreak: number;
+  correctAnswers: number;
+  totalAnswers: number;
+  currentStreak: number;
+  recentScores: number[];
 }
 
 // SVG ring component for progress visualization
@@ -64,11 +71,20 @@ function ProgressRing({
 
 export default function PerformanceCard({ user, locale }: PerformanceCardProps) {
   const tFeed = useTranslations('feed');
-  const [stats, setStats] = useState<LearningStats>({
-    currentStreak: 0,
-    totalPoints: 0,
-    completedLessons: 0,
+  const [stats, setStats] = useState<PerformanceStatsSummary>({
+    xp: 0,
     level: 1,
+    xpProgress: 0,
+    xpToNextLevel: 250,
+    totalQuizzes: 0,
+    totalPoints: 0,
+    avgScore: 0,
+    winRate: 0,
+    winStreak: 0,
+    correctAnswers: 0,
+    totalAnswers: 0,
+    currentStreak: 0,
+    recentScores: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -77,19 +93,14 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const res = await TokenManager.fetchWithAuth(`${LEARN_SERVICE_URL}/courses/stats/my-learning`, {
+      const res = await TokenManager.fetchWithAuth(`${ANALYTICS_SERVICE_URL}/stats/${user.id}/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data) {
-          setStats({
-            currentStreak: data.currentStreak || 0,
-            totalPoints: data.totalPoints || 0,
-            completedLessons: data.completedLessons || 0,
-            level: data.level || 1,
-          });
+        if (data && data.data) {
+          setStats(data.data);
         }
       }
     } catch {
@@ -97,15 +108,15 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user.id]);
 
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  const xpToNext = 250;
-  const xpProgress = stats.totalPoints % xpToNext;
-  const pct = Math.min((xpProgress / xpToNext) * 100, 100);
+  const xpToNext = Math.max(1, stats.xpToNextLevel || 250);
+  const xpProgress = Math.max(0, Math.min(stats.xpProgress || 0, xpToNext));
+  const pct = xpToNext > 0 ? Math.min((xpProgress / xpToNext) * 100, 100) : 0;
   const nextLevel = stats.level + 1;
 
   const size = 110;
@@ -113,9 +124,9 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
   const cy = size / 2;
 
   const rings = [
-    { r: 48, sw: 8, pct: xpProgress / xpToNext, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
-    { r: 37, sw: 6, pct: stats.completedLessons / Math.max(stats.completedLessons + 5, 10), id: 'lesson', c1: '#34D399', c2: '#059669' },
-    { r: 28, sw: 5, pct: stats.currentStreak / 7, id: 'streak', c1: '#FBBF24', c2: '#F97316' },
+    { r: 48, sw: 8, pct: xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+    { r: 37, sw: 6, pct: Math.min(stats.totalQuizzes / Math.max(stats.totalQuizzes + 5, 10), 1), id: 'quiz', c1: '#34D399', c2: '#059669' },
+    { r: 28, sw: 5, pct: Math.min(stats.avgScore / 100, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
   ];
 
   if (loading) {
@@ -165,15 +176,17 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
               <div className="w-7 h-7 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
                 <Diamond className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               </div>
-              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{stats.totalPoints.toLocaleString()}</span>
+              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{stats.xp.toLocaleString()}</span>
               <span className="text-xs text-gray-500 dark:text-gray-400">{tFeed('xp')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-emerald-600 dark:border-emerald-400 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 bg-emerald-600 dark:bg-emerald-400 rounded-full" />
+                </div>
               </div>
-              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{stats.completedLessons}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{tFeed('lessons')}</span>
+              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{stats.totalQuizzes}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{tFeed('quizzes')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center">

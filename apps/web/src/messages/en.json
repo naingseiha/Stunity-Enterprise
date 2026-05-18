@@ -709,6 +709,19 @@
     "achievements": "Achievements"
   },
   "feed": {
+    "subjects": {
+      "all": "All",
+      "math": "Math",
+      "science": "Science",
+      "physics": "Physics",
+      "chemistry": "Chemistry",
+      "biology": "Biology",
+      "cs": "Computer Science",
+      "english": "English",
+      "history": "History",
+      "geography": "Geography",
+      "arts": "Arts"
+    },
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
     "greetingEvening": "Good evening",
@@ -719,6 +732,7 @@
     "shareLearning": "Share your learning...",
     "ask": "Ask",
     "quiz": "Quiz",
+    "quizzes": "Quizzes",
     "resource": "Resource",
     "newPost": "1 New Post",
     "newPosts": "{{count}} New Posts",

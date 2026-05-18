@@ -145,57 +145,19 @@ export default function MediaGallery({
   // Two media
   if (count === 2) {
     return (
-      <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
-        {mediaUrls.map((url, index) => (
-          <div 
-            key={index}
-            className={`relative cursor-pointer group ${
-              effectiveMode === 'FULL_HEIGHT' ? 'h-[350px] sm:h-[450px]' : 'h-[250px] sm:h-[320px]'
-            }`}
-            onClick={() => handleClick(index)}
-          >
-            {isVideoUrl(url) ? (
-              <video src={url} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
-            ) : (
-              <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" />
-            )}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Three media
-  const MediaItem = ({ url, index }: { url: string; index: number }) =>
-    isVideoUrl(url) ? (
-      <video src={url} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
-    ) : (
-      <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" />
-    );
-
-  if (count === 3) {
-    return (
-      <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
-        <div 
-          className={`relative cursor-pointer group row-span-2 ${
-            effectiveMode === 'FULL_HEIGHT' ? 'h-[350px] sm:h-[450px]' : 'h-[250px] sm:h-[300px]'
-          }`}
-          onClick={() => handleClick(0)}
-        >
-          <MediaItem url={mediaUrls[0]} index={0} />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-        </div>
-        <div className="flex flex-col gap-1">
-          {mediaUrls.slice(1).map((url, index) => (
+      <div className={`relative w-full h-[260px] sm:h-[340px] rounded-xl overflow-hidden ${className}`}>
+        <div className="grid grid-cols-2 gap-1.5 h-full w-full">
+          {mediaUrls.map((url, index) => (
             <div 
               key={index}
-              className={`relative cursor-pointer group flex-1 ${
-                effectiveMode === 'FULL_HEIGHT' ? 'min-h-[170px]' : 'min-h-[120px]'
-              }`}
-              onClick={() => handleClick(index + 1)}
+              className="relative cursor-pointer group h-full w-full overflow-hidden"
+              onClick={() => handleClick(index)}
             >
-              <MediaItem url={url} index={index + 1} />
+              {isVideoUrl(url) ? (
+                <video src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
+              ) : (
+                <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+              )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
             </div>
           ))}
@@ -204,26 +166,64 @@ export default function MediaGallery({
     );
   }
 
+  // Three media
+  const MediaItem = ({ url, index }: { url: string; index: number }) =>
+    isVideoUrl(url) ? (
+      <video src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
+    ) : (
+      <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+    );
+
+  if (count === 3) {
+    return (
+      <div className={`relative w-full h-[320px] sm:h-[420px] rounded-xl overflow-hidden ${className}`}>
+        <div className="grid grid-cols-2 gap-1.5 h-full w-full">
+          {/* Left portrait/main image */}
+          <div 
+            className="relative cursor-pointer group h-full w-full overflow-hidden"
+            onClick={() => handleClick(0)}
+          >
+            <MediaItem url={mediaUrls[0]} index={0} />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+          </div>
+          {/* Right vertically stacked images */}
+          <div className="grid grid-rows-2 gap-1.5 h-full w-full">
+            {mediaUrls.slice(1).map((url, index) => (
+              <div 
+                key={index}
+                className="relative cursor-pointer group h-full w-full overflow-hidden"
+                onClick={() => handleClick(index + 1)}
+              >
+                <MediaItem url={url} index={index + 1} />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Four or more media
   return (
-    <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
-      {mediaUrls.slice(0, 4).map((url, index) => (
-        <div 
-          key={index}
-          className={`relative cursor-pointer group ${
-            effectiveMode === 'FULL_HEIGHT' ? 'h-[180px] sm:h-[220px]' : 'h-[140px] sm:h-[170px]'
-          }`}
-          onClick={() => handleClick(index)}
-        >
-          <MediaItem url={url} index={index} />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-          {index === 3 && count > 4 && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
-              <span className="text-white text-2xl font-bold">+{count - 4}</span>
-            </div>
-          )}
-        </div>
-      ))}
+    <div className={`relative w-full h-[320px] sm:h-[420px] rounded-xl overflow-hidden ${className}`}>
+      <div className="grid grid-cols-2 grid-rows-2 gap-1.5 h-full w-full">
+        {mediaUrls.slice(0, 4).map((url, index) => (
+          <div 
+            key={index}
+            className="relative cursor-pointer group h-full w-full overflow-hidden"
+            onClick={() => handleClick(index)}
+          >
+            <MediaItem url={url} index={index} />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+            {index === 3 && count > 4 && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+                <span className="text-white text-2xl font-bold">+{count - 4}</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

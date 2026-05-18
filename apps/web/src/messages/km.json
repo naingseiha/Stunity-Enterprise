@@ -709,6 +709,19 @@
     "achievements": "សមិទ្ធផល"
   },
   "feed": {
+    "subjects": {
+      "all": "ទាំងអស់",
+      "math": "គណិតវិទ្យា",
+      "science": "វិទ្យាសាស្ត្រ",
+      "physics": "រូបវិទ្យា",
+      "chemistry": "គីមីវិទ្យា",
+      "biology": "ជីវវិទ្យា",
+      "cs": "កុំព្យូទ័រ",
+      "english": "អង់គ្លេស",
+      "history": "ប្រវត្តិវិទ្យា",
+      "geography": "ភូមិវិទ្យា",
+      "arts": "សិល្បៈ"
+    },
     "greetingMorning": "អរុណសួស្ដី",
     "greetingAfternoon": "ទិវាសួស្ដី",
     "greetingEvening": "សាយ័ណ្ហសួស្ដី",
@@ -719,6 +732,7 @@
     "shareLearning": "ចែករំលែកការសិក្សារបស់អ្នក...",
     "ask": "សួរ",
     "quiz": "កម្រងសំណួរ",
+    "quizzes": "កម្រងសំណួរ",
     "poll": {
       "openVoting": "បើកការបោះឆ្នោត",
       "finalResults": "លទ្ធផលចុងក្រោយ",
