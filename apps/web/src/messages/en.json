@@ -823,6 +823,21 @@
       "loadErrorSubtitle": "Check your connection and try again.",
       "fetching": "Loading post details..."
     },
+    "educationalValue": {
+      "title": "Educational Value",
+      "rateSubtitle": "How would you rate this",
+      "difficulty": "Difficulty",
+      "recommend": "I recommend this to others",
+      "averageRating": "Average Rating:",
+      "submit": "Submit Evaluation",
+      "accuracy": "Accuracy",
+      "helpfulness": "Helpfulness",
+      "clarity": "Clarity",
+      "depth": "Depth",
+      "easy": "Easy",
+      "justRight": "Just Right",
+      "hard": "Hard"
+    },
     "sections": {
       "due": "Due: ",
       "dueSoon": "Due soon: ",

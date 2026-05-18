@@ -37,6 +37,8 @@ export interface FeedPost {
   author: FeedPostAuthor;
   isLiked?: boolean;
   isLikedByMe?: boolean;
+  isValued?: boolean;
+  valuesCount?: number;
   isBookmarked?: boolean;
   likes?: { userId: string }[];
   pollOptions?: { id: string; text: string; _count?: { votes: number } }[];
@@ -179,6 +181,8 @@ export function feedApiPostToPost(raw: unknown): FeedPost | null {
     },
     isLiked: isLikedByMe,
     isLikedByMe,
+    isValued: Boolean(p.isValued ?? p.isValuedByMe),
+    valuesCount: num(p.valuesCount, 0),
     isBookmarked: Boolean(p.isBookmarked),
     pollOptions,
     userVotedOptionId: typeof p.userVotedOptionId === 'string' ? p.userVotedOptionId : undefined,

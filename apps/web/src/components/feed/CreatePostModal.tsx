@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
@@ -41,6 +41,7 @@ interface CreatePostModalProps {
     firstName: string;
     lastName: string;
   };
+  initialPostType?: string;
 }
 
 export interface CreatePostData {
@@ -99,8 +100,14 @@ const MEDIA_DISPLAY_MODES = [
   { id: 'FULL_HEIGHT', labelKey: 'createPost.mediaModes.fullHeight', icon: RectangleVertical, descriptionKey: 'createPost.mediaModeDescriptions.fullHeight' },
 ];
 
-export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: CreatePostModalProps) {
+export default function CreatePostModal({ isOpen, onClose, onSubmit, user, initialPostType }: CreatePostModalProps) {
   const tFeed = useTranslations('feed');
+
+  useEffect(() => {
+    if (isOpen) {
+      setPostType(initialPostType || 'ARTICLE');
+    }
+  }, [isOpen, initialPostType]);
   const tCommon = useTranslations('common');
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('ARTICLE');

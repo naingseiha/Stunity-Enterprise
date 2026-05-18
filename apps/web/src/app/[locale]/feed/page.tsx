@@ -30,6 +30,7 @@ import {
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import CreatePostModal, { CreatePostData } from '@/components/feed/CreatePostModal';
 import PostCard from '@/components/feed/PostCard';
+import EducationalValueModal, { EducationalValue } from '@/components/feed/EducationalValueModal';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
 import InsightsDashboard from '@/components/feed/InsightsDashboard';
 import TrendingSection from '@/components/feed/TrendingSection';
@@ -318,6 +319,10 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [valuePostId, setValuePostId] = useState<string | null>(null);
+  const [valuePostType, setValuePostType] = useState<string>('ARTICLE');
+  const [isValueSubmitting, setIsValueSubmitting] = useState(false);
+  const [createPostTypePreset, setCreatePostTypePreset] = useState<string>('ARTICLE');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
@@ -1052,6 +1057,95 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     }
   };
 
+  const handleValueClick = useCallback((postId: string) => {
+    let postToValue: Post | undefined;
+    
+    // Check main feed rows
+    const mainRow = feedRows.find(row => row.kind === 'post' && row.post.id === postId);
+    if (mainRow && mainRow.kind === 'post') {
+      postToValue = mainRow.post;
+    }
+    
+    // Check my posts
+    if (!postToValue) {
+      postToValue = myPosts.find(p => p.id === postId);
+    }
+    
+    // Check bookmarked
+    if (!postToValue) {
+      postToValue = bookmarkedPosts.find(p => p.id === postId);
+    }
+    
+    if (postToValue) {
+      setValuePostId(postId);
+      setValuePostType(postToValue.postType || 'ARTICLE');
+    }
+  }, [feedRows, myPosts, bookmarkedPosts]);
+
+  const handleSubmitValue = useCallback(async (value: EducationalValue) => {
+    if (!valuePostId) return;
+    
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    
+    setIsValueSubmitting(true);
+    try {
+      const res = await fetch(`${FEED_API}/posts/${valuePostId}/value`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          accuracy: value.accuracy,
+          helpfulness: value.helpfulness,
+          clarity: value.clarity,
+          depth: value.depth,
+          difficulty: value.difficulty,
+          wouldRecommend: value.recommend,
+        })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        // Update state in main feed
+        updatePostInMainFeed(valuePostId, (p) => ({
+          ...p,
+          isValued: true,
+          valuesCount: (p.valuesCount || 0) + 1,
+        }));
+        
+        // Update my posts
+        setMyPosts(prev => prev.map(p => p.id === valuePostId ? {
+          ...p,
+          isValued: true,
+          valuesCount: (p.valuesCount || 0) + 1,
+        } : p));
+        
+        // Update bookmarked posts
+        setBookmarkedPosts(prev => prev.map(p => p.id === valuePostId ? {
+          ...p,
+          isValued: true,
+          valuesCount: (p.valuesCount || 0) + 1,
+        } : p));
+        
+        setValuePostId(null);
+      } else {
+        alert(data.error || 'Failed to submit evaluation');
+      }
+    } catch (error) {
+      console.error('Failed to submit evaluation:', error);
+      alert('Failed to submit evaluation. Please check your connection.');
+    } finally {
+      setIsValueSubmitting(false);
+    }
+  }, [valuePostId, updatePostInMainFeed]);
+
+  const openCreateModalWithPreset = useCallback((type: string) => {
+    setCreatePostTypePreset(type);
+    setShowCreateModal(true);
+  }, []);
+
   const toggleComments = async (postId: string) => {
     const newExpanded = new Set(expandedComments);
     if (newExpanded.has(postId)) {
@@ -1509,7 +1603,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   </div>
                 )}
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => openCreateModalWithPreset('ARTICLE')}
                   className="flex-1 text-left px-4 py-2.5 bg-gray-50 dark:bg-none dark:bg-gray-800/50 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700/80 transition-all duration-300 text-sm border border-gray-200 dark:border-gray-700/50"
                 >
                   {tFeed('createPost.askMind')}
@@ -1517,7 +1611,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               </div>
               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => openCreateModalWithPreset('QUESTION')}
                   className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-sky-50 dark:hover:bg-sky-900/20"
                 >
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-sky-300 to-sky-500 shadow-md shadow-sky-500/20 group-hover:scale-110 transition-transform">
@@ -1527,7 +1621,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 </button>
 
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => openCreateModalWithPreset('QUIZ')}
                   className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                 >
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
@@ -1537,7 +1631,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 </button>
 
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => openCreateModalWithPreset('POLL')}
                   className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-violet-50 dark:hover:bg-violet-900/20"
                 >
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-400 to-violet-600 shadow-md shadow-violet-500/20 group-hover:scale-110 transition-transform">
@@ -1547,7 +1641,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 </button>
 
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => openCreateModalWithPreset('RESOURCE')}
                   className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-pink-50 dark:hover:bg-pink-900/20"
                 >
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600 shadow-md shadow-pink-500/20 group-hover:scale-110 transition-transform">
@@ -1741,6 +1835,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                             })),
                           }}
                           onLike={handleLike}
+                          onValue={handleValueClick}
                           onComment={async (postId, content) => {
                             const token = TokenManager.getAccessToken();
                             if (!token || !content.trim()) return;
@@ -1900,6 +1995,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                           })),
                         }}
                         onLike={handleLike}
+                        onValue={handleValueClick}
                         onComment={async (postId, content) => {
                           const token = TokenManager.getAccessToken();
                           if (!token || !content.trim()) return;
@@ -2023,6 +2119,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                           })),
                         }}
                         onLike={handleLike}
+                        onValue={handleValueClick}
                         onComment={async (postId, content) => {
                           const token = TokenManager.getAccessToken();
                           if (!token || !content.trim()) return;
@@ -2115,6 +2212,16 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreatePost}
         user={user}
+        initialPostType={createPostTypePreset}
+      />
+
+      {/* Educational Value Modal */}
+      <EducationalValueModal
+        isOpen={valuePostId !== null}
+        postType={valuePostType}
+        onClose={() => setValuePostId(null)}
+        onSubmit={handleSubmitValue}
+        isSubmitting={isValueSubmitting}
       />
 
       {/* Post Analytics Modal */}

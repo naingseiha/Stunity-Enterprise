@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import BlurLoader from '@/components/BlurLoader';
+import EducationalValueModal, { EducationalValue } from '@/components/feed/EducationalValueModal';
 import { 
   ArrowLeft, 
   Heart, 
@@ -177,6 +178,8 @@ export default function PostDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pageReady, setPageReady] = useState(false);
+  const [showValueModal, setShowValueModal] = useState(false);
+  const [isValueSubmitting, setIsValueSubmitting] = useState(false);
 
   // Fetch current user
   useEffect(() => {
@@ -261,27 +264,56 @@ export default function PostDetailPage() {
     }
   };
 
-  // Handle value (star)
-  const handleValue = async () => {
+  // Handle value (star) - open modal
+  const handleValue = () => {
+    setShowValueModal(true);
+  };
+
+  // Submit value evaluations to backend
+  const handleSubmitValue = async (value: EducationalValue) => {
     if (!post) return;
     
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    
+    setIsValueSubmitting(true);
     try {
-      const token = TokenManager.getAccessToken();
       const res = await fetch(`${FEED_SERVICE_URL}/posts/${post.id}/value`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accuracy: value.accuracy,
+          helpfulness: value.helpfulness,
+          clarity: value.clarity,
+          depth: value.depth,
+          difficulty: value.difficulty,
+          wouldRecommend: value.recommend,
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        setPost(prev => prev ? {
-          ...prev,
-          isValuedByMe: data.valued,
-          valuesCount: (prev.valuesCount || 0) + (data.valued ? 1 : -1),
-        } : null);
+        if (data.success) {
+          setPost(prev => prev ? {
+            ...prev,
+            isValuedByMe: true,
+            valuesCount: (prev.valuesCount || 0) + 1,
+          } : null);
+          setShowValueModal(false);
+        } else {
+          alert(data.error || 'Failed to submit evaluation');
+        }
+      } else {
+        alert('Failed to submit evaluation');
       }
     } catch (err) {
-      console.error('Failed to value post');
+      console.error('Failed to value post', err);
+      alert('Failed to submit evaluation. Please check your connection.');
+    } finally {
+      setIsValueSubmitting(false);
     }
   };
 
@@ -795,6 +827,15 @@ export default function PostDetailPage() {
           )}
         </div>
       )}
+
+      {/* Educational Value Modal */}
+      <EducationalValueModal
+        isOpen={showValueModal}
+        postType={post?.postType || 'ARTICLE'}
+        onClose={() => setShowValueModal(false)}
+        onSubmit={handleSubmitValue}
+        isSubmitting={isValueSubmitting}
+      />
     </div>
   );
 }

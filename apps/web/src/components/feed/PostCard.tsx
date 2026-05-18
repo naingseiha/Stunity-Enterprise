@@ -405,24 +405,10 @@ export default function PostCard({
     }
   };
 
-  // Optimistic value - instant UI feedback
-  const handleValue = async () => {
-    if (isValuing || !onValue) return;
-    
-    // Optimistic update
-    const wasValued = localIsValued;
-    setLocalIsValued(!wasValued);
-    setLocalValuesCount(prev => wasValued ? prev - 1 : prev + 1);
-    setIsValuing(true);
-    
-    try {
-      await onValue(post.id);
-    } catch {
-      // Revert on error
-      setLocalIsValued(wasValued);
-      setLocalValuesCount(prev => wasValued ? prev + 1 : prev - 1);
-    } finally {
-      setIsValuing(false);
+  // Trigger educational value evaluation modal
+  const handleValue = () => {
+    if (onValue) {
+      onValue(post.id);
     }
   };
 
@@ -816,7 +802,7 @@ export default function PostCard({
             onClick={handleValue}
             disabled={isValuing}
             className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-all duration-200 ${
-              localIsLiked
+              localIsValued
                 ? 'text-amber-500 scale-105'
                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
