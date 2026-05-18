@@ -32,7 +32,9 @@ function createClassesCacheKey(params?: ClassesParams): string | null {
   if (params?.limit) queryParams.append('limit', (params.limit || 100).toString());
   if (params?.grade) queryParams.append('grade', params.grade.toString());
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
-  if (params?.search) queryParams.append('search', params.search);
+  if (params?.search && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
+  }
   
   return `${CLASS_SERVICE_URL}/classes/lightweight?${queryParams}`;
 }
@@ -94,18 +96,21 @@ export function useClasses(params?: ClassesParams) {
     ? readPersistentCache<ClassesResponse>(cacheKey, CLASSES_CACHE_TTL_MS)
     : undefined;
   
-  const { data, error, isLoading, isValidating, mutate } = useSWR<ClassesResponse>(
+  const { data, error, isLoading: swrLoading, isValidating, mutate } = useSWR<ClassesResponse>(
     cacheKey,
     fetchClasses,
     {
       dedupingInterval: CLASSES_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
-      fallbackData,
     }
   );
 
-  const classes = data ? transformClasses(data.data) : [];
+  const hasFallback = !!fallbackData;
+  const resolvedData = data || fallbackData;
+  const isLoading = swrLoading && !hasFallback;
+
+  const classes = resolvedData ? transformClasses(resolvedData.data) : [];
   const pagination = {
     total: classes.length,
     page: params?.page || 1,

@@ -13,7 +13,9 @@ function createParentsCacheKey(params?: GetParentsParams): string | null {
   const query = new URLSearchParams();
   if (params?.page) query.append('page', String(params.page));
   if (params?.limit) query.append('limit', String(params.limit));
-  if (params?.search) query.append('search', params.search);
+  if (params?.search && params.search.trim() !== '') {
+    query.append('search', params.search.trim());
+  }
   if (params?.schoolId) query.append('schoolId', params.schoolId);
 
   return `${AUTH_SERVICE_URL}/auth/admin/parents?${query.toString()}`;
@@ -45,20 +47,23 @@ export function useParents(params?: GetParentsParams) {
     ? readPersistentCache<ParentDirectoryResponse>(cacheKey, PARENTS_CACHE_TTL_MS)
     : undefined;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<ParentDirectoryResponse>(
+  const { data, error, isLoading: swrLoading, isValidating, mutate } = useSWR<ParentDirectoryResponse>(
     cacheKey,
     fetchParents,
     {
       dedupingInterval: PARENTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
-      fallbackData,
     }
   );
 
+  const hasFallback = !!fallbackData;
+  const resolvedData = data || fallbackData;
+  const isLoading = swrLoading && !hasFallback;
+
   return {
-    parents: data?.data || [],
-    pagination: data?.pagination || {
+    parents: resolvedData?.data || [],
+    pagination: resolvedData?.pagination || {
       total: 0,
       page: params?.page || 1,
       limit: params?.limit || 20,
@@ -68,7 +73,7 @@ export function useParents(params?: GetParentsParams) {
     isValidating,
     error,
     mutate,
-    isEmpty: !isLoading && (data?.data || []).length === 0,
+    isEmpty: !isLoading && (resolvedData?.data || []).length === 0,
   };
 }
 

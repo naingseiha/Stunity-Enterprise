@@ -28,7 +28,9 @@ function createSubjectsCacheKey(params?: SubjectsParams): string | null {
   if (params?.track) queryParams.append('track', params.track);
   if (params?.category) queryParams.append('category', params.category);
   if (params?.isActive !== undefined) queryParams.append('isActive', String(params.isActive));
-  if (params?.search) queryParams.append('search', params.search);
+  if (params?.search && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
+  }
   if (params?.includeTeachers) queryParams.append('includeTeachers', 'true');
   
   return `${SUBJECT_SERVICE_URL}/subjects${queryParams.toString() ? `?${queryParams}` : ''}`;
@@ -94,18 +96,20 @@ export function useSubjects(params?: SubjectsParams) {
     ? readPersistentCache<Subject[]>(cacheKey, SUBJECTS_CACHE_TTL_MS)
     : undefined;
   
-  const { data, error, isLoading, isValidating, mutate } = useSWR<Subject[]>(
+  const { data, error, isLoading: swrLoading, isValidating, mutate } = useSWR<Subject[]>(
     cacheKey,
     fetchSubjects,
     {
       dedupingInterval: SUBJECTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
-      fallbackData,
     }
   );
 
-  const subjects = data || [];
+  const hasFallback = !!fallbackData;
+  const resolvedData = data || fallbackData;
+  const isLoading = swrLoading && !hasFallback;
+  const subjects = resolvedData || [];
 
   return {
     subjects,
@@ -122,18 +126,21 @@ export function useSubjects(params?: SubjectsParams) {
  */
 export function useSubjectStatistics() {
   const fallbackData = readPersistentCache<SubjectStatistics>(SUBJECT_STATS_KEY, SUBJECT_STATS_CACHE_TTL_MS);
-  const { data, error, isLoading, mutate } = useSWR<SubjectStatistics>(
+  const { data, error, isLoading: swrLoading, mutate } = useSWR<SubjectStatistics>(
     typeof window !== 'undefined' ? SUBJECT_STATS_KEY : null,
     fetchStatistics,
     {
       dedupingInterval: SUBJECT_STATS_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      fallbackData,
     }
   );
 
+  const hasFallback = !!fallbackData;
+  const resolvedData = data || fallbackData;
+  const isLoading = swrLoading && !hasFallback;
+
   return {
-    statistics: data,
+    statistics: resolvedData,
     isLoading,
     error,
     mutate,

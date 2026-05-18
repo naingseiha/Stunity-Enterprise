@@ -820,7 +820,6 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         if (optimisticPath === item.path && pathname !== item.path) {
                           setOptimisticPath(null);
                           setTransitionSkeleton(null);
-                          return;
                         }
                         const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                         const hasSidebar = item.name === 'School';
@@ -1085,7 +1084,6 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         setOptimisticPath(null);
                         setTransitionSkeleton(null);
                         setMobileMenuOpen(false);
-                        return;
                       }
                       const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                       const hasSidebar = item.name === 'School';
@@ -1159,7 +1157,6 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         if (optimisticPath === item.path && pathname !== item.path) {
                           setOptimisticPath(null);
                           setTransitionSkeleton(null);
-                          return;
                         }
                         beginNavigationFeedback(item.path, item.skeleton, true);
                         router.push(item.path);

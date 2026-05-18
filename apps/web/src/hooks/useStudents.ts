@@ -91,7 +91,9 @@ function createStudentsCacheKey(params?: StudentsParams): string | null {
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.classId) queryParams.append('classId', params.classId);
   if (params?.gender) queryParams.append('gender', params.gender);
-  if (params?.search) queryParams.append('search', params.search);
+  if (params?.search && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
+  }
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
 
   return `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`;
@@ -131,7 +133,7 @@ export function useStudents(params?: StudentsParams) {
     ? readPersistentCache<StudentsResponse>(cacheKey, STUDENTS_CACHE_TTL_MS)
     : undefined;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<StudentsResponse>(
+  const { data, error, isLoading: swrLoading, isValidating, mutate } = useSWR<StudentsResponse>(
     cacheKey,
     fetchStudents,
     {
@@ -139,12 +141,15 @@ export function useStudents(params?: StudentsParams) {
       dedupingInterval: STUDENTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
-      fallbackData,
     }
   );
 
-  const students = data ? transformStudents(data.data) : [];
-  const pagination = data?.pagination || {
+  const hasFallback = !!fallbackData;
+  const resolvedData = data || fallbackData;
+  const isLoading = swrLoading && !hasFallback;
+
+  const students = resolvedData ? transformStudents(resolvedData.data) : [];
+  const pagination = resolvedData?.pagination || {
     total: 0,
     page: params?.page || 1,
     limit: params?.limit || 20,

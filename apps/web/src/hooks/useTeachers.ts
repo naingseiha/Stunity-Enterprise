@@ -95,7 +95,9 @@ function createTeachersCacheKey(params?: TeachersParams): string {
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.gender) queryParams.append('gender', params.gender);
-  if (params?.search) queryParams.append('search', params.search);
+  if (params?.search && params.search.trim() !== '') {
+    queryParams.append('search', params.search.trim());
+  }
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
   queryParams.append('includeRelations', '0');
   return `${TEACHER_SERVICE_URL}/teachers/lightweight?${queryParams}`;
@@ -128,20 +130,23 @@ export function useTeachers(params?: TeachersParams) {
   const cacheKey = createTeachersCacheKey(params);
   const fallbackData = readPersistentCache<TeachersResponse>(cacheKey, TEACHERS_CACHE_TTL_MS);
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<TeachersResponse>(
+  const { data, error, isLoading: swrLoading, isValidating, mutate } = useSWR<TeachersResponse>(
     cacheKey,
     fetchTeachers,
     {
       dedupingInterval: TEACHERS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
-      fallbackData,
     }
   );
 
-  const rawData = Array.isArray(data?.data) ? data.data : [];
-  const teachers = data ? transformTeachers(rawData) : [];
-  const pagination = data?.pagination || {
+  const hasFallback = !!fallbackData;
+  const resolvedData = data || fallbackData;
+  const isLoading = swrLoading && !hasFallback;
+
+  const rawData = Array.isArray(resolvedData?.data) ? resolvedData.data : [];
+  const teachers = resolvedData ? transformTeachers(rawData) : [];
+  const pagination = resolvedData?.pagination || {
     total: teachers.length,
     page: params?.page || 1,
     limit: params?.limit || 20,
