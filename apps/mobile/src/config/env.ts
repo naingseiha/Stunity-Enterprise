@@ -42,9 +42,10 @@ interface EnvironmentConfig {
  * Smart API host detection that works across WiFi changes
  * 
  * Priority:
- * 1. Manual override via EXPO_PUBLIC_API_HOST env var
- * 2. Expo's debuggerHost (auto-detects dev machine IP) ⭐ RECOMMENDED
- * 3. Localhost fallback
+ * 1. Native simulator localhost aliases
+ * 2. Manual override via EXPO_PUBLIC_API_HOST env var
+ * 3. Expo's debuggerHost (auto-detects dev machine IP) ⭐ RECOMMENDED
+ * 4. Localhost fallback
  * 
  * NOTE: In development, Expo automatically detects your dev machine's IP
  * when you start the app. This means WiFi changes are handled automatically!
@@ -129,7 +130,16 @@ const getApiHost = (): string => {
     return 'production'; // Host unused for prod/staging configs anyway
   }
 
-  // 2. Android emulator fallback. This reaches the host machine without relying
+  // 2. iOS simulator fallback. The simulator can reach the Mac through
+  // localhost, so stale LAN IP overrides should not break local development.
+  if (Platform.OS === 'ios' && !Device.isDevice) {
+    if (__DEV__) {
+      console.log('📡 [ENV] iOS simulator detected. Using localhost host fallback.');
+    }
+    return 'localhost';
+  }
+
+  // 3. Android emulator fallback. This reaches the host machine without relying
   // on the current WiFi/LAN IP when adb reverse is not available.
   if (Platform.OS === 'android' && !Device.isDevice) {
     if (__DEV__) {
@@ -138,15 +148,15 @@ const getApiHost = (): string => {
     return '10.0.2.2';
   }
 
-  // 3. Manual override via .env. Kept after emulator handling so stale LAN IPs
-  // cannot break Android emulator runs when WiFi changes.
+  // 4. Manual override via .env. Kept after simulator/emulator handling so stale
+  // LAN IPs cannot break local simulator runs when WiFi changes.
   const envHost = process.env.EXPO_PUBLIC_API_HOST;
   if (envHost) {
     if (__DEV__) console.log('📡 [ENV] Using manual API host:', envHost);
     return envHost;
   }
 
-  // 4. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)
+  // 5. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)
   const autoHost = detectExpoHost();
   if (autoHost) {
     return autoHost;

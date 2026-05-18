@@ -442,8 +442,10 @@ export default function FeedScreen() {
         const latestCreatedAt = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
 
         if (latestCreatedAt) {
-          feedApi.get('/posts/feed', {
-            params: { mode: 'RECENT', limit: 5, page: 1 },
+          feedApi.get('/posts', {
+            params: { limit: 5, page: 1, fields: 'minimal' },
+            timeout: 5000,
+            headers: { 'X-No-Retry': 'true' },
           }).then((response) => {
             if (response.data?.success && response.data.data) {
               const existingIds = new Set([
@@ -453,10 +455,9 @@ export default function FeedScreen() {
 
               const feedItemsFromApi: any[] = response.data.data;
               const rawNewPosts = feedItemsFromApi
-                .filter((p: any) => p.type === 'POST' && p.data)
-                .map((p: any) => p.data)
+                .map((item: any) => item?.type === 'POST' ? item.data : item)
                 .filter(
-                  (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
+                  (p: any) => p?.id && new Date(p.createdAt) > new Date(latestCreatedAt) &&
                     !existingIds.has(p.id)
                 );
 

@@ -36,11 +36,13 @@ let viewFlushTimer: ReturnType<typeof setTimeout> | null = null;
 const viewBuffer = new Map<string, { postId: string; duration: number; source: string; timestamp: number; sampleRate: number }>();
 
 // Feed cold-start resilience (Cloud Run free-tier friendly)
-const FEED_FIRST_PAGE_TIMEOUT_MS = 20_000;
-const FEED_RETRY_TIMEOUT_MS = 25_000;
-const FEED_NEXT_PAGE_TIMEOUT_MS = 12_000;
-const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
-const MAX_INITIAL_FEED_RETRIES = 2;
+const FEED_FIRST_PAGE_TIMEOUT_MS = 7_000;
+const FEED_RECENT_FALLBACK_TIMEOUT_MS = 5_500;
+const FEED_RETRY_TIMEOUT_MS = 8_000;
+const FEED_NEXT_PAGE_TIMEOUT_MS = 8_000;
+const FEED_BACKGROUND_POLL_TIMEOUT_MS = 5_000;
+const INITIAL_RETRY_BASE_DELAY_MS = 900;
+const MAX_INITIAL_FEED_RETRIES = 1;
 const PERSONALIZED_FEED_PAGE_SIZE = 18;
 const MAX_FEED_ITEMS_IN_MEMORY = 900;
 let initialFeedRetryAttempts = 0;
@@ -53,8 +55,17 @@ const REALTIME_FALLBACK_POLL_INTERVAL_MS = 20_000;
 let realtimeLivenessTimer: ReturnType<typeof setTimeout> | null = null;
 let realtimeFallbackPollTimer: ReturnType<typeof setInterval> | null = null;
 let realtimeFallbackPollInFlight = false;
+let realtimeFallbackPollFailures = 0;
+let realtimeFallbackPausedUntil = 0;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const summarizeFeedError = (error: any): string => {
+  if (!error) return 'unknown error';
+  const code = error.code || error.status;
+  const message = error.message || error.error || String(error);
+  return code ? `${code}: ${message}` : message;
+};
 
 const isWrappedFeedItem = (item: any): item is { type: string; data: any } =>
   !!item && typeof item === 'object' && typeof item.type === 'string' && 'data' in item;
@@ -395,13 +406,37 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       } catch (requestError) {
         if (page !== 1) throw requestError;
 
-        // Free-tier Cloud Run cold starts can be slow on the very first request.
-        await delay(INITIAL_RETRY_BASE_DELAY_MS);
-        response = await feedApi.get(endpoint, {
-          params,
-          timeout: FEED_RETRY_TIMEOUT_MS,
-          headers: { 'X-No-Retry': 'true' },
-        });
+        if (usePersonalizedFeed) {
+          // Fast-start feed: if the ranked feed stalls or errors, show the
+          // lighter chronological feed instead of holding the first paint.
+          if (__DEV__) {
+            console.log('🛟 [FeedStore] Ranked feed unavailable, falling back to recent feed:', summarizeFeedError(requestError));
+          }
+
+          const fallbackParams: any = {
+            page: 1,
+            limit,
+            fields: 'minimal',
+          };
+
+          if (subject && subject !== 'ALL') {
+            fallbackParams.subject = subject;
+          }
+
+          response = await feedApi.get('/posts', {
+            params: fallbackParams,
+            timeout: FEED_RECENT_FALLBACK_TIMEOUT_MS,
+            headers: { 'X-No-Retry': 'true' },
+          });
+        } else {
+          // Free-tier Cloud Run cold starts can be slow on the very first request.
+          await delay(INITIAL_RETRY_BASE_DELAY_MS);
+          response = await feedApi.get(endpoint, {
+            params,
+            timeout: FEED_RETRY_TIMEOUT_MS,
+            headers: { 'X-No-Retry': 'true' },
+          });
+        }
       }
 
       if (response.data.success) {
@@ -670,10 +705,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         set({ isLoadingPosts: false });
       }
     } catch (error: any) {
-      console.error('Failed to fetch posts:', error);
+      console.log('⚠️ [FeedStore] Failed to fetch posts:', summarizeFeedError(error));
 
-      // Use mock data if API fails in development
-      if (__DEV__ && error.code === 'TIMEOUT_ERROR') {
+      // Use mock data if API fails in development and there is no cache to show.
+      if (__DEV__ && get().feedItems.length === 0 && (error.code === 'TIMEOUT_ERROR' || error.code === 'NETWORK_ERROR')) {
         console.log('📦 Using mock data for offline development');
         set({
           feedItems: refresh ? mockPosts.map(p => ({ type: 'POST' as const, data: p })) : [...get().feedItems, ...mockPosts.map(p => ({ type: 'POST' as const, data: p }))],
@@ -1882,6 +1917,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         if (realtimeFallbackPollTimer) {
           clearInterval(realtimeFallbackPollTimer);
           realtimeFallbackPollTimer = null;
+          realtimeFallbackPollFailures = 0;
+          realtimeFallbackPausedUntil = 0;
           if (__DEV__) {
             console.log('✅ [FeedStore] Realtime recovered — stopped fallback polling');
           }
@@ -1890,6 +1927,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       const pollForMissedPosts = async () => {
         if (realtimeFallbackPollInFlight) return;
+        if (Date.now() < realtimeFallbackPausedUntil) return;
         realtimeFallbackPollInFlight = true;
 
         try {
@@ -1898,13 +1936,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const latestCreatedAt = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
           if (!latestCreatedAt) return;
 
-          const response = await feedApi.get('/posts/feed', {
-            params: { mode: 'RECENT', limit: 8, page: 1, fields: 'minimal' },
-            timeout: FEED_RETRY_TIMEOUT_MS,
+          const response = await feedApi.get('/posts', {
+            params: { limit: 8, page: 1, fields: 'minimal' },
+            timeout: FEED_BACKGROUND_POLL_TIMEOUT_MS,
             headers: { 'X-No-Retry': 'true' },
           });
 
           if (!response.data?.success) return;
+          realtimeFallbackPollFailures = 0;
+          realtimeFallbackPausedUntil = 0;
 
           const existingIds = new Set([
             ...feedItems.filter(i => i.type === 'POST').map(i => i.data.id),
@@ -1935,8 +1975,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             }
           }
         } catch (pollError) {
+          realtimeFallbackPollFailures += 1;
+          const pauseMs = Math.min(
+            REALTIME_FALLBACK_POLL_INTERVAL_MS * realtimeFallbackPollFailures,
+            120_000,
+          );
+          realtimeFallbackPausedUntil = Date.now() + pauseMs;
           if (__DEV__) {
-            console.log('⚠️ [FeedStore] Realtime fallback poll failed:', pollError);
+            console.log('⚠️ [FeedStore] Realtime fallback poll failed:', summarizeFeedError(pollError));
           }
         } finally {
           realtimeFallbackPollInFlight = false;
@@ -2200,6 +2246,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       realtimeFallbackPollTimer = null;
     }
     realtimeFallbackPollInFlight = false;
+    realtimeFallbackPollFailures = 0;
+    realtimeFallbackPausedUntil = 0;
 
     const { realtimeSubscription } = get();
     if (realtimeSubscription) {

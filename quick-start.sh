@@ -53,8 +53,8 @@ start_service() {
     cd "$PROJECT_DIR/$service_path" || exit 1
     load_root_env >/dev/null 2>&1
     export PORT="$port"
-    npx tsx src/index.ts >"/tmp/$log_file" 2>&1
-  ) &
+    nohup npx tsx src/index.ts >"/tmp/$log_file" 2>&1 < /dev/null &
+  )
 }
 
 start_web() {
@@ -62,8 +62,8 @@ start_web() {
   (
     cd "$PROJECT_DIR/apps/web" || exit 1
     load_root_env >/dev/null 2>&1
-    npm run dev > /tmp/web.log 2>&1
-  ) &
+    nohup npm run dev > /tmp/web.log 2>&1 < /dev/null &
+  )
 }
 
 wait_for_port() {
@@ -102,6 +102,59 @@ wait_for_health() {
 
   echo "  ⚠️  $name health check timed out ($url)"
   return 1
+}
+
+run_database_migrations() {
+  if [ "${SKIP_DB_MIGRATE:-0}" = "1" ]; then
+    echo "  ℹ️  Skipping database migrations (SKIP_DB_MIGRATE=1)"
+    return 0
+  fi
+
+  local timeout_seconds=${MIGRATE_TIMEOUT_SECONDS:-25}
+  local migration_log
+  migration_log="$(mktemp -t stunity-prisma-migrate.XXXXXX.log)"
+
+  (
+    cd "$PROJECT_DIR/packages/database" || exit 1
+    npx prisma migrate deploy
+  ) >"$migration_log" 2>&1 &
+
+  local migration_pid=$!
+  local elapsed=0
+
+  while kill -0 "$migration_pid" >/dev/null 2>&1; do
+    if [ "$elapsed" -ge "$timeout_seconds" ]; then
+      kill "$migration_pid" >/dev/null 2>&1 || true
+      wait "$migration_pid" >/dev/null 2>&1 || true
+      echo "  ⚠️  Database migrations skipped: Supabase migration connection timed out after ${timeout_seconds}s"
+      echo "      Services will still start. Run later: cd packages/database && npx prisma migrate deploy"
+      rm -f "$migration_log"
+      return 0
+    fi
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  wait "$migration_pid"
+  local status=$?
+
+  if [ "$status" -eq 0 ]; then
+    echo "  ✅ Migrations applied"
+    rm -f "$migration_log"
+    return 0
+  fi
+
+  if grep -qE "P1001|Schema engine error|ECHECKOUTTIMEOUT|Can't reach database server" "$migration_log"; then
+    echo "  ⚠️  Database migrations skipped: Supabase migration connection is unavailable right now"
+    echo "      Services will still start. Run later: cd packages/database && npx prisma migrate deploy"
+    rm -f "$migration_log"
+    return 0
+  fi
+
+  echo "  ⚠️  prisma migrate deploy failed. Last output:"
+  tail -n 12 "$migration_log" | sed 's/^/      /'
+  rm -f "$migration_log"
+  return 0
 }
 
 smoke_test_new_endpoints() {
@@ -174,13 +227,7 @@ load_root_env
 # Apply migrations so Postgres matches prisma/schema.prisma (e.g. new Subject columns).
 echo ""
 echo "📦 Applying database migrations..."
-(
-  cd "$PROJECT_DIR/packages/database" || exit 1
-  npx prisma migrate deploy
-) && echo "  ✅ Migrations applied" || {
-  echo "  ⚠️  prisma migrate deploy failed (is PostgreSQL running and DATABASE_URL set in .env?)"
-  echo "      Fix: cd packages/database && npx prisma migrate deploy"
-}
+run_database_migrations
 
 configure_android_reverse
 
