@@ -6285,9 +6285,9 @@
     "major2": "Major 2"
   },
   "monthlyReport": {
-    "nav": "Monthly Reports",
-    "eyebrow": "Monthly report",
-    "title": "Khmer monthly report",
+    "nav": "Reports",
+    "eyebrow": "Reports Dashboard",
+    "title": "School Reports",
     "description": "Generate MOEYS-style score sheets. School model: {model}.",
     "systemBadge": "Report system",
     "academicYear": "Academic year",

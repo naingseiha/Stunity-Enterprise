@@ -4,6 +4,7 @@ import type { MonthlyReportFormat } from '@/lib/api/grades';
 import MonthlyDetailedPrint from '@/components/reports/templates/khm-moeys/MonthlyDetailedPrint';
 import MonthlySummaryPrint, { type MonthlySummaryPrintProps } from '@/components/reports/templates/khm-moeys/MonthlySummaryPrint';
 import SemesterOnePrint from '@/components/reports/templates/khm-moeys/SemesterOnePrint';
+import TranscriptPrint from '@/components/reports/templates/khm-moeys/TranscriptPrint';
 
 function isMoeysTemplate(template?: string) {
   const t = (template || '').toUpperCase();
@@ -14,9 +15,13 @@ function isMoeysTemplate(template?: string) {
  * Dispatches print layout by API `report.template` + `report.format`.
  * Non-MOEYS templates fall back to summary layout until implemented.
  */
-export default function MonthlyReportPrint(props: MonthlySummaryPrintProps & { schoolProfile?: any }) {
-  const { report, schoolProfile } = props;
+export default function MonthlyReportPrint(props: MonthlySummaryPrintProps & { schoolProfile?: any; activeTab?: string }) {
+  const { report, schoolProfile, activeTab } = props;
   const format: MonthlyReportFormat = report.format ?? 'summary';
+
+  if (activeTab === 'transcript') {
+    return <TranscriptPrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
+  }
 
   if (!isMoeysTemplate(report.template)) {
     return <MonthlySummaryPrint {...props} />;

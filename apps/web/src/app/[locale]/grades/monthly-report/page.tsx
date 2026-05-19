@@ -8,6 +8,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Award,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -110,6 +111,7 @@ export default function KhmerMonthlyReportPage() {
   const [selectedMonthNumber, setSelectedMonthNumber] = useState(2);
   const [reportType, setReportType] = useState<'monthly' | 'semester'>('monthly');
   const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
+  const [activeTab, setActiveTab] = useState<'monthly' | 'transcript' | 'certificate'>('monthly');
   const reportFormat: MonthlyReportFormat = reportType === 'monthly' ? 'detailed' : (selectedSemester === 1 ? 'semester-1' : 'semester-2');
   const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -586,224 +588,385 @@ export default function KhmerMonthlyReportPage() {
                     </div>
                   </div>
 
+                  {/* Premium Enterprise-Grade Tab Switcher */}
+                  <div className="flex border-b border-slate-100 -mx-5 px-5 sm:-mx-7 sm:px-7 mt-2 mb-6 print:hidden overflow-x-auto">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('monthly')}
+                      className={`relative flex items-center gap-2 px-5 py-3.5 text-sm font-bold transition duration-150 focus:outline-none whitespace-nowrap ${
+                        activeTab === 'monthly'
+                          ? 'text-blue-600'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>{t('formatMonthly')} (របាយការណ៍ប្រចាំខែ)</span>
+                      {activeTab === 'monthly' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('transcript')}
+                      className={`relative flex items-center gap-2 px-5 py-3.5 text-sm font-bold transition duration-150 focus:outline-none whitespace-nowrap ${
+                        activeTab === 'transcript'
+                          ? 'text-blue-600'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <GraduationCap className="h-4 w-4" />
+                      <span>Transcript (ព្រឹត្តិបត្រពិន្ទុ)</span>
+                      {activeTab === 'transcript' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('certificate')}
+                      className={`relative flex items-center gap-2 px-5 py-3.5 text-sm font-bold transition duration-150 focus:outline-none whitespace-nowrap ${
+                        activeTab === 'certificate'
+                          ? 'text-blue-600'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Award className="h-4 w-4" />
+                      <span>Certificate (វិញ្ញាបនបត្រ)</span>
+                      {activeTab === 'certificate' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
+                      )}
+                    </button>
+                  </div>
+
                   {/* Output options */}
-                  <div className="mt-6 space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      {t('formatLabel')}
-                    </span>
-                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                      <div
-                        role="tablist"
-                        aria-label={t('formatLabel')}
-                        className="inline-flex w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
-                      >
-                        {(['monthly', 'semester'] as const).map((fmt, idx) => (
-                          <button
-                            key={fmt}
-                            type="button"
-                            role="tab"
-                            aria-pressed={reportType === fmt}
-                            onClick={() => setReportType(fmt)}
-                            className={`flex-1 px-3 py-2 text-sm font-medium transition ${
-                              idx > 0 ? 'border-l border-slate-200' : ''
-                            } ${
-                              reportType === fmt
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                            } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
-                          >
-                            {formatLabelMap[fmt]}
-                          </button>
-                        ))}
-                      </div>
-                      <div
-                        role="tablist"
-                        aria-label={t('reportSetup')}
-                        className="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-white"
-                      >
-                        {(['class', 'grade'] as ReportScope[]).map((item, idx) => (
-                          <button
-                            key={item}
-                            type="button"
-                            role="tab"
-                            aria-pressed={scope === item}
-                            onClick={() => setScope(item)}
-                            className={`px-4 py-2 text-sm font-medium transition ${
-                              idx > 0 ? 'border-l border-slate-200' : ''
-                            } ${
-                              scope === item
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                            } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
-                          >
-                            {item === 'class' ? t('scopeByClass') : t('scopeByGrade')}
-                          </button>
-                        ))}
+                  {activeTab === 'monthly' && (
+                    <div className="mt-6 space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {t('formatLabel')}
+                      </span>
+                      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                        <div
+                          role="tablist"
+                          aria-label={t('formatLabel')}
+                          className="inline-flex w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
+                        >
+                          {(['monthly', 'semester'] as const).map((fmt, idx) => (
+                            <button
+                              key={fmt}
+                              type="button"
+                              role="tab"
+                              aria-pressed={reportType === fmt}
+                              onClick={() => setReportType(fmt)}
+                              className={`flex-1 px-3 py-2 text-sm font-medium transition ${
+                                idx > 0 ? 'border-l border-slate-200' : ''
+                              } ${
+                                reportType === fmt
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                              } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
+                            >
+                              {formatLabelMap[fmt]}
+                            </button>
+                          ))}
+                        </div>
+                        <div
+                          role="tablist"
+                          aria-label={t('reportSetup')}
+                          className="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-white"
+                        >
+                          {(['class', 'grade'] as ReportScope[]).map((item, idx) => (
+                            <button
+                              key={item}
+                              type="button"
+                              role="tab"
+                              aria-pressed={scope === item}
+                              onClick={() => setScope(item)}
+                              className={`px-4 py-2 text-sm font-medium transition ${
+                                idx > 0 ? 'border-l border-slate-200' : ''
+                              } ${
+                                scope === item
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                              } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
+                            >
+                              {item === 'class' ? t('scopeByClass') : t('scopeByGrade')}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Filters */}
-                  <div className={`mt-6 grid gap-4 ${scope === 'class' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-                    <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {t('academicYear')}
-                      </span>
-                      <select
-                        className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        value={selectedYear}
-                        onChange={(event) => setSelectedYear(event.target.value)}
-                      >
-                        {allYears.map((year) => (
-                          <option key={year.id} value={year.id}>
-                            {year.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                  {/* Filters and Actions */}
+                  {activeTab !== 'certificate' ? (
+                    <>
+                      {/* Filters */}
+                      <div className={`mt-6 grid gap-4 ${scope === 'class' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {t('academicYear')}
+                          </span>
+                          <select
+                            className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            value={selectedYear}
+                            onChange={(event) => setSelectedYear(event.target.value)}
+                          >
+                            {allYears.map((year) => (
+                              <option key={year.id} value={year.id}>
+                                {year.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
 
-                    {scope === 'grade' && (
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t('grade')}
-                        </span>
-                        <select
-                          className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={selectedGrade}
-                          onChange={(event) => setSelectedGrade(event.target.value)}
-                        >
-                          {grades.map((g) => (
-                            <option key={g} value={g}>
-                              {g}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
+                        {scope === 'grade' && (
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {t('grade')}
+                            </span>
+                            <select
+                              className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                              value={selectedGrade}
+                              onChange={(event) => setSelectedGrade(event.target.value)}
+                            >
+                              {grades.map((g) => (
+                                <option key={g} value={g}>
+                                  {g}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
 
-                    {reportType === 'monthly' ? (
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t('monthLabel')}
-                        </span>
-                        <select
-                          className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={selectedMonthNumber}
-                          onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
-                        >
-                          {KHMER_MONTHS.map((month) => (
-                            <option key={month.number} value={month.number}>
-                              {getKhmerMonthDisplayName(month.number, month.label)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : (
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t('formatSemester')}
-                        </span>
-                        <select
-                          className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={selectedSemester}
-                          onChange={(event) => setSelectedSemester(Number(event.target.value) as 1 | 2)}
-                        >
-                          <option value={1}>{t('formatSemester1')}</option>
-                          <option value={2}>{t('formatSemester2')}</option>
-                        </select>
-                      </label>
-                    )}
-                  </div>
-
-                  {scope === 'class' && (
-                    <div className="mt-5 block">
-                      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {t('class')}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (selectedClasses.length === classes.length) {
-                              setSelectedClasses([]);
-                            } else {
-                              setSelectedClasses(classes.map(c => c.id));
-                            }
-                          }}
-                          className="text-xs font-medium text-blue-600 transition hover:text-blue-700 active:scale-95"
-                        >
-                          {selectedClasses.length === classes.length ? t('deselectAll', { fallback: 'Deselect All' }) : t('selectAll', { fallback: 'Select All' })}
-                        </button>
+                        {reportType === 'monthly' ? (
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {t('monthLabel')}
+                            </span>
+                            <select
+                              className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                              value={selectedMonthNumber}
+                              onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
+                            >
+                              {KHMER_MONTHS.map((month) => (
+                                <option key={month.number} value={month.number}>
+                                  {getKhmerMonthDisplayName(month.number, month.label)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : (
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {t('formatSemester')}
+                            </span>
+                            <select
+                              className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                              value={selectedSemester}
+                              onChange={(event) => setSelectedSemester(Number(event.target.value) as 1 | 2)}
+                            >
+                              <option value={1}>{t('formatSemester1')}</option>
+                              <option value={2}>{t('formatSemester2')}</option>
+                            </select>
+                          </label>
+                        )}
                       </div>
 
-                      {loadingClasses ? (
-                        <div className="text-sm text-slate-500 py-4 text-center">{t('loading')}</div>
-                      ) : (
-                        <div className="divide-y divide-slate-100">
-                          {groupedClasses.map(({ grade, classItems }) => {
-                            const gradeClassIds = classItems.map(c => c.id);
-                            const allSelected = gradeClassIds.every(id => selectedClasses.includes(id));
+                      {scope === 'class' && (
+                        <div className="mt-5 block">
+                          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {t('class')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedClasses.length === classes.length) {
+                                  setSelectedClasses([]);
+                                } else {
+                                  setSelectedClasses(classes.map(c => c.id));
+                                }
+                              }}
+                              className="text-xs font-medium text-blue-600 transition hover:text-blue-700 active:scale-95"
+                            >
+                              {selectedClasses.length === classes.length ? t('deselectAll', { fallback: 'Deselect All' }) : t('selectAll', { fallback: 'Select All' })}
+                            </button>
+                          </div>
+                          {groupedClasses.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                              <Inbox className="h-8 w-8 stroke-1" />
+                              <span className="mt-2 text-xs font-medium">{t('noClassesFound') || 'No classes found for this year'}</span>
+                            </div>
+                          ) : (
+                            <div className="divide-y divide-slate-100">
+                              {groupedClasses.map(({ grade, classItems }) => {
+                                const gradeClassIds = classItems.map(c => c.id);
+                                const allSelected = gradeClassIds.every(id => selectedClasses.includes(id));
 
-                            return (
-                              <div key={grade} className="flex items-start gap-4 py-3.5 first:pt-1 last:pb-1">
-                                {/* Aligned Left Grade Indicator */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (allSelected) {
-                                      setSelectedClasses(prev => prev.filter(id => !gradeClassIds.includes(id)));
-                                    } else {
-                                      setSelectedClasses(prev => {
-                                        const filtered = prev.filter(id => !gradeClassIds.includes(id));
-                                        return [...filtered, ...gradeClassIds];
-                                      });
-                                    }
-                                  }}
-                                  className="w-20 shrink-0 text-left transition hover:opacity-80 active:scale-95"
-                                >
-                                  <span className={`inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-bold transition duration-150 ${
-                                    allSelected
-                                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50'
-                                      : 'bg-slate-100 text-slate-600'
-                                  }`}>
-                                    ថ្នាក់ទី {grade}
-                                  </span>
-                                </button>
- 
-                                {/* Wrapping Class Chips on the Right */}
-                                <div className="flex flex-wrap gap-2">
-                                  {classItems.map((classItem) => {
-                                    const isSelected = selectedClasses.includes(classItem.id);
-                                    return (
-                                      <button
-                                        key={classItem.id}
-                                        type="button"
-                                        onClick={() => {
-                                          if (isSelected) {
-                                            setSelectedClasses(selectedClasses.filter(id => id !== classItem.id));
-                                          } else {
-                                            setSelectedClasses([...selectedClasses, classItem.id]);
-                                          }
-                                        }}
-                                        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 duration-100 ${
-                                          isSelected 
-                                            ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50 hover:from-blue-700 hover:to-indigo-700' 
-                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                      >
-                                        <span>{classItem.name}</span>
-                                        <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                                          ({classItem._count?.students || 0})
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })}
+                                return (
+                                  <div key={grade} className="flex items-start gap-4 py-3.5 first:pt-1 last:pb-1">
+                                    {/* Aligned Left Grade Indicator */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (allSelected) {
+                                          setSelectedClasses(prev => prev.filter(id => !gradeClassIds.includes(id)));
+                                        } else {
+                                          setSelectedClasses(prev => {
+                                            const filtered = prev.filter(id => !gradeClassIds.includes(id));
+                                            return [...filtered, ...gradeClassIds];
+                                          });
+                                        }
+                                      }}
+                                      className="w-20 shrink-0 text-left transition hover:opacity-80 active:scale-95"
+                                    >
+                                      <span className={`inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-bold transition duration-150 ${
+                                        allSelected
+                                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50'
+                                          : 'bg-slate-100 text-slate-600'
+                                      }`}>
+                                        ថ្នាក់ទី {grade}
+                                      </span>
+                                    </button>
+      
+                                    {/* Wrapping Class Chips on the Right */}
+                                    <div className="flex flex-wrap gap-2">
+                                      {classItems.map((classItem) => {
+                                        const isSelected = selectedClasses.includes(classItem.id);
+                                        return (
+                                          <button
+                                            key={classItem.id}
+                                            type="button"
+                                            onClick={() => {
+                                              if (isSelected) {
+                                                setSelectedClasses(selectedClasses.filter(id => id !== classItem.id));
+                                              } else {
+                                                setSelectedClasses([...selectedClasses, classItem.id]);
+                                              }
+                                            }}
+                                            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 duration-100 ${
+                                              isSelected 
+                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50 hover:from-blue-700 hover:to-indigo-700' 
+                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                                            }`}
+                                          >
+                                            <span>{classItem.name}</span>
+                                            <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                                              ({classItem._count?.students || 0})
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
+
+                      {error && (
+                        <div
+                          role="alert"
+                          aria-live="assertive"
+                          className="mt-5 flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                        >
+                          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                          <span>{error}</span>
+                        </div>
+                      )}
+
+                      {/* Action row */}
+                      <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5">
+                        <button
+                          type="button"
+                          onClick={() => handleGenerate(false)}
+                          disabled={!canGenerate || loadingReport}
+                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition-all shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-indigo-200/50 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100"
+                        >
+                          {loadingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                          {t('generate')}
+                          <kbd className="ml-1.5 hidden rounded border border-white/20 bg-white/10 px-1 text-[9px] text-white/80 sm:inline">⌘G</kbd>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleGenerate(true)}
+                          disabled={!canGenerate || loadingReport}
+                          className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          {t('refresh')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => window.print()}
+                          disabled={reports.length === 0}
+                          className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-2.5 text-sm font-bold text-violet-700 transition hover:bg-violet-100 hover:border-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
+                        >
+                          <Printer className="h-4 w-4" />
+                          {t('print')}
+                          <kbd className="ml-1.5 hidden rounded border border-violet-200 bg-violet-100/50 px-1 text-[9px] text-violet-600 sm:inline">⌘P</kbd>
+                        </button>
+                        <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
+                          {loadingReport ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              {t('loading')}
+                            </span>
+                          ) : reports.length > 0 ? (
+                            <div className="flex items-center gap-2 text-emerald-600">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              {reports[0].students.length} {t('students').toLowerCase()}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                              {t('metricReady')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-6 rounded-2xl border border-blue-50 bg-slate-50/20 p-8 text-center shadow-sm">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 to-amber-500 text-white shadow-md shadow-amber-200/50">
+                        <Award className="h-8 w-8 animate-bounce" />
+                      </div>
+                      <h2 className="mt-5 text-xl font-extrabold text-slate-900 tracking-tight">
+                        Official Certificate Designer
+                      </h2>
+                      <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
+                        Design, customize, and issue elegant MoEYS certificates, outstanding academic achievement awards, and graduation recognitions.
+                      </p>
+                      
+                      {/* Premium Animated Coming Soon Badge */}
+                      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-xs font-bold text-amber-800 shadow-sm animate-pulse">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        <span>FEATURE LAUNCHING SOON · វគ្គបន្ទាប់</span>
+                      </div>
+
+                      {/* Grid of Mock Templates */}
+                      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                        {[
+                          { title: 'សញ្ញាបត្របញ្ចប់ការសិក្សា', type: 'Graduation Certificate', desc: 'Official MoEYS layout with golden seals.' },
+                          { title: 'លិខិតសរសើរ សិស្សពូកែ', type: 'Honor Roll Award', desc: 'Outstanding academic excellence recognition.' },
+                          { title: 'វិញ្ញាបនបត្របញ្ជាក់ការសិក្សា', type: 'Completion Certificate', desc: 'General study completion letter template.' }
+                        ].map((tmpl, idx) => (
+                          <div key={idx} className="group relative overflow-hidden rounded-xl border border-slate-100 bg-white p-5 text-left transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md hover:shadow-blue-50">
+                            <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-blue-50/20 group-hover:bg-blue-50 transition duration-300" />
+                            <Award className="h-5 w-5 text-slate-400 group-hover:text-amber-500 transition duration-300 relative z-10" />
+                            <h4 className="mt-3 text-sm font-bold text-slate-900 relative z-10">{tmpl.title}</h4>
+                            <span className="block text-[10px] font-semibold text-blue-600 relative z-10 mt-0.5">{tmpl.type}</span>
+                            <p className="mt-2 text-xs text-slate-500 relative z-10 leading-relaxed">{tmpl.desc}</p>
+                            <button type="button" disabled className="mt-4 w-full rounded-lg bg-slate-100 py-2 text-center text-xs font-bold text-slate-400 cursor-not-allowed group-hover:bg-blue-600 group-hover:text-white transition duration-300">
+                              Preview Layout
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -953,95 +1116,195 @@ export default function KhmerMonthlyReportPage() {
               </header>
 
               <div className="space-y-6 p-5">
-
-
-                {/* Layout & columns */}
+                {/* Institution & Signatures */}
                 <div>
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="rounded-md bg-violet-100 p-1 text-violet-700">
-                      <Layout className="h-3.5 w-3.5" />
+                    <span className="rounded-md bg-blue-100 p-1 text-blue-700">
+                      <MapPin className="h-3.5 w-3.5" />
                     </span>
-                    <h3 className="text-sm font-semibold text-slate-800">Layout & columns</h3>
+                    <h3 className="text-sm font-semibold text-slate-800">Institution & Signatures</h3>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {(
-                      [
-                        ['firstPageStudentCount', 'firstPageRows', 'rows'],
-                        ['nextPageStudentCount', 'nextPageRows', 'rows'],
-                        ['tableFontSize', 'tableFontSize', 'px'],
-                      ] as const
-                    ).map(([key, labelKey, unit]) => (
-                      <label className="block" key={key}>
-                        <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          <span>{t(labelKey)}</span>
-                          <span className="font-normal normal-case text-slate-400">{unit}</span>
-                        </span>
-                        <input
-                          type="number"
-                          min={key === 'tableFontSize' ? 7 : 15}
-                          max={key === 'tableFontSize' ? 12 : 50}
-                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          value={settings[key as keyof typeof DEFAULT_SETTINGS] as number}
-                          onChange={(event) =>
-                            updateSetting(key as keyof typeof DEFAULT_SETTINGS, Number(event.target.value) as never)
-                          }
-                        />
-                      </label>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                    <div>
-                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Columns
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {(
-                          [
-                            ['showAttendance', 'toggleAttendance'],
-                            ['showSubjects', 'toggleSubjects'],
-                            ['showTotal', 'toggleTotal'],
-                            ['showAverage', 'toggleAverage'],
-                            ['showRank', 'toggleRank'],
-                            ['showGradeLevel', 'toggleGradeLetter'],
-                            ['showClassName', 'toggleClassName'],
-                          ] as const
-                        ).map(([key, labelKey]) => (
-                          <Switch
-                            key={key}
-                            label={t(labelKey)}
-                            checked={settings[key as keyof typeof DEFAULT_SETTINGS] as boolean}
-                            onChange={(next) =>
-                              updateSetting(key as keyof typeof DEFAULT_SETTINGS, next as never)
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Display
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {(
-                          [
-                            ['showCircles', 'toggleCircles'],
-                            ['autoCircle', 'toggleAutoCircle'],
-                          ] as const
-                        ).map(([key, labelKey]) => (
-                          <Switch
-                            key={key}
-                            label={t(labelKey)}
-                            checked={settings[key as keyof typeof DEFAULT_SETTINGS] as boolean}
-                            onChange={(next) =>
-                              updateSetting(key as keyof typeof DEFAULT_SETTINGS, next as never)
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <label className="block">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Province (ខេត្ត)
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. ព្រះសីហនុ"
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        value={settings.province || ''}
+                        onChange={(event) => updateSetting('province', event.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        School / Institution
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. អនុវិទ្យាល័យ ទំនប់រលក"
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        value={settings.examCenter || ''}
+                        onChange={(event) => updateSetting('examCenter', event.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Report Date (កាលបរិច្ឆេទ)
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. ថ្ងៃសុក្រ ៤ កើត ខែជេស្ឋ..."
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        value={settings.reportDate || ''}
+                        onChange={(event) => updateSetting('reportDate', event.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Principal Name (នាយក)
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. សុខ វ៉ាន់"
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        value={settings.principalName || ''}
+                        onChange={(event) => updateSetting('principalName', event.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Teacher Name (គ្រូ)
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="e.g. កែម មុន្នីកាល"
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        value={settings.teacherName || ''}
+                        onChange={(event) => updateSetting('teacherName', event.target.value)}
+                      />
+                    </label>
                   </div>
                 </div>
+
+                {/* Layout & columns (Monthly tab) */}
+                {activeTab === 'monthly' && (
+                  <div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="rounded-md bg-violet-100 p-1 text-violet-700">
+                        <Layout className="h-3.5 w-3.5" />
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-800">Layout & columns</h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {(
+                        [
+                          ['firstPageStudentCount', 'firstPageRows', 'rows'],
+                          ['nextPageStudentCount', 'nextPageRows', 'rows'],
+                          ['tableFontSize', 'tableFontSize', 'px'],
+                        ] as const
+                      ).map(([key, labelKey, unit]) => (
+                        <label className="block" key={key}>
+                          <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <span>{t(labelKey)}</span>
+                            <span className="font-normal normal-case text-slate-400">{unit}</span>
+                          </span>
+                          <input
+                            type="number"
+                            min={key === 'tableFontSize' ? 7 : 15}
+                            max={key === 'tableFontSize' ? 12 : 50}
+                            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            value={settings[key as keyof typeof DEFAULT_SETTINGS] as number}
+                            onChange={(event) =>
+                              updateSetting(key as keyof typeof DEFAULT_SETTINGS, Number(event.target.value) as never)
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                      <div>
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Columns
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {(
+                            [
+                              ['showAttendance', 'toggleAttendance'],
+                              ['showSubjects', 'toggleSubjects'],
+                              ['showTotal', 'toggleTotal'],
+                              ['showAverage', 'toggleAverage'],
+                              ['showRank', 'toggleRank'],
+                              ['showGradeLevel', 'toggleGradeLetter'],
+                              ['showClassName', 'toggleClassName'],
+                            ] as const
+                          ).map(([key, labelKey]) => (
+                            <Switch
+                              key={key}
+                              label={t(labelKey)}
+                              checked={settings[key as keyof typeof DEFAULT_SETTINGS] as boolean}
+                              onChange={(next) =>
+                                updateSetting(key as keyof typeof DEFAULT_SETTINGS, next as never)
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Display
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {(
+                            [
+                              ['showCircles', 'toggleCircles'],
+                              ['autoCircle', 'toggleAutoCircle'],
+                            ] as const
+                          ).map(([key, labelKey]) => (
+                            <Switch
+                              key={key}
+                              label={t(labelKey)}
+                              checked={settings[key as keyof typeof DEFAULT_SETTINGS] as boolean}
+                              onChange={(next) =>
+                                updateSetting(key as keyof typeof DEFAULT_SETTINGS, next as never)
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Font size settings for individual transcripts */}
+                {activeTab === 'transcript' && (
+                  <div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="rounded-md bg-violet-100 p-1 text-violet-700">
+                        <Layout className="h-3.5 w-3.5" />
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-800">Transcript Scaling</h3>
+                    </div>
+                    <label className="block max-w-[200px]">
+                      <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <span>{t('tableFontSize')}</span>
+                        <span className="font-normal normal-case text-slate-400">px</span>
+                      </span>
+                      <input
+                        type="number"
+                        min={7}
+                        max={16}
+                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        value={settings.tableFontSize || 10}
+                        onChange={(event) =>
+                          updateSetting('tableFontSize', Number(event.target.value))
+                        }
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -1101,6 +1364,7 @@ export default function KhmerMonthlyReportPage() {
                           settings={settings} 
                           subjects={repVisibleSubjects}
                           schoolProfile={schoolProfile}
+                          activeTab={activeTab}
                         />
                       </div>
                     );
