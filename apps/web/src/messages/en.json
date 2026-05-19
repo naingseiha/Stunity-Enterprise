@@ -6312,6 +6312,7 @@
     "templateMoeys": "Khmer system (MOEYS)",
     "scopeByClass": "By class",
     "scopeByGrade": "By grade",
+    "noClassesFound": "No classes found for this year",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "class": "Class",

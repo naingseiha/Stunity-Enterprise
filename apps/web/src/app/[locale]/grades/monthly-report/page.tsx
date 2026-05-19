@@ -791,10 +791,15 @@ export default function KhmerMonthlyReportPage() {
                               {selectedClasses.length === classes.length ? t('deselectAll', { fallback: 'Deselect All' }) : t('selectAll', { fallback: 'Select All' })}
                             </button>
                           </div>
-                          {groupedClasses.length === 0 ? (
+                          {loadingClasses ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-slate-400 gap-2">
+                              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                              <span className="text-xs font-medium text-slate-500">{t('loading')}</span>
+                            </div>
+                          ) : groupedClasses.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-8 text-slate-400">
                               <Inbox className="h-8 w-8 stroke-1" />
-                              <span className="mt-2 text-xs font-medium">{t('noClassesFound') || 'No classes found for this year'}</span>
+                              <span className="mt-2 text-xs font-medium">{t('noClassesFound', { fallback: 'No classes found for this year' })}</span>
                             </div>
                           ) : (
                             <div className="divide-y divide-slate-100">
@@ -969,68 +974,6 @@ export default function KhmerMonthlyReportPage() {
                       </div>
                     </div>
                   )}
-
-                  {error && (
-                    <div
-                      role="alert"
-                      aria-live="assertive"
-                      className="mt-5 flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-                    >
-                      <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  )}
-
-                  {/* Action row */}
-                  <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5">
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate(false)}
-                      disabled={!canGenerate || loadingReport}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition-all shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-indigo-200/50 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100"
-                    >
-                      {loadingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                      {t('generate')}
-                      <kbd className="ml-1.5 hidden rounded border border-white/20 bg-white/10 px-1 text-[9px] text-white/80 sm:inline">⌘G</kbd>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate(true)}
-                      disabled={!canGenerate || loadingReport}
-                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      {t('refresh')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      disabled={reports.length === 0}
-                      className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-2.5 text-sm font-bold text-violet-700 transition hover:bg-violet-100 hover:border-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
-                    >
-                      <Printer className="h-4 w-4" />
-                      {t('print')}
-                      <kbd className="ml-1.5 hidden rounded border border-violet-200 bg-violet-100/50 px-1 text-[9px] text-violet-600 sm:inline">⌘P</kbd>
-                    </button>
-                    <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
-                      {loadingReport ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          {t('loading')}
-                        </span>
-                      ) : reports.length > 0 ? (
-                        <div className="flex items-center gap-2 text-emerald-600">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          {reports[0].students.length} {t('students').toLowerCase()}
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                          {t('metricReady')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
