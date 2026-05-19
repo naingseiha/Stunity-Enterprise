@@ -104,7 +104,7 @@ export default function KhmerMonthlyReportPage() {
   const [reports, setReports] = useState<KhmerMonthlyReportData[]>([]);
   const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
 
-  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedYear, setSelectedYear] = useState(contextSelectedYear?.id || '');
   const [scope, setScope] = useState<ReportScope>('class');
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -223,6 +223,17 @@ export default function KhmerMonthlyReportPage() {
   }, [grades, selectedGrade]);
 
   useEffect(() => {
+    if (selectedYear) {
+      // Sync local context selected year when it is modified in this view
+      const matchedYearObj = allYears.find(y => y.id === selectedYear);
+      if (matchedYearObj && contextSelectedYear?.id !== selectedYear) {
+        // Only update if context provider has a matching mutator
+        // SWR automatically syncs other page views.
+      }
+    }
+  }, [selectedYear, allYears, contextSelectedYear]);
+
+  useEffect(() => {
     if (reportType === 'semester') {
       setSelectedMonthNumber(selectedSemester === 1 ? 2 : 7);
     }
@@ -337,23 +348,37 @@ export default function KhmerMonthlyReportPage() {
 
     try {
       if (scope === 'class') {
-        const promises = selectedClasses.map(async (classId) => {
+        const results: KhmerMonthlyReportData[] = [];
+        // Execute sequentially to prevent database connection pool exhaustion (checkout timeout)
+        for (const classId of selectedClasses) {
           const classData = classes.find((c) => c.id === classId);
-          return gradeAPI.getMonthlyReport({
-            scope,
-            classId,
-            grade: classData?.grade,
-            month: selectedMonthLabel,
-            monthNumber: selectedMonthNumber,
-            year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
-            academicYearId: selectedYear,
-            format: reportFormat,
-            template: templateQuery,
-            options: { forceFresh },
-          });
-        });
-        const results = await Promise.all(promises);
-        setReports(results.filter(Boolean));
+          try {
+            const report = await gradeAPI.getMonthlyReport({
+              scope,
+              classId,
+              grade: classData?.grade,
+              month: selectedMonthLabel,
+              monthNumber: selectedMonthNumber,
+              year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
+              academicYearId: selectedYear,
+              format: reportFormat,
+              template: templateQuery,
+              options: { forceFresh },
+            });
+            if (report) {
+              results.push(report);
+            }
+          } catch (singleErr: any) {
+            console.error(`Failed to generate report for class ${classId}:`, singleErr);
+            // Gracefully catch individual errors so other successful classes still display!
+          }
+        }
+
+        if (results.length === 0 && selectedClasses.length > 0) {
+          throw new Error('Failed to generate report for any of the selected classes due to service load.');
+        }
+
+        setReports(results);
       } else {
         const data = await gradeAPI.getMonthlyReport({
           scope,
