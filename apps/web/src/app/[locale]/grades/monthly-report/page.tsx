@@ -1112,7 +1112,8 @@ export default function KhmerMonthlyReportPage() {
                   )}
 
                   {/* Filters and Actions */}
-                  <>
+                  {activeTab !== 'certificate' && (
+                    <>
                       {/* Filters */}
                       <div className={`mt-6 grid gap-4 ${scope === 'class' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                         <label className="block">
@@ -1346,6 +1347,7 @@ export default function KhmerMonthlyReportPage() {
                         </div>
                       </div>
                   </>
+                  )}
 
                   {activeTab === 'certificate' && (
                     <div className="mt-6 grid gap-6 lg:grid-cols-12">
