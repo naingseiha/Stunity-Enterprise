@@ -14,6 +14,7 @@ import { parse } from 'csv-parse/sync';
 import { registerSchoolSchema } from './validators/school.validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import { sendBulkClaimCodeEmails } from './utils/emailService';
+import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 import {
   getCambodianHolidays,
   STANDARD_GRADING_SCALE,
@@ -43,7 +44,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: databaseUrl,
+      url: withPrismaPoolParams(databaseUrl),
     },
   },
   log: ['error'],
@@ -124,8 +125,10 @@ const warmUpDb = async () => {
     console.error('⚠️ School Service - Database warmup failed');
   }
 };
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
+if (shouldRunDbStartupWarmup()) {
+  warmUpDb();
+}
+scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
 
 const generateUniqueSchoolIdPrefix = async (): Promise<string> => {
   const schools = await prisma.school.findMany({

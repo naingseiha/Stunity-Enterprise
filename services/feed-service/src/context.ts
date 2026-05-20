@@ -14,39 +14,11 @@ dotenv.config();
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import { FeedRanker } from './feedRanker';
+import { normalizePrismaUrlForComparison, withPrismaPoolParams } from '../../lib/prisma-pool-url';
 
 // ─── Prisma (primary — read/write) ─────────────────────────────────
 const databaseUrl = process.env.DATABASE_URL || '';
-const appendQueryParam = (url: string, key: string, value: string) => {
-    if (!value || new RegExp(`[?&]${key}=`).test(url)) return url;
-    return `${url}${url.includes('?') ? '&' : '?'}${key}=${encodeURIComponent(value)}`;
-};
-
-const withPrismaPoolParams = (rawUrl: string) => {
-    if (!rawUrl) return rawUrl;
-
-    const connectionLimit = process.env.PRISMA_CONNECTION_LIMIT ?? '20';
-    const poolTimeout = process.env.PRISMA_POOL_TIMEOUT ?? '10';
-
-    try {
-        const parsedUrl = new URL(rawUrl);
-        if (connectionLimit && !parsedUrl.searchParams.has('connection_limit')) {
-            parsedUrl.searchParams.set('connection_limit', connectionLimit);
-        }
-        if (poolTimeout && !parsedUrl.searchParams.has('pool_timeout')) {
-            parsedUrl.searchParams.set('pool_timeout', poolTimeout);
-        }
-        return parsedUrl.toString();
-    } catch {
-        return appendQueryParam(
-            appendQueryParam(rawUrl, 'connection_limit', connectionLimit),
-            'pool_timeout',
-            poolTimeout
-        );
-    }
-};
-
-const pooledUrl = withPrismaPoolParams(databaseUrl);
+const pooledUrl = withPrismaPoolParams(databaseUrl) ?? databaseUrl;
 
 export const prisma = new PrismaClient({
     datasources: { db: { url: pooledUrl } },
@@ -54,12 +26,20 @@ export const prisma = new PrismaClient({
 });
 
 // ─── Prisma (read replica — read-only queries) ─────────────────────
-// Falls back to primary when DATABASE_READ_URL is not set.
-const readUrl = withPrismaPoolParams(process.env.DATABASE_READ_URL || databaseUrl);
-export const prismaRead = new PrismaClient({
-    datasources: { db: { url: readUrl } },
-    log: ['error', 'warn'],
-});
+// One client when no dedicated read URL — avoids doubling pooler slots on Micro.
+const readUrlRaw = process.env.DATABASE_READ_URL?.trim();
+const useDedicatedReadReplica = Boolean(
+    readUrlRaw &&
+    normalizePrismaUrlForComparison(readUrlRaw) !== normalizePrismaUrlForComparison(databaseUrl)
+);
+const readUrl = withPrismaPoolParams(readUrlRaw || databaseUrl) ?? databaseUrl;
+
+export const prismaRead = useDedicatedReadReplica
+    ? new PrismaClient({
+        datasources: { db: { url: readUrl } },
+        log: ['error', 'warn'],
+    })
+    : prisma;
 
 // ─── Feed Ranker ───────────────────────────────────────────────────
 export const feedRanker = new FeedRanker(prisma, prismaRead);

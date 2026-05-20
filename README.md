@@ -44,11 +44,15 @@ Placeholder service folders (not in the default local stack or default Cloud Run
 ```bash
 npm install
 npm run db:generate
-./quick-start.sh
+./quick-start-lite.sh    # recommended: feed/mobile/social (low Supabase load)
+# ./quick-start.sh       # full school stack (many services — use sparingly on Micro)
 ```
 
 - Web: `http://localhost:3000`
-- Expect a working **root** `.env`. Copy `.env.example` → `.env` and fill values before starting services.
+- Expect a working **root** `.env`. Copy `.env.example` → `.env` (or use [.env.development.example](.env.development.example) for a **dev** Supabase project).
+- **Dev → production workflow (រលំហូរពេញ):** [docs/DEV_TO_PRODUCTION_WORKFLOW.md](docs/DEV_TO_PRODUCTION_WORKFLOW.md)
+- **Long-term production architecture:** [docs/PRODUCTION_ARCHITECTURE_LONG_TERM.md](docs/PRODUCTION_ARCHITECTURE_LONG_TERM.md)
+- **Connections & pooler:** [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md)
 
 **Mobile (Expo):**
 

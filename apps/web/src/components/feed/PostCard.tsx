@@ -166,6 +166,21 @@ const ACHIEVEMENT_ICONS: Record<string, any> = {
   PUBLICATION: FileText,
 };
 
+function shouldSkipImageOptimization(src?: string | null) {
+  if (!src) return false;
+
+  if (src.startsWith('data:') || src.startsWith('blob:')) {
+    return true;
+  }
+
+  try {
+    const url = new URL(src);
+    return url.hostname === 'api.dicebear.com' && url.pathname.includes('/svg');
+  } catch {
+    return src.endsWith('.svg');
+  }
+}
+
 export default function PostCard({ 
   post, 
   onLike,
@@ -473,6 +488,7 @@ export default function PostCard({
                   alt={getDisplayName(post.author.firstName, post.author.lastName)}
                   width={40}
                   height={40}
+                  unoptimized={shouldSkipImageOptimization(post.author.profileImage)}
                   className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#F9A825] transition-all"
                 />
               ) : (

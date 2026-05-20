@@ -1,0 +1,21 @@
+name: Prisma singleton check
+
+on:
+  pull_request:
+    paths:
+      - 'services/**'
+      - 'scripts/check-prisma-singleton.sh'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/**'
+      - 'scripts/check-prisma-singleton.sh'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for duplicate PrismaClient in runtime code
+        run: bash scripts/check-prisma-singleton.sh

@@ -44,6 +44,7 @@ import { Avatar, ImageViewerModal } from "@/components/common";
 import { Skeleton } from "@/components/common/Loading";
 import { useThemeContext } from "@/contexts";
 import { Shadows } from "@/config";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { useAuthStore, useFeedStore, useLeaderboardStore } from "@/stores";
 import { User, UserStats, Education, Experience, Certification } from "@/types";
 import { formatNumber } from "@/utils";
@@ -1350,26 +1351,28 @@ export default function ProfileScreen() {
                             color={colors.text}
                           />
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.headerCircleBtnDark,
-                            {
-                              backgroundColor: colors.surfaceVariant,
-                              borderColor: colors.border,
-                            },
-                          ]}
-                          onPress={() =>
-                            navigation.navigate("Messages" as any, {
-                              screen: "Conversations",
-                            })
-                          }
-                        >
-                          <Ionicons
-                            name="chatbubbles-outline"
-                            size={20}
-                            color={colors.text}
-                          />
-                        </TouchableOpacity>
+                        {FEATURE_FLAGS.MESSAGING_ENABLED ? (
+                          <TouchableOpacity
+                            style={[
+                              styles.headerCircleBtnDark,
+                              {
+                                backgroundColor: colors.surfaceVariant,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                            onPress={() =>
+                              navigation.navigate("Messages" as any, {
+                                screen: "Conversations",
+                              })
+                            }
+                          >
+                            <Ionicons
+                              name="chatbubbles-outline"
+                              size={20}
+                              color={colors.text}
+                            />
+                          </TouchableOpacity>
+                        ) : null}
                         <TouchableOpacity
                           style={[
                             styles.headerCircleBtnDark,

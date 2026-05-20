@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import { shouldRunDbStartupWarmup, withPrismaPoolParams } from '../../lib/prisma-pool-url';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -23,13 +24,15 @@ app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For
 // ✅ Singleton Prisma pattern
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } },
+  datasources: { db: { url: withPrismaPoolParams(process.env.DATABASE_URL) } },
   log: ['error'],
 });
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 // Database warmup
-(async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
+if (shouldRunDbStartupWarmup()) {
+  (async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
+}
 
 const PORT = process.env.PORT || process.env.CLASS_SERVICE_PORT || 3005;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';

@@ -1,6 +1,5 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Supabase client — used ONLY for Realtime `postgres_changes` subscriptions.
@@ -31,15 +30,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    // No Supabase Auth session is used (custom JWT backend). Disable idle refresh work.
     auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
+        autoRefreshToken: false,
+        persistSession: false,
         detectSessionInUrl: false,
     },
     realtime: {
         params: {
-            eventsPerSecond: 10,
+            eventsPerSecond: 5,
         },
     },
 });

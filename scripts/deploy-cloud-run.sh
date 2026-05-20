@@ -1,31 +1,96 @@
 #!/bin/bash
 
 # Stunity Enterprise Cloud Run Deployment Script
-# Optimized for Free Tier (minScale: 0)
+# Optimized for cost-friendly Cloud Run defaults (scale-to-zero, bounded DB pools)
 
 set -e # Exit on any error
 
-PROJECT_ID="stunity-enterprise" 
-REGION="us-central1"
-# Defaults align with docs/DEPLOYMENT_GUIDE.md (scale-to-zero free tier). Set in .env for prod:
-# CLOUD_RUN_MIN_INSTANCES=1, CLOUD_RUN_CPU_THROTTLING=false, CORS_ORIGIN=https://your-domain.com
-CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-0}"
-CLOUD_RUN_MAX_INSTANCES="${CLOUD_RUN_MAX_INSTANCES:-5}"
-CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-true}"
-CORS_ORIGIN="${CORS_ORIGIN:-*}"
-PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-}"
-PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-}"
+load_env_file() {
+  local file="$1"
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" == export[[:space:]]* ]] && line="${line#export }"
+    [[ "$line" != *=* ]] && continue
+
+    local key="${line%%=*}"
+    local value="${line#*=}"
+    key="${key%"${key##*[![:space:]]}"}"
+    value="${value#"${value%%[![:space:]]*}"}"
+
+    if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && [ -z "${!key+x}" ]; then
+      export "$key=$value"
+    fi
+  done < "$file"
+}
 
 # Required in root .env: DATABASE_URL, JWT_SECRET, Supabase, R2, GEMINI_API_KEY (see script body).
 # For notification-service Cloud Run deploys, also set NOTIFICATION_SERVICE_AUTH_TOKEN (see services/notification-service/src/index.ts).
 if [ -f .env ]; then
   echo "📄 Loading environment variables from .env..."
-  # Export variables while handling quotes correctly
-  export $(grep -v '^#' .env | xargs)
+  # Shell-safe dotenv loading: preserves URLs with &, comma-separated origins, and wrapper env overrides.
+  load_env_file .env
 else
   echo "⚠️  .env file not found. Please ensure it exists with DATABASE_URL and JWT_SECRET."
   exit 1
 fi
+
+PROJECT_ID="${PROJECT_ID:-stunity-enterprise}"
+REGION="${REGION:-us-central1}"
+# Defaults align with docs/DEPLOYMENT_GUIDE.md (scale-to-zero free tier). Set in .env for prod:
+# CLOUD_RUN_MIN_INSTANCES=1, CLOUD_RUN_CPU_THROTTLING=false, CORS_ORIGIN=https://your-domain.com
+CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-0}"
+CLOUD_RUN_MAX_INSTANCES="${CLOUD_RUN_MAX_INSTANCES:-3}"
+CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-true}"
+CORS_ORIGIN="${CORS_ORIGIN:-*}"
+# Cap Prisma pool slots per Cloud Run instance (Supabase Micro cannot sustain 20×N services).
+PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-3}"
+PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-10}"
+# core = auth, feed, notification, learn (see scripts/deploy-production-core.sh)
+DEPLOY_PROFILE="${DEPLOY_PROFILE:-}"
+
+# Per-service warm instances (overrides CLOUD_RUN_MIN_INSTANCES when > 0)
+CLOUD_RUN_MIN_INSTANCES_AUTH="${CLOUD_RUN_MIN_INSTANCES_AUTH:-}"
+CLOUD_RUN_MIN_INSTANCES_FEED="${CLOUD_RUN_MIN_INSTANCES_FEED:-}"
+CLOUD_RUN_MIN_INSTANCES_NOTIFICATION="${CLOUD_RUN_MIN_INSTANCES_NOTIFICATION:-}"
+CLOUD_RUN_MIN_INSTANCES_LEARN="${CLOUD_RUN_MIN_INSTANCES_LEARN:-}"
+
+resolve_min_instances() {
+  local service="$1"
+  local default_min="${CLOUD_RUN_MIN_INSTANCES:-0}"
+  case "$service" in
+    auth-service)
+      echo "${CLOUD_RUN_MIN_INSTANCES_AUTH:-$default_min}"
+      ;;
+    feed-service)
+      echo "${CLOUD_RUN_MIN_INSTANCES_FEED:-$default_min}"
+      ;;
+    notification-service)
+      echo "${CLOUD_RUN_MIN_INSTANCES_NOTIFICATION:-$default_min}"
+      ;;
+    learn-service)
+      echo "${CLOUD_RUN_MIN_INSTANCES_LEARN:-$default_min}"
+      ;;
+    *)
+      echo "$default_min"
+      ;;
+  esac
+}
+
+for required_var in DATABASE_URL JWT_SECRET; do
+  if [ -z "${!required_var:-}" ]; then
+    echo "❌ Missing required env var: $required_var"
+    exit 1
+  fi
+done
 
 if [ "$CORS_ORIGIN" = "*" ]; then
   echo "⚠️  CORS_ORIGIN is * (allows any browser origin). Set CORS_ORIGIN in .env to your web origin for production."
@@ -37,6 +102,17 @@ echo "🚀 Deploying Stunity Enterprise to Cloud Run in project: $PROJECT_ID (mi
 if [ $# -gt 0 ]; then
   SERVICES=("$@")
   echo "🎯 Deploying target services: ${SERVICES[*]}"
+elif [ "$DEPLOY_PROFILE" = "core" ]; then
+  SERVICES=(
+    "auth-service"
+    "feed-service"
+    "notification-service"
+    "learn-service"
+  )
+  CLOUD_RUN_MIN_INSTANCES_AUTH="${CLOUD_RUN_MIN_INSTANCES_AUTH:-1}"
+  CLOUD_RUN_MIN_INSTANCES_FEED="${CLOUD_RUN_MIN_INSTANCES_FEED:-1}"
+  CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-false}"
+  echo "🎯 DEPLOY_PROFILE=core — auth+feed warm (min 1), notification+learn, max-instances=$CLOUD_RUN_MAX_INSTANCES"
 else
   SERVICES=(
     "auth-service"
@@ -51,8 +127,8 @@ else
     "grade-service"
     "analytics-service"
     "club-service"
-    "notification-service"
     "messaging-service"
+    "notification-service"
     "ai-service"
     "timetable-service"
   )
@@ -80,21 +156,29 @@ EOF
   gcloud builds submit --config cloudbuild.tmp.yaml --project "$PROJECT_ID" .
   rm cloudbuild.tmp.yaml
   
-  echo "🚀 Deploying $SERVICE to Cloud Run..."
+  SERVICE_MIN_INSTANCES="$(resolve_min_instances "$SERVICE")"
+  echo "🚀 Deploying $SERVICE to Cloud Run (min-instances=$SERVICE_MIN_INSTANCES)..."
+
+  if [ "${STUNITY_USE_DEV_DB:-0}" = "1" ] || [[ "${DATABASE_URL:-}" == *"ykvqgyrwizqjjzfuitto"* ]]; then
+    echo "❌ Refusing deploy: DATABASE_URL looks like dev Supabase. Use production .env for Cloud Run."
+    exit 1
+  fi
   
-  ENV_VARS="NODE_ENV=production,DATABASE_URL=$DATABASE_URL,JWT_SECRET=$JWT_SECRET,SUPABASE_URL=$SUPABASE_URL,SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,R2_ACCOUNT_ID=$R2_ACCOUNT_ID,R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME=$R2_BUCKET_NAME,R2_PUBLIC_URL=$R2_PUBLIC_URL,CORS_ORIGIN=$CORS_ORIGIN"
+  ENV_VARS="NODE_ENV=production|DATABASE_URL=$DATABASE_URL|JWT_SECRET=$JWT_SECRET|SUPABASE_URL=${SUPABASE_URL:-}|SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}|GEMINI_API_KEY=${GEMINI_API_KEY:-}|R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}|R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}|R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}|R2_BUCKET_NAME=${R2_BUCKET_NAME:-}|R2_PUBLIC_URL=${R2_PUBLIC_URL:-}|CORS_ORIGIN=$CORS_ORIGIN"
   if [ -n "${DATABASE_READ_URL:-}" ]; then
-    ENV_VARS="$ENV_VARS,DATABASE_READ_URL=$DATABASE_READ_URL"
+    ENV_VARS="$ENV_VARS|DATABASE_READ_URL=$DATABASE_READ_URL"
   fi
-  if [ -n "$PRISMA_CONNECTION_LIMIT" ]; then
-    ENV_VARS="$ENV_VARS,PRISMA_CONNECTION_LIMIT=$PRISMA_CONNECTION_LIMIT"
-  fi
-  if [ -n "$PRISMA_POOL_TIMEOUT" ]; then
-    ENV_VARS="$ENV_VARS,PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT"
+  ENV_VARS="$ENV_VARS|PRISMA_CONNECTION_LIMIT=$PRISMA_CONNECTION_LIMIT|PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT|DISABLE_DB_KEEPALIVE=1|DISABLE_DB_STARTUP_WARMUP=${DISABLE_DB_STARTUP_WARMUP:-1}"
+
+  # Background cron (feed ranker, school audit) runs per instance — disable by default in prod.
+  if [ "$SERVICE" = "feed-service" ] && [ "${FEED_ENABLE_BACKGROUND_JOBS:-0}" = "1" ]; then
+    ENV_VARS="$ENV_VARS|DISABLE_BACKGROUND_JOBS=false"
+  else
+    ENV_VARS="$ENV_VARS|DISABLE_BACKGROUND_JOBS=true"
   fi
   # Club and other services call notification with x-service-token; align with notification-service default.
   NOTIF_TOKEN="${NOTIFICATION_SERVICE_AUTH_TOKEN:-$JWT_SECRET}"
-  ENV_VARS="$ENV_VARS,NOTIFICATION_SERVICE_AUTH_TOKEN=$NOTIF_TOKEN"
+  ENV_VARS="$ENV_VARS|NOTIFICATION_SERVICE_AUTH_TOKEN=$NOTIF_TOKEN"
 
   CPU_THROTTLING_FLAG="--no-cpu-throttling"
   if [ "$CLOUD_RUN_CPU_THROTTLING" = "true" ]; then
@@ -109,13 +193,13 @@ EOF
     --platform managed \
     --region "$REGION" \
     --allow-unauthenticated \
-    --min-instances "$CLOUD_RUN_MIN_INSTANCES" \
+    --min-instances "$SERVICE_MIN_INSTANCES" \
     --max-instances "$CLOUD_RUN_MAX_INSTANCES" \
     "$CPU_THROTTLING_FLAG" \
     --memory 512Mi \
     --cpu 1 \
     --project "$PROJECT_ID" \
-    --set-env-vars "$ENV_VARS"
+    --set-env-vars "^|^$ENV_VARS"
 done
 
 echo "✅ All services deployed!"

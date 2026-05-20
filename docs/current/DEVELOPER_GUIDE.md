@@ -16,8 +16,12 @@ Bootstrap:
 ```bash
 npm install
 npm run db:generate
-./quick-start.sh
+./quick-start-lite.sh   # feed/mobile/social — low Supabase connection usage
+# ./quick-start.sh      # full stack — school, grades, clubs, etc.
 ```
+
+Full **dev → production** flow (commands, deploy, checklists): **[../DEV_TO_PRODUCTION_WORKFLOW.md](../DEV_TO_PRODUCTION_WORKFLOW.md)**.
+Supabase pooler URLs, connection limits: **[../LOCAL_DEV.md](../LOCAL_DEV.md)**.
 
 Useful local commands:
 

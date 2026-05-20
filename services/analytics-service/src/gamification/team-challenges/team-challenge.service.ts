@@ -1,7 +1,6 @@
-import { PrismaClient, TeamChallengeStatus } from '@prisma/client';
+import { TeamChallengeStatus } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { currencyService } from '../currency/currency.service';
-
-const prisma = new PrismaClient();
 
 const MIN_PARTICIPANTS = 2;
 const MAX_PARTICIPANTS = 50;

@@ -11,6 +11,11 @@ import { Notification, ApiResponse } from '@/types';
 import { notificationApi } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { debounce } from '@/utils/debounce';
+
+const debouncedFetchNotifications = debounce(() => {
+    useNotificationStore.getState().fetchNotifications();
+}, 800);
 
 interface NotificationState {
     notifications: Notification[];
@@ -135,10 +140,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
                         table: 'notifications',
                         filter: `recipientId=eq.${userId}`,
                     },
-                    async (payload) => {
+                    (payload) => {
                         console.log('🔔 [NotificationStore] New notification:', payload);
-                        // Refresh to get full populated data (actor details, etc.)
-                        await get().fetchNotifications();
+                        // Debounced refresh — coalesces bursts; actor details still come from API
+                        debouncedFetchNotifications();
                     }
                 )
                 // Notification read status updates (sync across devices)

@@ -2,7 +2,9 @@
 
 This document summarizes how local development aligns with production: Prisma, database safety, and frontend–backend behavior.
 
-**Last updated:** March 2026
+**Last updated:** May 2026
+
+> **Supabase connections & quick-start:** For pooler URLs, `./quick-start-lite.sh`, and avoiding connection exhaustion on Micro, read **[LOCAL_DEV.md](./LOCAL_DEV.md)** first.
 
 ---
 

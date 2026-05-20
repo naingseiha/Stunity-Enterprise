@@ -13,7 +13,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import currencyRoutes from './gamification/routes/currency.routes';
@@ -28,6 +27,8 @@ import {
   getWeekStartMonday,
   loadWeekActivityForUser,
 } from './utils/streakCalendar';
+import { prisma } from './lib/prisma';
+import { shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -35,7 +36,6 @@ dotenv.config(); // fallback: also check service-local .env
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || process.env.ANALYTICS_SERVICE_PORT || 3014;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
@@ -87,7 +87,16 @@ app.use(cors({
   },
 }));
 
-app.get('/health', async (_req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    service: 'analytics-service',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({
@@ -996,7 +1005,7 @@ app.get('/stats/:userId', authenticateToken, async (req: Request, res: Response)
     let totalAnswers = stats.totalAnswers;
     let totalQuizzes = stats.totalQuizzes;
     let totalPoints = stats.totalPoints;
-    let recentAttempts = stats.attempts;
+    let recentAttempts: any[] = stats.attempts;
 
     if (practice) {
       avgScore = practice.avgScore;
@@ -2005,13 +2014,15 @@ app.post('/achievements/check', authenticateToken, async (req: Request, res: Res
 // Database connection check — do NOT exit on failure; Supabase's connection
 // pooler occasionally trips the circuit-breaker during a cold start. The
 // service should stay up and individual requests will fail gracefully.
-prisma.$connect()
-  .then(() => {
-    console.log('✅ Analytics Service - Database ready');
-  })
-  .catch((error) => {
-    console.error('⚠️  Analytics Service - DB connect warning (service will continue):', error.message);
-  });
+if (shouldRunDbStartupWarmup()) {
+  prisma.$connect()
+    .then(() => {
+      console.log('✅ Analytics Service - Database ready');
+    })
+    .catch((error) => {
+      console.error('⚠️  Analytics Service - DB connect warning (service will continue):', error.message);
+    });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

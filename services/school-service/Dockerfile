@@ -33,6 +33,7 @@ RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma && cp -r /node_mo
 # Copy source and build
 COPY services/school-service/tsconfig.json ./
 COPY services/school-service/src/ ./src/
+COPY services/lib/ /lib/
 RUN npm run build
 
 # Stage 2: Production runtime
@@ -58,6 +59,9 @@ RUN npm install --omit=dev --ignore-scripts
 # Copy Prisma schema & generate client for runtime (output goes to /node_modules; copy into app)
 COPY --from=builder /app/prisma ./prisma/
 RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma && cp -r /node_modules/.prisma ./node_modules/
+
+# Copy shared service runtime helpers
+COPY services/lib/ /lib/
 
 # Copy compiled JavaScript
 COPY --from=builder /app/dist ./dist/

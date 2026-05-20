@@ -3,8 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import { prisma } from './lib/prisma';
+import { shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 dotenv.config({ path: '../../.env' });
 
@@ -15,23 +16,17 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
-// Singleton Prisma pattern
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } },
-  log: ['error'],
-});
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-
 // Database warmup
-(async () => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ Club Service - Database ready');
-  } catch (e) {
-    console.error('⚠️ DB warmup failed');
-  }
-})();
+if (shouldRunDbStartupWarmup()) {
+  (async () => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      console.log('✅ Club Service - Database ready');
+    } catch (e) {
+      console.error('⚠️ DB warmup failed');
+    }
+  })();
+}
 
 const PORT = process.env.PORT || process.env.CLUB_SERVICE_PORT || 3012;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';

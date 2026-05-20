@@ -21,6 +21,10 @@ Use the root [README.md](../README.md) as the main entrypoint. This file indexes
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | **Primary** production runbook: Supabase, Cloud Run, Vercel, R2, EAS, CI, RLS |
 | [deployment/README.md](deployment/README.md) | Index of deploy scripts, mobile runbooks, and supplemental setup notes |
 | [DATABASE_SAFETY.md](DATABASE_SAFETY.md) | Guards around destructive DB commands |
+| [DEV_TO_PRODUCTION_WORKFLOW.md](DEV_TO_PRODUCTION_WORKFLOW.md) | **រលំហូរពេញ:** dev commands → feature work → deploy production |
+| [PRODUCTION_ARCHITECTURE_LONG_TERM.md](PRODUCTION_ARCHITECTURE_LONG_TERM.md) | **Long-term prod strategy:** one Supabase, service consolidation, phases |
+| [MICROSERVICES_CONNECTION_AUDIT.md](MICROSERVICES_CONNECTION_AUDIT.md) | **DB connections, Prisma pools, resource audit** |
+| [LOCAL_DEV.md](LOCAL_DEV.md) | **Supabase pooler, quick-start-lite, connection limits** |
 | [LOCAL_DEVELOPMENT_AND_PRODUCTION.md](LOCAL_DEVELOPMENT_AND_PRODUCTION.md) | Local vs production conventions |
 
 ## Domain guides (product reference)

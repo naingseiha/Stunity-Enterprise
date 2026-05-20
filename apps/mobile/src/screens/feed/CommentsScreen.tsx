@@ -37,6 +37,9 @@ import { Comment } from '@/types';
 import { formatRelativeTime } from '@/utils';
 import { Colors, Shadows } from '@/config';
 import { supabase } from '@/lib/supabase';
+import { createKeyedDebouncer } from '@/utils/debounce';
+
+const scheduleCommentRefresh = createKeyedDebouncer(600);
 
 type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string } }, 'Comments'>;
 
@@ -86,7 +89,7 @@ export default function CommentsScreen() {
           // Skip own comments — addComment() already optimistically added them to state
           if (incoming?.authorId === user?.id) return;
           if (__DEV__) { console.log('💬 [Comments] New comment from other user:', incoming?.id); }
-          fetchComments(postId);
+          scheduleCommentRefresh(postId, () => fetchComments(postId));
         }
       )
       .on(
@@ -95,6 +98,7 @@ export default function CommentsScreen() {
           event: 'DELETE',
           schema: 'public',
           table: 'comments',
+          filter: `postId=eq.${postId}`,
         },
         (payload) => {
           // Handle DELETE directly in state — no round-trip needed

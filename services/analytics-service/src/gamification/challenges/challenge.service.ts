@@ -1,8 +1,7 @@
-import { PrismaClient, ChallengeType, ChallengeStatus, ChallengeDifficulty } from '@prisma/client';
+import { ChallengeType, ChallengeStatus, ChallengeDifficulty } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { currencyService } from '../currency/currency.service';
 import { challengeTemplateService } from './challenge-template.service';
-
-const prisma = new PrismaClient();
 
 // Reward amounts by difficulty
 export const DIFFICULTY_COIN_REWARD: Record<ChallengeDifficulty, number> = {

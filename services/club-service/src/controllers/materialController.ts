@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
-import { ClubMemberRole, MaterialType, PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { ClubMemberRole, MaterialType } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 interface AuthRequest extends Request {
   user?: {

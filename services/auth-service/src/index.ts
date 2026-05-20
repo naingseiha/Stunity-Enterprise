@@ -5,6 +5,7 @@ import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { withPrismaPoolParams } from '../../lib/prisma-pool-url';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
@@ -40,7 +41,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: withPrismaPoolParams(process.env.DATABASE_URL),
     },
   },
   log: ['error'],

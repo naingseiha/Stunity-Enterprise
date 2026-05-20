@@ -26,6 +26,7 @@ import type { ClubsStackParamList } from '@/navigation/types';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
 
 const Colors = {
   background: '#F8FBFF',
@@ -604,7 +605,10 @@ export default function ClassDetailsScreen() {
   }, [canSubmitScores, classId, loadData, scoreByStudent, selectedQuickSubject, students, t]);
 
   const hasUnsavedQuickScores = Object.values(scoreByStudent).some(score => score !== '');
-  const canMessageTeacher = user?.role === 'PARENT' && Boolean(params.homeroomTeacherId);
+  const canMessageTeacher =
+    FEATURE_FLAGS.MESSAGING_ENABLED &&
+    user?.role === 'PARENT' &&
+    Boolean(params.homeroomTeacherId);
   const canManageRecords =
     myRole === 'ADMIN' || myRole === 'STAFF' || myRole === 'SUPER_ADMIN' || myRole === 'SCHOOL_ADMIN';
   const rolePresentation = useMemo(() => {

@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import path from 'path';
+import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 // Load environment variables from root .env
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -23,7 +24,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: withPrismaPoolParams(process.env.DATABASE_URL),
     },
   },
   log: ['error', 'warn'],
@@ -51,8 +52,10 @@ const warmUpDb = async () => {
     console.error('⚠️ Messaging Service - Database warmup failed');
   }
 };
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
+if (shouldRunDbStartupWarmup()) {
+  warmUpDb();
+}
+scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
 
 // Middleware
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];

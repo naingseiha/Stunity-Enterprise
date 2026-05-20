@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { currencyService } from '../currency/currency.service';
-
-const prisma = new PrismaClient();
 
 export type UnlockableType = 'AVATAR' | 'THEME' | 'BADGE_FRAME' | 'PROFILE_EFFECT';
 

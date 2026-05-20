@@ -35,6 +35,10 @@ import { useTranslation } from 'react-i18next';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 
+/** Avoid duplicate foreground + fallback polls when returning to the app often */
+const FOREGROUND_FEED_POLL_MIN_MS = 45_000;
+let lastForegroundFeedPollAt = 0;
+
 import {
   PostAnalyticsModal,
   SubjectFilters,
@@ -441,7 +445,9 @@ export default function FeedScreen() {
         const firstPost = currentFeedItems.find(i => i.type === 'POST');
         const latestCreatedAt = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
 
-        if (latestCreatedAt) {
+        const now = Date.now();
+        if (latestCreatedAt && now - lastForegroundFeedPollAt >= FOREGROUND_FEED_POLL_MIN_MS) {
+          lastForegroundFeedPollAt = now;
           feedApi.get('/posts', {
             params: { limit: 5, page: 1, fields: 'minimal' },
             timeout: 5000,

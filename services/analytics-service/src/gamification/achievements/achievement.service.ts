@@ -1,7 +1,6 @@
-import { PrismaClient, AchievementCategory } from '@prisma/client';
+import { AchievementCategory } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { currencyService } from '../currency/currency.service';
-
-const prisma = new PrismaClient();
 
 export interface AchievementCriteria {
     type: 'grade' | 'attendance' | 'social' | 'challenge' | 'composite';

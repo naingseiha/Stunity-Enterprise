@@ -11,6 +11,7 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import IdGenerator from './utils/idGenerator';
 import { teacherPayloadSchema, getTeacherValidationMessage } from './validators/teacher.validator';
+import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -29,7 +30,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: withPrismaPoolParams(process.env.DATABASE_URL),
     },
   },
   log: ['error'],
@@ -57,8 +58,10 @@ const warmUpDb = async () => {
     console.error('⚠️ Database warmup failed');
   }
 };
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
+if (shouldRunDbStartupWarmup()) {
+  warmUpDb();
+}
+scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
 
 const normalizeRegionalValue = (value: any) => {
   if (typeof value === 'string') return value.trim() || null;

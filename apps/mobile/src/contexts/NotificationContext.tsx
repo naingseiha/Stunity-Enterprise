@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
@@ -65,6 +65,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [pushNotificationsEnabled, setPushNotificationsEnabledState] = useState(true);
     const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
     const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
+    const lastForegroundNotificationFetchAt = useRef(0);
 
     const { user, isAuthenticated } = useAuthStore();
     const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
@@ -222,10 +223,26 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             unsubscribeFromNotifications();
         }
 
+        const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+            if (!isAuthenticated || !user?.id) return;
+
+            if (nextState === 'active') {
+                subscribeToNotifications(user.id);
+                const now = Date.now();
+                if (now - lastForegroundNotificationFetchAt.current > 30_000) {
+                    lastForegroundNotificationFetchAt.current = now;
+                    fetchNotifications();
+                }
+            } else if (nextState === 'background' || nextState === 'inactive') {
+                unsubscribeFromNotifications();
+            }
+        });
+
         return () => {
+            appStateSubscription.remove();
             unsubscribeFromNotifications();
         };
-    }, [isAuthenticated, user?.id]);
+    }, [isAuthenticated, user?.id, fetchNotifications, subscribeToNotifications, unsubscribeFromNotifications]);
 
     // Schedule a local evening reminder when the learning streak is at risk.
     useEffect(() => {

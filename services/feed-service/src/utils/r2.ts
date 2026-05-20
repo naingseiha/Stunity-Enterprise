@@ -246,9 +246,19 @@ export const uploadMultipleToR2 = async (
   files: Array<{ buffer: Buffer; originalname: string; mimetype: string }>,
   folder: string = 'posts'
 ): Promise<Array<{ url: string; key: string; width?: number; height?: number; blurHash?: string }>> => {
-  const results = await Promise.all(
-    files.map(file => uploadToR2(file.buffer, file.originalname, file.mimetype, folder))
-  );
+  const concurrency = Math.max(1, Math.min(Number(process.env.R2_UPLOAD_CONCURRENCY || 3), 5));
+  const results: Array<{ url: string; key: string; width?: number; height?: number; blurHash?: string }> = [];
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, files.length) }, async () => {
+    while (nextIndex < files.length) {
+      const index = nextIndex++;
+      const file = files[index];
+      results[index] = await uploadToR2(file.buffer, file.originalname, file.mimetype, folder);
+    }
+  });
+
+  await Promise.all(workers);
   return results;
 };
 

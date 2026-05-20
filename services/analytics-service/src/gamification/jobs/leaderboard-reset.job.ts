@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client';
 import { leaderboardService, LeaderboardCategory } from '../leaderboards/leaderboard.service';
 import { leaderboardCache } from '../leaderboards/leaderboard.cache';
 import { currencyService } from '../currency/currency.service';
+import { prisma } from '../../lib/prisma';
+import type { LeaderboardCategory as PersistedLeaderboardCategory } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-const CATEGORIES: LeaderboardCategory[] = [
+const CATEGORIES: PersistedLeaderboardCategory[] = [
     'TOTAL_XP',
     'ACADEMIC_PERFORMANCE',
     'SOCIAL_ENGAGEMENT',
@@ -22,7 +21,7 @@ const TOP_PERFORMER_BONUS = 100; // coins awarded to top-10 finishers
 async function archiveAndAward(period: 'DAILY' | 'WEEKLY' | 'MONTHLY') {
     for (const category of CATEGORIES) {
         const snapshot = await leaderboardService.getLeaderboardEntries(
-            category,
+            category as LeaderboardCategory,
             'SCHOOL_WIDE',
             period,
             200 // top 200 entries

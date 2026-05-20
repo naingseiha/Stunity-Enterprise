@@ -11,6 +11,7 @@ import { Club } from '@/api/clubs'; // Use API definition of Club
 import { clubsApi } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { debounce } from '@/utils/debounce';
 
 interface ClubState {
     clubs: Club[];
@@ -113,6 +114,7 @@ export const useClubStore = create<ClubState>((set, get) => ({
         console.log('👥 [ClubStore] Subscribing to realtime clubs...');
         const { unsubscribeFromClubs } = get();
         unsubscribeFromClubs();
+        const refreshClubs = debounce(() => get().fetchClubs(), 1000);
 
         const channel = supabase
             .channel('public:clubs')
@@ -125,9 +127,7 @@ export const useClubStore = create<ClubState>((set, get) => ({
                 },
                 (payload) => {
                     console.log('👥 [ClubStore] Realtime update:', payload);
-                    // Simple strategy: Refetch list on any change to keep it accurate
-                    // Optimization: Update specific item in array if possible
-                    get().fetchClubs();
+                    refreshClubs();
                 }
             )
             .subscribe();
@@ -138,7 +138,7 @@ export const useClubStore = create<ClubState>((set, get) => ({
     unsubscribeFromClubs: () => {
         const { realtimeSubscription } = get();
         if (realtimeSubscription) {
-            realtimeSubscription.unsubscribe();
+            supabase.removeChannel(realtimeSubscription);
             set({ realtimeSubscription: null });
         }
     }

@@ -14,6 +14,12 @@ import { useAuthStore } from './authStore';
 import { supabase } from '@/lib/supabase';
 import { realtimeService } from '@/services/realtimeService';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { debounce } from '@/utils/debounce';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
+
+const debouncedFetchConversations = debounce(() => {
+    useMessagingStore.getState().fetchConversations();
+}, 1000);
 
 // ============================================
 // Types
@@ -92,6 +98,9 @@ interface MessagingState {
     messagesChannel: RealtimeChannel | null;
     typingChannel: RealtimeChannel | null;
 
+    /** Last successful conversations list fetch (for focus deduping) */
+    lastConversationsFetchedAt: number;
+
     // Actions — Conversations
     fetchConversations: () => Promise<void>;
     startConversation: (participantIds: string[], isGroup?: boolean, groupName?: string) => Promise<DMConversation | null>;
@@ -133,6 +142,7 @@ const initialState = {
     conversationsChannel: null,
     messagesChannel: null,
     typingChannel: null,
+    lastConversationsFetchedAt: 0,
 };
 
 // ============================================
@@ -198,7 +208,12 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                 });
 
                 const totalUnreadCount = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
-                set({ conversations, totalUnreadCount, isLoadingConversations: false });
+                set({
+                    conversations,
+                    totalUnreadCount,
+                    isLoadingConversations: false,
+                    lastConversationsFetchedAt: Date.now(),
+                });
             } else {
                 set({ isLoadingConversations: false });
             }
@@ -416,6 +431,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     // ========================================
 
     subscribeToConversations: (userId: string) => {
+        if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
         const { unsubscribeAll } = get();
 
         // Subscribe to new messages across all conversations
@@ -427,7 +443,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     event: 'INSERT',
                     callback: (payload) => {
                         const newMsg = payload.new as any;
-                        const { activeConversationId, messages } = get();
+                        const { activeConversationId, messages, conversations } = get();
 
                         // If this message is for the active conversation, add it
                         if (newMsg.conversationId === activeConversationId) {
@@ -450,8 +466,37 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                             }
                         }
 
-                        // Update conversation list (last message, unread count)
-                        get().fetchConversations();
+                        // Patch conversation list locally; full fetch only if unknown or debounced
+                        const currentUserId = useAuthStore.getState().user?.id;
+                        const convIndex = conversations.findIndex(
+                            (c) => c.id === newMsg.conversationId,
+                        );
+
+                        if (convIndex >= 0) {
+                            const updatedConversations = [...conversations];
+                            const conv = { ...updatedConversations[convIndex] };
+                            conv.lastMessage = {
+                                content: newMsg.content,
+                                createdAt: newMsg.createdAt,
+                                senderId: newMsg.senderId,
+                            };
+                            conv.lastMessageAt = newMsg.createdAt;
+                            if (
+                                newMsg.conversationId !== activeConversationId &&
+                                newMsg.senderId !== currentUserId
+                            ) {
+                                conv.unreadCount = (conv.unreadCount || 0) + 1;
+                            }
+                            updatedConversations.splice(convIndex, 1);
+                            updatedConversations.unshift(conv);
+                            const totalUnreadCount = updatedConversations.reduce(
+                                (sum, c) => sum + (c.unreadCount || 0),
+                                0,
+                            );
+                            set({ conversations: updatedConversations, totalUnreadCount });
+                        } else {
+                            debouncedFetchConversations();
+                        }
 
                         // Clear typing indicator for this user
                         set(state => {
@@ -479,8 +524,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     table: 'conversations',
                     event: 'UPDATE',
                     callback: () => {
-                        // Conversation metadata changed — refresh list
-                        get().fetchConversations();
+                        // Conversation metadata changed — debounced refresh
+                        debouncedFetchConversations();
                     },
                 },
             ]
@@ -490,6 +535,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     },
 
     subscribeToMessages: (conversationId: string) => {
+        if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
         // Unsubscribe from previous active chat channels
         get().unsubscribeFromMessages();
 

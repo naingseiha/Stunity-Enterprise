@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { classesApi } from '@/api';
 import { useAuthStore, useMessagingStore } from '@/stores';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -173,7 +174,7 @@ export default function ClassMembersScreen() {
         </View>
       </View>
 
-      {user?.role === 'PARENT' && homeroomTeacherId && (
+      {FEATURE_FLAGS.MESSAGING_ENABLED && user?.role === 'PARENT' && homeroomTeacherId && (
         <TouchableOpacity 
           style={styles.msgTeacherBanner} 
           onPress={() => handleMessage(homeroomTeacherId, 'Homeroom Teacher')}

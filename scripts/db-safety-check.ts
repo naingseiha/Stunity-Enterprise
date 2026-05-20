@@ -16,6 +16,9 @@ import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env') });
 config({ path: resolve(process.cwd(), '../.env') });
 config({ path: resolve(process.cwd(), '../../.env') });
+config({ path: resolve(process.cwd(), '.env.development.local') });
+config({ path: resolve(process.cwd(), '../.env.development.local') });
+config({ path: resolve(process.cwd(), '../../.env.development.local') });
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
 const DIRECT_URL = process.env.DIRECT_URL || '';
@@ -39,10 +42,21 @@ function bold(s: string): string {
   return `\x1b[1m${s}\x1b[0m`;
 }
 
+/** Dev Supabase project refs — seeding allowed when STUNITY_USE_DEV_DB=1 */
+const DEV_SUPABASE_PROJECT_REFS = (process.env.STUNITY_DEV_PROJECT_REFS || 'ykvqgyrwizqjjzfuitto')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 function looksLikeProduction(url: string): boolean {
   if (!url || url.includes('localhost') || url.includes('127.0.0.1')) return false;
   const lower = url.toLowerCase();
   return PRODUCTION_PATTERNS.some((p) => lower.includes(p));
+}
+
+function isDevSupabase(url: string): boolean {
+  const lower = url.toLowerCase();
+  return DEV_SUPABASE_PROJECT_REFS.some((ref) => lower.includes(ref.toLowerCase()));
 }
 
 function maskUrl(url: string): string {
@@ -67,6 +81,11 @@ export function runDbSafetyCheck(): void {
 
   if (ALLOW) {
     return; // Intended production run (e.g. deploy pipeline).
+  }
+
+  if (looksLikeProduction(urlToCheck) && isDevSupabase(urlToCheck) && process.env.STUNITY_USE_DEV_DB === '1') {
+    console.log('🧪 Dev Supabase — seed/migrate allowed (stunity-dev)');
+    return;
   }
 
   if (looksLikeProduction(urlToCheck)) {

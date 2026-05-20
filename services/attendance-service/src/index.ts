@@ -31,6 +31,7 @@ import {
 } from './teacherSchedule';
 import { buildSessionMonitor, SESSION_MONITOR_LATE_GRACE_MINUTES } from './sessionMonitor';
 import { assertProductionEnv, getJwtSecret } from './env';
+import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config();
@@ -47,7 +48,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: withPrismaPoolParams(process.env.DATABASE_URL),
     },
   },
   log: ['error'], // Changed from ['error'] to see more details if needed
@@ -71,8 +72,10 @@ const warmUpDb = async () => {
     if (process.env.NODE_ENV !== 'production') console.error(error);
   }
 };
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
+if (shouldRunDbStartupWarmup()) {
+  warmUpDb();
+}
+scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
 
 const schoolSummaryCache = new Map<string, { data: any; timestamp: number }>();
 const SCHOOL_SUMMARY_CACHE_TTL_MS = 60 * 1000;

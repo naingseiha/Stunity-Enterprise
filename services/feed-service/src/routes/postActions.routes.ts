@@ -329,6 +329,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
   };
 
   try {
+    const feedCardOnly = req.query.purpose === 'feed-card';
     const post = await timeStep('post', () => findAccessiblePost(req.params.id, req, {
       id: true,
       authorId: true,
@@ -409,7 +410,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
     }
 
     const [pollRows, quiz] = await Promise.all([
-      post.postType === 'POLL'
+      !feedCardOnly && post.postType === 'POLL'
         ? timeStep('pollOptions', () => prismaRead.$queryRaw<Array<{
           id: string;
           text: string;
@@ -431,7 +432,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
           ORDER BY po.position ASC
         `)
         : Promise.resolve([]),
-      post.postType === 'QUIZ'
+      !feedCardOnly && post.postType === 'QUIZ'
         ? timeStep('quiz', () => prismaRead.quiz.findUnique({
           where: { postId: post.id },
           select: {

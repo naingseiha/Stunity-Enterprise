@@ -2,11 +2,29 @@
 
 echo "🚀 Quick Start - Stunity Services"
 echo "=================================="
+echo "  Tip: ./quick-start-lite.sh for feed/mobile dev (fewer Supabase connections)"
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
 API_PORTS=(3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
 ADB_BIN="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Library/Android/sdk}}/platform-tools/adb"
+
+normalize_database_pool_url() {
+  export PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-3}"
+  export PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-10}"
+
+  if [ -z "${DATABASE_URL:-}" ]; then
+    return 0
+  fi
+  if [[ "$DATABASE_URL" == *"connection_limit="* ]]; then
+    return 0
+  fi
+  if [[ "$DATABASE_URL" == *"?"* ]]; then
+    export DATABASE_URL="${DATABASE_URL}&connection_limit=${PRISMA_CONNECTION_LIMIT}&pool_timeout=${PRISMA_POOL_TIMEOUT}"
+  else
+    export DATABASE_URL="${DATABASE_URL}?connection_limit=${PRISMA_CONNECTION_LIMIT}&pool_timeout=${PRISMA_POOL_TIMEOUT}"
+  fi
+}
 
 load_root_env() {
   if [ -f "$PROJECT_DIR/.env" ]; then
@@ -18,6 +36,22 @@ load_root_env() {
   else
     echo "  ⚠️  No .env at repo root — copy .env.example → .env before starting services"
   fi
+
+  if [ "${STUNITY_USE_DEV_DB:-0}" = "1" ] && [ -f "$PROJECT_DIR/.env.development.local" ]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$PROJECT_DIR/.env.development.local"
+    set +a
+    echo "  🧪 Loaded .env.development.local (dev Supabase — not production)"
+  elif [ -f "$PROJECT_DIR/.env.development.local" ] && [ "${STUNITY_ALLOW_PROD_DB:-0}" != "1" ]; then
+    echo "  💡 Dev DB file exists. Use: source scripts/activate-dev-database.sh  (or STUNITY_ALLOW_PROD_DB=1 to use production .env)"
+  fi
+
+  normalize_database_pool_url
+
+  # Local dev: avoid 14× keepalive pings holding Supabase pooler slots (override with DB_KEEPALIVE_INTERVAL_MS)
+  export DISABLE_DB_KEEPALIVE="${DISABLE_DB_KEEPALIVE:-1}"
+  export DISABLE_DB_STARTUP_WARMUP="${DISABLE_DB_STARTUP_WARMUP:-1}"
 
   # Align internal service auth with notification-service (streak-at-risk job, club push, etc.)
   export NOTIFICATION_SERVICE_AUTH_TOKEN="${NOTIFICATION_SERVICE_AUTH_TOKEN:-${JWT_SECRET:-stunity-notification-dev-service-token}}"
@@ -223,6 +257,7 @@ done
 sleep 2
 
 load_root_env
+echo "  🔗 DB pool: connection_limit=${PRISMA_CONNECTION_LIMIT}, keepalive=${DISABLE_DB_KEEPALIVE:-0}, startup_warmup=${DISABLE_DB_STARTUP_WARMUP:-0}"
 
 # Apply migrations so Postgres matches prisma/schema.prisma (e.g. new Subject columns).
 echo ""
@@ -233,59 +268,75 @@ configure_android_reverse
 
 # Start services in correct order
 echo ""
-echo "🚀 Starting services..."
+if [ "${QUICK_START_LITE:-0}" = "1" ]; then
+  echo "🚀 Starting services (LITE — mobile/feed dev, fewer DB connections)..."
+else
+  echo "🚀 Starting services..."
+fi
 
 start_service "services/auth-service" 3001 "auth.log" "Auth Service"
 wait_for_port 3001 "Auth Service" 60
 
-start_service "services/school-service" 3002 "school.log" "School Service"
-wait_for_port 3002 "School Service" 45
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  start_service "services/school-service" 3002 "school.log" "School Service"
+  wait_for_port 3002 "School Service" 45
 
-start_service "services/student-service" 3003 "student.log" "Student Service"
-wait_for_port 3003 "Student Service" 45
+  start_service "services/student-service" 3003 "student.log" "Student Service"
+  wait_for_port 3003 "Student Service" 45
 
-start_service "services/teacher-service" 3004 "teacher.log" "Teacher Service"
-wait_for_port 3004 "Teacher Service" 45
+  start_service "services/teacher-service" 3004 "teacher.log" "Teacher Service"
+  wait_for_port 3004 "Teacher Service" 45
 
-start_service "services/class-service" 3005 "class.log" "Class Service"
-wait_for_port 3005 "Class Service" 45
+  start_service "services/class-service" 3005 "class.log" "Class Service"
+  wait_for_port 3005 "Class Service" 45
 
-start_service "services/subject-service" 3006 "subject.log" "Subject Service"
-wait_for_port 3006 "Subject Service" 45
+  start_service "services/subject-service" 3006 "subject.log" "Subject Service"
+  wait_for_port 3006 "Subject Service" 45
 
-start_service "services/grade-service" 3007 "grade.log" "Grade Service"
-wait_for_port 3007 "Grade Service" 45
+  start_service "services/grade-service" 3007 "grade.log" "Grade Service"
+  wait_for_port 3007 "Grade Service" 45
 
-start_service "services/attendance-service" 3008 "attendance.log" "Attendance Service"
-wait_for_port 3008 "Attendance Service" 45
+  start_service "services/attendance-service" 3008 "attendance.log" "Attendance Service"
+  wait_for_port 3008 "Attendance Service" 45
 
-start_service "services/timetable-service" 3009 "timetable.log" "Timetable Service"
-wait_for_port 3009 "Timetable Service" 45
+  start_service "services/timetable-service" 3009 "timetable.log" "Timetable Service"
+  wait_for_port 3009 "Timetable Service" 45
+fi
 
 start_service "services/feed-service" 3010 "feed.log" "Feed Service"
 wait_for_port 3010 "Feed Service" 60
 wait_for_health "${FEED_SERVICE_URL}/health" "Feed Service" 30
 
-start_service "services/messaging-service" 3011 "messaging.log" "Messaging Service"
-wait_for_port 3011 "Messaging Service" 45
+if [ "${SKIP_MESSAGING_SERVICE:-1}" != "1" ]; then
+  start_service "services/messaging-service" 3011 "messaging.log" "Messaging Service"
+  wait_for_port 3011 "Messaging Service" 45
+else
+  echo "  ℹ️  Messaging service skipped (SKIP_MESSAGING_SERVICE=1). Set SKIP_MESSAGING_SERVICE=0 to enable."
+fi
 
-start_service "services/club-service" 3012 "club.log" "Club Service"
-wait_for_port 3012 "Club Service" 45
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  start_service "services/club-service" 3012 "club.log" "Club Service"
+  wait_for_port 3012 "Club Service" 45
+fi
 
 start_service "services/notification-service" 3013 "notification.log" "Notification Service"
 wait_for_port 3013 "Notification Service" 45
 wait_for_health "${NOTIFICATION_SERVICE_URL}/health" "Notification Service" 30
 
-start_service "services/analytics-service" 3014 "analytics.log" "Analytics Service"
-wait_for_port 3014 "Analytics Service" 60
-wait_for_health "${ANALYTICS_SERVICE_URL}/health" "Analytics Service" 30
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  start_service "services/analytics-service" 3014 "analytics.log" "Analytics Service"
+  wait_for_port 3014 "Analytics Service" 60
+  wait_for_health "${ANALYTICS_SERVICE_URL}/health" "Analytics Service" 30
+fi
 
 start_service "services/learn-service" 3018 "learn.log" "Learn Service"
 wait_for_port 3018 "Learn Service" 60
 wait_for_health "${LEARN_SERVICE_URL}/health" "Learn Service" 30
 
-start_service "services/ai-service" 3020 "ai.log" "AI Service"
-wait_for_port 3020 "AI Service" 45
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  start_service "services/ai-service" 3020 "ai.log" "AI Service"
+  wait_for_port 3020 "AI Service" 45
+fi
 
 start_web
 wait_for_port 3000 "Web App" 60
@@ -313,12 +364,20 @@ echo ""
 echo "🌐 Web App: http://localhost:3000"
 echo "🔐 Auth Service: http://localhost:3001"
 echo "📱 Feed Service: http://localhost:3010"
-echo "💬 Messaging Service: http://localhost:3011"
-echo "🎓 Club Service: http://localhost:3012"
+if [ "${SKIP_MESSAGING_SERVICE:-1}" != "1" ]; then
+  echo "💬 Messaging Service: http://localhost:3011"
+fi
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  echo "🎓 Club Service: http://localhost:3012"
+fi
 echo "🔔 Notification Service: http://localhost:3013"
-echo "📊 Analytics Service: http://localhost:3014 (streaks, leaderboards, live quiz)"
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  echo "📊 Analytics Service: http://localhost:3014 (streaks, leaderboards, live quiz)"
+fi
 echo "📚 Learn Service: http://localhost:3018"
-echo "🤖 AI Service: http://localhost:3020"
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  echo "🤖 AI Service: http://localhost:3020"
+fi
 echo ""
 echo "🆕 Teacher Quiz Analytics (web): http://localhost:3000/en/teacher/quizzes/analytics"
 echo "🆕 Streak-at-risk job (dev): POST ${NOTIFICATION_SERVICE_URL}/notifications/jobs/streak-at-risk"

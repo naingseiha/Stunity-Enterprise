@@ -62,6 +62,15 @@ export default function ConversationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      const { lastConversationsFetchedAt, conversationsChannel } =
+        useMessagingStore.getState();
+      const FRESH_MS = 30_000;
+      if (
+        conversationsChannel &&
+        Date.now() - lastConversationsFetchedAt < FRESH_MS
+      ) {
+        return;
+      }
       fetchConversations();
     }, [fetchConversations])
   );

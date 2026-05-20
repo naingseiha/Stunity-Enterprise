@@ -25,6 +25,7 @@ COPY services/analytics-service/package.json services/analytics-service/package-
 
 # Install ALL dependencies (including devDependencies for build)
 RUN npm install --ignore-scripts
+RUN ln -s /app/node_modules /node_modules
 
 # Copy Prisma schema from packages/database and generate client
 COPY packages/database/prisma ./prisma/
@@ -33,6 +34,7 @@ RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 # Copy source and build
 COPY services/analytics-service/tsconfig.json ./
 COPY services/analytics-service/src/ ./src/
+COPY services/lib/ /lib/
 RUN npm run build
 
 # Stage 2: Production runtime
@@ -58,6 +60,9 @@ RUN npm install --omit=dev --ignore-scripts
 # Copy Prisma schema & generate client for runtime
 COPY --from=builder /app/prisma ./prisma/
 RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
+
+# Copy shared service runtime helpers
+COPY services/lib/ /lib/
 
 # Copy compiled JavaScript
 COPY --from=builder /app/dist ./dist/

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { challengeService } from '../challenges/challenge.service';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma';
 
 const BATCH_SIZE = 1000;
 

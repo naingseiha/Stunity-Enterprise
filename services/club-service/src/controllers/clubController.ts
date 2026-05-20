@@ -1,9 +1,7 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../index';
 import axios from 'axios';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // Feed service URL
 const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';

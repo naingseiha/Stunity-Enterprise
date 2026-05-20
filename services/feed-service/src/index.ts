@@ -21,6 +21,7 @@ import storiesRouter from './stories';
 import mediaRouter from './routes/media.routes';
 import { authenticateToken } from './middleware/auth';
 import { startGamificationJobs } from './gamificationJobs';
+import { scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 // ─── Phase 1 Day 7: Performance Monitoring ─────────────────────────
 import {
@@ -99,10 +100,8 @@ const warmUpDb = async (reason = 'scheduled') => {
     };
 
     try {
-      const [primaryLatencyMs, readLatencyMs] = await Promise.all([
-        pingDatabase(prisma),
-        pingDatabase(prismaRead),
-      ]);
+      const primaryLatencyMs = await pingDatabase(prisma);
+      const readLatencyMs = prismaRead === prisma ? primaryLatencyMs : await pingDatabase(prismaRead);
 
       dbWarmupState = {
         isWarm: true,
@@ -129,7 +128,7 @@ const warmUpDb = async (reason = 'scheduled') => {
   return dbWarmupInFlight;
 };
 
-setInterval(() => { void warmUpDb('keepalive'); }, 4 * 60 * 1000);
+scheduleDbKeepalive(() => warmUpDb('keepalive'));
 
 // ─── Background Jobs ──────────────────────────────────────────────
 // CLOUD RUN NOTE: On Cloud Run, multiple instances can run simultaneously.
@@ -294,15 +293,14 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Apply HPP *after* body parsers so it doesn't try to buffer multipart binary streams
 app.use(hpp());
 
-// ─── Health Check ──────────────────────────────────────────────────
-app.get('/health', async (_req: Request, res: Response) => {
+const checkReadiness = async () => {
   const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
   let isHealthy = true;
 
-  const [primaryDb, readDb] = await Promise.allSettled([
-    pingDatabase(prisma),
-    pingDatabase(prismaRead),
-  ]);
+  const primaryDb = await Promise.allSettled([pingDatabase(prisma)]).then(([result]) => result);
+  const readDb = prismaRead === prisma
+    ? primaryDb
+    : await Promise.allSettled([pingDatabase(prismaRead)]).then(([result]) => result);
 
   if (primaryDb.status === 'fulfilled') {
     checks.database = { status: 'healthy', latencyMs: primaryDb.value };
@@ -327,6 +325,29 @@ app.get('/health', async (_req: Request, res: Response) => {
     checks.redis = { status: 'degraded', error: 'Using in-memory fallback' };
   }
 
+  return { isHealthy, checks };
+};
+
+// ─── Health Check ──────────────────────────────────────────────────
+// Liveness only: keep this cheap so uptime checks do not open Supabase connections.
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    uptime: Math.floor(process.uptime()),
+    memory: {
+      heapUsedMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    },
+    databaseWarmup: {
+      status: dbWarmupState.isWarm ? 'warm' : 'not_warmed',
+      ...dbWarmupState,
+    },
+  });
+});
+
+// Readiness: call this explicitly when you want to verify DB/Redis connectivity.
+app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
+  const { isHealthy, checks } = await checkReadiness();
   res.status(isHealthy ? 200 : 503).json({
     status: isHealthy ? 'healthy' : 'unhealthy',
     uptime: Math.floor(process.uptime()),
@@ -385,7 +406,9 @@ app.use(errorLogger);
 
 // ─── Start Server ──────────────────────────────────────────────────
 const startServer = async () => {
-  await warmUpDb('startup');
+  if (shouldRunDbStartupWarmup()) {
+    await warmUpDb('startup');
+  }
 
   server = app.listen(PORT, '0.0.0.0', () => {
     console.log('');

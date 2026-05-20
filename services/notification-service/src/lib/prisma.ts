@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import { withPrismaPoolParams } from '../../../lib/prisma-pool-url';
 
 const globalForPrisma = global as unknown as { notificationPrisma?: PrismaClient };
 
 export const prisma =
   globalForPrisma.notificationPrisma ||
   new PrismaClient({
-    datasources: { db: { url: process.env.DATABASE_URL } },
+    datasources: { db: { url: withPrismaPoolParams(process.env.DATABASE_URL) } },
     log: ['error'],
   });
 

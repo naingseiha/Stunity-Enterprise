@@ -49,9 +49,10 @@ let initialFeedRetryAttempts = 0;
 let initialFeedRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let feedWarmPageTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Realtime fallback: if Supabase channel is subscribed but not delivering events,
-// poll RECENT feed periodically so users still receive "New posts" updates.
-const REALTIME_FALLBACK_POLL_INTERVAL_MS = 20_000;
+// Realtime fallback: if Supabase channel errors or appears silent, poll RECENT feed
+// at a low rate so users still receive "New posts" updates without the old 20s churn.
+const REALTIME_FALLBACK_POLL_INTERVAL_MS = 60_000;
+const REALTIME_LIVENESS_WARN_MS = 30_000;
 let realtimeLivenessTimer: ReturnType<typeof setTimeout> | null = null;
 let realtimeFallbackPollTimer: ReturnType<typeof setInterval> | null = null;
 let realtimeFallbackPollInFlight = false;
@@ -1909,11 +1910,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       return;
     }
 
-    try {
-      // Unsubscribe existing if any
-      unsubscribeFromFeed();
+    // Unsubscribe existing if any
+    unsubscribeFromFeed();
 
-      const stopRealtimeFallbackPolling = () => {
+    const stopRealtimeFallbackPolling = () => {
         if (realtimeFallbackPollTimer) {
           clearInterval(realtimeFallbackPollTimer);
           realtimeFallbackPollTimer = null;
@@ -2022,8 +2022,34 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         } catch { return undefined; }
       };
 
+      /** Immediate hydrate — same UX as pre-optimization (New posts banner + suggestions). */
+      const hydrateRealtimePost = async (postId: string) => {
+        if (!postId || isKnownPostId(postId)) return;
+        try {
+          const response = await feedApi.get(`/posts/${postId}`, {
+            params: { purpose: 'feed-card' },
+            timeout: FEED_BACKGROUND_POLL_TIMEOUT_MS,
+            headers: { 'X-No-Retry': 'true' },
+          });
+          if (response.data.success && (response.data.data || response.data.post)) {
+            const transformed = transformPost(response.data.data || response.data.post);
+            if (transformed && !isKnownPostId(transformed.id)) {
+              set(state => ({
+                pendingPosts: [transformed, ...state.pendingPosts],
+              }));
+              if (__DEV__) {
+                console.log('✅ [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching realtime post:', e);
+        }
+      };
+
       let _receivedAnyEvent = false;
 
+    try {
       const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
       const channel = supabase
         .channel(channelName)
@@ -2047,25 +2073,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             }
 
             console.log('🔔 [FeedStore] New post INSERT:', newPostId);
-
-            try {
-              // Fetch full post via API (preserves business logic, author data, etc.)
-              const response = await feedApi.get(`/posts/${newPostId}`);
-              if (response.data.success && (response.data.data || response.data.post)) {
-                const transformed = transformPost(response.data.data || response.data.post);
-                if (transformed) {
-                  // Final dedup check (race condition guard)
-                  if (!isKnownPostId(transformed.id)) {
-                    set(state => ({
-                      pendingPosts: [transformed, ...state.pendingPosts]
-                    }));
-                    console.log('✅ [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
-                  }
-                }
-              }
-            } catch (e) {
-              console.error('Error fetching realtime post:', e);
-            }
+            await hydrateRealtimePost(newPostId);
           }
         )
         // Post updates (edits, like/comment count changes)
@@ -2127,20 +2135,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                 if (currentUserId && updated.authorId === currentUserId) return;
 
                 console.log('🆕 [FeedStore] Genuinely new post via UPDATE:', updated.id);
-                try {
-                  const response = await feedApi.get(`/posts/${updated.id}`);
-                  if (response.data.success && (response.data.data || response.data.post)) {
-                    const transformed = transformPost(response.data.data || response.data.post);
-                    if (transformed && !isKnownPostId(transformed.id)) {
-                      set(state => ({
-                        pendingPosts: [transformed, ...state.pendingPosts]
-                      }));
-                      console.log('✅ [FeedStore] Added genuinely new post to pendingPosts, count:', get().pendingPosts.length);
-                    }
-                  }
-                } catch (e) {
-                  console.error('Failed to fetch new post:', e);
-                }
+                await hydrateRealtimePost(updated.id);
               } else {
                 // Old post received an update (like, comment, etc.) — ignore silently
                 if (__DEV__) {
@@ -2174,23 +2169,20 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             // Reset retry counter
             set({ ...(get() as any), _realtimeRetries: 0 } as any);
 
-            // Liveness check: if no event arrives within 30s of subscribing,
-            // warn about possible RLS blocking (silent failure mode).
-            // In production with active users this fires rarely — posts are created often.
+            // Liveness: if Realtime is silently blocked, keep the old safety net but at a lower rate.
             if (realtimeLivenessTimer) clearTimeout(realtimeLivenessTimer);
             realtimeLivenessTimer = setTimeout(() => {
               if (!_receivedAnyEvent && __DEV__) {
                 console.warn(
                   '⚠️ [FeedStore] No real-time events received 30s after SUBSCRIBED.\n' +
-                  '  → Check Supabase dashboard: is RLS enabled on the `posts` table?\n' +
-                  '  → Run: ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;\n' +
-                  '  → See docs/DEPLOYMENT_GUIDE.md (Database / RLS checklist) and docs/REALTIME_ARCHITECTURE.md.'
+                  '  → If you expect traffic: check RLS on `posts` (Realtime needs events through).\n' +
+                  '  → Starting low-rate REST fallback polling as a safety net.'
                 );
               }
               if (!_receivedAnyEvent) {
                 startRealtimeFallbackPolling('no realtime events after subscribe');
               }
-            }, 30_000);
+            }, REALTIME_LIVENESS_WARN_MS);
           } else if (status === 'CHANNEL_ERROR') {
             console.warn('⚠️ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
             if (realtimeLivenessTimer) { clearTimeout(realtimeLivenessTimer); realtimeLivenessTimer = null; }
@@ -2225,14 +2217,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       set({ realtimeSubscription: channel });
     } catch (realtimeError) {
       console.warn('⚠️ [FeedStore] Realtime subscription failed (non-fatal), app continues without realtime:', realtimeError);
-      if (!realtimeFallbackPollTimer) {
-        realtimeFallbackPollTimer = setInterval(() => {
-          const { feedItems } = get();
-          if (feedItems.length > 0) {
-            get().fetchPosts(true).catch(() => { });
-          }
-        }, REALTIME_FALLBACK_POLL_INTERVAL_MS);
-      }
+      startRealtimeFallbackPolling('subscribe failed');
     }
   },
 
@@ -2248,7 +2233,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     realtimeFallbackPollInFlight = false;
     realtimeFallbackPollFailures = 0;
     realtimeFallbackPausedUntil = 0;
-
     const { realtimeSubscription } = get();
     if (realtimeSubscription) {
       console.log('🔌 [FeedStore] Unsubscribing...');

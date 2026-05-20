@@ -10,12 +10,11 @@ dotenv.config();
 
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
+import { normalizePrismaUrlForComparison, withPrismaPoolParams } from '../../lib/prisma-pool-url';
 
 // ─── Prisma (primary — read/write) ─────────────────────────────────
 const databaseUrl = process.env.DATABASE_URL || '';
-const pooledUrl = databaseUrl.includes('?')
-    ? `${databaseUrl}&connection_limit=20&pool_timeout=10`
-    : `${databaseUrl}?connection_limit=20&pool_timeout=10`;
+const pooledUrl = withPrismaPoolParams(databaseUrl) ?? databaseUrl;
 
 export const prisma = new PrismaClient({
     datasources: { db: { url: pooledUrl } },
@@ -23,11 +22,19 @@ export const prisma = new PrismaClient({
 });
 
 // ─── Prisma (read replica — read-only queries) ─────────────────────
-const readUrl = process.env.DATABASE_READ_URL || pooledUrl;
-export const prismaRead = new PrismaClient({
-    datasources: { db: { url: readUrl } },
-    log: ['error', 'warn'],
-});
+const readUrlRaw = process.env.DATABASE_READ_URL?.trim();
+const useDedicatedReadReplica = Boolean(
+    readUrlRaw &&
+    normalizePrismaUrlForComparison(readUrlRaw) !== normalizePrismaUrlForComparison(databaseUrl)
+);
+const readUrl = withPrismaPoolParams(readUrlRaw || databaseUrl) ?? pooledUrl;
+
+export const prismaRead = useDedicatedReadReplica
+    ? new PrismaClient({
+        datasources: { db: { url: readUrl } },
+        log: ['error', 'warn'],
+    })
+    : prisma;
 
 // ─── Multer (file uploads) ─────────────────────────────────────────
 export const upload = multer({

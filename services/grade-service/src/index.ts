@@ -13,6 +13,7 @@ import {
   resolveMonthlyTemplateId,
 } from './reports/monthly/monthly-template-registry';
 import * as MoeysMonthly from './reports/monthly/khm-moeys-logic';
+import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -31,7 +32,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: withPrismaPoolParams(process.env.DATABASE_URL),
     },
   },
   log: ['error'],
@@ -53,8 +54,10 @@ const warmUpDb = async () => {
     console.error('⚠️ Grade Service - Database warmup failed');
   }
 };
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
+if (shouldRunDbStartupWarmup()) {
+  warmUpDb();
+}
+scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
 
 // ========================================
 // Middleware

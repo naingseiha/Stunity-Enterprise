@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { PrismaClient, DayOfWeek } from '@prisma/client';
 import dotenv from 'dotenv';
+import { withPrismaPoolParams } from '../../lib/prisma-pool-url';
 
 // Load environment variables - try root .env first, then packages/database/.env
 dotenv.config({ path: '../../.env' });
@@ -22,6 +23,7 @@ const TIMETABLE_CACHE_TTL_MS = 2 * 60 * 1000;
 function getPrisma(): PrismaClient {
   if (!prisma) {
     prisma = new PrismaClient({
+      datasources: { db: { url: withPrismaPoolParams(process.env.DATABASE_URL) } },
       log: ['error', 'warn'],
     });
   }

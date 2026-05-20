@@ -76,6 +76,8 @@ import {
   ChatScreen,
   NewMessageScreen,
 } from "@/screens/messages";
+import MessagingArchivedScreen from "@/features/archived/messaging/MessagingArchivedScreen";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
   ClubsScreen,
   ClubAcademicsScreen,
@@ -291,23 +293,28 @@ const QuizStackNavigator = () => (
   </QuizStack.Navigator>
 );
 
-// Messages Stack Navigator
-const MessagesStackNavigator = () => (
-  <MessagesStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: "slide_from_right",
-      gestureEnabled: true,
-    }}
-  >
-    <MessagesStack.Screen
-      name="Conversations"
-      component={ConversationsScreen}
-    />
-    <MessagesStack.Screen name="Chat" component={ChatScreen} />
-    <MessagesStack.Screen name="NewMessage" component={NewMessageScreen} />
-  </MessagesStack.Navigator>
-);
+// Messages Stack Navigator (archived until Enterprise — see config/featureFlags.ts)
+const MessagesStackNavigator = () => {
+  if (!FEATURE_FLAGS.MESSAGING_ENABLED) {
+    return <MessagingArchivedScreen />;
+  }
+  return (
+    <MessagesStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+      }}
+    >
+      <MessagesStack.Screen
+        name="Conversations"
+        component={ConversationsScreen}
+      />
+      <MessagesStack.Screen name="Chat" component={ChatScreen} />
+      <MessagesStack.Screen name="NewMessage" component={NewMessageScreen} />
+    </MessagesStack.Navigator>
+  );
+};
 
 // Profile Stack Navigator
 const ProfileStackNavigator = () => (

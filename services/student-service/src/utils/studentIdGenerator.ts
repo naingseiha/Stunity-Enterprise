@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { getPooledPrismaClient } from '../../../lib/prisma-client';
 
-const prisma = new PrismaClient();
+const prisma = getPooledPrismaClient();
 
 /**
  * 🎯 Generate Unique Student ID (Multi-tenant version)
