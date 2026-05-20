@@ -57,6 +57,11 @@ const SETTINGS_STORAGE = 'stunity:monthly-report-print-settings:v1';
 type StoredPrintSettings = {
   certShowStamp?: boolean;
   certStyle?: string;
+  certThemeColor?: 'gold' | 'blue' | 'emerald' | 'ruby' | 'purple';
+  certSealStyle?: 'stamp' | 'gold_foil' | 'both' | 'none';
+  certSignatureStyle?: 'none' | 'cursive';
+  certTeacherName?: string;
+  certPrincipalName?: string;
   province?: string;
   examCenter?: string;
   roomNumber?: string;
@@ -163,6 +168,12 @@ export default function KhmerMonthlyReportPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
   const [certShowStamp, setCertShowStamp] = useState<boolean>(true);
 
+  // New Premium Designer States
+  const [certThemeColor, setCertThemeColor] = useState<'gold' | 'blue' | 'emerald' | 'ruby' | 'purple'>('gold');
+  const [certSealStyle, setCertSealStyle] = useState<'stamp' | 'gold_foil' | 'both' | 'none'>('stamp');
+  const [certSignatureStyle, setCertSignatureStyle] = useState<'none' | 'cursive'>('none');
+  const [certTeacherName, setCertTeacherName] = useState<string>('');
+
   // Recipient Manager States
   const [recipientTab, setRecipientTab] = useState<'class' | 'search' | 'custom'>('class');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -170,6 +181,33 @@ export default function KhmerMonthlyReportPage() {
   const [certSelectedClassId, setCertSelectedClassId] = useState<string>('');
   const [certSearchQuery, setCertSearchQuery] = useState<string>('');
   const debouncedCertSearchQuery = useDebounce(certSearchQuery, 500);
+
+  // Report Lookup Helper to auto-populate Rank and Average dynamically
+  const findStudentReportData = (studentId: string) => {
+    if (!reports || reports.length === 0) return null;
+    for (const r of reports) {
+      if (r.students) {
+        const match = r.students.find(st => st.studentId === studentId);
+        if (match) return match;
+      }
+    }
+    return null;
+  };
+
+  const getStudentInitialData = (s: any) => {
+    const reportData = findStudentReportData(s.studentId);
+    const rank = reportData ? String(reportData.rank) : '1';
+    const average = reportData ? reportData.average?.toFixed(2) || '9.00' : '9.00';
+    return {
+      id: s.studentId,
+      studentName: s.firstNameKhmer && s.lastNameKhmer ? `${s.lastNameKhmer} ${s.firstNameKhmer}` : (s.firstNameKhmer || s.firstName || ''),
+      gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
+      rank,
+      average,
+      className: s.class?.name || (reports.length > 0 ? reports[0].class?.name : '') || certClassName || '',
+      academicYear: selectedYearData?.name || certAcademicYear || '',
+    };
+  };
 
   const { students: certClassStudents, isLoading: isLoadingCertClassStudents } = useStudents(
     activeTab === 'certificate' && recipientTab === 'class' && certSelectedClassId
@@ -228,13 +266,29 @@ export default function KhmerMonthlyReportPage() {
       const parsed = JSON.parse(raw) as StoredPrintSettings;
       // Do NOT load province or examCenter from localStorage cache
       // so they are always dynamically loaded from the school profile
-      const { province, examCenter, certShowStamp: loadedCertShowStamp, certStyle: loadedCertStyle, ...rest } = parsed;
+      const {
+        province,
+        examCenter,
+        certShowStamp: loadedCertShowStamp,
+        certStyle: loadedCertStyle,
+        certThemeColor: loadedTheme,
+        certSealStyle: loadedSeal,
+        certSignatureStyle: loadedSig,
+        certTeacherName: loadedTeacher,
+        certPrincipalName: loadedPrincipal,
+        ...rest
+      } = parsed;
       setSettings((prev) => ({
         ...prev,
         ...rest,
       }));
       if (loadedCertShowStamp !== undefined) setCertShowStamp(loadedCertShowStamp);
       if (loadedCertStyle !== undefined) setCertStyle(loadedCertStyle as 'classic' | 'modern' | 'royal');
+      if (loadedTheme !== undefined) setCertThemeColor(loadedTheme as 'gold' | 'blue' | 'emerald' | 'ruby' | 'purple');
+      if (loadedSeal !== undefined) setCertSealStyle(loadedSeal as 'stamp' | 'gold_foil' | 'both' | 'none');
+      if (loadedSig !== undefined) setCertSignatureStyle(loadedSig as 'none' | 'cursive');
+      if (loadedTeacher !== undefined) setCertTeacherName(loadedTeacher);
+      if (loadedPrincipal !== undefined) setCertPrincipalName(loadedPrincipal);
     } catch {
       /* ignore */
     }
@@ -244,9 +298,28 @@ export default function KhmerMonthlyReportPage() {
     if (!school?.id || typeof window === 'undefined') return;
     // Do NOT save province or examCenter in localStorage cache
     const { province, examCenter, ...rest } = settings;
-    const payload: StoredPrintSettings = rest;
+    const payload: StoredPrintSettings = {
+      ...rest,
+      certShowStamp,
+      certStyle,
+      certThemeColor,
+      certSealStyle,
+      certSignatureStyle,
+      certTeacherName,
+      certPrincipalName,
+    };
     localStorage.setItem(`${SETTINGS_STORAGE}:${school.id}`, JSON.stringify(payload));
-  }, [school?.id, settings]);
+  }, [
+    school?.id,
+    settings,
+    certShowStamp,
+    certStyle,
+    certThemeColor,
+    certSealStyle,
+    certSignatureStyle,
+    certTeacherName,
+    certPrincipalName,
+  ]);
 
   useEffect(() => {
     if (selectedYear && allYears.some((year) => year.id === selectedYear)) return;
@@ -645,7 +718,10 @@ export default function KhmerMonthlyReportPage() {
     if (settings.reportDate) {
       setCertDate(prev => prev || settings.reportDate);
     }
-  }, [settings.principalName, settings.reportDate]);
+    if (settings.teacherName) {
+      setCertTeacherName(prev => prev || settings.teacherName);
+    }
+  }, [settings.principalName, settings.reportDate, settings.teacherName]);
 
   useEffect(() => {
     if (selectedYearData) {
@@ -809,15 +885,7 @@ export default function KhmerMonthlyReportPage() {
         const next = [...prev];
         filteredClassStudents.forEach(s => {
           if (!next.some(item => item.id === s.studentId)) {
-            next.push({
-              id: s.studentId,
-              studentName: s.studentName,
-              gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
-              rank: String(s.rank),
-              average: s.average?.toFixed(2) || '0.00',
-              className: certClassName,
-              academicYear: certAcademicYear
-            });
+            next.push(getStudentInitialData(s));
           }
         });
         return next;
@@ -828,22 +896,175 @@ export default function KhmerMonthlyReportPage() {
   const renderCertificate = (item: any, isPrint: boolean = false, idx: number = 0) => {
     const isModern = certStyle === 'modern';
     const isRoyal = certStyle === 'royal';
+
+    const themes = {
+      gold: {
+        primary: 'text-amber-600',
+        primaryDark: 'text-amber-800',
+        primaryBg: 'bg-amber-50',
+        border: 'border-amber-500',
+        borderLight: 'border-amber-300',
+        text: 'text-slate-800',
+        gradient: 'from-amber-500 to-orange-500',
+        glow: 'shadow-amber-100',
+        seal: 'text-amber-500',
+        ornament: 'text-amber-600',
+        fill: '#d97706',
+        subtleBg: 'bg-[radial-gradient(#ffffff_60%,#fdfbf7_100%)]',
+      },
+      blue: {
+        primary: 'text-blue-600',
+        primaryDark: 'text-blue-900',
+        primaryBg: 'bg-blue-50',
+        border: 'border-blue-700',
+        borderLight: 'border-blue-300',
+        text: 'text-slate-800',
+        gradient: 'from-blue-600 to-indigo-600',
+        glow: 'shadow-blue-100',
+        seal: 'text-blue-600',
+        ornament: 'text-blue-700',
+        fill: '#1d4ed8',
+        subtleBg: 'bg-[radial-gradient(#ffffff_60%,#f7f9fd_100%)]',
+      },
+      emerald: {
+        primary: 'text-emerald-600',
+        primaryDark: 'text-emerald-900',
+        primaryBg: 'bg-emerald-50',
+        border: 'border-emerald-700',
+        borderLight: 'border-emerald-300',
+        text: 'text-slate-800',
+        gradient: 'from-emerald-600 to-teal-600',
+        glow: 'shadow-emerald-100',
+        seal: 'text-emerald-600',
+        ornament: 'text-emerald-700',
+        fill: '#047857',
+        subtleBg: 'bg-[radial-gradient(#ffffff_60%,#f7fdfa_100%)]',
+      },
+      ruby: {
+        primary: 'text-rose-600',
+        primaryDark: 'text-rose-900',
+        primaryBg: 'bg-rose-50',
+        border: 'border-rose-700',
+        borderLight: 'border-rose-300',
+        text: 'text-slate-800',
+        gradient: 'from-rose-600 to-red-600',
+        glow: 'shadow-rose-100',
+        seal: 'text-rose-600',
+        ornament: 'text-rose-700',
+        fill: '#be123c',
+        subtleBg: 'bg-[radial-gradient(#ffffff_60%,#fdf7f8_100%)]',
+      },
+      purple: {
+        primary: 'text-purple-600',
+        primaryDark: 'text-purple-900',
+        primaryBg: 'bg-purple-50',
+        border: 'border-purple-700',
+        borderLight: 'border-purple-300',
+        text: 'text-slate-800',
+        gradient: 'from-purple-600 to-violet-600',
+        glow: 'shadow-purple-100',
+        seal: 'text-purple-600',
+        ornament: 'text-purple-700',
+        fill: '#7e22ce',
+        subtleBg: 'bg-[radial-gradient(#ffffff_60%,#faf7fd_100%)]',
+      }
+    };
+
+    const theme = themes[certThemeColor] || themes.gold;
     
     // Container Classes
-    let containerClass = "bg-white p-10 relative flex flex-col justify-between overflow-hidden ";
-    containerClass += isPrint ? "w-[297mm] h-[210mm] certificate-print-page " : "shadow-lg w-[297mm] h-[210mm] aspect-[1.414] ";
+    // For print: use inline style dimensions to ensure the browser print engine
+    // respects exact A4 landscape dimensions regardless of Tailwind purging.
+    const printInlineStyle: React.CSSProperties = isPrint
+      ? { width: '297mm', height: '210mm', minHeight: '210mm', maxHeight: '210mm', overflow: 'hidden', boxSizing: 'border-box' }
+      : {};
+    let containerClass = "bg-white relative flex flex-col justify-between overflow-hidden ";
+    containerClass += isPrint ? "certificate-print-page p-10 " : "shadow-xl p-10 aspect-[297/210] w-[297mm] h-[210mm] ";
     
     if (isModern) {
-      containerClass += "border-l-[16px] border-blue-700 rounded-r-3xl";
+      containerClass += `border-l-[20px] ${theme.border} rounded-r-3xl`;
     } else if (isRoyal) {
-      containerClass += "bg-slate-50 border-[2px] border-amber-300 rounded-sm outline outline-1 outline-offset-4 outline-amber-200";
+      containerClass += `bg-stone-50 border-[2px] ${theme.border} rounded-sm outline outline-1 outline-offset-4 outline-amber-300`;
     } else {
       // Classic
-      containerClass += "border-[16px] border-double border-amber-500 rounded-sm";
+      containerClass += `${theme.subtleBg} border-[16px] border-double ${theme.border} rounded-sm`;
     }
 
+    const CornerOrnament = ({ className }: { className?: string }) => (
+      <svg viewBox="0 0 100 100" className={`w-16 h-16 absolute pointer-events-none z-10 ${className}`} fill="none" stroke="currentColor" strokeWidth="1.2">
+        <path d="M 0 0 C 15 15, 20 40, 5 50 C 20 50, 40 40, 50 20 C 40 10, 15 15, 0 0" fill="currentColor" fillOpacity="0.05" />
+        <path d="M 8 8 L 60 8 L 8 60 Z" />
+        <circle cx="15" cy="15" r="3" fill="currentColor" />
+        <circle cx="35" cy="15" r="2.5" fill="currentColor" />
+        <circle cx="15" cy="35" r="2.5" fill="currentColor" />
+        <path d="M 15 15 Q 35 35 45 15 M 15 15 Q 35 35 15 45" />
+      </svg>
+    );
+
+    const GoldFoilBadge = ({ idx }: { idx: number }) => (
+      <div className="relative flex flex-col items-center justify-center pointer-events-none select-none z-20">
+        {/* Ribbon Tails */}
+        <div className="absolute top-6 flex gap-2 justify-center w-16 h-20 overflow-hidden">
+          <div className="w-4 bg-red-600/90 h-full origin-top rotate-12 skew-y-12 shadow-sm border-r border-red-700/20" />
+          <div className="w-4 bg-red-600/90 h-full origin-top -rotate-12 -skew-y-12 shadow-sm border-l border-red-700/20" />
+        </div>
+        {/* Shining Star Seal */}
+        <svg viewBox="0 0 100 100" className="w-24 h-24 text-amber-400 drop-shadow-md">
+          <defs>
+            <radialGradient id={`goldGrad_${idx}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fffbeb" />
+              <stop offset="30%" stopColor="#fbbf24" />
+              <stop offset="70%" stopColor="#d97706" />
+              <stop offset="100%" stopColor="#78350f" />
+            </radialGradient>
+          </defs>
+          {/* star points */}
+          <polygon 
+            points="50,2 53,15 65,7 64,20 76,15 72,28 83,26 76,38 86,40 76,50 86,60 76,62 83,74 72,72 76,85 64,80 65,93 53,85 50,98 47,85 35,93 36,80 24,85 28,72 17,74 24,62 14,60 24,50 14,40 24,38 17,26 28,28 24,15 36,20 35,7 47,15" 
+            fill={`url(#goldGrad_${idx})`} 
+            stroke="#b45309" 
+            strokeWidth="0.8"
+          />
+          <circle cx="50" cy="50" r="32" fill="none" stroke="#fef3c7" strokeWidth="1.2" strokeDasharray="3,1" />
+          <circle cx="50" cy="50" r="28" fill="none" stroke="#d97706" strokeWidth="0.6" />
+          <path id={`badgeTextPath_${idx}`} d="M 26 50 A 24 24 0 1 1 74 50" fill="none" />
+          <text className="font-bold fill-amber-950 text-[4.8px]" fill="#451a03" letterSpacing="0.1">
+            <textPath href={`#badgeTextPath_${idx}`} startOffset="50%" textAnchor="middle">
+              EXCELLENCE • វិសិដ្ឋភាព
+            </textPath>
+          </text>
+          {/* Center Crest */}
+          <g transform="translate(50, 50) scale(0.5)">
+            <path d="M 0,-15 L 4,-4 L 15,-4 L 7,3 L 10,14 L 0,8 L -10,14 L -7,3 L -15,-4 L -4,-4 Z" fill="#78350f" />
+            <circle cx="0" cy="0" r="1.8" fill="white" />
+          </g>
+        </svg>
+      </div>
+    );
+
     return (
-      <div className={containerClass} id={isPrint ? undefined : "certificate-print-area"}>
+      <div className={containerClass} style={printInlineStyle} id={isPrint ? undefined : "certificate-print-area"}>
+        {/* Dynamic signature and Khmer font loading */}
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Moul&family=Khmer&display=swap');
+          @font-face {
+            font-family: "Tacteing";
+            src: local("Tacteing"), local("TacteingA"), local("Tacteng"), local("TactengA");
+          }
+          .font-signature {
+            font-family: 'Alex Brush', cursive !important;
+          }
+          .font-moul {
+            font-family: 'Moul', "Metal", "Khmer OS Muol Light", "Khmer OS Muol", serif !important;
+          }
+          .font-khmer {
+            font-family: 'Khmer', "Khmer OS", "Khmer OS Battambang", sans-serif !important;
+          }
+          .font-tacteing {
+            font-family: 'Tacteing', 'Tacteng', 'tactieng', serif !important;
+          }
+        `}</style>
+
         {/* Background watermark/logo for Modern & Royal */}
         {(isModern || isRoyal) && schoolProfile?.logoUrl && (
            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
@@ -854,11 +1075,35 @@ export default function KhmerMonthlyReportPage() {
         {/* Ornaments for Classic */}
         {certStyle === 'classic' && (
           <>
-            <div className="absolute top-2 left-2 w-12 h-12 border-t-4 border-l-4 border-amber-600 rounded-tl-sm pointer-events-none" />
-            <div className="absolute top-2 right-2 w-12 h-12 border-t-4 border-r-4 border-amber-600 rounded-tr-sm pointer-events-none" />
-            <div className="absolute bottom-2 left-2 w-12 h-12 border-b-4 border-l-4 border-amber-600 rounded-bl-sm pointer-events-none" />
-            <div className="absolute bottom-2 right-2 w-12 h-12 border-b-4 border-r-4 border-amber-600 rounded-br-sm pointer-events-none" />
-            <div className="absolute inset-2 border border-amber-400 pointer-events-none" />
+            <CornerOrnament className="top-4 left-4 text-amber-600/80" />
+            <CornerOrnament className="top-4 right-4 rotate-90 text-amber-600/80" />
+            <CornerOrnament className="bottom-4 left-4 -rotate-90 text-amber-600/80" />
+            <CornerOrnament className="bottom-4 right-4 rotate-180 text-amber-600/80" />
+            <div className={`absolute inset-4 border-2 border-double ${theme.borderLight} pointer-events-none rounded`} />
+          </>
+        )}
+
+        {/* Geometric Accents for Modern */}
+        {isModern && (
+          <>
+            {/* Top-Right Triangle Accent */}
+            <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl ${theme.gradient} opacity-15 pointer-events-none z-0`} style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />
+            {/* Bottom-Left Triangle Accent */}
+            <div className={`absolute bottom-0 left-0 w-64 h-32 bg-gradient-to-tr ${theme.gradient} opacity-10 pointer-events-none z-0`} style={{ clipPath: 'polygon(0 100%, 0 0, 100% 100%)' }} />
+            {/* Elegant modern double thin border */}
+            <div className={`absolute inset-6 border border-slate-200 pointer-events-none rounded-2xl`} />
+          </>
+        )}
+
+        {/* Ornaments for Royal */}
+        {isRoyal && (
+          <>
+            <CornerOrnament className="top-5 left-5 text-amber-500/80" />
+            <CornerOrnament className="top-5 right-5 rotate-90 text-amber-500/80" />
+            <CornerOrnament className="bottom-5 left-5 -rotate-90 text-amber-500/80" />
+            <CornerOrnament className="bottom-5 right-5 rotate-180 text-amber-500/80" />
+            <div className={`absolute inset-4 border-2 ${theme.borderLight} pointer-events-none rounded`} />
+            <div className="absolute inset-5 border border-amber-400/30 pointer-events-none rounded" />
           </>
         )}
 
@@ -866,34 +1111,35 @@ export default function KhmerMonthlyReportPage() {
         <div className={`text-center font-khmer flex-1 flex flex-col justify-between py-2 relative z-10 ${isModern ? 'pl-8' : ''}`}>
           {/* Header */}
           <div className="space-y-1">
-            <h2 className={`text-lg font-bold tracking-wide font-moul ${isModern ? 'text-blue-900' : 'text-slate-800'}`}>ព្រះរាជាណាចក្រកម្ពុជា</h2>
-            <h3 className={`text-xs font-semibold font-moul ${isModern ? 'text-blue-700' : 'text-slate-700'}`}>ជាតិ សាសនា ព្រះមហាក្សត្រ</h3>
-            <div className="flex justify-center items-center gap-1 py-1">
-              <span className={`w-8 h-[1px] ${isModern ? 'bg-blue-300' : 'bg-amber-500'}`} />
-              <span className={`text-[8px] ${isModern ? 'text-blue-500' : 'text-amber-500'}`}>⚜</span>
-              <span className={`w-8 h-[1px] ${isModern ? 'bg-blue-300' : 'bg-amber-500'}`} />
+            <h2 className={`text-lg font-bold tracking-wide font-moul ${isModern ? theme.primaryDark : 'text-slate-800'}`}>ព្រះរាជាណាចក្រកម្ពុជា</h2>
+            <h3 className={`text-xs font-semibold font-moul ${isModern ? theme.primary : 'text-slate-700'}`}>ជាតិ សាសនា ព្រះមហាក្សត្រ</h3>
+            <div className="flex justify-center items-center py-1">
+              <span className={`font-tacteing text-[24px] leading-none ${isModern ? theme.primary : 'text-amber-500'}`}>3</span>
             </div>
           </div>
 
           {/* School Name */}
           <div className="mt-2 space-y-1">
-            <span className={`text-xs font-semibold tracking-wider font-moul ${isModern ? 'text-blue-800' : 'text-amber-700'}`}>{certSchoolName}</span>
+            <span className={`text-xs font-semibold tracking-wider font-moul ${isModern ? theme.primaryDark : 'text-amber-800'}`}>{certSchoolName}</span>
           </div>
 
           {/* Title */}
           <div className="my-2">
-            <h1 className={`text-4xl font-extrabold tracking-tight font-moul ${isModern ? 'text-blue-600' : 'text-amber-600'}`} style={!isModern ? { textShadow: '1px 1px 0px rgba(0,0,0,0.1)' } : {}}>
+            <h1 
+              className={`text-4xl font-extrabold tracking-tight font-moul ${isPrint ? '' : 'bg-clip-text text-transparent bg-gradient-to-r'} ${theme.gradient} drop-shadow-sm`} 
+              style={isPrint ? { color: theme.fill, WebkitTextFillColor: theme.fill } : { textShadow: '1px 1px 0px rgba(0,0,0,0.05)' }}
+            >
               {certTitle}
             </h1>
           </div>
 
           {/* Awardee */}
           <div className="my-2 space-y-1">
-            <p className="text-xs text-slate-500">ជូនចំពោះ / Awarded To</p>
+            <p className="text-xs text-slate-500 font-medium">ជូនចំពោះ / Awarded To</p>
             <h2 className={`text-2xl font-bold font-moul py-1 border-b border-dashed inline-block px-12 ${isModern ? 'text-blue-950 border-blue-200' : 'text-slate-900 border-amber-300'}`}>
               {item.studentName || 'ឈ្មោះសិស្ស'}
             </h2>
-            <p className="text-xs text-slate-600 font-semibold mt-1">
+            <p className="text-xs text-slate-600 font-semibold mt-1.5">
               ភេទ / Gender: <span className="text-slate-800">{item.gender === 'F' ? 'ស្រី' : 'ប្រុស'}</span>
               {item.className && <> · ថ្នាក់ / Class: <span className="text-slate-800">{item.className}</span></>}
               {item.academicYear && <> · ឆ្នាំសិក្សា / Year: <span className="text-slate-800">{toKhmerDigits(item.academicYear)}</span></>}
@@ -908,45 +1154,59 @@ export default function KhmerMonthlyReportPage() {
           </div>
 
           {/* Bottom Row - Signatures */}
-          <div className="mt-4 grid grid-cols-2 px-10 text-xs">
-            {/* Left: Teacher */}
-            <div className="text-center flex flex-col justify-end items-center space-y-12">
-              <div>
-                <p className="text-slate-500 italic text-[10px] opacity-0 select-none">{certDate}</p>
-                <p className="font-semibold text-slate-600 mt-1">រៀបចំដោយ</p>
+          <div className="mt-4 flex justify-between items-end px-10 text-xs">
+            {/* Left: Teacher Signature */}
+            <div className="text-center w-1/3 flex flex-col justify-end items-center relative min-h-[90px]">
+              <div className="mb-6 relative flex flex-col items-center">
+                {certSignatureStyle === 'cursive' && (
+                  <div className="absolute -top-7 text-[22px] font-signature text-blue-800 -rotate-6 tracking-wide select-none pointer-events-none whitespace-nowrap">
+                    {certTeacherName || settings.teacherName || 'K. Monikal'}
+                  </div>
+                )}
+                <p className="text-slate-400 italic text-[9px] select-none opacity-0">{certDate}</p>
+                <p className="font-semibold text-slate-500">រៀបចំដោយ</p>
               </div>
-              <div>
-                <p className="font-bold text-slate-800 border-t border-slate-200 pt-1 px-8">គ្រូបន្ទុកថ្នាក់</p>
-              </div>
+              <p className="font-bold text-slate-700 border-t border-slate-200 pt-1 px-6 w-full">គ្រូបន្ទុកថ្នាក់</p>
             </div>
 
-            {/* Right: Principal & Stamp */}
-            <div className="text-center flex flex-col justify-end items-center space-y-12">
-              <div>
-                <p className="text-slate-500 italic text-[10px]">{certDate}</p>
+            {/* Center: Gold Foil Badge (optional) */}
+            <div className="w-1/3 flex justify-center items-end min-h-[90px]">
+              {(certSealStyle === 'gold_foil' || certSealStyle === 'both') && (
+                <GoldFoilBadge idx={idx} />
+              )}
+            </div>
+
+            {/* Right: Principal Signature & Stamp */}
+            <div className="text-center w-1/3 flex flex-col justify-end items-center relative min-h-[90px]">
+              <div className="mb-6 relative flex flex-col items-center">
+                {certSignatureStyle === 'cursive' && (
+                  <div className="absolute -top-7 text-[22px] font-signature text-blue-800 -rotate-3 tracking-wide select-none pointer-events-none whitespace-nowrap">
+                    {certPrincipalName || settings.principalName || 'S. Vann'}
+                  </div>
+                )}
+                <p className="text-slate-500 italic text-[9px]">{certDate}</p>
                 <div className="relative mt-1">
-                  {certShowStamp && (
+                  {(certSealStyle === 'stamp' || certSealStyle === 'both') && certShowStamp && (
                     schoolProfile?.stampUrl ? (
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-32 h-32 pointer-events-none select-none z-20 rotate-12 opacity-95">
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-28 h-28 pointer-events-none select-none z-20 rotate-12 opacity-95">
                         <img src={resolveMediaUrl(schoolProfile.stampUrl)} alt="Stamp" className="w-full h-full object-contain" />
                       </div>
                     ) : (
-                      <svg viewBox="0 0 100 100" className="w-32 h-32 text-red-500/90 drop-shadow-sm select-none pointer-events-none z-20 rotate-12 opacity-85 absolute -top-6 left-1/2 -translate-x-1/2">
-                        <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="2.5" />
-                        <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3,2" />
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.8" />
-                        <path id={`topTextPath_${idx}`} d="M 12 50 A 38 38 0 0 1 88 50" fill="none" />
-                        <path id={`bottomTextPath_${idx}`} d="M 88 50 A 38 38 0 0 1 12 50" fill="none" />
-                        <text className="font-moul fill-current text-[5.5px]" fill="currentColor" letterSpacing="0.3">
+                      <svg viewBox="0 0 100 100" className="w-28 h-28 text-red-500/90 drop-shadow-sm select-none pointer-events-none z-20 rotate-12 opacity-85 absolute -top-12 left-1/2 -translate-x-1/2">
+                        <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="2" />
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="0.8" strokeDasharray="3,2" />
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                        <path id={`topTextPath_${idx}`} d="M 15 50 A 35 35 0 0 1 85 50" fill="none" />
+                        <path id={`bottomTextPath_${idx}`} d="M 85 50 A 35 35 0 0 1 15 50" fill="none" />
+                        <text className="font-moul fill-current text-[5px]" fill="currentColor" letterSpacing="0.2">
                           <textPath href={`#topTextPath_${idx}`} startOffset="50%" textAnchor="middle">
-                            {`សាលារៀន ${certSchoolName ? (certSchoolName.length > 25 ? certSchoolName.slice(0, 22) + '...' : certSchoolName) : ''}`}
+                            {`សាលារៀន ${certSchoolName ? (certSchoolName.length > 20 ? certSchoolName.slice(0, 18) + '...' : certSchoolName) : ''}`}
                           </textPath>
                         </text>
-                        <g transform="translate(50, 50) scale(0.6)">
+                        <g transform="translate(50, 50) scale(0.5)">
                           <path d="M 0,-15 L 4,-4 L 15,-4 L 7,3 L 10,14 L 0,8 L -10,14 L -7,3 L -15,-4 L -4,-4 Z" fill="currentColor" />
-                          <circle cx="0" cy="0" r="2.5" fill="white" />
                         </g>
-                        <text className="font-sans font-bold fill-current text-[5.5px]" fill="currentColor" letterSpacing="1">
+                        <text className="font-sans font-bold fill-current text-[5px]" fill="currentColor" letterSpacing="0.8">
                           <textPath href={`#bottomTextPath_${idx}`} startOffset="50%" textAnchor="middle">
                             {`★ ${schoolProfile?.province || 'សៀមរាប'} ★`}
                           </textPath>
@@ -954,12 +1214,10 @@ export default function KhmerMonthlyReportPage() {
                       </svg>
                     )
                   )}
-                  <p className="font-semibold text-slate-600">ហត្ថលេខា និងត្រា</p>
+                  <p className="font-semibold text-slate-500">ហត្ថលេខា និងត្រា</p>
                 </div>
               </div>
-              <div>
-                <p className={`font-bold font-moul mt-2 ${isModern ? 'text-blue-900' : 'text-slate-800'}`}>{certPrincipalName || 'នាយឈសាលា'}</p>
-              </div>
+              <p className={`font-bold font-moul mt-2 ${theme.primaryDark}`}>{certPrincipalName || 'នាយកសាលា'}</p>
             </div>
           </div>
         </div>
@@ -1469,15 +1727,7 @@ export default function KhmerMonthlyReportPage() {
                                     if (allSelected) {
                                       setPrintQueue(prev => prev.filter(item => !certClassStudents.some(cs => cs.studentId === item.id)));
                                     } else {
-                                      const toAdd = certClassStudents.filter(cs => !printQueue.some(item => item.id === cs.studentId)).map(s => ({
-                                        id: s.studentId,
-                                        studentName: s.firstNameKhmer && s.lastNameKhmer ? `${s.lastNameKhmer} ${s.firstNameKhmer}` : (s.firstNameKhmer || s.firstName || ''),
-                                        gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
-                                        rank: '0',
-                                        average: '0.00',
-                                        className: s.class?.name || '',
-                                        academicYear: selectedYearData?.name || '',
-                                      }));
+                                      const toAdd = certClassStudents.filter(cs => !printQueue.some(item => item.id === cs.studentId)).map(s => getStudentInitialData(s));
                                       setPrintQueue(prev => [...prev, ...toAdd]);
                                     }
                                   }}
@@ -1505,15 +1755,7 @@ export default function KhmerMonthlyReportPage() {
                                           if (isSelected) {
                                             setPrintQueue(prev => prev.filter(item => item.id !== s.studentId));
                                           } else {
-                                            setPrintQueue(prev => [...prev, {
-                                              id: s.studentId,
-                                              studentName,
-                                              gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
-                                              rank: '0',
-                                              average: '0.00',
-                                              className: s.class?.name || '',
-                                              academicYear: selectedYearData?.name || '',
-                                            }]);
+                                            setPrintQueue(prev => [...prev, getStudentInitialData(s)]);
                                           }
                                         }}
                                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs transition ${
@@ -1567,15 +1809,7 @@ export default function KhmerMonthlyReportPage() {
                                           if (isSelected) {
                                             setPrintQueue(prev => prev.filter(item => item.id !== s.studentId));
                                           } else {
-                                            setPrintQueue(prev => [...prev, {
-                                              id: s.studentId,
-                                              studentName,
-                                              gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
-                                              rank: '0',
-                                              average: '0.00',
-                                              className: s.class?.name || '',
-                                              academicYear: selectedYearData?.name || '',
-                                            }]);
+                                            setPrintQueue(prev => [...prev, getStudentInitialData(s)]);
                                           }
                                         }}
                                         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs transition ${
@@ -1660,30 +1894,87 @@ export default function KhmerMonthlyReportPage() {
                           {printQueue.length > 0 && (
                             <div className="mt-6 border-t border-slate-100 pt-4">
                               <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-xs font-semibold text-slate-700">Selected Students ({printQueue.length})</h4>
+                                <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                  <span>Selected Recipients ({printQueue.length})</span>
+                                  <span className="text-[10px] text-blue-500 font-semibold">(Interactive Editor)</span>
+                                </h4>
                                 <button
                                   type="button"
                                   onClick={() => setPrintQueue([])}
-                                  className="text-[10px] font-medium text-red-500 hover:text-red-700 transition"
+                                  className="text-[10px] font-bold text-red-500 hover:text-red-700 transition"
                                 >
                                   Clear All
                                 </button>
                               </div>
-                              <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                              <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                                 {printQueue.map((item, idx) => (
-                                  <div key={`${item.id}-${idx}`} className="flex items-center justify-between bg-slate-50 rounded-md px-3 py-1.5 text-xs">
-                                    <div className="flex flex-col">
-                                      <span className="font-medium text-slate-800">{item.studentName}</span>
-                                      <span className="text-[9px] text-slate-400">Class {item.className}</span>
+                                  <div key={`${item.id}-${idx}`} className="flex flex-col gap-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-xl p-3 text-xs transition">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex flex-col">
+                                        <input
+                                          type="text"
+                                          value={item.studentName}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setPrintQueue(prev => prev.map((pq, i) => i === idx ? { ...pq, studentName: val } : pq));
+                                          }}
+                                          className="font-bold text-slate-800 bg-transparent hover:bg-white focus:bg-white border-b border-transparent focus:border-blue-400 outline-none px-1 py-0.5 rounded transition min-w-[120px]"
+                                          placeholder="Student Name"
+                                        />
+                                        <span className="text-[9px] text-slate-400 px-1 mt-0.5">
+                                          Class {item.className || 'N/A'} • {item.gender === 'F' ? 'Female' : 'Male'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <select
+                                          value={item.gender}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setPrintQueue(prev => prev.map((pq, i) => i === idx ? { ...pq, gender: val } : pq));
+                                          }}
+                                          className="text-[10px] text-slate-500 border border-slate-200 bg-white rounded px-1 py-0.5 outline-none cursor-pointer"
+                                        >
+                                          <option value="M">M</option>
+                                          <option value="F">F</option>
+                                        </select>
+                                        <button
+                                          type="button"
+                                          onClick={() => setPrintQueue(prev => prev.filter((_, i) => i !== idx))}
+                                          className="text-slate-400 hover:text-red-500 transition p-1"
+                                          title="Remove"
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setPrintQueue(prev => prev.filter((_, i) => i !== idx))}
-                                      className="text-slate-400 hover:text-red-500 transition p-1"
-                                      title="Remove"
-                                    >
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                                    </button>
+                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                      <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-200 px-2 py-1 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100 transition">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase shrink-0">Rank:</span>
+                                        <input
+                                          type="text"
+                                          value={item.rank}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setPrintQueue(prev => prev.map((pq, i) => i === idx ? { ...pq, rank: val } : pq));
+                                          }}
+                                          className="w-full bg-transparent font-bold text-slate-700 focus:outline-none"
+                                          placeholder="1"
+                                        />
+                                      </div>
+                                      <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-200 px-2 py-1 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-100 transition">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase shrink-0">Avg:</span>
+                                        <input
+                                          type="text"
+                                          value={item.average}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setPrintQueue(prev => prev.map((pq, i) => i === idx ? { ...pq, average: val } : pq));
+                                          }}
+                                          className="w-full bg-transparent font-bold text-slate-700 focus:outline-none"
+                                          placeholder="9.50"
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -1691,7 +1982,163 @@ export default function KhmerMonthlyReportPage() {
                           )}
                         </div>
 
-                        {/* Row 3: Details & Customization */}
+                        {/* Row 3: Premium Design */}
+                        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-5">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <Settings2 className="h-4 w-4 text-slate-400" />
+                            3. Premium Design (រចនាប័ទ្ម)
+                          </h3>
+
+                          {/* Layout Style Option */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-500 block">Layout Style (ទម្រង់រចនា)</span>
+                            <div className="grid grid-cols-3 gap-2">
+                              {([
+                                { id: 'classic', title: 'Classic', desc: 'Traditional borders' },
+                                { id: 'modern', title: 'Modern', desc: 'Asymmetric vector' },
+                                { id: 'royal', title: 'Royal', desc: 'Gold-foiled filigree' },
+                              ] as const).map((style) => (
+                                <button
+                                  key={style.id}
+                                  type="button"
+                                  onClick={() => setCertStyle(style.id)}
+                                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 p-2.5 transition ${
+                                    certStyle === style.id
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-slate-100 bg-white hover:border-blue-200'
+                                  }`}
+                                >
+                                  <Layout className={`h-4 w-4 ${certStyle === style.id ? 'text-blue-600' : 'text-slate-400'}`} />
+                                  <span className={`text-[10px] font-bold ${certStyle === style.id ? 'text-blue-700' : 'text-slate-700'}`}>{style.title}</span>
+                                  <span className="text-[8px] text-slate-400">{style.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Theme Color Picker */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-500 block">Theme Color (ពណ៌ចម្បង)</span>
+                            <div className="flex flex-wrap gap-2.5">
+                              {([
+                                { id: 'gold', name: 'Prestige Gold', bg: 'bg-[#fbbf24]', border: 'border-[#fbbf24]' },
+                                { id: 'blue', name: 'Royal Blue', bg: 'bg-[#2563eb]', border: 'border-[#2563eb]' },
+                                { id: 'emerald', name: 'Emerald Green', bg: 'bg-[#059669]', border: 'border-[#059669]' },
+                                { id: 'ruby', name: 'Ruby Red', bg: 'bg-[#dc2626]', border: 'border-[#dc2626]' },
+                                { id: 'purple', name: 'Royal Purple', bg: 'bg-[#7e22ce]', border: 'border-[#7e22ce]' },
+                              ] as const).map((color) => (
+                                <button
+                                  key={color.id}
+                                  type="button"
+                                  onClick={() => setCertThemeColor(color.id)}
+                                  className={`group relative flex items-center justify-center h-8 w-8 rounded-full border-2 transition ${
+                                    certThemeColor === color.id
+                                      ? `${color.border} scale-110 shadow-md ring-2 ring-slate-100`
+                                      : 'border-transparent hover:scale-105'
+                                  }`}
+                                  title={color.name}
+                                >
+                                  <span className={`h-6 w-6 rounded-full ${color.bg} flex items-center justify-center text-white transition-transform ${certThemeColor === color.id ? 'scale-100' : 'scale-90'}`}>
+                                    {certThemeColor === color.id && <Check className="h-3 w-3 stroke-[3]" />}
+                                  </span>
+                                  {/* Tooltip */}
+                                  <span className="absolute bottom-full mb-1.5 hidden group-hover:block bg-slate-950 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap z-50">
+                                    {color.name}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Seal / Badge Selector */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-500 block">Official Seal (ត្រា និងផ្លាកមាស)</span>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {([
+                                { id: 'stamp', label: 'Stamp Only', sub: 'ត្រាក្រហម' },
+                                { id: 'gold_foil', label: 'Gold Foil', sub: 'ផ្លាកមាស' },
+                                { id: 'both', label: 'Both', sub: 'ទាំងពីរ' },
+                                { id: 'none', label: 'None', sub: 'គ្មាន' },
+                              ] as const).map((seal) => (
+                                <button
+                                  key={seal.id}
+                                  type="button"
+                                  onClick={() => setCertSealStyle(seal.id)}
+                                  className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 py-1.5 px-1 transition ${
+                                    certSealStyle === seal.id
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-slate-100 bg-white hover:border-blue-200'
+                                  }`}
+                                >
+                                  <span className={`text-[10px] font-bold ${certSealStyle === seal.id ? 'text-blue-700' : 'text-slate-700'}`}>{seal.label}</span>
+                                  <span className={`text-[8px] ${certSealStyle === seal.id ? 'text-blue-500' : 'text-slate-400'}`}>{seal.sub}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Handwritten Signature Options */}
+                          <div className="space-y-3 border-t border-slate-100 pt-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-xs font-semibold text-slate-700 block">Digital Cursive Signatures</span>
+                                <span className="text-[10px] text-slate-400 block">Render elegant digital handwritten signatures</span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={certSignatureStyle === 'cursive'}
+                                  onChange={(e) => setCertSignatureStyle(e.target.checked ? 'cursive' : 'none')}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+
+                            {certSignatureStyle === 'cursive' && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 p-3 border border-slate-100 rounded-xl">
+                                <label className="block">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase">Class Teacher Signature Name</span>
+                                  <input
+                                    type="text"
+                                    value={certTeacherName}
+                                    onChange={(e) => setCertTeacherName(e.target.value)}
+                                    placeholder="e.g. K. Monikal"
+                                    className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold outline-none focus:border-blue-400"
+                                  />
+                                </label>
+                                <label className="block">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase">Principal Signature Name</span>
+                                  <input
+                                    type="text"
+                                    value={certPrincipalName}
+                                    onChange={(e) => setCertPrincipalName(e.target.value)}
+                                    placeholder="e.g. S. Vann"
+                                    className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold outline-none focus:border-blue-400"
+                                  />
+                                </label>
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                              <div>
+                                <span className="text-xs font-semibold text-slate-700 block">Show School Stamp (បង្ហាញត្រា)</span>
+                                <span className="text-[10px] text-slate-400 block">Toggle the school stamp/seal visibility on the certificate</span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={certShowStamp}
+                                  onChange={(e) => setCertShowStamp(e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Row 4: Details & Customization */}
                         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
                           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                             4. Certificate Details (ព័ត៌មានលម្អិត)
@@ -2238,79 +2685,136 @@ export default function KhmerMonthlyReportPage() {
       
       {/* Certificate Preview Modal */}
       {isPreviewOpen && activeTab === 'certificate' && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-200">
-          {/* Header */}
-          <div className="flex items-center justify-between bg-slate-900 px-6 py-4 border-b border-slate-800 shadow-xl">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950 print:hidden">
+          {/* Top Header Bar */}
+          <div className="flex items-center justify-between bg-slate-900 px-4 py-3 border-b border-slate-800 shadow-xl shrink-0">
+            {/* Left: Title + Count */}
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
                 <Award className="h-4 w-4 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Certificate Preview & Print</h3>
-                <p className="text-xs text-slate-400 font-medium">
-                  {activePrintList.length} {activePrintList.length === 1 ? 'certificate' : 'certificates'} selected
+                <h3 className="text-sm font-bold text-white leading-tight">Certificate Preview</h3>
+                <p className="text-[11px] text-slate-400">
+                  {activePrintList.length} {activePrintList.length === 1 ? 'certificate' : 'certificates'} · {currentPreviewStudent?.studentName || ''}
                 </p>
               </div>
             </div>
-            
-            <div className="flex flex-col gap-1 items-end sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
-                <button
-                  type="button"
-                  disabled={previewIndex <= 0}
-                  onClick={() => setPreviewIndex(prev => prev - 1)}
-                  className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 rounded transition"
-                >
-                  <Search className="h-4 w-4" /> {/* Just using Search as a placeholder icon for Prev */}
-                </button>
-                <span className="text-xs font-bold text-white min-w-[3rem] text-center">
-                  {previewIndex + 1} / {activePrintList.length}
-                </span>
-                <button
-                  type="button"
-                  disabled={previewIndex >= activePrintList.length - 1}
-                  onClick={() => setPreviewIndex(prev => prev + 1)}
-                  className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 rounded transition"
-                >
-                  <Search className="h-4 w-4" /> {/* Placeholder for Next */}
-                </button>
+
+            {/* Center: Page Navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={previewIndex <= 0}
+                onClick={() => setPreviewIndex(prev => prev - 1)}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-blue-500 hover:bg-slate-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Prev
+              </button>
+              <span className="min-w-[4rem] text-center text-xs font-bold text-white bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5">
+                {previewIndex + 1} / {activePrintList.length}
+              </span>
+              <button
+                type="button"
+                disabled={previewIndex >= activePrintList.length - 1}
+                onClick={() => setPreviewIndex(prev => prev + 1)}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-blue-500 hover:bg-slate-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              >
+                Next
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Right: Reminder + Print + Close */}
+            <div className="flex items-center gap-2">
+              <div className="hidden lg:flex flex-col text-right text-[10px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded px-2.5 py-1">
+                <span className="font-bold">⚠️ Enable "Background graphics" & Margins: None</span>
               </div>
-
-              <div className="h-6 w-px bg-slate-700 hidden sm:block" />
-
               <button
                 type="button"
                 onClick={() => setTimeout(() => window.print(), 500)}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-500 active:scale-95"
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-500 active:scale-95"
               >
-                <Printer className="h-4 w-4" />
-                <span className="hidden sm:inline">Print All ({activePrintList.length})</span>
+                <Printer className="h-3.5 w-3.5" />
+                <span>Print All ({activePrintList.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(false)}
                 className="rounded-lg bg-slate-800 p-2 text-slate-400 transition hover:bg-slate-700 hover:text-white active:scale-95"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          {/* Modal Body */}
-          <div className="flex-1 overflow-auto bg-slate-950 p-8 flex items-center justify-center print:hidden">
-             {renderCertificate(currentPreviewStudent, false, previewIndex)}
+          {/* Certificate Preview Body — scale to fit */}
+          <div className="flex-1 overflow-hidden relative flex items-center justify-center bg-slate-950 print:hidden">
+            {/* Prev overlay button */}
+            {previewIndex > 0 && (
+              <button
+                type="button"
+                onClick={() => setPreviewIndex(prev => prev - 1)}
+                className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 shadow-xl transition hover:bg-slate-700 hover:text-white hover:border-blue-500 active:scale-95"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Certificate scaled to fit */}
+            <div
+              style={{
+                transform: 'scale(var(--cert-scale, 0.72))',
+                transformOrigin: 'center center',
+                width: '297mm',
+                height: '210mm',
+                flexShrink: 0,
+              }}
+              className="[--cert-scale:0.60] sm:[--cert-scale:0.65] md:[--cert-scale:0.70] lg:[--cert-scale:0.75] xl:[--cert-scale:0.82] 2xl:[--cert-scale:0.90] shadow-2xl"
+            >
+              {renderCertificate(currentPreviewStudent, false, previewIndex)}
+            </div>
+
+            {/* Next overlay button */}
+            {previewIndex < activePrintList.length - 1 && (
+              <button
+                type="button"
+                onClick={() => setPreviewIndex(prev => prev + 1)}
+                className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/90 border border-slate-700 text-slate-300 shadow-xl transition hover:bg-slate-700 hover:text-white hover:border-blue-500 active:scale-95"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Dot navigation indicators */}
+            {activePrintList.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                {activePrintList.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setPreviewIndex(i)}
+                    className={`rounded-full transition-all ${
+                      i === previewIndex
+                        ? 'w-5 h-2 bg-blue-400'
+                        : 'w-2 h-2 bg-slate-600 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Hidden Print Container specifically targeted for media query print */}
       {activeTab === 'certificate' && (
-        <div className="hidden print:block certificate-print-page w-full">
+        <div className="hidden print:block">
           {activePrintList.map((item, idx) => (
-            <div 
+            <div
               key={`cert-print-${idx}`}
-              style={{ pageBreakAfter: idx < activePrintList.length - 1 ? 'always' : 'auto', pageBreakInside: 'avoid' }}
-              className="w-full flex items-center justify-center overflow-hidden"
+              className="cert-print-wrapper"
             >
               {renderCertificate(item, true, idx)}
             </div>
@@ -2319,31 +2823,89 @@ export default function KhmerMonthlyReportPage() {
       )}
 
       <style>{`
-        @media print {
-          body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          
-          /* Hide all UI elements */
-          nav, aside, .UnifiedNavigation, .PageSkeleton, .print\\:hidden { 
-            display: none !important; 
-          }
-          
-          /* Reset layout wrappers */
-          .lg\\:ml-64 { margin-left: 0 !important; width: 100% !important; }
-          main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        @page {
+          size: A4 landscape;
+          margin: 0;
+        }
 
-          /* Hide UI-only sections like settings and hero */
-          section, .mx-auto.max-w-2xl {
+        @media print {
+          *,
+          *::before,
+          *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          /* Do NOT set fixed height on html/body — that cuts off pages 2+ */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            width: 297mm !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+
+          /* Hide ALL UI chrome and main layout wrappers completely so they don't occupy print space */
+          nav,
+          aside,
+          header,
+          footer,
+          .lg\\:ml-64,
+          main,
+          [class*="UnifiedNavigation"],
+          [class*="PageSkeleton"],
+          section,
+          .print\\:hidden {
             display: none !important;
           }
 
-          /* Specifically show the preview container even if inside hidden parents (overriding display: none on parents is hard, so we ensure the path is clear) */
-          /* But since we only hide 'section' and 'mx-auto.max-w-2xl', and the report is in a plain 'div', it should stay visible. */
-          
-          .khmer-report-preview-container {
+          /* Reset root layout wrapper on print */
+          body > div {
+            height: auto !important;
+            min-height: unset !important;
+            overflow: visible !important;
+            background: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          /* Each certificate wrapper is exactly one A4 landscape page */
+          .cert-print-wrapper {
             display: block !important;
+            width: 297mm !important;
+            height: 210mm !important;
+            overflow: hidden !important;
             margin: 0 !important;
             padding: 0 !important;
-            width: 100% !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-sizing: border-box !important;
+          }
+
+          .cert-print-wrapper:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+
+          /* Certificate fill + force backgrounds */
+          .certificate-print-page {
+            width: 297mm !important;
+            height: 210mm !important;
+            max-height: 210mm !important;
+            min-height: 210mm !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 2.5rem !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
