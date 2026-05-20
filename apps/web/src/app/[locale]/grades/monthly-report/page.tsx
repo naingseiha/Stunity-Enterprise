@@ -1070,7 +1070,7 @@ export default function KhmerMonthlyReportPage() {
                   </div>
 
                   {/* Output options */}
-                  {activeTab !== 'transcript' && (
+                  {activeTab !== 'transcript' && activeTab !== 'certificate' && (
                     <div className="mt-6 space-y-1.5">
                       <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {t('formatLabel')}
@@ -1652,6 +1652,40 @@ export default function KhmerMonthlyReportPage() {
                                     className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold outline-none focus:border-blue-400"
                                   />
                                 </label>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected Students List */}
+                          {printQueue.length > 0 && (
+                            <div className="mt-6 border-t border-slate-100 pt-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-xs font-semibold text-slate-700">Selected Students ({printQueue.length})</h4>
+                                <button
+                                  type="button"
+                                  onClick={() => setPrintQueue([])}
+                                  className="text-[10px] font-medium text-red-500 hover:text-red-700 transition"
+                                >
+                                  Clear All
+                                </button>
+                              </div>
+                              <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                                {printQueue.map((item, idx) => (
+                                  <div key={`${item.id}-${idx}`} className="flex items-center justify-between bg-slate-50 rounded-md px-3 py-1.5 text-xs">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-slate-800">{item.studentName}</span>
+                                      <span className="text-[9px] text-slate-400">Class {item.className}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPrintQueue(prev => prev.filter((_, i) => i !== idx))}
+                                      className="text-slate-400 hover:text-red-500 transition p-1"
+                                      title="Remove"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                    </button>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           )}
