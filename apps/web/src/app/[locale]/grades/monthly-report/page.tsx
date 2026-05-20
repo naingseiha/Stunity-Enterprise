@@ -37,6 +37,8 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import MonthlyReportPrint from '@/components/reports/MonthlyReportPrint';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
+import { useStudents } from '@/hooks/useStudents';
+import { useDebounce } from '@/hooks/useDebounce';
 import { TokenManager } from '@/lib/api/auth';
 import { schoolAPI } from '@/lib/api/school';
 import { gradeAPI, type KhmerMonthlyReportData, type MonthlyReportFormat } from '@/lib/api/grades';
@@ -165,6 +167,21 @@ export default function KhmerMonthlyReportPage() {
   const [recipientTab, setRecipientTab] = useState<'class' | 'search' | 'custom'>('class');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [classFilterQuery, setClassFilterQuery] = useState<string>('');
+  const [certSelectedClassId, setCertSelectedClassId] = useState<string>('');
+  const [certSearchQuery, setCertSearchQuery] = useState<string>('');
+  const debouncedCertSearchQuery = useDebounce(certSearchQuery, 500);
+
+  const { students: certClassStudents, isLoading: isLoadingCertClassStudents } = useStudents(
+    activeTab === 'certificate' && recipientTab === 'class' && certSelectedClassId
+      ? { classId: certSelectedClassId, limit: 100 }
+      : undefined
+  );
+
+  const { students: certSearchStudents, isLoading: isLoadingCertSearchStudents } = useStudents(
+    activeTab === 'certificate' && recipientTab === 'search' && debouncedCertSearchQuery.length >= 2
+      ? { search: debouncedCertSearchQuery, limit: 50 }
+      : undefined
+  );
   const [printQueue, setPrintQueue] = useState<any[]>([]);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const [sidebarWidth, setSidebarWidth] = useState(280);
@@ -1433,31 +1450,53 @@ export default function KhmerMonthlyReportPage() {
                             <div className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="relative flex-1">
-                                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                  <input
-                                    type="text"
-                                    placeholder="Filter students..."
-                                    value={classFilterQuery}
-                                    onChange={e => setClassFilterQuery(e.target.value)}
-                                    className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs font-medium text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                                  />
+                                  <select
+                                    value={certSelectedClassId}
+                                    onChange={e => setCertSelectedClassId(e.target.value)}
+                                    className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                  >
+                                    <option value="">Select a class...</option>
+                                    {classes.map(c => (
+                                      <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={toggleSelectAllClass}
+                                  onClick={() => {
+                                    if (!certClassStudents || certClassStudents.length === 0) return;
+                                    const allSelected = certClassStudents.every(s => printQueue.some(item => item.id === s.studentId));
+                                    if (allSelected) {
+                                      setPrintQueue(prev => prev.filter(item => !certClassStudents.some(cs => cs.studentId === item.id)));
+                                    } else {
+                                      const toAdd = certClassStudents.filter(cs => !printQueue.some(item => item.id === cs.studentId)).map(s => ({
+                                        id: s.studentId,
+                                        studentName: s.firstNameKhmer && s.lastNameKhmer ? `${s.lastNameKhmer} ${s.firstNameKhmer}` : (s.firstNameKhmer || s.firstName || ''),
+                                        gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
+                                        rank: '0',
+                                        average: '0.00',
+                                        className: s.class?.name || '',
+                                        academicYear: selectedYearData?.name || '',
+                                      }));
+                                      setPrintQueue(prev => [...prev, ...toAdd]);
+                                    }
+                                  }}
                                   className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                                 >
-                                  {isAllSelected ? 'Deselect All' : 'Select All'}
+                                  {certClassStudents && certClassStudents.length > 0 && certClassStudents.every(s => printQueue.some(item => item.id === s.studentId)) ? 'Deselect All' : 'Select All'}
                                 </button>
                               </div>
                               <div className="max-h-48 space-y-1 overflow-y-auto">
-                                {filteredClassStudents.length === 0 ? (
-                                  <div className="py-6 text-center text-xs text-slate-400">
-                                    {sortedStudents.length === 0 ? 'Generate a report first to see students' : 'No students match your filter'}
-                                  </div>
+                                {isLoadingCertClassStudents ? (
+                                  <div className="py-6 text-center text-xs text-slate-400">Loading students...</div>
+                                ) : !certSelectedClassId ? (
+                                  <div className="py-6 text-center text-xs text-slate-400">Please select a class</div>
+                                ) : !certClassStudents || certClassStudents.length === 0 ? (
+                                  <div className="py-6 text-center text-xs text-slate-400">No students in this class</div>
                                 ) : (
-                                  filteredClassStudents.map(s => {
+                                  certClassStudents.map(s => {
                                     const isSelected = printQueue.some(item => item.id === s.studentId);
+                                    const studentName = s.firstNameKhmer && s.lastNameKhmer ? `${s.lastNameKhmer} ${s.firstNameKhmer}` : (s.firstNameKhmer || s.firstName || '');
                                     return (
                                       <button
                                         key={s.studentId}
@@ -1468,11 +1507,11 @@ export default function KhmerMonthlyReportPage() {
                                           } else {
                                             setPrintQueue(prev => [...prev, {
                                               id: s.studentId,
-                                              studentName: s.studentName,
+                                              studentName,
                                               gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
-                                              rank: String(s.rank),
-                                              average: s.average?.toFixed(2) || '0.00',
-                                              className: s.className || '',
+                                              rank: '0',
+                                              average: '0.00',
+                                              className: s.class?.name || '',
                                               academicYear: selectedYearData?.name || '',
                                             }]);
                                           }
@@ -1486,8 +1525,8 @@ export default function KhmerMonthlyReportPage() {
                                         }`}>
                                           {isSelected && <span className="text-white text-[8px] font-black">✓</span>}
                                         </span>
-                                        <span className="font-semibold flex-1">{s.studentName}</span>
-                                        <span className="text-slate-400">#{s.rank} · {s.average?.toFixed(2)}</span>
+                                        <span className="font-semibold flex-1">{studentName}</span>
+                                        <span className="text-slate-400 text-[10px]">{s.class?.name}</span>
                                       </button>
                                     );
                                   })
@@ -1503,18 +1542,23 @@ export default function KhmerMonthlyReportPage() {
                                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                 <input
                                   type="text"
-                                  placeholder="Search student name..."
-                                  value={searchQuery}
-                                  onChange={e => setSearchQuery(e.target.value)}
+                                  placeholder="Search all students..."
+                                  value={certSearchQuery}
+                                  onChange={e => setCertSearchQuery(e.target.value)}
                                   className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs font-medium text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                 />
                               </div>
                               <div className="max-h-48 space-y-1 overflow-y-auto">
-                                {sortedStudents
-                                  .filter(s => s.studentName.toLowerCase().includes(searchQuery.toLowerCase()))
-                                  .slice(0, 30)
-                                  .map(s => {
+                                {isLoadingCertSearchStudents ? (
+                                  <div className="py-6 text-center text-xs text-slate-400">Searching...</div>
+                                ) : debouncedCertSearchQuery.length < 2 ? (
+                                  <div className="py-6 text-center text-xs text-slate-400">Type at least 2 characters to search</div>
+                                ) : !certSearchStudents || certSearchStudents.length === 0 ? (
+                                  <div className="py-6 text-center text-xs text-slate-400">No students found</div>
+                                ) : (
+                                  certSearchStudents.map(s => {
                                     const isSelected = printQueue.some(item => item.id === s.studentId);
+                                    const studentName = s.firstNameKhmer && s.lastNameKhmer ? `${s.lastNameKhmer} ${s.firstNameKhmer}` : (s.firstNameKhmer || s.firstName || '');
                                     return (
                                       <button
                                         key={s.studentId}
@@ -1525,11 +1569,11 @@ export default function KhmerMonthlyReportPage() {
                                           } else {
                                             setPrintQueue(prev => [...prev, {
                                               id: s.studentId,
-                                              studentName: s.studentName,
+                                              studentName,
                                               gender: s.gender === 'FEMALE' || s.gender === 'F' ? 'F' : 'M',
-                                              rank: String(s.rank),
-                                              average: s.average?.toFixed(2) || '0.00',
-                                              className: s.className || '',
+                                              rank: '0',
+                                              average: '0.00',
+                                              className: s.class?.name || '',
                                               academicYear: selectedYearData?.name || '',
                                             }]);
                                           }
@@ -1543,12 +1587,12 @@ export default function KhmerMonthlyReportPage() {
                                         }`}>
                                           {isSelected && <span className="text-white text-[8px] font-black">✓</span>}
                                         </span>
-                                        <span className="font-semibold flex-1">{s.studentName}</span>
-                                        <span className="text-slate-400 text-[10px]">{s.className} · #{s.rank}</span>
+                                        <span className="font-semibold flex-1">{studentName}</span>
+                                        <span className="text-slate-400 text-[10px]">{s.class?.name}</span>
                                       </button>
                                     );
-                                  })}
-                                {searchQuery.length === 0 && <p className="py-4 text-center text-xs text-slate-400">Type a name to search across the school</p>}
+                                  })
+                                )}
                               </div>
                             </div>
                           )}
@@ -2121,7 +2165,7 @@ export default function KhmerMonthlyReportPage() {
       </div>
 
       {/* Sticky action bar */}
-      {showStickyBar && (
+      {showStickyBar && activeTab !== 'certificate' && (
         <div className="pointer-events-none fixed bottom-6 right-6 z-30 print:hidden">
           <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-blue-100 bg-white p-1 shadow-lg shadow-blue-950/10">
             <button
