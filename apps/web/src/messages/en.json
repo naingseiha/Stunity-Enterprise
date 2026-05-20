@@ -6285,7 +6285,7 @@
     "major2": "Major 2"
   },
   "monthlyReport": {
-    "nav": "Reports",
+    "nav": "Report (របាយការណ៍)",
     "eyebrow": "Reports Dashboard",
     "title": "School Reports",
     "description": "Generate MOEYS-style score sheets. School model: {model}.",
