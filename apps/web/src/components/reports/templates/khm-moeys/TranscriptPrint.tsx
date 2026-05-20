@@ -160,6 +160,9 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         }
 
         .transcript-photo-placeholder {
+          position: absolute;
+          top: 17mm;
+          right: 10mm;
           width: 80px;
           height: 100px;
           border: 1px solid #94a3b8;
@@ -171,6 +174,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
           border-radius: 4px;
           box-shadow: inset 0 0 4px rgba(0,0,0,0.05);
           overflow: hidden;
+          z-index: 10;
         }
 
         .transcript-title-section {
@@ -203,6 +207,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         .student-meta-table {
           width: 100%;
           border-collapse: collapse;
+          margin-top: 5mm;
           margin-bottom: 3mm;
           font-size: 11px;
         }
@@ -239,7 +244,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
 
         .transcript-results-table th, .transcript-results-table td {
           border: 1px solid #000;
-          padding: 2.5px 4px;
+          padding: 6px 4px;
           text-align: center;
           vertical-align: middle;
         }
@@ -274,7 +279,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
 
         .attendance-table th, .attendance-table td {
           border: 1px solid #000;
-          padding: 3px 6px;
+          padding: 6px 6px;
           text-align: center;
         }
 
@@ -357,7 +362,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         // Calculate dynamic properties for student
         const classSize = report.students.length;
         const femaleCount = report.students.filter(
-          (s) => s.gender === 'F' || s.gender === 'female' || s.gender === 'ស្រី'
+          (s) => s.gender?.toUpperCase() === 'FEMALE' || s.gender?.toUpperCase() === 'F' || s.gender === 'ស្រី'
         ).length;
 
         const totalStudentsText = `ចំនួនសិស្សក្នុងថ្នាក់ ${toKhmerNumerals(classSize)} នាក់ ស្រី ${toKhmerNumerals(femaleCount)} នាក់`;
@@ -376,13 +381,18 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         // Formulated suggestion bullet
         const hasPassed = student.average >= report.rules.passingAverage;
         let suggestionText = '';
-        if (student.average >= 80) {
+        if (student.average >= 40) {
           suggestionText = 'លទ្ធផលសិក្សាល្អប្រសើរណាស់ គប្បីបន្តការខិតខំប្រឹងប្រែងនេះតទៅទៀត។';
-        } else if (student.average >= 50) {
+        } else if (student.average >= 25) {
           suggestionText = 'ការសិក្សាទទួលបានលទ្ធផលល្អមធ្យម ត្រូវខិតខំរៀនសូត្របន្ថែមទៀត។';
         } else {
           suggestionText = 'លទ្ធផលសិក្សានៅខ្សោយ ត្រូវយកចិត្តទុកដាក់ខ្ពស់លើការសិក្សាឡើងវិញ។';
         }
+
+        const rawClassName = report.class?.name || '';
+        const hasClassPrefix = rawClassName.includes('ថ្នាក់');
+        const classDisplay = hasClassPrefix ? rawClassName : `ថ្នាក់ទី ${rawClassName || report.grade}`;
+        const formattedClass = toKhmerNumerals(classDisplay);
 
         return (
           <div className="transcript-page" key={student.studentId}>
@@ -400,24 +410,22 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
               </div>
 
               {/* Royal emblem text */}
-              <div className="transcript-header-right">
+              <div className="transcript-header-right" style={{ marginRight: '90px' }}>
                 <p className="transcript-kingdom-text">ព្រះរាជាណាចក្រកម្ពុជា</p>
                 <p className="transcript-kingdom-text">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
                 <p className="transcript-symbol-3">3</p>
               </div>
 
               {/* Photo section */}
-              <div style={{ paddingLeft: '8px' }}>
-                <div className="transcript-photo-placeholder">
-                  <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold' }}>រូបថត ៣x៤</span>
-                </div>
+              <div className="transcript-photo-placeholder">
+                <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold' }}>រូបថត ៣x៤</span>
               </div>
             </div>
 
             {/* Title section */}
             <div className="transcript-title-section">
               <h2 className="transcript-main-title">ព្រឹត្តិបត្រពិន្ទុប្រចាំ{monthLine}</h2>
-              <h3 className="transcript-sub-title">ថ្នាក់ទី {report.grade} "{report.class?.name || ''}"</h3>
+              <h3 className="transcript-sub-title">{formattedClass}</h3>
               <p className="transcript-year-title">ឆ្នាំសិក្សា {toKhmerNumerals(academicYearLabel)}</p>
             </div>
 
@@ -436,7 +444,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
                   </td>
                   <td style={{ width: '13%' }}>
                     <span className="student-meta-value">
-                      {student.gender === 'F' || student.gender === 'female' || student.gender === 'ស្រី' ? 'ស្រី' : 'ប្រុស'}
+                      {student.gender?.toUpperCase() === 'FEMALE' || student.gender?.toUpperCase() === 'F' || student.gender === 'ស្រី' ? 'ស្រី' : 'ប្រុស'}
                     </span>
                   </td>
                   <td style={{ width: '30%', textAlign: 'right' }}>
@@ -507,16 +515,16 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
                 <tr className="summary-row">
                   <td></td>
                   <td className="subject-name">មធ្យមភាគ</td>
-                  <td>{toKhmerNumerals((100).toFixed(2))}</td>
+                  <td>{toKhmerNumerals((50).toFixed(2))}</td>
                   <td>{toKhmerNumerals(student.average.toFixed(2))}</td>
                   <td style={{ color: '#dc2626', fontWeight: 'bold' }}>{toKhmerNumerals(student.rank)}</td>
                   <td>{student.gradeLevel || '-'}</td>
                   <td>
-                    {student.average >= 90 ? 'ល្អប្រសើរ' :
-                     student.average >= 80 ? 'ល្អណាស់' :
-                     student.average >= 70 ? 'ល្អ' :
-                     student.average >= 60 ? 'មធ្យម' :
-                     student.average >= 50 ? 'ខ្សែរ' : 'ខ្សោយ'}
+                    {student.average >= 45 ? 'ល្អប្រសើរ' :
+                     student.average >= 40 ? 'ល្អណាស់' :
+                     student.average >= 35 ? 'ល្អ' :
+                     student.average >= 30 ? 'ល្អបង្គួរ' :
+                     student.average >= 25 ? 'មធ្យម' : 'ខ្សោយ'}
                   </td>
                   <td style={{ color: hasPassed ? 'inherit' : '#dc2626' }}>
                     {hasPassed ? 'ជាប់' : 'ធ្លាក់'}

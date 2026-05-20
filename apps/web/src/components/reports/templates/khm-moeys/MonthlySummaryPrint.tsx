@@ -756,7 +756,7 @@ export default function MonthlySummaryPrint({ report, settings, subjects: subjec
                   <div className="khmer-grade-grid">
                     {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((grade) => {
                       const count = report.students.filter(s => s.gradeLevel === grade).length;
-                      const femaleCount = report.students.filter(s => s.gradeLevel === grade && (s.gender === 'F' || s.gender === 'ស្រី' || s.gender === 'Female')).length;
+                      const femaleCount = report.students.filter(s => s.gradeLevel === grade && (s.gender?.toUpperCase() === 'FEMALE' || s.gender?.toUpperCase() === 'F' || s.gender === 'ស្រី')).length;
                       const colorMap = {
                         A: '#ca8a04', B: '#2563eb', C: '#16a34a', D: '#ea580c', E: '#64748b', F: '#dc2626'
                       };
