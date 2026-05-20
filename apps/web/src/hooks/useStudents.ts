@@ -44,6 +44,7 @@ export interface StudentsParams {
   gender?: string;
   search?: string;
   academicYearId?: string;
+  disabled?: boolean;
 }
 
 interface StudentsResponse {
@@ -85,6 +86,7 @@ function transformStudents(data: any[]): Student[] {
 // Create stable cache key from params
 function createStudentsCacheKey(params?: StudentsParams): string | null {
   if (typeof window === 'undefined') return null;
+  if (params?.disabled) return null;
 
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());

@@ -212,13 +212,13 @@ export default function KhmerMonthlyReportPage() {
   const { students: certClassStudents, isLoading: isLoadingCertClassStudents } = useStudents(
     activeTab === 'certificate' && recipientTab === 'class' && certSelectedClassId
       ? { classId: certSelectedClassId, limit: 100 }
-      : undefined
+      : { disabled: true }
   );
 
   const { students: certSearchStudents, isLoading: isLoadingCertSearchStudents } = useStudents(
     activeTab === 'certificate' && recipientTab === 'search' && debouncedCertSearchQuery.length >= 2
       ? { search: debouncedCertSearchQuery, limit: 50 }
-      : undefined
+      : { disabled: true }
   );
   const [printQueue, setPrintQueue] = useState<any[]>([]);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
@@ -1661,11 +1661,167 @@ export default function KhmerMonthlyReportPage() {
                           </div>
                         </div>
 
-                        {/* Row 2: Recipient Manager */}
+                        {/* Row 2: Premium Design */}
+                        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-5">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <Settings2 className="h-4 w-4 text-slate-400" />
+                            2. Premium Design (រចនាប័ទ្ម)
+                          </h3>
+
+                          {/* Layout Style Option */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-500 block">Layout Style (ទម្រង់រចនា)</span>
+                            <div className="grid grid-cols-3 gap-2">
+                              {([
+                                { id: 'classic', title: 'Classic', desc: 'Traditional borders' },
+                                { id: 'modern', title: 'Modern', desc: 'Asymmetric vector' },
+                                { id: 'royal', title: 'Royal', desc: 'Gold-foiled filigree' },
+                              ] as const).map((style) => (
+                                <button
+                                  key={style.id}
+                                  type="button"
+                                  onClick={() => setCertStyle(style.id)}
+                                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 p-2.5 transition ${
+                                    certStyle === style.id
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-slate-100 bg-white hover:border-blue-200'
+                                  }`}
+                                >
+                                  <Layout className={`h-4 w-4 ${certStyle === style.id ? 'text-blue-600' : 'text-slate-400'}`} />
+                                  <span className={`text-[10px] font-bold ${certStyle === style.id ? 'text-blue-700' : 'text-slate-700'}`}>{style.title}</span>
+                                  <span className="text-[8px] text-slate-400">{style.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Theme Color Picker */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-500 block">Theme Color (ពណ៌ចម្បង)</span>
+                            <div className="flex flex-wrap gap-2.5">
+                              {([
+                                { id: 'gold', name: 'Prestige Gold', bg: 'bg-[#fbbf24]', border: 'border-[#fbbf24]' },
+                                { id: 'blue', name: 'Royal Blue', bg: 'bg-[#2563eb]', border: 'border-[#2563eb]' },
+                                { id: 'emerald', name: 'Emerald Green', bg: 'bg-[#059669]', border: 'border-[#059669]' },
+                                { id: 'ruby', name: 'Ruby Red', bg: 'bg-[#dc2626]', border: 'border-[#dc2626]' },
+                                { id: 'purple', name: 'Royal Purple', bg: 'bg-[#7e22ce]', border: 'border-[#7e22ce]' },
+                              ] as const).map((color) => (
+                                <button
+                                  key={color.id}
+                                  type="button"
+                                  onClick={() => setCertThemeColor(color.id)}
+                                  className={`group relative flex items-center justify-center h-8 w-8 rounded-full border-2 transition ${
+                                    certThemeColor === color.id
+                                      ? `${color.border} scale-110 shadow-md ring-2 ring-slate-100`
+                                      : 'border-transparent hover:scale-105'
+                                  }`}
+                                  title={color.name}
+                                >
+                                  <span className={`h-6 w-6 rounded-full ${color.bg} flex items-center justify-center text-white transition-transform ${certThemeColor === color.id ? 'scale-100' : 'scale-90'}`}>
+                                    {certThemeColor === color.id && <Check className="h-3 w-3 stroke-[3]" />}
+                                  </span>
+                                  {/* Tooltip */}
+                                  <span className="absolute bottom-full mb-1.5 hidden group-hover:block bg-slate-950 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap z-50">
+                                    {color.name}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Seal / Badge Selector */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-500 block">Official Seal (ត្រា និងផ្លាកមាស)</span>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {([
+                                { id: 'stamp', label: 'Stamp Only', sub: 'ត្រាក្រហម' },
+                                { id: 'gold_foil', label: 'Gold Foil', sub: 'ផ្លាកមាស' },
+                                { id: 'both', label: 'Both', sub: 'ទាំងពីរ' },
+                                { id: 'none', label: 'None', sub: 'គ្មាន' },
+                              ] as const).map((seal) => (
+                                <button
+                                  key={seal.id}
+                                  type="button"
+                                  onClick={() => setCertSealStyle(seal.id)}
+                                  className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 py-1.5 px-1 transition ${
+                                    certSealStyle === seal.id
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-slate-100 bg-white hover:border-blue-200'
+                                  }`}
+                                >
+                                  <span className={`text-[10px] font-bold ${certSealStyle === seal.id ? 'text-blue-700' : 'text-slate-700'}`}>{seal.label}</span>
+                                  <span className={`text-[8px] ${certSealStyle === seal.id ? 'text-blue-500' : 'text-slate-400'}`}>{seal.sub}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Handwritten Signature Options */}
+                          <div className="space-y-3 border-t border-slate-100 pt-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-xs font-semibold text-slate-700 block">Digital Cursive Signatures</span>
+                                <span className="text-[10px] text-slate-400 block">Render elegant digital handwritten signatures</span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={certSignatureStyle === 'cursive'}
+                                  onChange={(e) => setCertSignatureStyle(e.target.checked ? 'cursive' : 'none')}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+
+                            {certSignatureStyle === 'cursive' && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 p-3 border border-slate-100 rounded-xl">
+                                <label className="block">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase">Class Teacher Signature Name</span>
+                                  <input
+                                    type="text"
+                                    value={certTeacherName}
+                                    onChange={(e) => setCertTeacherName(e.target.value)}
+                                    placeholder="e.g. K. Monikal"
+                                    className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold outline-none focus:border-blue-400"
+                                  />
+                                </label>
+                                <label className="block">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase">Principal Signature Name</span>
+                                  <input
+                                    type="text"
+                                    value={certPrincipalName}
+                                    onChange={(e) => setCertPrincipalName(e.target.value)}
+                                    placeholder="e.g. S. Vann"
+                                    className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold outline-none focus:border-blue-400"
+                                  />
+                                </label>
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                              <div>
+                                <span className="text-xs font-semibold text-slate-700 block">Show School Stamp (បង្ហាញត្រា)</span>
+                                <span className="text-[10px] text-slate-400 block">Toggle the school stamp/seal visibility on the certificate</span>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={certShowStamp}
+                                  onChange={(e) => setCertShowStamp(e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Row 3: Recipient Manager */}
                         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                              2. Recipients (សិស្សទទួល)
+                              3. Recipients (សិស្សទទួល)
                             </h3>
                             {printQueue.length > 0 && (
                               <div className="flex items-center gap-2">
@@ -1980,162 +2136,6 @@ export default function KhmerMonthlyReportPage() {
                               </div>
                             </div>
                           )}
-                        </div>
-
-                        {/* Row 3: Premium Design */}
-                        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm space-y-5">
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                            <Settings2 className="h-4 w-4 text-slate-400" />
-                            3. Premium Design (រចនាប័ទ្ម)
-                          </h3>
-
-                          {/* Layout Style Option */}
-                          <div className="space-y-2">
-                            <span className="text-xs font-semibold text-slate-500 block">Layout Style (ទម្រង់រចនា)</span>
-                            <div className="grid grid-cols-3 gap-2">
-                              {([
-                                { id: 'classic', title: 'Classic', desc: 'Traditional borders' },
-                                { id: 'modern', title: 'Modern', desc: 'Asymmetric vector' },
-                                { id: 'royal', title: 'Royal', desc: 'Gold-foiled filigree' },
-                              ] as const).map((style) => (
-                                <button
-                                  key={style.id}
-                                  type="button"
-                                  onClick={() => setCertStyle(style.id)}
-                                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 p-2.5 transition ${
-                                    certStyle === style.id
-                                      ? 'border-blue-500 bg-blue-50'
-                                      : 'border-slate-100 bg-white hover:border-blue-200'
-                                  }`}
-                                >
-                                  <Layout className={`h-4 w-4 ${certStyle === style.id ? 'text-blue-600' : 'text-slate-400'}`} />
-                                  <span className={`text-[10px] font-bold ${certStyle === style.id ? 'text-blue-700' : 'text-slate-700'}`}>{style.title}</span>
-                                  <span className="text-[8px] text-slate-400">{style.desc}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Theme Color Picker */}
-                          <div className="space-y-2">
-                            <span className="text-xs font-semibold text-slate-500 block">Theme Color (ពណ៌ចម្បង)</span>
-                            <div className="flex flex-wrap gap-2.5">
-                              {([
-                                { id: 'gold', name: 'Prestige Gold', bg: 'bg-[#fbbf24]', border: 'border-[#fbbf24]' },
-                                { id: 'blue', name: 'Royal Blue', bg: 'bg-[#2563eb]', border: 'border-[#2563eb]' },
-                                { id: 'emerald', name: 'Emerald Green', bg: 'bg-[#059669]', border: 'border-[#059669]' },
-                                { id: 'ruby', name: 'Ruby Red', bg: 'bg-[#dc2626]', border: 'border-[#dc2626]' },
-                                { id: 'purple', name: 'Royal Purple', bg: 'bg-[#7e22ce]', border: 'border-[#7e22ce]' },
-                              ] as const).map((color) => (
-                                <button
-                                  key={color.id}
-                                  type="button"
-                                  onClick={() => setCertThemeColor(color.id)}
-                                  className={`group relative flex items-center justify-center h-8 w-8 rounded-full border-2 transition ${
-                                    certThemeColor === color.id
-                                      ? `${color.border} scale-110 shadow-md ring-2 ring-slate-100`
-                                      : 'border-transparent hover:scale-105'
-                                  }`}
-                                  title={color.name}
-                                >
-                                  <span className={`h-6 w-6 rounded-full ${color.bg} flex items-center justify-center text-white transition-transform ${certThemeColor === color.id ? 'scale-100' : 'scale-90'}`}>
-                                    {certThemeColor === color.id && <Check className="h-3 w-3 stroke-[3]" />}
-                                  </span>
-                                  {/* Tooltip */}
-                                  <span className="absolute bottom-full mb-1.5 hidden group-hover:block bg-slate-950 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap z-50">
-                                    {color.name}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Seal / Badge Selector */}
-                          <div className="space-y-2">
-                            <span className="text-xs font-semibold text-slate-500 block">Official Seal (ត្រា និងផ្លាកមាស)</span>
-                            <div className="grid grid-cols-4 gap-1.5">
-                              {([
-                                { id: 'stamp', label: 'Stamp Only', sub: 'ត្រាក្រហម' },
-                                { id: 'gold_foil', label: 'Gold Foil', sub: 'ផ្លាកមាស' },
-                                { id: 'both', label: 'Both', sub: 'ទាំងពីរ' },
-                                { id: 'none', label: 'None', sub: 'គ្មាន' },
-                              ] as const).map((seal) => (
-                                <button
-                                  key={seal.id}
-                                  type="button"
-                                  onClick={() => setCertSealStyle(seal.id)}
-                                  className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 py-1.5 px-1 transition ${
-                                    certSealStyle === seal.id
-                                      ? 'border-blue-500 bg-blue-50'
-                                      : 'border-slate-100 bg-white hover:border-blue-200'
-                                  }`}
-                                >
-                                  <span className={`text-[10px] font-bold ${certSealStyle === seal.id ? 'text-blue-700' : 'text-slate-700'}`}>{seal.label}</span>
-                                  <span className={`text-[8px] ${certSealStyle === seal.id ? 'text-blue-500' : 'text-slate-400'}`}>{seal.sub}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Handwritten Signature Options */}
-                          <div className="space-y-3 border-t border-slate-100 pt-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <span className="text-xs font-semibold text-slate-700 block">Digital Cursive Signatures</span>
-                                <span className="text-[10px] text-slate-400 block">Render elegant digital handwritten signatures</span>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={certSignatureStyle === 'cursive'}
-                                  onChange={(e) => setCertSignatureStyle(e.target.checked ? 'cursive' : 'none')}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                              </label>
-                            </div>
-
-                            {certSignatureStyle === 'cursive' && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 p-3 border border-slate-100 rounded-xl">
-                                <label className="block">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase">Class Teacher Signature Name</span>
-                                  <input
-                                    type="text"
-                                    value={certTeacherName}
-                                    onChange={(e) => setCertTeacherName(e.target.value)}
-                                    placeholder="e.g. K. Monikal"
-                                    className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold outline-none focus:border-blue-400"
-                                  />
-                                </label>
-                                <label className="block">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase">Principal Signature Name</span>
-                                  <input
-                                    type="text"
-                                    value={certPrincipalName}
-                                    onChange={(e) => setCertPrincipalName(e.target.value)}
-                                    placeholder="e.g. S. Vann"
-                                    className="mt-1 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold outline-none focus:border-blue-400"
-                                  />
-                                </label>
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                              <div>
-                                <span className="text-xs font-semibold text-slate-700 block">Show School Stamp (បង្ហាញត្រា)</span>
-                                <span className="text-[10px] text-slate-400 block">Toggle the school stamp/seal visibility on the certificate</span>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={certShowStamp}
-                                  onChange={(e) => setCertShowStamp(e.target.checked)}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                              </label>
-                            </div>
-                          </div>
                         </div>
 
                         {/* Row 4: Details & Customization */}
@@ -2822,93 +2822,141 @@ export default function KhmerMonthlyReportPage() {
         </div>
       )}
 
-      <style>{`
-        @page {
-          size: A4 landscape;
-          margin: 0;
-        }
-
-        @media print {
-          *,
-          *::before,
-          *::after {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
+      {activeTab === 'certificate' ? (
+        <style>{`
+          @page {
+            size: A4 landscape;
+            margin: 0;
           }
 
-          /* Do NOT set fixed height on html/body — that cuts off pages 2+ */
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            width: 297mm !important;
-            height: auto !important;
-            overflow: visible !important;
-          }
+          @media print {
+            *,
+            *::before,
+            *::after {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
 
-          /* Hide ALL UI chrome and main layout wrappers completely so they don't occupy print space */
-          nav,
-          aside,
-          header,
-          footer,
-          .lg\\:ml-64,
-          main,
-          [class*="UnifiedNavigation"],
-          [class*="PageSkeleton"],
-          section,
-          .print\\:hidden {
-            display: none !important;
-          }
+            /* Do NOT set fixed height on html/body — that cuts off pages 2+ */
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+              width: 297mm !important;
+              height: auto !important;
+              overflow: visible !important;
+            }
 
-          /* Reset root layout wrapper on print */
-          body > div {
-            height: auto !important;
-            min-height: unset !important;
-            overflow: visible !important;
-            background: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
+            /* Hide ALL UI chrome and main layout wrappers completely so they don't occupy print space */
+            nav,
+            aside,
+            header,
+            footer,
+            .lg\\:ml-64,
+            main,
+            [class*="UnifiedNavigation"],
+            [class*="PageSkeleton"],
+            section,
+            .print\\:hidden {
+              display: none !important;
+            }
 
-          /* Each certificate wrapper is exactly one A4 landscape page */
-          .cert-print-wrapper {
-            display: block !important;
-            width: 297mm !important;
-            height: 210mm !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            box-sizing: border-box !important;
-          }
+            /* Reset root layout wrapper on print */
+            body > div {
+              height: auto !important;
+              min-height: unset !important;
+              overflow: visible !important;
+              background: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
 
-          .cert-print-wrapper:last-child {
-            page-break-after: auto !important;
-            break-after: auto !important;
-          }
+            /* Each certificate wrapper is exactly one A4 landscape page */
+            .cert-print-wrapper {
+              display: block !important;
+              width: 297mm !important;
+              height: 210mm !important;
+              overflow: hidden !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              box-sizing: border-box !important;
+            }
 
-          /* Certificate fill + force backgrounds */
-          .certificate-print-page {
-            width: 297mm !important;
-            height: 210mm !important;
-            max-height: 210mm !important;
-            min-height: 210mm !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 2.5rem !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            box-sizing: border-box !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            .cert-print-wrapper:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+
+            /* Certificate fill + force backgrounds */
+            .certificate-print-page {
+              width: 297mm !important;
+              height: 210mm !important;
+              max-height: 210mm !important;
+              min-height: 210mm !important;
+              overflow: hidden !important;
+              margin: 0 !important;
+              padding: 2.5rem !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+              box-sizing: border-box !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
           }
-        }
-      `}</style>
+        `}</style>
+      ) : (
+        <style>{`
+          @media print {
+            body { 
+              background: white !important; 
+              margin: 0 !important; 
+              padding: 0 !important; 
+            }
+            
+            /* Hide all UI elements */
+            nav, 
+            aside, 
+            header,
+            footer,
+            [class*="UnifiedNavigation"],
+            [class*="PageSkeleton"],
+            .print\\:hidden { 
+              display: none !important; 
+            }
+            
+            /* Reset layout wrappers */
+            .lg\\:ml-64 { 
+              margin-left: 0 !important; 
+              width: 100% !important; 
+            }
+            main { 
+              padding: 0 !important; 
+              margin: 0 !important; 
+              width: 100% !important; 
+            }
+
+            /* Hide UI-only sections like settings and hero */
+            section, 
+            .mx-auto.max-w-2xl {
+              display: none !important;
+            }
+
+            /* Specifically show the preview container */
+            .khmer-report-preview-container {
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100% !important;
+            }
+          }
+        `}</style>
+      )}
     </div>
   );
 }
