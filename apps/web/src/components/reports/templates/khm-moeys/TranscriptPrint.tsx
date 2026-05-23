@@ -9,6 +9,8 @@ interface TranscriptPrintProps {
   report: KhmerMonthlyReportData;
   settings: any;
   schoolProfile?: any;
+  filterStudentId?: string;
+  studentPhoto?: string | null;
 }
 
 // Convert numbers to Khmer numerals
@@ -51,7 +53,7 @@ function getSubjectResult(score: number, max: number): string {
   return score >= max * 0.5 ? 'ជាប់' : 'ធ្លាក់';
 }
 
-export default function TranscriptPrint({ report, settings, schoolProfile }: TranscriptPrintProps) {
+export default function TranscriptPrint({ report, settings, schoolProfile, filterStudentId, studentPhoto }: TranscriptPrintProps) {
   const columnSubjects = sortSubjectsByOrder(report.subjects, report.grade);
   const teacherName = settings.teacherName || report.teacherName || '';
   const monthLine = report.period?.month ? `ខែ${report.period.month}` : '';
@@ -124,6 +126,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 3mm;
+          position: relative;
         }
 
         .transcript-header-left {
@@ -135,6 +138,10 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         .transcript-header-right {
           text-align: center;
           width: 220px;
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          top: 0;
         }
 
         .transcript-moul-branding {
@@ -160,12 +167,9 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         }
 
         .transcript-photo-placeholder {
-          position: absolute;
-          top: 17mm;
-          right: 10mm;
-          width: 80px;
-          height: 100px;
-          border: 1px solid #94a3b8;
+          width: 75px;
+          height: 95px;
+          border: 1px solid #000;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -175,6 +179,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
           box-shadow: inset 0 0 4px rgba(0,0,0,0.05);
           overflow: hidden;
           z-index: 10;
+          flex-shrink: 0;
         }
 
         .transcript-title-section {
@@ -358,7 +363,9 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
         }
       `}</style>
 
-      {report.students.map((student, studentIndex) => {
+      {report.students
+        .filter((student) => !filterStudentId || student.studentId === filterStudentId)
+        .map((student, studentIndex) => {
         // Calculate dynamic properties for student
         const classSize = report.students.length;
         const femaleCount = report.students.filter(
@@ -398,7 +405,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
           <div className="transcript-page" key={student.studentId}>
             {/* Header section */}
             <div className="transcript-header-container">
-              <div className="transcript-header-left">
+              <div className="transcript-header-left" style={{ paddingTop: logoUrl ? '15px' : '45px' }}>
                 {logoUrl && (
                   <div style={{ marginBottom: '6px' }}>
                     <img src={logoUrl} alt="Logo" style={{ width: 50, height: 50, objectFit: 'contain' }} />
@@ -410,15 +417,19 @@ export default function TranscriptPrint({ report, settings, schoolProfile }: Tra
               </div>
 
               {/* Royal emblem text */}
-              <div className="transcript-header-right" style={{ marginRight: '90px' }}>
+              <div className="transcript-header-right">
                 <p className="transcript-kingdom-text">ព្រះរាជាណាចក្រកម្ពុជា</p>
                 <p className="transcript-kingdom-text">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
                 <p className="transcript-symbol-3">3</p>
               </div>
 
               {/* Photo section */}
-              <div className="transcript-photo-placeholder">
-                <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold' }}>រូបថត ៣x៤</span>
+              <div className="transcript-photo-placeholder" style={{ marginTop: logoUrl ? '15px' : '45px' }}>
+                {studentPhoto ? (
+                  <img src={studentPhoto} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold' }}>រូបថត ៣x៤</span>
+                )}
               </div>
             </div>
 

@@ -5056,7 +5056,16 @@
         "k_1536044f": "Class Rank",
         "k_9321a7d2": "Generated on",
         "k_31e8c84b": "| Stunity Enterprise School Management System",
-        "k_8c185c29": "This is an official document. Unauthorized alteration is prohibited."
+        "k_8c185c29": "This is an official document. Unauthorized alteration is prohibited.",
+        "cumulative_transcript": "Cumulative Transcript",
+        "monthly_transcript": "Monthly Transcript",
+        "select_month_to_print": "Select month(s) to print:",
+        "print_all_months": "Print All Months",
+        "print_settings": "Print Settings",
+        "teacher_name": "Teacher Name",
+        "principal_name": "Principal Name",
+        "province": "Province",
+        "signature_date": "Signature Date"
       },
       "app_locale_students_page": {
         "k_81558f64": "Analytics",

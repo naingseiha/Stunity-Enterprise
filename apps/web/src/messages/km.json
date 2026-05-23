@@ -5056,7 +5056,16 @@
         "k_1536044f": "Class Rank",
         "k_9321a7d2": "Generated on",
         "k_31e8c84b": "| Stunity Enterprise School Management System",
-        "k_8c185c29": "This is an official document. Unauthorized alteration is prohibited."
+        "k_8c185c29": "This is an official document. Unauthorized alteration is prohibited.",
+        "cumulative_transcript": "ព្រឹត្តិបត្រពិន្ទុរួម",
+        "monthly_transcript": "ព្រឹត្តិបត្រពិន្ទុប្រចាំខែ",
+        "select_month_to_print": "ជ្រើសរើសខែត្រូវបោះពុម្ព៖",
+        "print_all_months": "បោះពុម្ពគ្រប់ខែ",
+        "print_settings": "ការកំណត់បោះពុម្ព",
+        "teacher_name": "ឈ្មោះគ្រូបង្រៀន",
+        "principal_name": "ឈ្មោះនាយក",
+        "province": "ខេត្ត",
+        "signature_date": "កាលបរិច្ឆេទចុះហត្ថលេខា"
       },
       "app_locale_students_page": {
         "k_81558f64": "ការវិភាគ",
