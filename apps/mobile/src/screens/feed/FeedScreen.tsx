@@ -23,7 +23,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -250,6 +250,7 @@ const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create
 export default function FeedScreen() {
   const { t } = useTranslation();
   const layout = useLayoutBreakpoint();
+  const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { colors, isDark } = useThemeContext();
   const isWideTablet = layout.isTablet && windowWidth > windowHeight && windowWidth >= 1000;
@@ -582,7 +583,7 @@ export default function FeedScreen() {
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
       {/* V1 Header - Profile left, Logo center, Actions right */}
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+      <View style={styles.headerSafe}>
         <View style={styles.header}>
           {/* Menu Button - Left */}
           <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
@@ -617,7 +618,7 @@ export default function FeedScreen() {
         </View>
         {/* Header Divider */}
         <View style={styles.headerDivider} />
-      </SafeAreaView>
+      </View>
 
       {/* M3 FIX: PerformanceCard is memoized — SVG rings only re-render when stats change */}
       <PerformanceCard
@@ -641,32 +642,22 @@ export default function FeedScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
 
-        <LinearGradient colors={['transparent', colors.border, 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.storyDivider} />
-
         <View style={styles.quickActionsInCard}>
-          <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
-            <View style={[styles.quickActionIconShadow, { shadowColor: '#0EA5E9' }]}>
-              <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="help-circle" size={20} color="#FFFFFF" /></LinearGradient>
-            </View>
-            <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>{t('feed.ask')}</Text>
+          <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.7} style={styles.inCardAction}>
+            <Ionicons name="image" size={22} color="#3B82F6" />
+            <Text style={styles.inCardActionText}>{t('feed.media')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
-            <View style={[styles.quickActionIconShadow, { shadowColor: '#10B981' }]}>
-              <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}><Ionicons name="bulb" size={20} color="#FFFFFF" /></LinearGradient>
-            </View>
-            <Text style={[styles.inCardActionText, { color: '#10B981' }]}>{t('feed.quiz')}</Text>
+            <Ionicons name="bulb" size={22} color="#10B981" />
+            <Text style={styles.inCardActionText}>{t('feed.quiz')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
-            <View style={[styles.quickActionIconShadow, { shadowColor: '#8B5CF6' }]}>
-              <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={20} color="#FFFFFF" /></LinearGradient>
-            </View>
-            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>{t('feed.poll.label')}</Text>
+            <Ionicons name="bar-chart" size={22} color="#8B5CF6" />
+            <Text style={styles.inCardActionText}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
-            <View style={[styles.quickActionIconShadow, { shadowColor: '#EC4899' }]}>
-              <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}><Ionicons name="book" size={20} color="#FFFFFF" /></LinearGradient>
-            </View>
-            <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>{t('feed.resource')}</Text>
+            <Ionicons name="book" size={22} color="#F59E0B" />
+            <Text style={styles.inCardActionText}>{t('feed.resource')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -950,8 +941,9 @@ export default function FeedScreen() {
   }, [isThreeColumnTablet, user, t, styles, colors.primary, colors.textSecondary, learningStats, navigation, stableProfilePictureUrl]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.card }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.card} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
 
       {/* Network Status Banner */}
       <NetworkStatus onRetry={handleRefresh} />
@@ -1061,7 +1053,8 @@ export default function FeedScreen() {
         authorName={valuePostData?.authorName || t('common.unknown') || 'Unknown'}
       />
 
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -1396,23 +1389,22 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
   },
   createPostInputFake: {
     flex: 1,
-    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
+    backgroundColor: 'transparent',
     borderRadius: 24,
-    paddingHorizontal: isTablet ? 18 : 16,
-    paddingVertical: isTablet ? 12 : 10,
-
-    borderColor: isDark ? colors.border : '#CCFBF1',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   createPostPlaceholder: {
-    fontSize: isTablet ? 15 : 14,
+    fontSize: 14,
     color: colors.textTertiary,
     fontWeight: '500',
   },
   createPostMediaButton: {
-    width: isTablet ? 42 : 38,
-    height: isTablet ? 42 : 38,
-    borderRadius: isTablet ? 21 : 19,
-    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1424,46 +1416,23 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
   },
   quickActionsInCard: {
     flexDirection: 'row',
-    paddingHorizontal: isTablet ? 14 : 12,
-    paddingBottom: isTablet ? 14 : 12,
-    gap: 4,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 4,
   },
   inCardAction: {
-    flex: 1,
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: isTablet ? 10 : 8,
-    gap: 7,
-    borderRadius: 12,
-  },
-  quickActionIconShadow: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.card,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 1.5,
-      },
-    }),
-  },
-  quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
   inCardActionText: {
-    fontSize: isTablet ? 12 : 11,
-    fontWeight: '700',
-    letterSpacing: 0.1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
   footer: {
     paddingHorizontal: 0,
