@@ -830,13 +830,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
     marginHorizontal: FEED_POST_CARD_MARGIN_H,
-    marginBottom: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: 0,
+    borderRadius: 0,
+    borderWidth: 0,
     position: 'relative',
     paddingTop: 14,
-    overflow: 'hidden',      // Required: clips images and media to card's borderRadius
+    overflow: 'hidden',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
   },
   // LIVE Badge styles
   liveBadge: {
@@ -1020,10 +1021,10 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     color: '#DC2626',
   },
   mediaWrapper: {
-    marginHorizontal: 0,        // Full-width, edge-to-edge
-    marginTop: 12,
-    marginBottom: 12,
-    borderRadius: 0,
+    marginHorizontal: 12,   // Inset from card edges for a polished, rounded look
+    marginTop: 8,
+    marginBottom: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -1250,11 +1251,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16, // Consistent 16px padding
-    paddingVertical: 12,
-    paddingBottom: 16, // Add bottom padding for breathing room
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingBottom: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
   },
   actionBarLeft: {
     flexDirection: 'row',

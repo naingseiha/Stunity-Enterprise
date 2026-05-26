@@ -325,6 +325,8 @@ function ImageCarouselInner({
         style={[styles.imageContainer, {
           width: '100%',
           height: IMAGE_HEIGHT,
+          borderRadius,
+          overflow: 'hidden',
         }]}
       >
         {isVid && optimizeForFeed ? (
@@ -334,7 +336,7 @@ function ImageCarouselInner({
             uri={playbackUri}
             style={{ width: '100%', height: '100%', borderRadius }}
             resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={!optimizeForFeed && index === activeIndex} // Keep feed previews paused for smooth vertical scroll
+            shouldPlay={!optimizeForFeed && index === activeIndex}
             useNativeControls={!optimizeForFeed}
           />
         ) : (
@@ -343,13 +345,11 @@ function ImageCarouselInner({
             style={[styles.image, { borderRadius }]}
             contentFit={isItemHeightCapped ? 'contain' : 'cover'}
             transition={120}
-            // Critical for 120Hz scroll performance
-            cachePolicy="memory-disk" // Cache decoded images in memory
-            priority="normal" // Avoid decode spikes while fast-scrolling the feed
-            recyclingKey={uri} // Reuse decoded bitmap across instances
-            // GPU acceleration hints
-            blurRadius={0} // No blur = faster
-            allowDownscaling={optimizeForFeed} // Downscale feed bitmaps to reduce decode/upload cost while scrolling
+            cachePolicy="memory-disk"
+            priority="normal"
+            recyclingKey={uri}
+            blurRadius={0}
+            allowDownscaling={optimizeForFeed}
             onLoad={!usesFixedHeight && !usesMultiMediaFeedFrame ? (event) => handleImageLoad(index, event) : undefined}
           />
         )}
@@ -370,10 +370,10 @@ function ImageCarouselInner({
     usesMultiMediaFeedFrame,
   ]);
 
-  // Single item
+  // Single item — wrap in a clipping View so borderRadius applies perfectly
   if (normalizedImages.length === 1) {
     return (
-      <>
+      <View style={{ borderRadius, overflow: 'hidden' }}>
         {renderSlide(normalizedImages[0], 0)}
         {enableViewer && (
           <ImageViewerModal
@@ -383,13 +383,13 @@ function ImageCarouselInner({
             onClose={() => setModalVisible(false)}
           />
         )}
-      </>
+      </View>
     );
   }
 
   // Carousel — native PagerView for smooth horizontal paging inside vertical feeds
   return (
-    <View style={[styles.container, { height: IMAGE_HEIGHT }]}>
+    <View style={[styles.container, { height: IMAGE_HEIGHT, borderRadius, overflow: 'hidden' }]}>
       <PagerView
         ref={pagerRef}
         style={styles.pager}
@@ -398,7 +398,7 @@ function ImageCarouselInner({
         {...(Platform.OS === 'android' ? { overScrollMode: 'never' as const } : {})}
       >
         {normalizedImages.map((uri, index) => (
-          <View key={`${uri}-${index}`} style={styles.pagerPage} collapsable={false}>
+          <View key={`${uri}-${index}`} style={[styles.pagerPage, { borderRadius, overflow: 'hidden' }]} collapsable={false}>
             {renderSlide(uri, index)}
           </View>
         ))}
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000', // Black background for video/images
+    // No hard background — borderRadius+overflow:hidden at every layer prevents corner bleed
   },
   image: {
     width: '100%',

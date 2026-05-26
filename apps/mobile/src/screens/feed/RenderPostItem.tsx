@@ -39,7 +39,7 @@ const RenderPostItem = ({ item, handlersRef, isValued, setAnalyticsPostId }: Ren
 
 const styles = StyleSheet.create({
   postWrapper: {
-    marginBottom: 0,
+    // Full-bleed LinkedIn-style: no margin, hairline separator is on PostCard itself
   },
 });
 

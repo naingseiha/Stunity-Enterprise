@@ -1,11 +1,10 @@
 /**
  * Feed Screen — Enterprise E-Learning Social Feed
  * 
- * V2 Premium Design:
- * - Performance card with streak + XP stats
- * - Featured categories with icon grid
- * - E-learning focused create post card
- * - Subject filter chips with clear active states
+ * LinkedIn-Style Full-Screen Design:
+ * - Performance card with streak + XP stats (full-bleed)
+ * - E-learning focused create post card (full-bleed)
+ * - Full-width borderless posts with hairline separators
  */
 
 import React, { useEffect, useCallback, useState, useRef } from 'react';
@@ -28,7 +27,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 
@@ -41,14 +39,13 @@ let lastForegroundFeedPollAt = 0;
 
 import {
   PostAnalyticsModal,
-  SubjectFilters,
   EducationalValueModal,
   type EducationalValue,
   SuggestedUsersCarousel,
   SuggestedCoursesCarousel,
   SuggestedQuizzesCarousel,
 } from '@/components/feed';
-import { Avatar, PostSkeleton, Skeleton, NetworkStatus, EmptyState } from '@/components/common';
+import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
@@ -68,30 +65,6 @@ const LIST_DRAW_DISTANCE = Platform.OS === 'android' ? 520 : 720;
 const ESTIMATED_TEXT_POST_SIZE = 330;
 const ESTIMATED_MEDIA_BASE_SIZE = 292;
 
-const normalizeSubjectToken = (value: unknown) =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-
-const postMatchesSubject = (post: Post, subject: string) => {
-  if (subject === 'ALL') return true;
-  const target = normalizeSubjectToken(subject);
-  const tags = [
-    ...(post.topicTags || []),
-    ...(post.tags || []),
-    ...((post as any).subjects || []),
-    (post as any).subject,
-    (post.learningMeta as any)?.subject,
-  ];
-
-  return tags.some((tag) => normalizeSubjectToken(tag) === target);
-};
-
-const filterFeedItemsBySubject = (items: FeedItem[], subject: string): FeedItem[] => {
-  if (subject === 'ALL') return items;
-  return items.filter((item) => item.type === 'POST' && postMatchesSubject(item.data as Post, subject));
-};
 
 // Time-based greeting
 const getGreeting = (t: any): string => {
@@ -102,37 +75,6 @@ const getGreeting = (t: any): string => {
 };
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
-
-const FilterLoadingSkeleton = React.memo(function FilterLoadingSkeleton({
-  styles,
-}: {
-  styles: ReturnType<typeof createStyles>;
-}) {
-  return (
-    <View style={styles.filterSkeletonWrap}>
-      {[0, 1, 2].map((item) => (
-        <View key={item} style={styles.filterSkeletonCard}>
-          <View style={styles.filterSkeletonHeader}>
-            <Skeleton width={42} height={42} borderRadius={21} />
-            <View style={styles.filterSkeletonHeaderText}>
-              <Skeleton width="45%" height={12} borderRadius={6} />
-              <Skeleton width="30%" height={10} borderRadius={5} style={{ marginTop: 6 }} />
-            </View>
-          </View>
-          <Skeleton width="92%" height={13} borderRadius={6} style={{ marginTop: 16 }} />
-          <Skeleton width="65%" height={13} borderRadius={6} style={{ marginTop: 8 }} />
-          <Skeleton width="100%" height={160} borderRadius={14} style={{ marginTop: 16 }} />
-          <View style={styles.filterSkeletonActions}>
-            <Skeleton width={48} height={14} borderRadius={7} />
-            <Skeleton width={48} height={14} borderRadius={7} />
-            <Skeleton width={48} height={14} borderRadius={7} />
-            <Skeleton width={32} height={14} borderRadius={7} style={{ marginLeft: 'auto' }} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-});
 
 interface PerformanceCardProps {
   stats: FeedPerformanceStats;
@@ -273,13 +215,14 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, avata
 
 const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   card: {
-    marginHorizontal: 12,
-    marginBottom: 12,
-    borderRadius: 16,
+    marginHorizontal: 0,
+    marginBottom: 0,
+    borderRadius: 0,
     overflow: 'visible',
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
   },
   inner: { padding: 14, borderRadius: 16, overflow: 'hidden' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
@@ -344,9 +287,7 @@ export default function FeedScreen() {
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [activeSubjectFilter, setActiveSubjectFilter] = useState('ALL');
-  const [pendingSubjectFilter, setPendingSubjectFilter] = useState<string | null>(null);
-  const [optimisticFilterItems, setOptimisticFilterItems] = useState<FeedItem[] | null>(null);
+  const [activeSubjectFilter] = useState('ALL');
   const [analyticsPostId, setAnalyticsPostId] = useState<string | null>(null);
   const [valuePostId, setValuePostId] = useState<string | null>(null);
   const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
@@ -366,10 +307,6 @@ export default function FeedScreen() {
   const canTriggerEndReachedRef = React.useRef(true);
   const postsRef = useRef(feedItems);
   const pendingPostsRef = useRef(pendingPosts);
-  const subjectFeedCacheRef = useRef<Record<string, FeedItem[]>>({});
-  const filterFetchInFlightRef = useRef(false);
-  const queuedSubjectFilterRef = useRef<string | null>(null);
-  const filterOverlayOpacity = useRef(new Animated.Value(0)).current;
   const lastProfilePictureUrlRef = useRef<string | null>(null);
   postsRef.current = feedItems;
   pendingPostsRef.current = pendingPosts;
@@ -377,25 +314,10 @@ export default function FeedScreen() {
     lastProfilePictureUrlRef.current = user.profilePictureUrl;
   }
   const stableProfilePictureUrl = user?.profilePictureUrl || lastProfilePictureUrlRef.current;
-  const displayedFeedItems = optimisticFilterItems || feedItems;
+  const displayedFeedItems = feedItems;
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
-  const isFilterTransitioning = !!pendingSubjectFilter;
 
   useScrollToTop(scrollToTopRef);
-
-  useEffect(() => {
-    if (!pendingSubjectFilter && feedItems.length > 0) {
-      subjectFeedCacheRef.current[activeSubjectFilter] = feedItems;
-    }
-  }, [activeSubjectFilter, feedItems, pendingSubjectFilter]);
-
-  useEffect(() => {
-    Animated.timing(filterOverlayOpacity, {
-      toValue: pendingSubjectFilter ? 1 : 0,
-      duration: pendingSubjectFilter ? 140 : 180,
-      useNativeDriver: true,
-    }).start();
-  }, [filterOverlayOpacity, pendingSubjectFilter]);
 
   useEffect(() => {
     if (!isInitialFeedLoading) {
@@ -548,21 +470,21 @@ export default function FeedScreen() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
-      fetchPosts(true, activeSubjectFilter),
+      fetchPosts(true),
       refreshPerformanceStats(true),
     ]);
     setRefreshing(false);
-  }, [activeSubjectFilter, fetchPosts, refreshPerformanceStats]);
+  }, [fetchPosts, refreshPerformanceStats]);
 
   const handleLoadMore = useCallback(() => {
     if (!canTriggerEndReachedRef.current) return;
-    if (!isLoadingPosts && !pendingSubjectFilter && hasMorePosts) {
+    if (!isLoadingPosts && hasMorePosts) {
       canTriggerEndReachedRef.current = false;
-      fetchPosts(false, activeSubjectFilter).finally(() => {
+      fetchPosts(false).finally(() => {
         canTriggerEndReachedRef.current = true;
       });
     }
-  }, [activeSubjectFilter, isLoadingPosts, pendingSubjectFilter, hasMorePosts, fetchPosts]);
+  }, [isLoadingPosts, hasMorePosts, fetchPosts]);
 
   const handleLikePost = useCallback((post: Post) => {
     if (post.isLiked) {
@@ -656,49 +578,6 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any, { initialPostType: 'RESOURCE' });
   }, [navigation]);
 
-  const runSubjectFilterFetch = useCallback((filterKey: string) => {
-    if (filterFetchInFlightRef.current) {
-      queuedSubjectFilterRef.current = filterKey;
-      return;
-    }
-
-    filterFetchInFlightRef.current = true;
-
-    requestAnimationFrame(() => {
-      fetchPosts(true, filterKey)
-        .catch(() => { })
-        .finally(() => {
-          const latestItems = useFeedStore.getState().feedItems;
-          subjectFeedCacheRef.current[filterKey] = latestItems;
-          filterFetchInFlightRef.current = false;
-
-          const queuedFilter = queuedSubjectFilterRef.current;
-          queuedSubjectFilterRef.current = null;
-
-          if (queuedFilter && queuedFilter !== filterKey) {
-            runSubjectFilterFetch(queuedFilter);
-            return;
-          }
-
-          setOptimisticFilterItems(null);
-          setPendingSubjectFilter(null);
-        });
-    });
-  }, [fetchPosts]);
-
-  const handleSubjectFilterChange = useCallback((filterKey: string) => {
-    if (filterKey === activeSubjectFilter && !pendingSubjectFilter) return;
-    subjectFeedCacheRef.current[activeSubjectFilter] = feedItems;
-
-    const cachedItems = subjectFeedCacheRef.current[filterKey];
-    const locallyMatchedItems = filterFeedItemsBySubject(feedItems, filterKey);
-    const instantItems = cachedItems?.length ? cachedItems : locallyMatchedItems;
-
-    setActiveSubjectFilter(filterKey);
-    setOptimisticFilterItems(instantItems.length > 0 ? instantItems : feedItems);
-    setPendingSubjectFilter(filterKey);
-    runSubjectFilterFetch(filterKey);
-  }, [activeSubjectFilter, feedItems, pendingSubjectFilter, runSubjectFilterFetch]);
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
@@ -711,15 +590,6 @@ export default function FeedScreen() {
           navigation.getParent()?.navigate('QuizTab', { screen: 'MyJoinedQuizzes' })
         }
       />
-
-      {/* Featured Categories */}
-      <View style={styles.categoriesSection}>
-        <SubjectFilters
-          activeFilter={activeSubjectFilter}
-          pendingFilter={pendingSubjectFilter}
-          onFilterChange={handleSubjectFilterChange}
-        />
-      </View>
 
       {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
@@ -763,7 +633,7 @@ export default function FeedScreen() {
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, pendingSubjectFilter, handleSubjectFilterChange, navigation, t, colors.border, colors.primary]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, navigation, t, colors.border, colors.primary]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -837,18 +707,19 @@ export default function FeedScreen() {
       return;
     }
 
-    const mediaHeight = (feedColumnWidth - 28) * getFeedMediaAspectRatio(postData);
+    // Media is now inset with 12px margin each side — subtract 24px from width
+    const mediaHeight = (feedColumnWidth - 24) * getFeedMediaAspectRatio(postData);
     slot.size = Math.round(ESTIMATED_MEDIA_BASE_SIZE + mediaHeight);
   }, [feedColumnWidth]);
 
   const renderFooter = useCallback(() => {
-    if (!isLoadingPosts || pendingSubjectFilter) return null;
+    if (!isLoadingPosts) return null;
     return (
       <View style={styles.footer}>
         <PostSkeleton />
       </View>
     );
-  }, [isLoadingPosts, pendingSubjectFilter]);
+  }, [isLoadingPosts]);
 
   const renderInitialLoadNotice = useCallback(() => {
     if (initialLoadNotice === 'hidden') return null;
@@ -873,7 +744,7 @@ export default function FeedScreen() {
   }, [initialLoadNotice, t, colors.primary]);
 
   const renderEmpty = useCallback(() => {
-    if (isLoadingPosts && !pendingSubjectFilter) {
+    if (isLoadingPosts) {
       return (
         <View style={styles.skeletonContainer}>
           {renderInitialLoadNotice()}
@@ -889,11 +760,11 @@ export default function FeedScreen() {
         type="posts"
         title={t('feed.noPosts')}
         message={t('feed.noPostsMessage')}
-        actionLabel={t('auth.createAccount')} // re-using create post/account label
+        actionLabel={t('auth.createAccount')}
         onAction={handleCreatePost}
       />
     );
-  }, [isLoadingPosts, pendingSubjectFilter, handleCreatePost, renderInitialLoadNotice, t]);
+  }, [isLoadingPosts, handleCreatePost, renderInitialLoadNotice, t]);
 
   const renderTabletSideRail = useCallback(() => {
     if (!isWideTablet) return null;
@@ -1166,22 +1037,6 @@ export default function FeedScreen() {
         </View>
 
         {renderTabletSideRail()}
-
-        {isFilterTransitioning && (
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.filterLoadingOverlay, { opacity: filterOverlayOpacity }]}
-          >
-            <BlurView
-              intensity={Platform.OS === 'ios' ? 45 : 90}
-              tint={isDark ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.filterLoadingContent}>
-              <FilterLoadingSkeleton styles={styles} />
-            </View>
-          </Animated.View>
-        )}
       </View>
 
       {/* Post Analytics Modal */}
@@ -1497,73 +1352,18 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     paddingBottom: isTablet ? 120 : 100,
     paddingTop: isTablet ? 10 : 0,
   },
-  filterLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.92)',
-    paddingTop: 80,
-    paddingHorizontal: 12,
-    zIndex: 20,
-    elevation: 0,
-  },
-  filterLoadingContent: {
-    width: '100%',
-    maxWidth: isTablet ? feedColumnWidth : undefined,
-    alignItems: 'center',
-  },
-  filterSkeletonWrap: {
-    width: '100%',
-    marginTop: 18,
-    gap: 12,
-  },
-  filterSkeletonCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 0,
-      },
-    }),
-  },
-  filterSkeletonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  filterSkeletonHeaderText: {
-    flex: 1,
-  },
-  filterSkeletonActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: isDark ? 'rgba(148,163,184,0.1)' : 'rgba(226,232,240,0.6)',
-  },
+
   headerSection: {
-    paddingTop: isTablet ? 12 : 8,
+    paddingTop: 0,
     paddingBottom: 0,
   },
   postWrapper: {
     marginBottom: 0,
   },
 
-  // ── Featured Categories Section ──
+  // ── (Subject filters removed — LinkedIn full-bleed style) ──
   categoriesSection: {
-    marginTop: 8,
+    display: 'none' as any,
   },
   categoriesSectionTitle: {
     fontSize: 17,
@@ -1573,17 +1373,18 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     marginBottom: 4,
   },
 
-  // ── Create Post Card ──
+  // ── Create Post Card — LinkedIn full-bleed style ──
   createPostCard: {
     backgroundColor: colors.card,
-    marginHorizontal: isTablet ? 10 : 12,
-    marginTop: isTablet ? 10 : 6,
-    marginBottom: isTablet ? 16 : 12,
-    paddingTop: isTablet ? 18 : 16,
+    marginHorizontal: 0,
+    marginTop: 0,
+    marginBottom: 0,
+    paddingTop: isTablet ? 16 : 14,
     paddingBottom: isTablet ? 10 : 8,
-    borderRadius: isTablet ? 18 : 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 0,
+    borderRadius: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
   },
   createPostRow: {
     flexDirection: 'row',
@@ -1663,11 +1464,11 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     letterSpacing: 0.1,
   },
   footer: {
-    paddingHorizontal: isTablet ? 10 : 16,
+    paddingHorizontal: 0,
   },
   skeletonContainer: {
-    paddingHorizontal: isTablet ? 10 : 16,
-    paddingTop: 12,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   initialLoadNotice: {
     flexDirection: 'row',

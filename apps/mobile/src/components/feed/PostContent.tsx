@@ -1,9 +1,10 @@
 import React, { memo, useCallback, useState } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ImageCarousel } from '@/components/common';
 import { PollVoting } from './PollVoting';
 import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, ClubCreatedSection } from './PostCardSections';
@@ -104,7 +105,7 @@ const PostContent = ({
             images={post.mediaUrls}
             mediaMetadata={post.mediaMetadata || []}
             onImagePress={onImagePress}
-            borderRadius={0}
+            borderRadius={12}
             aspectRatio={mediaDisplayMode === 'AUTO' || mediaDisplayMode === 'CAROUSEL' ? undefined : feedMediaAspectRatio}
             mode="auto"
             enableViewer={false}
@@ -324,46 +325,69 @@ const PostContent = ({
         </View>
       )}
 
-      {/* Learning Info Bar */}
+      {/* ── Learning Badge Strip ── */}
       <View style={styles.learningBar}>
-        <View style={[styles.typeChip, { backgroundColor: typeConfig.color }]}>
+
+        {/* Post-type gradient pill */}
+        <LinearGradient
+          colors={typeConfig.gradient as any}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[
+            styles.typeChip,
+            Platform.OS === 'ios' && {
+              shadowColor: typeConfig.color,
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.32,
+              shadowRadius: 6,
+            },
+          ]}
+        >
           <Ionicons name={typeConfig.icon as any} size={13} color="#FFFFFF" />
           <Text style={styles.typeChipText}>{typeConfig.label}</Text>
-        </View>
+        </LinearGradient>
 
+        {/* Difficulty badge */}
         {learningMeta?.difficulty && DIFFICULTY_CONFIG[learningMeta.difficulty] && (
-          <View style={[styles.difficultyBadge, { backgroundColor: DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor }]}>
+          <View style={[
+            styles.metaBadge,
+            { backgroundColor: DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor + (isDark ? 'CC' : 'FF') },
+          ]}>
             <Ionicons
               name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any}
-              size={12}
+              size={11}
               color={DIFFICULTY_CONFIG[learningMeta.difficulty].color}
             />
-            <Text style={[styles.difficultyText, { color: DIFFICULTY_CONFIG[learningMeta.difficulty].color }]}>
+            <Text style={[styles.metaBadgeText, { color: DIFFICULTY_CONFIG[learningMeta.difficulty].color }]}>
               {t(DIFFICULTY_CONFIG[learningMeta.difficulty].labelKey)}
             </Text>
           </View>
         )}
 
-        {/* Academic Match Badge */}
+        {/* Academic Match badge */}
         {post._scoreBreakdown?.academicRelevance > 0.5 && (
-          <View style={[styles.difficultyBadge, { backgroundColor: '#F0FDF4' }]}>
-            <Ionicons name="school" size={12} color="#16A34A" />
-            <Text style={[styles.difficultyText, { color: '#16A34A' }]}>{t('feed.academicMatch')}</Text>
+          <View style={[styles.metaBadge, { backgroundColor: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' }]}>
+            <Ionicons name="school" size={11} color="#16A34A" />
+            <Text style={[styles.metaBadgeText, { color: '#16A34A' }]}>{t('feed.academicMatch')}</Text>
           </View>
         )}
 
+        {/* Right-side stats */}
         <View style={styles.inlineMetrics}>
           {learningMeta?.xpReward != null && (
-            <View style={styles.inlineMetric}>
-              <Ionicons name="flash" size={13} color="#0EA5E9" />
-              <Text style={styles.inlineMetricText}>+{learningMeta.xpReward} XP</Text>
+            <View style={styles.statPill}>
+              <Ionicons name="flash" size={11} color="#F59E0B" />
+              <Text style={[styles.statPillText, { color: '#F59E0B' }]}>+{learningMeta.xpReward}</Text>
             </View>
           )}
-          <View style={styles.inlineMetric}>
-            <Ionicons name="stats-chart" size={13} color="#0D9488" />
-            <Text style={styles.inlineMetricText}>{formatNumber(post.likes + post.comments)}</Text>
+          <View style={styles.statPill}>
+            <Ionicons name="bar-chart" size={11} color={colors.textTertiary} />
+            <Text style={[styles.statPillText, { color: colors.textTertiary }]}>
+              {formatNumber(post.likes + post.comments)}
+            </Text>
           </View>
         </View>
+
       </View>
     </View>
   );
@@ -371,8 +395,11 @@ const PostContent = ({
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   mediaWrapper: {
-    width: '100%',
-    marginBottom: 8,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    marginTop: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
     position: 'relative',
   },
   richContentIndicators: {
@@ -596,47 +623,80 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   learningBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.card,
-    gap: 8,
+    gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
   },
   typeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 5,
+    overflow: 'hidden',
+    ...(Platform.OS === 'android' ? { elevation: 3 } : {}),
   },
   typeChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
+  // Shared pill badge (difficulty, academic match)
+  metaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 4,
+  },
+  metaBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.05,
+  },
+  // Legacy aliases (kept so PostCard.tsx styles still compile)
   difficultyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 4,
   },
   difficultyText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
   },
+  // Stats on the right
   inlineMetrics: {
     flexDirection: 'row',
     marginLeft: 'auto',
-    gap: 8,
+    gap: 6,
+    alignItems: 'center',
   },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // Legacy aliases
   inlineMetric: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   inlineMetricText: {
     fontSize: 11,
