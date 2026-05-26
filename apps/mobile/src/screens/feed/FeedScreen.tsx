@@ -643,9 +643,9 @@ export default function FeedScreen() {
         </TouchableOpacity>
 
         <View style={styles.quickActionsInCard}>
-          <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="image" size={22} color="#3B82F6" />
-            <Text style={styles.inCardActionText}>{t('feed.media')}</Text>
+          <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
+            <Ionicons name="help-circle" size={22} color="#3B82F6" />
+            <Text style={styles.inCardActionText}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
             <Ionicons name="bulb" size={22} color="#10B981" />
