@@ -33,23 +33,17 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
         if (!item) return null;
         return (
             <TouchableOpacity
-                style={[styles.card, Shadows.sm]}
+                style={styles.card}
                 activeOpacity={0.8}
                 onPress={() => handleCoursePress(item.id)}
             >
-                <Image source={{ uri: item.thumbnailUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' }} style={styles.image} />
-                <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.gradient}
-                />
+                <View style={styles.imageContainer}>
+                    <Image source={{ uri: item.thumbnailUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' }} style={styles.image} contentFit="cover" />
+                </View>
                 <View style={styles.content}>
                     <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-                    <View style={styles.meta}>
-                        <Ionicons name="star" size={12} color="#FBBF24" />
-                        <Text style={styles.metaText}>{item.rating?.toFixed(1) || '4.5'}</Text>
-                        <Text style={styles.metaDot}>•</Text>
-                        <Ionicons name="people" size={12} color="#D1D5DB" />
-                        <Text style={styles.metaText}>{t('feed.enrolledCount', { count: item.enrollmentCount || 0 })}</Text>
+                    <View style={styles.footerRow}>
+                        <Text style={styles.metaText}>{item.rating?.toFixed(1) || '4.5'} ★ • {t('feed.enrolledCount', { count: item.enrollmentCount || 0 })}</Text>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -104,53 +98,37 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         gap: 12,
     },
     card: {
-        width: 260,
-        height: 140,
+        width: 240,
         backgroundColor: colors.card,
-        borderRadius: 16,
+        borderRadius: 8,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: isDark ? colors.border : '#E5E7EB',
+    },
+    imageContainer: {
+        height: 135, // 16:9 ratio approximately (240x135)
+        width: '100%',
     },
     image: {
         width: '100%',
         height: '100%',
-        position: 'absolute',
-    },
-    gradient: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '60%',
+        backgroundColor: colors.surfaceVariant,
     },
     content: {
-        flex: 1,
-        justifyContent: 'flex-end',
         padding: 12,
+        justifyContent: 'flex-start',
     },
     title: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#FFFFFF',
-        marginBottom: 6,
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
+        color: colors.text,
+        lineHeight: 18,
     },
-    meta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
+    footerRow: {
+        marginTop: 6,
     },
     metaText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#F9FAFB',
-    },
-    metaDot: {
-        fontSize: 11,
-        color: '#D1D5DB',
-        marginHorizontal: 2,
+        fontSize: 12,
+        color: colors.textSecondary,
     },
 });

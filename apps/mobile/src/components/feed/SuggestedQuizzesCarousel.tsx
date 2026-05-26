@@ -78,64 +78,26 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
 
     return (
       <TouchableOpacity
-        style={[styles.card, Shadows.sm]}
+        style={styles.card}
         activeOpacity={0.82}
         onPress={() => handleQuizPress(item)}
       >
-        <Image source={{ uri: background }} style={styles.image} contentFit="cover" />
-        <LinearGradient
-          colors={['rgba(7,12,22,0.12)', 'rgba(7,12,22,0.5)', 'rgba(7,12,22,0.94)']}
-          locations={[0, 0.38, 1]}
-          style={styles.gradient}
-        />
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: background }} style={styles.image} contentFit="cover" />
+        </View>
 
-        <View style={styles.overlay}>
-          <View style={styles.topRow}>
-            <View style={styles.typeBadge}>
-              <Ionicons name="school" size={14} color="#FFFFFF" />
-            </View>
-            <View style={styles.pointsPill}>
-              <Ionicons name="flash" size={12} color="#FDE68A" />
-              <Text style={styles.pointsText}>
-                {item.totalPoints || Math.max(questionCount * 10, 10)} XP
-              </Text>
-            </View>
+        <View style={styles.content}>
+          <View style={styles.titleWrap}>
+            {renderPostTitleText(
+              quizTitle,
+              [styles.title, useKhmerTitleMetrics && styles.titleKhmer],
+              2,
+            )}
           </View>
-
-          <View style={styles.bottomBlock}>
-            <View style={styles.titleWrap}>
-              {renderPostTitleText(
-                quizTitle,
-                [styles.title, useKhmerTitleMetrics && styles.titleKhmer],
-                2,
-              )}
-            </View>
-            <View style={styles.meta}>
-              <Ionicons name="help-circle" size={12} color="#E0F2FE" />
-              <Text style={styles.metaText}>{questionCount || '--'} {t('feed.sections.questions')}</Text>
-              <Text style={styles.metaDot}>•</Text>
-              <Ionicons name="time" size={12} color="#E0F2FE" />
-              <Text style={styles.metaText}>
-                {item.timeLimit ? t('feed.sections.minutesShort', { count: item.timeLimit }) : '∞'}
-              </Text>
-              {attemptCount > 0 && (
-                <>
-                  <Text style={styles.metaDot}>•</Text>
-                  <Ionicons name="people" size={12} color="#E0F2FE" />
-                  <Text style={styles.metaText}>{attemptCount}</Text>
-                </>
-              )}
-            </View>
-
-            <View style={styles.footerRow}>
-              <Text style={styles.authorText} numberOfLines={1}>
-                {authorName || t('feed.suggestedQuizzes')}
-              </Text>
-              <View style={styles.startButton}>
-                <Text style={styles.startText} numberOfLines={1}>{t('feed.sections.takeQuizNow')}</Text>
-                <Ionicons name="arrow-forward" size={12} color="#0F172A" />
-              </View>
-            </View>
+          <View style={styles.footerRow}>
+            <Text style={styles.metaText}>
+              {questionCount || '--'} {t('feed.sections.questions')} • {item.timeLimit ? t('feed.sections.minutesShort', { count: item.timeLimit }) : '∞'} • {item.totalPoints || Math.max(questionCount * 10, 10)} XP
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -180,24 +142,14 @@ type QuizCarouselStyles = {
   seeAll: TextStyle;
   listContent: ViewStyle;
   card: ViewStyle;
+  imageContainer: ViewStyle;
   image: ImageStyle;
-  gradient: ViewStyle;
-  overlay: ViewStyle;
-  topRow: ViewStyle;
-  typeBadge: ViewStyle;
-  pointsPill: ViewStyle;
-  pointsText: TextStyle;
-  bottomBlock: ViewStyle;
+  content: ViewStyle;
   titleWrap: ViewStyle;
   title: TextStyle;
   titleKhmer: TextStyle;
-  meta: ViewStyle;
-  metaText: TextStyle;
-  metaDot: TextStyle;
   footerRow: ViewStyle;
-  authorText: TextStyle;
-  startButton: ViewStyle;
-  startText: TextStyle;
+  metaText: TextStyle;
 };
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCarouselStyles>({
@@ -245,128 +197,48 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
     gap: 12,
   },
   card: {
-    width: 260,
-    height: 178,
+    width: 240,
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: isDark ? colors.border : '#E5E7EB',
     overflow: 'hidden',
+  },
+  imageContainer: {
+    height: 135,
+    width: '100%',
   },
   image: {
     width: '100%',
     height: '100%',
-    position: 'absolute',
+    backgroundColor: colors.surfaceVariant,
   },
-  gradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'space-between',
-    padding: 10,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 30,
-  },
-  typeBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(15,23,42,0.58)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  pointsPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(15,23,42,0.58)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  pointsText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  bottomBlock: {
-    gap: 6,
+  content: {
+    padding: 12,
+    justifyContent: 'flex-start',
   },
   titleWrap: {
     overflow: 'visible',
   },
   title: {
     fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    lineHeight: 18,
+    fontWeight: '700',
+    color: colors.text,
   },
   titleKhmer: {
-    lineHeight: 30,
-    paddingTop: Platform.OS === 'android' ? 4 : 6,
+    lineHeight: 24,
+    paddingTop: Platform.OS === 'android' ? 2 : 4,
     ...Platform.select({
       android: { includeFontPadding: true, textAlignVertical: 'top' as const },
       default: {},
     }),
   },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  footerRow: {
+    marginTop: 6,
   },
   metaText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#F8FAFC',
-  },
-  metaDot: {
-    fontSize: 11,
-    color: '#E5E7EB',
-    marginHorizontal: 2,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 2,
-  },
-  authorText: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#E5E7EB',
-  },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    maxWidth: 112,
-  },
-  startText: {
-    flexShrink: 1,
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#0F172A',
+    fontSize: 12,
+    color: colors.textSecondary,
   },
 });
