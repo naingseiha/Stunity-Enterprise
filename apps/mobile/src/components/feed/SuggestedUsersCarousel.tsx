@@ -218,14 +218,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         fontWeight: '700',
         color: colors.text,
         textAlign: 'center',
-        lineHeight: 18,
     },
     role: {
         fontSize: 12,
         color: colors.textSecondary,
         textAlign: 'center',
         marginTop: 4,
-        lineHeight: 16,
     },
     followBtn: {
         width: '100%',
