@@ -581,6 +581,44 @@ export default function FeedScreen() {
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
+      {/* V1 Header - Profile left, Logo center, Actions right */}
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.header}>
+          {/* Menu Button - Left */}
+          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
+            <Ionicons name="menu" size={28} color={colors.text} />
+          </TouchableOpacity>
+
+          {/* Stunity Logo - Center */}
+          <StunityLogo width={130} height={36} />
+
+          {/* Actions - Right */}
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Notifications' as any)}
+            >
+              <Ionicons name="notifications-outline" size={24} color={colors.text} />
+              {unreadNotifications > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Search' as any)}
+            >
+              <Ionicons name="search-outline" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        {/* Header Divider */}
+        <View style={styles.headerDivider} />
+      </SafeAreaView>
+
       {/* M3 FIX: PerformanceCard is memoized — SVG rings only re-render when stats change */}
       <PerformanceCard
         stats={learningStats}
@@ -633,7 +671,7 @@ export default function FeedScreen() {
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, navigation, t, colors.border, colors.primary]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, navigation, t, colors, openSidebar, unreadNotifications]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -918,43 +956,7 @@ export default function FeedScreen() {
       {/* Network Status Banner */}
       <NetworkStatus onRetry={handleRefresh} />
 
-      {/* V1 Header - Profile left, Logo center, Actions right */}
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.header}>
-          {/* Menu Button - Left */}
-          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
-            <Ionicons name="menu" size={28} color={colors.text} />
-          </TouchableOpacity>
 
-          {/* Stunity Logo - Center */}
-          <StunityLogo width={130} height={36} />
-
-          {/* Actions - Right */}
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('Notifications' as any)}
-            >
-              <Ionicons name="notifications-outline" size={24} color={colors.text} />
-              {unreadNotifications > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('Search' as any)}
-            >
-              <Ionicons name="search-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
-        {/* Header Divider */}
-        <View style={styles.headerDivider} />
-      </SafeAreaView>
 
       {/* New Posts Pill */}
       {pendingPosts.length > 0 && (
