@@ -3,7 +3,6 @@ import { useThemeContext } from '@/contexts';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '@/components/common/Avatar';
-import { Image } from 'expo-image';
 import { feedApi } from '@/api/client';
 import { User } from '@/types';
 import { Shadows } from '@/config';
@@ -85,48 +84,30 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
 
         return (
             <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, Shadows.sm]}
                 activeOpacity={0.8}
                 onPress={() => item.id && navigation.navigate('UserProfile', { userId: item.id })}
             >
-                {/* Cover Photo */}
-                <View style={styles.coverContainer}>
-                    {item.coverPhotoUrl ? (
-                         <Image source={{ uri: item.coverPhotoUrl }} style={styles.coverImage} contentFit="cover" />
+                <Avatar uri={item.profilePictureUrl} name={name} size="lg" />
+                <Text style={styles.name} numberOfLines={1}>{name}</Text>
+                <Text style={styles.role} numberOfLines={1}>{subtitle}</Text>
+                <TouchableOpacity
+                    style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                    onPress={(event) => {
+                        event.stopPropagation?.();
+                        item.id && handleFollow(item.id);
+                    }}
+                    disabled={!item.id || isLoading}
+                    activeOpacity={0.8}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : colors.primary} />
                     ) : (
-                         <View style={[styles.coverImage, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }]} />
+                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                            {isFollowing ? t('common.following') : t('common.follow')}
+                        </Text>
                     )}
-                </View>
-
-                {/* Avatar overlapping */}
-                <View style={styles.avatarWrapper}>
-                    <Avatar uri={item.profilePictureUrl} name={name} size="lg" />
-                </View>
-
-                {/* Info and button */}
-                <View style={styles.infoContainer}>
-                    <Text style={styles.name} numberOfLines={1}>{name}</Text>
-                    <Text style={styles.role} numberOfLines={2}>{subtitle}</Text>
-                    
-                    <View style={{ flex: 1 }} />
-                    <TouchableOpacity
-                        style={[styles.followBtn, isFollowing && styles.followingBtn]}
-                        onPress={(event) => {
-                            event.stopPropagation?.();
-                            item.id && handleFollow(item.id);
-                        }}
-                        disabled={!item.id || isLoading}
-                        activeOpacity={0.8}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : colors.primary} />
-                        ) : (
-                            <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                                {isFollowing ? t('common.following') : t('common.follow')}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
             </TouchableOpacity>
         );
     };
@@ -153,10 +134,13 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
+        marginVertical: 12,
         backgroundColor: colors.card,
         paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginHorizontal: 12,
     },
     header: {
         flexDirection: 'row',
@@ -180,69 +164,42 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         gap: 12,
     },
     card: {
-        width: 156,
-        height: 220,
-        backgroundColor: colors.card,
-        borderRadius: 8,
+        width: 130,
+        backgroundColor: isDark ? colors.surfaceVariant : '#F9FAFB',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
         borderWidth: 1,
         borderColor: colors.border,
-        overflow: 'hidden',
-    },
-    coverContainer: {
-        height: 56,
-        width: '100%',
-        backgroundColor: isDark ? '#1E293B' : '#E2E8F0',
-    },
-    coverImage: {
-        width: '100%',
-        height: '100%',
-    },
-    avatarWrapper: {
-        position: 'absolute',
-        top: 24,
-        alignSelf: 'center',
-        borderRadius: 999,
-        borderWidth: 2,
-        borderColor: colors.card,
-        backgroundColor: colors.card,
-    },
-    infoContainer: {
-        flex: 1,
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingTop: 36,
-        paddingBottom: 12,
     },
     name: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '700',
         color: colors.text,
+        marginTop: 10,
         textAlign: 'center',
-        lineHeight: 18,
     },
     role: {
-        fontSize: 12,
+        fontSize: 11,
         color: colors.textSecondary,
-        textAlign: 'center',
-        marginTop: 4,
-        lineHeight: 16,
+        marginTop: 2,
+        marginBottom: 12,
     },
     followBtn: {
-        width: '100%',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#E0F2FE',
+        paddingHorizontal: 16,
         paddingVertical: 6,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.primary,
+        borderRadius: 20,
+        width: '100%',
         alignItems: 'center',
+        minHeight: 30,
         justifyContent: 'center',
-        marginTop: 12,
     },
     followingBtn: {
-        borderColor: colors.border,
         backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     },
     followBtnText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '700',
         color: colors.primary,
     },
