@@ -135,10 +135,9 @@ const PostContent = ({
         </View>
       )}
 
-      {/* Content Text - Hidden for automated posts to avoid redundancy and messiness */}
       {!isAutomated && (
         <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
-          {renderPostBodyText(post.content, styles.contentText, 4)}
+          {renderPostBodyText(post.content, styles.contentText, 2)}
         </TouchableOpacity>
       )}
 
