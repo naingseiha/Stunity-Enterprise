@@ -15,6 +15,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
+  Easing,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -118,12 +120,27 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState<EducationalValue>(INITIAL_VALUE);
+  const slideAnim = React.useRef(new Animated.Value(600)).current;
 
   useEffect(() => {
-    if (!visible) {
-      setValue(INITIAL_VALUE);
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 600,
+        duration: 200,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        setValue(INITIAL_VALUE);
+      });
     }
-  }, [visible]);
+  }, [visible, slideAnim]);
 
   const handleRate = useCallback((key: keyof EducationalValue, rating: number) => {
     setValue((prev) => ({ ...prev, [key]: rating }));
@@ -145,9 +162,16 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
   }, [value, onSubmit]);
 
   const handleClose = useCallback(() => {
-    setValue(INITIAL_VALUE);
-    onClose();
-  }, [onClose]);
+    Animated.timing(slideAnim, {
+      toValue: 600,
+      duration: 200,
+      easing: Easing.in(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      setValue(INITIAL_VALUE);
+      onClose();
+    });
+  }, [onClose, slideAnim]);
 
   const isComplete =
     value.accuracy > 0 &&
@@ -163,7 +187,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="none"
+      animationType="fade"
       presentationStyle="overFullScreen"
       statusBarTranslucent
       onRequestClose={handleClose}
@@ -171,7 +195,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleClose} />
 
-        <Animated.View style={styles.modal}>
+        <Animated.View style={[styles.modal, { transform: [{ translateY: slideAnim }] }]}>
           {/* Handle bar */}
           <View style={styles.handleBar} />
 
@@ -182,9 +206,9 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 <Ionicons name="diamond" size={18} color="#8B5CF6" />
               </View>
               <View>
-                <Text style={styles.title}>{t('feed.educationalValue.title')}</Text>
+                <Text style={styles.title}>{t('feed.educationalValue.title', 'Rate Educational Value')}</Text>
                 <Text style={styles.subtitle}>
-                  {t('feed.educationalValue.rateSubtitle')} {t(`feed.postTypes.${postType.toLowerCase()}`)}?
+                  {t('feed.educationalValue.rateSubtitle', 'How would you rate this')} {t(`feed.postTypes.${postType.toLowerCase()}`, postType.toLowerCase())}?
                 </Text>
               </View>
             </View>
@@ -199,7 +223,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               <StarRow
                 key={dim.key}
                 icon={dim.icon}
-                label={t(`feed.educationalValue.${dim.key}`)}
+                label={t(`feed.educationalValue.${dim.key}`, dim.label)}
                 color={dim.color}
                 rating={value[dim.key] as number}
                 onRate={(n) => handleRate(dim.key, n)}
@@ -209,7 +233,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
 
           {/* ── Difficulty ─────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>{t('feed.educationalValue.difficulty')}</Text>
+            <Text style={styles.sectionLabel}>{t('feed.educationalValue.difficulty', 'DIFFICULTY')}</Text>
             <View style={styles.difficultyRow}>
               {DIFFICULTY_OPTIONS.map((opt) => {
                 const active = value.difficulty === opt.value;
@@ -233,7 +257,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                         active && { color: opt.color, fontWeight: '700' },
                       ]}
                     >
-                      {t(`feed.educationalValue.${opt.value === 'too_easy' ? 'easy' : opt.value === 'just_right' ? 'justRight' : 'hard'}`)}
+                      {t(`feed.educationalValue.${opt.value === 'too_easy' ? 'easy' : opt.value === 'just_right' ? 'justRight' : 'hard'}`, opt.label)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -254,7 +278,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 color={value.recommend ? '#6366F1' : '#D1D5DB'}
               />
               <Text style={[styles.recommendText, value.recommend && styles.recommendTextActive]}>
-                {t('feed.educationalValue.recommend')}
+                {t('feed.educationalValue.recommend', 'I recommend this to others')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -265,7 +289,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               <Animated.View style={styles.summaryRow}>
                 <Ionicons name="analytics" size={18} color="#8B5CF6" />
                 <Text style={styles.summaryText}>
-                  {t('feed.educationalValue.averageRating')} <Text style={styles.summaryBold}>{averageRating}/5.0</Text>
+                  {t('feed.educationalValue.averageRating', 'Average Rating:')} <Text style={styles.summaryBold}>{averageRating}/5.0</Text>
                 </Text>
               </Animated.View>
             )}
@@ -292,7 +316,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                       color={isComplete ? '#fff' : '#9CA3AF'}
                     />
                     <Text style={[styles.submitText, !isComplete && styles.submitTextDisabled]}>
-                      {t('feed.educationalValue.submit')}
+                      {t('feed.educationalValue.submit', 'Submit Rating')}
                     </Text>
                   </>
                 )}
@@ -439,8 +463,8 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   difficultyLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
     color: '#6B7280',
   },
 
