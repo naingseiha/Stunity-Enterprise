@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   StyleSheet,
   Modal,
   FlatList,
   SafeAreaView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { getAvailableTranslationLocales, syncTranslations } from '@/lib/i18n';
@@ -103,7 +103,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
           <Image
             source={{ uri: getFlagUrl(item.countryCode) }}
             style={styles.flag}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            transition={150}
+            recyclingKey={item.countryCode}
           />
           <View>
             <Text style={[styles.languageName, isSelected && styles.languageTextActive]}>

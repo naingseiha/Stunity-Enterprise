@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   RefreshControl,
   ScrollView,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -1209,7 +1209,14 @@ export default function ClassReportScreen() {
                           </View>
                           <View style={[styles.podiumAvatar, { backgroundColor: getAvatarColor(student.student.id) }]}>
                             {student.student.photoUrl ? (
-                              <Image source={{ uri: student.student.photoUrl }} style={styles.podiumAvatarImage} />
+                              <Image
+                                source={{ uri: student.student.photoUrl }}
+                                style={styles.podiumAvatarImage}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={150}
+                                recyclingKey={student.student.photoUrl}
+                              />
                             ) : (
                               <Text style={styles.podiumAvatarText}>
                                 {getInitials(student.student.firstName, student.student.lastName)}

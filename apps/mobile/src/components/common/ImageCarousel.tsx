@@ -143,7 +143,8 @@ const FeedVideoPreview = React.memo(function FeedVideoPreview({
           style={[styles.feedVideoPoster, { borderRadius }]}
           contentFit="cover"
           cachePolicy="memory-disk"
-          priority="normal"
+          priority="high"
+          transition={150}
           recyclingKey={posterUrl}
           allowDownscaling
         />
@@ -344,9 +345,9 @@ function ImageCarouselInner({
             source={{ uri }}
             style={[styles.image, { borderRadius }]}
             contentFit={isItemHeightCapped ? 'contain' : 'cover'}
-            transition={120}
+            transition={150}
             cachePolicy="memory-disk"
-            priority="normal"
+            priority={optimizeForFeed ? 'high' : 'normal'}
             recyclingKey={uri}
             blurRadius={0}
             allowDownscaling={optimizeForFeed}

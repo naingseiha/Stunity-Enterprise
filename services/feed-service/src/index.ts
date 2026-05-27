@@ -173,9 +173,15 @@ if (runBackgroundJobs) {
       });
 
       let cached = 0;
+      // IMPORTANT: limit must match the mobile client's PERSONALIZED_FEED_PAGE_SIZE
+      // (apps/mobile/src/stores/feedStore.ts:51). The session-cache key in
+      // feedRanker.generateFeed is keyed by limit, so a mismatch causes 100%
+      // cache miss for every mobile request — even when the precomputed feed
+      // for the user exists. Keep these two values in sync.
+      const PRECOMPUTE_LIMIT = 18;
       for (const { userId } of activeUsers) {
         try {
-          const rankedFeed = await feedRanker.generateFeed(userId, { page: 1, limit: 20 });
+          const rankedFeed = await feedRanker.generateFeed(userId, { page: 1, limit: PRECOMPUTE_LIMIT });
           if (rankedFeed.items.length > 0) {
             const { feedCache: cache } = require('./redis');
             await cache.set(

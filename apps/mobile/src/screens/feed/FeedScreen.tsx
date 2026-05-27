@@ -305,7 +305,6 @@ export default function FeedScreen() {
       flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
     },
   });
-  const canTriggerEndReachedRef = React.useRef(true);
   const postsRef = useRef(feedItems);
   const pendingPostsRef = useRef(pendingPosts);
   const lastProfilePictureUrlRef = useRef<string | null>(null);
@@ -477,15 +476,16 @@ export default function FeedScreen() {
     setRefreshing(false);
   }, [fetchPosts, refreshPerformanceStats]);
 
+  // The store dedups concurrent fetches internally (feedStore.ts:343), so call
+  // through directly. The previous canTriggerEndReachedRef + onMomentumScrollBegin
+  // pair caused a race where the gate was released mid-fetch while isLoadingPosts
+  // was still true, dropping the call — symptom was blank space at the bottom
+  // until the user scrolled up and back down to re-trigger the threshold.
   const handleLoadMore = useCallback(() => {
-    if (!canTriggerEndReachedRef.current) return;
-    if (!isLoadingPosts && hasMorePosts) {
-      canTriggerEndReachedRef.current = false;
-      fetchPosts(false).finally(() => {
-        canTriggerEndReachedRef.current = true;
-      });
+    if (hasMorePosts) {
+      fetchPosts(false);
     }
-  }, [isLoadingPosts, hasMorePosts, fetchPosts]);
+  }, [hasMorePosts, fetchPosts]);
 
   const handleLikePost = useCallback((post: Post) => {
     if (post.isLiked) {
@@ -742,13 +742,17 @@ export default function FeedScreen() {
   }, [feedColumnWidth]);
 
   const renderFooter = useCallback(() => {
-    if (!isLoadingPosts) return null;
+    // Initial load uses renderEmpty's skeleton stack. Footer is only for
+    // load-more (page > 1), where the user is mid-scroll and needs a visible
+    // "more coming" signal instead of blank space below the last post.
+    if (!isLoadingPosts || feedItems.length === 0) return null;
     return (
       <View style={styles.footer}>
         <PostSkeleton />
+        <PostSkeleton />
       </View>
     );
-  }, [isLoadingPosts]);
+  }, [isLoadingPosts, feedItems.length]);
 
   const renderInitialLoadNotice = useCallback(() => {
     if (initialLoadNotice === 'hidden') return null;
@@ -1000,10 +1004,10 @@ export default function FeedScreen() {
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmpty}
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.28}
-          onMomentumScrollBegin={() => {
-            canTriggerEndReachedRef.current = true;
-          }}
+          // Aggressive prefetch — FB/Instagram trigger at ~0.5-0.8 of viewport.
+          // The store already prefetches page 2 after page 1 paint, and this
+          // ensures page 3+ start loading well before the user hits bottom.
+          onEndReachedThreshold={0.6}
           viewabilityConfig={viewabilityConfig}
           onViewableItemsChanged={onViewableItemsChanged}
           refreshControl={

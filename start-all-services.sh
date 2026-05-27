@@ -13,6 +13,29 @@ NC='\033[0m'
 echo -e "${BLUE}🚀 Starting Stunity Enterprise Services${NC}"
 echo ""
 
+# ─── Load environment ─────────────────────────────────────────────────────
+# Same precedence as quick-start.sh: prefer .env.development.local (dev Supabase)
+# unless STUNITY_ALLOW_PROD_DB=1 is set. Avoids accidentally pointing services
+# at Sydney prod DB (~700ms RTT) when the dev DB env file is present.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/.env"
+  set +a
+  echo -e "${GREEN}  📄 Loaded $SCRIPT_DIR/.env${NC}"
+fi
+if [ -f "$SCRIPT_DIR/.env.development.local" ] && [ "${STUNITY_ALLOW_PROD_DB:-0}" != "1" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/.env.development.local"
+  set +a
+  echo -e "${GREEN}  🧪 Loaded .env.development.local (dev Supabase — set STUNITY_ALLOW_PROD_DB=1 to use prod)${NC}"
+elif [ "${STUNITY_ALLOW_PROD_DB:-0}" = "1" ]; then
+  echo -e "${YELLOW}  ⚠️  STUNITY_ALLOW_PROD_DB=1 — using production DB${NC}"
+fi
+echo ""
+
 # Check for port conflicts
 echo "🔍 Checking for port conflicts..."
 PORTS_IN_USE=0

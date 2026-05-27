@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Modal,
   Platform,
   Pressable,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -138,7 +138,14 @@ const RankingAvatar = React.memo(({
 }) => (
   <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: getAvatarColor(student.id) }]}>
     {student.photoUrl ? (
-      <Image source={{ uri: student.photoUrl }} style={styles.avatarImage} />
+      <Image
+        source={{ uri: student.photoUrl }}
+        style={styles.avatarImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={150}
+        recyclingKey={student.photoUrl}
+      />
     ) : (
       <Text style={[styles.avatarText, { fontSize: textSize }]}>{getInitials(student.firstName, student.lastName)}</Text>
     )}

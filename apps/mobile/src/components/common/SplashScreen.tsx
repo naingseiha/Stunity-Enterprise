@@ -6,7 +6,8 @@
  */
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -174,7 +175,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           <Image
             source={require('../../../assets/Stunity.png')}
             style={[styles.logo, { width: logoWidth }]}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            priority="high"
           />
         </Animated.View>
 

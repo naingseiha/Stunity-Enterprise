@@ -18,8 +18,9 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  Image, Animated
+  Animated
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -764,7 +765,15 @@ export default function EditProfileScreen() {
               activeOpacity={0.85}
             >
               {coverUri ? (
-                <Image source={{ uri: coverUri }} style={s.coverImage} />
+                <Image
+                  source={{ uri: coverUri }}
+                  style={s.coverImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  priority="high"
+                  transition={150}
+                  recyclingKey={coverUri}
+                />
               ) : (
                 <>
                   <LinearGradient

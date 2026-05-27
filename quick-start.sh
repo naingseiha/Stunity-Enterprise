@@ -37,14 +37,18 @@ load_root_env() {
     echo "  ⚠️  No .env at repo root — copy .env.example → .env before starting services"
   fi
 
-  if [ "${STUNITY_USE_DEV_DB:-0}" = "1" ] && [ -f "$PROJECT_DIR/.env.development.local" ]; then
+  # Dev-DB-by-default: if .env.development.local exists, prefer it unless the
+  # operator has explicitly opted into the prod DB via STUNITY_ALLOW_PROD_DB=1.
+  # The Sydney prod DB has ~700ms RTT from APAC dev machines; defaulting to dev
+  # (Singapore) keeps the feed snappy and prevents accidental writes to prod.
+  if [ -f "$PROJECT_DIR/.env.development.local" ] && [ "${STUNITY_ALLOW_PROD_DB:-0}" != "1" ]; then
     set -a
     # shellcheck disable=SC1091
     source "$PROJECT_DIR/.env.development.local"
     set +a
-    echo "  🧪 Loaded .env.development.local (dev Supabase — not production)"
-  elif [ -f "$PROJECT_DIR/.env.development.local" ] && [ "${STUNITY_ALLOW_PROD_DB:-0}" != "1" ]; then
-    echo "  💡 Dev DB file exists. Use: source scripts/activate-dev-database.sh  (or STUNITY_ALLOW_PROD_DB=1 to use production .env)"
+    echo "  🧪 Loaded .env.development.local (dev Supabase — set STUNITY_ALLOW_PROD_DB=1 to use prod)"
+  elif [ "${STUNITY_ALLOW_PROD_DB:-0}" = "1" ]; then
+    echo "  ⚠️  STUNITY_ALLOW_PROD_DB=1 — using production .env values"
   fi
 
   normalize_database_pool_url

@@ -13,7 +13,7 @@
  * - Rich content indicators (PDF, Code, Formula)
  */
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useThemeContext } from '@/contexts';
 import {
   View,
@@ -442,13 +442,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const [isFollowing, setIsFollowing] = useState(post.isFollowingAuthor || false);
   const [followLoading, setFollowLoading] = useState(false);
 
-  // Keep valued in sync with prop when it changes from parent
-  useEffect(() => {
-    if (isValuedProp && !valued) setValued(true);
-  }, [isValuedProp]);
-
-  // Reset internal state when post identity changes (recycling)
-  // Use layout effect to ensure state is reset before paint
+  // Reset internal state when post identity or relevant prop slice changes (recycling).
+  // useLayoutEffect runs before paint to avoid a frame of stale UI.
   React.useLayoutEffect(() => {
     setLiked(post.isLiked);
     setBookmarked(post.isBookmarked);
@@ -1474,22 +1469,4 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
 });
 
-export default React.memo(PostCard, (prevProps, nextProps) => {
-  return (
-    // Re-render if the post object itself changes deeply. We specifically check
-    // properties that update during interactions:
-    prevProps.post.id === nextProps.post.id &&
-    prevProps.post.likes === nextProps.post.likes &&
-    prevProps.post.comments === nextProps.post.comments &&
-    prevProps.post.shares === nextProps.post.shares &&
-    prevProps.post.views === nextProps.post.views &&
-    prevProps.post.isLiked === nextProps.post.isLiked &&
-    prevProps.post.isBookmarked === nextProps.post.isBookmarked &&
-    prevProps.post.content === nextProps.post.content && // for edits
-    // Check if the user has valued it changes
-    prevProps.isValued === nextProps.isValued &&
-    // Check if poll votes updated
-    prevProps.post.userVotedOptionId === nextProps.post.userVotedOptionId
-    // Handlers (like onLike, onComment) are assumed stable from the parent (FeedScreen uses useRef for them)
-  );
-});
+export default PostCard;

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  Image,
   InteractionManager,
   RefreshControl,
   ScrollView,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -1052,7 +1052,14 @@ export default function ClassDetailsScreen() {
                       <View style={[styles.timelineCard, { borderColor: slotTheme.border, backgroundColor: slotTheme.soft }]}>
                         <View style={styles.cardLeft}>
                           {entry.teacher?.photoUrl || entry.teacher?.profilePictureUrl ? (
-                            <Image source={{ uri: entry.teacher?.photoUrl || entry.teacher?.profilePictureUrl }} style={styles.cardAvatar} />
+                            <Image
+                              source={{ uri: entry.teacher?.photoUrl || entry.teacher?.profilePictureUrl }}
+                              style={styles.cardAvatar}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                              transition={150}
+                              recyclingKey={entry.teacher?.photoUrl || entry.teacher?.profilePictureUrl}
+                            />
                           ) : (
                             <View style={[styles.cardAvatarFallback, { backgroundColor: slotTheme.tint }]}>
                               <Text style={[styles.cardAvatarText, { color: slotTheme.text }]}>{entry.teacher?.firstName?.[0] || 'T'}</Text>
@@ -1118,7 +1125,14 @@ export default function ClassDetailsScreen() {
                     activeOpacity={0.85}
                   >
                     {teacher.photoUrl || teacher.profilePictureUrl ? (
-                      <Image source={{ uri: teacher.photoUrl || teacher.profilePictureUrl }} style={styles.teacherAvatarFallback} />
+                      <Image
+                        source={{ uri: teacher.photoUrl || teacher.profilePictureUrl }}
+                        style={styles.teacherAvatarFallback}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={150}
+                        recyclingKey={teacher.photoUrl || teacher.profilePictureUrl}
+                      />
                     ) : (
                       <View style={styles.teacherAvatarFallback}>
                         <Text style={styles.teacherAvatarText}>{teacher.firstName?.[0] || 'T'}</Text>

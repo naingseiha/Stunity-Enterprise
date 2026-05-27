@@ -37,9 +37,14 @@ const viewBuffer = new Map<string, { postId: string; duration: number; source: s
 
 // Feed cold-start resilience (Cloud Run free-tier friendly)
 const FEED_FIRST_PAGE_TIMEOUT_MS = 7_000;
+// Pagination is retried once on timeout, so keep the per-attempt window tight.
+// Worst case: 4s + 700ms delay + 4s retry = ~9s before the user sees a failure,
+// vs. ~8s today for a single shot that succeeds maybe half the time on a cold
+// backend. Tight timeouts pair with retry — long timeouts without retry don't.
+const FEED_NEXT_PAGE_RETRY_DELAY_MS = 700;
+const FEED_NEXT_PAGE_TIMEOUT_TIGHT_MS = 4_500;
 const FEED_RECENT_FALLBACK_TIMEOUT_MS = 5_500;
 const FEED_RETRY_TIMEOUT_MS = 8_000;
-const FEED_NEXT_PAGE_TIMEOUT_MS = 8_000;
 const FEED_BACKGROUND_POLL_TIMEOUT_MS = 5_000;
 const INITIAL_RETRY_BASE_DELAY_MS = 900;
 const MAX_INITIAL_FEED_RETRIES = 1;
@@ -399,11 +404,38 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       let response;
       try {
-        response = await feedApi.get(endpoint, {
-          params,
-          timeout: page === 1 ? FEED_FIRST_PAGE_TIMEOUT_MS : FEED_NEXT_PAGE_TIMEOUT_MS,
-          headers: { 'X-No-Retry': 'true' },
-        });
+        if (page === 1) {
+          response = await feedApi.get(endpoint, {
+            params,
+            timeout: FEED_FIRST_PAGE_TIMEOUT_MS,
+            headers: { 'X-No-Retry': 'true' },
+          });
+        } else {
+          // Page 2+ has no fallback path, so retry once on timeout. Backend
+          // cold-starts (dev or Cloud Run) usually warm up within ~500ms after
+          // the first failed attempt.
+          try {
+            response = await feedApi.get(endpoint, {
+              params,
+              timeout: FEED_NEXT_PAGE_TIMEOUT_TIGHT_MS,
+              headers: { 'X-No-Retry': 'true' },
+            });
+          } catch (firstAttemptError: any) {
+            const isTimeout = firstAttemptError?.code === 'ECONNABORTED'
+              || firstAttemptError?.code === 'TIMEOUT_ERROR'
+              || /timeout/i.test(firstAttemptError?.message || '');
+            if (!isTimeout) throw firstAttemptError;
+            if (__DEV__) {
+              console.log(`⏳ [FeedStore] Load-more timeout on page ${page}, retrying once after ${FEED_NEXT_PAGE_RETRY_DELAY_MS}ms…`);
+            }
+            await new Promise(resolve => setTimeout(resolve, FEED_NEXT_PAGE_RETRY_DELAY_MS));
+            response = await feedApi.get(endpoint, {
+              params,
+              timeout: FEED_NEXT_PAGE_TIMEOUT_TIGHT_MS,
+              headers: { 'X-No-Retry': 'true' },
+            });
+          }
+        }
       } catch (requestError) {
         if (page !== 1) throw requestError;
 

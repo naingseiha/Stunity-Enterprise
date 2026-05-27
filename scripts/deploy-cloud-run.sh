@@ -168,7 +168,27 @@ EOF
   if [ -n "${DATABASE_READ_URL:-}" ]; then
     ENV_VARS="$ENV_VARS|DATABASE_READ_URL=$DATABASE_READ_URL"
   fi
-  ENV_VARS="$ENV_VARS|PRISMA_CONNECTION_LIMIT=$PRISMA_CONNECTION_LIMIT|PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT|DISABLE_DB_KEEPALIVE=1|DISABLE_DB_STARTUP_WARMUP=${DISABLE_DB_STARTUP_WARMUP:-1}"
+  # Pass REDIS_URL to Cloud Run only if it points at a real shared cache
+  # (Upstash / Memorystore). Local dev Redis (localhost:6379) is unreachable
+  # from Cloud Run, so falling back to in-process LRU is preferred there.
+  # CLOUD_RUN_REDIS_URL takes precedence when set, otherwise REDIS_URL is
+  # passed through if it doesn't look like a localhost address.
+  RESOLVED_REDIS_URL="${CLOUD_RUN_REDIS_URL:-}"
+  if [ -z "$RESOLVED_REDIS_URL" ] && [[ "${REDIS_URL:-}" != *"localhost"* && "${REDIS_URL:-}" != *"127.0.0.1"* && -n "${REDIS_URL:-}" ]]; then
+    RESOLVED_REDIS_URL="$REDIS_URL"
+  fi
+  if [ -n "$RESOLVED_REDIS_URL" ]; then
+    ENV_VARS="$ENV_VARS|REDIS_URL=$RESOLVED_REDIS_URL"
+  fi
+  # Keepalive defaults to ON for warm services (min-instances>=1), OFF otherwise.
+  # The keepalive ping every 4 min keeps the DB connection hot so requests
+  # don't pay the TCP+TLS handshake cost after idle periods. Costs negligible
+  # connection-pool slots on Pro plan. Override via env var if needed.
+  DEFAULT_DISABLE_KEEPALIVE=1
+  if [ "$SERVICE_MIN_INSTANCES" -ge 1 ]; then
+    DEFAULT_DISABLE_KEEPALIVE=0
+  fi
+  ENV_VARS="$ENV_VARS|PRISMA_CONNECTION_LIMIT=$PRISMA_CONNECTION_LIMIT|PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT|DISABLE_DB_KEEPALIVE=${DISABLE_DB_KEEPALIVE:-$DEFAULT_DISABLE_KEEPALIVE}|DISABLE_DB_STARTUP_WARMUP=${DISABLE_DB_STARTUP_WARMUP:-$DEFAULT_DISABLE_KEEPALIVE}"
 
   # Background cron (feed ranker, school audit) runs per instance — disable by default in prod.
   if [ "$SERVICE" = "feed-service" ] && [ "${FEED_ENABLE_BACKGROUND_JOBS:-0}" = "1" ]; then

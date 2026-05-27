@@ -91,6 +91,13 @@ const mapApiUserToUser = (apiUser: any): User => {
 const prewarmFeedAfterAuth = (role?: User['role']) => {
   if (role === 'PARENT') return;
 
+  // Wake hot-path backend containers in parallel with the data fetch. /health
+  // is unauthenticated and ~10ms warm, so the ping itself is cheap and the
+  // sibling services (learn, notification) get warmed for free.
+  void import('@/services/backendPrewarm')
+    .then(({ prewarmHotServices }) => prewarmHotServices())
+    .catch(() => { });
+
   setTimeout(() => {
     import('./feedStore')
       .then(({ useFeedStore }) => {

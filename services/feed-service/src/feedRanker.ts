@@ -171,14 +171,23 @@ function calculatePostQualityScore(post: {
     return Math.min(score, 1.0);
 }
 
-const USER_SIGNALS_CACHE_TTL_SECONDS = 60;
+// User signals (interests, follows, blocks, recent affinity) change slowly —
+// any single page view doesn't need real-time freshness. 10 min keeps the
+// cache warm across a normal session and any quick re-open, eliminating the
+// 6-subsystem fan-out that today makes page 1 cold take ~4s.
+const USER_SIGNALS_CACHE_TTL_SECONDS = 600;
 const SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS = 300;
 
 /** Horizontally scrollable quiz rail — fill with topic-matched first, then wider pool. */
 const SUGGESTED_QUIZ_CAROUSEL_TARGET = 16;
-const CANDIDATE_POOL_CACHE_TTL_SECONDS = 45;
-const TRENDING_POOL_CACHE_TTL_SECONDS = 45;
-const EXPLORE_POOL_CACHE_TTL_SECONDS = 45;
+// Candidate/trending/explore pools are post-list queries that change as new
+// posts come in. 45s was tight and pushed every refresh into cache-miss; 3 min
+// keeps them warm during a scroll session while still picking up new content
+// often enough for an educational/social feed. Hot posts also get invalidated
+// directly by post-create/edit hooks.
+const CANDIDATE_POOL_CACHE_TTL_SECONDS = 180;
+const TRENDING_POOL_CACHE_TTL_SECONDS = 180;
+const EXPLORE_POOL_CACHE_TTL_SECONDS = 180;
 const FEED_SESSION_CACHE_TTL_SECONDS = 300;
 const FEED_SESSION_PAGE_MULTIPLIER = 6;
 const FEED_SESSION_MIN_ITEMS = 80;

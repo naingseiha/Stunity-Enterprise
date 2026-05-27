@@ -588,9 +588,26 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       });
     }
 
+    // Per-request timing tape. Cheap (Node performance.now ~100ns) and gives
+    // us a single line per request showing where the time went. Logged only
+    // outside production so prod logs stay clean.
+    const requestStartedAt = performance.now();
+    const timings: Record<string, number> = {};
+    const mark = (label: string, fromMs: number) => {
+      timings[label] = Math.round(performance.now() - fromMs);
+    };
+    const logTimings = (cacheHit: boolean) => {
+      if (process.env.NODE_ENV === 'production') return;
+      const total = Math.round(performance.now() - requestStartedAt);
+      const parts = Object.entries(timings).map(([k, v]) => `${k}=${v}ms`).join(' ');
+      console.log(`⏱️  [Feed] /posts/feed page=${normalizedPage} mode=${mode} cache=${cacheHit ? 'HIT' : 'MISS'} total=${total}ms ${parts}`);
+    };
+
     // Check feed response cache first
     const cacheKey = `${userId}:${mode}:${normalizedPage}:${normalizedLimit}:${subject || 'ALL'}:${normalizedFields}:${excludeKey}:${cursorKey}`;
+    const cacheLookupStart = performance.now();
     const cached = await feedCache.get(cacheKey);
+    mark('cacheLookup', cacheLookupStart);
     if (cached) {
       const cachedPayload = cached.payload || cached;
       const cachedEtag = cached.etag;
@@ -598,6 +615,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
         res.setHeader('ETag', cachedEtag);
       }
       res.setHeader('Cache-Control', `private, max-age=${FEED_RESPONSE_CACHE_TTL_SECONDS}, stale-while-revalidate=300`);
+      logTimings(true);
       if (cachedEtag && req.headers['if-none-match'] === cachedEtag) {
         return res.status(304).end();
       }
@@ -605,6 +623,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     }
 
     const buildResponse = async (): Promise<{ payload: any; etag: string }> => {
+      const rankerStart = performance.now();
       const result = await feedRanker.generateFeed(userId, {
         mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
         page: normalizedPage,
@@ -613,6 +632,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
         excludeIds: normalizedExcludeIds,
         cursor: rawCursor || undefined,
       });
+      mark('ranker', rankerStart);
 
       const feedPosts = result.items.filter(i => i.type === 'POST').map(i => i.data as any);
       const postIds = feedPosts.map((sp: any) => sp.post.id);
@@ -628,6 +648,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
           ? withFeedSoftTimeout(label, promise, FEED_PERSONALIZATION_TIMEOUT_MS, fallback)
           : promise.catch(() => fallback);
 
+      const personalizeStart = performance.now();
       const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
         postIds.length > 0
           ? personalize('liked-state lookup', prismaRead.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }), [] as any[])
@@ -650,6 +671,9 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
           : Promise.resolve(new Map()),
       ]);
 
+      mark('personalize', personalizeStart);
+
+      const formatStart = performance.now();
       const likedSet = new Set(userLikes.map(l => l.postId));
       const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
       const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
@@ -707,7 +731,9 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       });
 
       const outputPosts = minimal ? formattedFeed.map(f => f.type === 'POST' ? { type: 'POST', data: stripToMinimal(f.data) } : f) : formattedFeed;
+      mark('format', formatStart);
 
+      const mediaStart = performance.now();
       outputPosts.forEach((p: any) => {
         if (p.type === 'POST') {
           if (p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req as AuthRequest);
@@ -730,7 +756,9 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
           });
         }
       });
+      mark('media', mediaStart);
 
+      const etagStart = performance.now();
       // @ts-ignore
       const etag = createETag(outputPosts.filter(p => p.type === 'POST').map(p => p.data));
       const payload = {
@@ -756,20 +784,26 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       };
 
       feedCache.set(cacheKey, { payload, etag }, FEED_RESPONSE_CACHE_TTL_SECONDS).catch(() => { });
+      mark('etag', etagStart);
       return { payload, etag };
     };
 
     let responsePromise = inFlightFeedResponses.get(cacheKey);
+    let coalesced = false;
     if (!responsePromise) {
       responsePromise = buildResponse().finally(() => {
         inFlightFeedResponses.delete(cacheKey);
       });
       inFlightFeedResponses.set(cacheKey, responsePromise);
+    } else {
+      coalesced = true;
     }
 
     const { payload, etag } = await responsePromise;
+    if (coalesced) timings.coalesced = 1;
     res.setHeader('ETag', etag);
     res.setHeader('Cache-Control', `private, max-age=${FEED_RESPONSE_CACHE_TTL_SECONDS}, stale-while-revalidate=300`);
+    logTimings(false);
 
     if (req.headers['if-none-match'] === etag) {
       return res.status(304).end();

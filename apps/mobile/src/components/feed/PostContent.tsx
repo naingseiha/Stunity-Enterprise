@@ -153,6 +153,11 @@ const PostContent = ({
               <Image
                 source={{ uri: post.repostOf.author.profilePictureUrl }}
                 style={styles.repostEmbedAvatar}
+                cachePolicy="memory-disk"
+                priority="high"
+                transition={150}
+                recyclingKey={post.repostOf.author.profilePictureUrl}
+                contentFit="cover"
                 allowDownscaling={false}
               />
             ) : (
@@ -176,6 +181,10 @@ const PostContent = ({
               source={{ uri: post.repostOf.mediaUrls[0] }}
               style={styles.repostEmbedMedia}
               contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="high"
+              transition={150}
+              recyclingKey={post.repostOf.mediaUrls[0]}
               allowDownscaling={false}
             />
           )}

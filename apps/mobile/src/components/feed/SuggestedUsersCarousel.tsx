@@ -92,7 +92,15 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
                 {/* Cover Photo */}
                 <View style={styles.coverContainer}>
                     {item.coverPhotoUrl ? (
-                         <Image source={{ uri: item.coverPhotoUrl }} style={styles.coverImage} contentFit="cover" />
+                         <Image
+                            source={{ uri: item.coverPhotoUrl }}
+                            style={styles.coverImage}
+                            contentFit="cover"
+                            cachePolicy="memory-disk"
+                            priority="high"
+                            transition={150}
+                            recyclingKey={item.coverPhotoUrl}
+                        />
                     ) : (
                          <View style={[styles.coverImage, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }]} />
                     )}

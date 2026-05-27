@@ -10,10 +10,10 @@ import {
   Alert,
   StatusBar,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -772,7 +772,14 @@ export default function ClassGradesScreen() {
         
         <View style={styles.studentInfo}>
           {item.photoUrl ? (
-            <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
+            <Image
+              source={{ uri: item.photoUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={150}
+              recyclingKey={item.photoUrl}
+            />
           ) : (
             <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '20' }]}>
               <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>

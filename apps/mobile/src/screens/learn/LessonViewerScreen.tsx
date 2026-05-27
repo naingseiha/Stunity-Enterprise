@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   ActionSheetIOS,
   Alert,
-  Image,
   Linking,
   Platform,
   RefreshControl,
@@ -16,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -1034,7 +1034,14 @@ export default function LessonViewerScreen() {
 
           {lesson.type === 'IMAGE' && (
             <View style={{ marginVertical: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: '#F1F5F9' }}>
-               <Image source={{ uri: lesson.content || '' }} style={{ width: '100%', aspectRatio: 16/9 }} resizeMode="contain" />
+               <Image
+                 source={{ uri: lesson.content || '' }}
+                 style={{ width: '100%', aspectRatio: 16/9 }}
+                 contentFit="contain"
+                 cachePolicy="memory-disk"
+                 transition={150}
+                 recyclingKey={lesson.content || undefined}
+               />
                <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B' }}>{lesson.title}</Text>
                  <TouchableOpacity style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }} onPress={() => Linking.openURL(lesson.content || '')}>
@@ -1071,7 +1078,10 @@ export default function LessonViewerScreen() {
                   <Image
                     source={{ uri: primaryVisibleResource.url }}
                     style={styles.inlinePreviewImage}
-                    resizeMode="contain"
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                    transition={150}
+                    recyclingKey={primaryVisibleResource.url}
                   />
                 </View>
               ) : null}

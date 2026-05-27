@@ -11,7 +11,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image, Animated} from 'react-native';
+  Animated} from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeContext } from '@/contexts';
@@ -64,7 +65,15 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
           >
             <View style={styles.avatarInner}>
               {uri ? (
-                <Image source={{ uri }} style={styles.avatarImage} />
+                <Image
+                  source={{ uri }}
+                  style={styles.avatarImage}
+                  cachePolicy="memory-disk"
+                  priority="high"
+                  transition={150}
+                  recyclingKey={uri}
+                  contentFit="cover"
+                />
               ) : (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
@@ -79,7 +88,15 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
           <View style={styles.grayRing}>
             <View style={styles.avatarInner}>
               {uri ? (
-                <Image source={{ uri }} style={styles.avatarImage} />
+                <Image
+                  source={{ uri }}
+                  style={styles.avatarImage}
+                  cachePolicy="memory-disk"
+                  priority="high"
+                  transition={150}
+                  recyclingKey={uri}
+                  contentFit="cover"
+                />
               ) : (
                 <LinearGradient
                   colors={['#6366F1', '#8B5CF6']}
