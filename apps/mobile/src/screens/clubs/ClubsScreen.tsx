@@ -16,6 +16,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   Platform,
   RefreshControl,
@@ -30,9 +31,7 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -48,7 +47,7 @@ import { useAuthStore } from '@/stores';
 import StunityLogo from '../../../assets/Stunity.svg';
 import { ClubCard } from '@/components/clubs/ClubCard';
 import { SchoolClassCard } from '@/components/clubs/SchoolClassCard';
-import { BannerCarousel, ShortcutItem, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
+import { BannerCarousel, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
 import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 import { useTranslation } from 'react-i18next';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
@@ -56,6 +55,24 @@ import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
 import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
+
+// ── Filter tab bar — mirrors LearnScreen pill-tab visual language ─────────────
+const CLUB_FILTER_TABS: { id: ClubFilter; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'all',      labelKey: 'clubs.screen.shortcuts.allClubs', icon: 'sparkles-outline' },
+  { id: 'joined',   labelKey: 'clubs.screen.shortcuts.myClubs',  icon: 'heart-outline' },
+  { id: 'discover', labelKey: 'clubs.screen.shortcuts.discover', icon: 'compass-outline' },
+];
+
+// Single accent palette — matches LearnScreen's unified teal accent. Light bg + dark text
+// when inactive; teal fill + white text when active.
+const CLUB_TAB_PALETTE = {
+  inactiveBackground: '#FFFFFF',
+  inactiveBorder: '#E2E8F0',
+  inactiveIcon: '#64748B',
+  inactiveText: '#475569',
+  activeBackground: '#14B8A6',
+  activeBorder: '#14B8A6',
+};
 
 // Matches the accent palette used in ClubCard — professional, consistent with the page
 const CLASS_THEMES = [
@@ -124,6 +141,20 @@ export default function ClubsScreen() {
   const isThreeColumnTablet = layoutBreakpoint.isTablet && windowWidth > windowHeight && windowWidth >= 1180;
   const isPortraitTablet = layoutBreakpoint.isTablet && windowHeight >= windowWidth && windowWidth >= 820;
   const isClubRailTablet = isThreeColumnTablet || isPortraitTablet;
+
+  const styles = useMemo(
+    () =>
+      createStyles(
+        colors,
+        isDark,
+        layoutBreakpoint.isTablet,
+        layoutBreakpoint.isLargeTablet,
+        isThreeColumnTablet,
+        isPortraitTablet
+      ),
+    [colors, isDark, layoutBreakpoint.isTablet, layoutBreakpoint.isLargeTablet, isThreeColumnTablet, isPortraitTablet]
+  );
+
   const threeColumnAvailableWidth = windowWidth - TABLET_TAB_RAIL_WIDTH;
   const threeColumnCenterWidth = Math.max(620, threeColumnAvailableWidth - 260 - 280 - 28);
   /** Measured width of the school-classes band (matches on-screen column, not raw window width). */
@@ -140,16 +171,15 @@ export default function ClubsScreen() {
         ? schoolClassesBandWidth
         : contentW;
     const innerW = Math.max(0, basisW - gridHPad * 2);
-    /** Target ~3 columns on iPad class screens; tune min card width so measured innerW yields 3 cols when space allows. */
+    /** 2-column compact category-style class cards on phones; up to 3 on tablets. */
     const MIN_CLASS_COL_W = isPortraitTablet ? 320 : 200;
     const cols = layoutBreakpoint.isTablet && !isThreeColumnTablet
       ? Math.min(3, Math.max(1, Math.floor(innerW / MIN_CLASS_COL_W)))
-      : 1;
-    /** Wider gutters between columns/rows on multi-column grids (also drives `gap` on the flex wrap). */
-    const gap = cols > 1 ? 18 : 12;
+      : 2;
+    const gap = cols > 1 ? 12 : 12;
     const cellW = cols === 1 ? innerW : (innerW - gap * (cols - 1)) / cols;
-    const classPreviewCount = cols === 1 ? 6 : cols * 3;
-    const teacherSectionCount = cols === 1 ? 3 : cols * 2;
+    const classPreviewCount = cols * 3;
+    const teacherSectionCount = cols * 2;
     return { cols, contentW, gap, cellW, classPreviewCount, teacherSectionCount, gridHPad };
   }, [isPortraitTablet, isThreeColumnTablet, layoutBreakpoint.isTablet, layoutBreakpoint.contentColumnWidth, windowWidth, schoolClassesBandWidth, threeColumnCenterWidth]);
   const user = useAuthStore((state) => state.user);
@@ -166,6 +196,30 @@ export default function ClubsScreen() {
   const [refreshing, setRefreshing]             = useState(false);
   const [error, setError]                       = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter]     = useState<ClubFilter>('all');
+
+  const tabContentProgress = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    tabContentProgress.setValue(0);
+    Animated.timing(tabContentProgress, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [selectedFilter, tabContentProgress]);
+
+  const tabContentAnimatedStyle = useMemo(() => ({
+    opacity: tabContentProgress,
+    transform: [
+      {
+        translateY: tabContentProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [8, 0],
+        }),
+      },
+    ],
+  }), [tabContentProgress]);
+
   const [searchQuery, setSearchQuery]           = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [clubs, setClubs]                       = useState<Club[]>(initialClubsPage?.clubs || []);
@@ -212,7 +266,7 @@ export default function ClubsScreen() {
     user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
   );
   const canUseDisciplineWorkbench = Boolean(isAdminOrStaff || user?.role === 'TEACHER');
-  const clubListColumns = isThreeColumnTablet || isPortraitTablet ? 1 : gridConfig.cols;
+  const clubListColumns = 1;
   const shortcutItems = useMemo(() => [
     { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
     { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: isDark ? '#3A1720' : '#FFF1F2' },
@@ -763,28 +817,11 @@ export default function ClubsScreen() {
   }, [clubs, joinedClubSet, selectedFilter, normalizedQuery]);
 
   // ── Header ────────────────────────────────────────────────────────────────
+  // Note: shortcuts row and search are rendered ABOVE the list (in the hero header
+  // + pill tab bar). This renderHeader only contains body-level sections.
   const renderHeader = useCallback(() => {
     return (
       <View style={styles.listHeader}>
-        {/* Shortcuts */}
-        {!isClubRailTablet && (
-          <View style={styles.shortcutsRow}>
-          {shortcutItems.map((s) => {
-            const isActive = selectedFilter === s.id;
-            return (
-              <ShortcutItem
-                key={s.id}
-                s={s}
-                isActive={isActive}
-                onPress={() => s.id === 'create' ? handleCreateClub() : handleFilterChange(s.id as ClubFilter)}
-              />
-            );
-          })}
-          </View>
-        )}
-
-        {/* Banner Carousel */}
-        <BannerCarousel navigation={navigation} />
 
         {/* School Classes Section */}
         {(canViewSchoolClasses || isAdminOrStaff) && !isClubRailTablet && (
@@ -798,14 +835,14 @@ export default function ClubsScreen() {
             <View style={styles.schoolClassesHeader}>
               <View style={styles.schoolClassesHeaderInfo}>
                 <View style={styles.schoolClassesTitleRow}>
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    style={styles.schoolClassesTitleIcon}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  <View
+                    style={[
+                      styles.schoolClassesTitleIcon,
+                      { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' }
+                    ]}
                   >
-                    <MaterialCommunityIcons name="google-classroom" size={14} color="#FFFFFF" />
-                  </LinearGradient>
+                    <MaterialCommunityIcons name="google-classroom" size={16} color="#6366F1" />
+                  </View>
                   <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
                     {isAdminOrStaff && !isTeacherClassLayout
                       ? t('classes.directory.title')
@@ -931,8 +968,13 @@ export default function ClubsScreen() {
                 {teacherClassSplit.teaching.length > 0 ? (
                   <View style={styles.teacherSectionCard}>
                     <View style={styles.teacherSectionCardHeader}>
-                      <View style={[styles.teacherSectionIconBubble, { backgroundColor: '#0EA5E9' }]}>
-                        <Ionicons name="ribbon-outline" size={20} color="#FFFFFF" />
+                      <View
+                        style={[
+                          styles.teacherSectionIconBubble,
+                          { backgroundColor: isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE' }
+                        ]}
+                      >
+                        <Ionicons name="ribbon-outline" size={20} color="#0EA5E9" />
                       </View>
                       <View style={styles.teacherSectionHeaderText}>
                         <Text style={[styles.teacherSectionCardTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
@@ -947,7 +989,6 @@ export default function ClubsScreen() {
                       style={[
                         styles.schoolClassesGridInCard,
                         gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
-                        gridConfig.cols > 1 && { gap: gridConfig.gap },
                       ]}
                     >
                       {teacherClassSplit.teaching.slice(0, gridConfig.teacherSectionCount).map((item, idx) => (
@@ -955,8 +996,7 @@ export default function ClubsScreen() {
                           key={`teach-${item.id}`}
                           style={[
                             styles.gridItemWrapper,
-                            gridConfig.cols > 1 && styles.gridItemMulticol,
-                            gridConfig.cols > 1 && { width: gridConfig.cellW },
+                            { width: gridConfig.cols === 3 ? '31.5%' : gridConfig.cols === 2 ? '48.5%' : '100%' }
                           ]}
                         >
                           <SchoolClassCard
@@ -977,7 +1017,7 @@ export default function ClubsScreen() {
                         <Text style={[styles.seeAllGridText, isKhmer && styles.khmerInlineText]}>
                           {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
                         </Text>
-                        <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                        <Ionicons name="chevron-forward" size={16} color="#14B8A6" />
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -986,8 +1026,13 @@ export default function ClubsScreen() {
                 {teacherOtherClasses.length > 0 ? (
                   <View style={styles.teacherSectionCard}>
                     <View style={styles.teacherSectionCardHeader}>
-                      <View style={[styles.teacherSectionIconBubble, { backgroundColor: '#6366F1' }]}>
-                        <Ionicons name="layers-outline" size={20} color="#FFFFFF" />
+                      <View
+                        style={[
+                          styles.teacherSectionIconBubble,
+                          { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' }
+                        ]}
+                      >
+                        <Ionicons name="layers-outline" size={20} color="#6366F1" />
                       </View>
                       <View style={styles.teacherSectionHeaderText}>
                         <Text style={[styles.teacherSectionCardTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
@@ -1002,7 +1047,6 @@ export default function ClubsScreen() {
                       style={[
                         styles.schoolClassesGridInCard,
                         gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
-                        gridConfig.cols > 1 && { gap: gridConfig.gap },
                       ]}
                     >
                       {teacherOtherClasses.slice(0, gridConfig.teacherSectionCount).map((item, idx) => (
@@ -1010,8 +1054,7 @@ export default function ClubsScreen() {
                           key={`oth-${item.id}`}
                           style={[
                             styles.gridItemWrapper,
-                            gridConfig.cols > 1 && styles.gridItemMulticol,
-                            gridConfig.cols > 1 && { width: gridConfig.cellW },
+                            { width: gridConfig.cols === 3 ? '31.5%' : gridConfig.cols === 2 ? '48.5%' : '100%' }
                           ]}
                         >
                           <SchoolClassCard
@@ -1032,7 +1075,7 @@ export default function ClubsScreen() {
                         <Text style={[styles.seeAllGridText, isKhmer && styles.khmerInlineText]}>
                           {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
                         </Text>
-                        <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                        <Ionicons name="chevron-forward" size={16} color="#14B8A6" />
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -1043,7 +1086,6 @@ export default function ClubsScreen() {
                 style={[
                   styles.schoolClassesGrid,
                   gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
-                  gridConfig.cols > 1 && { gap: gridConfig.gap },
                 ]}
               >
                 {previewClasses.slice(0, gridConfig.classPreviewCount).map((item, idx) => (
@@ -1051,8 +1093,7 @@ export default function ClubsScreen() {
                     key={item.id}
                     style={[
                       styles.gridItemWrapper,
-                      gridConfig.cols > 1 && styles.gridItemMulticol,
-                      gridConfig.cols > 1 && { width: gridConfig.cellW },
+                      { width: gridConfig.cols === 3 ? '31.5%' : gridConfig.cols === 2 ? '48.5%' : '100%' }
                     ]}
                   >
                     <SchoolClassCard
@@ -1075,7 +1116,7 @@ export default function ClubsScreen() {
                         ? t('clubs.screen.seeAllCount', { count: previewClasses.length })
                         : t('clubs.screen.seeAllMyClassesCount', { count: previewClasses.length })}
                     </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                    <Ionicons name="chevron-forward" size={16} color="#14B8A6" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1083,28 +1124,12 @@ export default function ClubsScreen() {
           </View>
         )}
 
-        {/* Section heading + search */}
+        {/* Community Clubs section heading */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
           <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
             <Text style={[styles.viewAllText, isKhmer && styles.khmerInlineText]}>{t('learn.viewAll')}</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={[styles.searchContainer, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-          <Ionicons name="search-outline" size={20} color={colors.textTertiary} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('clubs.screen.searchPlaceholder')}
-            placeholderTextColor={colors.textTertiary}
-            style={[styles.searchInput, { color: colors.text }]}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     );
@@ -1130,10 +1155,8 @@ export default function ClubsScreen() {
     navigation,
     schoolClasses,
     schoolClassesError,
-    searchQuery,
     selectedFilter,
     colors,
-    shortcutItems,
     isKhmer,
     t,
     user?.role,
@@ -1231,7 +1254,10 @@ export default function ClubsScreen() {
                 paddingHorizontal: 6,
                 paddingBottom: 12,
               }
-            : undefined
+            : {
+                marginHorizontal: 12,
+                marginBottom: 16,
+              }
         }
       >
         <ClubCard
@@ -1284,32 +1310,48 @@ export default function ClubsScreen() {
   // ── Skeleton loading ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.container}>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <SafeAreaView edges={['top']} style={[styles.headerSafe, { backgroundColor: colors.background }]}>
-          <View style={[styles.topBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={openSidebar} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-              <Ionicons name="menu-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <StunityLogo width={108} height={30} />
-            <View style={styles.topBarActions}>
-              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-                <Ionicons name="add-circle-outline" size={22} color={colors.text} />
+
+        {/* ─ Hero gradient header — identical to real screen ─ */}
+        <LinearGradient
+          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroHeaderBg}
+        >
+          <SafeAreaView edges={['top']} style={styles.headerSafe}>
+            <View style={styles.topBar}>
+              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                <Ionicons name="menu-outline" size={24} color={colors.text} />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-                <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-                {inviteCount > 0 ? (
-                  <View style={styles.inviteBadge}>
-                    <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-                <Ionicons name="refresh-outline" size={22} color={colors.text} />
-              </TouchableOpacity>
+              <StunityLogo width={108} height={30} />
+              <View style={styles.topBarActions}>
+                <TouchableOpacity style={styles.headerIconButton}>
+                  <Ionicons name="add" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.headerIconButton}>
+                  <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
+                  {inviteCount > 0 ? (
+                    <View style={styles.inviteBadge}>
+                      <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.headerIconButton}>
+                  <Ionicons name="refresh" size={22} color={colors.text} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </SafeAreaView>
+
+            {/* Search bar — same position as real screen */}
+            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+              <Ionicons name="search" size={20} color={colors.textTertiary} />
+              <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton || '#E2E8F0', borderRadius: 6 }} />
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+
         <View style={styles.safeArea}>
           <BlurView
             intensity={isDark ? 42 : 72}
@@ -1333,45 +1375,107 @@ export default function ClubsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-      <SafeAreaView edges={['top']} style={[styles.headerSafe, { backgroundColor: colors.background }]}>
-        <View style={[styles.topBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={openSidebar} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-            <Ionicons name="menu-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <StunityLogo width={108} height={30} />
-          <View style={styles.topBarActions}>
-            <TouchableOpacity onPress={handleCreateClub} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-              <Ionicons name="add-circle-outline" size={22} color={colors.text} />
+
+      {/* ── Premium Hero Header ── */}
+      <LinearGradient
+        colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroHeaderBg}
+      >
+        <SafeAreaView edges={['top']} style={styles.headerSafe}>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+              <Ionicons name="menu-outline" size={24} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleOpenInvites} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-              <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-              {inviteCount > 0 ? (
-                <View style={styles.inviteBadge}>
-                  <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
-                </View>
-              ) : null}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onRefresh} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
-              <Ionicons name="refresh-outline" size={22} color={colors.text} />
-            </TouchableOpacity>
+            <StunityLogo width={108} height={30} />
+            <View style={styles.topBarActions}>
+              <TouchableOpacity onPress={handleCreateClub} style={styles.headerIconButton}>
+                <Ionicons name="add" size={24} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleOpenInvites} style={styles.headerIconButton}>
+                <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
+                {inviteCount > 0 ? (
+                  <View style={styles.inviteBadge}>
+                    <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
+                <Ionicons name="refresh" size={22} color={colors.text} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
-      <View style={[styles.safeArea, isClubRailTablet && styles.tabletThreeColumnBody]}>
-        <LinearGradient
-          colors={
-            isDark
-              ? ["#000000", "#061512", "#000000"]
-              : ["#FFFFFF", "#F5F0FF", "#EEF7FF"]
-          }
-          style={StyleSheet.absoluteFill}
-        />
+
+          <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+            <Ionicons name="search" size={20} color={colors.textTertiary} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('clubs.screen.searchPlaceholder')}
+              placeholderTextColor={colors.textTertiary}
+              style={[styles.searchInput, { color: colors.text }]}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      {/* Pill tab bar — fixed outside the list, matches LearnScreen */}
+      <ScrollView
+        horizontal
+        style={styles.tabsScroll}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsContainer}
+      >
+        {CLUB_FILTER_TABS.map((tab) => {
+          const isActive = selectedFilter === tab.id;
+          const palette = isDark ? {
+            ...CLUB_TAB_PALETTE,
+            inactiveBackground: colors.card,
+            inactiveBorder: colors.border,
+            inactiveIcon: colors.textSecondary,
+            inactiveText: colors.textSecondary,
+          } : CLUB_TAB_PALETTE;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={[
+                styles.tabButton,
+                { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
+                isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
+              ]}
+              onPress={() => handleFilterChange(tab.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
+              <Text
+                allowFontScaling={false}
+                style={[
+                  styles.tabLabel,
+                  isKhmer && styles.khmerInlineText,
+                  { color: isActive ? '#FFFFFF' : palette.inactiveText },
+                  isActive && styles.tabLabelActive,
+                ]}
+              >
+                {t(tab.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      <Animated.View style={[styles.animatedTabContent, layoutBreakpoint.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
         {renderTabletLeftRail()}
         {/* @ts-ignore FlashList types omit some valid props */}
         <FlashList
-          style={layoutBreakpoint.isTablet ? [styles.tabletListShell, isClubRailTablet && styles.tabletCenterList] : undefined}
+          style={isClubRailTablet ? styles.tabletCenterList : undefined}
           key={`club-cols-${clubListColumns}`}
           data={filteredClubs}
           keyExtractor={keyExtractor}
@@ -1399,26 +1503,47 @@ export default function ClubsScreen() {
           }
         />
         {renderTabletRightRail()}
-      </View>
+      </Animated.View>
     </View>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const createStyles = (
+  colors: any,
+  isDark: boolean,
+  isTablet: boolean,
+  isLargeTablet: boolean,
+  isThreeColumnTablet: boolean,
+  isPortraitTablet: boolean
+) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
   },
   listContent: {
-    paddingBottom: 40,
+    paddingTop: 4,
+    paddingBottom: isTablet ? 64 : 40,
+    paddingHorizontal: isTablet ? 12 : 0,
+  },
+  animatedTabContent: {
+    flex: 1,
+    flexDirection: (isThreeColumnTablet || isPortraitTablet) ? 'row' : 'column',
+    gap: (isThreeColumnTablet || isPortraitTablet) ? 14 : 0,
+    paddingHorizontal: (isThreeColumnTablet || isPortraitTablet) ? 8 : 0,
+  },
+  tabletContentShell: {
+    width: '100%',
+    maxWidth: isThreeColumnTablet ? undefined : isPortraitTablet ? 980 : isLargeTablet ? 980 : 900,
+    alignSelf: 'center',
   },
   tabletListShell: {
     width: '100%',
-    maxWidth: 900,
+    maxWidth: isLargeTablet ? 1100 : 900,
     alignSelf: 'center',
   },
   tabletThreeColumnBody: {
@@ -1430,27 +1555,29 @@ const styles = StyleSheet.create({
   },
   tabletCenterList: {
     flex: 1,
-    maxWidth: undefined,
-    alignSelf: 'stretch',
+    minWidth: 0,
   },
   tabletLeftRail: {
-    width: 238,
-    flexShrink: 0,
+    width: isPortraitTablet ? 238 : 260,
+    paddingTop: 8,
   },
   tabletRightRail: {
     width: 280,
-    flexShrink: 0,
-    paddingRight: 8,
+    paddingTop: 8,
+    gap: 14,
   },
   tabletRailCard: {
     borderRadius: 18,
     borderWidth: 1,
     padding: 14,
     marginBottom: 14,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
   },
   tabletRailTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
+    color: colors.text,
     marginBottom: 12,
   },
   tabletShortcutRow: {
@@ -1461,6 +1588,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 10,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   tabletShortcutText: {
     flex: 1,
@@ -1469,13 +1597,14 @@ const styles = StyleSheet.create({
   },
   tabletRailStatRow: {
     borderRadius: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     padding: 16,
     marginBottom: 12,
   },
   tabletRailStatValue: {
     fontSize: 28,
     fontWeight: '900',
+    color: colors.text,
   },
   tabletRailStatLabel: {
     marginTop: 2,
@@ -1483,6 +1612,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+    color: colors.textSecondary,
   },
   tabletRailButton: {
     height: 46,
@@ -1491,6 +1621,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   tabletRailButtonText: {
     fontSize: 14,
@@ -1505,6 +1636,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 10,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   tabletClassIcon: {
     width: 38,
@@ -1520,11 +1652,13 @@ const styles = StyleSheet.create({
   tabletClassName: {
     fontSize: 13,
     fontWeight: '900',
+    color: colors.text,
   },
   tabletClassMeta: {
     marginTop: 2,
     fontSize: 11,
     fontWeight: '700',
+    color: colors.textSecondary,
   },
   listHeader: {
     paddingBottom: 16,
@@ -1541,27 +1675,41 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
 
+  // ── Hero header (mirrors LearnScreen) ───────────────────────────────────
+  heroHeaderBg: {
+    paddingBottom: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    zIndex: 10,
+    overflow: 'hidden',
+  },
   headerSafe: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#DBEAFE',
+    paddingVertical: 12,
     width: '100%',
-    maxWidth: 1180,
+    maxWidth: isTablet ? (isLargeTablet ? 1100 : 900) : undefined,
     alignSelf: 'center',
   },
   topBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
+  headerIconButton: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Legacy alias retained for tablet-rail code paths that still reference it
   iconButton: {
     position: 'relative',
     width: 38,
@@ -1570,6 +1718,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F3F4F6',
+  },
+  // ── Pill tab bar (mirrors LearnScreen) ───────────────────────────────────
+  tabsScroll: {
+    maxHeight: 68,
+    maxWidth: isTablet ? (isLargeTablet ? 1100 : 900) : undefined,
+    alignSelf: isTablet ? 'center' : undefined,
+    width: '100%',
+  },
+  tabsContainer: {
+    paddingHorizontal: 16,
+    gap: 8,
+    paddingTop: 8,
+    paddingBottom: 14,
+    alignItems: 'center',
+  },
+  tabButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    minHeight: 44,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  tabLabel: {
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  tabLabelActive: {
+    fontWeight: '800',
   },
   inviteBadge: {
     position: 'absolute',
@@ -1605,11 +1788,11 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 18,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   shortcutOuterActive: {
     borderColor: COLORS.primaryDark,
@@ -1624,7 +1807,7 @@ const styles = StyleSheet.create({
   shortcutLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   shortcutLabelActive: {
     color: COLORS.primaryDark,
@@ -1747,27 +1930,31 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 19,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
+  // Pill-shaped search inside the hero, mirrors LearnScreen
   searchContainer: {
-    marginHorizontal: 12,
-    marginTop: 8,
+    marginHorizontal: 16,
+    marginTop: 4,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    width: isTablet ? '100%' : undefined,
+    maxWidth: isTablet ? (isLargeTablet ? 1068 : 868) : undefined,
+    alignSelf: isTablet ? 'center' : undefined,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
+    color: colors.text,
     fontWeight: '500',
-    color: COLORS.textPrimary,
+    padding: 0,
   },
 
   schoolClassesSection: {
@@ -1837,9 +2024,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   teacherSectionIconBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1848,18 +2035,18 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   teacherSectionCardTitle: {
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: 16.5,
+    fontWeight: '800',
     letterSpacing: -0.2,
   },
   teacherSectionCardMeta: {
-    marginTop: 3,
-    fontSize: 12,
-    fontWeight: '600',
+    marginTop: 2,
+    fontSize: 12.5,
+    fontWeight: '500',
   },
-  /** Class grid inside a teacher section card (no extra horizontal padding — card handles inset). */
+  /** Class grid inside a teacher section card. */
   schoolClassesGridInCard: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
   },
   gridItemMulticol: {
     marginBottom: 0,
@@ -1883,9 +2070,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   schoolClassesTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#0F172A',
+    fontSize: 18.5,
+    fontWeight: '800',
     letterSpacing: -0.3,
   },
   schoolClassesTitleRow: {
@@ -1902,9 +2088,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   schoolClassesSubtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
     marginTop: 2,
   },
   yearSelectorContainer: {
@@ -1922,9 +2108,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 99,
-    backgroundColor: '#F1F5F9',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
   },
   yearPillActive: {
     backgroundColor: COLORS.primaryDark,
@@ -1933,7 +2117,6 @@ const styles = StyleSheet.create({
   yearPillText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#475569',
   },
   yearPillTextActive: {
     color: '#FFFFFF',
@@ -1946,33 +2129,27 @@ const styles = StyleSheet.create({
   adminSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 48,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     gap: 10,
   },
   adminSearchInput: {
     flex: 1,
     fontSize: 14,
-    color: COLORS.textPrimary,
     fontWeight: '600',
   },
   schoolClassesLoading: {
     marginHorizontal: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     paddingVertical: 20,
     alignItems: 'center',
     gap: 10,
   },
   schoolClassesLoadingText: {
     fontSize: 14,
-    color: COLORS.textMuted,
     fontWeight: '700',
   },
   schoolClassesErrorText: {
@@ -1997,9 +2174,7 @@ const styles = StyleSheet.create({
   schoolClassesEmpty: {
     marginHorizontal: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     paddingVertical: 24,
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -2009,11 +2184,10 @@ const styles = StyleSheet.create({
   schoolClassesEmptyText: {
     flex: 1,
     fontSize: 14,
-    color: COLORS.textSecondary,
     fontWeight: '700',
   },
   schoolClassesGrid: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
     marginTop: 8,
   },
   schoolClassesGridTight: {
@@ -2024,18 +2198,19 @@ const styles = StyleSheet.create({
   schoolClassesGridMulticol: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   gridItemWrapper: {
     width: '100%',
-    marginBottom: 0,
+    marginBottom: 12,
   },
   schoolClassCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#E8EDF5',
+    borderColor: colors.border,
     padding: 18,
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -2073,25 +2248,25 @@ const styles = StyleSheet.create({
   schoolClassName: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     flexShrink: 1,
   },
   schoolClassGradePill: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   schoolClassGradeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   schoolClassSubLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   schoolClassIconBox: {
@@ -2111,12 +2286,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
   },
   genderStatText: {
     fontSize: 10,
@@ -2125,7 +2300,7 @@ const styles = StyleSheet.create({
   genderStatValue: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   schoolClassFooter: {
     flexDirection: 'row',
@@ -2141,24 +2316,24 @@ const styles = StyleSheet.create({
   schoolClassChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     paddingHorizontal: 6,
     paddingVertical: 4,
     borderRadius: 10,
     gap: 4,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   schoolClassChipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   schoolClassChevron: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2182,14 +2357,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 4,
     marginBottom: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: '#06A8CC',
-    shadowColor: '#06A8CC',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
+    borderWidth: 1.25,
+    borderColor: '#14B8A6',
+    gap: 6,
   },
   seeAllGridBtn: {
     width: '100%',
@@ -2200,14 +2374,14 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     marginBottom: 12,
   },
   seeAllGridText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#FFFFFF',
-    marginRight: 8,
+    color: '#14B8A6',
+    letterSpacing: 0.2,
     textAlign: 'center',
   },
   classListCard: {
@@ -2240,10 +2414,10 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   clubCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginHorizontal: 16,
     marginBottom: 16,
     overflow: 'hidden',
@@ -2256,7 +2430,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
   },
   cardHeaderIcon: {
     width: 40,
@@ -2268,7 +2441,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
     flex: 1,
   },
   viewAllBtn: {
@@ -2291,7 +2464,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     fontSize: 14,
     lineHeight: 20,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   cardMembersRow: {
@@ -2310,7 +2483,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2318,7 +2491,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
   },
   joinPill: {
     flexDirection: 'row',
@@ -2347,7 +2520,7 @@ const styles = StyleSheet.create({
   },
   cardProgressTrack: {
     height: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     marginHorizontal: 12,
     marginBottom: 20,
     borderRadius: 4,
@@ -2368,12 +2541,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: colors.textTertiary,
     marginTop: 4,
   },
   khmerInlineText: {
@@ -2396,6 +2569,6 @@ const styles = StyleSheet.create({
   footerLoadingText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textMuted,
+    color: colors.textTertiary,
   },
 });

@@ -7,11 +7,10 @@ import {
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
 import type { MyClassSummary } from '@/api/classes';
-import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
+import { getSafeStudentCount } from '@/utils/classGenderCounts';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -24,16 +23,6 @@ const CLASS_THEMES = [
   { accent: '#8B5CF6', soft: '#F3E8FF', icon: 'extension-puzzle-outline' as const }, // Violet
 ];
 
-const formatTeacherDisplayName = (
-  teacher?: MyClassSummary['homeroomTeacher'] | null,
-  preferEnglish = false
-): string => {
-  if (!teacher) return '';
-  const nativeName = [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim();
-  const englishName = [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ').trim();
-  return (preferEnglish ? englishName || nativeName : nativeName || englishName) || '';
-};
-
 interface SchoolClassCardProps {
   item: MyClassSummary;
   index: number;
@@ -45,223 +34,126 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
   item,
   index,
   onPress,
-  orderNumber,
 }: SchoolClassCardProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { colors, isDark } = useThemeContext();
-  const isKhmer = i18n.language?.startsWith('km');
   const theme = CLASS_THEMES[index % CLASS_THEMES.length];
-  
-  const teacherName = item.homeroomTeacher
-    ? formatTeacherDisplayName(item.homeroomTeacher, !isKhmer)
-    : t('classes.directory.notAssigned');
-    
-  const { male: maleCount, female: femaleCount } = getClassGenderCounts(item);
   const studentTotal = getSafeStudentCount(item);
-  
+
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  
   const handlePressIn = () => { scale.value = withSpring(0.97, { damping: 15 }); };
   const handlePressOut = () => { scale.value = withSpring(1, { damping: 15 }); };
 
-  // Mock momentum/progress for visual parity
-  const classMomentum = Math.min(100, Math.max(15, (studentTotal / 50) * 100));
-
   return (
     <AnimatedPressable
-      style={[styles.card, { backgroundColor: colors.card, borderColor: isDark ? colors.border : '#E2E8F0' }, animatedStyle]}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: isDark ? colors.border : '#E2E8F0',
+        },
+        animatedStyle,
+      ]}
       onPress={() => onPress(item)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
     >
-      <LinearGradient
-        colors={isDark ? [colors.card, colors.surfaceVariant] : ['#F8FEFF', '#FFFFFF']}
-        style={styles.gradient}
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={[styles.iconBox, { backgroundColor: isDark ? `${theme.accent}25` : theme.soft }]}>
-            <Ionicons name="school" size={20} color={theme.accent} />
-          </View>
-          
-          <View style={styles.titleWrap}>
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+      <View style={styles.body}>
+        <View style={styles.textWrap}>
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.title, { color: colors.text }]}
+              numberOfLines={1}
+            >
               {item.name}
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {t('classes.directory.gradeShort', { grade: item.grade })} • {item.section || 'A'}
-            </Text>
           </View>
-          
-          <View style={[styles.scorePill, { backgroundColor: theme.accent }]}>
-            <Text style={styles.scoreValue}>{studentTotal}</Text>
-            <Text style={styles.scoreLabel}>{t('common.student')}</Text>
-          </View>
+          <Text
+            style={[styles.subtitle, { color: colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            {t('clubs.screen.studentCountInline', {
+              count: studentTotal,
+              defaultValue: `${studentTotal} ${studentTotal === 1 ? 'student' : 'students'}`,
+            })}
+          </Text>
         </View>
 
-        {/* Progress Bar Section */}
-        <View style={[styles.momentumTrack, { backgroundColor: isDark ? colors.border : '#F8FAFC' }]}>
-          <LinearGradient
-            colors={[theme.accent, `${theme.accent}CC`]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.momentumFill, { width: `${classMomentum}%` }]}
-          />
+        <View
+          style={[
+            styles.iconCircle,
+            {
+              backgroundColor: isDark ? `${theme.accent}25` : theme.soft,
+            },
+          ]}
+        >
+          <Ionicons name={theme.icon} size={20} color={theme.accent} />
         </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{maleCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('common.male')}</Text>
-          </View>
-          <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{femaleCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('common.female')}</Text>
-          </View>
-          <View style={[styles.divider, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.text }]}>{studentTotal}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('common.total')}</Text>
-          </View>
-        </View>
-
-        {/* Signal Chips Section */}
-        <View style={styles.signalRow}>
-          <View style={[styles.signalChip, { backgroundColor: isDark ? `${theme.accent}15` : `${theme.soft}80` }]}>
-            <Ionicons name="person" size={13} color={theme.accent} />
-            <Text style={[styles.signalText, { color: theme.accent }]} numberOfLines={1}>
-              {teacherName}
-            </Text>
-          </View>
-          <View style={[styles.signalChip, { backgroundColor: isDark ? '#063A2C' : '#ECFDF5' }]}>
-            <Ionicons name="checkmark-circle" size={13} color="#059669" />
-            <Text style={[styles.signalText, { color: '#059669' }]}>
-              {t('common.active')}
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
+      </View>
     </AnimatedPressable>
   );
 });
 
 const styles = StyleSheet.create({
   card: {
+    flex: 1,
     borderRadius: 16,
     borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 12,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    minHeight: 84,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  gradient: {
-    padding: 20,
-  },
-  header: {
+  body: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleWrap: {
+  textWrap: {
     flex: 1,
+    minWidth: 0,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  badgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  badgePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#2563EB',
+    letterSpacing: 0.1,
   },
   subtitle: {
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
+    fontSize: 13,
     fontWeight: '500',
+    marginTop: 4,
   },
-  scorePill: {
-    minWidth: 58,
-    height: 58,
-    borderRadius: 16,
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  scoreValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -0.5,
-  },
-  scoreLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.78)',
-    textTransform: 'uppercase',
-  },
-  momentumTrack: {
-    height: 3,
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginTop: 16,
-  },
-  momentumFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 19,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 3,
-    textTransform: 'uppercase',
-    opacity: 0.7,
-  },
-  divider: {
-    width: 1,
-    height: 30,
-    alignSelf: 'center',
-  },
-  signalRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 16,
-  },
-  signalChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
-  },
-  signalText: {
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    flexShrink: 0,
   },
 });
