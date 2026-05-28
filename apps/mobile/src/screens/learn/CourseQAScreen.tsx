@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -41,6 +42,22 @@ export default function CourseQAScreen({ route, navigation }: Props) {
       setLoading(false);
     }
   };
+
+  const keyExtractor = useCallback((thread: QAThread) => thread.id, []);
+
+  const renderThread = useCallback(({ item: thread }: { item: QAThread }) => (
+    <TouchableOpacity style={styles.listItem} onPress={() => loadThread(thread)}>
+      <Text style={styles.listTitle} numberOfLines={1}>{thread.title}</Text>
+      <Text style={styles.listBody} numberOfLines={2}>{thread.body}</Text>
+      <View style={styles.metaRow}>
+        <Ionicons name="person-outline" size={12} color="#6B7280" />
+        <Text style={styles.metaText}>{thread.user?.firstName}</Text>
+        <View style={{ flex: 1 }} />
+        <Ionicons name="chatbubble-outline" size={12} color="#6B7280" />
+        <Text style={styles.metaText}>{thread._count?.answers || 0}</Text>
+      </View>
+    </TouchableOpacity>
+  ), []);
 
   const loadThread = async (t: QAThread) => {
     setSelectedThread(t);
@@ -198,28 +215,22 @@ export default function CourseQAScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.listContent}>
-        {threads.length === 0 && !isCreating ? (
-          <View style={styles.emptyBox}>
-            <Ionicons name="chatbubbles-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>{t('learn.qa.noQuestions')}</Text>
-          </View>
-        ) : (
-          threads.map(t => (
-            <TouchableOpacity key={t.id} style={styles.listItem} onPress={() => loadThread(t)}>
-              <Text style={styles.listTitle} numberOfLines={1}>{t.title}</Text>
-              <Text style={styles.listBody} numberOfLines={2}>{t.body}</Text>
-              <View style={styles.metaRow}>
-                <Ionicons name="person-outline" size={12} color="#6B7280" />
-                <Text style={styles.metaText}>{t.user?.firstName}</Text>
-                <View style={{flex:1}}/>
-                <Ionicons name="chatbubble-outline" size={12} color="#6B7280" />
-                <Text style={styles.metaText}>{t._count?.answers || 0}</Text>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
-      </ScrollView>
+      {/* @ts-ignore FlashList types omit estimatedItemSize but it is supported and critical for perf */}
+      <FlashList
+        data={threads}
+        keyExtractor={keyExtractor}
+        renderItem={renderThread}
+        estimatedItemSize={84}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          !isCreating ? (
+            <View style={styles.emptyBox}>
+              <Ionicons name="chatbubbles-outline" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyText}>{t('learn.qa.noQuestions')}</Text>
+            </View>
+          ) : null
+        }
+      />
     </SafeAreaView>
   );
 }
