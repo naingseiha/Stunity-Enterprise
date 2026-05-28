@@ -831,8 +831,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     position: 'relative',
     paddingTop: 14,
     overflow: 'hidden',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB',
   },
   // LIVE Badge styles
   liveBadge: {

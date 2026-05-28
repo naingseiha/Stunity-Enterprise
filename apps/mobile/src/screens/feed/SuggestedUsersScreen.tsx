@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
     StatusBar,
     Platform,
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,49 +90,20 @@ export const SuggestedUsersScreen: React.FC = () => {
     }, [followingIds, loadingFollowIds]);
 
     const renderUser = ({ item, index }: { item: SuggestedUser; index: number }) => {
-        if (!item?.id) return null;
-        const name = `${item.lastName || ''} ${item.firstName || ''}`.trim() || item.name || 'Unknown';
-        const subtitle =
-            item.headline ||
-            (item.role === 'TEACHER' ? 'Teacher' :
-                item.role === 'ADMIN' || item.role === 'SCHOOL_ADMIN' ? 'Admin' : 'Student');
-        const isFollowing = followingIds.has(item.id);
-        const isFollowLoading = loadingFollowIds.has(item.id);
-
         return (
-            <TouchableOpacity
-                style={[styles.card, Shadows.sm]}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('UserProfile', { userId: item.id })}
-            >
-                <Avatar uri={item.profilePictureUrl} name={name} size="lg" />
-                <View style={styles.info}>
-                    <Text style={styles.name} numberOfLines={1}>{name}</Text>
-                    <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
-                    {item.mutualConnectionsCount ? (
-                        <Text style={styles.mutual}>
-                            <Ionicons name="people" size={11} color={colors.textSecondary} /> {item.mutualConnectionsCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_a85323c6" />
-                        </Text>
-                    ) : null}
-                </View>
-                <TouchableOpacity
-                    style={[styles.followBtn, isFollowing && styles.followingBtn]}
-                    onPress={(event) => {
-                        event.stopPropagation?.();
-                        handleFollow(item.id!);
-                    }}
-                    disabled={isFollowLoading}
-                    activeOpacity={0.8}
-                >
-                    {isFollowLoading ? (
-                        <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : colors.primary} />
-                    ) : (
-                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                            {isFollowing ? 'Following' : 'Follow'}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-            </TouchableOpacity>
+            <React.Fragment key={item.id || index}>
+                <UserRow
+                    item={item}
+                    colors={colors}
+                    styles={styles}
+                    isDark={isDark}
+                    followingIds={followingIds}
+                    loadingFollowIds={loadingFollowIds}
+                    handleFollow={handleFollow}
+                    navigation={navigation}
+                />
+                {index < users.length - 1 && <View style={styles.divider} />}
+            </React.Fragment>
         );
     };
 
@@ -176,16 +148,17 @@ export const SuggestedUsersScreen: React.FC = () => {
                     <Text style={styles.emptySubtitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_5a0d9259" /></Text>
                 </View>
             ) : (
-                <FlatList
-                    data={users}
-                    keyExtractor={(item, index) => item?.id || `suggested-user-${index}`}
-                    renderItem={renderUser}
-                    refreshing={refreshing}
-                    onRefresh={() => fetchSuggestions(true)}
-                    contentContainerStyle={styles.list}
-                    showsVerticalScrollIndicator={false}
-                    ItemSeparatorComponent={() => <View style={styles.separator} />}
-                />
+                <View style={styles.sectionCard}>
+                    <FlatList
+                        data={users}
+                        keyExtractor={(item, index) => item?.id || `suggested-user-${index}`}
+                        renderItem={renderUser}
+                        refreshing={refreshing}
+                        onRefresh={() => fetchSuggestions(true)}
+                        contentContainerStyle={styles.listContainer}
+                        showsVerticalScrollIndicator={false}
+                    />
+                </View>
             )}
         </View>
     );
@@ -233,52 +206,62 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         textAlign: 'center',
         marginTop: 2,
     },
-    list: {
-        padding: 16,
-        paddingBottom: 32,
+    listContainer: {
+        paddingVertical: 4,
     },
-    card: {
+    sectionCard: {
+        backgroundColor: colors.card,
+        borderRadius: 14,
+        marginHorizontal: 16,
+        marginTop: 16,
+        marginBottom: 32,
+        overflow: 'hidden',
+        shadowOpacity: 0.04,
+        ...Shadows.sm,
+    },
+    settingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.card,
-        borderRadius: 16,
-        padding: 14,
+        paddingHorizontal: 14,
+        paddingVertical: 13,
         gap: 12,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
-    info: {
+    settingContent: {
         flex: 1,
-        gap: 2,
+        justifyContent: 'center',
     },
-    name: {
+    settingLabel: {
         fontSize: 15,
-        fontWeight: '700',
+        fontWeight: '600',
         color: colors.text,
+        letterSpacing: -0.1,
     },
-    subtitle: {
+    settingSublabel: {
         fontSize: 13,
-        color: colors.textSecondary,
+        color: colors.textTertiary,
+        marginTop: 2,
+    },
+    divider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: colors.border,
+        marginLeft: 62,
     },
     mutual: {
         fontSize: 11,
         color: colors.textSecondary,
-        marginTop: 2,
+        marginTop: 4,
     },
     followBtn: {
-        backgroundColor: isDark ? '#1D2B45' : '#EEF2FF',
-        borderWidth: 1,
-        borderColor: isDark ? colors.primary : '#E0E7FF',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.14)' : '#EEF6FF',
         borderRadius: 20,
-        paddingHorizontal: 18,
-        paddingVertical: 7,
-        minWidth: 92,
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        minWidth: 84,
         alignItems: 'center',
         justifyContent: 'center',
     },
     followingBtn: {
-        backgroundColor: colors.surfaceVariant,
-        borderColor: colors.border,
+        backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     },
     followBtnText: {
         fontSize: 13,
@@ -287,9 +270,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     },
     followingBtnText: {
         color: colors.textSecondary,
-    },
-    separator: {
-        height: 12,
     },
     center: {
         flex: 1,
@@ -333,3 +313,72 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         lineHeight: 20,
     },
 });
+
+function UserRow({
+    item,
+    colors,
+    styles,
+    isDark,
+    followingIds,
+    loadingFollowIds,
+    handleFollow,
+    navigation,
+}: any) {
+    const scale = React.useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scale, { toValue: 0.97, friction: 5, tension: 300, useNativeDriver: true }).start();
+    };
+    const handlePressOut = () => {
+        Animated.spring(scale, { toValue: 1, friction: 5, tension: 300, useNativeDriver: true }).start();
+    };
+
+    if (!item?.id) return null;
+    const name = `${item.lastName || ''} ${item.firstName || ''}`.trim() || item.name || 'Unknown';
+    const subtitle =
+        item.headline ||
+        (item.role === 'TEACHER' ? 'Teacher' :
+            item.role === 'ADMIN' || item.role === 'SCHOOL_ADMIN' ? 'Admin' : 'Student');
+    const isFollowing = followingIds.has(item.id);
+    const isFollowLoading = loadingFollowIds.has(item.id);
+
+    return (
+        <Animated.View style={{ transform: [{ scale }] }}>
+            <TouchableOpacity
+                style={styles.settingRow}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('UserProfile', { userId: item.id })}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+            >
+                <Avatar uri={item.profilePictureUrl} name={name} size="md" />
+                <View style={styles.settingContent}>
+                    <Text style={styles.settingLabel} numberOfLines={1}>{name}</Text>
+                    <Text style={styles.settingSublabel} numberOfLines={1}>{subtitle}</Text>
+                    {item.mutualConnectionsCount ? (
+                        <Text style={styles.mutual}>
+                            <Ionicons name="people" size={11} color={colors.textSecondary} /> {item.mutualConnectionsCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_a85323c6" />
+                        </Text>
+                    ) : null}
+                </View>
+                <TouchableOpacity
+                    style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                    onPress={(event) => {
+                        event.stopPropagation?.();
+                        handleFollow(item.id!);
+                    }}
+                    disabled={isFollowLoading}
+                    activeOpacity={0.8}
+                >
+                    {isFollowLoading ? (
+                        <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : colors.primary} />
+                    ) : (
+                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                            {isFollowing ? 'Following' : 'Follow'}
+                        </Text>
+                    )}
+                </TouchableOpacity>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+}

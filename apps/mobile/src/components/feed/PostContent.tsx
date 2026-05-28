@@ -105,7 +105,7 @@ const PostContent = ({
             images={post.mediaUrls}
             mediaMetadata={post.mediaMetadata || []}
             onImagePress={onImagePress}
-            borderRadius={12}
+            borderRadius={16}
             aspectRatio={mediaDisplayMode === 'AUTO' || mediaDisplayMode === 'CAROUSEL' ? undefined : feedMediaAspectRatio}
             mode="auto"
             enableViewer={false}
@@ -406,7 +406,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 10,
     marginTop: 4,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
   },
