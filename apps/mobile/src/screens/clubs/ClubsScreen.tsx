@@ -33,7 +33,7 @@ import {
 } from 'react-native';
 
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -48,7 +48,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { ClubCard } from '@/components/clubs/ClubCard';
 import { SchoolClassCard } from '@/components/clubs/SchoolClassCard';
 import { BannerCarousel, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
-import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
+import { ClubsHeaderSkeleton, ClubCardSkeleton, SchoolClassCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 import { useTranslation } from 'react-i18next';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
@@ -136,6 +136,7 @@ export default function ClubsScreen() {
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
+  const insets = useSafeAreaInsets();
   const layoutBreakpoint = useLayoutBreakpoint();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isThreeColumnTablet = layoutBreakpoint.isTablet && windowWidth > windowHeight && windowWidth >= 1180;
@@ -821,7 +822,100 @@ export default function ClubsScreen() {
   // + pill tab bar). This renderHeader only contains body-level sections.
   const renderHeader = useCallback(() => {
     return (
-      <View style={styles.listHeader}>
+      <>
+        {/* ── Premium Hero Header ── */}
+        <LinearGradient
+          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
+        >
+          <View style={styles.headerSafe}>
+            <View style={styles.topBar}>
+              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                <Ionicons name="menu-outline" size={24} color={colors.text} />
+              </TouchableOpacity>
+              <StunityLogo width={108} height={30} />
+              <View style={styles.topBarActions}>
+                <TouchableOpacity onPress={handleCreateClub} style={styles.headerIconButton}>
+                  <Ionicons name="add" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleOpenInvites} style={styles.headerIconButton}>
+                  <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
+                  {inviteCount > 0 ? (
+                    <View style={styles.inviteBadge}>
+                      <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
+                  <Ionicons name="refresh" size={22} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+              <Ionicons name="search" size={20} color={colors.textTertiary} />
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={t('clubs.screen.searchPlaceholder')}
+                placeholderTextColor={colors.textTertiary}
+                style={[styles.searchInput, { color: colors.text }]}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Pill tab bar — fixed outside the list, matches LearnScreen */}
+        <ScrollView
+          horizontal
+          style={styles.tabsScroll}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {CLUB_FILTER_TABS.map((tab) => {
+            const isActive = selectedFilter === tab.id;
+            const palette = isDark ? {
+              ...CLUB_TAB_PALETTE,
+              inactiveBackground: colors.card,
+              inactiveBorder: colors.border,
+              inactiveIcon: colors.textSecondary,
+              inactiveText: colors.textSecondary,
+            } : CLUB_TAB_PALETTE;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.tabButton,
+                  { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
+                  isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
+                ]}
+                onPress={() => handleFilterChange(tab.id)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
+                <Text
+                  allowFontScaling={false}
+                  style={[
+                    styles.tabLabel,
+                    isKhmer && styles.khmerInlineText,
+                    { color: isActive ? '#FFFFFF' : palette.inactiveText },
+                    isActive && styles.tabLabelActive,
+                  ]}
+                >
+                  {t(tab.labelKey)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        <View style={styles.listHeader}>
 
         {/* School Classes Section */}
         {(canViewSchoolClasses || isAdminOrStaff) && !isClubRailTablet && (
@@ -931,9 +1025,12 @@ export default function ClubsScreen() {
             )}
 
             {loadingSchoolClasses || loadingAdminClasses || loadingAllSchoolClasses ? (
-              <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <ActivityIndicator size="small" color={COLORS.primaryDark} />
-                <Text style={[styles.schoolClassesLoadingText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.updatingClasses')}</Text>
+              <View style={[styles.schoolClassesGridInCard, { paddingTop: 4 }]}>
+                {[1, 2, 3].map((i) => (
+                  <View key={`skel-${i}`} style={styles.gridItemWrapper}>
+                    <SchoolClassCardSkeleton />
+                  </View>
+                ))}
               </View>
             ) : schoolClassesError || allSchoolClassesError ? (
               <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -1132,6 +1229,7 @@ export default function ClubsScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      </>
     );
   }, [
     canViewSchoolClasses,
@@ -1157,12 +1255,18 @@ export default function ClubsScreen() {
     schoolClassesError,
     selectedFilter,
     colors,
+    isDark,
     isKhmer,
     t,
     user?.role,
     teacherClassSplit,
     teacherOtherClasses,
     gridConfig,
+    openSidebar,
+    handleOpenInvites,
+    inviteCount,
+    onRefresh,
+    searchQuery,
   ]);
 
   const renderTabletLeftRail = useCallback(() => {
@@ -1311,16 +1415,23 @@ export default function ClubsScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-
-        {/* ─ Hero gradient header — identical to real screen ─ */}
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
         <LinearGradient
           colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroHeaderBg}
+          end={{ x: 1, y: 0 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
+        />
+        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+          {/* ─ Hero gradient header — identical to real screen ─ */}
+        <LinearGradient
+          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
         >
-          <SafeAreaView edges={['top']} style={styles.headerSafe}>
+          <View style={styles.headerSafe}>
             <View style={styles.topBar}>
               <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
                 <Ionicons name="menu-outline" size={24} color={colors.text} />
@@ -1349,7 +1460,7 @@ export default function ClubsScreen() {
               <Ionicons name="search" size={20} color={colors.textTertiary} />
               <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton || '#E2E8F0', borderRadius: 6 }} />
             </View>
-          </SafeAreaView>
+          </View>
         </LinearGradient>
 
         <View style={styles.safeArea}>
@@ -1370,108 +1481,24 @@ export default function ClubsScreen() {
             </ScrollView>
           </BlurView>
         </View>
+        </View>
+        </SafeAreaView>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-
-      {/* ── Premium Hero Header ── */}
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
       <LinearGradient
         colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroHeaderBg}
-      >
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-              <Ionicons name="menu-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <StunityLogo width={108} height={30} />
-            <View style={styles.topBarActions}>
-              <TouchableOpacity onPress={handleCreateClub} style={styles.headerIconButton}>
-                <Ionicons name="add" size={24} color={colors.text} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleOpenInvites} style={styles.headerIconButton}>
-                <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-                {inviteCount > 0 ? (
-                  <View style={styles.inviteBadge}>
-                    <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-                <Ionicons name="refresh" size={22} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-            <Ionicons name="search" size={20} color={colors.textTertiary} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={t('clubs.screen.searchPlaceholder')}
-              placeholderTextColor={colors.textTertiary}
-              style={[styles.searchInput, { color: colors.text }]}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      {/* Pill tab bar — fixed outside the list, matches LearnScreen */}
-      <ScrollView
-        horizontal
-        style={styles.tabsScroll}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer}
-      >
-        {CLUB_FILTER_TABS.map((tab) => {
-          const isActive = selectedFilter === tab.id;
-          const palette = isDark ? {
-            ...CLUB_TAB_PALETTE,
-            inactiveBackground: colors.card,
-            inactiveBorder: colors.border,
-            inactiveIcon: colors.textSecondary,
-            inactiveText: colors.textSecondary,
-          } : CLUB_TAB_PALETTE;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.tabButton,
-                { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
-                isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
-              ]}
-              onPress={() => handleFilterChange(tab.id)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
-              <Text
-                allowFontScaling={false}
-                style={[
-                  styles.tabLabel,
-                  isKhmer && styles.khmerInlineText,
-                  { color: isActive ? '#FFFFFF' : palette.inactiveText },
-                  isActive && styles.tabLabelActive,
-                ]}
-              >
-                {t(tab.labelKey)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      <Animated.View style={[styles.animatedTabContent, layoutBreakpoint.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
+        end={{ x: 1, y: 0 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
+      />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View style={[styles.animatedTabContent, layoutBreakpoint.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
         {renderTabletLeftRail()}
         {/* @ts-ignore FlashList types omit some valid props */}
         <FlashList
@@ -1504,6 +1531,8 @@ export default function ClubsScreen() {
         />
         {renderTabletRightRail()}
       </Animated.View>
+      </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -1526,7 +1555,7 @@ const createStyles = (
     flex: 1,
   },
   listContent: {
-    paddingTop: 4,
+    paddingTop: 0,
     paddingBottom: isTablet ? 64 : 40,
     paddingHorizontal: isTablet ? 12 : 0,
   },

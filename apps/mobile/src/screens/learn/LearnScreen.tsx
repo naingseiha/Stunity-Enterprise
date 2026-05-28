@@ -40,7 +40,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -268,6 +268,7 @@ export default function LearnScreen() {
   const styles = useMemo(() => createStyles(colors, isDark, featuredCardWidth, layout.isTablet, layout.isLargeTablet, isThreeColumnTablet, isPortraitTablet), [colors, isDark, featuredCardWidth, layout.isTablet, layout.isLargeTablet, isThreeColumnTablet, isPortraitTablet]);
   const isKhmer = i18n.language?.startsWith('km');
   const { openSidebar } = useNavigationContext();
+  const insets = useSafeAreaInsets();
 
   const initialTab = route.params?.initialTab;
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'explore');
@@ -574,183 +575,276 @@ export default function LearnScreen() {
     ] : [];
 
     return (
-      <View style={styles.headerContent}>
-        {activeTab === 'explore' && suggestedCourses.length > 0 && (
-          <View style={styles.featuredSection}>
-            <View style={styles.featuredSectionHeader}>
-              <Text style={styles.featuredSectionTitle}>{t('learn.suggestedCourses')}</Text>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredHorizontalScroll}
-              snapToInterval={featuredCardWidth + FEATURED_CARD_GAP}
-              snapToAlignment="start"
-              decelerationRate="fast"
-            >
-              {suggestedCourses.map((item) => {
-                const { course, theme } = item;
-                const isEnrolled = enrolledCourseIds.has(course.id);
-                return (
-                  <TouchableOpacity
-                    key={course.id}
-                    style={[styles.featuredCardWrap, { shadowColor: theme.shadowColor }]}
-                    activeOpacity={0.9}
-                    onPress={() => handleCoursePress(course.id)}
-                  >
-                    <View style={[styles.featuredCard, { borderColor: theme.accentSoftColor }]}>
-                      <View style={styles.featuredAbstractBg}>
-                        <LinearGradient
-                          colors={isDark ? ['rgba(45, 212, 191, 0.12)', 'rgba(29, 155, 240, 0.10)'] : ['rgba(34, 211, 238, 0.08)', 'rgba(8, 145, 178, 0.15)']}
-                          style={styles.featuredAbstractShape1}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                        />
-                        <LinearGradient
-                          colors={isDark ? ['rgba(45, 212, 191, 0.18)', 'rgba(29, 155, 240, 0.14)'] : ['rgba(34, 211, 238, 0.2)', 'rgba(8, 145, 178, 0.25)']}
-                          style={styles.featuredAbstractShape2}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                        />
-                      </View>
-  
-                      <View style={styles.featuredCardBody}>
-                        <View style={styles.featuredArtworkWrap}>
-                          <View style={[styles.featuredArtworkHalo, { backgroundColor: isDark ? `${theme.iconColor}18` : `${theme.iconColor}15` }]} />
-                          <View style={[styles.featuredIconWrap, { backgroundColor: isDark ? `${theme.iconColor}1F` : `${theme.iconColor}10`, borderColor: isDark ? `${theme.iconColor}3D` : `${theme.iconColor}20` }]}>
-                            <Ionicons name={item.icon} size={32} color={theme.iconColor} />
-                          </View>
-                        </View>
-  
-                        <View style={styles.featuredContentRow}>
-                          <View style={styles.featuredTopRow}>
-                            <View style={[styles.featuredBadgePill, { backgroundColor: theme.badgeBackground, borderColor: `${theme.badgeColor}33` }]}>
-                              <Ionicons name="flame" size={11} color={theme.badgeColor} />
-                              <Text style={[styles.featuredHeroBadgeText, { color: theme.badgeColor }]}>{item.badgeLabel}</Text>
-                            </View>
-                            <View style={[styles.featuredLevelPill, { backgroundColor: theme.levelBackground, borderColor: `${theme.levelColor}2A` }]}>
-                              <Text style={[styles.featuredLevelText, { color: theme.levelColor }]}>{course.level.replace('_', ' ')}</Text>
-                            </View>
-                          </View>
-  
-                          <View style={styles.featuredTextBlock}>
-                            <Text style={styles.featuredTitle} numberOfLines={2}>{course.title}</Text>
-                            <Text style={styles.featuredSubtitle} numberOfLines={1}>
-                              {course.category} · {formatDuration(course.duration)}
-                            </Text>
-                          </View>
-  
-                          <View style={styles.featuredBottomRow}>
-                            <View style={styles.featuredMetaRow}>
-                              <View style={styles.featuredMetaItem}>
-                                <Ionicons name="star" size={12} color="#F59E0B" />
-                                <Text style={[styles.featuredMetaText, { color: '#F59E0B', fontWeight: '700' }]}>{course.rating.toFixed(1)}</Text>
-                              </View>
-                              <Text style={styles.featuredMetaDivider}>•</Text>
-                              <View style={styles.featuredMetaItem}>
-                                <Ionicons name="people" size={12} color={colors.textSecondary} />
-                                <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)}</Text>
-                              </View>
-                            </View>
-  
-                            <View style={[styles.featuredCtaButton, { backgroundColor: theme.buttonColor }]}>
-                              <Text style={styles.featuredCtaText}>
-                                {isEnrolled ? t('learn.continue') : t('learn.start')}
-                              </Text>
-                              <Ionicons name="arrow-forward" size={12} color="#FFF" />
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Category grid */}
-        {!isLearnRailTablet && <View style={styles.categorySurface}>
-          <View style={styles.categorySection}>
-            <View style={styles.categoryHeaderRow}>
-              <View style={styles.categoryHeaderInfo}>
-                <Text style={styles.categoryHeaderTitle}>{t('learn.exploreCategories')}</Text>
+      <View>
+        {/* ── Premium Hero Header ── */}
+        <LinearGradient
+          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
+        >
+          <View style={styles.headerSafe}>
+            <View style={styles.topBar}>
+              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                <Ionicons name="menu-outline" size={24} color={colors.text} />
+              </TouchableOpacity>
+              <View>
+                <StunityLogo width={108} height={30} />
               </View>
-              <View style={styles.categoryHeaderActions}>
-                {selectedCategory !== 'All' && (
-                  <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
-                    <Text style={[styles.categoryHeaderButtonText, isKhmer && styles.khmerInlineText]}>{t('learn.allCourses')}</Text>
-                  </TouchableOpacity>
-                )}
-                {canToggleCategoryList && (
-                  <TouchableOpacity
-                    style={styles.categoryHeaderButton}
-                    onPress={() => setShowAllCategories((v) => !v)}
-                  >
-                    <Text style={[styles.categoryHeaderButtonText, isKhmer && styles.khmerInlineText]}>{showAllCategories ? t('learn.viewLess') : t('learn.viewAll')}</Text>
-                  </TouchableOpacity>
-                )}
+              <View style={styles.topBarActions}>
+                <TouchableOpacity onPress={handleCreateCourse} style={styles.headerIconButton}>
+                  <Ionicons name="add" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
+                  <Ionicons name="refresh" size={22} color={colors.text} />
+                </TouchableOpacity>
               </View>
             </View>
 
-            <View style={styles.categoryGrid}>
-              {visibleCategoryItems.map((category, index) => {
-                const isActive     = selectedCategory === category.name;
-                const isTopCategory= category.count > 0 && index < 3;
-                const categoryLabel = t(getCategoryTranslationKey(category.name), category.name);
-                return (
-                  <TouchableOpacity
-                    key={category.name}
-                    style={[styles.categoryCard, isActive && styles.categoryCardActive]}
-                    onPress={() => setSelectedCategory(category.name)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={styles.categoryContent}>
-                      <View style={styles.categoryTitleRow}>
-                        <Text numberOfLines={1} style={[styles.categoryLabel, isKhmer && styles.khmerInlineText, isActive && styles.categoryLabelActive]}>
-                          {categoryLabel}
-                        </Text>
-                        {isTopCategory && (
-                          <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
-                            <Text style={[styles.categoryTrendText, isKhmer && styles.khmerSmallInlineText, isActive && styles.categoryTrendTextActive]}>{t('learn.top')}</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={[styles.categoryCount, isKhmer && styles.khmerInlineText, isActive && styles.categoryCountActive]}>
-                        {t('learn.courseCount', { count: category.count })}
-                      </Text>
-                    </View>
-                    <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
-                      <Ionicons name={category.icon} size={18} color={category.iconColor} />
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+              <Ionicons name="search" size={20} color={colors.textTertiary} />
+              <TextInput
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                placeholder={t('learn.searchPlaceholder')}
+                placeholderTextColor={colors.textTertiary}
+                style={styles.searchInput}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => { setSearchQuery(''); setDebouncedQuery(''); }}>
+                  <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
-        </View>}
+        </LinearGradient>
 
-        {/* Stat cards */}
-        {stats && !isLearnRailTablet && (
-          <View style={styles.statsSection}>
-            <View style={styles.statsSectionHeader}>
-              <Text style={styles.statsSectionTitle}>{t('learn.learningSnapshot')}</Text>
-            </View>
-            <View style={styles.statsRow}>
-              {statCards.map((item) => (
-                <View key={item.key} style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}>
-                  <View style={styles.statCardTopRow}>
-                    <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
-                      <Ionicons name={item.icon} size={15} color={item.iconColor} />
-                    </View>
-                    <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
-                  </View>
-                  <Text style={styles.statLabel}>{item.label}</Text>
+        {/* Tab bar — fixed outside list -> now inside header */}
+        <ScrollView
+          horizontal
+          style={styles.tabsScroll}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const basePalette = TAB_COLOR_PALETTES[tab.id];
+            const palette = isDark ? {
+              ...basePalette,
+              inactiveBackground: colors.card,
+              inactiveBorder: colors.border,
+              inactiveIcon: colors.textSecondary,
+              inactiveText: colors.textSecondary,
+            } : basePalette;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.tabButton,
+                  { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
+                  isActive && styles.tabButtonActive,
+                  isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
+                ]}
+                onPress={() => setActiveTab(tab.id)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
+                <Text
+                  allowFontScaling={false}
+                  style={[
+                    styles.tabLabel,
+                    isKhmer && styles.khmerInlineText,
+                    { color: isActive ? '#FFFFFF' : palette.inactiveText },
+                    isActive && styles.tabLabelActive,
+                  ]}
+                >
+                  {t(tab.labelKey)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {!isThreeColumnTablet && (
+          <View style={styles.headerContent}>
+            {activeTab === 'explore' && suggestedCourses.length > 0 && (
+              <View style={styles.featuredSection}>
+                <View style={styles.featuredSectionHeader}>
+                  <Text style={styles.featuredSectionTitle}>{t('learn.suggestedCourses')}</Text>
                 </View>
-              ))}
-            </View>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.featuredHorizontalScroll}
+                  snapToInterval={featuredCardWidth + FEATURED_CARD_GAP}
+                  snapToAlignment="start"
+                  decelerationRate="fast"
+                >
+                  {suggestedCourses.map((item) => {
+                    const { course, theme } = item;
+                    const isEnrolled = enrolledCourseIds.has(course.id);
+                    return (
+                      <TouchableOpacity
+                        key={course.id}
+                        style={[styles.featuredCardWrap, { shadowColor: theme.shadowColor }]}
+                        activeOpacity={0.9}
+                        onPress={() => handleCoursePress(course.id)}
+                      >
+                        <View style={[styles.featuredCard, { borderColor: theme.accentSoftColor }]}>
+                          <View style={styles.featuredAbstractBg}>
+                            <LinearGradient
+                              colors={isDark ? ['rgba(45, 212, 191, 0.12)', 'rgba(29, 155, 240, 0.10)'] : ['rgba(34, 211, 238, 0.08)', 'rgba(8, 145, 178, 0.15)']}
+                              style={styles.featuredAbstractShape1}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                            />
+                            <LinearGradient
+                              colors={isDark ? ['rgba(45, 212, 191, 0.18)', 'rgba(29, 155, 240, 0.14)'] : ['rgba(34, 211, 238, 0.2)', 'rgba(8, 145, 178, 0.25)']}
+                              style={styles.featuredAbstractShape2}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                            />
+                          </View>
+      
+                          <View style={styles.featuredCardBody}>
+                            <View style={styles.featuredArtworkWrap}>
+                              <View style={[styles.featuredArtworkHalo, { backgroundColor: isDark ? `${theme.iconColor}18` : `${theme.iconColor}15` }]} />
+                              <View style={[styles.featuredIconWrap, { backgroundColor: isDark ? `${theme.iconColor}1F` : `${theme.iconColor}10`, borderColor: isDark ? `${theme.iconColor}3D` : `${theme.iconColor}20` }]}>
+                                <Ionicons name={item.icon} size={32} color={theme.iconColor} />
+                              </View>
+                            </View>
+      
+                            <View style={styles.featuredContentRow}>
+                              <View style={styles.featuredTopRow}>
+                                <View style={[styles.featuredBadgePill, { backgroundColor: theme.badgeBackground, borderColor: `${theme.badgeColor}33` }]}>
+                                  <Ionicons name="flame" size={11} color={theme.badgeColor} />
+                                  <Text style={[styles.featuredHeroBadgeText, { color: theme.badgeColor }]}>{item.badgeLabel}</Text>
+                                </View>
+                                <View style={[styles.featuredLevelPill, { backgroundColor: theme.levelBackground, borderColor: `${theme.levelColor}2A` }]}>
+                                  <Text style={[styles.featuredLevelText, { color: theme.levelColor }]}>{course.level.replace('_', ' ')}</Text>
+                                </View>
+                              </View>
+      
+                              <View style={styles.featuredTextBlock}>
+                                <Text style={styles.featuredTitle} numberOfLines={2}>{course.title}</Text>
+                                <Text style={styles.featuredSubtitle} numberOfLines={1}>
+                                  {course.category} · {formatDuration(course.duration)}
+                                </Text>
+                              </View>
+      
+                              <View style={styles.featuredBottomRow}>
+                                <View style={styles.featuredMetaRow}>
+                                  <View style={styles.featuredMetaItem}>
+                                    <Ionicons name="star" size={12} color="#F59E0B" />
+                                    <Text style={[styles.featuredMetaText, { color: '#F59E0B', fontWeight: '700' }]}>{course.rating.toFixed(1)}</Text>
+                                  </View>
+                                  <Text style={styles.featuredMetaDivider}>•</Text>
+                                  <View style={styles.featuredMetaItem}>
+                                    <Ionicons name="people" size={12} color={colors.textSecondary} />
+                                    <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)}</Text>
+                                  </View>
+                                </View>
+      
+                                <View style={[styles.featuredCtaButton, { backgroundColor: theme.buttonColor }]}>
+                                  <Text style={styles.featuredCtaText}>
+                                    {isEnrolled ? t('learn.continue') : t('learn.start')}
+                                  </Text>
+                                  <Ionicons name="arrow-forward" size={12} color="#FFF" />
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Category grid */}
+            {!isLearnRailTablet && <View style={styles.categorySurface}>
+              <View style={styles.categorySection}>
+                <View style={styles.categoryHeaderRow}>
+                  <View style={styles.categoryHeaderInfo}>
+                    <Text style={styles.categoryHeaderTitle}>{t('learn.exploreCategories')}</Text>
+                  </View>
+                  <View style={styles.categoryHeaderActions}>
+                    {selectedCategory !== 'All' && (
+                      <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
+                        <Text style={[styles.categoryHeaderButtonText, isKhmer && styles.khmerInlineText]}>{t('learn.allCourses')}</Text>
+                      </TouchableOpacity>
+                    )}
+                    {canToggleCategoryList && (
+                      <TouchableOpacity
+                        style={styles.categoryHeaderButton}
+                        onPress={() => setShowAllCategories((v) => !v)}
+                      >
+                        <Text style={[styles.categoryHeaderButtonText, isKhmer && styles.khmerInlineText]}>{showAllCategories ? t('learn.viewLess') : t('learn.viewAll')}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.categoryGrid}>
+                  {visibleCategoryItems.map((category, index) => {
+                    const isActive     = selectedCategory === category.name;
+                    const isTopCategory= category.count > 0 && index < 3;
+                    const categoryLabel = t(getCategoryTranslationKey(category.name), category.name);
+                    return (
+                      <TouchableOpacity
+                        key={category.name}
+                        style={[styles.categoryCard, isActive && styles.categoryCardActive]}
+                        onPress={() => setSelectedCategory(category.name)}
+                        activeOpacity={0.85}
+                      >
+                        <View style={styles.categoryContent}>
+                          <View style={styles.categoryTitleRow}>
+                            <Text numberOfLines={1} style={[styles.categoryLabel, isKhmer && styles.khmerInlineText, isActive && styles.categoryLabelActive]}>
+                              {categoryLabel}
+                            </Text>
+                            {isTopCategory && (
+                              <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
+                                <Text style={[styles.categoryTrendText, isKhmer && styles.khmerSmallInlineText, isActive && styles.categoryTrendTextActive]}>{t('learn.top')}</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[styles.categoryCount, isKhmer && styles.khmerInlineText, isActive && styles.categoryCountActive]}>
+                            {t('learn.courseCount', { count: category.count })}
+                          </Text>
+                        </View>
+                        <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
+                          <Ionicons name={category.icon} size={18} color={category.iconColor} />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>}
+
+            {/* Stat cards */}
+            {stats && !isLearnRailTablet && (
+              <View style={styles.statsSection}>
+                <View style={styles.statsSectionHeader}>
+                  <Text style={styles.statsSectionTitle}>{t('learn.learningSnapshot')}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  {statCards.map((item) => (
+                    <View key={item.key} style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}>
+                      <View style={styles.statCardTopRow}>
+                        <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
+                          <Ionicons name={item.icon} size={15} color={item.iconColor} />
+                        </View>
+                        <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
+                      </View>
+                      <Text style={styles.statLabel}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -766,14 +860,21 @@ export default function LearnScreen() {
     showAllCategories,
     canToggleCategoryList,
     isLearnRailTablet,
+    isThreeColumnTablet,
     isKhmer,
     t,
-    colors.card,
-    colors.border,
-    colors.textSecondary,
+    colors,
     isDark,
     featuredCardWidth,
     styles,
+    openSidebar,
+    handleCreateCourse,
+    onRefresh,
+    searchQuery,
+    handleSearchChange,
+    setSearchQuery,
+    setDebouncedQuery,
+    setActiveTab,
   ]);
 
   const learnStatCards = useMemo(() => stats ? [
@@ -985,159 +1086,86 @@ export default function LearnScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-
-        {/* ─ Hero gradient header — identical to real screen ─ */}
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
         <LinearGradient
           colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroHeaderBg}
-        >
-          <SafeAreaView edges={['top']} style={styles.headerSafe}>
-            <View style={styles.topBar}>
-              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-                <Ionicons name="menu-outline" size={24} color={colors.text} />
-              </TouchableOpacity>
-              <View>
-                <StunityLogo width={108} height={30} />
-              </View>
-              <View style={styles.topBarActions}>
-                <TouchableOpacity style={styles.headerIconButton}>
-                  <Ionicons name="add" size={24} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
+          end={{ x: 1, y: 0 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
+        />
+        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            {/* ─ Hero gradient header — identical to real screen ─ */}
+            <LinearGradient
+              colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
+            >
+              <View style={styles.headerSafe}>
+                <View style={styles.topBar}>
+                  <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                    <Ionicons name="menu-outline" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  <View>
+                    <StunityLogo width={108} height={30} />
+                  </View>
+                  <View style={styles.topBarActions}>
+                    <TouchableOpacity style={styles.headerIconButton}>
+                      <Ionicons name="add" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
-            {/* Search bar — same position as real screen */}
-            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-              <Ionicons name="search" size={20} color={colors.textTertiary} />
-              <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton, borderRadius: 6 }} />
-            </View>
-          </SafeAreaView>
-        </LinearGradient>
+                {/* Search bar — same position as real screen */}
+                <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+                  <Ionicons name="search" size={20} color={colors.textTertiary} />
+                  <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton, borderRadius: 6 }} />
+                </View>
+              </View>
+            </LinearGradient>
 
-        {/* ─ Tab bar skeleton — same position and style as real tabs ─ */}
-        <View style={[styles.tabsScroll, skeletonStyles.tabsRow]}>
-          <Skeleton width={76} height={40} borderRadius={999} />
-          <Skeleton width={106} height={40} borderRadius={999} />
-          <Skeleton width={80}  height={40} borderRadius={999} />
-          <Skeleton width={66}  height={40} borderRadius={999} />
-        </View>
+            {/* ─ Tab bar skeleton — same position and style as real tabs ─ */}
+            <View style={[styles.tabsScroll, skeletonStyles.tabsRow]}>
+              <Skeleton width={76} height={40} borderRadius={999} />
+              <Skeleton width={106} height={40} borderRadius={999} />
+              <Skeleton width={80}  height={40} borderRadius={999} />
+              <Skeleton width={66}  height={40} borderRadius={999} />
+            </View>
 
         {/* ─ Body content ─ */}
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
           <LearnHeaderSkeleton />
           {[1, 2, 3].map((i) => <CourseCardSkeleton key={i} />)}
         </ScrollView>
+          </View>
+        </SafeAreaView>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-
-      {/* ── Premium Hero Header ── */}
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
       <LinearGradient
         colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroHeaderBg}
-      >
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-              <Ionicons name="menu-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <View>
-              <StunityLogo width={108} height={30} />
-            </View>
-            <View style={styles.topBarActions}>
-              <TouchableOpacity onPress={handleCreateCourse} style={styles.headerIconButton}>
-                <Ionicons name="add" size={24} color={colors.text} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-                <Ionicons name="refresh" size={22} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-            <Ionicons name="search" size={20} color={colors.textTertiary} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              placeholder={t('learn.searchPlaceholder')}
-              placeholderTextColor={colors.textTertiary}
-              style={styles.searchInput}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => { setSearchQuery(''); setDebouncedQuery(''); }}>
-                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      {/* Tab bar — fixed outside list */}
-      <ScrollView
-        horizontal
-        style={styles.tabsScroll}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer}
-      >
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          const basePalette = TAB_COLOR_PALETTES[tab.id];
-          const palette = isDark ? {
-            ...basePalette,
-            inactiveBackground: colors.card,
-            inactiveBorder: colors.border,
-            inactiveIcon: colors.textSecondary,
-            inactiveText: colors.textSecondary,
-          } : basePalette;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.tabButton,
-                { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
-                isActive && styles.tabButtonActive,
-                isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
-              ]}
-              onPress={() => setActiveTab(tab.id)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
-              <Text
-                allowFontScaling={false}
-                style={[
-                  styles.tabLabel,
-                  isKhmer && styles.khmerInlineText,
-                  { color: isActive ? '#FFFFFF' : palette.inactiveText },
-                  isActive && styles.tabLabelActive,
-                ]}
-              >
-                {t(tab.labelKey)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      <Animated.View style={[styles.animatedTabContent, layout.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
-        {renderTabletLeftRail()}
-        {/* ── FlashList ── */}
-        {/* @ts-ignore FlashList types omit some valid props */}
-        <FlashList
-          style={isLearnRailTablet ? styles.tabletCenterList : undefined}
-          data={listData}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          getItemType={getItemType}
-          ListHeaderComponent={isThreeColumnTablet ? null : renderHeader}
+        end={{ x: 1, y: 0 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
+      />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <Animated.View style={[styles.animatedTabContent, layout.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
+            {renderTabletLeftRail()}
+            {/* ── FlashList ── */}
+            {/* @ts-ignore FlashList types omit some valid props */}
+            <FlashList
+              style={isLearnRailTablet ? styles.tabletCenterList : undefined}
+              data={listData}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              getItemType={getItemType}
+              ListHeaderComponent={renderHeader}
           estimatedItemSize={320}
           overrideItemLayout={overrideItemLayout}
           drawDistance={600}
@@ -1159,6 +1187,8 @@ export default function LearnScreen() {
         />
         {renderTabletRightRail()}
       </Animated.View>
+      </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -1458,7 +1488,7 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number, i
     lineHeight: 16,
   },
   listContent: {
-    paddingTop: 4,
+    paddingTop: 0,
     paddingBottom: isTablet ? 64 : 40,
     paddingHorizontal: isTablet ? 12 : 0,
   },

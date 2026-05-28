@@ -465,6 +465,7 @@ export default function ClassDirectoryScreen() {
                 item={item}
                 index={index}
                 orderNumber={index + 1}
+                variant="list"
                 onPress={(row) => handleClassPress(row, section.teacherAccess)}
               />
             )}

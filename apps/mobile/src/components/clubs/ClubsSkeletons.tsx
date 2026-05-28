@@ -64,6 +64,22 @@ export const ClubCardSkeleton = React.memo(function ClubCardSkeleton() {
   );
 });
 
+export const SchoolClassCardSkeleton = React.memo(function SchoolClassCardSkeleton() {
+  const { colors, isDark } = useThemeContext();
+  const skeletonStyles = React.useMemo(() => createStyles(colors), [colors, isDark]);
+
+  return (
+    <View style={skeletonStyles.schoolClassCard}>
+      <View style={skeletonStyles.schoolClassIcon} />
+      <View style={skeletonStyles.schoolClassTextWrap}>
+        <View style={skeletonStyles.schoolClassTitle} />
+        <View style={skeletonStyles.schoolClassSubtitle} />
+      </View>
+      <View style={skeletonStyles.schoolClassChevron} />
+    </View>
+  );
+});
+
 const createStyles = (colors: any) => StyleSheet.create({
   // Header skeleton
   shortcutsRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 },
@@ -84,4 +100,11 @@ const createStyles = (colors: any) => StyleSheet.create({
   avatars:     { width: 80, height: 26, borderRadius: 13, backgroundColor: colors.skeleton },
   pill:        { width: 88, height: 34, borderRadius: 20, backgroundColor: colors.skeleton },
   progressBar: { height: 8, backgroundColor: colors.skeleton, marginHorizontal: 12, marginBottom: 20, borderRadius: 4 },
+  // School Class Card Skeleton
+  schoolClassCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 14, minHeight: 84, borderWidth: 1, borderColor: colors.border, shadowColor: '#0F172A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  schoolClassIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.skeleton },
+  schoolClassTextWrap: { flex: 1, gap: 6 },
+  schoolClassTitle: { width: '70%', height: 14, borderRadius: 7, backgroundColor: colors.skeleton },
+  schoolClassSubtitle: { width: '90%', height: 12, borderRadius: 6, backgroundColor: colors.skeleton },
+  schoolClassChevron: { width: 16, height: 16, borderRadius: 8, backgroundColor: colors.skeleton },
 });

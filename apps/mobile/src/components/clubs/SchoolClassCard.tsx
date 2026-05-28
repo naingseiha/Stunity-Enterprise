@@ -28,17 +28,20 @@ interface SchoolClassCardProps {
   index: number;
   onPress: (item: MyClassSummary) => void;
   orderNumber?: number;
+  variant?: 'grid' | 'list';
 }
 
 export const SchoolClassCard = React.memo(function SchoolClassCard({
   item,
   index,
   onPress,
+  variant = 'grid',
 }: SchoolClassCardProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const theme = CLASS_THEMES[index % CLASS_THEMES.length];
   const studentTotal = getSafeStudentCount(item);
+  const isList = variant === 'list';
 
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -48,10 +51,11 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
   return (
     <AnimatedPressable
       style={[
-        styles.card,
+        isList ? styles.listCard : styles.gridCard,
         {
           backgroundColor: colors.card,
           borderColor: isDark ? colors.border : '#E2E8F0',
+          borderWidth: 1,
         },
         animatedStyle,
       ]}
@@ -59,18 +63,18 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
     >
-      <View style={styles.body}>
-        <View style={styles.textWrap}>
-          <View style={styles.titleRow}>
+      <View style={isList ? styles.listBody : styles.gridBody}>
+        <View style={isList ? styles.listTextWrap : styles.gridTextWrap}>
+          <View style={isList ? styles.listTitleRow : styles.gridTitleRow}>
             <Text
-              style={[styles.title, { color: colors.text }]}
+              style={[isList ? styles.listTitle : styles.gridTitle, { color: colors.text }]}
               numberOfLines={1}
             >
               {item.name}
             </Text>
           </View>
           <Text
-            style={[styles.subtitle, { color: colors.textSecondary }]}
+            style={[isList ? styles.listSubtitle : styles.gridSubtitle, { color: colors.textSecondary }]}
             numberOfLines={1}
           >
             {t('clubs.screen.studentCountInline', {
@@ -82,24 +86,24 @@ export const SchoolClassCard = React.memo(function SchoolClassCard({
 
         <View
           style={[
-            styles.iconCircle,
+            isList ? styles.listIconCircle : styles.gridIconCircle,
             {
               backgroundColor: isDark ? `${theme.accent}25` : theme.soft,
             },
           ]}
         >
-          <Ionicons name={theme.icon} size={20} color={theme.accent} />
+          <Ionicons name={theme.icon} size={isList ? 22 : 20} color={theme.accent} />
         </View>
+        {isList && <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} style={{ opacity: 0.5, marginLeft: 4 }} />}
       </View>
     </AnimatedPressable>
   );
 });
 
 const styles = StyleSheet.create({
-  card: {
+  gridCard: {
     flex: 1,
     borderRadius: 16,
-    borderWidth: 1,
     paddingVertical: 14,
     paddingHorizontal: 14,
     minHeight: 84,
@@ -109,26 +113,85 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  body: {
+  gridBody: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  textWrap: {
+  gridTextWrap: {
     flex: 1,
     minWidth: 0,
   },
-  titleRow: {
+  gridTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  title: {
+  gridTitle: {
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
     flexShrink: 1,
   },
+  gridSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  gridIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  listCard: {
+    flex: 1,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    minHeight: 88,
+    elevation: 0,
+  },
+  listBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  listTextWrap: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  listTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  listTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+    flexShrink: 1,
+  },
+  listSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  listIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  
   badgePill: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -142,18 +205,5 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#2563EB',
     letterSpacing: 0.1,
-  },
-  subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
   },
 });
