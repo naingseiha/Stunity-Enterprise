@@ -172,7 +172,7 @@ const getStatusStyle = (status: string, t: TranslateFn) => {
 export const AttendanceReportScreen = () => {
     const { t, i18n } = useTranslation();
     const navigation = useNavigation();
-    const { user } = useAuthStore();
+    const user = useAuthStore(s => s.user);
     const chartGradientId = useId().replace(/[^a-zA-Z0-9_-]/g, '_');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);

@@ -290,7 +290,7 @@ const SessionCard = ({
 export const AttendanceCheckInScreen = () => {
     const { t, i18n } = useTranslation();
     const navigation = useNavigation();
-    const { user } = useAuthStore();
+    const user = useAuthStore(s => s.user);
     const isLinkedToSchool = !!user?.schoolId;
 
     const [loading, setLoading] = useState(true);
