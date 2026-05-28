@@ -93,13 +93,21 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
   const { t } = useTranslation();
   const { colors: themeColors } = useThemeContext();
   const styles = React.useMemo(() => createStyles(themeColors), [themeColors]);
-  const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics, feedItems } = useFeedStore();
+  // Narrow selectors — actions are stable; analytics & loading are per-postId, not feed-wide.
+  // Previously this modal destructured the whole store including `feedItems`, which made
+  // it re-render on every scroll-driven feed update.
+  const fetchPostAnalytics = useFeedStore(s => s.fetchPostAnalytics);
+  const analyticsForPost = useFeedStore(s => (postId ? s.postAnalytics[postId] : undefined));
+  const isLoadingAnalytics = useFeedStore(s => s.isLoadingAnalytics);
+  // Only the matching post — modal re-renders only when THIS post changes, not the whole feed.
+  const post = useFeedStore(s => {
+    if (!postId) return undefined;
+    const item = s.feedItems.find(i => i.type === 'POST' && (i.data as any).id === postId);
+    return item?.type === 'POST' ? item.data : undefined;
+  });
   const [analytics, setAnalytics] = useState<PostAnalytics | null>(null);
   const [algoScore, setAlgoScore] = useState<any>(null);
   const [period, setPeriod] = useState<Period>('7d');
-
-  const postItem = feedItems.find(i => i.type === 'POST' && (i.data as any).id === postId);
-  const post = postItem?.type === 'POST' ? postItem.data : undefined;
 
   useEffect(() => {
     if (post) {
@@ -110,13 +118,13 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
 
   const loadAnalytics = useCallback(async (force = false) => {
     if (!postId) return;
-    if (!force && postAnalytics[postId]) {
-      setAnalytics(postAnalytics[postId]);
+    if (!force && analyticsForPost) {
+      setAnalytics(analyticsForPost);
       return;
     }
     const data = await fetchPostAnalytics(postId);
     if (data) setAnalytics(data);
-  }, [postId, postAnalytics, fetchPostAnalytics]);
+  }, [postId, analyticsForPost, fetchPostAnalytics]);
 
   useEffect(() => {
     if (isOpen) loadAnalytics();
@@ -124,8 +132,8 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
 
   // Sync from store cache when it updates
   useEffect(() => {
-    if (postAnalytics[postId]) setAnalytics(postAnalytics[postId]);
-  }, [postAnalytics[postId]]);
+    if (analyticsForPost) setAnalytics(analyticsForPost);
+  }, [analyticsForPost]);
 
   const isLoading = isLoadingAnalytics[postId] || false;
 

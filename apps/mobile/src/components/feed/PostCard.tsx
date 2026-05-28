@@ -13,7 +13,7 @@
  * - Rich content indicators (PDF, Code, Formula)
  */
 
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useThemeContext } from '@/contexts';
 import {
   View,
@@ -25,8 +25,16 @@ import {
   Share,
   ActivityIndicator,
   Platform,
-  Animated,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withRepeat,
+  withSequence,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -189,49 +197,39 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
   styles,
   accessibilityLabel,
 }) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const haloScale = useRef(new Animated.Value(0.75)).current;
-  const haloOpacity = useRef(new Animated.Value(0)).current;
+  // Reanimated shared values run animations entirely on the UI thread —
+  // no JS bridge crossings per frame, so rapid taps never hitch the scroll.
+  const scale = useSharedValue(1);
+  const haloScale = useSharedValue(0.75);
+  const haloOpacity = useSharedValue(0);
   const displayColor = active ? activeColor : color;
 
-  const animatePress = useCallback(() => {
-    scale.stopAnimation();
-    haloScale.stopAnimation();
-    haloOpacity.stopAnimation();
-    scale.setValue(0.92);
-    haloScale.setValue(0.7);
-    haloOpacity.setValue(active ? 0.28 : 0.18);
+  const haloAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: haloOpacity.value,
+    transform: [{ scale: haloScale.value }],
+  }));
 
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: active ? 1.18 : 1.1,
-        friction: 4,
-        tension: 180,
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(haloScale, {
-            toValue: 1.85,
-            duration: 260,
-            useNativeDriver: true,
-          }),
-          Animated.timing(haloOpacity, {
-            toValue: 0,
-            duration: 260,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    ]).start(() => {
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 6,
-        tension: 150,
-        useNativeDriver: true,
-      }).start();
+  const buttonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const animatePress = useCallback(() => {
+    cancelAnimation(scale);
+    cancelAnimation(haloScale);
+    cancelAnimation(haloOpacity);
+
+    scale.value = 0.92;
+    haloScale.value = 0.7;
+    haloOpacity.value = active ? 0.28 : 0.18;
+
+    scale.value = withSpring(active ? 1.18 : 1.1, { damping: 4, stiffness: 180 }, (finished) => {
+      if (finished) {
+        scale.value = withSpring(1, { damping: 6, stiffness: 150 });
+      }
     });
-  }, [active, haloOpacity, haloScale, scale]);
+    haloScale.value = withTiming(1.85, { duration: 260 });
+    haloOpacity.value = withTiming(0, { duration: 260 });
+  }, [active, scale, haloScale, haloOpacity]);
 
   const handlePress = useCallback(() => {
     animatePress();
@@ -250,14 +248,11 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
         pointerEvents="none"
         style={[
           styles.actionHalo,
-          {
-            backgroundColor: activeColor,
-            opacity: haloOpacity,
-            transform: [{ scale: haloScale }],
-          },
+          { backgroundColor: activeColor },
+          haloAnimatedStyle,
         ]}
       />
-      <Animated.View style={[styles.actionButtonInner, { transform: [{ scale }] }]}>
+      <Animated.View style={[styles.actionButtonInner, buttonAnimatedStyle]}>
         <Ionicons
           name={active && activeIcon ? activeIcon : icon}
           size={size}
@@ -370,20 +365,24 @@ const ActionBar = React.memo<ActionBarProps>(({
   </View>
 )});
 
-// LIVE badge — isolated so animation only runs on LIVE posts
+// LIVE badge — isolated so animation only runs on LIVE posts.
+// Pulse runs on the UI thread via Reanimated worklets — no JS frame cost.
 const LiveBadge = React.memo<{ viewers?: number; t: any; styles: any }>(({ viewers, t, styles }) => {
-  const livePulse = useRef(new Animated.Value(1)).current;
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(livePulse, { toValue: 1.2, duration: 500, useNativeDriver: true }),
-        Animated.timing(livePulse, { toValue: 1, duration: 500, useNativeDriver: true })
-      ])
-    ).start();
+  const livePulse = useSharedValue(1);
+  useEffect(() => {
+    livePulse.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 500 }),
+        withTiming(1, { duration: 500 }),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(livePulse);
   }, [livePulse]);
-  const liveAnimatedStyle = {
-    transform: [{ scale: livePulse }],
-  };
+  const liveAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: livePulse.value }],
+  }));
   return (
     <Animated.View style={[styles.liveBadge, liveAnimatedStyle]}>
       <LinearGradient

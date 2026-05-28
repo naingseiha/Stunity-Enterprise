@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
   RefreshControl,
   TextInput,
-  Image
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -236,7 +236,15 @@ export default function ClassMembersScreen() {
     return (
       <View style={styles.card}>
         {item.photoUrl ? (
-          <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
+          <Image
+            source={{ uri: item.photoUrl }}
+            style={styles.avatar}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+            transition={150}
+            recyclingKey={item.photoUrl}
+          />
         ) : (
           <View style={[styles.avatarFallback, { backgroundColor: isFemale ? COLORS.femaleBg : COLORS.primary + '20' }]}>
             <Text style={[styles.avatarText, { color: isFemale ? COLORS.femaleText : COLORS.primaryDark }]}>

@@ -134,7 +134,7 @@
       "tryAgain": "Try Again"
     },
     "network": {
-      "online": "Back online! 🎉",
+      "online": "Back online",
       "offline": "No internet connection",
       "retry": "Retry"
     },

@@ -1,20 +1,17 @@
 /**
  * Optimized Image Component
- * 
- * Enterprise-grade image loading with:
- * - Progressive loading (blur-up effect)
- * - Lazy loading
- * - Automatic caching
- * - Memory optimization
- * - Error handling with fallback
+ *
+ * Thin wrapper over expo-image that preserves the legacy API used in older
+ * screens (uri, aspectRatio, borderRadius, showLoader, fallbackColor, priority).
+ * expo-image handles caching, decoding, recycling, and transitions natively —
+ * no JS-side delays, no userland cache layer.
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, ImageProps, Animated, DimensionValue } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, ActivityIndicator, DimensionValue, StyleProp, ImageStyle } from 'react-native';
+import { Image, ImageContentFit } from 'expo-image';
 
-import { imageCacheService } from '@/services/imageCache';
-
-interface OptimizedImageProps extends Omit<ImageProps, 'source' | 'width' | 'height'> {
+interface OptimizedImageProps {
   uri: string;
   width?: DimensionValue;
   height?: DimensionValue;
@@ -23,6 +20,8 @@ interface OptimizedImageProps extends Omit<ImageProps, 'source' | 'width' | 'hei
   showLoader?: boolean;
   fallbackColor?: string;
   priority?: 'high' | 'normal' | 'low';
+  contentFit?: ImageContentFit;
+  style?: StyleProp<ImageStyle>;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
@@ -34,59 +33,11 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   showLoader = true,
   fallbackColor = '#F3F4F6',
   priority = 'normal',
+  contentFit = 'cover',
   style,
-  ...props
 }) => {
-  const [cachedUri, setCachedUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadImage = async () => {
-      if (!uri) {
-        setError(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // High priority images load immediately, others load with delay
-        if (priority === 'low') {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        } else if (priority === 'normal') {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        const cached = await imageCacheService.getCachedImage(uri);
-        if (mounted) {
-          setCachedUri(cached);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(true);
-          setLoading(false);
-        }
-      }
-    };
-
-    loadImage();
-
-    return () => {
-      mounted = false;
-    };
-  }, [uri, priority]);
-
-  const handleLoad = () => {
-    setLoading(false);
-    setError(false);
-  };
-
-  const handleError = () => {
-    setError(true);
-    setLoading(false);
-  };
 
   const containerStyle = [
     styles.container,
@@ -99,41 +50,38 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     },
   ];
 
-  const imageStyle = [
-    styles.image,
-    {
-      borderRadius,
-    },
-    style,
-  ];
+  const imageStyle = [styles.image, { borderRadius }, style];
 
-  return (
-    <View style={containerStyle}>
-      {/* Fallback/Error State */}
-      {error && (
+  if (!uri || error) {
+    return (
+      <View style={containerStyle}>
         <View style={[styles.fallback, { borderRadius }]}>
           <View style={styles.fallbackIcon} />
         </View>
-      )}
+      </View>
+    );
+  }
 
-      {/* Loading Indicator */}
-      {loading && showLoader && !error && (
-        <Animated.View
-          style={styles.loader}
-        >
+  return (
+    <View style={containerStyle}>
+      <Image
+        source={{ uri }}
+        style={imageStyle}
+        contentFit={contentFit}
+        cachePolicy="memory-disk"
+        priority={priority}
+        transition={150}
+        recyclingKey={uri}
+        onLoadEnd={() => setLoading(false)}
+        onError={() => {
+          setError(true);
+          setLoading(false);
+        }}
+      />
+      {loading && showLoader && (
+        <View style={styles.loader} pointerEvents="none">
           <ActivityIndicator size="small" color="#9CA3AF" />
-        </Animated.View>
-      )}
-
-      {/* Actual Image */}
-      {cachedUri && !error && (
-        <Animated.Image
-          source={{ uri: cachedUri }}
-          style={imageStyle}
-          onLoad={handleLoad}
-          onError={handleError}
-          {...props}
-        />
+        </View>
       )}
     </View>
   );
@@ -153,7 +101,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   fallback: {
     ...StyleSheet.absoluteFillObject,

@@ -83,7 +83,15 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
         onPress={() => handleQuizPress(item)}
       >
         <View style={styles.imageContainer}>
-          <Image source={{ uri: background }} style={styles.image} contentFit="cover" />
+          <Image
+            source={{ uri: background }}
+            style={styles.image}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+            transition={150}
+            recyclingKey={background}
+          />
         </View>
 
         <View style={styles.content}>

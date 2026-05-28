@@ -31,6 +31,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
 
     const renderItem = ({ item }: { item: Course }) => {
         if (!item) return null;
+        const thumbnailUri = item.thumbnailUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80';
         return (
             <TouchableOpacity
                 style={styles.card}
@@ -38,7 +39,15 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
                 onPress={() => handleCoursePress(item.id)}
             >
                 <View style={styles.imageContainer}>
-                    <Image source={{ uri: item.thumbnailUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' }} style={styles.image} contentFit="cover" />
+                    <Image
+                        source={{ uri: thumbnailUri }}
+                        style={styles.image}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        priority="high"
+                        transition={150}
+                        recyclingKey={thumbnailUri}
+                    />
                 </View>
                 <View style={styles.content}>
                     <Text style={styles.title} numberOfLines={2}>{item.title}</Text>

@@ -61,7 +61,10 @@ import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
 const INITIAL_FEED_NOTICE_MS = 2800;
 const INITIAL_FEED_STILL_WORKING_MS = 9000;
-const LIST_DRAW_DISTANCE = Platform.OS === 'android' ? 520 : 720;
+// ProMotion / high-refresh: frame budget drops from 16.6ms to 8.3ms at 120Hz,
+// so the recycler needs more headroom ahead of the user's scroll to avoid
+// blank cells on fast flings. Conservative on Android (memory pressure).
+const LIST_DRAW_DISTANCE = Platform.OS === 'android' ? 600 : 900;
 const ESTIMATED_TEXT_POST_SIZE = 330;
 const ESTIMATED_MEDIA_BASE_SIZE = 292;
 
@@ -264,7 +267,10 @@ export default function FeedScreen() {
     : windowWidth;
   const styles = React.useMemo(() => createStyles(colors, isDark, layout.isTablet, layout.isLargeTablet, isWideTablet, isThreeColumnTablet, feedColumnWidth), [colors, isDark, layout.isTablet, layout.isLargeTablet, isWideTablet, isThreeColumnTablet, feedColumnWidth]);
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuthStore();
+  // Narrow selector — only resubscribes when the user object reference changes
+  // (login/logout/profile update). Previously `useAuthStore()` re-rendered the
+  // entire FeedScreen on every auth-store action, including transient ones.
+  const user = useAuthStore(s => s.user);
   const { openSidebar } = useNavigationContext();
 
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.

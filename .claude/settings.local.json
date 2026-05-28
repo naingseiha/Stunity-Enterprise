@@ -51,7 +51,23 @@
       "Bash(redis-cli -u \"rediss://default:gQAAAAAAAhnmAAIgcDI1NzU3NDU0YmU0Yzk0ODhhOGM3MTI5YzFkMWY0MDA5MQ@humble-glider-137702.upstash.io:6379\" PING)",
       "Bash(DATABASE_URL='postgresql://postgres.mwqdsxbxqlkrahoyqqox:Iamaprogrammer2131@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres?connection_limit=10&pool_timeout=15' REGION=asia-southeast1 CLOUD_RUN_MIN_INSTANCES_FEED=1 CLOUD_RUN_MAX_INSTANCES=1 CLOUD_RUN_CPU_THROTTLING=false PRISMA_CONNECTION_LIMIT=10 PRISMA_POOL_TIMEOUT=15 FEED_ENABLE_BACKGROUND_JOBS=1 ./scripts/deploy-cloud-run.sh feed-service)",
       "Bash(redis-cli -u rediss://default:gQAAAAAAAhnmAAIgcDI1NzU3NDU0YmU0Yzk0ODhhOGM3MTI5YzFkMWY0MDA5MQ@humble-glider-137702.upstash.io:6379 --scan --pattern feed:feedranker:session:*:limit:18:*)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/naingseiha/Documents/projects/Stunity-Enterprise/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png /Users/naingseiha/Documents/projects/Stunity-Enterprise/AppIcons/appstore.png /Users/naingseiha/Documents/projects/Stunity-Enterprise/AppIcons/playstore.png)",
+      "Bash(python3 -c \"from PIL import Image; print\\('Pillow available'\\)\")",
+      "Bash(python3 -c \"import PIL; print\\(PIL.__version__\\)\")",
+      "Bash(convert --version)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; [print\\(k+': '+v\\) for k,v in sorted\\(deps.items\\(\\)\\) if 'expo' in k.lower\\(\\) and k in ['expo', 'expo-router']]\")",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise show HEAD:apps/mobile/assets/icon.png > /tmp/original_icon.png 2>/dev/null && echo \"got from git\" || echo \"not in git\")",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise show HEAD:apps/mobile/ios/Stunity/Images.xcassets/AppIcon.appiconset/AppIcon@3x.png)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise show HEAD:apps/mobile/ios/Stunity/Images.xcassets/AppIcon.appiconset/AppIcon~ios-marketing.png)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise ls-files apps/mobile/ios/Stunity/Images.xcassets/AppIcon.appiconset/)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise status --short apps/mobile/ios/Stunity/Images.xcassets/)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise log --oneline --follow -- apps/mobile/ios/Stunity/Images.xcassets/AppIcon.appiconset/AppIcon@3x.png)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise show HEAD:AppIcons/appstore.png)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise stash list)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise status --short)"
     ]
   }
 }

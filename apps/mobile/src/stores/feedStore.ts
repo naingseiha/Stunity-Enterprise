@@ -8,7 +8,8 @@ import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem, MediaMetadata } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
 import { feedApi, quizApi, learnApi } from '@/api/client';
-import { Image, InteractionManager } from 'react-native';
+import { InteractionManager } from 'react-native';
+import { Image } from 'expo-image';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
 import { supabase } from '@/lib/supabase';
@@ -731,7 +732,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             .slice(0, 6);
 
           InteractionManager.runAfterInteractions(() => {
-            urlsToPrefetch.forEach((url: string) => Image.prefetch(url).catch(() => { }));
+            urlsToPrefetch.forEach((url: string) => Image.prefetch(url, 'memory-disk').catch(() => { }));
           });
         }
       } else {

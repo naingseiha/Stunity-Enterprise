@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Animated, Easing,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
