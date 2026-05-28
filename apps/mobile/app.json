@@ -25,7 +25,8 @@
         "NSPhotoLibraryUsageDescription": "Stunity needs photo library access to share photos in posts.",
         "NSMicrophoneUsageDescription": "Stunity needs microphone access to record videos.",
         "NSFaceIDUsageDescription": "Stunity uses Face ID for secure login.",
-        "NSLocationWhenInUseUsageDescription": "Stunity needs your location to verify your check-in at school."
+        "NSLocationWhenInUseUsageDescription": "Stunity needs your location to verify your check-in at school.",
+        "CADisableMinimumFrameDurationOnPhone": true
       },
       "newArchEnabled": true
     },
@@ -36,7 +37,7 @@
       "icon": "./assets/android-icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-adaptive-foreground.png",
-        "backgroundColor": "#0ad2fa"
+        "backgroundColor": "#09CFF7"
       },
       "splash": {
         "image": "./assets/Stunity.png",
