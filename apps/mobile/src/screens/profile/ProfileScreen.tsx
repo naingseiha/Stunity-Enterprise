@@ -236,7 +236,7 @@ export default function ProfileScreen() {
   const { colors, isDark } = useThemeContext();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
-  const { user: currentUser } = useAuthStore();
+  const currentUser = useAuthStore(s => s.user);
   const insets = useSafeAreaInsets();
   const layout = useLayoutBreakpoint();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -274,7 +274,7 @@ export default function ProfileScreen() {
 
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentUser?.id;
-  const { updateUser } = useAuthStore();
+  const updateUser = useAuthStore(s => s.updateUser);
   const feedItems = useFeedStore((state) => state.feedItems);
 
   const [profile, setProfile] = useState<User | null>(
