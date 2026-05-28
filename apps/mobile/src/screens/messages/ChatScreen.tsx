@@ -50,20 +50,19 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
 
-  const {
-    messages,
-    isLoadingMessages,
-    typingUsers,
-    fetchMessages,
-    sendMessage,
-    editMessage,
-    deleteMessage,
-    subscribeToMessages,
-    unsubscribeFromMessages,
-    markAsRead,
-    sendTypingIndicator,
-    setActiveConversation,
-  } = useMessagingStore();
+  // Granular Zustand selectors — each only re-renders when its slice changes.
+  const messages = useMessagingStore(s => s.messages);
+  const isLoadingMessages = useMessagingStore(s => s.isLoadingMessages);
+  const typingUsers = useMessagingStore(s => s.typingUsers);
+  const fetchMessages = useMessagingStore(s => s.fetchMessages);
+  const sendMessage = useMessagingStore(s => s.sendMessage);
+  const editMessage = useMessagingStore(s => s.editMessage);
+  const deleteMessage = useMessagingStore(s => s.deleteMessage);
+  const subscribeToMessages = useMessagingStore(s => s.subscribeToMessages);
+  const unsubscribeFromMessages = useMessagingStore(s => s.unsubscribeFromMessages);
+  const markAsRead = useMessagingStore(s => s.markAsRead);
+  const sendTypingIndicator = useMessagingStore(s => s.sendTypingIndicator);
+  const setActiveConversation = useMessagingStore(s => s.setActiveConversation);
 
   const conversationId = route.params?.conversationId;
   const [inputText, setInputText] = useState('');

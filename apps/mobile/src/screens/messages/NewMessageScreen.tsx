@@ -46,7 +46,9 @@ export default function NewMessageScreen() {
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const navigation = useNavigation<NavigationProp>();
     const { user } = useAuthStore();
-    const { conversations, startConversation } = useMessagingStore();
+    // Granular Zustand selectors — each only re-renders when its slice changes.
+    const conversations = useMessagingStore(s => s.conversations);
+    const startConversation = useMessagingStore(s => s.startConversation);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(false);
 

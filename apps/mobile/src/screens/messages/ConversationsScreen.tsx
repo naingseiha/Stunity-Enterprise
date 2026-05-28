@@ -40,13 +40,12 @@ export default function ConversationsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { openSidebar } = useNavigationContext();
   const { user } = useAuthStore();
-  const {
-    conversations,
-    isLoadingConversations,
-    fetchConversations,
-    subscribeToConversations,
-    unsubscribeAll,
-  } = useMessagingStore();
+  // Granular Zustand selectors — each only re-renders when its slice changes.
+  const conversations = useMessagingStore(s => s.conversations);
+  const isLoadingConversations = useMessagingStore(s => s.isLoadingConversations);
+  const fetchConversations = useMessagingStore(s => s.fetchConversations);
+  const subscribeToConversations = useMessagingStore(s => s.subscribeToConversations);
+  const unsubscribeAll = useMessagingStore(s => s.unsubscribeAll);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);

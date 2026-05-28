@@ -83,19 +83,18 @@ const LeaderboardRow = React.memo(({ item, showStreak = false }: { item: Leaderb
 
 export const LeaderboardScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
-    const {
-        globalLeaderboard,
-        weeklyLeaderboard,
-        streakLeaderboard,
-        userGlobalStanding,
-        userWeeklyStanding,
-        userStreakStanding,
-        isLoading,
-        isRefreshing,
-        fetchGlobalLeaderboard,
-        fetchWeeklyLeaderboard,
-        fetchStreakLeaderboard,
-    } = useLeaderboardStore();
+    // Granular Zustand selectors — each only re-renders when its slice changes.
+    const globalLeaderboard = useLeaderboardStore(s => s.globalLeaderboard);
+    const weeklyLeaderboard = useLeaderboardStore(s => s.weeklyLeaderboard);
+    const streakLeaderboard = useLeaderboardStore(s => s.streakLeaderboard);
+    const userGlobalStanding = useLeaderboardStore(s => s.userGlobalStanding);
+    const userWeeklyStanding = useLeaderboardStore(s => s.userWeeklyStanding);
+    const userStreakStanding = useLeaderboardStore(s => s.userStreakStanding);
+    const isLoading = useLeaderboardStore(s => s.isLoading);
+    const isRefreshing = useLeaderboardStore(s => s.isRefreshing);
+    const fetchGlobalLeaderboard = useLeaderboardStore(s => s.fetchGlobalLeaderboard);
+    const fetchWeeklyLeaderboard = useLeaderboardStore(s => s.fetchWeeklyLeaderboard);
+    const fetchStreakLeaderboard = useLeaderboardStore(s => s.fetchStreakLeaderboard);
     const [activeTab, setActiveTab] = useState<LeaderboardTab>('ALL_TIME');
 
     useEffect(() => {

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  RefreshControl, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  RefreshControl,
   Linking,
   Modal,
   TextInput,
@@ -15,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -49,7 +49,12 @@ export default function ClassMaterialsScreen() {
   const classId = route.params?.classId;
   const isTeacher = user?.role === 'TEACHER';
 
-  const { materials, loading, error, fetchMaterials, createMaterial } = useClassHubStore();
+  // Granular Zustand selectors — each only re-renders when its slice changes.
+  const materials = useClassHubStore(s => s.materials);
+  const loading = useClassHubStore(s => s.loading);
+  const error = useClassHubStore(s => s.error);
+  const fetchMaterials = useClassHubStore(s => s.fetchMaterials);
+  const createMaterial = useClassHubStore(s => s.createMaterial);
   const data = materials[classId] || [];
   const isLoading = loading[`materials_${classId}`];
   const errorMessage = error[`materials_${classId}`];
@@ -143,10 +148,12 @@ export default function ClassMaterialsScreen() {
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          <FlatList
+          {/* @ts-ignore FlashList types omit estimatedItemSize but it is supported and critical for perf */}
+          <FlashList
             data={data}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            estimatedItemSize={96}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
             ListEmptyComponent={<Text style={styles.empty}>{t('classScreens.materials.empty')}</Text>}

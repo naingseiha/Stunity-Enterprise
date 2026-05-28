@@ -99,15 +99,14 @@ export default function NotificationsScreen() {
     const { colors, isDark } = useThemeContext();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const navigation = useNavigation();
-    const {
-        notifications,
-        unreadCount,
-        isLoading,
-        fetchNotifications,
-        markAsRead,
-        markAllAsRead,
-        deleteNotification,
-    } = useNotificationStore();
+    // Granular Zustand selectors — each only re-renders when its slice changes.
+    const notifications = useNotificationStore(s => s.notifications);
+    const unreadCount = useNotificationStore(s => s.unreadCount);
+    const isLoading = useNotificationStore(s => s.isLoading);
+    const fetchNotifications = useNotificationStore(s => s.fetchNotifications);
+    const markAsRead = useNotificationStore(s => s.markAsRead);
+    const markAllAsRead = useNotificationStore(s => s.markAllAsRead);
+    const deleteNotification = useNotificationStore(s => s.deleteNotification);
 
     const [refreshing, setRefreshing] = React.useState(false);
 

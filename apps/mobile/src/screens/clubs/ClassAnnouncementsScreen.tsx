@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  ActivityIndicator, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
   RefreshControl,
   Modal,
   TextInput,
@@ -14,6 +13,7 @@ import {
   Alert,
   ScrollView
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,7 +39,12 @@ export default function ClassAnnouncementsScreen() {
   const classId = route.params?.classId;
   const isTeacher = user?.role === 'TEACHER';
 
-  const { announcements, loading, error, fetchAnnouncements, createAnnouncement } = useClassHubStore();
+  // Granular Zustand selectors — each only re-renders when its slice changes.
+  const announcements = useClassHubStore(s => s.announcements);
+  const loading = useClassHubStore(s => s.loading);
+  const error = useClassHubStore(s => s.error);
+  const fetchAnnouncements = useClassHubStore(s => s.fetchAnnouncements);
+  const createAnnouncement = useClassHubStore(s => s.createAnnouncement);
   const data = announcements[classId] || [];
   const isLoading = loading[`announcements_${classId}`];
   const errorMessage = error[`announcements_${classId}`];
@@ -144,10 +149,12 @@ export default function ClassAnnouncementsScreen() {
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          <FlatList
+          {/* @ts-ignore FlashList types omit estimatedItemSize but it is supported and critical for perf */}
+          <FlashList
             data={data}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            estimatedItemSize={180}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
             ListEmptyComponent={<Text style={[styles.empty, isKhmer && styles.khmerInlineText]}>{t('announcements.empty')}</Text>}

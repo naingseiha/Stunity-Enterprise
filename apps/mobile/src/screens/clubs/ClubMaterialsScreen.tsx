@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -215,10 +215,12 @@ export default function ClubMaterialsScreen() {
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          <FlatList
+          {/* @ts-ignore FlashList types omit estimatedItemSize but it is supported and critical for perf */}
+          <FlashList
             data={items}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            estimatedItemSize={96}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             ListEmptyComponent={<Text style={styles.emptyText}>{t('clubScreens.materials.empty')}</Text>}

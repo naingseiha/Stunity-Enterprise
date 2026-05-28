@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  RefreshControl, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  RefreshControl,
   Linking,
   Modal,
   TextInput,
@@ -15,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,7 +47,12 @@ export default function ClassAssignmentsScreen() {
   const linkedStudentId = route.params?.linkedStudentId;
   const studentId = linkedStudentId || (user as any)?.studentId || (user as any)?.student?.id;
 
-  const { assignments, loading, error, fetchAssignments, createAssignment } = useClassHubStore();
+  // Granular Zustand selectors — each only re-renders when its slice changes.
+  const assignments = useClassHubStore(s => s.assignments);
+  const loading = useClassHubStore(s => s.loading);
+  const error = useClassHubStore(s => s.error);
+  const fetchAssignments = useClassHubStore(s => s.fetchAssignments);
+  const createAssignment = useClassHubStore(s => s.createAssignment);
   const data = assignments[classId] || [];
   const isLoading = loading[`assignments_${classId}`];
   const errorMessage = error[`assignments_${classId}`];
@@ -184,10 +189,12 @@ export default function ClassAssignmentsScreen() {
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          <FlatList
+          {/* @ts-ignore FlashList types omit estimatedItemSize but it is supported and critical for perf */}
+          <FlashList
             data={data}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            estimatedItemSize={140}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
             ListEmptyComponent={<Text style={styles.empty}>{t('classScreens.assignments.empty')}</Text>}

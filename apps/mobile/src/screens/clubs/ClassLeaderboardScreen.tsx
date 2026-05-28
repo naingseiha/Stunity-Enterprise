@@ -2,9 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   StatusBar,
@@ -13,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -528,10 +527,12 @@ export default function ClassLeaderboardScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <FlatList
+          /* @ts-ignore FlashList types omit estimatedItemSize but it is supported and critical for perf */
+          <FlashList
             data={listRows}
             keyExtractor={keyExtractor}
             renderItem={renderRow}
+            estimatedItemSize={72}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
               rankingStudents.length === 0 ? (
@@ -543,9 +544,7 @@ export default function ClassLeaderboardScreen() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pink} colors={[COLORS.pink]} />
             }
-            initialNumToRender={14}
-            windowSize={8}
-            removeClippedSubviews={Platform.OS === 'android'}
+            removeClippedSubviews={false}
           />
         )}
       </View>

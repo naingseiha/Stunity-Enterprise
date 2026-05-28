@@ -28,7 +28,6 @@ import {
   TouchableOpacity,
   View,
   Pressable,
-  FlatList,
   useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
