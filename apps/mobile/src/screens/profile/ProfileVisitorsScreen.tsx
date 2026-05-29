@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -178,23 +178,20 @@ export default function ProfileVisitorsScreen() {
           <ActivityIndicator color="#0891B2" />
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={visitors}
           keyExtractor={(item) => item.id}
           renderItem={renderVisitor}
+          estimatedItemSize={72}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={8}
-          removeClippedSubviews
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => void loadVisitors("refresh")}
             />
           }
-          onEndReachedThreshold={0.55}
+          onEndReachedThreshold={0.6}
           onEndReached={() => void loadVisitors("more")}
           ListFooterComponent={
             loadingMore ? (

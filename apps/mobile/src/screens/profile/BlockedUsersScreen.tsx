@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -131,10 +131,11 @@ export default function BlockedUsersScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={blockedUsers}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          estimatedItemSize={68}
           contentContainerStyle={blockedUsers.length ? styles.listContent : styles.emptyContent}
           refreshControl={
             <RefreshControl
