@@ -51,6 +51,8 @@ import { applyMockEdScores } from '@/utils/mockEdScores';
 import BrainModeToggle from '@/components/feed/BrainModeToggle';
 import FeynmanBountyItem from '@/components/feed/FeynmanBountyItem';
 import { getMockFeynmanBounties, injectFeynmanBounties } from '@/utils/mockFeynmanBounties';
+import QuizWarBanner from '@/components/feed/QuizWarBanner';
+import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
@@ -364,9 +366,18 @@ export default function FeedScreen() {
   // cadence). Prototype: mocked. Production: pulled from /bounties/active
   // ranked by relevance to the student's current subjects.
   const feynmanBounties = useMemo(() => getMockFeynmanBounties(), []);
-  const displayedFeedItems = useMemo(
+  const withBounties = useMemo(
     () => injectFeynmanBounties(withRecallCards, feynmanBounties, 8),
     [withRecallCards, feynmanBounties],
+  );
+
+  // Inject the active Quiz War as a single banner near the top of the feed
+  // (after the first POST). Single war at a time per school. Prototype:
+  // static state. Production: /quiz-wars/active + WebSocket score deltas.
+  const quizWar = useMemo(() => getMockQuizWar(), []);
+  const displayedFeedItems = useMemo(
+    () => injectQuizWar(withBounties, quizWar),
+    [withBounties, quizWar],
   );
 
   const handleToggleBrainMode = useCallback(() => {
@@ -400,6 +411,7 @@ export default function FeedScreen() {
     if (item?.type === 'POST') return item.data?.id || `post-${index}`;
     if (item?.type === 'RECALL_CARD') return item.data.id;
     if (item?.type === 'FEYNMAN_BOUNTY') return item.data.id;
+    if (item?.type === 'QUIZ_WAR') return item.data.id;
     if (item?.type) return item.type;
     return `item-${index}`;
   }, []);
@@ -760,6 +772,9 @@ export default function FeedScreen() {
     if (item.type === 'FEYNMAN_BOUNTY') {
       return <FeynmanBountyItem bounty={item.data} />;
     }
+    if (item.type === 'QUIZ_WAR') {
+      return <QuizWarBanner war={item.data} />;
+    }
 
     if (item.type === 'POST' && !item.data) return null;
 
@@ -781,6 +796,7 @@ export default function FeedScreen() {
     if (item.type === 'SUGGESTED_QUIZZES') return 'suggested_quizzes';
     if (item.type === 'RECALL_CARD') return 'recall_card';
     if (item.type === 'FEYNMAN_BOUNTY') return 'feynman_bounty';
+    if (item.type === 'QUIZ_WAR') return 'quiz_war';
     const postData = (item as any).data || item;
     if (postData.postType === 'QUIZ') return 'quiz';
     if (postData.postType === 'POLL') return 'poll';
@@ -812,6 +828,12 @@ export default function FeedScreen() {
     if (item.type === 'FEYNMAN_BOUNTY') {
       // Floating flat card with bounty hero (big +XP number), stats chips,
       // top tutor row, and 2 action buttons. Tallest of the new cards (~480).
+      slot.size = 500;
+      return;
+    }
+    if (item.type === 'QUIZ_WAR') {
+      // Live battle banner: header + teams row (big scores) + tug-of-war
+      // bar + countdown + presence + CTA + reward footer (~470).
       slot.size = 500;
       return;
     }

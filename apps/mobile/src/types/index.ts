@@ -484,13 +484,41 @@ export interface FeynmanBounty {
   createdAt: string;
 }
 
+// Quiz War — live inter-class quiz battle. Drives "class pride" identity
+// motivation (Zajonc social facilitation + Köhler effect for weaker
+// performers in interdependent groups). Single active war at a time per
+// school. Status flows: PRE_MATCH → LIVE → POST_MATCH.
+export interface QuizWarTeam {
+  id: string;
+  name: string;            // e.g. "10A"
+  color: string;           // class color for score bar
+  score: number;
+}
+
+export interface QuizWar {
+  id: string;
+  status: 'PRE_MATCH' | 'LIVE' | 'POST_MATCH';
+  subject: string;          // e.g. "Mathematics · Algebra"
+  round: number;
+  totalRounds: number;
+  timeRemainingSec: number; // initial seed; component ticks down
+  teamA: QuizWarTeam;
+  teamB: QuizWarTeam;
+  classmatesFighting: number;
+  isUserParticipating: boolean;
+  userTeamId?: string;      // present if user belongs to one of the two
+  rewardXp: number;         // XP to winning class leaderboard
+  createdAt: string;
+}
+
 export type FeedItem =
   | { type: "POST"; data: Post }
   | { type: "SUGGESTED_USERS"; data: Partial<User>[] }
   | { type: "SUGGESTED_COURSES"; data: Course[] }
   | { type: "SUGGESTED_QUIZZES"; data: any[] }
   | { type: "RECALL_CARD"; data: RecallCard }
-  | { type: "FEYNMAN_BOUNTY"; data: FeynmanBounty };
+  | { type: "FEYNMAN_BOUNTY"; data: FeynmanBounty }
+  | { type: "QUIZ_WAR"; data: QuizWar };
 
 export interface Comment {
   id: string;
