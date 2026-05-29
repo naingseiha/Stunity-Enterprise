@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   InteractionManager,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { addDays, format, isToday, parseISO } from 'date-fns';
@@ -520,17 +519,14 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading')}</Text>
         </View>
       ) : (
-        <FlatList
+        /* @ts-ignore FlashList types omit some valid props */
+        <FlashList
           data={filteredRows}
           keyExtractor={(item) => item.studentId}
           renderItem={renderRow}
+          estimatedItemSize={120}
           ListHeaderComponent={listHeader}
           contentContainerStyle={styles.listContent}
-          initialNumToRender={12}
-          maxToRenderPerBatch={12}
-          updateCellsBatchingPeriod={50}
-          windowSize={7}
-          removeClippedSubviews={Platform.OS === 'android'}
           keyboardShouldPersistTaps="handled"
           extraData={`${savingId || ''}:${allowedStatuses.join('|')}`}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_TEAL} />}

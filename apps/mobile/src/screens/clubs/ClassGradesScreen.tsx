@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -1132,10 +1132,13 @@ export default function ClassGradesScreen() {
         </View>
       ) : (
         <View style={[styles.screenBody, scoreDataLoading && styles.screenBodyRefreshing]}>
-          <FlatList
+          {/* @ts-ignore FlashList types omit some valid props */}
+          <FlashList
             data={isTeacher ? students : studentMonthlyGrades}
             keyExtractor={item => item.id}
             renderItem={isTeacher ? renderStudent : renderStudentSubjectScore}
+            estimatedItemSize={100}
+            getItemType={() => isTeacher ? 'student' : 'score'}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={renderListHeader}
@@ -1147,8 +1150,8 @@ export default function ClassGradesScreen() {
                   <Ionicons name={isTeacher ? "people-outline" : "bar-chart-outline"} size={48} color={COLORS.border} />
                 )}
                 <Text style={styles.emptyText}>
-                  {scoreDataLoading 
-                    ? t('classScreens.grades.loading') 
+                  {scoreDataLoading
+                    ? t('classScreens.grades.loading')
                     : (isTeacher ? t('classScreens.grades.emptyStudents') : t('classScreens.grades.emptyReport'))}
                 </Text>
               </View>
