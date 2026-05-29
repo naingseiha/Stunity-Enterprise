@@ -454,12 +454,43 @@ export interface RecallCard {
   courseTitle?: string;
 }
 
+// Feynman Bounty — a student-asked question with XP staked, tutors compete
+// to give the best explanation. Drives the "best way to learn is to teach"
+// thesis (Protégé effect, generation effect, elaborative encoding).
+export type MasterExplainerTier = 'bronze' | 'silver' | 'gold';
+
+export interface FeynmanBounty {
+  id: string;
+  asker: {
+    id: string;
+    name: string;
+    gradeLabel?: string;        // e.g. "Grade 11"
+    avatarUrl?: string;
+  };
+  subject: string;              // e.g. "Physics · Density"
+  subjectColor?: string;        // optional override for subject chip tint
+  questionText: string;
+  attachmentName?: string;      // e.g. "textbook_pg42.jpg"
+  bountyXp: number;             // total XP at stake
+  hoursLeft: number;            // time remaining to claim bounty
+  tutorsWorking: number;        // live "X tutors working" count
+  answersCount: number;         // how many replies already in
+  // Optional preview of the current top tutor (drives social proof)
+  topTutor?: {
+    id: string;
+    name: string;
+    tier: MasterExplainerTier;
+  };
+  createdAt: string;
+}
+
 export type FeedItem =
   | { type: "POST"; data: Post }
   | { type: "SUGGESTED_USERS"; data: Partial<User>[] }
   | { type: "SUGGESTED_COURSES"; data: Course[] }
   | { type: "SUGGESTED_QUIZZES"; data: any[] }
-  | { type: "RECALL_CARD"; data: RecallCard };
+  | { type: "RECALL_CARD"; data: RecallCard }
+  | { type: "FEYNMAN_BOUNTY"; data: FeynmanBounty };
 
 export interface Comment {
   id: string;
