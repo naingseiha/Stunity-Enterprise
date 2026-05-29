@@ -15,10 +15,10 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator, Animated} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -157,10 +157,12 @@ export default function MyPostsScreen() {
       </View>
       
       {/* Posts List */}
-      <FlatList
+      {/* @ts-ignore FlashList types omit some valid props */}
+      <FlashList
         data={myPosts}
         renderItem={renderPost}
         keyExtractor={(item) => item.id}
+        estimatedItemSize={300}
         ListEmptyComponent={renderEmpty}
         refreshControl={
           <RefreshControl

@@ -20,10 +20,10 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  FlatList,
   TextInput,
   ActivityIndicator,
   ScrollView, Animated} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -326,10 +326,11 @@ export default function CommentsScreen() {
         ) : postComments.length === 0 ? (
           renderEmptyState()
         ) : (
-          <FlatList
+          <FlashList
             data={postComments}
             renderItem={renderComment}
             keyExtractor={(item) => item.id}
+            estimatedItemSize={80}
             contentContainerStyle={styles.commentsList}
             showsVerticalScrollIndicator={false}
           />
