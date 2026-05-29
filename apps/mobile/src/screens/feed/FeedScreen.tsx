@@ -48,6 +48,7 @@ import {
 import RecallCardItem from '@/components/feed/RecallCardItem';
 import { getMockRecallCards, injectRecallCards } from '@/utils/mockRecallCards';
 import { applyMockEdScores } from '@/utils/mockEdScores';
+import BrainModeToggle from '@/components/feed/BrainModeToggle';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
@@ -279,6 +280,8 @@ export default function FeedScreen() {
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
   // Previously, one big destructure caused the whole screen to re-render on any store change.
   const feedItems = useFeedStore(s => s.feedItems);
+  const feedMode = useFeedStore(s => s.feedMode);
+  const toggleFeedMode = useFeedStore(s => s.toggleFeedMode);
   const isLoadingPosts = useFeedStore(s => s.isLoadingPosts);
   const hasMorePosts = useFeedStore(s => s.hasMorePosts);
   const fetchPosts = useFeedStore(s => s.fetchPosts);
@@ -329,15 +332,34 @@ export default function FeedScreen() {
   // the new Post.verifiedByTeacherId field powers teacherVerified.
   const scoredFeedItems = useMemo(() => applyMockEdScores(feedItems), [feedItems]);
 
+  // Brain Mode: when active, re-sort POST items by edScore desc so high-
+  // quality posts surface first. Non-POST items (carousels, recall cards)
+  // keep their relative position. Prototype: client-side sort. Production:
+  // a /feed/brain endpoint that re-weights _scoreBreakdown.quality.
+  const sortedFeedItems = useMemo(() => {
+    if (feedMode !== 'BRAIN_MODE') return scoredFeedItems;
+    // Stable sort: POST items by edScore desc; non-POST items hold position.
+    return [...scoredFeedItems].sort((a, b) => {
+      if (a.type !== 'POST' || b.type !== 'POST') return 0;
+      const aScore = a.data?.edScore ?? 0;
+      const bScore = b.data?.edScore ?? 0;
+      return bScore - aScore;
+    });
+  }, [scoredFeedItems, feedMode]);
+
   // Inject Recall Cards into the live feed every 5 posts.
   // Prototype: cards come from a fixed mock pool. Production will source from
   // an SM-2/FSRS scheduler keyed to the student's course gaps and past
   // incorrect quiz attempts.
   const recallCards = useMemo(() => getMockRecallCards(), []);
   const displayedFeedItems = useMemo(
-    () => injectRecallCards(scoredFeedItems, recallCards, 5),
-    [scoredFeedItems, recallCards],
+    () => injectRecallCards(sortedFeedItems, recallCards, 5),
+    [sortedFeedItems, recallCards],
   );
+
+  const handleToggleBrainMode = useCallback(() => {
+    toggleFeedMode(feedMode === 'BRAIN_MODE' ? 'FOR_YOU' : 'BRAIN_MODE');
+  }, [feedMode, toggleFeedMode]);
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
 
   useScrollToTop(scrollToTopRef);
@@ -685,8 +707,14 @@ export default function FeedScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Brain Mode toggle — re-rank feed by Ed-Score (Educational Value) */}
+      <BrainModeToggle
+        active={feedMode === 'BRAIN_MODE'}
+        onToggle={handleToggleBrainMode}
+      />
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, navigation, t, colors, openSidebar, unreadNotifications]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({

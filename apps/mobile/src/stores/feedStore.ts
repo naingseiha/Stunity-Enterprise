@@ -166,7 +166,11 @@ interface FeedState {
   hasMorePosts: boolean;
   postsPage: number;
   nextCursor: string | null;
-  feedMode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
+  // BRAIN_MODE is a client-side overlay on top of FOR_YOU — same backend
+  // ranking, but FeedScreen sorts the result by edScore desc to surface
+  // high-quality posts first. Backend integration (a real /feed/brain
+  // endpoint) is deferred until edScore is denormalized server-side.
+  feedMode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT' | 'BRAIN_MODE';
   userInterestProfile: UserInterestProfile | null;
   pendingPosts: Post[];
   lastFeedTimestamp: string | null; // ISO timestamp of newest post in feed
@@ -244,7 +248,7 @@ interface FeedState {
   fetchBookmarks: () => Promise<void>;
 
   fetchTrending: (period?: TrendingPeriod) => Promise<void>;
-  toggleFeedMode: (mode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT') => void;
+  toggleFeedMode: (mode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT' | 'BRAIN_MODE') => void;
 
   initializeRecommendations: () => void;
   // Real-time
@@ -372,7 +376,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       // Use personalized feed endpoint for FOR_YOU and FOLLOWING modes
       const feedMode = get().feedMode;
-      const usePersonalizedFeed = feedMode === 'FOR_YOU' || feedMode === 'FOLLOWING';
+      // BRAIN_MODE rides on top of FOR_YOU's personalized ranker —
+      // backend doesn't yet know BRAIN_MODE, so we send FOR_YOU and let
+      // the client re-sort by edScore.
+      const usePersonalizedFeed =
+        feedMode === 'FOR_YOU' || feedMode === 'FOLLOWING' || feedMode === 'BRAIN_MODE';
       const endpoint = usePersonalizedFeed ? '/posts/feed' : '/posts';
 
       // Personalized feed is page/session-based, so keep the page size stable
@@ -400,7 +408,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }
 
       if (usePersonalizedFeed) {
-        params.mode = feedMode;
+        // BRAIN_MODE → FOR_YOU on the wire; client-side sort handles the rest.
+        params.mode = feedMode === 'BRAIN_MODE' ? 'FOR_YOU' : feedMode;
       }
 
       let response;
