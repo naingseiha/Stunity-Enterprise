@@ -4,6 +4,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 import BlurLoader from '@/components/BlurLoader';
@@ -275,7 +276,7 @@ export default function TeacherSubjectsPage() {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
               {teacher.photoUrl ? (
-                <img src={teacher.photoUrl} alt="" className="w-full h-full object-cover" />
+                <Image src={teacher.photoUrl} alt="" width={64} height={64} className="w-full h-full object-cover" />
               ) : (
                 `${teacher.firstName[0]}${teacher.lastName[0]}`
               )}

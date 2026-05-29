@@ -4,6 +4,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BookOpen,
   Clock,
@@ -970,7 +971,7 @@ export default function CourseDetailPage() {
                       <div className="flex items-start gap-4">
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-300 to-amber-400 text-lg font-black text-amber-950">
                           {course.instructor?.avatar ? (
-                            <img src={course.instructor.avatar} alt={course.instructor.name || 'Instructor'} className="h-full w-full rounded-2xl object-cover" />
+                            <Image src={course.instructor.avatar} alt={course.instructor.name || 'Instructor'} width={56} height={56} className="h-full w-full rounded-2xl object-cover" />
                           ) : (
                             (course.instructor?.name || 'I').charAt(0)
                           )}
@@ -1031,7 +1032,7 @@ export default function CourseDetailPage() {
               <div className="premium-sidebar reveal-item reveal-3 overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_24px_70px_rgba(15,23,42,0.16)] dark:border-slate-800 dark:bg-slate-900">
                 <div className="relative h-64 overflow-hidden bg-slate-200 dark:bg-slate-800">
                   {course.thumbnail ? (
-                    <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                    <Image src={course.thumbnail} alt={course.title} fill className="object-cover transition duration-500 hover:scale-105" sizes="(max-width: 1280px) 100vw, 360px" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-200/60 via-slate-100 to-cyan-200/50 dark:from-amber-500/25 dark:via-slate-900 dark:to-cyan-500/20">
                       <CategoryIcon className="h-20 w-20 text-amber-100 dark:text-amber-200/70" />
@@ -1334,7 +1335,7 @@ export default function CourseDetailPage() {
                         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
                           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-300 to-amber-400 text-2xl font-black text-amber-950">
                             {course.instructor?.avatar ? (
-                              <img src={course.instructor.avatar} alt={course.instructor.name || 'Instructor'} className="h-full w-full rounded-2xl object-cover" />
+                              <Image src={course.instructor.avatar} alt={course.instructor.name || 'Instructor'} width={80} height={80} className="h-full w-full rounded-2xl object-cover" />
                             ) : (
                               (course.instructor?.name || 'I').charAt(0)
                             )}

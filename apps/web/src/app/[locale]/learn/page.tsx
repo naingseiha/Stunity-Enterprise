@@ -4,6 +4,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BookOpen,
   Clock,
@@ -993,7 +994,7 @@ export default function LearnHubPage() {
         {/* Thumbnail */}
         <div className="relative h-40 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-500/10 dark:via-slate-900 dark:to-cyan-500/10">
           {course.thumbnail ? (
-            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <Image src={course.thumbnail} alt={course.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <Icon className="h-14 w-14 text-amber-300/90" />
@@ -1140,7 +1141,7 @@ export default function LearnHubPage() {
         <div className="relative flex items-start gap-4">
           <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white dark:bg-gray-900 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
             {item.course.thumbnail ? (
-              <img src={item.course.thumbnail} alt={item.course.title} className="h-full w-full object-cover" />
+              <Image src={item.course.thumbnail} alt={item.course.title} width={56} height={56} className="h-full w-full object-cover" />
             ) : (
               <Icon className="h-7 w-7 text-amber-500 dark:text-amber-300" />
             )}
@@ -1206,7 +1207,7 @@ export default function LearnHubPage() {
         <div className="relative flex items-start gap-4">
           <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white dark:bg-gray-900 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
             {item.course.thumbnail ? (
-              <img src={item.course.thumbnail} alt={item.course.title} className="h-full w-full object-cover" />
+              <Image src={item.course.thumbnail} alt={item.course.title} width={56} height={56} className="h-full w-full object-cover" />
             ) : (
               <Icon className="h-7 w-7 text-sky-500 dark:text-sky-300" />
             )}
@@ -1772,9 +1773,9 @@ export default function LearnHubPage() {
                     {createdCourses.map(course => (
                       <div key={course.id} className="learn-surface overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
                         <div className="relative">
-                          <div className={`aspect-video ${course.thumbnail ? '' : 'bg-gradient-to-br from-amber-200 to-orange-200'}`}>
+                          <div className={`relative aspect-video ${course.thumbnail ? '' : 'bg-gradient-to-br from-amber-200 to-orange-200'}`}>
                             {course.thumbnail && (
-                              <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                              <Image src={course.thumbnail} alt={course.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
                             )}
                           </div>
                           {/* Status badge */}

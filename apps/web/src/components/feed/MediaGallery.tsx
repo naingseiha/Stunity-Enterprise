@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, ChevronLeft, ChevronRight, ZoomIn, Download, Maximize2 } from 'lucide-react';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 
@@ -156,7 +157,7 @@ export default function MediaGallery({
               {isVideoUrl(url) ? (
                 <video src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
               ) : (
-                <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                <Image src={url} alt={`Post media ${index + 1}`} fill className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" sizes="(max-width: 768px) 100vw, 50vw" />
               )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
             </div>
@@ -171,7 +172,7 @@ export default function MediaGallery({
     isVideoUrl(url) ? (
       <video src={url} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
     ) : (
-      <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+      <Image src={url} alt={`Post media ${index + 1}`} fill className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" sizes="(max-width: 768px) 100vw, 50vw" />
     );
 
   if (count === 3) {
@@ -391,7 +392,7 @@ export function MediaLightbox({ mediaUrls: rawMediaUrls, initialIndex, isOpen, o
               {isVideoUrl(url) ? (
                 <video src={url} className="w-full h-full object-cover" muted preload="metadata" />
               ) : (
-                <img src={url} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                <Image src={url} alt={`Thumbnail ${index + 1}`} width={48} height={48} className="w-full h-full object-cover" />
               )}
             </button>
           ))}

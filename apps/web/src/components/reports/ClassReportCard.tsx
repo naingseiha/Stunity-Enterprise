@@ -3,6 +3,7 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { ClassReportSummary, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { downloadClassSummaryPDF } from '@/lib/pdf/reportCardPdf';
+import Image from 'next/image';
 import { Users, User, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal, Download } from 'lucide-react';
 import { formatEducationModelLabel, type EducationModel } from '@/lib/educationModel';
 
@@ -281,7 +282,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
                   <td className="py-6 px-6">
                     <div className="flex items-center gap-4">
                       {student.student.photoUrl ? (
-                        <img src={student.student.photoUrl} alt="" className="w-12 h-12 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800 shadow-lg" />
+                        <Image src={student.student.photoUrl} alt="" width={48} height={48} className="w-12 h-12 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800 shadow-lg" />
                       ) : (
                         <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
                           <User className="w-6 h-6 text-gray-400" />

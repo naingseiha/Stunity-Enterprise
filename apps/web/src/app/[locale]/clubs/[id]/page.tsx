@@ -4,6 +4,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Users,
   Plus,
@@ -550,7 +551,7 @@ export default function ClubDetailPage() {
           {/* Gradient Header Banner - Taller like profile/clubs page */}
           <div className={`h-48 md:h-56 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} relative overflow-hidden`}>
             {club.coverImage ? (
-              <img src={club.coverImage} alt="" className="w-full h-full object-cover" />
+              <Image src={club.coverImage} alt="" fill className="object-cover" sizes="100vw" />
             ) : (
               /* Decorative pattern */
               <div className="absolute inset-0 opacity-20">
@@ -627,7 +628,7 @@ export default function ClubDetailPage() {
                 {/* Creator Info */}
                 <div className="flex items-center gap-2 mt-3">
                   {club.creator.profilePictureUrl ? (
-                    <img src={club.creator.profilePictureUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                    <Image src={club.creator.profilePictureUrl} alt="" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-medium">
                       {club.creator.firstName?.[0]}{club.creator.lastName?.[0]}

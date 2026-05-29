@@ -4,6 +4,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Users,
   Plus,
@@ -313,7 +314,7 @@ export default function StudyClubsPage() {
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
               {club.creator.profilePictureUrl ? (
-                <img src={club.creator.profilePictureUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                <Image src={club.creator.profilePictureUrl} alt="" width={20} height={20} className="w-full h-full rounded-full object-cover" />
               ) : (
                 <span className="text-[10px] text-white font-medium">{club.creator.firstName[0]}</span>
               )}

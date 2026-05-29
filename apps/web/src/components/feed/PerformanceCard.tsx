@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
 import { ANALYTICS_SERVICE_URL } from '@/lib/api/config';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface PerformanceCardProps {
   user: {
@@ -202,7 +203,7 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 p-0.5">
               <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
                 {user.profilePictureUrl ? (
-                  <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover rounded-full" />
+                  <Image src={user.profilePictureUrl} alt="" width={48} height={48} className="w-full h-full object-cover rounded-full" />
                 ) : (
                   <span className="text-sm font-bold text-sky-600">
                     {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}

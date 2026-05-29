@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -890,7 +891,7 @@ export default function MarkAttendancePage() {
                                   <div className="flex items-center gap-4">
                                     <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800">
                                       {student.photoUrl ? (
-                                        <img src={student.photoUrl} alt={student.firstName} className="h-full w-full object-cover" />
+                                        <Image src={student.photoUrl} alt={student.firstName} width={48} height={48} className="h-full w-full object-cover" />
                                       ) : (
                                         <Users className="h-5 w-5 text-slate-300" />
                                       )}

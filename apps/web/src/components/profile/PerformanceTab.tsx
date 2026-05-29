@@ -7,6 +7,7 @@ import {
   ChevronRight, Calendar, Users, Star, ArrowUpRight
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface PerformanceStatsSummary {
   xp: number;
@@ -450,7 +451,7 @@ export default function PerformanceTab({
                 >
                   <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${borderStyle} flex items-center justify-center text-2xl shadow-md transition-transform group-hover:rotate-12`}>
                     {ua.badgeUrl ? (
-                      <img src={ua.badgeUrl} alt="" className="w-10 h-10 object-contain" />
+                      <Image src={ua.badgeUrl} alt="" width={40} height={40} className="w-10 h-10 object-contain" />
                     ) : (
                       <span>🏆</span>
                     )}
