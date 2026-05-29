@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   Animated,
   TouchableOpacity,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -214,10 +214,11 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
             <Text style={styles.loadingText}>{t('liveQuiz.leaderboard.loadingRankings')}</Text>
           </View>
         ) : (
-          <FlatList
+          <FlashList
             data={leaderboard}
             renderItem={renderLeaderboardItem}
             keyExtractor={(item) => item.id}
+            estimatedItemSize={64}
             contentContainerStyle={styles.leaderboardList}
             showsVerticalScrollIndicator={false}
           />

@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   ActivityIndicator,
   Animated,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -162,10 +162,11 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : (
-          <FlatList
+          <FlashList
             data={participants}
             renderItem={renderParticipant}
             keyExtractor={(item) => item.id}
+            estimatedItemSize={60}
             contentContainerStyle={styles.participantsList}
             showsVerticalScrollIndicator={false}
           />
