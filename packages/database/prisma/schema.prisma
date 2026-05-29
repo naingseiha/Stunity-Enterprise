@@ -641,6 +641,8 @@ model User {
   challengeParticipations      ChallengeParticipant[]
   learningStreak               LearningStreak?
   quizAttemptRecords           QuizAttemptRecord[]
+  recallCards                  RecallCard[]
+  recallReviews                RecallReview[]
   challengesAsChallenger       QuizChallenge[]              @relation("ChallengerChallenges")
   challengesAsOpponent         QuizChallenge[]              @relation("OpponentChallenges")
   gameAchievements             UserGameAchievement[]
@@ -944,17 +946,18 @@ model PollOption {
 }
 
 model QuizQuestion {
-  id            String   @id @default(cuid())
+  id            String       @id @default(cuid())
   postId        String
   question      String
   options       String[]
   correctAnswer Int
-  points        Int      @default(10)
-  position      Int      @default(0)
+  points        Int          @default(10)
+  position      Int          @default(0)
   explanation   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  post          Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  recallCards   RecallCard[]
 
   @@index([postId])
   @@map("quiz_questions")
@@ -2794,6 +2797,83 @@ model QuizAttemptRecord {
   @@index([quizId])
   @@index([userStatsId])
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────
+// Recall Cards — spaced-repetition over QuizQuestions a user has gotten
+// wrong (or chosen to review). SM-2 scheduling state lives on the card.
+// Algorithm: services/feed-service/src/utils/sm2.ts
+// Drives the "Smart Scroll" feature on mobile (every Nth feed slot).
+// ─────────────────────────────────────────────────────────
+
+model RecallCard {
+  id         String @id @default(cuid())
+  userId     String
+  questionId String
+
+  // ── SM-2 scheduling state ──
+  // easeFactor: 1.3..3.0+, increases on Easy, decreases on Again
+  easeFactor     Float     @default(2.5)
+  // interval: days until next review (driven by SM-2 math)
+  interval       Int       @default(0)
+  // repetitions: consecutive successful reviews; resets on Again
+  repetitions    Int       @default(0)
+  nextReviewAt   DateTime  @default(now())
+  lastReviewedAt DateTime?
+
+  // ── Denormalized for fast feed query (avoid JOIN-per-card) ──
+  // Source: usually post.tags / quiz post.title at creation time.
+  subject      String // 'biology' | 'mathematics' | 'physics' | ...
+  subjectLabel String // 'Biology · Cell Structure'
+  courseTitle  String?
+
+  // ── Memory state estimate (0..1) — derived; surfaced in UI as decay pip ──
+  recallStrength Float @default(0.5)
+
+  // ── Reward snapshot (mirrors origin quiz question.points) ──
+  xpReward       Int     @default(5)
+  // Streak protection eligibility (heuristic toggle for now)
+  protectsStreak Boolean @default(true)
+
+  // ── Stats ──
+  reviewCount    Int @default(0)
+  incorrectCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question QuizQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  reviews  RecallReview[]
+
+  @@unique([userId, questionId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, subject])
+  @@map("recall_cards")
+}
+
+model RecallReview {
+  id           String @id @default(cuid())
+  recallCardId String
+  userId       String
+
+  // 'again' | 'good' | 'easy' — see services/feed-service/src/utils/sm2.ts
+  grade    String
+  xpEarned Int
+
+  // Snapshot of state BEFORE this review — useful for analytics + audit
+  easeBefore           Float
+  intervalBefore       Int
+  recallStrengthBefore Float
+
+  reviewedAt DateTime @default(now())
+
+  recallCard RecallCard @relation(fields: [recallCardId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reviewedAt])
+  @@index([recallCardId, reviewedAt])
+  @@map("recall_reviews")
 }
 
 model QuizChallenge {
