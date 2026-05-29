@@ -406,11 +406,45 @@ export interface Post {
   updatedAt: string;
 }
 
+// Recall Card — spaced-repetition flashcard interleaved into the social feed.
+// Drives the "Smart Scroll" thesis: every N posts, the feed pauses for a
+// sub-15-second retrieval test pulled from the student's own course gaps.
+export type RecallCardSubject =
+  | 'biology'
+  | 'mathematics'
+  | 'physics'
+  | 'chemistry'
+  | 'english'
+  | 'history'
+  | 'geography'
+  | 'computerScience';
+
+export interface RecallCard {
+  id: string;
+  questionId: string;
+  subject: RecallCardSubject;
+  subjectLabel: string;          // e.g. "Biology · Cell Structure"
+  questionText: string;
+  answerText: string;
+  hint?: string;
+  // Memory state — mocked for prototype; real values come from SM-2/FSRS scheduler.
+  daysSinceLastSeen: number;
+  recallStrength: number;        // 0..1 — 1 = fresh, 0 = forgotten
+  // Social context
+  classmatesReviewingCount: number;
+  // Reward economics
+  xpReward: number;
+  protectsStreak: boolean;
+  // Origin attribution
+  courseTitle?: string;
+}
+
 export type FeedItem =
   | { type: "POST"; data: Post }
   | { type: "SUGGESTED_USERS"; data: Partial<User>[] }
   | { type: "SUGGESTED_COURSES"; data: Course[] }
-  | { type: "SUGGESTED_QUIZZES"; data: any[] };
+  | { type: "SUGGESTED_QUIZZES"; data: any[] }
+  | { type: "RECALL_CARD"; data: RecallCard };
 
 export interface Comment {
   id: string;

@@ -7,7 +7,7 @@
  * - Full-width borderless posts with hairline separators
  */
 
-import React, { useEffect, useCallback, useState, useRef } from 'react';
+import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -45,6 +45,8 @@ import {
   SuggestedCoursesCarousel,
   SuggestedQuizzesCarousel,
 } from '@/components/feed';
+import RecallCardItem from '@/components/feed/RecallCardItem';
+import { getMockRecallCards, injectRecallCards } from '@/utils/mockRecallCards';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
@@ -320,7 +322,15 @@ export default function FeedScreen() {
     lastProfilePictureUrlRef.current = user.profilePictureUrl;
   }
   const stableProfilePictureUrl = user?.profilePictureUrl || lastProfilePictureUrlRef.current;
-  const displayedFeedItems = feedItems;
+  // Inject Recall Cards into the live feed every 5 posts.
+  // Prototype: cards come from a fixed mock pool. Production will source from
+  // an SM-2/FSRS scheduler keyed to the student's course gaps and past
+  // incorrect quiz attempts.
+  const recallCards = useMemo(() => getMockRecallCards(), []);
+  const displayedFeedItems = useMemo(
+    () => injectRecallCards(feedItems, recallCards, 5),
+    [feedItems, recallCards],
+  );
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
 
   useScrollToTop(scrollToTopRef);
@@ -347,6 +357,7 @@ export default function FeedScreen() {
   // Stable key extractor for FlatList
   const keyExtractor = useCallback((item: FeedItem, index: number) => {
     if (item?.type === 'POST') return item.data?.id || `post-${index}`;
+    if (item?.type === 'RECALL_CARD') return item.data.id;
     if (item?.type) return item.type;
     return `item-${index}`;
   }, []);
@@ -695,6 +706,9 @@ export default function FeedScreen() {
     if (item.type === 'SUGGESTED_QUIZZES') {
       return <SuggestedQuizzesCarousel quizzes={item.data} />;
     }
+    if (item.type === 'RECALL_CARD') {
+      return <RecallCardItem card={item.data} />;
+    }
 
     if (item.type === 'POST' && !item.data) return null;
 
@@ -714,6 +728,7 @@ export default function FeedScreen() {
     if (item.type === 'SUGGESTED_USERS') return 'suggested_users';
     if (item.type === 'SUGGESTED_COURSES') return 'suggested_courses';
     if (item.type === 'SUGGESTED_QUIZZES') return 'suggested_quizzes';
+    if (item.type === 'RECALL_CARD') return 'recall_card';
     const postData = (item as any).data || item;
     if (postData.postType === 'QUIZ') return 'quiz';
     if (postData.postType === 'POLL') return 'poll';
@@ -733,6 +748,13 @@ export default function FeedScreen() {
     }
     if (item.type === 'SUGGESTED_QUIZZES') {
       slot.size = 270;
+      return;
+    }
+    if (item.type === 'RECALL_CARD') {
+      // v6 floating flat card: resting ~300, revealed ~360, completed ~365.
+      // Beautiful contained card with soft shadow, 24px radius, generous padding.
+      // Stands apart from the full-bleed posts above/below.
+      slot.size = 380;
       return;
     }
 
