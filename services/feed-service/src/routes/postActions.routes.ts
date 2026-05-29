@@ -656,6 +656,20 @@ router.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res:
         _count: { _all: true },
       });
 
+      // Denormalize aggregated Ed-Score onto the Post so feed queries
+      // can render the EdScoreBadge without a per-post JOIN. Mobile
+      // reads Post.edScore + Post.edScoreCount in PostHeader.
+      const denormalizedScore = aggregate._avg.averageRating
+        ? Math.round(aggregate._avg.averageRating * 100) / 100
+        : null;
+      await tx.post.update({
+        where: { id: postId },
+        data: {
+          edScore: denormalizedScore,
+          edScoreCount: aggregate._count._all,
+        },
+      });
+
       return {
         rating,
         ratingCount: aggregate._count._all,
@@ -683,6 +697,136 @@ router.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res:
     res.status(500).json({ success: false, error: 'Failed to submit value rating' });
   }
 });
+
+// ─────────────────────────────────────────────────────────
+// Teacher verification — POST /posts/:postId/verify
+// Only teachers + admins can mark a post as teacher-verified. The badge
+// appears on the post header in mobile (TeacherVerifiedBadge). Distinct
+// from User.isVerified (the blue tick on the author) — this is *post*-
+// level endorsement.
+// ─────────────────────────────────────────────────────────
+const POST_VERIFICATION_ROLES = new Set([
+  'TEACHER',
+  'SCHOOL_ADMIN',
+  'ADMIN',
+  'SUPER_ADMIN',
+]);
+
+router.post(
+  '/posts/:postId/verify',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const role = req.user!.role || '';
+      const postId = req.params.postId;
+
+      if (!POST_VERIFICATION_ROLES.has(role)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Only teachers and school admins can verify posts',
+        });
+      }
+
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { id: true, schoolId: true, authorId: true },
+      });
+      if (!post) {
+        return res.status(404).json({ success: false, error: 'Post not found' });
+      }
+
+      // Same-school enforcement for teachers; admins are cross-school.
+      if (
+        role === 'TEACHER' &&
+        post.schoolId &&
+        post.schoolId !== req.user!.schoolId
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: 'Teachers can only verify posts from their own school',
+        });
+      }
+
+      const updated = await prisma.post.update({
+        where: { id: postId },
+        data: {
+          teacherVerified: true,
+          verifiedByTeacherId: userId,
+          verifiedAt: new Date(),
+        },
+        select: {
+          id: true,
+          teacherVerified: true,
+          verifiedAt: true,
+          verifiedByTeacherId: true,
+        },
+      });
+
+      // Bust caches so the badge surfaces immediately for both verifier
+      // and post author.
+      Promise.all([
+        feedCache.invalidateUser(userId),
+        feedCache.invalidateUser(post.authorId),
+      ]).catch(() => { });
+
+      res.json({ success: true, data: updated });
+    } catch (error: any) {
+      console.error('[POST /posts/:postId/verify]', error);
+      res
+        .status(500)
+        .json({ success: false, error: 'Failed to verify post' });
+    }
+  },
+);
+
+router.post(
+  '/posts/:postId/unverify',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const role = req.user!.role || '';
+      const postId = req.params.postId;
+
+      if (!POST_VERIFICATION_ROLES.has(role)) {
+        return res
+          .status(403)
+          .json({ success: false, error: 'Insufficient permissions' });
+      }
+
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { id: true, authorId: true },
+      });
+      if (!post) {
+        return res.status(404).json({ success: false, error: 'Post not found' });
+      }
+
+      const updated = await prisma.post.update({
+        where: { id: postId },
+        data: {
+          teacherVerified: false,
+          verifiedByTeacherId: null,
+          verifiedAt: null,
+        },
+        select: { id: true, teacherVerified: true },
+      });
+
+      Promise.all([
+        feedCache.invalidateUser(userId),
+        feedCache.invalidateUser(post.authorId),
+      ]).catch(() => { });
+
+      res.json({ success: true, data: updated });
+    } catch (error: any) {
+      console.error('[POST /posts/:postId/unverify]', error);
+      res
+        .status(500)
+        .json({ success: false, error: 'Failed to remove verification' });
+    }
+  },
+);
 
 // GET /posts/:id/comments - Get post comments
 router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, res: Response) => {

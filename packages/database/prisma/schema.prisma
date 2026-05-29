@@ -643,6 +643,7 @@ model User {
   quizAttemptRecords           QuizAttemptRecord[]
   recallCards                  RecallCard[]
   recallReviews                RecallReview[]
+  verifiedPosts                Post[]                       @relation("PostsVerifiedBy")
   challengesAsChallenger       QuizChallenge[]              @relation("ChallengerChallenges")
   challengesAsOpponent         QuizChallenge[]              @relation("OpponentChallenges")
   gameAchievements             UserGameAchievement[]
@@ -819,6 +820,14 @@ model Post {
   title                    String?
   topicTags                String[]
   trendingScore            Float                    @default(0)
+  // Ed-Score denormalization — aggregated from EducationalValueRating.averageRating
+  // and updated in postActions.routes.ts on every new rating. Mobile reads these
+  // to render the EdScoreBadge + TeacherVerifiedBadge in PostHeader.
+  edScore                  Float?
+  edScoreCount             Int                      @default(0)
+  teacherVerified          Boolean                  @default(false)
+  verifiedByTeacherId      String?
+  verifiedAt               DateTime?
   bookmarks                Bookmark[]
   comments                 Comment[]
   likes                    Like[]
@@ -833,7 +842,9 @@ model Post {
   studyClub                StudyClub?               @relation("ClubPosts", fields: [studyClubId], references: [id])
   quizQuestions            QuizQuestion[]
   quiz                     Quiz?
+  verifiedByTeacher        User?                    @relation("PostsVerifiedBy", fields: [verifiedByTeacherId], references: [id])
 
+  @@index([edScore(sort: Desc), createdAt(sort: Desc)], map: "posts_edScore_createdAt_idx")
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
   @@index([visibility, createdAt(sort: Desc)])
