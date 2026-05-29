@@ -14,6 +14,7 @@ import { getLatestQuizAttemptForUser } from '../utils/quizAttempts';
 import { getUserJoinedQuizzesPage } from '../utils/joinedQuizzes';
 import { gradeQuizSubmission } from '../utils/quizGrading';
 import { normalizeQuizQuestionsForGrading } from '../utils/quizQuestions';
+import { createRecallCardsForFailedAnswers } from '../utils/recallCardsFromQuiz';
 
 const router = Router();
 
@@ -479,6 +480,20 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
 
     // Bust personalized feed cache so quiz cards show this attempt immediately.
     await feedCache.invalidateUser(userId);
+
+    // Spaced-repetition: every wrong answer becomes (or resets) a RecallCard
+    // so it surfaces in the user's feed for review. Non-fatal — logged on
+    // failure but doesn't block the response.
+    try {
+      await createRecallCardsForFailedAnswers(
+        prisma,
+        userId,
+        { id: quiz.post.id, title: quiz.post.title, topicTags: quiz.post.topicTags },
+        answerResults,
+      );
+    } catch (recallErr) {
+      console.error('[quiz.submit] recall-card auto-create failed', recallErr);
+    }
 
     // Return results based on visibility settings
     let resultsData: any = {

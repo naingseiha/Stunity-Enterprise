@@ -47,6 +47,7 @@ import {
 } from '@/components/feed';
 import RecallCardItem from '@/components/feed/RecallCardItem';
 import { getMockRecallCards, injectRecallCards } from '@/utils/mockRecallCards';
+import { fetchDueCards, submitRecallReview, type RecallGrade } from '@/api/recall';
 import { applyMockEdScores } from '@/utils/mockEdScores';
 import BrainModeToggle from '@/components/feed/BrainModeToggle';
 import FeynmanBountyItem from '@/components/feed/FeynmanBountyItem';
@@ -57,7 +58,7 @@ import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/co
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
-import { Post, FeedItem } from '@/types';
+import { Post, FeedItem, RecallCard } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext, useThemeContext } from '@/contexts';
@@ -351,11 +352,52 @@ export default function FeedScreen() {
     });
   }, [scoredFeedItems, feedMode]);
 
-  // Inject Recall Cards into the live feed every 5 posts.
-  // Prototype: cards come from a fixed mock pool. Production will source from
-  // an SM-2/FSRS scheduler keyed to the student's course gaps and past
-  // incorrect quiz attempts.
-  const recallCards = useMemo(() => getMockRecallCards(), []);
+  // Recall Cards: prefer real backend data when available, fall back to
+  // mocks when the API errors or returns empty (e.g. before the migration
+  // runs, or when the user has no due cards). Refetched after every grade
+  // so newly-scheduled cards appear and completed ones drop out.
+  const [serverRecallCards, setServerRecallCards] = useState<RecallCard[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDueCards({ limit: 10 })
+      .then((cards) => {
+        if (!cancelled && cards.length > 0) {
+          setServerRecallCards(cards);
+        }
+      })
+      .catch((err) => {
+        // Non-fatal: silent fallback to mocks (logged only in dev).
+        if (__DEV__) {
+          console.warn('[FeedScreen] fetchDueCards failed; using mock cards', err?.message);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const recallCards = useMemo(
+    () => (serverRecallCards && serverRecallCards.length > 0
+      ? serverRecallCards
+      : getMockRecallCards()),
+    [serverRecallCards],
+  );
+
+  // Grade handler — wires the RecallCardItem grade buttons to the backend.
+  // Mock cards (id prefix "recall-") short-circuit to a no-op so the UI
+  // demo still works without a live DB. Real card grades hit POST
+  // /recall/:cardId/review, then refetch the due list so the feed updates.
+  const handleRecallGrade = useCallback(async (cardId: string, grade: RecallGrade) => {
+    if (cardId.startsWith('recall-')) return; // mock card → no API call
+    try {
+      await submitRecallReview(cardId, grade);
+      const refreshed = await fetchDueCards({ limit: 10 });
+      setServerRecallCards(refreshed);
+    } catch (err: any) {
+      if (__DEV__) {
+        console.warn('[FeedScreen] submitRecallReview failed', err?.message);
+      }
+    }
+  }, []);
   const withRecallCards = useMemo(
     () => injectRecallCards(sortedFeedItems, recallCards, 5),
     [sortedFeedItems, recallCards],
@@ -754,6 +796,8 @@ export default function FeedScreen() {
     };
   });
 
+  // Note: renderPost is wrapped with handleRecallGrade in deps so the
+  // closure stays fresh across re-renders.
   const renderPost = useCallback(({ item }: { item: FeedItem }) => {
     if (!item) return null;
 
@@ -767,7 +811,7 @@ export default function FeedScreen() {
       return <SuggestedQuizzesCarousel quizzes={item.data} />;
     }
     if (item.type === 'RECALL_CARD') {
-      return <RecallCardItem card={item.data} />;
+      return <RecallCardItem card={item.data} onGrade={handleRecallGrade} />;
     }
     if (item.type === 'FEYNMAN_BOUNTY') {
       return <FeynmanBountyItem bounty={item.data} />;
@@ -787,7 +831,7 @@ export default function FeedScreen() {
         setAnalyticsPostId={setAnalyticsPostId}
       />
     );
-  }, [valuedPostIds]); // Only re-create if valued set changes
+  }, [valuedPostIds, handleRecallGrade]); // Re-create when valued set or recall handler changes
 
   const getItemType = useCallback((item: FeedItem) => {
     if (!item) return 'unknown';
