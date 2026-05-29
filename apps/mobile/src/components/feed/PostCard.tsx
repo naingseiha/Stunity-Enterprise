@@ -715,10 +715,15 @@ const PostCardInner: React.FC<PostCardProps> = ({
     onMenuToggle: handleMenuToggle,
     showMenu: false,
     menuContent: null,
+    // Ed-Score (Educational Value) overlay badges. Additive — when the post
+    // has neither, PostHeader renders identically to before.
+    edScore: post.edScore,
+    teacherVerified: post.teacherVerified,
   }), [
     post.author, post.createdAt, post.visibility, post.learningMeta,
     isCurrentUser, isFollowing, followLoading, onUserPress, handleFollow,
     handleMenuToggle,
+    post.edScore, post.teacherVerified,
   ]);
 
   return (

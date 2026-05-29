@@ -387,6 +387,21 @@ export interface Post {
   // Q&A Bounty
   questionBounty?: number;
 
+  // Ed-Score (Educational Value badge) — denormalized average of the
+  // existing EducationalValueRating dimensions (accuracy + helpfulness +
+  // clarity + depth). 0–5. Renders as a small pill in PostHeader when
+  // score >= 3.5 — low-quality posts are silently un-badged, never
+  // stigmatized. Production: computed by a nightly job over
+  // EducationalValueRating.averageRating; prototype: mocked via
+  // applyMockEdScores() in utils/mockEdScores.ts.
+  edScore?: number;
+  edScoreCount?: number;        // how many ratings contributed
+  // Teacher-verified post — a teacher in the post's school has reviewed
+  // it and marked it canonical. Prototype: mocked. Production: needs
+  // Post.verifiedByTeacherId + Post.verificationStatus on Prisma model.
+  teacherVerified?: boolean;
+  teacherVerifiedBy?: { id: string; name: string; role?: string };
+
   // Feed Score Data
   _score?: number;
   _scoreBreakdown?: {

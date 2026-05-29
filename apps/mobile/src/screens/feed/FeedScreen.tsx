@@ -47,6 +47,7 @@ import {
 } from '@/components/feed';
 import RecallCardItem from '@/components/feed/RecallCardItem';
 import { getMockRecallCards, injectRecallCards } from '@/utils/mockRecallCards';
+import { applyMockEdScores } from '@/utils/mockEdScores';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
@@ -322,14 +323,20 @@ export default function FeedScreen() {
     lastProfilePictureUrlRef.current = user.profilePictureUrl;
   }
   const stableProfilePictureUrl = user?.profilePictureUrl || lastProfilePictureUrlRef.current;
+  // Apply mocked Ed-Score + teacher-verified overlays to every POST.
+  // Prototype: deterministic hash per post id. Production: a nightly job
+  // denormalizes EducationalValueRating.averageRating → Post.edScore and
+  // the new Post.verifiedByTeacherId field powers teacherVerified.
+  const scoredFeedItems = useMemo(() => applyMockEdScores(feedItems), [feedItems]);
+
   // Inject Recall Cards into the live feed every 5 posts.
   // Prototype: cards come from a fixed mock pool. Production will source from
   // an SM-2/FSRS scheduler keyed to the student's course gaps and past
   // incorrect quiz attempts.
   const recallCards = useMemo(() => getMockRecallCards(), []);
   const displayedFeedItems = useMemo(
-    () => injectRecallCards(feedItems, recallCards, 5),
-    [feedItems, recallCards],
+    () => injectRecallCards(scoredFeedItems, recallCards, 5),
+    [scoredFeedItems, recallCards],
   );
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
 

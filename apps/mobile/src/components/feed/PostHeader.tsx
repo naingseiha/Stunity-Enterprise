@@ -6,6 +6,8 @@ import { Avatar } from '@/components/common';
 import { formatRelativeTime } from '@/utils';
 import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
+import EdScoreBadge from './EdScoreBadge';
+import TeacherVerifiedBadge from './TeacherVerifiedBadge';
 
 interface PostHeaderProps {
   author: {
@@ -32,6 +34,11 @@ interface PostHeaderProps {
   onMenuToggle: () => void;
   showMenu: boolean;
   menuContent: React.ReactNode; // Pass the menu dropdown as children or a prop
+  // Ed-Score (Educational Value) badge — additive overlay; nothing renders
+  // when score is missing or below the visibility threshold (3.5).
+  edScore?: number;
+  // Teacher-verified post badge — additive overlay.
+  teacherVerified?: boolean;
 }
 
 const PostHeader = ({
@@ -47,6 +54,8 @@ const PostHeader = ({
   onMenuToggle,
   showMenu,
   menuContent,
+  edScore,
+  teacherVerified,
 }: PostHeaderProps) => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -104,6 +113,12 @@ const PostHeader = ({
                 <Text style={[styles.roleBadgeText, { color: roleBadge.color }]}>{roleBadge.label}</Text>
               </View>
             )}
+
+            {/* Ed-Score Badge — renders only when score >= 3.5 */}
+            {typeof edScore === 'number' ? <EdScoreBadge score={edScore} /> : null}
+
+            {/* Teacher Verified Badge — post-level endorsement */}
+            {teacherVerified ? <TeacherVerifiedBadge /> : null}
           </View>
 
           <View style={styles.metaRow}>
