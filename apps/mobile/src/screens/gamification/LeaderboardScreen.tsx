@@ -6,7 +6,8 @@ import {
     TouchableOpacity,
     RefreshControl,
     Platform,
-    FlatList, Animated} from 'react-native';
+    Animated} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,6 +57,10 @@ const LeaderboardRow = React.memo(({ item, showStreak = false }: { item: Leaderb
                     <Image
                         source={{ uri: item.user.profilePictureUrl || `https://ui-avatars.com/api/?name=${item.user.firstName}+${item.user.lastName}&background=random` }}
                         style={[styles.avatar, isTop3 && { borderColor: badge.color, borderWidth: 2 }]}
+                        cachePolicy="memory-disk"
+                        contentFit="cover"
+                        transition={150}
+                        recyclingKey={item.user.profilePictureUrl || item.user.id}
                     />
                 </View>
 
@@ -253,17 +258,15 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                         <Text style={styles.loadingText}>{t('screens.leaderboard.fetchingRanks')}</Text>
                     </View>
                 ) : (
-                    <FlatList
+                    <FlashList
                         data={visibleLeaderboard}
                         keyExtractor={keyExtractor}
                         renderItem={renderLeaderboardItem}
+                        estimatedItemSize={72}
                         ListHeaderComponent={renderHeader}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#FFF" />}
-                        initialNumToRender={12}
-                        windowSize={7}
-                        removeClippedSubviews={Platform.OS === 'android'}
                     />
                 )}
             </SafeAreaView>

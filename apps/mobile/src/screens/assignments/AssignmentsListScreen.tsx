@@ -10,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -21,6 +20,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -436,15 +436,12 @@ export default function AssignmentsListScreen() {
         ))}
       </View>
 
-      <FlatList
+      {/* @ts-ignore FlashList types omit some valid props */}
+      <FlashList
         data={filteredAssignments}
         renderItem={renderAssignmentCard}
         keyExtractor={keyExtractor}
-        initialNumToRender={8}
-        maxToRenderPerBatch={6}
-        windowSize={7}
-        updateCellsBatchingPeriod={50}
-        removeClippedSubviews={Platform.OS === 'android'}
+        estimatedItemSize={120}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
