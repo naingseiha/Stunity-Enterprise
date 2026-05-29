@@ -4,13 +4,13 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TouchableOpacity,
     ActivityIndicator,
     StatusBar,
     Platform,
     Animated,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -149,10 +149,11 @@ export const SuggestedUsersScreen: React.FC = () => {
                 </View>
             ) : (
                 <View style={styles.sectionCard}>
-                    <FlatList
+                    <FlashList
                         data={users}
                         keyExtractor={(item, index) => item?.id || `suggested-user-${index}`}
                         renderItem={renderUser}
+                        estimatedItemSize={72}
                         refreshing={refreshing}
                         onRefresh={() => fetchSuggestions(true)}
                         contentContainerStyle={styles.listContainer}
