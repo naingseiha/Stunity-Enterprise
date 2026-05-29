@@ -13,11 +13,11 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TouchableOpacity,
     RefreshControl,
     StatusBar,
     Platform, Animated} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -219,12 +219,10 @@ export default function NotificationsScreen() {
 
     // Fixed-height rows: 72px item + 1px hairline divider
     const ITEM_HEIGHT = 73;
-    const getItemLayout = useCallback(
-        (_: any, index: number) => ({
-            length: ITEM_HEIGHT,
-            offset: ITEM_HEIGHT * index,
-            index,
-        }),
+    const overrideItemLayout = useCallback(
+        (layout: { span?: number; size?: number }) => {
+            layout.size = ITEM_HEIGHT;
+        },
         []
     );
 
@@ -259,17 +257,14 @@ export default function NotificationsScreen() {
             </SafeAreaView>
 
             {/* Notification List */}
-            <FlatList
+            {/* @ts-ignore FlashList types omit some valid props */}
+            <FlashList
                 data={notifications}
                 renderItem={renderNotification}
                 keyExtractor={(item) => item.id}
+                estimatedItemSize={ITEM_HEIGHT}
+                overrideItemLayout={overrideItemLayout}
                 ListEmptyComponent={renderEmpty}
-                getItemLayout={getItemLayout}
-                initialNumToRender={10}
-                maxToRenderPerBatch={8}
-                windowSize={7}
-                updateCellsBatchingPeriod={50}
-                removeClippedSubviews={Platform.OS === 'android'}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
