@@ -50,6 +50,8 @@ import {
   EventDetailScreen,
   SearchScreen,
   SuggestedUsersScreen,
+  BountyDetailScreen,
+  CreateBountyScreen,
 } from "@/screens/feed";
 import {
   LearnScreen,
@@ -256,6 +258,16 @@ const FeedStackNavigator = () => (
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
     <FeedStack.Screen name="SuggestedUsers" component={SuggestedUsersScreen} />
+    <FeedStack.Screen
+      name="BountyDetail"
+      component={BountyDetailScreen}
+      options={{ headerShown: false, animation: 'slide_from_right' }}
+    />
+    <FeedStack.Screen
+      name="CreateBounty"
+      component={CreateBountyScreen}
+      options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'modal' }}
+    />
   </FeedStack.Navigator>
 );
 

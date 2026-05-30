@@ -13,3 +13,5 @@ export { default as EventsScreen } from './EventsScreen';
 export { default as EventDetailScreen } from './EventDetailScreen';
 export { default as SearchScreen } from './SearchScreen';
 export { SuggestedUsersScreen } from './SuggestedUsersScreen';
+export { default as BountyDetailScreen } from './BountyDetailScreen';
+export { default as CreateBountyScreen } from './CreateBountyScreen';

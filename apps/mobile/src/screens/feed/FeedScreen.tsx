@@ -427,38 +427,25 @@ export default function FeedScreen() {
   );
 
   // ── Feynman Bounty action handlers ───────────────────────────────────
-  // Buttons are wired to contextual Alerts now. Full BountyDetailScreen
-  // (replies list + compose) is the next mobile UI session.
+  // Navigate to BountyDetailScreen — compose sheet opens automatically
+  // when openCompose is true (Explain it path).
   const handleBountySeeAnswers = useCallback((bountyId: string) => {
     const bounty = feynmanBounties.find((b) => b.id === bountyId);
-    Alert.alert(
-      t('feed.bounty.seeAnswersTitle', { defaultValue: 'View Answers' }),
-      t('feed.bounty.seeAnswersComingSoon', {
-        defaultValue:
-          '"{{subject}}" — {{count}} answer(s) submitted so far.\n\n' +
-          'The full answers screen is coming in the next update!',
-        subject: bounty?.subject ?? 'this bounty',
-        count: bounty?.answersCount ?? 0,
-      }),
-      [{ text: t('common.ok', { defaultValue: 'OK' }) }],
-    );
-  }, [feynmanBounties, t]);
+    navigation.navigate('BountyDetail', {
+      bountyId,
+      bountySubject: bounty?.subject,
+      bountyXp: bounty?.bountyXp,
+    });
+  }, [feynmanBounties, navigation]);
 
   const handleBountyExplain = useCallback((bountyId: string) => {
     const bounty = feynmanBounties.find((b) => b.id === bountyId);
-    Alert.alert(
-      t('feed.bounty.explainTitle', { defaultValue: 'Explain & Earn' }),
-      t('feed.bounty.explainComingSoon', {
-        defaultValue:
-          '{{bountyXp}} XP is at stake for "{{subject}}".\n\n' +
-          'The reply composer (text, video, sketch) is coming in the next update. ' +
-          'Be the first to explain it and claim the bounty!',
-        bountyXp: bounty?.bountyXp ?? '?',
-        subject: bounty?.subject ?? 'this bounty',
-      }),
-      [{ text: t('common.ok', { defaultValue: 'Got it' }) }],
-    );
-  }, [feynmanBounties, t]);
+    navigation.navigate('BountyDetail', {
+      bountyId,
+      bountySubject: bounty?.subject,
+      bountyXp: bounty?.bountyXp,
+    });
+  }, [feynmanBounties, navigation]);
 
   const withBounties = useMemo(
     () => injectFeynmanBounties(withRecallCards, feynmanBounties, 8),

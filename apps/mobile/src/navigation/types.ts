@@ -133,6 +133,9 @@ export type FeedStackParamList = {
   Events: undefined;
   EventDetail: { eventId: string };
   SuggestedUsers: undefined;
+  // Feynman Bounty screens
+  BountyDetail: { bountyId: string; bountySubject?: string; bountyXp?: number };
+  CreateBounty: undefined;
 };
 
 // Learn Stack
