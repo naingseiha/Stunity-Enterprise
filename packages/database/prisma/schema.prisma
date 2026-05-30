@@ -1,13 +1,21 @@
 generator client {
-  provider      = "prisma-client-js"
-  output        = "../../../node_modules/.prisma/client"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  output          = "../../../node_modules/.prisma/client"
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
+  // postgresqlExtensions: lets the schema declare extensions like pg_trgm
+  // (used by the GIN trigram indexes on posts.content / posts.title) so
+  // `prisma migrate diff` and `prisma db pull` stop wanting to drop them.
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  // Declared so Prisma is aware of extensions present in the database.
+  // pg_trgm powers the trigram fuzzy-search indexes on Post.content/title.
+  // pgcrypto is used by various `dbgenerated()` defaults across the schema.
+  extensions = [pg_trgm, pgcrypto]
 }
 
 model School {
@@ -845,6 +853,12 @@ model Post {
   verifiedByTeacher        User?                    @relation("PostsVerifiedBy", fields: [verifiedByTeacherId], references: [id])
 
   @@index([edScore(sort: Desc), createdAt(sort: Desc)], map: "posts_edScore_createdAt_idx")
+  // Production-only indexes that were added directly via SQL — declared
+  // here so `prisma migrate diff` matches the live DB. Map names preserve
+  // the existing constraint names so no rename is needed.
+  @@index([content(ops: raw("gin_trgm_ops"))], type: Gin, map: "posts_content_trgm_idx")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "posts_title_trgm_idx")
+  @@index([postType, isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "posts_type_pinned_created_id_idx")
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
   @@index([visibility, createdAt(sort: Desc)])
@@ -1317,9 +1331,12 @@ model UserPostFeedback {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, postId, feedbackType])
-  @@index([userId, feedbackType, createdAt])
-  @@index([postId])
+  // map: directives preserve the existing DB index names (which use the
+  // older Prisma convention) so this model produces no `prisma migrate
+  // diff` noise. createdAt sort: Desc matches the live index definition.
+  @@unique([userId, postId, feedbackType], map: "user_post_feedback_user_post_type_key")
+  @@index([userId, feedbackType, createdAt(sort: Desc)], map: "user_post_feedback_user_type_created_idx")
+  @@index([postId], map: "user_post_feedback_post_idx")
   @@map("user_post_feedback")
 }
 
@@ -1436,23 +1453,27 @@ model OnboardingChecklist {
   @@map("onboarding_checklists")
 }
 
+// NOTE: This model's columns were created via raw SQL (not via a Prisma
+// migration), so they use VARCHAR(255) instead of TEXT and the FK is named
+// `fk_school` instead of Prisma's default. Annotations below match the
+// live DB exactly so `prisma migrate diff` is empty.
 model SchoolProfile {
-  id              String   @id @default(cuid())
-  schoolId        String   @unique
-  nameKh          String?
-  officeName      String?
-  province        String?
-  district        String?
-  commune         String?
-  village         String?
-  stampUrl        String?
+  id              String   @id @default(cuid()) @db.VarChar(255)
+  schoolId        String   @unique @db.VarChar(255)
+  nameKh          String?  @db.VarChar(255)
+  officeName      String?  @db.VarChar(255)
+  province        String?  @db.VarChar(255)
+  district        String?  @db.VarChar(255)
+  commune         String?  @db.VarChar(255)
+  village         String?  @db.VarChar(255)
+  stampUrl        String?  @db.VarChar(255)
   vision          String?
   mission         String?
   slogan          String?
-  establishedYear String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  school          School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  establishedYear String?  @db.VarChar(255)
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  school          School   @relation(fields: [schoolId], references: [id], onDelete: Cascade, map: "fk_school")
 
   @@map("school_profiles")
 }
