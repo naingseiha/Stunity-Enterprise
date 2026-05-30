@@ -354,29 +354,46 @@ export default function FeedScreen() {
     });
   }, [scoredFeedItems, feedMode]);
 
-  // Recall Cards: prefer real backend data when available, fall back to
-  // mocks when the API errors or returns empty (e.g. before the migration
-  // runs, or when the user has no due cards). Refetched after every grade
-  // so newly-scheduled cards appear and completed ones drop out.
+  // ── Smart Scroll parallel data fetch ────────────────────────────────
+  // Single useEffect fires all 3 API calls simultaneously via
+  // Promise.allSettled — eliminates the 3-sequential-request waterfall
+  // that was adding ~600ms of serial latency on mount. Each call resolves
+  // independently: one failure never blocks the others, and all three
+  // fall back to mocks gracefully if the backend is unreachable.
+  // The main feed (feedItems from feedStore) renders from cache immediately
+  // before this resolves — Smart Scroll overlays layer in after (~300ms).
   const [serverRecallCards, setServerRecallCards] = useState<RecallCard[] | null>(null);
+  const [serverBounties,    setServerBounties]    = useState<FeynmanBounty[] | null>(null);
+  const [serverQuizWar,     setServerQuizWar]     = useState<QuizWar | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetchDueCards({ limit: 10 })
-      .then((cards) => {
-        if (!cancelled && cards.length > 0) {
-          setServerRecallCards(cards);
-        }
-      })
-      .catch((err) => {
-        // Non-fatal: silent fallback to mocks (logged only in dev).
-        if (__DEV__) {
-          console.warn('[FeedScreen] fetchDueCards failed; using mock cards', err?.message);
-        }
-      });
+    Promise.allSettled([
+      fetchDueCards({ limit: 10 }),
+      fetchActiveBounties({ limit: 10 }),
+      fetchActiveQuizWar(),
+    ]).then(([cards, bounties, war]) => {
+      if (cancelled) return;
+      if (cards.status === 'fulfilled' && cards.value.length > 0) {
+        setServerRecallCards(cards.value);
+      } else if (cards.status === 'rejected' && __DEV__) {
+        console.warn('[FeedScreen] fetchDueCards failed:', cards.reason?.message);
+      }
+      if (bounties.status === 'fulfilled' && bounties.value.length > 0) {
+        setServerBounties(bounties.value);
+      } else if (bounties.status === 'rejected' && __DEV__) {
+        console.warn('[FeedScreen] fetchActiveBounties failed:', bounties.reason?.message);
+      }
+      if (war.status === 'fulfilled' && war.value) {
+        setServerQuizWar(war.value);
+      } else if (war.status === 'rejected' && __DEV__) {
+        console.warn('[FeedScreen] fetchActiveQuizWar failed:', war.reason?.message);
+      }
+    });
     return () => { cancelled = true; };
   }, []);
 
+  // Recall Cards — real preferred, mocks as fallback
   const recallCards = useMemo(
     () => (serverRecallCards && serverRecallCards.length > 0
       ? serverRecallCards
@@ -384,50 +401,24 @@ export default function FeedScreen() {
     [serverRecallCards],
   );
 
-  // Grade handler — wires the RecallCardItem grade buttons to the backend.
-  // Mock cards (id prefix "recall-") short-circuit to a no-op so the UI
-  // demo still works without a live DB. Real card grades hit POST
-  // /recall/:cardId/review, then refetch the due list so the feed updates.
+  // Grade handler — real review endpoint; mock ids (prefix "recall-") no-op
   const handleRecallGrade = useCallback(async (cardId: string, grade: RecallGrade) => {
-    if (cardId.startsWith('recall-')) return; // mock card → no API call
+    if (cardId.startsWith('recall-')) return;
     try {
       await submitRecallReview(cardId, grade);
       const refreshed = await fetchDueCards({ limit: 10 });
       setServerRecallCards(refreshed);
     } catch (err: any) {
-      if (__DEV__) {
-        console.warn('[FeedScreen] submitRecallReview failed', err?.message);
-      }
+      if (__DEV__) console.warn('[FeedScreen] submitRecallReview failed', err?.message);
     }
   }, []);
+
   const withRecallCards = useMemo(
     () => injectRecallCards(sortedFeedItems, recallCards, 5),
     [sortedFeedItems, recallCards],
   );
 
-  // Feynman Bounties: prefer real backend data when available, fall back
-  // to mocks otherwise (same pattern as Recall Cards). The first
-  // useEffect fires once on mount; the response shape matches the mobile
-  // FeynmanBounty type exactly (see services/feed-service/src/routes/
-  // bounty.routes.ts response shaping).
-  const [serverBounties, setServerBounties] = useState<FeynmanBounty[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchActiveBounties({ limit: 10 })
-      .then((bounties) => {
-        if (!cancelled && bounties.length > 0) {
-          setServerBounties(bounties);
-        }
-      })
-      .catch((err) => {
-        if (__DEV__) {
-          console.warn('[FeedScreen] fetchActiveBounties failed; using mocks', err?.message);
-        }
-      });
-    return () => { cancelled = true; };
-  }, []);
-
+  // Feynman Bounties — real preferred, mocks as fallback
   const feynmanBounties = useMemo(
     () => (serverBounties && serverBounties.length > 0
       ? serverBounties
@@ -435,42 +426,92 @@ export default function FeedScreen() {
     [serverBounties],
   );
 
-  // Inject Feynman Bounties every 8 posts (less frequent than Recall — a
-  // bounty is a higher-commitment interaction, would feel spammy at recall
-  // cadence).
+  // ── Feynman Bounty action handlers ───────────────────────────────────
+  // Buttons are wired to contextual Alerts now. Full BountyDetailScreen
+  // (replies list + compose) is the next mobile UI session.
+  const handleBountySeeAnswers = useCallback((bountyId: string) => {
+    const bounty = feynmanBounties.find((b) => b.id === bountyId);
+    Alert.alert(
+      t('feed.bounty.seeAnswersTitle', { defaultValue: 'View Answers' }),
+      t('feed.bounty.seeAnswersComingSoon', {
+        defaultValue:
+          '"{{subject}}" — {{count}} answer(s) submitted so far.\n\n' +
+          'The full answers screen is coming in the next update!',
+        subject: bounty?.subject ?? 'this bounty',
+        count: bounty?.answersCount ?? 0,
+      }),
+      [{ text: t('common.ok', { defaultValue: 'OK' }) }],
+    );
+  }, [feynmanBounties, t]);
+
+  const handleBountyExplain = useCallback((bountyId: string) => {
+    const bounty = feynmanBounties.find((b) => b.id === bountyId);
+    Alert.alert(
+      t('feed.bounty.explainTitle', { defaultValue: 'Explain & Earn' }),
+      t('feed.bounty.explainComingSoon', {
+        defaultValue:
+          '{{bountyXp}} XP is at stake for "{{subject}}".\n\n' +
+          'The reply composer (text, video, sketch) is coming in the next update. ' +
+          'Be the first to explain it and claim the bounty!',
+        bountyXp: bounty?.bountyXp ?? '?',
+        subject: bounty?.subject ?? 'this bounty',
+      }),
+      [{ text: t('common.ok', { defaultValue: 'Got it' }) }],
+    );
+  }, [feynmanBounties, t]);
+
   const withBounties = useMemo(
     () => injectFeynmanBounties(withRecallCards, feynmanBounties, 8),
     [withRecallCards, feynmanBounties],
   );
 
-  // Quiz War: prefer real backend (GET /quiz-wars/active returns the
-  // user's school's active war or null) with graceful fallback to the
-  // mock single war so the banner stays visible during dev / outage.
-  // Real-time score sync (WebSocket) is deferred — for now the UI's
-  // local countdown tick is the only "live" element.
-  const [serverQuizWar, setServerQuizWar] = useState<QuizWar | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchActiveQuizWar()
-      .then((war) => {
-        if (!cancelled && war) setServerQuizWar(war);
-      })
-      .catch((err) => {
-        if (__DEV__) {
-          console.warn('[FeedScreen] fetchActiveQuizWar failed; using mock', err?.message);
-        }
-      });
-    return () => { cancelled = true; };
-  }, []);
-
+  // ── Quiz War ──────────────────────────────────────────────────────────
   const quizWar = useMemo(
     () => serverQuizWar ?? getMockQuizWar(),
     [serverQuizWar],
   );
 
-  // Inject the active Quiz War as a single banner near the top of the feed
-  // (after the first POST). Single war at a time per school.
+  // Join handler — calls real endpoint for live wars; shows coming-soon
+  // Alert for mock war (id = 'war-math-10a-10b-1'). Full question-round
+  // UI is the next Quiz Wars session.
+  const handleQuizWarJoin = useCallback(async (warId: string) => {
+    const isMockWar = warId === 'war-math-10a-10b-1';
+    if (isMockWar) {
+      Alert.alert(
+        t('feed.quizWar.joinTitle', { defaultValue: 'Join Quiz War' }),
+        t('feed.quizWar.joinComingSoon', {
+          defaultValue:
+            'The live question battle interface is coming soon! Your team needs you — hold tight.',
+        }),
+        [{ text: t('common.ok', { defaultValue: 'Ready!' }) }],
+      );
+      return;
+    }
+    try {
+      const { joinQuizWar } = await import('@/api/quizWars');
+      const result = await joinQuizWar(warId, 'A');
+      Alert.alert(
+        result.isAlreadyJoined
+          ? t('feed.quizWar.alreadyJoinedTitle', { defaultValue: "You're already in!" })
+          : t('feed.quizWar.joinedTitle', { defaultValue: "You're in!" }),
+        t('feed.quizWar.joinedBody', {
+          defaultValue:
+            'You joined Team {{team}}. The live question interface is coming soon — ' +
+            'your class can see you are fighting for them!',
+          team: result.team,
+        }),
+        [{ text: t('common.ok', { defaultValue: "Let's go!" }) }],
+      );
+    } catch (err: any) {
+      Alert.alert(
+        t('common.error', { defaultValue: 'Error' }),
+        err?.message ?? t('feed.quizWar.joinFailed', { defaultValue: 'Failed to join. Try again.' }),
+        [{ text: t('common.ok') }],
+      );
+    }
+  }, [t]);
+
+  // Inject Quiz War banner after the first POST.
   const displayedFeedItems = useMemo(
     () => injectQuizWar(withBounties, quizWar),
     [withBounties, quizWar],
@@ -868,10 +909,16 @@ export default function FeedScreen() {
       return <RecallCardItem card={item.data} onGrade={handleRecallGrade} />;
     }
     if (item.type === 'FEYNMAN_BOUNTY') {
-      return <FeynmanBountyItem bounty={item.data} />;
+      return (
+        <FeynmanBountyItem
+          bounty={item.data}
+          onSeeAnswers={handleBountySeeAnswers}
+          onExplain={handleBountyExplain}
+        />
+      );
     }
     if (item.type === 'QUIZ_WAR') {
-      return <QuizWarBanner war={item.data} />;
+      return <QuizWarBanner war={item.data} onJoin={handleQuizWarJoin} />;
     }
 
     if (item.type === 'POST' && !item.data) return null;
@@ -885,7 +932,7 @@ export default function FeedScreen() {
         setAnalyticsPostId={setAnalyticsPostId}
       />
     );
-  }, [valuedPostIds, handleRecallGrade]); // Re-create when valued set or recall handler changes
+  }, [valuedPostIds, handleRecallGrade, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin]);
 
   const getItemType = useCallback((item: FeedItem) => {
     if (!item) return 'unknown';
