@@ -508,7 +508,7 @@ export class FeedRanker {
     async generateFeed(
         userId: string,
         options?: {
-            mode?: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
+            mode?: 'FOR_YOU' | 'FOLLOWING' | 'RECENT' | 'BRAIN_MODE';
             page?: number;
             limit?: number;
             excludeIds?: string[];
@@ -523,6 +523,14 @@ export class FeedRanker {
         // Short-circuit for simple modes
         if (mode === 'RECENT') {
             return this.getRecentFeed(userId, page, limit, subject, cursor);
+        }
+        // BRAIN_MODE — pure quality sort: Post.edScore desc (NULLS LAST),
+        // then createdAt desc. Powered by the posts_edScore_createdAt_idx
+        // index added in migration 20260530065104. Offset pagination only
+        // (no cursor support yet — Brain Mode sessions are short, the
+        // sorting is deterministic, page-based works fine).
+        if (mode === 'BRAIN_MODE') {
+            return this.getBrainModeFeed(userId, page, limit, subject);
         }
 
         const feedSessionKey = `feedranker:session:${userId}:v2:${mode}:${subject || 'ALL'}:limit:${limit}:exclude:${excludeKey}`;
@@ -2063,6 +2071,125 @@ export class FeedRanker {
             hasMore,
             ...(nextCursor ? { nextCursor } : {}),
         };
+    }
+
+    /**
+     * BRAIN_MODE feed: sort all visible posts by Post.edScore desc, then
+     * createdAt desc. Unrated posts (edScore = null) fall to the end
+     * naturally on Postgres DESC ordering. Powered by the
+     * posts_edScore_createdAt_idx index (added in migration 20260530065104).
+     *
+     * Same visibility / hidden-post / subject-filter logic as getRecentFeed
+     * — the only differences are: (a) orderBy, (b) no cursor support
+     * (offset pagination is fine since Brain Mode sessions are short and
+     * ranking is deterministic), (c) `score` is populated with edScore so
+     * the mobile knows why this post surfaced.
+     */
+    private async getBrainModeFeed(
+        userId: string,
+        page: number,
+        limit: number,
+        subject?: string
+    ): Promise<{ items: FeedItem[]; total?: number; hasMore: boolean; nextCursor?: string }> {
+        const skip = (page - 1) * limit;
+        const currentUser = await this.readPrisma.user.findUnique({
+            where: { id: userId },
+            select: { schoolId: true },
+        });
+        const hiddenPostIds = (await this.getUserPostFeedback(userId))
+            .filter((feedback) => ['HIDE', 'NOT_INTERESTED', 'SHOW_LESS'].includes(feedback.feedbackType))
+            .map((feedback) => feedback.postId);
+
+        const where: any = {
+            AND: [
+                await resolveFeedVisibilityWhere(this.readPrisma, {
+                    userId,
+                    schoolId: currentUser?.schoolId,
+                }),
+            ],
+        };
+        if (subject && subject !== 'ALL') {
+            where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+        }
+        if (hiddenPostIds.length > 0) {
+            where.AND.push({ id: { notIn: [...new Set(hiddenPostIds)] } });
+        }
+
+        const posts = await this.readPrisma.post.findMany({
+            where,
+            include: {
+                author: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                        role: true,
+                        isVerified: true,
+                    },
+                },
+                pollOptions: {
+                    select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+                },
+                quiz: {
+                    select: {
+                        id: true,
+                        questions: true,
+                        timeLimit: true,
+                        passingScore: true,
+                        totalPoints: true,
+                        resultsVisibility: true,
+                    },
+                },
+                repostOf: {
+                    select: {
+                        id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true,
+                        createdAt: true, likesCount: true, commentsCount: true,
+                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                    },
+                },
+            },
+            orderBy: [
+                { isPinned: 'desc' as const },
+                // Prisma 5.x: `{ sort, nulls }` for nullable fields.
+                { edScore: { sort: 'desc' as const, nulls: 'last' as const } },
+                { createdAt: 'desc' as const },
+                { id: 'desc' as const },
+            ],
+            skip,
+            take: limit + 1,
+        }) as unknown as PostWithRelations[];
+
+        const hasMore = posts.length > limit;
+        const pagePosts = hasMore ? posts.slice(0, limit) : posts;
+
+        // Populate `score` with edScore so the mobile knows the quality
+        // signal; `breakdown.quality` mirrors it for the _scoreBreakdown
+        // surface the client already understands.
+        const scored = pagePosts.map(post => {
+            const ed = (post as any).edScore ?? 0;
+            const teacherVerified = (post as any).teacherVerified === true;
+            return {
+                post,
+                score: ed,
+                breakdown: {
+                    engagement: 0,
+                    relevance: 0,
+                    quality: ed,
+                    recency: 0,
+                    socialProof: 0,
+                    learningContext: 0,
+                    academicRelevance: 0,
+                    teacherRelevance: teacherVerified ? 1 : 0,
+                    peerLearning: 0,
+                    difficultyMatch: 0,
+                    negativeFeedback: 0,
+                },
+            };
+        });
+
+        const items: FeedItem[] = scored.map(s => ({ type: 'POST', data: s }));
+        return { items, hasMore };
     }
 
     // ─── Track User Action (Batched) ──────────────────────────────

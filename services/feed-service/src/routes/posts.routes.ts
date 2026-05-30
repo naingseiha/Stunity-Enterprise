@@ -625,7 +625,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     const buildResponse = async (): Promise<{ payload: any; etag: string }> => {
       const rankerStart = performance.now();
       const result = await feedRanker.generateFeed(userId, {
-        mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
+        mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT' | 'BRAIN_MODE',
         page: normalizedPage,
         limit: normalizedLimit,
         subject: subject ? String(subject) : undefined,

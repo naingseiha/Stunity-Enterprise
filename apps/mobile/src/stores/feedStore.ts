@@ -408,8 +408,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }
 
       if (usePersonalizedFeed) {
-        // BRAIN_MODE → FOR_YOU on the wire; client-side sort handles the rest.
-        params.mode = feedMode === 'BRAIN_MODE' ? 'FOR_YOU' : feedMode;
+        // Backend now supports BRAIN_MODE natively (server-sorted by
+        // Post.edScore desc via posts_edScore_createdAt_idx). Sending
+        // BRAIN_MODE through verbatim. The FeedScreen client-side sort
+        // is kept as a defensive fallback in case the cache returns
+        // pre-deploy data without server-side ordering.
+        params.mode = feedMode;
       }
 
       let response;
