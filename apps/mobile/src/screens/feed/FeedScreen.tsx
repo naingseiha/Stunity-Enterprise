@@ -52,13 +52,14 @@ import { applyMockEdScores } from '@/utils/mockEdScores';
 import BrainModeToggle from '@/components/feed/BrainModeToggle';
 import FeynmanBountyItem from '@/components/feed/FeynmanBountyItem';
 import { getMockFeynmanBounties, injectFeynmanBounties } from '@/utils/mockFeynmanBounties';
+import { fetchActiveBounties } from '@/api/bounties';
 import QuizWarBanner from '@/components/feed/QuizWarBanner';
 import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
-import { Post, FeedItem, RecallCard } from '@/types';
+import { Post, FeedItem, RecallCard, FeynmanBounty } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext, useThemeContext } from '@/contexts';
@@ -403,11 +404,39 @@ export default function FeedScreen() {
     [sortedFeedItems, recallCards],
   );
 
+  // Feynman Bounties: prefer real backend data when available, fall back
+  // to mocks otherwise (same pattern as Recall Cards). The first
+  // useEffect fires once on mount; the response shape matches the mobile
+  // FeynmanBounty type exactly (see services/feed-service/src/routes/
+  // bounty.routes.ts response shaping).
+  const [serverBounties, setServerBounties] = useState<FeynmanBounty[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveBounties({ limit: 10 })
+      .then((bounties) => {
+        if (!cancelled && bounties.length > 0) {
+          setServerBounties(bounties);
+        }
+      })
+      .catch((err) => {
+        if (__DEV__) {
+          console.warn('[FeedScreen] fetchActiveBounties failed; using mocks', err?.message);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const feynmanBounties = useMemo(
+    () => (serverBounties && serverBounties.length > 0
+      ? serverBounties
+      : getMockFeynmanBounties()),
+    [serverBounties],
+  );
+
   // Inject Feynman Bounties every 8 posts (less frequent than Recall — a
   // bounty is a higher-commitment interaction, would feel spammy at recall
-  // cadence). Prototype: mocked. Production: pulled from /bounties/active
-  // ranked by relevance to the student's current subjects.
-  const feynmanBounties = useMemo(() => getMockFeynmanBounties(), []);
+  // cadence).
   const withBounties = useMemo(
     () => injectFeynmanBounties(withRecallCards, feynmanBounties, 8),
     [withRecallCards, feynmanBounties],

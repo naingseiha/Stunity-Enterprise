@@ -652,6 +652,9 @@ model User {
   recallCards                  RecallCard[]
   recallReviews                RecallReview[]
   verifiedPosts                Post[]                       @relation("PostsVerifiedBy")
+  bountiesAsked                Bounty[]                     @relation("BountiesAsked")
+  bountyReplies                BountyReply[]                @relation("BountyReplies")
+  bountyAhas                   BountyAha[]                  @relation("BountyAhas")
   challengesAsChallenger       QuizChallenge[]              @relation("ChallengerChallenges")
   challengesAsOpponent         QuizChallenge[]              @relation("OpponentChallenges")
   gameAchievements             UserGameAchievement[]
@@ -2906,6 +2909,101 @@ model RecallReview {
   @@index([userId, reviewedAt])
   @@index([recallCardId, reviewedAt])
   @@map("recall_reviews")
+}
+
+// ─────────────────────────────────────────────────────────
+// Feynman Bounties — XP-staked Q&A. Asker stakes XP at creation; the
+// stake sits in escrow (UserStats.xp debit + Bounty row holding the
+// amount) until either the asker awards a reply or the bounty
+// expires / is cancelled. Drives the Protégé effect: students learn
+// more deeply by teaching than by consuming.
+//
+// Atomic transitions live in: services/feed-service/src/utils/bountyEscrow.ts
+// ─────────────────────────────────────────────────────────
+
+enum BountyStatus {
+  ACTIVE // accepting replies, XP held in escrow
+  AWARDED // winner chosen, XP transferred to winning tutor
+  EXPIRED // ran out of time without award (XP refundable)
+  CANCELLED // asker cancelled before any winner (XP refunded)
+}
+
+enum BountyReplyFormat {
+  TEXT
+  VIDEO
+  SKETCH
+}
+
+model Bounty {
+  id      String @id @default(cuid())
+  askerId String
+
+  // Denormalized subject for fast feed query — matches the mobile
+  // FeynmanBounty type at apps/mobile/src/types/index.ts.
+  subject      String
+  subjectColor String?
+
+  questionText   String  @db.Text
+  attachmentName String?
+
+  bountyXp Int
+  status   BountyStatus @default(ACTIVE)
+
+  // Outcome refs (set when status transitions to AWARDED).
+  winnerReplyId String?   @unique
+  awardedAt     DateTime?
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asker       User          @relation("BountiesAsked", fields: [askerId], references: [id], onDelete: Cascade)
+  winnerReply BountyReply?  @relation("WinningReply", fields: [winnerReplyId], references: [id])
+  replies     BountyReply[] @relation("BountyReplies")
+
+  @@index([status, expiresAt])
+  @@index([askerId, createdAt(sort: Desc)])
+  @@map("bounties")
+}
+
+model BountyReply {
+  id       String @id @default(cuid())
+  bountyId String
+  tutorId  String
+
+  format   BountyReplyFormat @default(TEXT)
+  content  String            @db.Text
+  mediaUrl String?
+
+  // Denormalized "Aha!" reaction count (kept in sync with BountyAha
+  // inserts inside the same tx — see bounty.routes.ts).
+  ahaCount Int     @default(0)
+  isWinner Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  bounty    Bounty      @relation("BountyReplies", fields: [bountyId], references: [id], onDelete: Cascade)
+  tutor     User        @relation("BountyReplies", fields: [tutorId], references: [id], onDelete: Cascade)
+  ahas      BountyAha[]
+  wonBounty Bounty?     @relation("WinningReply")
+
+  @@index([bountyId, ahaCount(sort: Desc), createdAt(sort: Desc)])
+  @@index([tutorId, createdAt(sort: Desc)])
+  @@map("bounty_replies")
+}
+
+model BountyAha {
+  id        String   @id @default(cuid())
+  replyId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  reply BountyReply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  user  User        @relation("BountyAhas", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([replyId, userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("bounty_ahas")
 }
 
 model QuizChallenge {
