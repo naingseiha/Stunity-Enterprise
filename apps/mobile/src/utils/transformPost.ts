@@ -116,6 +116,24 @@ export function transformPost(post: any): Post | null {
                 hasPdf: post.hasPdf,
                 hasFormula: post.hasFormula,
             },
+            // ── Smart Scroll fields ──────────────────────────────────
+            // These MUST be passed through explicitly — the `as Post`
+            // cast below silently drops unknown keys, so anything not
+            // listed here gets stripped before the mobile store sees it.
+            //
+            // edScore / edScoreCount: denormalized from EducationalValueRating
+            //   on the backend (postActions.routes.ts). Drives EdScoreBadge.
+            // teacherVerified / teacherVerifiedBy: post-level endorsement.
+            //   Drives TeacherVerifiedBadge.
+            // _score / _scoreBreakdown: feed ranker output used by Brain Mode
+            //   (getBrainModeFeed populates .quality + .teacherRelevance).
+            edScore:             post.edScore    ?? post.post?.edScore,
+            edScoreCount:        post.edScoreCount ?? post.post?.edScoreCount,
+            teacherVerified:     post.teacherVerified ?? post.post?.teacherVerified ?? false,
+            teacherVerifiedBy:   post.teacherVerifiedBy ?? post.post?.teacherVerifiedBy,
+            questionBounty:      post.questionBounty,
+            _score:              post._score ?? post.score,
+            _scoreBreakdown:     post._scoreBreakdown ?? post.breakdown,
         } as Post;
     } catch (error: any) {
         console.error('❌ [transformPost] Error transforming post:', post?.id, error);

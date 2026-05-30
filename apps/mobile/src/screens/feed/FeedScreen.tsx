@@ -393,13 +393,24 @@ export default function FeedScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  // Recall Cards — real preferred, mocks as fallback
-  const recallCards = useMemo(
-    () => (serverRecallCards && serverRecallCards.length > 0
+  // Deferred recall cards — hidden for the current session only.
+  // Re-appear on next app launch (no persistence needed: the SM-2
+  // interval still fires on the next day regardless).
+  const [deferredCardIds, setDeferredCardIds] = useState<Set<string>>(new Set());
+
+  const handleRecallDefer = useCallback((cardId: string) => {
+    setDeferredCardIds(prev => new Set([...prev, cardId]));
+  }, []);
+
+  // Recall Cards — real preferred, mocks as fallback; deferred ones hidden
+  const recallCards = useMemo(() => {
+    const base = (serverRecallCards && serverRecallCards.length > 0
       ? serverRecallCards
-      : getMockRecallCards()),
-    [serverRecallCards],
-  );
+      : getMockRecallCards());
+    return deferredCardIds.size > 0
+      ? base.filter(c => !deferredCardIds.has(c.id))
+      : base;
+  }, [serverRecallCards, deferredCardIds]);
 
   // Grade handler — real review endpoint; mock ids (prefix "recall-") no-op
   const handleRecallGrade = useCallback(async (cardId: string, grade: RecallGrade) => {
@@ -476,7 +487,18 @@ export default function FeedScreen() {
     }
     try {
       const { joinQuizWar } = await import('@/api/quizWars');
-      const result = await joinQuizWar(warId, 'A');
+      // Auto-assign to the team with the lower score to keep balance.
+      // If the user already has a team (userTeamId), match it.
+      const activeWar = serverQuizWar;
+      let assignedTeam: 'A' | 'B' = 'A';
+      if (activeWar) {
+        if (activeWar.userTeamId) {
+          assignedTeam = activeWar.userTeamId === activeWar.teamA.id ? 'A' : 'B';
+        } else {
+          assignedTeam = activeWar.teamA.score <= activeWar.teamB.score ? 'A' : 'B';
+        }
+      }
+      const result = await joinQuizWar(warId, assignedTeam);
       Alert.alert(
         result.isAlreadyJoined
           ? t('feed.quizWar.alreadyJoinedTitle', { defaultValue: "You're already in!" })
@@ -774,6 +796,10 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any, { initialPostType: 'RESOURCE' });
   }, [navigation]);
 
+  const handleCreateBounty = useCallback(() => {
+    navigation.navigate('CreateBounty' as any);
+  }, [navigation]);
+
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
@@ -854,6 +880,10 @@ export default function FeedScreen() {
             <Ionicons name="book" size={22} color="#F59E0B" />
             <Text style={styles.inCardActionText}>{t('feed.resource')}</Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
+            <Ionicons name="cash" size={22} color="#D97706" />
+            <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -863,7 +893,7 @@ export default function FeedScreen() {
         onToggle={handleToggleBrainMode}
       />
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, handleCreateBounty, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -893,7 +923,13 @@ export default function FeedScreen() {
       return <SuggestedQuizzesCarousel quizzes={item.data} />;
     }
     if (item.type === 'RECALL_CARD') {
-      return <RecallCardItem card={item.data} onGrade={handleRecallGrade} />;
+      return (
+        <RecallCardItem
+          card={item.data}
+          onGrade={handleRecallGrade}
+          onDefer={handleRecallDefer}
+        />
+      );
     }
     if (item.type === 'FEYNMAN_BOUNTY') {
       return (
@@ -919,7 +955,7 @@ export default function FeedScreen() {
         setAnalyticsPostId={setAnalyticsPostId}
       />
     );
-  }, [valuedPostIds, handleRecallGrade, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin]);
+  }, [valuedPostIds, handleRecallGrade, handleRecallDefer, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin]);
 
   const getItemType = useCallback((item: FeedItem) => {
     if (!item) return 'unknown';
