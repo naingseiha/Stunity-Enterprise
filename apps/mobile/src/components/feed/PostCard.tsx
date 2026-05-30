@@ -50,6 +50,7 @@ import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSection
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
 import PostOptionsSheet, { PostOptionAction } from './PostOptionsSheet';
+import { verifyPost, unverifyPost, canVerifyPosts } from '@/api/postVerification';
 import { FEED_POST_CARD_MARGIN_H } from '@/constants';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
@@ -426,7 +427,15 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   // Narrow selector — only subscribe to user ID, not entire auth store
   const currentUserId2 = useAuthStore(s => s.user?.id);
+  const currentUserRole = useAuthStore(s => s.user?.role);
   const isCurrentUser = currentUserId ? post.author?.id === currentUserId : post.author?.id === currentUserId2;
+
+  // Teacher-verification: local optimistic state. Initialized from the
+  // post's persisted value, flipped immediately on action so the badge
+  // appears (or disappears) without waiting for a feed refresh.
+  const [verifiedOverride, setVerifiedOverride] = useState<boolean | null>(null);
+  const effectiveTeacherVerified =
+    verifiedOverride !== null ? verifiedOverride : (post.teacherVerified ?? false);
 
   // Derive directly from props — no useEffect sync needed
   // We use key={post.id} on the component itself (in the parent list) to force remounting
@@ -662,6 +671,60 @@ const PostCardInner: React.FC<PostCardProps> = ({
       });
     }
 
+    // Teacher / admin verification actions. Role-gated client-side
+    // (backend re-checks + enforces same-school for TEACHER). Either
+    // "Verify post" or "Remove verification" shows depending on
+    // current state — never both.
+    if (canVerifyPosts(currentUserRole)) {
+      if (effectiveTeacherVerified) {
+        actions.push({
+          key: 'unverify',
+          icon: 'close-circle-outline',
+          color: '#DC2626',
+          label: t('feed.actions.removeVerification', {
+            defaultValue: 'Remove verification',
+          }),
+          onPress: async () => {
+            try {
+              await unverifyPost(post.id);
+              setVerifiedOverride(false);
+            } catch (err: any) {
+              Alert.alert(
+                t('common.error', { defaultValue: 'Error' }),
+                err?.message || t('feed.actions.unverifyFailed', {
+                  defaultValue: 'Failed to remove verification',
+                }),
+                [{ text: t('common.ok') }],
+              );
+            }
+          },
+        });
+      } else {
+        actions.push({
+          key: 'verify',
+          icon: 'school',
+          color: '#D97706',
+          label: t('feed.actions.verifyPost', {
+            defaultValue: 'Verify post',
+          }),
+          onPress: async () => {
+            try {
+              await verifyPost(post.id);
+              setVerifiedOverride(true);
+            } catch (err: any) {
+              Alert.alert(
+                t('common.error', { defaultValue: 'Error' }),
+                err?.message || t('feed.actions.verifyFailed', {
+                  defaultValue: 'Failed to verify post',
+                }),
+                [{ text: t('common.ok') }],
+              );
+            }
+          },
+        });
+      }
+    }
+
     actions.push(
       {
         key: 'report',
@@ -699,6 +762,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
     handleBookmark,
     handleNotInterested,
     post.id,
+    currentUserRole,
+    effectiveTeacherVerified,
   ]);
 
   // Prepare props for PostHeader
@@ -718,12 +783,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
     // Ed-Score (Educational Value) overlay badges. Additive — when the post
     // has neither, PostHeader renders identically to before.
     edScore: post.edScore,
-    teacherVerified: post.teacherVerified,
+    teacherVerified: effectiveTeacherVerified,
   }), [
     post.author, post.createdAt, post.visibility, post.learningMeta,
     isCurrentUser, isFollowing, followLoading, onUserPress, handleFollow,
     handleMenuToggle,
-    post.edScore, post.teacherVerified,
+    post.edScore, effectiveTeacherVerified,
   ]);
 
   return (
