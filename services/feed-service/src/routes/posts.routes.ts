@@ -133,6 +133,16 @@ function stripToMinimal(post: any): any {
       repostComment: post.repostComment,
       repostOf: post.repostOf,
     }),
+    // Smart Scroll quality signals — must survive the minimal strip
+    // because the mobile always requests ?fields=minimal and the
+    // EdScoreBadge + TeacherVerifiedBadge need these to render real data.
+    edScore:          post.edScore    ?? null,
+    edScoreCount:     post.edScoreCount ?? 0,
+    teacherVerified:  post.teacherVerified ?? false,
+    verifiedByTeacherId: post.verifiedByTeacherId ?? null,
+    topicTags:        post.topicTags  || [],
+    _score:           post._score,
+    _scoreBreakdown:  post._scoreBreakdown,
   };
 }
 
@@ -726,6 +736,15 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
             }),
             _score: sp.score,
             _scoreBreakdown: sp.breakdown,
+            // ── Smart Scroll quality signals ─────────────────────────
+            // Must be explicitly included — the serializer builds an
+            // explicit object, so anything not listed here is dropped
+            // even though Prisma fetches all scalars from the Post row.
+            edScore:           sp.post.edScore    ?? null,
+            edScoreCount:      sp.post.edScoreCount ?? 0,
+            teacherVerified:   sp.post.teacherVerified ?? false,
+            verifiedByTeacherId: sp.post.verifiedByTeacherId ?? null,
+            questionBounty:    sp.post.questionBounty ?? 0,
           }
         };
       });
