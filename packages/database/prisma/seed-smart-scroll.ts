@@ -1,16 +1,18 @@
 /**
  * Smart Scroll feature seed — production-safe, additive, idempotent.
  *
- * Targets the live Stunity QA School (the main production school) and
- * creates real data for all 5 Smart Scroll features:
+ * Targets BOTH live schools:
+ *   • Stunity QA School    (cmn1e43ir002a14op0m3ibq2g) — 6 students, 2 teachers
+ *   • Svaythom High School (cmm7yhssh0000lwcvao23npok) — 1 teacher, 42 real quiz Qs
  *
- *   1. UserStats (XP + levels) for every active student & teacher
- *   2. Quiz War — LIVE 10A vs 10B mathematics battle
- *   3. Quiz War participants — students split across both teams
- *   4. Feynman Bounties — 3 real XP-staked questions from students
- *   5. Bounty replies — peer explanations on each bounty
- *   6. Recall Cards — spaced-repetition cards per student (requires
- *      quiz questions; skipped with a warning when none exist)
+ * Features seeded per school:
+ *   1. UserStats (XP + levels)
+ *   2. Quiz War — LIVE inter-class battle
+ *   3. Quiz War participants
+ *   4. Feynman Bounties with real XP stakes
+ *   5. Bounty replies (peer explanations)
+ *   6. Recall Cards from real quiz questions (Svaythom only — QA School
+ *      has no quiz questions yet; auto-create via quiz submission there)
  *
  * Rules:
  *   ✅  Upsert / createIfNotExists everywhere — safe to re-run
@@ -27,7 +29,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// ─── Real production IDs ──────────────────────────────────────────────
+// ─── Real production IDs — QA School ─────────────────────────────────
 const SCHOOL_ID = 'cmn1e43ir002a14op0m3ibq2g'; // Stunity QA School
 
 const TEACHERS = [
@@ -443,7 +445,260 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// SVAYTHOM HIGH SCHOOL — separate section, runs after QA School
+// ─────────────────────────────────────────────────────────────────────
+
+async function seedSvaythom() {
+  const SVA_SCHOOL_ID = 'cmm7yhssh0000lwcvao23npok';
+  const SVA_TEACHER_ID = 'cmmej05kv00003e6pwuvfmr9c'; // សុមង្គល គឹម
+  const SVA_ADMIN_ID   = 'cmm9k2j7g000214atfc4qub81'; // សីហា ណាំង
+  const SVA_SCHOOL_ADMIN_ID = 'cmm80v7pq0001t1987f4p73l0'; // School Admin
+
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🏫  Svaythom High School seed');
+  console.log(`    School ID: ${SVA_SCHOOL_ID}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  // ── 1. UserStats ───────────────────────────────────────────────────
+  console.log('📊 [1/4] Upserting UserStats for Svaythom users...');
+
+  const svaUsers = [
+    { id: SVA_TEACHER_ID,      name: 'សុមង្គល គឹម',  xp: 920  },
+    { id: SVA_ADMIN_ID,        name: 'សីហា ណាំង',    xp: 1215 },
+    { id: SVA_SCHOOL_ADMIN_ID, name: 'School Admin',  xp: 350  },
+  ];
+  for (const u of svaUsers) {
+    const level = levelFromXp(u.xp);
+    await prisma.userStats.upsert({
+      where:  { userId: u.id },
+      create: { userId: u.id, xp: u.xp, level },
+      update: {},
+    });
+    log('  ✅', `${u.name}: ${u.xp} XP  lvl ${level}`);
+  }
+
+  // ── 2. Recall Cards from real quiz questions ────────────────────────
+  // Svaythom has 42 real quiz questions across JS / AI / Biology / Math.
+  // We create recall cards for the teacher on a sample spread across
+  // subjects — one per unique topic so the feed eyebrow is meaningful.
+  console.log('\n🧠 [2/4] Creating Recall Cards from Svaythom quiz questions...');
+
+  // Ordered by subject tag: pick one representative question per tag.
+  const tagGroups: Array<{ tag: string; subjectLabel: string; limit: number }> = [
+    { tag: 'javascript',       subjectLabel: 'Computer Science · JavaScript',   limit: 2 },
+    { tag: 'ai',               subjectLabel: 'Computer Science · AI & Prompts', limit: 2 },
+    { tag: 'biology',          subjectLabel: 'Biology · Science',               limit: 2 },
+    { tag: 'math',             subjectLabel: 'Mathematics · Algebra',           limit: 2 },
+    { tag: 'general-knowledge',subjectLabel: 'General Knowledge',               limit: 2 },
+  ];
+
+  // Vary recall strength so the decay pips look realistic in the feed
+  const strengthVariants = [0.72, 0.38, 0.18, 0.55, 0.82, 0.28, 0.45, 0.65, 0.20, 0.50];
+  const daysVariants     = [1, 4, 7, 2, 0, 6, 3, 1, 5, 2];
+
+  let cardIndex = 0;
+  let totalCards = 0;
+
+  for (const group of tagGroups) {
+    const questions = await prisma.quizQuestion.findMany({
+      where: {
+        post: {
+          schoolId: SVA_SCHOOL_ID,
+          topicTags: { has: group.tag },
+        },
+      },
+      take: group.limit,
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, post: { select: { title: true } } },
+    });
+
+    for (const q of questions) {
+      const strength = strengthVariants[cardIndex % strengthVariants.length];
+      const daysAgo  = daysVariants[cardIndex % daysVariants.length];
+      const nextReview = new Date(Date.now() + (strength > 0.5 ? 3 : 1) * 24 * 60 * 60 * 1000);
+      const lastReview = daysAgo > 0
+        ? new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)
+        : null;
+
+      await prisma.recallCard.upsert({
+        where:  { userId_questionId: { userId: SVA_TEACHER_ID, questionId: q.id } },
+        create: {
+          userId:          SVA_TEACHER_ID,
+          questionId:      q.id,
+          subject:         group.tag,
+          subjectLabel:    group.subjectLabel,
+          courseTitle:     q.post.title ?? undefined,
+          recallStrength:  strength,
+          xpReward:        10,
+          interval:        strength > 0.6 ? 3 : 1,
+          easeFactor:      2.5,
+          lastReviewedAt:  lastReview,
+          nextReviewAt:    nextReview,
+          protectsStreak:  strength < 0.4, // weak memories protect streak to incentivise review
+        },
+        update: {},
+      });
+
+      cardIndex++;
+      totalCards++;
+    }
+  }
+
+  log('  ✅', `${totalCards} recall cards created for សុមង្គល គឹម`);
+
+  // ── 3. Quiz War ────────────────────────────────────────────────────
+  // Only 1 teacher, no students — so we create a PRE_MATCH war that's
+  // about to start. Real participants will join when the app launches.
+  // (A LIVE war needs scores, which require participants.)
+  console.log('\n⚔️  [3/4] Creating PRE_MATCH Quiz War for Svaythom...');
+
+  const SVA_WAR_ID = 'quizwar-svaythom-cs-001';
+  const warStartsAt = new Date(Date.now() + 5 * 60 * 1000);   // starts in 5 min
+  const warEndsAt   = new Date(Date.now() + 25 * 60 * 1000);  // ends in 25 min
+
+  const existingSvaWar = await prisma.quizWar.findUnique({ where: { id: SVA_WAR_ID } });
+  if (existingSvaWar) {
+    log('  ⏭ ', `Quiz War ${SVA_WAR_ID} already exists — updating times`);
+    await prisma.quizWar.update({
+      where: { id: SVA_WAR_ID },
+      data:  { startsAt: warStartsAt, endsAt: warEndsAt, status: 'PRE_MATCH' },
+    });
+  } else {
+    await prisma.quizWar.create({
+      data: {
+        id:          SVA_WAR_ID,
+        schoolId:    SVA_SCHOOL_ID,
+        subject:     'Computer Science · JavaScript',
+        status:      'PRE_MATCH',
+        round:       1,
+        totalRounds: 5,
+        teamAName:   '11A',
+        teamAColor:  '#7C3AED',  // violet
+        teamAScore:  0,
+        teamBName:   '11B',
+        teamBColor:  '#059669',  // emerald
+        teamBScore:  0,
+        startsAt:    warStartsAt,
+        endsAt:      warEndsAt,
+        rewardXp:    150,
+      },
+    });
+    log('  ✅', `Quiz War created: 11A vs 11B  PRE_MATCH  subject=CS·JavaScript`);
+  }
+
+  // The teacher joins Team A (as a mentor observer)
+  await prisma.quizWarParticipant.upsert({
+    where:  { warId_userId: { warId: SVA_WAR_ID, userId: SVA_TEACHER_ID } },
+    create: { warId: SVA_WAR_ID, userId: SVA_TEACHER_ID, team: 'A' },
+    update: {},
+  });
+  log('  ✅', `សុមង្គល គឹម joined Team A`);
+
+  // ── 4. Feynman Bounties ────────────────────────────────────────────
+  // The teacher asks two real subject questions used in class.
+  console.log('\n🪙 [4/4] Creating Feynman Bounties for Svaythom...');
+
+  type SvaBountyDef = {
+    id: string;
+    askerId: string;
+    askerName: string;
+    subject: string;
+    subjectColor: string;
+    questionText: string;
+    bountyXp: number;
+    durationHours: number;
+  };
+
+  const SVA_BOUNTIES: SvaBountyDef[] = [
+    {
+      id:           'bounty-sva-async-001',
+      askerId:      SVA_TEACHER_ID,
+      askerName:    'សុមង្គល គឹម',
+      subject:      'Computer Science · JavaScript',
+      subjectColor: '#7C3AED',
+      questionText:
+        'I am teaching async/await to Grade 11 and students keep confusing ' +
+        'it with callbacks. Can anyone give me a clean analogy — ideally in ' +
+        'Khmer context — that explains why async/await makes code easier to ' +
+        'read and debug compared to nested callbacks? A short code comparison ' +
+        'with comments would be perfect.',
+      bountyXp:     80,
+      durationHours: 48,
+    },
+    {
+      id:           'bounty-sva-dna-001',
+      askerId:      SVA_ADMIN_ID, // សីហា ណាំង — uses the school
+      askerName:    'សីហា ណាំង',
+      subject:      'Biology · DNA',
+      subjectColor: '#16A34A',
+      questionText:
+        'For our Grade 10 science revision: can someone explain in simple ' +
+        'terms how DNA replication works and why the two strands produced are ' +
+        '"semi-conservative"? Students are mixing up the leading and lagging ' +
+        'strand terminology. A diagram description would be very helpful.',
+      bountyXp:     60,
+      durationHours: 72,
+    },
+  ];
+
+  for (const bounty of SVA_BOUNTIES) {
+    const existing = await prisma.bounty.findUnique({ where: { id: bounty.id } });
+    if (existing) {
+      log('  ⏭ ', `Bounty ${bounty.id} already exists — skipped`);
+      continue;
+    }
+
+    const expiresAt = new Date(Date.now() + bounty.durationHours * 60 * 60 * 1000);
+
+    await prisma.$transaction([
+      prisma.userStats.update({
+        where: { userId: bounty.askerId },
+        data:  { xp: { decrement: bounty.bountyXp } },
+      }),
+      prisma.bounty.create({
+        data: {
+          id:             bounty.id,
+          askerId:        bounty.askerId,
+          subject:        bounty.subject,
+          subjectColor:   bounty.subjectColor,
+          questionText:   bounty.questionText,
+          bountyXp:       bounty.bountyXp,
+          status:         'ACTIVE',
+          expiresAt,
+        },
+      }),
+    ]);
+    log('  ✅', `${bounty.askerName} staked ${bounty.bountyXp} XP → "${bounty.subject}"`);
+  }
+
+  // Summary for Svaythom
+  const [wars, participants, bounties, cards, statsCount] = await Promise.all([
+    prisma.quizWar.count({ where: { schoolId: SVA_SCHOOL_ID } }),
+    prisma.quizWarParticipant.count({ where: { war: { schoolId: SVA_SCHOOL_ID } } }),
+    prisma.bounty.count({ where: { asker: { schoolId: SVA_SCHOOL_ID } } }),
+    prisma.recallCard.count({ where: { user: { schoolId: SVA_SCHOOL_ID } } }),
+    prisma.userStats.count({ where: { user: { schoolId: SVA_SCHOOL_ID } } }),
+  ]);
+
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✅  Svaythom seed complete!');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`   UserStats:        ${statsCount} users with XP`);
+  console.log(`   Quiz War:         ${wars} (PRE_MATCH: 11A vs 11B  CS·JS)`);
+  console.log(`   War Participants: ${participants}`);
+  console.log(`   Bounties:         ${bounties} ACTIVE`);
+  console.log(`   Recall Cards:     ${cards} (for teacher សុមង្គល គឹម)`);
+  console.log('\n   To verify:');
+  console.log('   ① Login as teacher សុមង្គល គឹម → open Feed');
+  console.log('   ② Recall cards from real quiz questions should appear every ~5 posts');
+  console.log('   ③ Quiz War banner: 11A vs 11B PRE_MATCH (upcoming)');
+  console.log('   ④ Feynman Bounty cards visible in feed');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+}
+
 main()
+  .then(() => seedSvaythom())
   .catch((e) => {
     console.error('\n❌ Seed failed:', e.message ?? e);
     process.exit(1);
