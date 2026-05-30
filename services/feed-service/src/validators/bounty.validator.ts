@@ -41,3 +41,28 @@ export const activeBountiesQuerySchema = z.object({
   subject: z.string().min(1).max(100).optional(),
 });
 export type ActiveBountiesQuery = z.infer<typeof activeBountiesQuerySchema>;
+
+export const createReplyBodySchema = z.object({
+  content: z.string().min(10).max(5000),
+  format: z.enum(['TEXT', 'VIDEO', 'SKETCH']).optional(),
+  mediaUrl: z.string().url().optional().nullable(),
+});
+export type CreateReplyBody = z.infer<typeof createReplyBodySchema>;
+
+export const awardBountyBodySchema = z.object({
+  replyId: z.string().min(1),
+});
+export type AwardBountyBody = z.infer<typeof awardBountyBodySchema>;
+
+export const repliesQuerySchema = z.object({
+  limit: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === null || v === '') return undefined;
+      const n = typeof v === 'number' ? v : parseInt(v, 10);
+      return Number.isFinite(n) ? n : undefined;
+    })
+    .pipe(z.number().int().min(1).max(100).optional()),
+});
+export type RepliesQuery = z.infer<typeof repliesQuerySchema>;
