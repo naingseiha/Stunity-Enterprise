@@ -55,11 +55,12 @@ import { getMockFeynmanBounties, injectFeynmanBounties } from '@/utils/mockFeynm
 import { fetchActiveBounties } from '@/api/bounties';
 import QuizWarBanner from '@/components/feed/QuizWarBanner';
 import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
+import { fetchActiveQuizWar } from '@/api/quizWars';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
-import { Post, FeedItem, RecallCard, FeynmanBounty } from '@/types';
+import { Post, FeedItem, RecallCard, FeynmanBounty, QuizWar } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext, useThemeContext } from '@/contexts';
@@ -442,10 +443,34 @@ export default function FeedScreen() {
     [withRecallCards, feynmanBounties],
   );
 
+  // Quiz War: prefer real backend (GET /quiz-wars/active returns the
+  // user's school's active war or null) with graceful fallback to the
+  // mock single war so the banner stays visible during dev / outage.
+  // Real-time score sync (WebSocket) is deferred — for now the UI's
+  // local countdown tick is the only "live" element.
+  const [serverQuizWar, setServerQuizWar] = useState<QuizWar | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveQuizWar()
+      .then((war) => {
+        if (!cancelled && war) setServerQuizWar(war);
+      })
+      .catch((err) => {
+        if (__DEV__) {
+          console.warn('[FeedScreen] fetchActiveQuizWar failed; using mock', err?.message);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const quizWar = useMemo(
+    () => serverQuizWar ?? getMockQuizWar(),
+    [serverQuizWar],
+  );
+
   // Inject the active Quiz War as a single banner near the top of the feed
-  // (after the first POST). Single war at a time per school. Prototype:
-  // static state. Production: /quiz-wars/active + WebSocket score deltas.
-  const quizWar = useMemo(() => getMockQuizWar(), []);
+  // (after the first POST). Single war at a time per school.
   const displayedFeedItems = useMemo(
     () => injectQuizWar(withBounties, quizWar),
     [withBounties, quizWar],

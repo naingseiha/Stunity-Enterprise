@@ -73,6 +73,7 @@ model School {
   profileChangeRequests ProfileChangeRequest[]
   profile               SchoolProfile?
   attendanceDelegations AttendanceDelegation[]
+  quizWars              QuizWar[]
   disciplinePolicy      DisciplinePolicy?
 
   @@index([slug])
@@ -655,6 +656,7 @@ model User {
   bountiesAsked                Bounty[]                     @relation("BountiesAsked")
   bountyReplies                BountyReply[]                @relation("BountyReplies")
   bountyAhas                   BountyAha[]                  @relation("BountyAhas")
+  quizWarParticipations        QuizWarParticipant[]
   challengesAsChallenger       QuizChallenge[]              @relation("ChallengerChallenges")
   challengesAsOpponent         QuizChallenge[]              @relation("OpponentChallenges")
   gameAchievements             UserGameAchievement[]
@@ -3004,6 +3006,86 @@ model BountyAha {
   @@unique([replyId, userId])
   @@index([userId, createdAt(sort: Desc)])
   @@map("bounty_ahas")
+}
+
+// ─────────────────────────────────────────────────────────
+// Quiz Wars — live inter-class quiz battle. One active war per school
+// at a time. Status state machine: PRE_MATCH → LIVE → POST_MATCH.
+//
+// Drives "class pride" identity motivation. Mobile QuizWarBanner reads
+// /quiz-wars/active and renders the LIVE state (countdown, tug-of-war
+// score bar, presence count, "Join the Battle" CTA).
+//
+// Real-time score sync (WebSocket) + question delivery + round state
+// machine are deferred to a follow-up session. This commit ships
+// persistence + the read/join endpoints so the mobile banner can
+// fetch real wars from the DB.
+// ─────────────────────────────────────────────────────────
+
+enum QuizWarStatus {
+  PRE_MATCH
+  LIVE
+  POST_MATCH
+}
+
+model QuizWar {
+  id       String @id @default(cuid())
+  schoolId String
+
+  subject     String
+  status      QuizWarStatus @default(PRE_MATCH)
+  round       Int           @default(1)
+  totalRounds Int           @default(6)
+
+  // Team A — denormalized for fast read. Maps to mobile QuizWarTeam.
+  teamAName  String
+  teamAColor String
+  teamAScore Int    @default(0)
+
+  // Team B
+  teamBName  String
+  teamBColor String
+  teamBScore Int    @default(0)
+
+  // Lifecycle. timeRemainingSec on mobile derives from endsAt - now.
+  startsAt  DateTime
+  endsAt    DateTime
+  awardedAt DateTime?
+
+  rewardXp Int @default(200)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school       School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  participants QuizWarParticipant[]
+
+  @@index([schoolId, status, endsAt])
+  @@map("quiz_wars")
+}
+
+model QuizWarParticipant {
+  id     String @id @default(cuid())
+  warId  String
+  userId String
+  // Which side the user joined — 'A' or 'B'. Validated at write time;
+  // free-form string here so future formats (e.g. 3-way) don't need
+  // a schema migration.
+  team   String
+
+  correctAnswers Int     @default(0)
+  totalAnswers   Int     @default(0)
+  xpEarned       Int     @default(0)
+  isMvp          Boolean @default(false)
+
+  joinedAt DateTime @default(now())
+
+  war  QuizWar @relation(fields: [warId], references: [id], onDelete: Cascade)
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([warId, userId])
+  @@index([warId, team])
+  @@map("quiz_war_participants")
 }
 
 model QuizChallenge {
