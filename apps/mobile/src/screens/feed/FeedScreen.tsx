@@ -57,6 +57,7 @@ import { fetchActiveBounties } from '@/api/bounties';
 import QuizWarBanner from '@/components/feed/QuizWarBanner';
 import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
 import { fetchActiveQuizWar, joinQuizWar } from '@/api/quizWars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
@@ -354,11 +355,15 @@ export default function FeedScreen() {
   //      real data instantly rather than mocking then flickering to real.
   // ─────────────────────────────────────────────────────────────────────
 
-  const CACHE_KEYS = {
-    recallCards: `ss_recall_${user?.id}`,
-    bounties:    `ss_bounties_${user?.id}`,
-    quizWar:     `ss_war_${user?.id}`,
-  } as const;
+  // Stable cache keys — memoized so they don't recalculate on every render.
+  // Scoped to userId so multi-user devices never collide. When userId is
+  // unavailable (pre-auth render), return empty strings — the cache helpers
+  // skip reads/writes when the key is falsy.
+  const CACHE_KEYS = useMemo(() => ({
+    recallCards: user?.id ? `ss_recall_${user.id}` : '',
+    bounties:    user?.id ? `ss_bounties_${user.id}` : '',
+    quizWar:     user?.id ? `ss_war_${user.id}` : '',
+  }), [user?.id]);
   const CACHE_TTL = { recallCards: 60_000, bounties: 30_000, quizWar: 15_000 };
 
   const [serverRecallCards, setServerRecallCards] = useState<RecallCard[] | null>(null);
@@ -387,9 +392,10 @@ export default function FeedScreen() {
   // state before the first paint of Smart Scroll overlays.
   useEffect(() => {
     let cancelled = false;
-    const { AsyncStorage } = require('@react-native-async-storage/async-storage');
+    // AsyncStorage is a static top-level import (no require needed)
 
     const loadCached = async (key: string, ttl: number): Promise<any | null> => {
+      if (!key) return null; // skip when userId not yet available
       try {
         const raw = await AsyncStorage.getItem(key);
         if (!raw) return null;
@@ -400,6 +406,7 @@ export default function FeedScreen() {
     };
 
     const saveCache = async (key: string, data: any) => {
+      if (!key) return; // skip when userId not yet available
       try { await AsyncStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); }
       catch { /* non-fatal */ }
     };
@@ -456,13 +463,12 @@ export default function FeedScreen() {
       await submitRecallReview(cardId, grade);
       const refreshed = await fetchDueCards({ limit: 10 });
       setServerRecallCards(refreshed);
-      try {
-        const { AsyncStorage } = require('@react-native-async-storage/async-storage');
-        await AsyncStorage.setItem(
+      if (CACHE_KEYS.recallCards) {
+        AsyncStorage.setItem(
           CACHE_KEYS.recallCards,
           JSON.stringify({ data: refreshed, ts: Date.now() }),
-        );
-      } catch { /* non-fatal */ }
+        ).catch(() => { /* non-fatal */ });
+      }
     } catch (err: any) {
       if (__DEV__) console.warn('[FeedScreen] submitRecallReview failed', err?.message);
     }
