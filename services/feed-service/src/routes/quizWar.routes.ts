@@ -621,10 +621,10 @@ router.post(
         ...userUpdates,
       ]);
 
-      // Invalidate caches for all participating users so they get updated totalPoints in their feeds
-      for (const p of participants) {
-        await feedCache.invalidateUser(p.userId);
-      }
+      // Invalidate caches for all participating users — parallel, not sequential.
+      // Previously: N sequential awaits inside a for loop (N round-trips to Redis).
+      // Now: all invalidations fire simultaneously via Promise.all.
+      await Promise.all(participants.map(p => feedCache.invalidateUser(p.userId)));
 
       res.json({
         success: true,

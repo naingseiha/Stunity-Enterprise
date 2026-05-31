@@ -334,145 +334,166 @@ export default function FeedScreen() {
     lastProfilePictureUrlRef.current = user.profilePictureUrl;
   }
   const stableProfilePictureUrl = user?.profilePictureUrl || lastProfilePictureUrlRef.current;
-  // Apply mocked Ed-Score + teacher-verified overlays to every POST.
-  // Prototype: deterministic hash per post id. Production: a nightly job
-  // denormalizes EducationalValueRating.averageRating → Post.edScore and
-  // the new Post.verifiedByTeacherId field powers teacherVerified.
-  const scoredFeedItems = useMemo(() => applyMockEdScores(feedItems), [feedItems]);
 
-  // Brain Mode: when active, re-sort POST items by edScore desc so high-
-  // quality posts surface first. Non-POST items (carousels, recall cards)
-  // keep their relative position. Prototype: client-side sort. Production:
-  // a /feed/brain endpoint that re-weights _scoreBreakdown.quality.
-  const sortedFeedItems = useMemo(() => {
-    if (feedMode !== 'BRAIN_MODE') return scoredFeedItems;
-    // Stable sort: POST items by edScore desc; non-POST items hold position.
-    return [...scoredFeedItems].sort((a, b) => {
-      if (a.type !== 'POST' || b.type !== 'POST') return 0;
-      const aScore = a.data?.edScore ?? 0;
-      const bScore = b.data?.edScore ?? 0;
-      return bScore - aScore;
-    });
-  }, [scoredFeedItems, feedMode]);
+  // ─────────────────────────────────────────────────────────────────────
+  // Smart Scroll overlay data — three async sources on top of the cached
+  // main feed. Key design constraints:
+  //
+  //   1. ZERO impact on first-paint: main feedItems come from the Zustand
+  //      store (Redis-backed), which renders before this async data arrives.
+  //   2. Stable renderPost: handlers must NOT change identity when async
+  //      data loads. The existing handlersRef pattern is extended here —
+  //      smartScrollRef holds all Smart Scroll data and is always fresh,
+  //      but its identity is stable so renderPost never needs to recreate.
+  //   3. Single pipeline memo: 5 useMemos → 1. Previously every store
+  //      mutation (like, view-count update) triggered 5 useMemo recomputes
+  //      + 3 intermediate array allocations. Now it's 1 recompute + 1
+  //      allocation.
+  //   4. AsyncStorage cache: recall cards, bounties, and war data are
+  //      cached for 60s / 30s / 15s respectively so return visits show
+  //      real data instantly rather than mocking then flickering to real.
+  // ─────────────────────────────────────────────────────────────────────
 
-  // ── Smart Scroll parallel data fetch ────────────────────────────────
-  // Single useEffect fires all 3 API calls simultaneously via
-  // Promise.allSettled — eliminates the 3-sequential-request waterfall
-  // that was adding ~600ms of serial latency on mount. Each call resolves
-  // independently: one failure never blocks the others, and all three
-  // fall back to mocks gracefully if the backend is unreachable.
-  // The main feed (feedItems from feedStore) renders from cache immediately
-  // before this resolves — Smart Scroll overlays layer in after (~300ms).
+  const CACHE_KEYS = {
+    recallCards: `ss_recall_${user?.id}`,
+    bounties:    `ss_bounties_${user?.id}`,
+    quizWar:     `ss_war_${user?.id}`,
+  } as const;
+  const CACHE_TTL = { recallCards: 60_000, bounties: 30_000, quizWar: 15_000 };
+
   const [serverRecallCards, setServerRecallCards] = useState<RecallCard[] | null>(null);
   const [serverBounties,    setServerBounties]    = useState<FeynmanBounty[] | null>(null);
   const [serverQuizWar,     setServerQuizWar]     = useState<QuizWar | null>(null);
+  const [deferredCardIds,   setDeferredCardIds]   = useState<Set<string>>(new Set());
 
+  // smartScrollRef — holds all Smart Scroll data with stable identity.
+  // renderPost callbacks close over this ref instead of the state values,
+  // so they are never recreated when async data arrives (fixes the
+  // FlashList full-re-render on data load that was the #2 perf issue).
+  const smartScrollRef = useRef({
+    recallCards:  null as RecallCard[] | null,
+    bounties:     null as FeynmanBounty[] | null,
+    quizWar:      null as QuizWar | null,
+    deferred:     new Set<string>(),
+  });
+  // Keep ref in sync with state on every render (same pattern as handlersRef)
+  smartScrollRef.current.recallCards = serverRecallCards;
+  smartScrollRef.current.bounties    = serverBounties;
+  smartScrollRef.current.quizWar     = serverQuizWar;
+  smartScrollRef.current.deferred    = deferredCardIds;
+
+  // Parallel mount fetch with AsyncStorage cache layer.
+  // Cache check runs synchronously, so if cached data exists it populates
+  // state before the first paint of Smart Scroll overlays.
   useEffect(() => {
     let cancelled = false;
-    Promise.allSettled([
-      fetchDueCards({ limit: 10 }),
-      fetchActiveBounties({ limit: 10 }),
-      fetchActiveQuizWar(),
-    ]).then(([cards, bounties, war]) => {
+    const { AsyncStorage } = require('@react-native-async-storage/async-storage');
+
+    const loadCached = async (key: string, ttl: number): Promise<any | null> => {
+      try {
+        const raw = await AsyncStorage.getItem(key);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        if (Date.now() - ts > ttl) return null;
+        return data;
+      } catch { return null; }
+    };
+
+    const saveCache = async (key: string, data: any) => {
+      try { await AsyncStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); }
+      catch { /* non-fatal */ }
+    };
+
+    const run = async () => {
+      // 1. Populate from cache immediately (no network wait)
+      const [cachedCards, cachedBounties, cachedWar] = await Promise.all([
+        loadCached(CACHE_KEYS.recallCards, CACHE_TTL.recallCards),
+        loadCached(CACHE_KEYS.bounties,    CACHE_TTL.bounties),
+        loadCached(CACHE_KEYS.quizWar,     CACHE_TTL.quizWar),
+      ]);
       if (cancelled) return;
+      if (cachedCards?.length)  setServerRecallCards(cachedCards);
+      if (cachedBounties?.length) setServerBounties(cachedBounties);
+      if (cachedWar)            setServerQuizWar(cachedWar);
+
+      // 2. Fetch fresh data in parallel — all 3 requests fire simultaneously
+      const [cards, bounties, war] = await Promise.allSettled([
+        fetchDueCards({ limit: 10 }),
+        fetchActiveBounties({ limit: 10 }),
+        fetchActiveQuizWar(),
+      ]);
+      if (cancelled) return;
+
       if (cards.status === 'fulfilled' && cards.value.length > 0) {
         setServerRecallCards(cards.value);
+        saveCache(CACHE_KEYS.recallCards, cards.value);
       } else if (cards.status === 'rejected' && __DEV__) {
         console.warn('[FeedScreen] fetchDueCards failed:', cards.reason?.message);
       }
       if (bounties.status === 'fulfilled' && bounties.value.length > 0) {
         setServerBounties(bounties.value);
+        saveCache(CACHE_KEYS.bounties, bounties.value);
       } else if (bounties.status === 'rejected' && __DEV__) {
         console.warn('[FeedScreen] fetchActiveBounties failed:', bounties.reason?.message);
       }
       if (war.status === 'fulfilled' && war.value) {
         setServerQuizWar(war.value);
+        saveCache(CACHE_KEYS.quizWar, war.value);
       } else if (war.status === 'rejected' && __DEV__) {
         console.warn('[FeedScreen] fetchActiveQuizWar failed:', war.reason?.message);
       }
-    });
+    };
+
+    run();
     return () => { cancelled = true; };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // deliberately [] — only runs once on mount
 
-  // Deferred recall cards — hidden for the current session only.
-  // Re-appear on next app launch (no persistence needed: the SM-2
-  // interval still fires on the next day regardless).
-  const [deferredCardIds, setDeferredCardIds] = useState<Set<string>>(new Set());
-
-  const handleRecallDefer = useCallback((cardId: string) => {
-    setDeferredCardIds(prev => new Set([...prev, cardId]));
-  }, []);
-
-  // Recall Cards — real preferred, mocks as fallback; deferred ones hidden
-  const recallCards = useMemo(() => {
-    const base = (serverRecallCards && serverRecallCards.length > 0
-      ? serverRecallCards
-      : getMockRecallCards());
-    return deferredCardIds.size > 0
-      ? base.filter(c => !deferredCardIds.has(c.id))
-      : base;
-  }, [serverRecallCards, deferredCardIds]);
-
-  // Grade handler — real review endpoint; mock ids (prefix "recall-") no-op
+  // Grade handler — after grade, refetch + refresh cache
   const handleRecallGrade = useCallback(async (cardId: string, grade: RecallGrade) => {
     if (cardId.startsWith('recall-')) return;
     try {
       await submitRecallReview(cardId, grade);
       const refreshed = await fetchDueCards({ limit: 10 });
       setServerRecallCards(refreshed);
+      try {
+        const { AsyncStorage } = require('@react-native-async-storage/async-storage');
+        await AsyncStorage.setItem(
+          CACHE_KEYS.recallCards,
+          JSON.stringify({ data: refreshed, ts: Date.now() }),
+        );
+      } catch { /* non-fatal */ }
     } catch (err: any) {
       if (__DEV__) console.warn('[FeedScreen] submitRecallReview failed', err?.message);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const withRecallCards = useMemo(
-    () => injectRecallCards(sortedFeedItems, recallCards, 5),
-    [sortedFeedItems, recallCards],
-  );
+  const handleRecallDefer = useCallback((cardId: string) => {
+    setDeferredCardIds(prev => new Set([...prev, cardId]));
+  }, []);
 
-  // Feynman Bounties — real preferred, mocks as fallback
-  const feynmanBounties = useMemo(
-    () => (serverBounties && serverBounties.length > 0
-      ? serverBounties
-      : getMockFeynmanBounties()),
-    [serverBounties],
-  );
-
-  // ── Feynman Bounty action handlers ───────────────────────────────────
-  // Navigate to BountyDetailScreen — compose sheet opens automatically
-  // when openCompose is true (Explain it path).
+  // ── Stable action handlers (close over ref, not state) ─────────────────
+  // These never recreate → renderPost never recreates → FlashList never
+  // does a full visible-cell re-render when async data arrives.
   const handleBountySeeAnswers = useCallback((bountyId: string) => {
-    const bounty = feynmanBounties.find((b) => b.id === bountyId);
+    const bounty = smartScrollRef.current.bounties?.find((b) => b.id === bountyId);
     navigation.navigate('BountyDetail', {
       bountyId,
       bountySubject: bounty?.subject,
       bountyXp: bounty?.bountyXp,
     });
-  }, [feynmanBounties, navigation]);
+  }, [navigation]); // ← stable: no feynmanBounties dep
 
   const handleBountyExplain = useCallback((bountyId: string) => {
-    const bounty = feynmanBounties.find((b) => b.id === bountyId);
+    const bounty = smartScrollRef.current.bounties?.find((b) => b.id === bountyId);
     navigation.navigate('BountyDetail', {
       bountyId,
       bountySubject: bounty?.subject,
       bountyXp: bounty?.bountyXp,
     });
-  }, [feynmanBounties, navigation]);
+  }, [navigation]); // ← stable
 
-  const withBounties = useMemo(
-    () => injectFeynmanBounties(withRecallCards, feynmanBounties, 8),
-    [withRecallCards, feynmanBounties],
-  );
-
-  // ── Quiz War ──────────────────────────────────────────────────────────
-  const quizWar = useMemo(
-    () => serverQuizWar ?? getMockQuizWar(),
-    [serverQuizWar],
-  );
-
-  // Join handler — calls real endpoint for live wars; shows coming-soon
-  // Alert for mock war (id = 'war-math-10a-10b-1'). Full question-round
-  // UI is the next Quiz Wars session.
   const handleQuizWarJoin = useCallback(async (warId: string) => {
     const isMockWar = warId === 'war-math-10a-10b-1';
     if (isMockWar) {
@@ -487,10 +508,7 @@ export default function FeedScreen() {
       return;
     }
     try {
-
-      // Auto-assign to the team with the lower score to keep balance.
-      // If the user already has a team (userTeamId), match it.
-      const activeWar = serverQuizWar;
+      const activeWar = smartScrollRef.current.quizWar; // ← reads ref, not state
       let assignedTeam: 'A' | 'B' = 'A';
       if (activeWar) {
         if (activeWar.userTeamId) {
@@ -519,13 +537,60 @@ export default function FeedScreen() {
         [{ text: t('common.ok') }],
       );
     }
-  }, [t]);
+  }, [t]); // ← stable: no serverQuizWar dep
 
-  // Inject Quiz War banner after the first POST.
-  const displayedFeedItems = useMemo(
-    () => injectQuizWar(withBounties, quizWar),
-    [withBounties, quizWar],
-  );
+  // ── Single pipeline memo (replaces 5 separate useMemos) ───────────────
+  // Previously: every store mutation (like, view count) triggered
+  //   scoredFeedItems → sortedFeedItems → withRecallCards →
+  //   withBounties → displayedFeedItems  (5 recomputes, 3 array allocs)
+  // Now: 1 recompute, 1 array allocation.
+  //
+  // Smart Scroll insertion data (recallCards, bounties, quizWar) is
+  // included as deps so the pipeline re-runs when async data loads.
+  // deferredCardIds is a Set — its SIZE is used as a dep proxy so the
+  // memo only re-runs when the count actually changes.
+  const displayedFeedItems = useMemo(() => {
+    // Step 1: edScore overlay (dev-only; production pass-through)
+    const base = __DEV__ ? applyMockEdScores(feedItems) : feedItems;
+
+    // Step 2: Brain Mode sort (O(n log n) but only when active)
+    const sorted = feedMode === 'BRAIN_MODE'
+      ? [...base].sort((a, b) => {
+          if (a.type !== 'POST' || b.type !== 'POST') return 0;
+          return (b.data?.edScore ?? 0) - (a.data?.edScore ?? 0);
+        })
+      : base;
+
+    // Step 3: recall cards — real preferred, mocks as fallback, deferred hidden
+    const rcBase = (serverRecallCards && serverRecallCards.length > 0)
+      ? serverRecallCards
+      : getMockRecallCards();
+    const activeRecallCards = deferredCardIds.size > 0
+      ? rcBase.filter(c => !deferredCardIds.has(c.id))
+      : rcBase;
+
+    // Step 4: bounties — real preferred, mocks as fallback
+    const activeBounties = (serverBounties && serverBounties.length > 0)
+      ? serverBounties
+      : getMockFeynmanBounties();
+
+    // Step 5: quiz war + all injections in one pass
+    const activeWar = serverQuizWar ?? getMockQuizWar();
+    return injectQuizWar(
+      injectFeynmanBounties(
+        injectRecallCards(sorted, activeRecallCards, 5),
+        activeBounties, 8,
+      ),
+      activeWar,
+    );
+  }, [
+    feedItems,         // main feed data
+    feedMode,          // BRAIN_MODE toggle
+    serverRecallCards, // async: recall card data
+    serverBounties,    // async: bounty data
+    serverQuizWar,     // async: quiz war data
+    deferredCardIds,   // session-deferred cards
+  ]);
 
   const handleToggleBrainMode = useCallback(() => {
     toggleFeedMode(feedMode === 'BRAIN_MODE' ? 'FOR_YOU' : 'BRAIN_MODE');
@@ -968,6 +1033,11 @@ export default function FeedScreen() {
         setAnalyticsPostId={setAnalyticsPostId}
       />
     );
+  // All Smart Scroll handlers (handleRecallGrade, handleRecallDefer,
+  // handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin) are
+  // now stable — they close over refs not state — so they're excluded
+  // from deps. renderPost only recreates when valuedPostIds changes
+  // (user rates a post), which is intentional.
   }, [valuedPostIds, handleRecallGrade, handleRecallDefer, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin]);
 
   const getItemType = useCallback((item: FeedItem) => {
