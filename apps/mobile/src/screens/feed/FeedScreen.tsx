@@ -864,9 +864,6 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any, { initialPostType: 'POLL' });
   }, [navigation]);
 
-  const handleCreateResource = useCallback(() => {
-    navigation.navigate('CreatePost' as any, { initialPostType: 'RESOURCE' });
-  }, [navigation]);
 
   const handleCreateBounty = useCallback(() => {
     navigation.navigate('CreateBounty' as any);
@@ -956,10 +953,6 @@ export default function FeedScreen() {
             <Ionicons name="bar-chart" size={22} color="#8B5CF6" />
             <Text style={styles.inCardActionText}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="book" size={22} color="#F59E0B" />
-            <Text style={styles.inCardActionText}>{t('feed.resource')}</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={handleNavigateToFocusReels} activeOpacity={0.7} style={styles.inCardAction}>
             <Ionicons name="play-circle" size={22} color="#EF4444" />
             <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
@@ -977,7 +970,7 @@ export default function FeedScreen() {
         onToggle={handleToggleBrainMode}
       />
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, handleCreateBounty, handleNavigateToFocusReels, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateBounty, handleNavigateToFocusReels, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -1218,10 +1211,6 @@ export default function FeedScreen() {
             <Ionicons name="bar-chart-outline" size={20} color="#8B5CF6" />
             <Text style={styles.sideRailActionText}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.sideRailAction} onPress={handleCreateResource} activeOpacity={0.75}>
-            <Ionicons name="book-outline" size={20} color="#EC4899" />
-            <Text style={styles.sideRailActionText}>{t('feed.resource')}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.sideRailAction} onPress={handleNavigateToFocusReels} activeOpacity={0.75}>
             <Ionicons name="play-circle-outline" size={20} color="#EF4444" />
             <Text style={styles.sideRailActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
@@ -1238,7 +1227,6 @@ export default function FeedScreen() {
     handleAskQuestion,
     handleCreateQuiz,
     handleCreatePoll,
-    handleCreateResource,
     handleNavigateToFocusReels,
     stableProfilePictureUrl,
   ]);

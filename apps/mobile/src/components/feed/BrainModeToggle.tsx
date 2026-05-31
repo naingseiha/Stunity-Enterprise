@@ -42,18 +42,6 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
 
   return (
     <View style={styles.row}>
-      <View style={styles.leftCol}>
-        <Text style={styles.contextText}>
-          {active
-            ? t('feed.brainMode.contextOn', {
-                defaultValue: 'Sorted by educational value',
-              })
-            : t('feed.brainMode.contextOff', {
-                defaultValue: 'Turn on Brain Mode to prioritize highly-rated posts',
-              })}
-        </Text>
-      </View>
-
       <Pressable
         onPress={handlePress}
         style={({ pressed }) => [
@@ -88,8 +76,6 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
 
 type StyleMap = {
   row: ViewStyle;
-  leftCol: ViewStyle;
-  contextText: TextStyle;
   pill: ViewStyle;
   pillActive: ViewStyle;
   pillInactive: ViewStyle;
@@ -106,22 +92,12 @@ const createStyles = (colors: any, isDark: boolean) =>
     row: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       paddingHorizontal: 16,
-      paddingVertical: 14,
+      paddingVertical: 10,
       backgroundColor: colors.card,
       borderBottomWidth: 1.5,
       borderBottomColor: isDark ? 'rgba(255,255,255,0.12)' : '#E2E8F0',
-    },
-    leftCol: {
-      flex: 1,
-      marginRight: 12,
-    },
-    contextText: {
-      fontSize: 12,
-      fontWeight: '500',
-      color: colors.textSecondary,
-      lineHeight: 16,
     },
     pill: {
       flexDirection: 'row',
