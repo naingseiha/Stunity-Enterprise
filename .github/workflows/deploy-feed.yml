@@ -82,7 +82,7 @@ jobs:
           CPU_THROTTLE_INPUT: ${{ vars.CLOUD_RUN_CPU_THROTTLING }}
         run: |
           CORS_ORIGIN="${CORS_ORIGIN_INPUT:-*}"
-          MIN_INSTANCES="${MIN_INSTANCES_INPUT:-0}"
+          MIN_INSTANCES="1"
           CPU_THROTTLE="${CPU_THROTTLE_INPUT:-true}"
           THROTTLE_FLAG="--cpu-throttling"
           if [ "$CPU_THROTTLE" = "false" ]; then THROTTLE_FLAG="--no-cpu-throttling"; fi

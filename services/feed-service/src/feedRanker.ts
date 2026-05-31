@@ -191,10 +191,11 @@ const SUGGESTED_QUIZ_CAROUSEL_TARGET = 16;
 const CANDIDATE_POOL_CACHE_TTL_SECONDS = 180;
 const TRENDING_POOL_CACHE_TTL_SECONDS = 180;
 const EXPLORE_POOL_CACHE_TTL_SECONDS = 180;
-const FEED_SESSION_CACHE_TTL_SECONDS = 300;
-const FEED_SESSION_PAGE_MULTIPLIER = 6;
-const FEED_SESSION_MIN_ITEMS = 80;
-const FEED_SESSION_MAX_ITEMS = 120;
+const FEED_SESSION_CACHE_TTL_SECONDS = 600;
+/** Pre-generate enough items so pages 1–10+ slice from Redis without re-running the ranker pipeline. */
+const FEED_SESSION_PAGE_MULTIPLIER = 12;
+const FEED_SESSION_MIN_ITEMS = 200;
+const FEED_SESSION_MAX_ITEMS = 200;
 const OPTIONAL_FEED_POOL_TIMEOUT_MS = Number(process.env.FEED_OPTIONAL_POOL_TIMEOUT_MS || 1200);
 const SOCIAL_PROOF_TIMEOUT_MS = Number(process.env.FEED_SOCIAL_PROOF_TIMEOUT_MS || 900);
 const FEED_SUGGESTIONS_TIMEOUT_MS = Number(process.env.FEED_SUGGESTIONS_TIMEOUT_MS || 900);
@@ -1031,7 +1032,7 @@ export class FeedRanker {
                 where,
                 select: FEED_CANDIDATE_POST_SELECT,
                 orderBy: { trendingScore: 'desc' },
-                take: 36,
+                take: 100,
             }) as unknown as PostWithRelations[];
         };
 
@@ -1079,7 +1080,7 @@ export class FeedRanker {
                     { likesCount: 'desc' },
                     { createdAt: 'desc' },
                 ],
-                take: 24,
+                take: 60,
             }) as unknown as PostWithRelations[];
         };
 
@@ -1185,7 +1186,7 @@ export class FeedRanker {
                         select: {
                             course: { select: { tags: true, category: true, instructorId: true } },
                         },
-                        take: 20,
+                        take: 40,
                     }),
                     900,
                     [] as any[],
@@ -1398,7 +1399,7 @@ export class FeedRanker {
                         { trendingScore: 'desc' },
                         { createdAt: 'desc' },
                     ],
-                    take: 60,
+                    take: 120,
                 }),
                 this.withSoftTimeout(
                     'fresh candidate pool',
@@ -1406,7 +1407,7 @@ export class FeedRanker {
                         where: { AND: [...baseAnd, { createdAt: { gte: sixHoursAgo } }] },
                         select: FEED_CANDIDATE_POST_SELECT,
                         orderBy: { createdAt: 'desc' },
-                        take: 20,
+                        take: 40,
                     }),
                     OPTIONAL_FEED_POOL_TIMEOUT_MS,
                     [] as any[],

@@ -18,7 +18,11 @@ import { normalizePrismaUrlForComparison, withPrismaPoolParams } from '../../lib
 
 // ─── Prisma (primary — read/write) ─────────────────────────────────
 const databaseUrl = process.env.DATABASE_URL || '';
-const pooledUrl = withPrismaPoolParams(databaseUrl) ?? databaseUrl;
+let pooledUrl = withPrismaPoolParams(databaseUrl) ?? databaseUrl;
+if (pooledUrl && !pooledUrl.includes('keepalives=')) {
+    const separator = pooledUrl.includes('?') ? '&' : '?';
+    pooledUrl += `${separator}keepalives=1&keepalives_idle=60&keepalives_interval=10&keepalives_count=5&connection_limit=10`;
+}
 
 export const prisma = new PrismaClient({
     datasources: { db: { url: pooledUrl } },
@@ -32,7 +36,11 @@ const useDedicatedReadReplica = Boolean(
     readUrlRaw &&
     normalizePrismaUrlForComparison(readUrlRaw) !== normalizePrismaUrlForComparison(databaseUrl)
 );
-const readUrl = withPrismaPoolParams(readUrlRaw || databaseUrl) ?? databaseUrl;
+let readUrl = withPrismaPoolParams(readUrlRaw || databaseUrl) ?? databaseUrl;
+if (readUrl && !readUrl.includes('keepalives=')) {
+    const separator = readUrl.includes('?') ? '&' : '?';
+    readUrl += `${separator}keepalives=1&keepalives_idle=60&keepalives_interval=10&keepalives_count=5&connection_limit=10`;
+}
 
 export const prismaRead = useDedicatedReadReplica
     ? new PrismaClient({
