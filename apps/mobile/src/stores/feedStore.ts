@@ -36,17 +36,30 @@ const VIEW_SAMPLE_RATE = 0.2; // Track 20% of views (1 in 5)
 let viewFlushTimer: ReturnType<typeof setTimeout> | null = null;
 const viewBuffer = new Map<string, { postId: string; duration: number; source: string; timestamp: number; sampleRate: number }>();
 
-// Feed cold-start resilience (Cloud Run free-tier friendly)
-const FEED_FIRST_PAGE_TIMEOUT_MS = 7_000;
-// Pagination is retried once on timeout, so keep the per-attempt window tight.
-// Worst case: 4s + 700ms delay + 4s retry = ~9s before the user sees a failure,
-// vs. ~8s today for a single shot that succeeds maybe half the time on a cold
-// backend. Tight timeouts pair with retry — long timeouts without retry don't.
+// Feed timeouts — tuned for the production deployment where the backend
+// connects to a remote Supabase region (e.g. APAC users → Sydney Supabase).
+//
+// Network reality:
+//   • Mobile → backend (localhost / Cloud Run): <50ms
+//   • Backend → Supabase same region: ~10-50ms RTT per query
+//   • Backend → Supabase cross-region (Cambodia → Sydney): ~150-300ms RTT
+//
+// The /posts/feed endpoint does 4-6 JOINs (likes, bookmarks, polls, quizzes,
+// reposts, personalization). Cross-region that's 600ms-1.8s in network alone,
+// plus actual query work + ranker computation. Previous 4.5s tight timeout
+// was tuned for same-region Cloud Run and caused false timeouts in production.
+//
+// New budgets give 2 attempts within a "feels-broken" threshold:
+//   First page:        12s (cold start friendly)
+//   Pagination tight:  9s × 1 retry × 700ms delay = 18.7s worst case
+//   Background poll:   9s (silent; failures don't block UI)
+//   Retry:             12s (more patience after first failure)
+const FEED_FIRST_PAGE_TIMEOUT_MS = 12_000;
 const FEED_NEXT_PAGE_RETRY_DELAY_MS = 700;
-const FEED_NEXT_PAGE_TIMEOUT_TIGHT_MS = 4_500;
-const FEED_RECENT_FALLBACK_TIMEOUT_MS = 5_500;
-const FEED_RETRY_TIMEOUT_MS = 8_000;
-const FEED_BACKGROUND_POLL_TIMEOUT_MS = 5_000;
+const FEED_NEXT_PAGE_TIMEOUT_TIGHT_MS = 9_000;
+const FEED_RECENT_FALLBACK_TIMEOUT_MS = 9_000;
+const FEED_RETRY_TIMEOUT_MS = 12_000;
+const FEED_BACKGROUND_POLL_TIMEOUT_MS = 9_000;
 const INITIAL_RETRY_BASE_DELAY_MS = 900;
 const MAX_INITIAL_FEED_RETRIES = 1;
 const PERSONALIZED_FEED_PAGE_SIZE = 18;
