@@ -67,7 +67,12 @@
       "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise log --oneline --follow -- apps/mobile/ios/Stunity/Images.xcassets/AppIcon.appiconset/AppIcon@3x.png)",
       "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise show HEAD:AppIcons/appstore.png)",
       "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise stash list)",
-      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise status --short)"
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise status --short)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(npx prisma *)",
+      "Bash(awk '/^enum UserRole/,/^}/' packages/database/prisma/schema.prisma)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('prisma', {}\\), indent=2\\)\\)\")",
+      "Bash(git commit -m 'docs: Smart Scroll handover document + next-session brief *)"
     ]
   }
 }

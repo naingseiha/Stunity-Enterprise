@@ -20,6 +20,13 @@ function withPrismaPoolParams(rawUrl) {
     if (poolTimeout && !parsed.searchParams.has('pool_timeout')) {
       parsed.searchParams.set('pool_timeout', poolTimeout);
     }
+    // libpq TCP keepalive — reduces cold reconnect cost after idle PgBouncer slots
+    if (!parsed.searchParams.has('keepalives')) {
+      parsed.searchParams.set('keepalives', '1');
+      parsed.searchParams.set('keepalives_idle', '60');
+      parsed.searchParams.set('keepalives_interval', '10');
+      parsed.searchParams.set('keepalives_count', '5');
+    }
     return parsed.toString();
   } catch {
     let url = rawUrl;
