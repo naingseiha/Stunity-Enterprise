@@ -84,7 +84,7 @@ export const FeynmanBountyItem: React.FC<Props> = ({
       {/* ────────── HEADER ────────── */}
       <View style={styles.headerRow}>
         <View style={styles.iconWrapHeader}>
-          <Ionicons name="cash" size={20} color={ACCENT} />
+          <Ionicons name="cash-outline" size={20} color={ACCENT} />
         </View>
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
@@ -115,6 +115,11 @@ export const FeynmanBountyItem: React.FC<Props> = ({
             </Text>
           </View>
         </View>
+        {/* Top-right Bounty XP Tag (Stack Overflow style) */}
+        <View style={styles.xpBadge}>
+          <Ionicons name="diamond" size={12} color={ACCENT_DEEP} />
+          <Text style={styles.xpBadgeText}>+{bounty.bountyXp} XP</Text>
+        </View>
       </View>
 
       <View style={styles.divider} />
@@ -131,43 +136,21 @@ export const FeynmanBountyItem: React.FC<Props> = ({
         </View>
       ) : null}
 
-      {/* ────────── BOUNTY HERO (big number) ────────── */}
-      <View style={styles.bountyHero}>
-        <View style={styles.bountyNumberRow}>
-          <Text style={[styles.bountyNumber, { color: ACCENT_DEEP }]}>
-            {bounty.bountyXp}
-          </Text>
-          <Text style={[styles.bountyUnit, { color: ACCENT_DEEP }]}>XP</Text>
-        </View>
-        <Text style={styles.bountyCaption}>
-          {t('feed.bounty.atStake', { defaultValue: 'AT STAKE' })}
-        </Text>
-      </View>
-
-      {/* ────────── STAT CHIPS ────────── */}
-      <View style={styles.statsRow}>
-        <View
-          style={[
-            styles.statChip,
-            { backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT },
-          ]}
-        >
-          <Ionicons name="people" size={13} color={ACCENT} />
-          <Text style={[styles.statChipText, { color: ACCENT_DEEP }]}>
+      {/* ────────── METRICS & STATS ────────── */}
+      <View style={styles.metricsRow}>
+        <View style={styles.metricItem}>
+          <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
+          <Text style={styles.metricText}>
             {t('feed.bounty.tutorsWorking', {
-              defaultValue: '{{count}} tutors working',
+              defaultValue: '{{count}} active',
               count: bounty.tutorsWorking,
             })}
           </Text>
         </View>
-        <View
-          style={[
-            styles.statChip,
-            { backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT },
-          ]}
-        >
-          <Ionicons name="chatbubbles" size={13} color={ACCENT} />
-          <Text style={[styles.statChipText, { color: ACCENT_DEEP }]}>
+        <Text style={styles.metricSeparator}>•</Text>
+        <View style={styles.metricItem}>
+          <Ionicons name="chatbubbles-outline" size={13} color={colors.textSecondary} />
+          <Text style={styles.metricText}>
             {t('feed.bounty.answersIn', {
               defaultValue: '{{count}} answers',
               count: bounty.answersCount,
@@ -179,7 +162,7 @@ export const FeynmanBountyItem: React.FC<Props> = ({
       {/* ────────── TOP TUTOR ────────── */}
       {bounty.topTutor ? (
         <View style={styles.topTutorRow}>
-          <Ionicons name="trophy" size={12} color={ACCENT} />
+          <Ionicons name="trophy-outline" size={12} color={ACCENT} />
           <Text style={styles.topTutorLabel}>
             {t('feed.bounty.topTutor', { defaultValue: 'Top tutor:' })}{' '}
             <Text style={styles.topTutorName}>@{bounty.topTutor.name}</Text>
@@ -194,16 +177,16 @@ export const FeynmanBountyItem: React.FC<Props> = ({
           onPress={handleSeeAnswers}
           style={({ pressed }) => [
             styles.secondaryCta,
-            { backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT },
-            pressed && { opacity: 0.85 },
+            { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9' },
+            pressed && { opacity: 0.8 },
           ]}
           accessibilityRole="button"
           accessibilityLabel={t('feed.bounty.seeAnswersCta', {
             defaultValue: 'See answers',
           })}
         >
-          <Ionicons name="bulb" size={16} color={ACCENT_DEEP} />
-          <Text style={[styles.secondaryCtaText, { color: ACCENT_DEEP }]}>
+          <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
+          <Text style={[styles.secondaryCtaText, { color: colors.textSecondary }]}>
             {t('feed.bounty.seeAnswersCta', {
               defaultValue: 'See answers ({{count}})',
               count: bounty.answersCount,
@@ -226,7 +209,7 @@ export const FeynmanBountyItem: React.FC<Props> = ({
             end={{ x: 1, y: 0 }}
             style={styles.primaryCta}
           >
-            <Ionicons name="videocam" size={16} color="#FFFFFF" />
+            <Ionicons name="videocam-outline" size={16} color="#FFFFFF" />
             <Text style={styles.primaryCtaText}>
               {t('feed.bounty.explainCta', { defaultValue: 'Explain it' })}
             </Text>
@@ -253,6 +236,8 @@ type StyleMap = {
   metaRow: ViewStyle;
   metaText: TextStyle;
   metaDot: TextStyle;
+  xpBadge: ViewStyle;
+  xpBadgeText: TextStyle;
 
   divider: ViewStyle;
 
@@ -260,15 +245,10 @@ type StyleMap = {
   attachmentRow: ViewStyle;
   attachmentText: TextStyle;
 
-  bountyHero: ViewStyle;
-  bountyNumberRow: ViewStyle;
-  bountyNumber: TextStyle;
-  bountyUnit: TextStyle;
-  bountyCaption: TextStyle;
-
-  statsRow: ViewStyle;
-  statChip: ViewStyle;
-  statChipText: TextStyle;
+  metricsRow: ViewStyle;
+  metricItem: ViewStyle;
+  metricText: TextStyle;
+  metricSeparator: TextStyle;
 
   topTutorRow: ViewStyle;
   topTutorLabel: TextStyle;
@@ -284,7 +264,6 @@ type StyleMap = {
 
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create<StyleMap>({
-    // Beautiful flat card — same DNA as RecallCardItem v6
     outer: {
       marginHorizontal: 14,
       marginVertical: 10,
@@ -358,6 +337,20 @@ const createStyles = (colors: any, isDark: boolean) =>
       color: colors.textTertiary,
       marginHorizontal: 6,
     },
+    xpBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT,
+    },
+    xpBadgeText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: ACCENT_DEEP,
+    },
 
     // ── Divider ──
     divider: {
@@ -392,55 +385,27 @@ const createStyles = (colors: any, isDark: boolean) =>
       letterSpacing: 0.1,
     },
 
-    // ── Bounty hero (mirrors profile-card big number) ──
-    bountyHero: {
+    // ── Metrics ──
+    metricsRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 20,
-      paddingVertical: 6,
-    },
-    bountyNumberRow: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-    },
-    bountyNumber: {
-      fontSize: 48,
-      fontWeight: '900',
-      letterSpacing: -2.5,
-    },
-    bountyUnit: {
-      fontSize: 18,
-      fontWeight: '800',
-      letterSpacing: -0.3,
-      marginLeft: 6,
-    },
-    bountyCaption: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.textSecondary,
-      letterSpacing: 1.4,
-      marginTop: -2,
-    },
-
-    // ── Stats chips ──
-    statsRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
       justifyContent: 'center',
-      marginTop: 14,
+      marginTop: 16,
+      gap: 8,
     },
-    statChip: {
+    metricItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 20,
+      gap: 4,
     },
-    statChipText: {
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 0.1,
+    metricText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    metricSeparator: {
+      fontSize: 12,
+      color: colors.textTertiary,
     },
 
     // ── Top tutor inline row ──

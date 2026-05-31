@@ -1,13 +1,9 @@
 /**
- * BrainModeToggle — the visible switch that flips the feed from
+ * BrainModeToggle — the switch that flips the feed from
  * engagement-ranked → quality-ranked (Ed-Score desc).
  *
- * Pairs with the EdScoreBadge: once you can see quality scores, this lets
- * you re-rank by them. Closes the "Brain Mode" loop from the strategy doc.
- *
- * Prototype: client-side sort only. Production: a /feed/brain endpoint
- * that re-weights _scoreBreakdown.quality + academicRelevance + average
- * EducationalValueRating instead of engagement.
+ * Designed as a clean feed header row sitting flush with the content,
+ * featuring a left text section and a toggling pill button on the right.
  */
 
 import React from 'react';
@@ -16,6 +12,7 @@ import {
   Text,
   Pressable,
   StyleSheet,
+  Platform,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -23,7 +20,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { useThemeContext } from '@/contexts';
-import { ColorScale } from '@/config';
 import { Haptics } from '@/services/haptics';
 
 interface Props {
@@ -46,17 +42,18 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
 
   return (
     <View style={styles.row}>
-      <View style={styles.contextWrap}>
+      <View style={styles.leftCol}>
         <Text style={styles.contextText}>
           {active
             ? t('feed.brainMode.contextOn', {
                 defaultValue: 'Sorted by educational value',
               })
             : t('feed.brainMode.contextOff', {
-                defaultValue: 'Showing latest from your network',
+                defaultValue: 'Turn on Brain Mode to prioritize highly-rated posts',
               })}
         </Text>
       </View>
+
       <Pressable
         onPress={handlePress}
         style={({ pressed }) => [
@@ -66,21 +63,20 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
         ]}
         accessibilityRole="switch"
         accessibilityState={{ checked: active }}
-        accessibilityLabel={t('feed.brainMode.label', {
-          defaultValue: 'Brain Mode',
-        })}
+        accessibilityLabel={t('feed.brainMode.label', { defaultValue: 'Brain Mode' })}
       >
         <Ionicons
-          name="bulb"
+          name={active ? 'bulb' : 'bulb-outline'}
           size={14}
-          color={active ? '#FFFFFF' : ColorScale.primary[600]}
+          color={active ? '#EAB308' : colors.textSecondary}
+          style={styles.bulbIcon}
         />
         <Text style={[styles.pillText, active ? styles.pillTextActive : styles.pillTextInactive]}>
           {t('feed.brainMode.label', { defaultValue: 'Brain Mode' })}
         </Text>
         {active ? (
-          <View style={styles.onDot}>
-            <Text style={styles.onDotText}>
+          <View style={styles.onBadge}>
+            <Text style={styles.onBadgeText}>
               {t('feed.brainMode.on', { defaultValue: 'ON' })}
             </Text>
           </View>
@@ -92,16 +88,17 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
 
 type StyleMap = {
   row: ViewStyle;
-  contextWrap: ViewStyle;
+  leftCol: ViewStyle;
   contextText: TextStyle;
   pill: ViewStyle;
-  pillInactive: ViewStyle;
   pillActive: ViewStyle;
+  pillInactive: ViewStyle;
+  bulbIcon: TextStyle;
   pillText: TextStyle;
-  pillTextInactive: TextStyle;
   pillTextActive: TextStyle;
-  onDot: ViewStyle;
-  onDotText: TextStyle;
+  pillTextInactive: TextStyle;
+  onBadge: ViewStyle;
+  onBadgeText: TextStyle;
 };
 
 const createStyles = (colors: any, isDark: boolean) =>
@@ -111,18 +108,20 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingVertical: 10,
-      gap: 12,
+      paddingVertical: 14,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1.5,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.12)' : '#E2E8F0',
     },
-    contextWrap: {
+    leftCol: {
       flex: 1,
-      flexShrink: 1,
+      marginRight: 12,
     },
     contextText: {
       fontSize: 12,
-      fontWeight: '600',
+      fontWeight: '500',
       color: colors.textSecondary,
-      letterSpacing: 0.1,
+      lineHeight: 16,
     },
     pill: {
       flexDirection: 'row',
@@ -131,38 +130,50 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingHorizontal: 12,
       paddingVertical: 7,
       borderRadius: 999,
-    },
-    pillInactive: {
-      backgroundColor: isDark ? 'rgba(14,165,233,0.15)' : ColorScale.primary[50],
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(14,165,233,0.30)' : ColorScale.primary[200],
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+        },
+        android: { elevation: 1 },
+      }),
     },
     pillActive: {
-      backgroundColor: ColorScale.primary[500],
+      backgroundColor: colors.primary,
+    },
+    pillInactive: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+    },
+    bulbIcon: {
+      marginRight: 1,
     },
     pillText: {
       fontSize: 12,
       fontWeight: '800',
-      letterSpacing: 0.2,
-    },
-    pillTextInactive: {
-      color: ColorScale.primary[700],
+      letterSpacing: 0.1,
     },
     pillTextActive: {
       color: '#FFFFFF',
     },
-    onDot: {
+    pillTextInactive: {
+      color: colors.textSecondary,
+    },
+    onBadge: {
       backgroundColor: 'rgba(255,255,255,0.20)',
-      paddingHorizontal: 6,
+      paddingHorizontal: 5,
       paddingVertical: 1,
       borderRadius: 4,
       marginLeft: 2,
     },
-    onDotText: {
-      fontSize: 10,
+    onBadgeText: {
+      fontSize: 8,
       fontWeight: '900',
       color: '#FFFFFF',
-      letterSpacing: 0.8,
+      letterSpacing: 0.5,
     },
   });
 

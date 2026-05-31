@@ -259,20 +259,19 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
       {/* ────────── BODY ────────── */}
       {stage === 'completed' ? (
         <View style={styles.completedBody}>
-          <AnimatedView style={[styles.checkRing, checkAnim]}>
-            <Ionicons name="checkmark" size={34} color="#16A34A" />
-          </AnimatedView>
-
-          <AnimatedView style={[styles.xpNumberWrap, xpNumberAnim]}>
-            <View style={styles.xpNumberRow}>
-              <Text style={[styles.xpPlus, { color: subject.accentDeep }]}>+</Text>
-              <Text style={[styles.xpNumber, { color: subject.accentDeep }]}>{earnedXp}</Text>
-              <Text style={[styles.xpUnit, { color: subject.accentDeep }]}>XP</Text>
-            </View>
-            <Text style={styles.xpCaption}>
-              {t('feed.recall.xpEarned', { defaultValue: 'EARNED' })}
-            </Text>
-          </AnimatedView>
+          <View style={styles.successHeader}>
+            <AnimatedView style={[styles.checkBadge, checkAnim]}>
+              <Ionicons name="checkmark-circle" size={24} color="#16A34A" />
+            </AnimatedView>
+            <AnimatedView style={[styles.xpRow, xpNumberAnim]}>
+              <Text style={[styles.successText, { color: colors.text }]}>
+                {t('feed.recall.completedText', { defaultValue: 'Memory Checked!' })}
+              </Text>
+              <Text style={[styles.xpEarnedBadge, { color: subject.accentDeep }]}>
+                +{earnedXp} XP
+              </Text>
+            </AnimatedView>
+          </View>
 
           {/* Memory strength bar — mirrors profile card progress bar */}
           <View style={styles.strengthBlock}>
@@ -280,6 +279,7 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
               <Text style={[styles.strengthLabelStart, { color: decayStatus.color }]}>
                 {memoryFromLabel}
               </Text>
+              <Ionicons name="arrow-forward" size={12} color={colors.textTertiary} />
               <Text style={[styles.strengthLabelEnd, { color: subject.accentDeep }]}>
                 {t('feed.recall.memoryStrong', { defaultValue: 'Strong' })}
               </Text>
@@ -594,13 +594,11 @@ type StyleMap = {
   bottomLeftCompleted: ViewStyle;
 
   completedBody: ViewStyle;
-  checkRing: ViewStyle;
-  xpNumberWrap: ViewStyle;
-  xpNumberRow: ViewStyle;
-  xpPlus: TextStyle;
-  xpNumber: TextStyle;
-  xpUnit: TextStyle;
-  xpCaption: TextStyle;
+  successHeader: ViewStyle;
+  checkBadge: ViewStyle;
+  xpRow: ViewStyle;
+  successText: TextStyle;
+  xpEarnedBadge: TextStyle;
   strengthBlock: ViewStyle;
   strengthLabels: ViewStyle;
   strengthLabelStart: TextStyle;
@@ -875,59 +873,47 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
 
     // ── Completed body ──
     completedBody: {
-      alignItems: 'center',
-      gap: 8,
-      paddingVertical: 8,
+      width: '100%',
+      gap: 12,
+      paddingVertical: 4,
     },
-    checkRing: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      borderWidth: 2.5,
-      borderColor: '#22C55E',
-      backgroundColor: isDark ? 'rgba(34,197,94,0.14)' : '#DCFCE7',
+    successHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: isDark ? 'rgba(34,197,94,0.1)' : '#F0FDF4',
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(34,197,94,0.2)' : '#DCFCE7',
+    },
+    checkBadge: {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    xpNumberWrap: {
-      alignItems: 'center',
-      marginTop: 2,
-    },
-    xpNumberRow: {
+    xpRow: {
+      flex: 1,
       flexDirection: 'row',
-      alignItems: 'baseline',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
-    xpPlus: {
-      fontSize: 26,
-      fontWeight: '900',
-      letterSpacing: -1.2,
-      marginRight: 2,
-    },
-    xpNumber: {
-      fontSize: 46,
-      fontWeight: '900',
-      letterSpacing: -2.4,
-    },
-    xpUnit: {
-      fontSize: 18,
-      fontWeight: '800',
-      letterSpacing: -0.3,
-      marginLeft: 6,
-    },
-    xpCaption: {
-      fontSize: 11,
+    successText: {
+      fontSize: 14,
       fontWeight: '700',
-      color: colors.textSecondary,
-      letterSpacing: 1.4,
-      marginTop: -2,
+    },
+    xpEarnedBadge: {
+      fontSize: 14,
+      fontWeight: '800',
+      letterSpacing: -0.2,
     },
     strengthBlock: {
       width: '100%',
-      marginTop: 14,
+      marginTop: 6,
     },
     strengthLabels: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: 6,
     },
     strengthLabelStart: {
@@ -941,8 +927,8 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       letterSpacing: 0.2,
     },
     strengthTrack: {
-      height: 8,
-      borderRadius: 4,
+      height: 6,
+      borderRadius: 3,
       overflow: 'hidden',
     },
     strengthFillWrap: {
@@ -951,7 +937,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
     },
     strengthFill: {
       height: '100%',
-      borderRadius: 4,
+      borderRadius: 3,
     },
     strengthHint: {
       marginTop: 8,
