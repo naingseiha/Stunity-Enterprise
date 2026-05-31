@@ -281,9 +281,14 @@ export const TIER_THRESHOLDS = {
 export async function computeMasterExplainerTier(
   prisma: PrismaClient,
   tutorId: string,
+  subject?: string,
 ): Promise<MasterExplainerTier | null> {
   const wins = await prisma.bountyReply.count({
-    where: { tutorId, isWinner: true },
+    where: {
+      tutorId,
+      isWinner: true,
+      ...(subject ? { bounty: { subject } } : {}),
+    },
   });
   if (wins >= TIER_THRESHOLDS.gold) return 'gold';
   if (wins >= TIER_THRESHOLDS.silver) return 'silver';
@@ -291,33 +296,156 @@ export async function computeMasterExplainerTier(
   return null;
 }
 
+export interface TutorSubjectPair {
+  tutorId: string;
+  subject: string;
+}
+
 /**
- * Batch tier lookup — returns Map<tutorId, tier | null> for use in
- * list endpoints where computing per-tutor would N+1.
+ * Batch tier lookup — returns Map<"tutorId:subject", tier | null> for use in
+ * list endpoints to compute subject-specific tiers without N+1 queries.
  */
 export async function computeMasterExplainerTiersBatch(
   prisma: PrismaClient,
-  tutorIds: string[],
+  pairs: TutorSubjectPair[],
 ): Promise<Map<string, MasterExplainerTier | null>> {
   const result = new Map<string, MasterExplainerTier | null>();
-  if (tutorIds.length === 0) return result;
+  if (pairs.length === 0) return result;
 
-  const grouped = await prisma.bountyReply.groupBy({
-    by: ['tutorId'],
-    where: { tutorId: { in: tutorIds }, isWinner: true },
-    _count: { id: true },
+  for (const p of pairs) {
+    result.set(`${p.tutorId}:${p.subject}`, null);
+  }
+
+  const tutorIds = Array.from(new Set(pairs.map((p) => p.tutorId)));
+  const subjects = Array.from(new Set(pairs.map((p) => p.subject)));
+
+  const wins = await prisma.bountyReply.findMany({
+    where: {
+      tutorId: { in: tutorIds },
+      isWinner: true,
+      bounty: {
+        subject: { in: subjects },
+      },
+    },
+    select: {
+      tutorId: true,
+      bounty: {
+        select: { subject: true },
+      },
+    },
   });
 
-  for (const id of tutorIds) {
-    result.set(id, null);
+  const counts = new Map<string, number>();
+  for (const w of wins) {
+    if (!w.bounty) continue;
+    const key = `${w.tutorId}:${w.bounty.subject}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
   }
-  for (const row of grouped) {
-    const wins = row._count.id;
-    if (wins >= TIER_THRESHOLDS.gold) result.set(row.tutorId, 'gold');
-    else if (wins >= TIER_THRESHOLDS.silver) result.set(row.tutorId, 'silver');
-    else if (wins >= TIER_THRESHOLDS.bronze) result.set(row.tutorId, 'bronze');
-    // else stays null
+
+  for (const p of pairs) {
+    const key = `${p.tutorId}:${p.subject}`;
+    const winsCount = counts.get(key) || 0;
+    if (winsCount >= TIER_THRESHOLDS.gold) result.set(key, 'gold');
+    else if (winsCount >= TIER_THRESHOLDS.silver) result.set(key, 'silver');
+    else if (winsCount >= TIER_THRESHOLDS.bronze) result.set(key, 'bronze');
   }
 
   return result;
 }
+
+
+export async function sweepExpiredBounties(prisma: PrismaClient): Promise<number> {
+  const now = new Date();
+  const expiredBounties = await prisma.bounty.findMany({
+    where: {
+      status: 'ACTIVE',
+      expiresAt: { lte: now },
+    },
+    select: {
+      id: true,
+      askerId: true,
+      bountyXp: true,
+    },
+  });
+
+  if (expiredBounties.length === 0) return 0;
+
+  let sweptCount = 0;
+  for (const bounty of expiredBounties) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        const fresh = await tx.bounty.findUnique({
+          where: { id: bounty.id },
+          select: { status: true },
+        });
+
+        if (!fresh || fresh.status !== 'ACTIVE') return;
+
+        await tx.bounty.update({
+          where: { id: bounty.id },
+          data: { status: 'EXPIRED' },
+        });
+
+        await tx.userStats.upsert({
+          where: { userId: bounty.askerId },
+          create: { userId: bounty.askerId, xp: bounty.bountyXp },
+          update: { xp: { increment: bounty.bountyXp } },
+        });
+      });
+
+      const { feedCache } = await import('../redis');
+      await feedCache.invalidateUser(bounty.askerId);
+
+      sweptCount++;
+    } catch (err) {
+      console.error(`❌ [sweepExpiredBounties] Failed to sweep bounty ${bounty.id}:`, err);
+    }
+  }
+
+  return sweptCount;
+}
+
+export async function cancelBountyWithRefund(
+  prisma: PrismaClient,
+  args: { bountyId: string; askerId: string },
+): Promise<{ id: string; status: string; refundedXp: number }> {
+  return prisma.$transaction(async (tx) => {
+    const bounty = await tx.bounty.findUnique({
+      where: { id: args.bountyId },
+      select: {
+        id: true,
+        askerId: true,
+        bountyXp: true,
+        status: true,
+      },
+    });
+
+    if (!bounty) {
+      throw new Error('Bounty not found');
+    }
+    if (bounty.askerId !== args.askerId) {
+      throw new Error('Only the asker can cancel this bounty');
+    }
+    if (bounty.status !== 'ACTIVE') {
+      throw new Error(`Bounty is ${bounty.status}, cannot cancel`);
+    }
+
+    await tx.bounty.update({
+      where: { id: bounty.id },
+      data: { status: 'CANCELLED' },
+    });
+
+    await tx.userStats.upsert({
+      where: { userId: bounty.askerId },
+      create: { userId: bounty.askerId, xp: bounty.bountyXp },
+      update: { xp: { increment: bounty.bountyXp } },
+    });
+
+    return {
+      id: bounty.id,
+      status: 'CANCELLED',
+      refundedXp: bounty.bountyXp,
+    };
+  });
+}
+

@@ -33,6 +33,8 @@ export type EventType =
   // Notification events
   | 'NOTIFICATION'
   | 'ANNOUNCEMENT'
+  // Quiz war events
+  | 'QUIZ_WAR_UPDATED'
   // System events
   | 'HEARTBEAT'
   | 'CONNECTED'

@@ -23,7 +23,10 @@
 import { PrismaClient, Post, User, PostType, Prisma } from '@prisma/client';
 import { feedCache } from './redis';
 import { resolveFeedVisibilityWhere } from './utils/visibilityScope';
-import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from './utils/feedCursor';
+import {
+    buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor,
+    decodeBrainModeCursor, encodeBrainModeCursor, buildBrainModeCursorWhere
+} from './utils/feedCursor';
 
 // ─── Scoring Weights (v2 — dynamic per post type) ──────────────────
 interface ScoringWeights {
@@ -526,11 +529,9 @@ export class FeedRanker {
         }
         // BRAIN_MODE — pure quality sort: Post.edScore desc (NULLS LAST),
         // then createdAt desc. Powered by the posts_edScore_createdAt_idx
-        // index added in migration 20260530065104. Offset pagination only
-        // (no cursor support yet — Brain Mode sessions are short, the
-        // sorting is deterministic, page-based works fine).
+        // index added in migration 20260530065104.
         if (mode === 'BRAIN_MODE') {
-            return this.getBrainModeFeed(userId, page, limit, subject);
+            return this.getBrainModeFeed(userId, page, limit, subject, cursor);
         }
 
         const feedSessionKey = `feedranker:session:${userId}:v2:${mode}:${subject || 'ALL'}:limit:${limit}:exclude:${excludeKey}`;
@@ -2089,9 +2090,13 @@ export class FeedRanker {
         userId: string,
         page: number,
         limit: number,
-        subject?: string
+        subject?: string,
+        cursor?: string
     ): Promise<{ items: FeedItem[]; total?: number; hasMore: boolean; nextCursor?: string }> {
-        const skip = (page - 1) * limit;
+        const cursorState = cursor ? decodeBrainModeCursor(cursor) : null;
+        const useCursor = Boolean(cursorState);
+        const skip = useCursor ? 0 : (page - 1) * limit;
+
         const currentUser = await this.readPrisma.user.findUnique({
             where: { id: userId },
             select: { schoolId: true },
@@ -2113,6 +2118,13 @@ export class FeedRanker {
         }
         if (hiddenPostIds.length > 0) {
             where.AND.push({ id: { notIn: [...new Set(hiddenPostIds)] } });
+        }
+
+        if (cursorState) {
+            const cursorWhere = buildBrainModeCursorWhere(cursorState);
+            if (cursorWhere) {
+                where.AND.push(cursorWhere);
+            }
         }
 
         const posts = await this.readPrisma.post.findMany({
@@ -2189,7 +2201,17 @@ export class FeedRanker {
         });
 
         const items: FeedItem[] = scored.map(s => ({ type: 'POST', data: s }));
-        return { items, hasMore };
+        const lastVisiblePost = pagePosts[pagePosts.length - 1];
+        const nextCursor = hasMore && lastVisiblePost
+            ? encodeBrainModeCursor({
+                id: lastVisiblePost.id,
+                createdAt: lastVisiblePost.createdAt,
+                isPinned: lastVisiblePost.isPinned,
+                edScore: lastVisiblePost.edScore ?? null,
+            })
+            : undefined;
+
+        return { items, hasMore, nextCursor };
     }
 
     // ─── Track User Action (Batched) ──────────────────────────────

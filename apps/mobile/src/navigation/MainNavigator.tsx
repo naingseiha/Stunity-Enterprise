@@ -52,6 +52,7 @@ import {
   SuggestedUsersScreen,
   BountyDetailScreen,
   CreateBountyScreen,
+  FocusReelsScreen,
 } from "@/screens/feed";
 import {
   LearnScreen,
@@ -268,6 +269,7 @@ const FeedStackNavigator = () => (
       component={CreateBountyScreen}
       options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'modal' }}
     />
+    <FeedStack.Screen name="FocusReels" component={FocusReelsScreen} />
   </FeedStack.Navigator>
 );
 
@@ -609,6 +611,7 @@ const MainNavigatorContent = () => {
                 "PostDetail",
                 "Comments",
                 "EventDetail",
+                "FocusReels",
               ].includes(routeName)
             ) {
               return { tabBarStyle: { display: "none" } };

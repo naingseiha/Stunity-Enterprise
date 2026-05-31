@@ -14,6 +14,7 @@ import rateLimit from 'express-rate-limit';
 import { prisma, prismaRead, feedRanker } from './context';
 import { initRedis } from './redis';
 import sseRouter from './sse';
+import { initWebSocketServer } from './websocket';
 import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
 import calendarRouter from './calendar';
@@ -37,6 +38,7 @@ import quizRouter from './routes/quiz.routes';
 import recallRouter from './routes/recall.routes';
 import bountyRouter from './routes/bounty.routes';
 import quizWarRouter from './routes/quizWar.routes';
+import focusReelRouter from './routes/focusReel.routes';
 import analyticsRouter from './routes/analytics.routes';
 import profileRouter from './routes/profile.routes';
 import skillsRouter from './routes/skills.routes';
@@ -392,6 +394,7 @@ app.use('/', quizRouter);
 app.use('/', recallRouter);
 app.use('/', bountyRouter);
 app.use('/', quizWarRouter);
+app.use('/', focusReelRouter);
 app.use('/', analyticsRouter);
 app.use('/', profileRouter);
 app.use('/', skillsRouter);
@@ -446,6 +449,8 @@ const startServer = async () => {
     console.log('   stories           → Stories');
     console.log('');
   });
+
+  initWebSocketServer(server);
 
   // Cloud Run: keep-alive timeout must exceed the load balancer's 600s timeout
   // This prevents "connection reset" errors on long-lived SSE streams

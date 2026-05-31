@@ -412,6 +412,70 @@
     "achievements": "Achievements"
   },
   "feed": {
+    "recall": {
+      "title": "Memory Check",
+      "doneToday": "Done",
+      "memoryFresh": "Fresh",
+      "memoryFading": "Fading",
+      "memoryDim": "Forgotten",
+      "memoryStrong": "Strong",
+      "metaFromCourse": "From {{course}}",
+      "metaDaysAgo": "{{count}}d ago",
+      "xpEarned": "EARNED",
+      "memoryShift": "Memory shifted from {{from}} → Strong",
+      "hintLabel": "Hint",
+      "answerLabel": "ANSWER",
+      "revealCta": "Reveal answer",
+      "gradePrompt": "How did that feel?",
+      "gradeAgain": "Again",
+      "gradeAgainSub": "Missed it",
+      "gradeGood": "Got it",
+      "gradeEasy": "Easy",
+      "streakShielded": "Streak shielded",
+      "typeChip": "Memory",
+      "defer": "Skip"
+    },
+    "bounty": {
+      "title": "Bounty Question",
+      "hoursLeft": "{{count}}h left",
+      "askedBy": "asked by @{{name}}",
+      "atStake": "AT STAKE",
+      "tutorsWorking": "{{count}} tutors working",
+      "answersIn": "{{count}} answers",
+      "topTutor": "Top tutor:",
+      "seeAnswersCta": "See answers ({{count}})",
+      "explainCta": "Explain it",
+      "masterExplainerTier": {
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold"
+      }
+    },
+    "quizWar": {
+      "title": "Quiz War",
+      "live": "LIVE",
+      "round": "ROUND {{round}} / {{totalRounds}}",
+      "yourTeam": "Your team",
+      "vs": "VS",
+      "remaining": "REMAINING",
+      "classmatesFighting": "{{count}} classmates fighting",
+      "youreOut": "you're out",
+      "joinCta": "Join the Battle",
+      "continueCta": "Continue Battle",
+      "reward": "+{{xp}} XP to winning class",
+      "joinTitle": "Join Quiz War",
+      "joinComingSoon": "The live question battle interface is coming soon! Your team needs you — hold tight.",
+      "alreadyJoinedTitle": "You're already in!",
+      "joinedTitle": "You're in!",
+      "joinedBody": "You joined Team {{team}}. The live question interface is coming soon — your class can see you are fighting for them!",
+      "joinFailed": "Failed to join. Try again."
+    },
+    "brainMode": {
+      "label": "Brain Mode",
+      "on": "ON",
+      "contextOn": "Sorting feed by Educational Value rating",
+      "contextOff": "Turn on Brain Mode to prioritize highly-rated posts"
+    },
     "postCard": {
       "time": {
         "justNow": "Just now",

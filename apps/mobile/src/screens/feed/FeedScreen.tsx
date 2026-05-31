@@ -10,6 +10,7 @@
 import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import {
   View,
+  ScrollView,
   Text,
   StyleSheet,
   RefreshControl,
@@ -55,7 +56,7 @@ import { getMockFeynmanBounties, injectFeynmanBounties } from '@/utils/mockFeynm
 import { fetchActiveBounties } from '@/api/bounties';
 import QuizWarBanner from '@/components/feed/QuizWarBanner';
 import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
-import { fetchActiveQuizWar } from '@/api/quizWars';
+import { fetchActiveQuizWar, joinQuizWar } from '@/api/quizWars';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
@@ -486,7 +487,7 @@ export default function FeedScreen() {
       return;
     }
     try {
-      const { joinQuizWar } = await import('@/api/quizWars');
+
       // Auto-assign to the team with the lower score to keep balance.
       // If the user already has a team (userTeamId), match it.
       const activeWar = serverQuizWar;
@@ -800,6 +801,10 @@ export default function FeedScreen() {
     navigation.navigate('CreateBounty' as any);
   }, [navigation]);
 
+  const handleNavigateToFocusReels = useCallback(() => {
+    navigation.navigate('FocusReels');
+  }, [navigation]);
+
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
@@ -863,7 +868,11 @@ export default function FeedScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
 
-        <View style={styles.quickActionsInCard}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickActionsInCard}
+        >
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
             <Ionicons name="help-circle" size={22} color="#3B82F6" />
             <Text style={styles.inCardActionText}>{t('feed.ask')}</Text>
@@ -880,11 +889,15 @@ export default function FeedScreen() {
             <Ionicons name="book" size={22} color="#F59E0B" />
             <Text style={styles.inCardActionText}>{t('feed.resource')}</Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={handleNavigateToFocusReels} activeOpacity={0.7} style={styles.inCardAction}>
+            <Ionicons name="play-circle" size={22} color="#EF4444" />
+            <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
             <Ionicons name="cash" size={22} color="#D97706" />
             <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Brain Mode toggle — re-rank feed by Ed-Score (Educational Value) */}
@@ -893,7 +906,7 @@ export default function FeedScreen() {
         onToggle={handleToggleBrainMode}
       />
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, handleCreateBounty, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, handleCreateBounty, handleNavigateToFocusReels, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -1133,6 +1146,10 @@ export default function FeedScreen() {
             <Ionicons name="book-outline" size={20} color="#EC4899" />
             <Text style={styles.sideRailActionText}>{t('feed.resource')}</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.sideRailAction} onPress={handleNavigateToFocusReels} activeOpacity={0.75}>
+            <Ionicons name="play-circle-outline" size={20} color="#EF4444" />
+            <Text style={styles.sideRailActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -1146,6 +1163,7 @@ export default function FeedScreen() {
     handleCreateQuiz,
     handleCreatePoll,
     handleCreateResource,
+    handleNavigateToFocusReels,
     stableProfilePictureUrl,
   ]);
 
@@ -1696,10 +1714,10 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
   },
   quickActionsInCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginTop: 12,
     marginBottom: 4,
+    gap: 12,
   },
   inCardAction: {
     flexDirection: 'row',

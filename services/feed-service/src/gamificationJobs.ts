@@ -1,4 +1,6 @@
 import { PrismaClient, PostType } from '@prisma/client';
+import { sweepExpiredBounties } from './utils/bountyEscrow';
+
 
 interface GamificationJobOptions {
     startupDelayMs?: number;
@@ -10,6 +12,18 @@ export function startGamificationJobs(prisma: PrismaClient, options: Gamificatio
 
     const startupDelayMs = options.startupDelayMs ?? 5 * 60 * 1000;
     console.log('🚀 [GamificationJobs] Starting background jobs...');
+
+    // ─── Every 15 minutes: Sweep expired Feynman Bounties ──────────────
+    setInterval(async () => {
+        try {
+            const swept = await sweepExpiredBounties(prisma);
+            if (swept > 0) {
+                console.log(`🧹 [GamificationJobs] Swept and refunded ${swept} expired bounties.`);
+            }
+        } catch (err) {
+            console.error('❌ [GamificationJobs] Bounty expiration sweep error:', err);
+        }
+    }, 15 * 60 * 1000); // 15 minutes
 
     // ─── Hourly: Recalculate post difficulty scores ────────────────────
     setInterval(async () => {
@@ -33,13 +47,25 @@ export function startGamificationJobs(prisma: PrismaClient, options: Gamificatio
     // during the first run does NOT cause an unhandled rejection that crashes
     // the process (the setInterval jobs above already have their own guards).
     setTimeout(async () => {
+        try {
+            const swept = await sweepExpiredBounties(prisma);
+            if (swept > 0) {
+                console.log(`🧹 [GamificationJobs] Initial sweep refunded ${swept} expired bounties.`);
+            }
+        } catch (err) {
+            console.error('❌ [GamificationJobs] Initial bounty sweep error:', err);
+        }
+    }, startupDelayMs);
+
+    setTimeout(async () => {
         try { await updatePostDifficulties(prisma); }
         catch (err) { console.error('❌ [GamificationJobs] Initial difficulty update error:', err); }
-    }, startupDelayMs);
+    }, startupDelayMs + 2 * 60 * 1000);
+
     setTimeout(async () => {
         try { await updateUserAcademicProfiles(prisma); }
         catch (err) { console.error('❌ [GamificationJobs] Initial academic profile update error:', err); }
-    }, startupDelayMs + 2 * 60 * 1000);
+    }, startupDelayMs + 4 * 60 * 1000);
 }
 
 async function updatePostDifficulties(prisma: PrismaClient) {

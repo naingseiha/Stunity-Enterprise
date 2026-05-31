@@ -65,6 +65,25 @@ router.get(
         },
       });
 
+      // Count classmates who also have each question due now.
+      // Single grouped query instead of N round-trips.
+      const questionIds = cards.map((c) => c.questionId);
+      const classmatesCounts =
+        questionIds.length > 0
+          ? await prisma.recallCard.groupBy({
+              by: ['questionId'],
+              where: {
+                questionId: { in: questionIds },
+                userId: { not: userId },
+                nextReviewAt: { lte: new Date() },
+              },
+              _count: { userId: true },
+            })
+          : [];
+      const countByQuestion = new Map(
+        classmatesCounts.map((g) => [g.questionId, g._count.userId]),
+      );
+
       // Shape response so it matches the mobile `RecallCard` type
       // (apps/mobile/src/types/index.ts:RecallCard).
       const responseCards = cards.map((card) => ({
@@ -81,8 +100,7 @@ router.get(
         hint: card.question.explanation ?? undefined,
         daysSinceLastSeen: daysSinceReview(card.lastReviewedAt),
         recallStrength: card.recallStrength,
-        // TODO: real "classmates reviewing" count from a peer-signal join.
-        classmatesReviewingCount: 0,
+        classmatesReviewingCount: countByQuestion.get(card.questionId) ?? 0,
         xpReward: card.xpReward,
         protectsStreak: card.protectsStreak,
       }));

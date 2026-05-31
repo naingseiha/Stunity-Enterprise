@@ -52,6 +52,24 @@ export async function fetchActiveBounties(
   return response.data.data ?? [];
 }
 
+export async function fetchBountyById(
+  bountyId: string,
+): Promise<FeynmanBounty | null> {
+  try {
+    const response = await feedApi.get<{
+      success: boolean;
+      data: FeynmanBounty;
+    }>(`/bounties/${bountyId}`);
+
+    if (!response.data?.success) return null;
+    return response.data.data ?? null;
+  } catch (err: any) {
+    // 404 is expected for deleted/expired bounties — don't throw
+    if (err?.response?.status === 404) return null;
+    throw err;
+  }
+}
+
 export interface CreateBountyInput {
   subject: string;
   subjectColor?: string;
@@ -175,3 +193,21 @@ export async function awardBounty(
   }
   return response.data.data;
 }
+
+export interface CancelBountyResult {
+  id: string;
+  status: string;
+  refundedXp: number;
+}
+
+export async function cancelBounty(bountyId: string): Promise<CancelBountyResult> {
+  const response = await feedApi.post<{
+    success: boolean;
+    data: CancelBountyResult;
+  }>(`/bounties/${bountyId}/cancel`, {});
+  if (!response.data?.success) {
+    throw new Error('Failed to cancel bounty');
+  }
+  return response.data.data;
+}
+

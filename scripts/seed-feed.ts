@@ -417,12 +417,83 @@ async function seedFeed() {
 
     console.log('  ✅ Follow relationships created');
 
-    // ─── 4. Summary ───────────────────────────────────────────────────────────
+    // ─── 4. Create Focus Reels ────────────────────────────────────────────────
+    console.log('\n🎬 Creating focus reels...');
+    const reelsData = [
+        {
+            title: 'Quantum Wave-Particle Duality',
+            description: 'Learn why light behaves as both a wave and a stream of particles, and how observation collapses the state.',
+            videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-starry-outer-space-background-12891-large.mp4',
+            thumbnailUrl: null,
+            subject: 'Physics',
+            creatorId: emma.id,
+            duration: 30,
+            pausePoints: [
+                {
+                    time: 5,
+                    question: 'What happens to a quantum wave function when it is measured/observed?',
+                    options: [
+                        'It splits into multiple parallel universes',
+                        'It collapses into a single definite particle state',
+                        'It gains momentum and speeds up',
+                        'It ceases to exist'
+                    ],
+                    correctAnswer: 1,
+                    xp: 15
+                }
+            ]
+        },
+        {
+            title: 'Helicase & DNA Unwinding',
+            description: 'Watch helicase separate double-stranded DNA into single strands to allow replication.',
+            videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-tunnel-of-futuristic-blue-lights-42234-large.mp4',
+            thumbnailUrl: null,
+            subject: 'Biology',
+            creatorId: emma.id,
+            duration: 40,
+            pausePoints: [
+                {
+                    time: 6,
+                    question: 'Which enzyme is responsible for unwinding the DNA double helix structure?',
+                    options: [
+                        'DNA Polymerase',
+                        'Helicase',
+                        'DNA Ligase',
+                        'Primase'
+                    ],
+                    correctAnswer: 1,
+                    xp: 15
+                }
+            ]
+        }
+    ];
+
+    let reelCount = 0;
+    for (const reel of reelsData) {
+        const existing = await prisma.focusReel.findFirst({
+            where: { title: reel.title }
+        });
+        if (existing) {
+            console.log(`  ⏭️  Focus Reel already exists: "${reel.title}"`);
+        } else {
+            await prisma.focusReel.create({
+                data: {
+                    ...reel,
+                    pausePoints: reel.pausePoints as any
+                }
+            });
+            reelCount++;
+            console.log(`  ✅ Created Focus Reel: "${reel.title}"`);
+        }
+    }
+
+    // ─── 5. Summary ───────────────────────────────────────────────────────────
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✅ FEED SEED COMPLETE!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`  👤 ${createdUsers.length} demo users`);
     console.log(`  📝 ${postCount} new posts`);
+    console.log(`  🎬 ${reelCount} focus reels`);
     console.log('');
     console.log('📱 Open the app and scroll the feed to see:');
     console.log('   → Posts by different users');

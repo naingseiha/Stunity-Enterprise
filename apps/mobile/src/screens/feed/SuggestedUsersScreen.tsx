@@ -217,8 +217,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         marginTop: 16,
         marginBottom: 32,
         overflow: 'hidden',
-        shadowOpacity: 0.04,
         ...Shadows.sm,
+        shadowOpacity: 0.04,
     },
     settingRow: {
         flexDirection: 'row',

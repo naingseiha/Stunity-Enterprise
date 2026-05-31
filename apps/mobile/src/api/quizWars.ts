@@ -43,3 +43,91 @@ export async function joinQuizWar(
   }
   return response.data.data;
 }
+
+export interface SubmitAnswerResult {
+  participant: {
+    id: string;
+    correctAnswers: number;
+    totalAnswers: number;
+    xpEarned: number;
+  };
+  war: {
+    teamAScore: number;
+    teamBScore: number;
+  };
+}
+
+export async function submitQuizWarAnswer(
+  warId: string,
+  isCorrect: boolean,
+): Promise<SubmitAnswerResult> {
+  const response = await feedApi.post<{
+    success: boolean;
+    data: SubmitAnswerResult;
+  }>(`/quiz-wars/${warId}/answer`, { isCorrect });
+
+  if (!response.data?.success) {
+    throw new Error('Failed to submit quiz war answer');
+  }
+  return response.data.data;
+}
+
+export interface CreateQuizWarParams {
+  subject: string;
+  startsAt: string;
+  endsAt: string;
+  teamAName: string;
+  teamAColor: string;
+  teamBName: string;
+  teamBColor: string;
+  rewardXp?: number;
+  totalRounds?: number;
+}
+
+export async function createQuizWar(
+  params: CreateQuizWarParams,
+): Promise<QuizWar> {
+  const response = await feedApi.post<{
+    success: boolean;
+    data: QuizWar;
+  }>('/quiz-wars', params);
+
+  if (!response.data?.success) {
+    throw new Error('Failed to create quiz war');
+  }
+  return response.data.data;
+}
+
+export async function startQuizWar(warId: string): Promise<QuizWar> {
+  const response = await feedApi.post<{
+    success: boolean;
+    data: QuizWar;
+  }>(`/quiz-wars/${warId}/start`);
+
+  if (!response.data?.success) {
+    throw new Error('Failed to start quiz war');
+  }
+  return response.data.data;
+}
+
+export interface EndQuizWarResult {
+  war: QuizWar;
+  winningTeam: string | null;
+  rewardXp: number;
+  totalParticipants: number;
+  winningParticipantsCount: number;
+  mvpCount: number;
+}
+
+export async function endQuizWar(warId: string): Promise<EndQuizWarResult> {
+  const response = await feedApi.post<{
+    success: boolean;
+    data: EndQuizWarResult;
+  }>(`/quiz-wars/${warId}/end`);
+
+  if (!response.data?.success) {
+    throw new Error('Failed to end quiz war');
+  }
+  return response.data.data;
+}
+

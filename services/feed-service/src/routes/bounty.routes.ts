@@ -21,7 +21,9 @@ import {
   awardBountyAtomic,
   BountyNotAwardableError,
   computeMasterExplainerTiersBatch,
+  cancelBountyWithRefund,
 } from '../utils/bountyEscrow';
+import { feedCache } from '../redis';
 import {
   activeBountiesQuerySchema,
   createBountyBodySchema,
@@ -29,6 +31,7 @@ import {
   awardBountyBodySchema,
   repliesQuerySchema,
 } from '../validators/bounty.validator';
+
 
 const router = Router();
 
@@ -87,12 +90,17 @@ router.get(
 
       // Batch tier lookup for all top tutors — one grouped query
       // instead of N round-trips.
-      const topTutorIds = bounties
-        .map((b) => b.replies[0]?.tutor.id)
-        .filter((id): id is string => !!id);
+      const tutorSubjectPairs = bounties
+        .map((b) => {
+          const tutorId = b.replies[0]?.tutor.id;
+          if (!tutorId) return null;
+          return { tutorId, subject: b.subject };
+        })
+        .filter((pair): pair is { tutorId: string; subject: string } => !!pair);
+
       const tierByTutor = await computeMasterExplainerTiersBatch(
         prisma,
-        topTutorIds,
+        tutorSubjectPairs,
       );
 
       const shaped = bounties.map((b) => {
@@ -104,14 +112,14 @@ router.get(
           `${b.asker.lastName ?? ''} ${b.asker.firstName ?? ''}`.trim() ||
           'Unknown';
 
+        const lookupKey = top ? `${top.tutor.id}:${b.subject}` : '';
+
         return {
           id: b.id,
           asker: {
             id: b.asker.id,
             name: askerName,
             avatarUrl: b.asker.profilePictureUrl ?? undefined,
-            // gradeLabel: derived from academic profile later — undefined
-            // for now is fine; mobile renders without it gracefully.
           },
           subject: b.subject,
           subjectColor: b.subjectColor ?? undefined,
@@ -127,12 +135,7 @@ router.get(
                 name:
                   `${top.tutor.lastName ?? ''} ${top.tutor.firstName ?? ''}`.trim() ||
                   'Tutor',
-                // Real tier from batch lookup. Null means "no tier yet"
-                // (below bronze threshold). Mobile MasterExplainerBadge
-                // expects a non-null tier; we default to bronze when null
-                // so the badge still shows for top tutors who haven't
-                // crossed the win threshold yet.
-                tier: tierByTutor.get(top.tutor.id) ?? 'bronze',
+                tier: tierByTutor.get(lookupKey) ?? 'bronze',
               }
             : undefined,
           createdAt: b.createdAt.toISOString(),
@@ -145,6 +148,102 @@ router.get(
       res.status(500).json({
         success: false,
         error: 'Failed to fetch bounties',
+        details: error.message,
+      });
+    }
+  },
+);
+
+// ─────────────────────────────────────────────────────────
+// GET /bounties/:bountyId — single bounty by ID
+// Used by BountyDetailScreen to avoid fetching all active bounties.
+// ─────────────────────────────────────────────────────────
+router.get(
+  '/bounties/:bountyId',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const bountyId = req.params.bountyId;
+
+      const b = await prisma.bounty.findUnique({
+        where: { id: bountyId },
+        include: {
+          asker: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true,
+            },
+          },
+          replies: {
+            select: {
+              tutorId: true,
+              ahaCount: true,
+              tutor: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+            },
+            orderBy: { ahaCount: 'desc' },
+          },
+        },
+      });
+
+      if (!b) {
+        return res
+          .status(404)
+          .json({ success: false, error: 'Bounty not found' });
+      }
+
+      const now = new Date();
+      const topTutorId = b.replies[0]?.tutor.id;
+      const tierByTutor = topTutorId
+        ? await computeMasterExplainerTiersBatch(prisma, [{ tutorId: topTutorId, subject: b.subject }])
+        : new Map();
+
+      const tutorsWorking = new Set(b.replies.map((r) => r.tutorId)).size;
+      const answersCount = b.replies.length;
+      const top = b.replies[0];
+
+      const askerName =
+        `${b.asker.lastName ?? ''} ${b.asker.firstName ?? ''}`.trim() ||
+        'Unknown';
+
+      const lookupKey = top ? `${top.tutor.id}:${b.subject}` : '';
+
+      const shaped = {
+        id: b.id,
+        asker: {
+          id: b.asker.id,
+          name: askerName,
+          avatarUrl: b.asker.profilePictureUrl ?? undefined,
+        },
+        subject: b.subject,
+        subjectColor: b.subjectColor ?? undefined,
+        questionText: b.questionText,
+        attachmentName: b.attachmentName ?? undefined,
+        bountyXp: b.bountyXp,
+        hoursLeft: hoursLeftUntil(b.expiresAt, now),
+        tutorsWorking,
+        answersCount,
+        topTutor: top
+          ? {
+              id: top.tutor.id,
+              name:
+                `${top.tutor.lastName ?? ''} ${top.tutor.firstName ?? ''}`.trim() ||
+                'Tutor',
+              tier: tierByTutor.get(lookupKey) ?? 'bronze',
+            }
+          : undefined,
+        createdAt: b.createdAt.toISOString(),
+      };
+
+      res.json({ success: true, data: shaped });
+    } catch (error: any) {
+      console.error('[GET /bounties/:bountyId]', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch bounty',
         details: error.message,
       });
     }
@@ -250,6 +349,11 @@ router.get(
               profilePictureUrl: true,
             },
           },
+          bounty: {
+            select: {
+              subject: true,
+            },
+          },
           // hasAha for the current viewer — single query via filtered count
           _count: {
             select: {
@@ -261,32 +365,37 @@ router.get(
         },
       });
 
-      const tutorIds = replies.map((r) => r.tutor.id);
+      const tutorSubjectPairs = replies.map((r) => ({
+        tutorId: r.tutor.id,
+        subject: r.bounty.subject,
+      }));
+
       const tierByTutor = await computeMasterExplainerTiersBatch(
         prisma,
-        tutorIds,
+        tutorSubjectPairs,
       );
 
-      const shaped = replies.map((r) => ({
-        id: r.id,
-        tutor: {
-          id: r.tutor.id,
-          name:
-            `${r.tutor.lastName ?? ''} ${r.tutor.firstName ?? ''}`.trim() ||
-            'Tutor',
-          avatarUrl: r.tutor.profilePictureUrl ?? undefined,
-          tier: tierByTutor.get(r.tutor.id) ?? null,
-        },
-        format: r.format,
-        content: r.content,
-        mediaUrl: r.mediaUrl ?? undefined,
-        ahaCount: r.ahaCount,
-        // From the _count(ahas where userId) filtered subquery above:
-        // 1 if viewer has Aha'd, 0 otherwise.
-        hasAha: (r._count as any).ahas > 0,
-        isWinner: r.isWinner,
-        createdAt: r.createdAt.toISOString(),
-      }));
+      const shaped = replies.map((r) => {
+        const lookupKey = `${r.tutor.id}:${r.bounty.subject}`;
+        return {
+          id: r.id,
+          tutor: {
+            id: r.tutor.id,
+            name:
+              `${r.tutor.lastName ?? ''} ${r.tutor.firstName ?? ''}`.trim() ||
+              'Tutor',
+            avatarUrl: r.tutor.profilePictureUrl ?? undefined,
+            tier: tierByTutor.get(lookupKey) ?? null,
+          },
+          format: r.format,
+          content: r.content,
+          mediaUrl: r.mediaUrl ?? undefined,
+          ahaCount: r.ahaCount,
+          hasAha: (r._count as any).ahas > 0,
+          isWinner: r.isWinner,
+          createdAt: r.createdAt.toISOString(),
+        };
+      });
 
       res.json({ success: true, data: shaped });
     } catch (error: any) {
@@ -469,4 +578,39 @@ router.post(
   },
 );
 
+// ─────────────────────────────────────────────────────────
+// POST /bounties/:bountyId/cancel — asker cancels bounty and gets a refund
+// ─────────────────────────────────────────────────────────
+router.post(
+  '/bounties/:bountyId/cancel',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const askerId = req.user!.id;
+      const bountyId = req.params.bountyId;
+
+      const result = await cancelBountyWithRefund(prisma, {
+        bountyId,
+        askerId,
+      });
+
+      // Bust feed cache for the asker
+      await feedCache.invalidateUser(askerId);
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      console.error('[POST /bounties/:bountyId/cancel]', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to cancel bounty',
+        details: error.message,
+      });
+    }
+  },
+);
+
 export default router;
+

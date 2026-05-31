@@ -39,6 +39,7 @@ import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
 import type { QuizWar } from '@/types';
+import { useQuizWarSocket } from '@/hooks/useQuizWarSocket';
 
 // Urgency accent for LIVE / CTA — distinct from any subject color
 const URGENT = '#DC2626';        // red-600
@@ -58,13 +59,19 @@ interface Props {
   onJoin?: (warId: string) => void;
 }
 
-export const QuizWarBanner: React.FC<Props> = ({ war, onJoin }) => {
+export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
+  const war = useQuizWarSocket(initialWar);
   const { colors, isDark } = useThemeContext();
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   // ── Live-ticking countdown ──
   const [remainingSec, setRemainingSec] = useState(war.timeRemainingSec);
+
+  useEffect(() => {
+    setRemainingSec(war.timeRemainingSec);
+  }, [war.timeRemainingSec]);
+
   useEffect(() => {
     if (war.status !== 'LIVE') return;
     const id = setInterval(() => {

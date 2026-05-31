@@ -657,6 +657,8 @@ model User {
   bountyReplies                BountyReply[]                @relation("BountyReplies")
   bountyAhas                   BountyAha[]                  @relation("BountyAhas")
   quizWarParticipations        QuizWarParticipant[]
+  focusReelsCreated            FocusReel[]                  @relation("FocusReelsCreated")
+  focusReelAttempts            FocusReelAttempt[]           @relation("FocusReelAttempts")
   challengesAsChallenger       QuizChallenge[]              @relation("ChallengerChallenges")
   challengesAsOpponent         QuizChallenge[]              @relation("OpponentChallenges")
   gameAchievements             UserGameAchievement[]
@@ -4301,4 +4303,35 @@ enum PlatformAnnouncementPriority {
   INFO
   WARNING
   URGENT
+}
+
+model FocusReel {
+  id             String             @id @default(cuid())
+  title          String
+  description    String?
+  videoUrl       String
+  thumbnailUrl   String?
+  subject        String
+  creatorId      String
+  creator        User               @relation("FocusReelsCreated", fields: [creatorId], references: [id])
+  duration       Int                // in seconds
+  pausePoints    Json               // [{ time: number, question: string, options: string[], correctAnswer: number, xp: number }]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  attempts       FocusReelAttempt[]
+
+  @@map("focus_reels")
+}
+
+model FocusReelAttempt {
+  id          String    @id @default(cuid())
+  reelId      String
+  reel        FocusReel @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation("FocusReelAttempts", fields: [userId], references: [id], onDelete: Cascade)
+  completedAt DateTime  @default(now())
+  xpEarned    Int       @default(0)
+
+  @@unique([reelId, userId])
+  @@map("focus_reel_attempts")
 }

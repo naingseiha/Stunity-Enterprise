@@ -54,7 +54,7 @@ import {
   awardBounty,
   type BountyReply,
 } from '@/api/bounties';
-import { fetchActiveBounties } from '@/api/bounties';
+import { fetchBountyById } from '@/api/bounties';
 import type { FeynmanBounty, MasterExplainerTier } from '@/types';
 import type { FeedStackParamList } from '@/navigation/types';
 
@@ -94,12 +94,11 @@ export default function BountyDetailScreen() {
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     try {
-      const [allBounties, replyData] = await Promise.all([
-        fetchActiveBounties({ limit: 50 }),
+      const [foundBounty, replyData] = await Promise.all([
+        fetchBountyById(bountyId),
         fetchBountyReplies(bountyId, { limit: 50 }),
       ]);
-      const found = allBounties.find(b => b.id === bountyId);
-      if (found) setBounty(found);
+      if (foundBounty) setBounty(foundBounty);
       setReplies(replyData);
     } catch (e: any) {
       if (__DEV__) console.warn('[BountyDetail] load failed', e?.message);
