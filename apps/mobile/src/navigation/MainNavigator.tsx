@@ -56,6 +56,11 @@ import {
   FocusReelsScreen,
 } from "@/screens/feed";
 import { prefetchReelsFeed, hydrateReelsCacheFromDisk } from "@/screens/feed/reelsCache";
+import { prefetchLearnHub, hydrateLearnHubFromDisk } from "@/screens/learn/learnHubCache";
+import { prefetchFeed, hydrateFeedCacheFromDisk } from "@/services/feedCache";
+import { prefetchClubs, hydrateClubsCacheFromDisk } from "@/screens/clubs/clubsCache";
+import { prefetchProfile, hydrateProfileCacheFromDisk } from "@/screens/profile/profileCache";
+import { hydrateClassesCacheFromDisk, prefetchClasses, hydrateClassDetailFromDisk } from "@/api/classes";
 import useAuthStore from "@/stores/authStore";
 import {
   LearnScreen,
@@ -842,14 +847,25 @@ const MainNavigator = () => {
   useEffect(() => {
     if (!userId) return; // wait until auth resolved before touching disk
     // Disk hydrate runs immediately (~5ms, no network) so a same-tick Reels
-    // tap renders from last session's cache instantly.
+    // or Learn tap renders from last session's cache instantly.
     void hydrateReelsCacheFromDisk(userId);
+    void hydrateLearnHubFromDisk(userId);
+    void hydrateFeedCacheFromDisk(userId);
+    void hydrateClubsCacheFromDisk(userId);
+    void hydrateProfileCacheFromDisk(userId);
+    void hydrateClassesCacheFromDisk(userId);
+    void hydrateClassDetailFromDisk(userId);
     // Network refresh deferred 1.5s so it doesn't pile onto the boot
     // waterfall (FeedStore, carousels, notifications). After the spike
-    // settles, feed-service's connection pool is free and /reels/feed
-    // gets a clean shot.
+    // settles, the per-service connection pools are free and the prefetch
+    // calls get a clean shot.
     const t = setTimeout(() => {
       void prefetchReelsFeed(userId);
+      void prefetchLearnHub(userId);
+      void prefetchFeed(userId);
+      void prefetchClubs(userId);
+      void prefetchProfile(userId);
+      void prefetchClasses(userId);
     }, 1500);
     return () => clearTimeout(t);
   }, [userId]);

@@ -6,6 +6,13 @@
 
 import { learnApi as api } from './client';
 import i18n from '@/lib/i18n';
+import {
+  _setLearnHubNormalizers,
+  fetchLearnHub,
+  invalidateLearnHubCache as invalidateLearnHubCacheInternal,
+  prefetchLearnHub as prefetchLearnHubInternal,
+  readLearnHubFromCache,
+} from '@/screens/learn/learnHubCache';
 
 export type LearnCourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'ALL_LEVELS';
 
@@ -856,19 +863,10 @@ export const getLearningStats = async (): Promise<LearningStats> => {
 };
 
 // ─── Learn Hub (combined single-request loader) ───────────────────────────────
-
-const LEARN_HUB_CACHE_TTL = 30_000; // 30 seconds
-let _learnHubCache: { data: LearnHubData; locale: string; ts: number } | null = null;
-
-const normalizeStats = (data: any): LearningStats => ({
-  enrolledCourses: Number(data?.enrolledCourses ?? 0),
-  completedCourses: Number(data?.completedCourses ?? 0),
-  completedLessons: Number(data?.completedLessons ?? 0),
-  hoursLearned: Number(data?.hoursLearned ?? 0),
-  currentStreak: Number(data?.currentStreak ?? 0),
-  totalPoints: Number(data?.totalPoints ?? 0),
-  level: Number(data?.level ?? 1),
-});
+// The cache implementation (memory + AsyncStorage disk persistence) lives in
+// `screens/learn/learnHubCache.ts` so MainNavigator can hydrate it at boot
+// without dragging in the heavy normalizers below. We inject the normalizers
+// here on first import so the module owns the full read path.
 
 const normalizeEnrolledCourse = (course: any): LearnEnrolledCourse => ({
   ...normalizeCourse(course),
@@ -879,70 +877,37 @@ const normalizeEnrolledCourse = (course: any): LearnEnrolledCourse => ({
   completedAt: typeof course?.completedAt === 'string' ? course.completedAt : undefined,
 });
 
-const normalizePath = (path: any): LearnPath => ({
-  id: String(path?.id ?? ''),
-  title: String(path?.title ?? ''),
-  description: String(path?.description ?? ''),
-  thumbnail: path?.thumbnail || undefined,
-  level: String(path?.level ?? 'BEGINNER'),
-  isFeatured: Boolean(path?.isFeatured),
-  totalDuration: Number(path?.totalDuration ?? 0),
-  coursesCount: Number(path?.coursesCount ?? 0),
-  enrolledCount: Number(path?.enrolledCount ?? 0),
-  isEnrolled: Boolean(path?.isEnrolled),
-  courses: Array.isArray(path?.courses)
-    ? path.courses.map((c: any) => ({
-        id: String(c?.id ?? ''),
-        title: String(c?.title ?? ''),
-        thumbnail: c?.thumbnail || undefined,
-        duration: Number(c?.duration ?? 0),
-        order: Number(c?.order ?? 0),
-      }))
-    : [],
-});
+_setLearnHubNormalizers(normalizeCourse, normalizeEnrolledCourse);
 
 /**
- * Fetches all Learn screen data in a single HTTP request.
- * Results are cached for 30 seconds — subsequent calls within the TTL
- * are instant (zero network). Pass force=true to bypass the cache
- * (e.g., on pull-to-refresh or post-enroll).
+ * Fetches all Learn screen data in a single HTTP request. Backed by
+ * `learnHubCache` — 30s freshness in memory, 24h on disk. Pass force=true
+ * to bypass the freshness check (e.g. pull-to-refresh, post-enroll).
+ *
+ * If the network fails and the cache is empty (cold install only), throws
+ * so the caller can surface an error; otherwise returns the cached payload.
  */
 export const getLearnHub = async (force = false): Promise<LearnHubData> => {
-  const locale = getLearnLocale();
-  if (!force && _learnHubCache && _learnHubCache.locale === locale && Date.now() - _learnHubCache.ts < LEARN_HUB_CACHE_TTL) {
-    return _learnHubCache.data;
-  }
-
-  const response = await api.get('/courses/learn-hub', { params: { limit: 30, pathLimit: 20, locale } });
-  const d = response.data;
-
-  const data: LearnHubData = {
-    courses:   Array.isArray(d?.courses)   ? d.courses.map(normalizeCourse)        : [],
-    myCourses: Array.isArray(d?.myCourses) ? d.myCourses.map(normalizeEnrolledCourse) : [],
-    myCreated: Array.isArray(d?.myCreated) ? d.myCreated.map(normalizeCourse)      : [],
-    paths:     Array.isArray(d?.paths)     ? d.paths.map(normalizePath)            : [],
-    stats:     normalizeStats(d?.stats),
-  };
-
-  _learnHubCache = { data, locale, ts: Date.now() };
-  return data;
+  const data = await fetchLearnHub({ force });
+  if (data) return data as LearnHubData;
+  throw new Error('Failed to load learn hub');
 };
+
+/** Synchronous read for code paths that want to render from cache without awaiting. */
+export const getCachedLearnHub = (): LearnHubData | null =>
+  (readLearnHubFromCache() as LearnHubData | null);
 
 /**
  * Proactively fetches Learn Hub data in the background.
  * Useful for pre-warming the cache before the user navigates to the screen.
  */
-export const prefetchLearnHub = async (): Promise<void> => {
-  try {
-    await getLearnHub(true);
-  } catch (error) {
-    // Silently ignore prefetch errors
-  }
+export const prefetchLearnHub = async (userId?: string): Promise<void> => {
+  await prefetchLearnHubInternal(userId);
 };
 
 /** Call this after an enroll action so the next navigation shows fresh data. */
 export const invalidateLearnHubCache = (): void => {
-  _learnHubCache = null;
+  invalidateLearnHubCacheInternal();
 };
 
 const normalizeResourceType = (value: unknown): 'FILE' | 'LINK' | 'VIDEO' | 'PDF' | 'AUDIO' => {

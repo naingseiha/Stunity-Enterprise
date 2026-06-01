@@ -18,8 +18,9 @@ type StackNav = NativeStackNavigationProp<MainStackParamList>;
 
 const TAB_ORDER: (keyof MainTabParamList)[] = [
   'FeedTab',
+  'ReelsTab',
   'LearnTab',
-  'QuizTab',
+  // QuizTab intentionally omitted — accessible via the sidebar menu instead.
   'ClubsTab',
   'ProfileTab',
 ];
@@ -30,6 +31,7 @@ const TAB_ICONS: Record<
 > = {
   FeedTab: { focused: 'home', outline: 'home-outline', size: 28 },
   LearnTab: { focused: 'compass', outline: 'compass-outline', size: 28 },
+  ReelsTab: { focused: 'play-circle', outline: 'play-circle-outline', size: 32 },
   QuizTab: { focused: 'game-controller', outline: 'game-controller-outline', size: 27 },
   ClubsTab: { focused: 'school', outline: 'school-outline', size: 28 },
   ProfileTab: { focused: 'person-circle', outline: 'person-circle-outline', size: 28 },

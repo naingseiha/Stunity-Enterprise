@@ -15,7 +15,14 @@ import { recommendationEngine, UserInterestProfile } from '@/services/recommenda
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { seedDatabase } from '@/lib/seed';
-import { cacheFeedPosts, loadCachedFeed, isCacheStale } from '@/services/feedCache';
+import {
+  cacheFeedPosts,
+  loadCachedFeed,
+  isCacheStale,
+  readFeedFromMemory,
+  writeFeedToMemory,
+  isFeedCacheFresh,
+} from '@/services/feedCache';
 import { useAuthStore } from './authStore';
 import { metadataForUris, primaryMediaAspectRatio } from '@/utils/mediaMetadata';
 import { normalizeMediaUrls } from '@/utils/mediaUtils';
@@ -374,11 +381,32 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     set({ isLoadingPosts: true });
 
-    // Stale-while-revalidate: show cached feed instantly on cold-start
+    // Stale-while-revalidate: show cached feed instantly on cold-start.
+    // Memory cache is synchronous (hydrated by MainNavigator at boot),
+    // so we avoid awaiting AsyncStorage in the hot path. Falls back to
+    // disk read on cold-from-install when memory is empty.
+    const ttiStart = page === 1 && feedItems.length === 0 ? Date.now() : 0;
     if (page === 1 && feedItems.length === 0) {
-      const cached = await loadCachedFeed(authState.user.id);
-      if (cached && cached.length > 0) {
-        set({ feedItems: cached.map(p => ({ type: 'POST' as const, data: p })) });
+      const memCached = readFeedFromMemory(authState.user.id);
+      if (memCached && memCached.length > 0) {
+        set({ feedItems: memCached.map(p => ({ type: 'POST' as const, data: p })) });
+        if (__DEV__) console.log(`[Feed TTI] memory-cache hit (${Date.now() - ttiStart}ms)`);
+      } else {
+        const cached = await loadCachedFeed(authState.user.id);
+        if (cached && cached.length > 0) {
+          writeFeedToMemory(cached, authState.user.id);
+          set({ feedItems: cached.map(p => ({ type: 'POST' as const, data: p })) });
+          if (__DEV__) console.log(`[Feed TTI] disk-cache hit (${Date.now() - ttiStart}ms)`);
+        }
+      }
+      // If memory cache is fresh (<60s), skip the network call entirely.
+      // The user just opened the app and saw last session's posts — refreshing
+      // again immediately wastes a 14s ranker round-trip for no UX gain.
+      // Pull-to-refresh still bypasses this (refresh=true path).
+      if (!refresh && isFeedCacheFresh(authState.user.id)) {
+        if (__DEV__) console.log('[Feed TTI] fresh-cache skip network');
+        set({ isLoadingPosts: false });
+        return;
       }
     }
 
@@ -624,6 +652,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         // Write to offline cache on page 1 (most recent posts)
         if (page === 1 && optimizedPostsOnly.length > 0) {
           initialFeedRetryAttempts = 0;
+          writeFeedToMemory(optimizedPostsOnly, authState.user.id);
           cacheFeedPosts(optimizedPostsOnly, authState.user.id).catch(() => { });
         }
 
@@ -659,7 +688,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const hasSuggestedQuizzes = optimizedFeedItems.some(i => i.type === 'SUGGESTED_QUIZZES');
 
           if (!hasSuggestedUsers || !hasSuggestedCourses || !hasSuggestedQuizzes) {
-            (async () => {
+            // Defer 2s so we don't pile onto the cold-boot waterfall.
+            // /posts/feed has just returned (already a slow ranker call); firing
+            // 3 more concurrent reads in the same window competes with
+            // /reels/feed prefetch for the same pool slots and inflates
+            // every cold request to 15-20s. The carousels are visual
+            // enhancements that appear several screens deep in the scroll,
+            // so a small delay is invisible to the user.
+            setTimeout(async () => {
               try {
                 const [usersResp, coursesResp, quizzesResp] = await Promise.allSettled([
                   !hasSuggestedUsers
@@ -742,7 +778,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                 // Silent — carousels are an enhancement, not critical
                 if (__DEV__) console.log('⚠️ [FeedStore] Carousel fallback skipped:', err);
               }
-            })();
+            }, 2000);
           }
         }
         // ─────────────────────────────────────────────────────────────────────
@@ -1857,6 +1893,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       .filter((item): item is { type: 'POST'; data: Post } => item.type === 'POST')
       .map((item) => item.data);
     if (authState.user?.id && posts.length > 0) {
+      writeFeedToMemory(posts, authState.user.id);
       cacheFeedPosts(posts, authState.user.id).catch(() => { });
     }
   },
@@ -2391,6 +2428,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     // Persist to cache so reopening the app shows the latest posts
     const mergedPostsOnly = mergedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
     const userId = useAuthStore.getState().user?.id;
+    if (userId) writeFeedToMemory(mergedPostsOnly.slice(0, 50), userId);
     cacheFeedPosts(mergedPostsOnly.slice(0, 50), userId).catch(() => { });
 
     return uniqueNewPosts.length;

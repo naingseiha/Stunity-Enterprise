@@ -44,6 +44,7 @@ import profileRouter from './routes/profile.routes';
 import skillsRouter from './routes/skills.routes';
 import experienceRouter from './routes/experience.routes';
 import achievementsRouter from './routes/achievements.routes';
+import reelsRouter from './routes/reels.routes';
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
@@ -400,6 +401,7 @@ app.use('/', profileRouter);
 app.use('/', skillsRouter);
 app.use('/', experienceRouter);
 app.use('/', achievementsRouter);
+app.use('/reels', reelsRouter);
 
 // ─── Feature Modules (existing routers) ────────────────────────────
 // SSE: EventSource can't send headers, so accept token via query param

@@ -279,17 +279,29 @@ export default function LearnScreen() {
       setActiveTab(initialTab);
     }
   }, [initialTab]);
-  const [loading,          setLoading]          = useState(true);
+  // Synchronous cache read — if MainNavigator has hydrated learnHubCache
+  // from disk (or we've already fetched this session), this returns the
+  // payload immediately and we skip the skeleton entirely. Mirrors the
+  // Reels playbook: render real content on first frame, refresh in the
+  // background.
+  const cachedHub = learnApi.getCachedLearnHub();
+  const ttiStartRef = useRef(Date.now());
+  if (cachedHub && ttiStartRef.current && __DEV__) {
+    console.log(`[Learn TTI] memory/disk hit (${Date.now() - ttiStartRef.current}ms)`);
+    ttiStartRef.current = 0;
+  }
+
+  const [loading,          setLoading]          = useState(!cachedHub);
   const [refreshing,       setRefreshing]       = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
   const [debouncedQuery,   setDebouncedQuery]   = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAllCategories,setShowAllCategories]= useState(false);
-  const [courses,          setCourses]          = useState<LearnCourse[]>([]);
-  const [enrolledCourses,  setEnrolledCourses]  = useState<LearnEnrolledCourse[]>([]);
-  const [createdCourses,   setCreatedCourses]   = useState<LearnCourse[]>([]);
-  const [paths,            setPaths]            = useState<LearnPath[]>([]);
-  const [stats,            setStats]            = useState<LearningStats | null>(null);
+  const [courses,          setCourses]          = useState<LearnCourse[]>(cachedHub?.courses ?? []);
+  const [enrolledCourses,  setEnrolledCourses]  = useState<LearnEnrolledCourse[]>(cachedHub?.myCourses ?? []);
+  const [createdCourses,   setCreatedCourses]   = useState<LearnCourse[]>(cachedHub?.myCreated ?? []);
+  const [paths,            setPaths]            = useState<LearnPath[]>(cachedHub?.paths ?? []);
+  const [stats,            setStats]            = useState<LearningStats | null>(cachedHub?.stats ?? null);
   const [busyCourseId,     setBusyCourseId]     = useState<string | null>(null);
   const [busyPathId,       setBusyPathId]       = useState<string | null>(null);
   const tabContentProgress = useRef(new Animated.Value(1)).current;
@@ -336,6 +348,8 @@ export default function LearnScreen() {
   const hasFetched = useRef(false);
   const isRefreshing = useRef(false);
   const loadLearningData = useCallback(async (force = false) => {
+    const t0 = Date.now();
+    const hadCache = !!learnApi.getCachedLearnHub();
     try {
       // Single HTTP request — /courses/learn-hub runs all queries server-side in parallel.
       // Cache hit (within 30s) returns instantly with zero network.
@@ -345,8 +359,19 @@ export default function LearnScreen() {
       setCreatedCourses(hub.myCreated);
       setPaths(hub.paths);
       setStats(hub.stats);
+      if (__DEV__) {
+        const path = hadCache ? (force ? 'refresh' : 'fresh-cache') : 'network';
+        console.log(`[Learn TTI] ${path} settle (${Date.now() - t0}ms)`);
+      }
     } catch (error: any) {
-      Alert.alert(t('learn.learning'), error?.message || t('learn.errors.loadFailed'));
+      // Only surface an error if we have no cached content to fall back on.
+      // A background refresh failure should never wipe the screen the user
+      // is already looking at.
+      if (!learnApi.getCachedLearnHub()) {
+        Alert.alert(t('learn.learning'), error?.message || t('learn.errors.loadFailed'));
+      } else if (__DEV__) {
+        console.warn('[Learn] background refresh failed (cache still shown):', error?.message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

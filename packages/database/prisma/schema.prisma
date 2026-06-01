@@ -748,6 +748,10 @@ model User {
   attendanceDelegations        AttendanceDelegation[]       @relation("AttendanceDelegationAssignee")
   grantedAttendanceDelegations AttendanceDelegation[]       @relation("AttendanceDelegationGranter")
 
+  // Gamification for EduReels
+  reelCombo        Int                          @default(0)
+  highestReelCombo Int                          @default(0)
+
   @@index([email, isActive])
   @@index([phone, isActive])
   @@index([studentId, isActive])

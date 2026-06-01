@@ -17,12 +17,11 @@ import { FeedRanker } from './feedRanker';
 import { normalizePrismaUrlForComparison, withPrismaPoolParams } from '../../lib/prisma-pool-url';
 
 // ─── Prisma (primary — read/write) ─────────────────────────────────
+// Pool size + keepalives are applied by `withPrismaPoolParams` (shared helper
+// in services/lib/prisma-pool-url.js). Adjust pool via PRISMA_CONNECTION_LIMIT
+// env var, not here.
 const databaseUrl = process.env.DATABASE_URL || '';
-let pooledUrl = withPrismaPoolParams(databaseUrl) ?? databaseUrl;
-if (pooledUrl && !pooledUrl.includes('keepalives=')) {
-    const separator = pooledUrl.includes('?') ? '&' : '?';
-    pooledUrl += `${separator}keepalives=1&keepalives_idle=60&keepalives_interval=10&keepalives_count=5&connection_limit=10`;
-}
+const pooledUrl = withPrismaPoolParams(databaseUrl) ?? databaseUrl;
 
 export const prisma = new PrismaClient({
     datasources: { db: { url: pooledUrl } },
@@ -36,11 +35,7 @@ const useDedicatedReadReplica = Boolean(
     readUrlRaw &&
     normalizePrismaUrlForComparison(readUrlRaw) !== normalizePrismaUrlForComparison(databaseUrl)
 );
-let readUrl = withPrismaPoolParams(readUrlRaw || databaseUrl) ?? databaseUrl;
-if (readUrl && !readUrl.includes('keepalives=')) {
-    const separator = readUrl.includes('?') ? '&' : '?';
-    readUrl += `${separator}keepalives=1&keepalives_idle=60&keepalives_interval=10&keepalives_count=5&connection_limit=10`;
-}
+const readUrl = withPrismaPoolParams(readUrlRaw || databaseUrl) ?? databaseUrl;
 
 export const prismaRead = useDedicatedReadReplica
     ? new PrismaClient({

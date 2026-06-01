@@ -72,7 +72,11 @@
       "Bash(npx prisma *)",
       "Bash(awk '/^enum UserRole/,/^}/' packages/database/prisma/schema.prisma)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('prisma', {}\\), indent=2\\)\\)\")",
-      "Bash(git commit -m 'docs: Smart Scroll handover document + next-session brief *)"
+      "Bash(git commit -m 'docs: Smart Scroll handover document + next-session brief *)",
+      "Bash(awk '/^model /{m=$2} NR==271{print \"271:\", m} NR==1996{print \"1996:\", m} NR==2285{print \"2285:\", m} NR==2408{print \"2408:\", m}' packages/database/prisma/schema.prisma)",
+      "Bash(tee /tmp/tsc.out)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node -e \"const { PrismaClient } = require\\('@prisma/client'\\); const dmmf = new PrismaClient\\(\\)._engineConfig?.inlineSchema; const fs = require\\('fs'\\); const f = require.resolve\\('@prisma/client'\\); console.log\\('client at:', f\\); const idx = require\\('@prisma/client/index.d.ts' \\);\")"
     ]
   }
 }

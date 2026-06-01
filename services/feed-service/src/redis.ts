@@ -327,6 +327,11 @@ export const feedCache = {
     memoryCache.deleteByPattern(`feedranker:candidates:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:trending:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:explore:${userId}:*`);
+    // EduReels caches — engagement state (isLikedByMe, commentsCount) is
+    // embedded in /reels/feed responses, so any like/comment action on a
+    // post-backed reel must invalidate this user's reels caches too.
+    memoryCache.deleteByPattern(`reels:feed:${userId}:*`);
+    memoryCache.deleteByPattern(`reels:state:${userId}`);
 
     // Clear Redis if available — use SCAN (non-blocking) instead of KEYS (blocks Redis)
     if (!publisher || !isRedisConnected) return;
@@ -342,6 +347,8 @@ export const feedCache = {
         `feed:feedranker:candidates:${userId}:*`,
         `feed:feedranker:trending:${userId}:*`,
         `feed:feedranker:explore:${userId}:*`,
+        `feed:reels:feed:${userId}:*`,
+        `feed:reels:state:${userId}`,
       ];
       const keysToDelete = new Set<string>();
       for (const pattern of patterns) {

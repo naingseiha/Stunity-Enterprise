@@ -849,11 +849,21 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     const mark = (label: string, fromMs: number) => {
       timings[label] = Math.round(performance.now() - fromMs);
     };
+    const buildServerTimingHeader = (cacheHit: boolean): string => {
+      const total = Math.round(performance.now() - requestStartedAt);
+      const parts: string[] = [`total;dur=${total}`, `cache;desc="${cacheHit ? 'HIT' : 'MISS'}"`];
+      for (const [k, v] of Object.entries(timings)) parts.push(`${k};dur=${v}`);
+      return parts.join(', ');
+    };
     const logTimings = (cacheHit: boolean) => {
-      if (process.env.NODE_ENV === 'production') return;
       const total = Math.round(performance.now() - requestStartedAt);
       const parts = Object.entries(timings).map(([k, v]) => `${k}=${v}ms`).join(' ');
-      console.log(`⏱️  [Feed] /posts/feed page=${normalizedPage} mode=${mode} cache=${cacheHit ? 'HIT' : 'MISS'} total=${total}ms ${parts}`);
+      // Always log misses + any request > 3s so prod can be diagnosed; dev
+      // still gets the full firehose for cache-hit paths.
+      if (!cacheHit || total > 3000 || process.env.NODE_ENV !== 'production') {
+        const tag = total > 5000 ? '[Feed SLOW]' : '⏱️  [Feed]';
+        console.log(`${tag} /posts/feed page=${normalizedPage} mode=${mode} cache=${cacheHit ? 'HIT' : 'MISS'} total=${total}ms ${parts}`);
+      }
     };
 
     const cacheKey = buildFeedCacheKey(feedParams);
@@ -869,6 +879,8 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
         res.setHeader('ETag', cachedEtag);
       }
       res.setHeader('Cache-Control', `private, max-age=${responseCacheTtl}, stale-while-revalidate=300`);
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('Server-Timing', buildServerTimingHeader(true));
       logTimings(true);
       if (cachedEtag && req.headers['if-none-match'] === cachedEtag) {
         return res.status(304).end();
@@ -895,6 +907,8 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     if (coalesced) timings.coalesced = 1;
     res.setHeader('ETag', etag);
     res.setHeader('Cache-Control', `private, max-age=${responseCacheTtl}, stale-while-revalidate=300`);
+    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('Server-Timing', buildServerTimingHeader(false));
     logTimings(false);
 
     if (req.headers['if-none-match'] === etag) {

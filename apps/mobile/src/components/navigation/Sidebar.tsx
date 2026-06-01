@@ -236,6 +236,14 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       onPress: () => closeAndNavigate('Events'),
     },
     {
+      key: 'quizzes',
+      label: t('common.quizzes', 'Quizzes'),
+      icon: 'game-controller',
+      iconColor: '#F59E0B',
+      iconBg: '#FEF3C7',
+      onPress: () => closeAndNavigate('Quizzes'),
+    },
+    {
       key: 'bookmarks',
       label: t('settings.bookmarks'),
       icon: 'bookmark',

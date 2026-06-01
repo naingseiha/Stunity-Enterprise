@@ -64,6 +64,11 @@ import {
   type ProfileVisitor,
 } from "@/api/profileApi";
 import {
+  readProfileFromCache,
+  writeProfileToCache,
+  invalidateProfileCache,
+} from "@/screens/profile/profileCache";
+import {
   fetchPerformanceStatsSummary,
   fetchUserStatsCached,
   getCachedPerformanceSummary,
@@ -277,10 +282,21 @@ export default function ProfileScreen() {
   const updateUser = useAuthStore(s => s.updateUser);
   const feedItems = useFeedStore((state) => state.feedItems);
 
+  // For the user's own profile, seed from the disk-backed cache (hydrated by
+  // MainNavigator at boot) so the first paint is synchronous — no skeleton
+  // on warm reopen. Falls through to currentUser (auth store) if cache empty.
+  const cachedOwnProfile = isOwnProfile && currentUser?.id
+    ? readProfileFromCache(currentUser.id)
+    : null;
+  if (cachedOwnProfile && __DEV__) {
+    console.log('[Profile TTI] cache hit (own profile)');
+  }
   const [profile, setProfile] = useState<User | null>(
-    isOwnProfile ? currentUser : null,
+    isOwnProfile ? (cachedOwnProfile as User) || currentUser : null,
   );
-  const [profileStats, setProfileStats] = useState<UserStats | null>(null);
+  const [profileStats, setProfileStats] = useState<UserStats | null>(
+    (cachedOwnProfile as any)?.stats ?? null,
+  );
   const [education, setEducation] = useState<Education[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
@@ -569,6 +585,7 @@ export default function ProfileScreen() {
           }
         }
 
+        const tProfile = Date.now();
         const profileData = await apiFetchProfile(targetId);
 
         if (requestId !== requestIdRef.current) {
@@ -579,6 +596,11 @@ export default function ProfileScreen() {
         setProfileStats(profileData.stats);
         setIsFollowing(profileData.isFollowing || false);
         setLoading(false);
+
+        if (isOwnProfile && resolvedUserId) {
+          writeProfileToCache(profileData, resolvedUserId);
+          if (__DEV__) console.log(`[Profile TTI] settle (${Date.now() - tProfile}ms)`);
+        }
 
         if (!isOwnProfile && resolvedUserId) {
           void loadAnalyticsFast(resolvedUserId);

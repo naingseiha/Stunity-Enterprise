@@ -40,6 +40,11 @@ import { BlurView } from 'expo-blur';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { clubsApi, classesApi } from '@/api';
+import {
+  readClubsFromCache as readClubsLandingFromCache,
+  writeClubsToCache as writeClubsLandingToCache,
+  invalidateClubsCache as invalidateClubsLandingCache,
+} from '@/screens/clubs/clubsCache';
 import type { Club } from '@/api/clubs';
 import type { MyClassSummary } from '@/api/classes';
 import { useNavigationContext, useThemeContext } from '@/contexts';
@@ -184,7 +189,19 @@ export default function ClubsScreen() {
     return { cols, contentW, gap, cellW, classPreviewCount, teacherSectionCount, gridHPad };
   }, [isPortraitTablet, isThreeColumnTablet, layoutBreakpoint.isTablet, layoutBreakpoint.contentColumnWidth, windowWidth, schoolClassesBandWidth, threeColumnCenterWidth]);
   const user = useAuthStore((state) => state.user);
-  const initialClubsPage = clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE });
+  // Cache priority: api/clubs.ts in-memory map → clubsCache (memory + disk).
+  // The api/clubs.ts cache is per-param-combo and dies on app kill; the
+  // clubsCache disk layer was hydrated by MainNavigator at t≈0, so on a
+  // cold reopen we still get a synchronous first paint here.
+  const initialClubsPage =
+    clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE }) ||
+    readClubsLandingFromCache(user?.id);
+  if (initialClubsPage && __DEV__) {
+    const source = clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE })
+      ? 'api-mem'
+      : 'disk';
+    console.log(`[Clubs TTI] ${source}-cache hit (${initialClubsPage.clubs.length} clubs)`);
+  }
   const initialAcademicYears = classesApi.getCachedAcademicYears() || [];
   const initialSelectedYearId = initialAcademicYears.find((year) => year.isCurrent)?.id || null;
   const classCacheScopeKey = getClassCacheScopeKey(user);
@@ -253,6 +270,11 @@ export default function ClubsScreen() {
   const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
   const debouncedQueryRef = useRef('');
   const prefetchedClassDetailKeysRef = useRef<Set<string>>(new Set());
+  const deferredInteractionTaskRef = useRef<ReturnType<typeof InteractionManager.runAfterInteractions> | null>(null);
+  // Guards the visible-class prefetch so it fires exactly once per mount,
+  // even if `schoolClasses` re-populates from the network refresh after the
+  // initial cache paint.
+  const classDetailPrefetchFiredRef = useRef(false);
   const prefetchedClubDetailKeysRef = useRef<Set<string>>(new Set());
   const hasFocusedOnceRef = useRef(false);
   const hasLinkedTeacherProfile = Boolean(user?.teacher?.id || user?.teacherId);
@@ -524,7 +546,20 @@ export default function ClubsScreen() {
       // Use cached API call. 'force' is true if this was triggered by a pull-to-refresh or explicit user action.
       // initial load and tab switches benefit from the 30s TTL cache.
       const isUserAction = options?.reset && !options?.silent;
+      const t0 = Date.now();
       const { clubs: pageClubs, pagination } = await clubsApi.getClubsPaginated(params, isUserAction);
+      // Persist the landing page (no filter, page 1) to the disk-backed
+      // cache so next cold reopen renders synchronously. Only the canonical
+      // landing view is worth persisting — filters/searches don't need it.
+      if (
+        user?.id &&
+        targetPage === 1 &&
+        targetFilter === 'all' &&
+        targetQuery.length === 0
+      ) {
+        writeClubsLandingToCache({ clubs: pageClubs, pagination }, user.id);
+        if (__DEV__) console.log(`[Clubs TTI] settle (${Date.now() - t0}ms)`);
+      }
       const joinedIdsFromPage = pageClubs.filter((club) => club.isJoined).map((club) => club.id);
       setJoinedClubIds((prev) => {
         const uniqueJoinedIds = new Set(reset ? joinedIdsFromPage : [...prev, ...joinedIdsFromPage]);
@@ -610,12 +645,25 @@ export default function ClubsScreen() {
     );
     if (visibleClasses.length === 0) return;
 
-    const task = InteractionManager.runAfterInteractions(() => {
-      visibleClasses.forEach(prefetchClassDetails);
-    });
+    // Defer the class-detail bundle prefetch by 4s and fire exactly once
+    // per mount. The 4 parallel class-detail reads (students / timetable /
+    // attendance / grades — across 4 microservices) used to land in the
+    // middle of the cold-boot waterfall. Now they fire well after every
+    // other boot call has settled, so the user perceives cold-boot as
+    // "just the cached content paints". Tapping a class within the first
+    // 4s still works — the user-intent path bypasses this prefetch.
+    if (classDetailPrefetchFiredRef.current) return;
+    const deferTimer = setTimeout(() => {
+      classDetailPrefetchFiredRef.current = true;
+      const task = InteractionManager.runAfterInteractions(() => {
+        visibleClasses.forEach(prefetchClassDetails);
+      });
+      deferredInteractionTaskRef.current = task;
+    }, 4000);
 
     return () => {
-      task.cancel?.();
+      clearTimeout(deferTimer);
+      deferredInteractionTaskRef.current?.cancel?.();
     };
   }, [adminClasses, isAdminOrStaff, isTeacherClassLayout, prefetchClassDetails, schoolClasses]);
 
@@ -647,6 +695,7 @@ export default function ClubsScreen() {
     setHasMoreClubs(true);
     setRefreshing(true);
     clubsApi.invalidateClubsCache();
+    invalidateClubsLandingCache();
     if (canViewSchoolClasses) {
       classesApi.invalidateMyClassesCache();
     }
@@ -716,6 +765,7 @@ export default function ClubsScreen() {
           }
         }
         clubsApi.invalidateClubsCache();
+    invalidateClubsLandingCache();
         await loadClubs({
           silent: true,
           reset: true,

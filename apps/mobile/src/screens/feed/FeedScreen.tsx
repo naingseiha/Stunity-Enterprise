@@ -411,8 +411,8 @@ export default function FeedScreen() {
       catch { /* non-fatal */ }
     };
 
-    const run = async () => {
-      // 1. Populate from cache immediately (no network wait)
+    // 1. Cache-first paint — runs immediately on mount with no network wait
+    const loadFromCache = async () => {
       const [cachedCards, cachedBounties, cachedWar] = await Promise.all([
         loadCached(CACHE_KEYS.recallCards, CACHE_TTL.recallCards),
         loadCached(CACHE_KEYS.bounties,    CACHE_TTL.bounties),
@@ -422,8 +422,13 @@ export default function FeedScreen() {
       if (cachedCards?.length)  setServerRecallCards(cachedCards);
       if (cachedBounties?.length) setServerBounties(cachedBounties);
       if (cachedWar)            setServerQuizWar(cachedWar);
+    };
 
-      // 2. Fetch fresh data in parallel — all 3 requests fire simultaneously
+    // 2. Network refresh — deferred 1.5s so it doesn't pile onto the boot
+    // waterfall. The cache load above gives instant paint; the user never
+    // sees a loading state on a warm reopen. Same trick MainNavigator uses
+    // for the Reels and Learn prefetches.
+    const refreshFromNetwork = async () => {
       const [cards, bounties, war] = await Promise.allSettled([
         fetchDueCards({ limit: 10 }),
         fetchActiveBounties({ limit: 10 }),
@@ -451,8 +456,12 @@ export default function FeedScreen() {
       }
     };
 
-    run();
-    return () => { cancelled = true; };
+    loadFromCache();
+    const networkRefreshTimer = setTimeout(refreshFromNetwork, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(networkRefreshTimer);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // deliberately [] — only runs once on mount
 

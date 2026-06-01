@@ -1,4 +1,202 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { classApi, gradeApi, attendanceApi, timetableApi, teacherApi } from './client';
+
+// ── Disk persistence (for academic years + my classes only) ────────
+// These two endpoints fire on every Clubs tab mount. The in-memory caches
+// above are scoped to a single app session; the disk layer below survives
+// app kill so the next cold reopen renders ClubsScreen's school-classes
+// band synchronously instead of awaiting 2 network round trips.
+//
+// MainNavigator calls `hydrateClassesCacheFromDisk` at boot which populates
+// the in-memory caches above before ClubsScreen mounts. The `getCachedXxx`
+// helpers then return real data on first paint.
+
+const DISK_YEARS_KEY_PREFIX = 'classes:academic_years';
+const DISK_YEARS_TS_KEY_PREFIX = 'classes:academic_years_at';
+const DISK_MY_KEY_PREFIX = 'classes:my';
+const DISK_MY_TS_KEY_PREFIX = 'classes:my_at';
+const DISK_TTL_MS = 24 * 60 * 60 * 1000;
+
+const yearsDiskKeys = (userId: string) => ({
+  data: `${DISK_YEARS_KEY_PREFIX}:${userId}`,
+  ts: `${DISK_YEARS_TS_KEY_PREFIX}:${userId}`,
+});
+const myClassesDiskKeys = (userId: string) => ({
+  data: `${DISK_MY_KEY_PREFIX}:${userId}`,
+  ts: `${DISK_MY_TS_KEY_PREFIX}:${userId}`,
+});
+
+const persistAcademicYearsToDisk = async (userId: string, data: any[]): Promise<void> => {
+  if (!userId || !data?.length) return;
+  try {
+    const { data: dataKey, ts: tsKey } = yearsDiskKeys(userId);
+    await AsyncStorage.multiSet([
+      [dataKey, JSON.stringify(data)],
+      [tsKey, String(Date.now())],
+    ]);
+  } catch {
+    // non-fatal
+  }
+};
+
+const persistMyClassesToDisk = async (
+  userId: string,
+  data: any[],
+  cacheKey: string,
+): Promise<void> => {
+  if (!userId || !data?.length) return;
+  try {
+    const { data: dataKey, ts: tsKey } = myClassesDiskKeys(userId);
+    await AsyncStorage.multiSet([
+      [dataKey, JSON.stringify({ data, cacheKey })],
+      [tsKey, String(Date.now())],
+    ]);
+  } catch {
+    // non-fatal
+  }
+};
+
+/**
+ * Populate the in-memory academicYears + myClasses caches from disk if
+ * they're empty. Called from MainNavigator at boot before the user lands
+ * on Clubs, so ClubsScreen's `getCachedAcademicYears()` /
+ * `getCachedMyClasses()` synchronous reads return real data.
+ *
+ * Honors 24h TTL — drops stale entries instead of showing day-old class
+ * data. Memory cache `ts` is set to the disk write time so the next
+ * network call still fires (background refresh).
+ */
+export const hydrateClassesCacheFromDisk = async (userId: string): Promise<boolean> => {
+  if (!userId) return false;
+  let hydratedAny = false;
+
+  try {
+    const { data: yearsKey, ts: yearsTsKey } = yearsDiskKeys(userId);
+    const { data: myKey, ts: myTsKey } = myClassesDiskKeys(userId);
+    const [[, rawYears], [, rawYearsTs], [, rawMy], [, rawMyTs]] =
+      await AsyncStorage.multiGet([yearsKey, yearsTsKey, myKey, myTsKey]);
+
+    // Academic years
+    if (rawYears && rawYearsTs && !_academicYearsCache) {
+      const cachedAt = parseInt(rawYearsTs, 10);
+      if (Number.isFinite(cachedAt) && Date.now() - cachedAt <= DISK_TTL_MS) {
+        const parsed = JSON.parse(rawYears) as any[];
+        if (parsed?.length) {
+          _academicYearsCache = { data: parsed, ts: cachedAt };
+          hydratedAny = true;
+        }
+      } else {
+        AsyncStorage.multiRemove([yearsKey, yearsTsKey]).catch(() => {});
+      }
+    }
+
+    // My classes
+    if (rawMy && rawMyTs && !_myClassesCache) {
+      const cachedAt = parseInt(rawMyTs, 10);
+      if (Number.isFinite(cachedAt) && Date.now() - cachedAt <= DISK_TTL_MS) {
+        const parsed = JSON.parse(rawMy) as { data: any[]; cacheKey: string };
+        if (parsed?.data?.length && parsed.cacheKey) {
+          _myClassesCache = { data: parsed.data, ts: cachedAt, cacheKey: parsed.cacheKey };
+          hydratedAny = true;
+        }
+      } else {
+        AsyncStorage.multiRemove([myKey, myTsKey]).catch(() => {});
+      }
+    }
+  } catch {
+    // non-fatal
+  }
+
+  return hydratedAny;
+};
+
+// ── Class-detail bundle disk persistence ────────────────────────────
+// The class-detail bundle (students + timetable + attendance + grades) is
+// the heaviest tap in Clubs — 4 parallel reads across 4 microservices. The
+// in-memory `_classDetailCache` makes repeat opens within the same session
+// instant, but dies on app kill. Disk-cache the most recently used class so
+// reopening the app + retapping the same class paints from disk.
+//
+// Scoped per (userId, classDetailCacheKey). Only the LRU last-opened class
+// per user is persisted to bound storage footprint.
+
+const DISK_CLASS_DETAIL_KEY_PREFIX = 'class-detail:bundle';
+const DISK_CLASS_DETAIL_TS_KEY_PREFIX = 'class-detail:at';
+const DISK_CLASS_DETAIL_KEY_INDEX_PREFIX = 'class-detail:key';
+const DISK_CLASS_DETAIL_TTL_MS = 24 * 60 * 60 * 1000;
+
+const classDetailDiskKeys = (userId: string) => ({
+  data: `${DISK_CLASS_DETAIL_KEY_PREFIX}:${userId}`,
+  ts: `${DISK_CLASS_DETAIL_TS_KEY_PREFIX}:${userId}`,
+  key: `${DISK_CLASS_DETAIL_KEY_INDEX_PREFIX}:${userId}`,
+});
+
+const persistClassDetailToDisk = async (
+  userId: string,
+  cacheKey: string,
+  bundle: any,
+): Promise<void> => {
+  if (!userId || !cacheKey || !bundle) return;
+  try {
+    const { data, ts, key } = classDetailDiskKeys(userId);
+    await AsyncStorage.multiSet([
+      [data, JSON.stringify(bundle)],
+      [ts, String(Date.now())],
+      [key, cacheKey],
+    ]);
+  } catch {
+    // non-fatal
+  }
+};
+
+/**
+ * Populate `_classDetailCache` from disk for the user's last-opened class.
+ * Called from MainNavigator at boot. Returns the cacheKey if hydration
+ * succeeded so the caller can decide whether to await the read.
+ */
+export const hydrateClassDetailFromDisk = async (
+  userId: string,
+): Promise<string | null> => {
+  if (!userId) return null;
+  try {
+    const { data, ts, key } = classDetailDiskKeys(userId);
+    const [[, rawData], [, rawTs], [, rawKey]] = await AsyncStorage.multiGet([
+      data,
+      ts,
+      key,
+    ]);
+    if (!rawData || !rawTs || !rawKey) return null;
+    const cachedAt = parseInt(rawTs, 10);
+    if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > DISK_CLASS_DETAIL_TTL_MS) {
+      AsyncStorage.multiRemove([data, ts, key]).catch(() => {});
+      return null;
+    }
+    const parsed = JSON.parse(rawData);
+    if (!parsed) return null;
+    _classDetailCache.set(rawKey, { data: parsed, ts: cachedAt });
+    return rawKey;
+  } catch {
+    return null;
+  }
+};
+
+/** Fire-and-forget disk warmup. Used by MainNavigator's deferred prefetch. */
+export const prefetchClasses = async (userId?: string): Promise<void> => {
+  if (!userId) return;
+  // Refresh in background — short-circuits via in-memory TTL if recent.
+  try {
+    const years = await getAcademicYears();
+    void persistAcademicYearsToDisk(userId, years);
+    const currentYearId = years.find((y: any) => y?.isCurrent)?.id;
+    if (currentYearId) {
+      const classes = await getMyClasses({ academicYearId: currentYearId, scopeKey: userId });
+      const cacheKey = getMyClassesCacheKey(currentYearId, userId);
+      void persistMyClassesToDisk(userId, classes, cacheKey);
+    }
+  } catch (err) {
+    if (__DEV__) console.warn('[Classes] prefetch failed (non-fatal):', err);
+  }
+};
 
 export interface MyClassSummary {
   id: string;
@@ -328,6 +526,9 @@ export const getMyClasses = async (options?: { force?: boolean; academicYearId?:
   }).then((response) => {
     const data = Array.isArray(response.data?.data) ? response.data.data : [];
     _myClassesCache = { data, ts: Date.now(), cacheKey };
+    // Persist to disk so the next cold reopen of Clubs hydrates instantly.
+    // scopeKey is typically the userId — use it as the disk scope.
+    if (scopeKey) void persistMyClassesToDisk(scopeKey, data, cacheKey);
     return data;
   }).finally(() => {
     _myClassesInFlight.delete(cacheKey);
@@ -886,10 +1087,23 @@ export const primeClassDetailBundleCache = (
     teacherInfo: bundle.teacherInfo || null,
   };
 
-  _classDetailCache.set(getClassDetailCacheKey(options), {
+  const cacheKey = getClassDetailCacheKey(options);
+  _classDetailCache.set(cacheKey, {
     data: normalizedBundle,
     ts: Date.now(),
   });
+  // Persist this class as the user's last-opened so a cold reopen + tap on
+  // the same class paints from disk. Lazy import of auth store to avoid a
+  // cycle at module-init time.
+  void (async () => {
+    try {
+      const { useAuthStore } = await import('@/stores/authStore');
+      const userId = useAuthStore.getState().user?.id;
+      if (userId) void persistClassDetailToDisk(userId, cacheKey, normalizedBundle);
+    } catch {
+      // non-fatal
+    }
+  })();
 
   _classStudentsCache.set(options.classId, {
     data: normalizedBundle.students,

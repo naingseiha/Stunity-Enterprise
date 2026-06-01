@@ -4,6 +4,28 @@ import { buildLocalizedTextInput, getRequestedLocale, isValidLocaleKey, normaliz
 import { buildCourseResumeSnapshots } from '../utils/course-resume';
 import { inferCourseItemType, normalizeLessonResources, normalizeLessonTextTracks } from '../utils/course-items';
 
+// ── Lightweight in-process metrics ──────────────────────────────────
+// Mirrors services/feed-service/src/routes/reels.routes.ts. Logs once per
+// minute and resets, so we get a rolling sample without growing memory.
+// No Redis cache here yet, so every hub fetch is a miss — the counter is
+// still useful as a request-rate signal and the per-request [Learn MISS]
+// line carries the per-pool timings for cold-path diagnosis.
+const learnMetrics = {
+  learnHub: { hit: 0, miss: 0 },
+};
+setInterval(() => {
+  const h = learnMetrics.learnHub;
+  if (h.hit + h.miss === 0) return;
+  const ratio = h.hit + h.miss > 0 ? (h.hit / (h.hit + h.miss)).toFixed(2) : 'n/a';
+  console.log(`[Learn metrics] learn-hub: hit=${h.hit} miss=${h.miss} ratio=${ratio}`);
+  learnMetrics.learnHub = { hit: 0, miss: 0 };
+}, 60_000).unref();
+
+const buildServerTiming = (parts: Record<string, number>): string =>
+  Object.entries(parts)
+    .map(([k, v]) => `${k};dur=${v}`)
+    .join(', ');
+
 interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -248,6 +270,8 @@ export class CoursesController {
    * GET /courses/learn-hub - Aggregated data for mobile/web dashboard
    */
   static async getLearnHub(req: AuthRequest, res: Response) {
+    const t0 = Date.now();
+    const timings: Record<string, number> = {};
     try {
       const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
@@ -256,6 +280,8 @@ export class CoursesController {
       const myLimit = parseBoundedLimit(req.query.myLimit, 50, 100);
       const createdLimit = parseBoundedLimit(req.query.createdLimit, 50, 100);
 
+      learnMetrics.learnHub.miss++;
+      const tPools = Date.now();
       const [
         rawCourses,
         rawEnrollments,
@@ -396,8 +422,10 @@ export class CoursesController {
           },
         }) : Promise.resolve([]),
       ]);
+      timings.pools = Date.now() - tPools;
 
       // Batch-resolve completedLessons for enrolled courses
+      const tPost = Date.now();
       let completedMap = new Map<string, number>();
       const enrolledCourseIds = rawEnrollments.map((enrollment) => enrollment.courseId);
       const resumeSnapshots = userId
@@ -443,6 +471,14 @@ export class CoursesController {
 
       const now = Date.now();
       const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+      timings.post = Date.now() - tPost;
+      timings.total = Date.now() - t0;
+
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('Server-Timing', buildServerTiming(timings));
+      console.log(
+        `[Learn MISS] user=${userId ?? 'anon'} locale=${locale} total=${timings.total}ms pools=${timings.pools}ms post=${timings.post}ms`,
+      );
 
       res.json({
         courses: rawCourses.map(course => ({

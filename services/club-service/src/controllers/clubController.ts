@@ -1,7 +1,28 @@
 import { Response } from 'express';
 import { AuthRequest } from '../index';
 import axios from 'axios';
-import { prisma } from '../lib/prisma';
+import { prisma, prismaRead } from '../lib/prisma';
+
+// ── Lightweight in-process metrics ──────────────────────────────────
+// Mirrors learn-service / feed-service. Logs once per minute and resets.
+// No Redis cache here yet, so every getClubs is a miss — the counter is a
+// request-rate signal and the per-request [Clubs MISS] line carries the
+// per-query timings for cold-path diagnosis.
+const clubMetrics = {
+  list: { hit: 0, miss: 0 },
+};
+setInterval(() => {
+  const m = clubMetrics.list;
+  if (m.hit + m.miss === 0) return;
+  const ratio = m.hit + m.miss > 0 ? (m.hit / (m.hit + m.miss)).toFixed(2) : 'n/a';
+  console.log(`[Clubs metrics] /clubs: hit=${m.hit} miss=${m.miss} ratio=${ratio}`);
+  clubMetrics.list = { hit: 0, miss: 0 };
+}, 60_000).unref();
+
+const buildClubServerTiming = (parts: Record<string, number>): string =>
+  Object.entries(parts)
+    .map(([k, v]) => `${k};dur=${v}`)
+    .join(', ');
 
 // Feed service URL
 const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
@@ -198,7 +219,10 @@ export const createClub = async (req: AuthRequest, res: Response) => {
 };
 
 export const getClubs = async (req: AuthRequest, res: Response) => {
+  const t0 = Date.now();
+  const timings: Record<string, number> = {};
   try {
+    clubMetrics.list.miss++;
     const userId = req.user?.userId; // Optional - may be undefined
     const { type, myClubs, schoolId, search, discover } = req.query;
     const pageParam = Array.isArray(req.query.page) ? req.query.page[0] : req.query.page;
@@ -235,7 +259,8 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
 
     const skip = (page - 1) * limit;
 
-    const clubs = await prisma.studyClub.findMany({
+    const tList = Date.now();
+    const clubs = await prismaRead.studyClub.findMany({
       where,
       include: {
         creator: {
@@ -261,13 +286,15 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
       },
       ...(usePagination ? { skip, take: limit + 1 } : {}),
     });
+    timings.list = Date.now() - tList;
 
     const hasMore = usePagination ? clubs.length > limit : false;
     const pageItems = usePagination && hasMore ? clubs.slice(0, limit) : clubs;
 
     let joinedSet = new Set<string>();
     if (userId && pageItems.length > 0) {
-      const memberships = await prisma.clubMember.findMany({
+      const tMembers = Date.now();
+      const memberships = await prismaRead.clubMember.findMany({
         where: {
           userId,
           clubId: { in: pageItems.map((club) => club.id) },
@@ -277,6 +304,7 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
           clubId: true,
         },
       });
+      timings.members = Date.now() - tMembers;
       joinedSet = new Set(memberships.map((membership) => membership.clubId));
     }
 
@@ -287,6 +315,15 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
       memberCount: club._count.members,  // Map _count.members to memberCount
       isJoined: joinedSet.has(club.id),
     }));
+
+    timings.total = Date.now() - t0;
+    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('Server-Timing', buildClubServerTiming(timings));
+    if (timings.total > 1000) {
+      console.log(
+        `[Clubs MISS] user=${userId ?? 'anon'} count=${transformedClubs.length} total=${timings.total}ms list=${timings.list ?? 0}ms members=${timings.members ?? 0}ms`,
+      );
+    }
 
     res.json({
       success: true,

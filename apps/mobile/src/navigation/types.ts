@@ -112,6 +112,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   FeedTab: NavigatorScreenParams<FeedStackParamList>;
   LearnTab: NavigatorScreenParams<LearnStackParamList>;
+  ReelsTab: undefined;
   QuizTab: NavigatorScreenParams<QuizStackParamList>;
   ClubsTab: NavigatorScreenParams<ClubsStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
