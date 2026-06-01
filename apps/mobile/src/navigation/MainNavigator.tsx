@@ -29,6 +29,7 @@ import {
 import { Colors, Typography, Shadows } from "@/config";
 import { Sidebar } from "@/components/navigation";
 import TabletTabRail from "@/components/navigation/TabletTabRail";
+import { withSwipeableTab } from "@/components/navigation/SwipeableTabContainer";
 import { ProfileTabIcon } from "@/components/navigation/ProfileTabIcon";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
 import {
@@ -54,6 +55,8 @@ import {
   CreateBountyScreen,
   FocusReelsScreen,
 } from "@/screens/feed";
+import { prefetchReelsFeed, hydrateReelsCacheFromDisk } from "@/screens/feed/reelsCache";
+import useAuthStore from "@/stores/authStore";
 import {
   LearnScreen,
   CourseDetailScreen,
@@ -378,6 +381,14 @@ const ProfileStackNavigator = () => (
 // Tab Navigator
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+// Wrap each visible tab root so horizontal flicks switch tabs (Instagram-style).
+// The wrapper bails out on vertical scrolls and on deep-stack screens.
+const SwipeableFeed = withSwipeableTab(FeedStackNavigator, "FeedTab");
+const SwipeableReels = withSwipeableTab(FocusReelsScreen, "ReelsTab");
+const SwipeableLearn = withSwipeableTab(LearnStackNavigator, "LearnTab");
+const SwipeableClubs = withSwipeableTab(ClubsStackNavigator, "ClubsTab");
+const SwipeableProfile = withSwipeableTab(ProfileStackNavigator, "ProfileTab");
+
 interface TabBarIconProps {
   focused: boolean;
   color: string;
@@ -483,6 +494,8 @@ const MainNavigatorContent = () => {
           screen: "LearnHub",
           params: { initialTab: "created" },
         },
+        // Quiz Hub is reachable from the sidebar after the tab was removed.
+        Quizzes: { tab: "QuizTab" },
       };
 
       const mapping = screenToTabMap[screen];
@@ -552,6 +565,11 @@ const MainNavigatorContent = () => {
                 iconName = focused ? "compass" : "compass-outline";
                 iconSize = 28;
                 break;
+              case "ReelsTab":
+                // Play-circle for short-form video — slightly larger to pop visually.
+                iconName = focused ? "play-circle" : "play-circle-outline";
+                iconSize = 32;
+                break;
               case "QuizTab":
                 // Game controller for play/quizzes
                 iconName = focused
@@ -601,7 +619,7 @@ const MainNavigatorContent = () => {
       >
         <Tab.Screen
           name="FeedTab"
-          component={FeedStackNavigator}
+          component={SwipeableFeed}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? "Feed";
             if (
@@ -620,8 +638,17 @@ const MainNavigatorContent = () => {
           }}
         />
         <Tab.Screen
+          name="ReelsTab"
+          component={SwipeableReels}
+          options={{
+            // Reels is full-immersive (vertical paged video). Hide the tab bar
+            // while in it so the experience matches Instagram / Facebook Reels.
+            tabBarStyle: { display: "none" },
+          }}
+        />
+        <Tab.Screen
           name="LearnTab"
-          component={LearnStackNavigator}
+          component={SwipeableLearn}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? "LearnHub";
             if (
@@ -639,10 +666,19 @@ const MainNavigatorContent = () => {
             return {};
           }}
         />
-        <Tab.Screen name="QuizTab" component={QuizStackNavigator} />
+        <Tab.Screen
+          name="QuizTab"
+          component={QuizStackNavigator}
+          options={{
+            // Quiz lives in the sidebar menu now (frees a slot for Reels).
+            // Keep the route registered so deep links / programmatic nav still work.
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
         <Tab.Screen
           name="ClubsTab"
-          component={ClubsStackNavigator}
+          component={SwipeableClubs}
           options={({ route }) => {
             const routeName =
               getFocusedRouteNameFromRoute(route) ?? "ClubsList";
@@ -681,7 +717,7 @@ const MainNavigatorContent = () => {
         />
         <Tab.Screen
           name="ProfileTab"
-          component={ProfileStackNavigator}
+          component={SwipeableProfile}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? "Profile";
             if (
@@ -785,6 +821,39 @@ function MainStackNavigatorTabletAware() {
 };
 
 const MainNavigator = () => {
+  // Background-prefetch the Reels feed on app boot, *before* the user taps
+  // the Reels tab. Same trick Instagram / TikTok use for instant tab entry.
+  //
+  // Two-layer fast path:
+  //   1. AsyncStorage hydrate (~5ms): populates reelsCache from last session
+  //      so even a cold-from-kill launch can show real reels immediately.
+  //   2. Network refresh: fires in the background, refreshes the cache, and
+  //      persists the new payload back to disk for next launch.
+  //
+  // CRITICAL: the network call is *deferred 1.5s* so it doesn't join the
+  // boot waterfall (FeedStore, carousels, notifications, analytics) and
+  // starve feed-service's connection pool. Without this delay, /reels/feed
+  // gets queued behind /posts/feed and the Reels TTI balloons to ~10s on
+  // cold launch. The disk hydrate still fires immediately so the cache is
+  // populated for any same-tick tab tap.
+  //
+  // userId scopes the disk cache so account switching can't leak reels.
+  const userId = useAuthStore((s) => s.user?.id);
+  useEffect(() => {
+    if (!userId) return; // wait until auth resolved before touching disk
+    // Disk hydrate runs immediately (~5ms, no network) so a same-tick Reels
+    // tap renders from last session's cache instantly.
+    void hydrateReelsCacheFromDisk(userId);
+    // Network refresh deferred 1.5s so it doesn't pile onto the boot
+    // waterfall (FeedStore, carousels, notifications). After the spike
+    // settles, feed-service's connection pool is free and /reels/feed
+    // gets a clean shot.
+    const t = setTimeout(() => {
+      void prefetchReelsFeed(userId);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [userId]);
+
   return (
     <NavigationProvider>
       <MainStackNavigatorTabletAware />

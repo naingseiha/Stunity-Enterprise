@@ -600,9 +600,13 @@ export default function ClubsScreen() {
   );
 
   useEffect(() => {
+    // Prefetch only the top card on mount. Earlier this was slice(0, 3), which
+    // fanned out 12+ simultaneous HTTP calls (each bundle fires 4–6 requests
+    // via getClassDetailBundle) and saturated the gateway, causing /posts/feed
+    // and /reels/feed to time out. Other cards prefetch on press intent.
     const visibleClasses = (isTeacherClassLayout ? schoolClasses : isAdminOrStaff ? adminClasses : schoolClasses).slice(
       0,
-      3,
+      1,
     );
     if (visibleClasses.length === 0) return;
 
