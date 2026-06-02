@@ -13,7 +13,7 @@
  */
 
 import { Router, Response } from 'express';
-import { prisma } from '../context';
+import { prisma, prismaRead } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { applyReview, daysSinceReview, type RecallGrade } from '../utils/sm2';
 import {
@@ -24,6 +24,100 @@ import {
 const router = Router();
 
 const DEFAULT_DUE_LIMIT = 20;
+
+// ─────────────────────────────────────────────────────────
+// GET /recall/mastery — subject → topic mastery tree (Progress hook §3.5)
+// Derived from each card's SM-2 recallStrength blended with review accuracy.
+// ─────────────────────────────────────────────────────────
+
+/** Per-card mastery 0..100. New/unpracticed cards are capped low to avoid overstating. */
+function cardMasteryPct(c: { recallStrength: number; reviewCount: number; incorrectCount: number }): number {
+  if (!c.reviewCount || c.reviewCount <= 0) {
+    return Math.round(Math.max(0, Math.min(1, c.recallStrength)) * 40);
+  }
+  const accuracy = Math.max(0, (c.reviewCount - c.incorrectCount) / c.reviewCount);
+  return Math.round((0.6 * c.recallStrength + 0.4 * accuracy) * 100);
+}
+
+function capitalize(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+router.get('/recall/mastery', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const now = new Date();
+
+    const cards = await prismaRead.recallCard.findMany({
+      where: { userId },
+      select: {
+        subject: true,
+        subjectLabel: true,
+        recallStrength: true,
+        reviewCount: true,
+        incorrectCount: true,
+        nextReviewAt: true,
+      },
+    });
+
+    // subject -> { label, topic -> { masterySum, count, due } }
+    type TopicAgg = { label: string; sum: number; count: number; due: number };
+    type SubjectAgg = { label: string; sum: number; count: number; due: number; topics: Map<string, TopicAgg> };
+    const subjects = new Map<string, SubjectAgg>();
+
+    for (const c of cards) {
+      const mastery = cardMasteryPct(c);
+      const isDue = c.nextReviewAt <= now;
+
+      // subjectLabel looks like "Biology · Cell Structure" → nice name + topic.
+      const [rawName, ...rest] = (c.subjectLabel || '').split('·').map((p) => p.trim());
+      const subjectLabel = rawName || capitalize(c.subject);
+      const topicLabel = rest.join(' · ') || subjectLabel;
+
+      let subj = subjects.get(c.subject);
+      if (!subj) {
+        subj = { label: subjectLabel, sum: 0, count: 0, due: 0, topics: new Map() };
+        subjects.set(c.subject, subj);
+      }
+      subj.sum += mastery;
+      subj.count += 1;
+      if (isDue) subj.due += 1;
+
+      let topic = subj.topics.get(topicLabel);
+      if (!topic) {
+        topic = { label: topicLabel, sum: 0, count: 0, due: 0 };
+        subj.topics.set(topicLabel, topic);
+      }
+      topic.sum += mastery;
+      topic.count += 1;
+      if (isDue) topic.due += 1;
+    }
+
+    const tree = Array.from(subjects.entries())
+      .map(([subject, s]) => ({
+        subject,
+        label: s.label,
+        mastery: s.count ? Math.round(s.sum / s.count) : 0,
+        cardCount: s.count,
+        dueCount: s.due,
+        topics: Array.from(s.topics.values())
+          .map((tp) => ({
+            label: tp.label,
+            mastery: tp.count ? Math.round(tp.sum / tp.count) : 0,
+            cardCount: tp.count,
+            dueCount: tp.due,
+          }))
+          // Weakest topics first — that's where the user should focus.
+          .sort((a, b) => a.mastery - b.mastery),
+      }))
+      .sort((a, b) => b.cardCount - a.cardCount);
+
+    res.json({ success: true, subjects: tree });
+  } catch (error: any) {
+    console.error('Get mastery tree error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get mastery' });
+  }
+});
 
 // ─────────────────────────────────────────────────────────
 // GET /recall/due — cards due for review now

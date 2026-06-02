@@ -1751,6 +1751,82 @@ app.get('/super-admin/users', requireSuperAdmin, async (req: Request, res: Respo
   }
 });
 
+// GET /super-admin/verification-requests - List educator verification requests
+app.get('/super-admin/verification-requests', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { status = 'PENDING' } = req.query;
+    const requests = await prisma.verificationRequest.findMany({
+      where: { status: String(status) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            school: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: requests });
+  } catch (error: any) {
+    console.error('Super admin fetch verification requests error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch requests' });
+  }
+});
+
+// POST /super-admin/verification-requests/:id/approve - Approve educator verification
+app.post('/super-admin/verification-requests/:id/approve', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const request = await prisma.verificationRequest.findUnique({ where: { id } });
+    if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
+    if (request.status !== 'PENDING') {
+      return res.status(400).json({ success: false, error: 'Request is not pending' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.verificationRequest.update({
+        where: { id },
+        data: { status: 'APPROVED' },
+      });
+      await tx.user.update({
+        where: { id: request.userId },
+        data: { isVerified: true, verifiedAt: new Date() },
+      });
+    });
+
+    res.json({ success: true, message: 'Educator verified' });
+  } catch (error: any) {
+    console.error('Super admin approve verification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to approve request' });
+  }
+});
+
+// POST /super-admin/verification-requests/:id/reject - Reject educator verification
+app.post('/super-admin/verification-requests/:id/reject', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const request = await prisma.verificationRequest.findUnique({ where: { id } });
+    if (!request) return res.status(404).json({ success: false, error: 'Request not found' });
+    if (request.status !== 'PENDING') {
+      return res.status(400).json({ success: false, error: 'Request is not pending' });
+    }
+
+    await prisma.verificationRequest.update({
+      where: { id },
+      data: { status: 'REJECTED' },
+    });
+
+    res.json({ success: true, message: 'Verification rejected' });
+  } catch (error: any) {
+    console.error('Super admin reject verification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reject request' });
+  }
+});
+
 // GET /super-admin/users/:userId - Get user detail (super admin only)
 app.get('/super-admin/users/:userId', requireSuperAdmin, async (req: Request, res: Response) => {
   try {

@@ -26,6 +26,7 @@ import {
   Animated,
   InteractionManager,
   useWindowDimensions,
+  Share,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
@@ -95,6 +96,7 @@ import {
   ActivityTab,
   CertificationsSection,
   SkillsSection,
+  EndorsableSkills,
   ProfileCompletenessCard,
   CareerGoalsCard,
   ProjectShowcase,
@@ -281,6 +283,8 @@ export default function ProfileScreen() {
   const isOwnProfile = !userId || userId === currentUser?.id;
   const updateUser = useAuthStore(s => s.updateUser);
   const feedItems = useFeedStore((state) => state.feedItems);
+  const myPosts = useFeedStore((state) => state.myPosts);
+  const fetchMyPosts = useFeedStore((state) => state.fetchMyPosts);
 
   // For the user's own profile, seed from the disk-backed cache (hydrated by
   // MainNavigator at boot) so the first paint is synchronous — no skeleton
@@ -786,6 +790,24 @@ export default function ProfileScreen() {
     navigation.navigate("EditProfile" as any);
   }, [navigation]);
 
+  // Share the public profile URL (works logged-out via /public/u/:username).
+  const handleShareProfile = useCallback(async () => {
+    const username = (profile as any)?.username || currentUser?.username;
+    if (!username) {
+      Alert.alert("Profile link unavailable", "Set a username first to share your profile.");
+      return;
+    }
+    const url = `https://stunity.app/u/${username}`;
+    const name = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim();
+    try {
+      await Share.share({
+        message: name ? `Check out ${name}'s learning profile on Stunity: ${url}` : url,
+        url,
+        title: "My Stunity profile",
+      });
+    } catch (_) {/* user cancelled */}
+  }, [profile, currentUser?.username]);
+
   // ── Photo Upload Handlers ───────────────────────────────────
 
   const handlePickProfilePhoto = useCallback(async () => {
@@ -896,16 +918,26 @@ export default function ProfileScreen() {
     [profile],
   );
 
-  const profilePosts = useMemo(
-    () =>
-      (Array.isArray(feedItems) ? feedItems : [])
-        .filter(
-          (i: any) =>
-            i.type === "POST" && i.data?.author?.id === profileAuthorId,
-        )
-        .map((i: any) => i.data),
-    [feedItems, profileAuthorId],
-  );
+  // Own profile shows the complete, paginated archive from /my-posts (includes
+  // reposts with their quoted card). Other profiles fall back to whatever posts
+  // are already loaded in the feed (no public user-posts endpoint yet).
+  const profilePosts = useMemo(() => {
+    if (isOwnProfile) {
+      return Array.isArray(myPosts) ? myPosts : [];
+    }
+    return (Array.isArray(feedItems) ? feedItems : [])
+      .filter(
+        (i: any) => i.type === "POST" && i.data?.author?.id === profileAuthorId,
+      )
+      .map((i: any) => i.data);
+  }, [isOwnProfile, myPosts, feedItems, profileAuthorId]);
+
+  // Load the full archive when the owner opens their Posts tab.
+  useEffect(() => {
+    if (isOwnProfile && activeTab === "posts") {
+      fetchMyPosts();
+    }
+  }, [isOwnProfile, activeTab, fetchMyPosts]);
 
   const noop = useCallback(() => {}, []);
   const profilePostHandlersRef = useMemo(
@@ -1395,6 +1427,22 @@ export default function ProfileScreen() {
                             />
                           </TouchableOpacity>
                         ) : null}
+                        <TouchableOpacity
+                          style={[
+                            styles.headerCircleBtnDark,
+                            {
+                              backgroundColor: colors.surfaceVariant,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                          onPress={handleShareProfile}
+                        >
+                          <Ionicons
+                            name="share-social-outline"
+                            size={20}
+                            color={colors.text}
+                          />
+                        </TouchableOpacity>
                         <TouchableOpacity
                           style={[
                             styles.headerCircleBtnDark,
@@ -2390,6 +2438,11 @@ export default function ProfileScreen() {
                       skills={profile.skills || []}
                       interests={profile.interests || []}
                     />
+
+                    {/* Endorsable skills (UserSkill model w/ endorsements) */}
+                    {profile.id ? (
+                      <EndorsableSkills userId={profile.id} isOwnProfile={isOwnProfile} />
+                    ) : null}
 
                     {/* Empty state — only if absolutely nothing */}
                     {aboutLoaded &&

@@ -313,6 +313,8 @@ export interface Post {
   shares: number;
   views?: number;
   isLiked: boolean;
+  /** The signed-in user's reaction type, or null. LIKE | INSIGHTFUL | CELEBRATE | SMART_TAKE */
+  myReaction?: string | null;
   isBookmarked: boolean;
   isValued?: boolean;
   isFollowingAuthor?: boolean;

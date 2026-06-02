@@ -6,6 +6,7 @@
 
 import { Router, Response } from "express";
 import { prisma, prismaRead, feedRanker, upload } from "../context";
+import { computeProfileStrength } from "../utils/profileStrength";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from "../utils/r2";
 import { feedCache, EventPublisher } from "../redis";
@@ -186,6 +187,134 @@ async function getRecentProfileVisitors(
 // ========================================
 // PROFILE ENDPOINTS
 // ========================================
+
+// ========================================
+// PUBLIC PROFILE ENDPOINTS
+// ========================================
+
+// GET /public/u/:username - Public, unauthenticated profile view
+router.get("/public/u/:username", async (req: any, res: Response) => {
+  try {
+    const { username } = req.params;
+    if (!username) {
+      return res.status(400).json({ success: false, error: "Username is required" });
+    }
+
+    const cleanUsername = username.toLowerCase().trim();
+
+    const user = await prismaRead.user.findUnique({
+      where: { username: cleanUsername },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        profilePictureUrl: true,
+        coverPhotoUrl: true,
+        bio: true,
+        headline: true,
+        location: true,
+        professionalTitle: true,
+        isVerified: true,
+        level: true,
+        totalLearningHours: true,
+        currentStreak: true,
+        school: {
+          select: { name: true, slug: true }
+        },
+        userSkills: {
+          take: 10,
+          select: { id: true, skillName: true, category: true, level: true }
+        },
+        achievements: {
+          take: 5,
+          where: { isPublic: true },
+          select: { id: true, title: true, description: true, badgeUrl: true }
+        },
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: "Profile not found" });
+    }
+
+    // Increment public profile views (optional, could be tracked asynchronously)
+
+    res.json({ success: true, data: user });
+  } catch (error: any) {
+    console.error("Public profile fetch error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch public profile" });
+  }
+});
+
+// GET /profile/strength - Get authenticated user's profile strength and next action nudge
+router.get(
+  "/profile/strength",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+
+      // Read on the replica — this is a pure-read endpoint.
+      const user = await prismaRead.user.findUnique({
+        where: { id: userId },
+        select: {
+          profilePictureUrl: true,
+          bio: true,
+          headline: true,
+          location: true,
+          careerGoals: true,
+          profileCompleteness: true,
+          _count: {
+            select: {
+              userSkills: true,
+              experiences: true,
+              certifications: true,
+            }
+          }
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: "User not found" });
+      }
+
+      const strength = computeProfileStrength({
+        profilePictureUrl: user.profilePictureUrl,
+        bio: user.bio,
+        headline: user.headline,
+        location: user.location,
+        careerGoals: user.careerGoals,
+        skillCount: user._count.userSkills,
+        experienceCount: user._count.experiences,
+      });
+
+      // Keep the persisted value fresh for consumers (nudges, weekly digest) without
+      // writing on every read — only when it has actually drifted, fire-and-forget on
+      // the write pool so the read path stays off the primary.
+      if (user.profileCompleteness !== strength.completeness) {
+        prisma.user
+          .update({
+            where: { id: userId },
+            data: { profileCompleteness: strength.completeness },
+          })
+          .catch((err) => console.error("Profile completeness write-back failed:", err));
+      }
+
+      res.json({
+        success: true,
+        data: {
+          completeness: strength.completeness,
+          missingFields: strength.missingFields,
+          nextAction: strength.nextAction,
+        }
+      });
+    } catch (error: any) {
+      console.error("Profile strength error:", error);
+      res.status(500).json({ success: false, error: "Failed to get profile strength" });
+    }
+  }
+);
 
 // GET /users/suggested - Suggested users for feed carousel (no query required)
 router.get(

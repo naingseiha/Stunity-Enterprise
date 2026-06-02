@@ -104,6 +104,24 @@ export async function fetchProfile(userId: string = "me") {
   return data.profile;
 }
 
+export interface ProfileStrength {
+  completeness: number;
+  missingFields: string[];
+  nextAction: string;
+}
+
+/**
+ * Authoritative profile-strength for the signed-in user. Also triggers the
+ * server-side refresh of the persisted profileCompleteness (consumed by the
+ * weekly digest). Safe to call on profile view.
+ */
+export async function fetchProfileStrength() {
+  const { data } = await feedApi.get<{ success: boolean; data: ProfileStrength }>(
+    "/profile/strength",
+  );
+  return data.data;
+}
+
 /** Track a profile visit. The backend de-dupes repeated visits within an hour. */
 export async function trackProfileView(
   userId: string,

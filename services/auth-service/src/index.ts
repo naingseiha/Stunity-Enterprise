@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import * as tokenBlacklist from './utils/tokenBlacklist';
+import { generateUniqueUsername } from './utils/username';
 import passwordResetRoutes from './routes/passwordReset.routes';
 import socialAuthRoutes from './routes/socialAuth.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
@@ -1100,11 +1101,15 @@ app.post(
       // Hash password
       const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
+      // Assign a unique username so public profile URLs (stunity.app/u/{username}) work from day one
+      const username = await generateUniqueUsername(prisma, firstName, lastName);
+
       // Create user (email and phone are optional in schema)
       const user = await prisma.user.create({
         data: {
           email: emailTrim || null,
           phone: phoneTrim || null,
+          username,
           password: hashedPassword,
           firstName,
           lastName,
@@ -1533,10 +1538,12 @@ app.post(
         });
 
         // Create User account for parent
+        const parentUsername = await generateUniqueUsername(tx, firstName, lastName);
         const user = await tx.user.create({
           data: {
             email: email || null,
             phone,
+            username: parentUsername,
             password: hashedPassword,
             firstName,
             lastName,
@@ -2054,6 +2061,14 @@ const DEFAULT_MOBILE_APP_SETTINGS = {
   autoPlayVideos: true,
   hapticFeedback: true,
   showOnlineStatus: true,
+  // Per-category push opt-in (opt-out model — all on by default). Consumed by
+  // notification-service jobs via isPushCategoryEnabled().
+  pushStreakReminders: true,
+  pushWeeklyDigest: true,
+  pushFollows: true,
+  pushClubActivity: true,
+  pushGrades: true,
+  pushAssignments: true,
 };
 
 type MobileAppSettings = typeof DEFAULT_MOBILE_APP_SETTINGS;
@@ -2064,23 +2079,14 @@ const normalizeMobileAppSettings = (value: unknown): MobileAppSettings => {
     ? value as Partial<Record<MobileAppSettingKey, unknown>>
     : {};
 
-  return {
-    pushNotifications: typeof source.pushNotifications === 'boolean'
-      ? source.pushNotifications
-      : DEFAULT_MOBILE_APP_SETTINGS.pushNotifications,
-    emailNotifications: typeof source.emailNotifications === 'boolean'
-      ? source.emailNotifications
-      : DEFAULT_MOBILE_APP_SETTINGS.emailNotifications,
-    autoPlayVideos: typeof source.autoPlayVideos === 'boolean'
-      ? source.autoPlayVideos
-      : DEFAULT_MOBILE_APP_SETTINGS.autoPlayVideos,
-    hapticFeedback: typeof source.hapticFeedback === 'boolean'
-      ? source.hapticFeedback
-      : DEFAULT_MOBILE_APP_SETTINGS.hapticFeedback,
-    showOnlineStatus: typeof source.showOnlineStatus === 'boolean'
-      ? source.showOnlineStatus
-      : DEFAULT_MOBILE_APP_SETTINGS.showOnlineStatus,
-  };
+  // Every setting is a boolean with the same default-on behavior, so normalize uniformly.
+  const result = {} as MobileAppSettings;
+  (Object.keys(DEFAULT_MOBILE_APP_SETTINGS) as MobileAppSettingKey[]).forEach((key) => {
+    result[key] = typeof source[key] === 'boolean'
+      ? (source[key] as boolean)
+      : DEFAULT_MOBILE_APP_SETTINGS[key];
+  });
+  return result;
 };
 
 const extractMobileAppSettings = (privacySettings: unknown): MobileAppSettings => {
@@ -2151,6 +2157,7 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
       data: {
         id: user.id,
         email: user.email,
+        username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
@@ -2186,6 +2193,46 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
   }
 });
 
+app.put('/users/me/username', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { username } = req.body;
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ success: false, error: 'Username is required' });
+    }
+
+    const cleanUsername = username.toLowerCase().trim();
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+      return res.status(400).json({ success: false, error: 'Username must be between 3 and 30 characters' });
+    }
+
+    if (!/^[a-z0-9_-]+$/.test(cleanUsername)) {
+      return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, dashes, and underscores' });
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    if (existing && existing.id !== req.user!.id) {
+      return res.status(409).json({ success: false, error: 'Username is already taken' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { username: cleanUsername },
+    });
+
+    res.json({
+      success: true,
+      message: 'Username updated successfully',
+      data: { username: updatedUser.username },
+    });
+  } catch (error: any) {
+    console.error('Update username error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update username' });
+  }
+});
+
 app.get('/users/me/app-settings', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
@@ -2215,6 +2262,12 @@ app.patch('/users/me/app-settings', authenticateToken, async (req: AuthRequest, 
       'autoPlayVideos',
       'hapticFeedback',
       'showOnlineStatus',
+      'pushStreakReminders',
+      'pushWeeklyDigest',
+      'pushFollows',
+      'pushClubActivity',
+      'pushGrades',
+      'pushAssignments',
     ];
 
     const updates: Partial<MobileAppSettings> = {};
@@ -2617,6 +2670,47 @@ app.post('/auth/admin/profile-change-requests/:id/reject', authenticateToken, as
   } catch (error: any) {
     console.error('Reject profile request error:', error);
     res.status(500).json({ success: false, error: 'Failed to reject request' });
+  }
+});
+
+/**
+ * POST /users/me/verification-request
+ * Submit a request to become a verified educator
+ */
+app.post('/users/me/verification-request', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    // Check if user is already verified
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, error: 'User is already verified' });
+    }
+
+    // Check for existing pending request
+    const existing = await prisma.verificationRequest.findFirst({
+      where: { userId, status: 'PENDING' },
+    });
+    if (existing) {
+      return res.status(400).json({ success: false, error: 'A verification request is already pending' });
+    }
+
+    const { documentUrl, notes } = req.body;
+    
+    const request = await prisma.verificationRequest.create({
+      data: {
+        userId,
+        documentUrl: documentUrl || null,
+        notes: notes || null,
+      },
+    });
+
+    res.json({ success: true, message: 'Verification request submitted', data: request });
+  } catch (error: any) {
+    console.error('Verification request error:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit request' });
   }
 });
 
@@ -3594,9 +3688,11 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     // Create user and submit pending school link in transaction. Admin approval applies the school link.
     const result = await prisma.$transaction(async (tx) => {
       // Create user
+      const claimUsername = await generateUniqueUsername(tx, firstName, lastName);
       const user = await tx.user.create({
         data: {
           email: emailTrim || null,
+          username: claimUsername,
           password: hashedPassword,
           firstName,
           lastName,

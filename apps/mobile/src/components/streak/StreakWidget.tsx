@@ -81,14 +81,16 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
   const glowAnimatedStyle = { opacity: glowOpacity };
 
   if (compact) {
+    // Don't clutter the header with an empty "0" — only show once a streak exists.
+    if (!isActive) {
+      return null;
+    }
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.compactContainer}>
-        <Animated.Text style={[styles.compactFlame, flameAnimatedStyle]}>
-          🔥
-        </Animated.Text>
-        <Text style={[styles.compactNumber, { color: isActive ? '#EF4444' : '#6B7280' }]}>
-          {streak.currentStreak}
-        </Text>
+        <Animated.View style={flameAnimatedStyle}>
+          <Ionicons name="flame" size={15} color="#EA580C" />
+        </Animated.View>
+        <Text style={styles.compactNumber}>{streak.currentStreak}</Text>
       </TouchableOpacity>
     );
   }
@@ -161,23 +163,16 @@ const styles = StyleSheet.create({
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 10,
+    backgroundColor: '#FFF1E6',
+    paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 14,
-    gap: 4,
-    shadowColor: '#000',
-
-
-    shadowRadius: 2,
-
-  },
-  compactFlame: {
-    fontSize: 16,
+    borderRadius: 999,
+    gap: 3,
   },
   compactNumber: {
     fontSize: 14,
     fontWeight: '800',
+    color: '#EA580C',
   },
   container: {
     borderRadius: 14,

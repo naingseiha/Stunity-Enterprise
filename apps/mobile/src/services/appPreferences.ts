@@ -6,6 +6,14 @@ export interface AppPreferences {
   autoPlayVideos: boolean;
   hapticFeedback: boolean;
   showOnlineStatus: boolean;
+  // Per-category push opt-in (opt-out model). Honored server-side by the
+  // notification-service jobs via isPushCategoryEnabled().
+  pushStreakReminders: boolean;
+  pushWeeklyDigest: boolean;
+  pushFollows: boolean;
+  pushClubActivity: boolean;
+  pushGrades: boolean;
+  pushAssignments: boolean;
 }
 
 export type AppPreferenceKey = keyof AppPreferences;
@@ -16,7 +24,23 @@ export const DEFAULT_APP_PREFERENCES: AppPreferences = {
   autoPlayVideos: true,
   hapticFeedback: true,
   showOnlineStatus: true,
+  pushStreakReminders: true,
+  pushWeeklyDigest: true,
+  pushFollows: true,
+  pushClubActivity: true,
+  pushGrades: true,
+  pushAssignments: true,
 };
+
+/** Push categories shown as toggles in Settings, in display order. */
+export const PUSH_CATEGORY_KEYS: AppPreferenceKey[] = [
+  'pushStreakReminders',
+  'pushWeeklyDigest',
+  'pushFollows',
+  'pushClubActivity',
+  'pushGrades',
+  'pushAssignments',
+];
 
 const APP_PREFERENCES_KEY = 'stunity_app_preferences_v1';
 const listeners = new Set<(preferences: AppPreferences) => void>();
@@ -28,23 +52,14 @@ const normalizePreferences = (value: unknown): AppPreferences => {
     ? value as Partial<Record<AppPreferenceKey, unknown>>
     : {};
 
-  return {
-    pushNotifications: typeof source.pushNotifications === 'boolean'
-      ? source.pushNotifications
-      : DEFAULT_APP_PREFERENCES.pushNotifications,
-    emailNotifications: typeof source.emailNotifications === 'boolean'
-      ? source.emailNotifications
-      : DEFAULT_APP_PREFERENCES.emailNotifications,
-    autoPlayVideos: typeof source.autoPlayVideos === 'boolean'
-      ? source.autoPlayVideos
-      : DEFAULT_APP_PREFERENCES.autoPlayVideos,
-    hapticFeedback: typeof source.hapticFeedback === 'boolean'
-      ? source.hapticFeedback
-      : DEFAULT_APP_PREFERENCES.hapticFeedback,
-    showOnlineStatus: typeof source.showOnlineStatus === 'boolean'
-      ? source.showOnlineStatus
-      : DEFAULT_APP_PREFERENCES.showOnlineStatus,
-  };
+  // Every preference is a default-on boolean, so normalize uniformly.
+  const result = {} as AppPreferences;
+  (Object.keys(DEFAULT_APP_PREFERENCES) as AppPreferenceKey[]).forEach((key) => {
+    result[key] = typeof source[key] === 'boolean'
+      ? (source[key] as boolean)
+      : DEFAULT_APP_PREFERENCES[key];
+  });
+  return result;
 };
 
 const notifyListeners = (preferences: AppPreferences) => {

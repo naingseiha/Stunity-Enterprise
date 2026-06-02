@@ -2,6 +2,8 @@ import { NotificationType } from '@prisma/client';
 
 import { prisma } from '../lib/prisma';
 import { sendExpoPushNotifications, isExpoPushToken } from '../utils/expoPush';
+import { hasNonUrgentBudget } from '../utils/pushQuota';
+import { isPushCategoryEnabled } from '../utils/pushPreferences';
 
 const STREAK_REMINDER_TITLE = "Don't lose your streak!";
 const STREAK_REMINDER_TYPE: NotificationType = 'SYSTEM';
@@ -10,18 +12,6 @@ function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function isMobilePushEnabled(privacySettings: unknown): boolean {
-  const settings =
-    privacySettings && typeof privacySettings === 'object' && !Array.isArray(privacySettings)
-      ? (privacySettings as Record<string, unknown>)
-      : {};
-  const mobileApp =
-    settings.mobileApp && typeof settings.mobileApp === 'object' && !Array.isArray(settings.mobileApp)
-      ? (settings.mobileApp as Record<string, unknown>)
-      : {};
-  return mobileApp.pushNotifications !== false;
 }
 
 export async function runStreakAtRiskPushJob(): Promise<{
@@ -62,16 +52,17 @@ export async function runStreakAtRiskPushJob(): Promise<{
       continue;
     }
 
-    const [tokens, user] = await Promise.all([
+    const [tokens, user, withinBudget] = await Promise.all([
       prisma.deviceToken.findMany({ where: { userId: streak.userId } }),
       prisma.user.findUnique({
         where: { id: streak.userId },
         select: { privacySettings: true },
       }),
+      hasNonUrgentBudget(streak.userId),
     ]);
 
     const body = `Complete a quiz today to keep your ${streak.currentStreak}-day learning streak.`;
-    const pushAllowed = isMobilePushEnabled(user?.privacySettings);
+    const pushAllowed = isPushCategoryEnabled(user?.privacySettings, 'streakReminders') && withinBudget;
     const expoTokens = tokens.filter((row) => isExpoPushToken(row.token));
 
     if (pushAllowed && expoTokens.length > 0) {

@@ -580,6 +580,7 @@ model User {
   id                           String                       @id @default(cuid())
   schoolId                     String?
   email                        String?                      @unique
+  username                     String?                      @unique
   password                     String
   firstName                    String
   lastName                     String
@@ -650,6 +651,7 @@ model User {
   challengeParticipations      ChallengeParticipant[]
   learningStreak               LearningStreak?
   quizAttemptRecords           QuizAttemptRecord[]
+  verificationRequests         VerificationRequest[]
   recallCards                  RecallCard[]
   recallReviews                RecallReview[]
   verifiedPosts                Post[]                       @relation("PostsVerifiedBy")
@@ -914,12 +916,13 @@ model Comment {
 }
 
 model Like {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  postId       String
+  userId       String
+  reactionType String   @default("LIKE") // LIKE, INSIGHTFUL, CELEBRATE, SMART_TAKE
+  createdAt    DateTime @default(now())
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([userId])
@@ -3167,7 +3170,7 @@ model LearningStreak {
   longestStreak Int        @default(0)
   lastQuizDate  DateTime?
   freezesUsed   Int        @default(0)
-  freezesTotal  Int        @default(3)
+  freezesTotal  Int        @default(0) // freezes currently available; earned per 7-day milestone, capped at 1
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   userStatsId   String?
@@ -4338,4 +4341,50 @@ model FocusReelAttempt {
 
   @@unique([reelId, userId])
   @@map("focus_reel_attempts")
+}
+
+model VerificationRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  documentUrl String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@map("verification_requests")
+}
+
+// Raw product-analytics event stream (app_open, recall_review, post_reaction, …).
+// userId is a plain scalar (no FK) to keep ingestion decoupled and fast.
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  props     Json?
+  schoolId  String?
+  sessionId String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([name, createdAt])
+  @@index([schoolId, createdAt])
+  @@map("analytics_events")
+}
+
+// Daily active-day rollup — one row per (user, day). Upserted on any event so
+// WAD/MAU is a cheap distinct-day count instead of scanning the event stream.
+model UserActiveDay {
+  id        String   @id @default(cuid())
+  userId    String
+  day       DateTime @db.Date
+  schoolId  String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, day])
+  @@index([day])
+  @@map("user_active_days")
 }

@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem, MediaMetadata } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
+import { track } from '@/services/analytics';
 import { feedApi, quizApi, learnApi } from '@/api/client';
 import { InteractionManager } from 'react-native';
 import { Image } from 'expo-image';
@@ -244,6 +245,7 @@ interface FeedState {
   ) => void;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
+  reactToPost: (postId: string, type: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
   notInterestedPost: (postId: string) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
@@ -1179,6 +1181,49 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             : item
         ),
       }));
+    }
+  },
+
+  // Set / change / toggle-off a reaction on a post.
+  reactToPost: async (postId, type) => {
+    const item = get().feedItems.find(
+      (i) => i.type === 'POST' && i.data.id === postId,
+    ) as { type: 'POST'; data: Post } | undefined;
+    const prev = item?.data.myReaction ?? null;
+    const same = prev === type;
+    const had = !!prev;
+    const next = same ? null : type;
+    const likeDelta = same ? -1 : had ? 0 : 1;
+
+    const apply = (reaction: string | null, delta: number) =>
+      set((state) => ({
+        feedItems: state.feedItems.map((it) =>
+          it.type === 'POST' && it.data.id === postId
+            ? {
+                ...it,
+                data: {
+                  ...it.data,
+                  myReaction: reaction,
+                  isLiked: !!reaction,
+                  likes: Math.max(0, it.data.likes + delta),
+                },
+              }
+            : it,
+        ),
+      }));
+
+    apply(next, likeDelta);
+
+    if (item) {
+      recommendationEngine.trackAction('LIKE', item.data);
+      set({ userInterestProfile: recommendationEngine.getUserProfile() });
+    }
+
+    try {
+      await feedApi.post(`/posts/${postId}/react`, { type });
+      if (next) track('post_reaction', { type: next });
+    } catch (error) {
+      apply(prev, -likeDelta); // revert
     }
   },
 

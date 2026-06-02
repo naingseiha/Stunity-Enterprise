@@ -15,6 +15,8 @@ export const config = {
 
     // Enable redirects that add missing locales
     // (e.g. `/pathnames` -> `/en/pathnames`)
-    '/((?!_next|_vercel|privacy|data-deletion|.*\\..*).*)'
+    // `u/` is excluded so public profile URLs (stunity.app/u/{username}) stay
+    // locale-free and render the SSR public profile route directly.
+    '/((?!_next|_vercel|privacy|data-deletion|u/|.*\\..*).*)'
   ],
 };

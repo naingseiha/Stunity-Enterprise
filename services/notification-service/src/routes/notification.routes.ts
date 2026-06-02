@@ -5,6 +5,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireServiceAuth } from '../middleware/serviceAuth';
 import { prisma } from '../lib/prisma';
 import { runStreakAtRiskPushJob } from '../jobs/streakAtRiskJob';
+import { runWeeklyProgressDigestJob } from '../jobs/weeklyProgressDigestJob';
 
 const router = Router();
 
@@ -21,6 +22,17 @@ router.post('/jobs/streak-at-risk', requireServiceAuth, async (_req: Request, re
   } catch (error: any) {
     console.error('Streak at-risk job error:', error);
     res.status(500).json({ success: false, error: 'Failed to run streak reminder job' });
+  }
+});
+
+/** Cron / Cloud Scheduler: Sunday weekly progress digest push */
+router.post('/jobs/weekly-progress-digest', requireServiceAuth, async (_req: Request, res: Response) => {
+  try {
+    const result = await runWeeklyProgressDigestJob();
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Weekly progress digest job error:', error);
+    res.status(500).json({ success: false, error: 'Failed to run weekly progress digest job' });
   }
 });
 
