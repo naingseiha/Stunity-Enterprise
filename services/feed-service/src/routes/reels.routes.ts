@@ -19,6 +19,7 @@ import { prisma, prismaRead } from '../context';
 import { ReelsRanker } from '../reelsRanker';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { applyReview, RecallGrade } from '../utils/sm2';
+import { upsertRecallCardFromReelAnswer, seedRecallCardsFromQuizPool } from '../utils/recallCardsFromQuiz';
 import { feedCache } from '../redis';
 
 // Ranker uses the read replica for all 6 pool queries; writes (interactions,
@@ -31,6 +32,11 @@ const COMBO_FILL_BONUS = 50;
 const BASE_XP_CORRECT = 5;
 const REELS_FEED_TTL = 60; // seconds — short enough that fresh posts surface within a minute
 const REELS_STATE_TTL = 15; // HUD warmup — combo updates frequently, so keep TTL tight
+
+// Flag-gated (default ON; set REELS_RECALL_SEED=false to disable). When the
+// learner's due-recall pool is thin, lazily seed cards from real quiz content
+// so recall reels have something to show from day one.
+const RECALL_SEED_ENABLED = process.env.REELS_RECALL_SEED !== 'false';
 
 // ── Lightweight in-process metrics ──────────────────────────────────
 // Counts cache hits/misses for /feed and /state. Logged once per minute
@@ -169,6 +175,13 @@ router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) =
       metrics.feed.hit++;
     } else {
       metrics.feed.miss++;
+      // Top up the recall pool from real quiz content before ranking, but only
+      // on the first page (deep pages keep the slot pattern stable). Best-effort
+      // and self-quiescing — a no-op once the user has enough due cards.
+      if (RECALL_SEED_ENABLED && !cursor) {
+        const seeded = await seedRecallCardsFromQuizPool(prisma, userId);
+        if (seeded > 0) console.log(`[Reels] seeded ${seeded} recall card(s) for user=${userId}`);
+      }
       const tRank = Date.now();
       result = await reelsRanker.generateFeed(userId, { cursor, limit, subject });
       timings.rank = Date.now() - tRank;
@@ -255,8 +268,17 @@ async function handleQuizQuestion(userId: string, body: any) {
   const correct = !!body.correct;
   const baseXp = clampInt(body.xpEarned, 0, 100) || (correct ? BASE_XP_CORRECT : 0);
   const combo = await applyCombo(userId, correct, baseXp);
+
+  // Close the learning loop: a quiz-reel answer enters spaced repetition so it
+  // feeds SM-2 scheduling + the subject-mastery tree, not just the combo HUD.
+  // Best-effort — never blocks the interaction response.
+  let recallCarded = false;
+  if (typeof body.itemId === 'string') {
+    recallCarded = await upsertRecallCardFromReelAnswer(prisma, userId, body.itemId, correct);
+  }
+
   await invalidateUserState(userId);
-  return { success: true, ...combo };
+  return { success: true, recallCarded, ...combo };
 }
 
 async function handleRecallCard(userId: string, cardId: string, body: any) {

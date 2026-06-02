@@ -299,6 +299,15 @@ export const FocusReelsScreen: React.FC = () => {
   ) => {
     // RECALL_CARD uses SM-2 grade; everything else uses correct boolean.
     const passed = itemType === 'RECALL_CARD' ? payload.grade !== 'again' : !!payload.correct;
+    // Instrument the core learning event so accuracy/completion is measurable
+    // (answer accuracy, per-type engagement). Fire before the network call so a
+    // dropped request still records that the learner attempted retrieval.
+    track('reel_answer', {
+      type: itemType,
+      passed,
+      ...(payload.grade ? { grade: payload.grade } : { correct: !!payload.correct }),
+      xp: payload.xpEarned ?? 0,
+    });
     try {
       const res = await feedApi.post('/reels/interactions', { itemId, itemType, ...payload });
       const { combo: newCombo, isComboFill, xpEarned: actualXp } = res.data;

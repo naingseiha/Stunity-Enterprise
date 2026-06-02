@@ -64,6 +64,17 @@ const SUBJECT_CONFIG: Record<RecallCardSubject, SubjectVisual> = {
   computerScience: { icon: 'code-slash',  accent: '#DB2777', accentDeep: '#BE185D', accentSoft: '#FCE7F3', accentSoftDark: 'rgba(236,72,153,0.18)' },
 };
 
+// Fallback for any subject not in SUBJECT_CONFIG (e.g. cards generated from a
+// quiz whose topic tag isn't one of the known subjects, or 'general'/'quiz').
+// Keeps the component from ever crashing on an unmapped subject string.
+const DEFAULT_SUBJECT_VISUAL: SubjectVisual = {
+  icon: 'sparkles',
+  accent: '#6366F1',
+  accentDeep: '#4F46E5',
+  accentSoft: '#E0E7FF',
+  accentSoftDark: 'rgba(99,102,241,0.18)',
+};
+
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface Props {
@@ -75,7 +86,7 @@ interface Props {
 export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
   const { colors, isDark } = useThemeContext();
   const { t } = useTranslation();
-  const subject = SUBJECT_CONFIG[card.subject];
+  const subject = SUBJECT_CONFIG[card.subject] ?? DEFAULT_SUBJECT_VISUAL;
 
   const styles = useMemo(
     () => createStyles(colors, isDark, subject),
