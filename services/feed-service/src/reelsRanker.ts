@@ -40,6 +40,8 @@ export interface ReelEngagement {
   likesCount: number;
   commentsCount: number;
   isLikedByMe: boolean;
+  /** The viewer's reaction type (LIKE/INSIGHTFUL/CELEBRATE/SMART_TAKE) or null. */
+  myReaction: string | null;
 }
 
 export interface ReelDto<TPayload = unknown> {
@@ -267,11 +269,15 @@ export class ReelsRanker {
 
     const liked = await this.prismaRead.like.findMany({
       where: { userId, postId: { in: posts.map((p) => p.id) } },
-      select: { postId: true },
+      select: { postId: true, reactionType: true },
     });
-    const likedSet = new Set(liked.map((l) => l.postId));
+    const reactionMap = new Map(liked.map((l) => [l.postId, l.reactionType ?? 'LIKE']));
 
-    return posts.map((p) => ({ ...p, isLikedByMe: likedSet.has(p.id) }));
+    return posts.map((p) => ({
+      ...p,
+      isLikedByMe: reactionMap.has(p.id),
+      myReaction: reactionMap.get(p.id) ?? null,
+    }));
   }
 
   /** Social: schoolmates' FocusReels. */
@@ -373,6 +379,7 @@ function toPostDto(p: any): ReelDto {
       likesCount: p.likesCount ?? 0,
       commentsCount: p.commentsCount ?? 0,
       isLikedByMe: !!p.isLikedByMe,
+      myReaction: p.myReaction ?? null,
     },
     payload: {
       postType: p.postType,

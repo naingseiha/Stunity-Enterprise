@@ -634,7 +634,6 @@ const MainNavigatorContent = () => {
                 "PostDetail",
                 "Comments",
                 "EventDetail",
-                "FocusReels",
               ].includes(routeName)
             ) {
               return { tabBarStyle: { display: "none" } };
@@ -645,10 +644,25 @@ const MainNavigatorContent = () => {
         <Tab.Screen
           name="ReelsTab"
           component={SwipeableReels}
+          // Keep the bottom tab bar visible on Reels (like TikTok / Instagram /
+          // Facebook). The reel pages size themselves to sit above the bar
+          // (FocusReelsScreen uses useBottomTabBarHeight), so nothing is hidden.
+          // Reels are always a dark, immersive surface, so the bar goes dark +
+          // light-tinted while focused (regardless of the app's light/dark
+          // theme) to match — same as TikTok/IG. Reverts when another tab is
+          // focused (that screen's options take over).
           options={{
-            // Reels is full-immersive (vertical paged video). Hide the tab bar
-            // while in it so the experience matches Instagram / Facebook Reels.
-            tabBarStyle: { display: "none" },
+            tabBarActiveTintColor: "#FFFFFF",
+            tabBarInactiveTintColor: "rgba(255,255,255,0.6)",
+            tabBarStyle: {
+              backgroundColor: "#000000",
+              borderTopWidth: 0.5,
+              borderTopColor: "rgba(255,255,255,0.12)",
+              height: Platform.OS === "ios" ? 80 : 60,
+              paddingTop: 8,
+              paddingBottom: Platform.OS === "ios" ? 24 : 8,
+              elevation: 0,
+            },
           }}
         />
         <Tab.Screen

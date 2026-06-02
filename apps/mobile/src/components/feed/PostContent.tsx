@@ -69,6 +69,13 @@ const PostContent = ({
 
   const isQuestion = post.postType === 'QUESTION';
   const isAutomated = ['EVENT_CREATED', 'CLUB_CREATED'].includes(post.postType);
+  // A repost is a Post authored by the user with repostOfId + an embedded
+  // original. We render it quote-tweet style: the reposter's commentary above
+  // a LIGHT quoted card. The original's type tag + CTA live INSIDE that card
+  // (typeConfig is the original's type — the backend copies postType onto the
+  // repost), so the outer learning bar / CTA are suppressed to avoid two
+  // competing identity + engagement rows.
+  const isRepost = !!post.repostOfId && !!post.repostOf;
   const showProgress = (post.postType === 'COURSE' || post.postType === 'QUIZ') && learningMeta?.progress !== undefined;
   const mediaDisplayMode = String(post.mediaDisplayMode || 'AUTO').toUpperCase();
   const feedMediaAspectRatio = React.useMemo(() => getFeedMediaAspectRatio(post), [
@@ -135,24 +142,29 @@ const PostContent = ({
         </View>
       )}
 
-      {!isAutomated && (
+      {!isAutomated && !!post.content?.trim() && (
         <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
           {renderPostBodyText(post.content, styles.contentText, 2)}
         </TouchableOpacity>
       )}
 
-      {/* Embedded Repost Card */}
-      {!!post.repostOfId && !!post.repostOf && (
+      {/* Quoted original (quote-tweet style). Light card, no inner engagement
+          counts — the action bar below acts on the repost. The original's type
+          + CTA sit in the footer so it's clear they belong to the quoted post.
+          Tapping anywhere opens the original. */}
+      {isRepost && (
         <TouchableOpacity
-          activeOpacity={0.7}
+          activeOpacity={0.85}
           onPress={() => navigate?.('PostDetail', { postId: post.repostOf!.id })}
-          style={styles.repostEmbed}
+          style={styles.quoteCard}
+          accessibilityRole="button"
+          accessibilityLabel={t('feed.viewOriginal')}
         >
-          <View style={styles.repostEmbedHeader}>
+          <View style={styles.quoteHeader}>
             {post.repostOf.author?.profilePictureUrl ? (
               <Image
                 source={{ uri: post.repostOf.author.profilePictureUrl }}
-                style={styles.repostEmbedAvatar}
+                style={styles.quoteAvatar}
                 cachePolicy="memory-disk"
                 priority="high"
                 transition={150}
@@ -161,25 +173,26 @@ const PostContent = ({
                 allowDownscaling={false}
               />
             ) : (
-              <View style={[styles.repostEmbedAvatar, { backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }]}>
-                <Ionicons name="person" size={14} color="#9CA3AF" />
+              <View style={[styles.quoteAvatar, styles.quoteAvatarFallback]}>
+                <Ionicons name="person" size={11} color={colors.textTertiary} />
               </View>
             )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.repostEmbedAuthor} numberOfLines={1}>
-                {post.repostOf.author ? `${post.repostOf.author.lastName || ''} ${post.repostOf.author.firstName || ''}`.trim() : t('common.unknown')}
-              </Text>
-              <Text style={styles.repostEmbedTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
-            </View>
+            <Text style={styles.quoteAuthor} numberOfLines={1}>
+              {post.repostOf.author ? `${post.repostOf.author.lastName || ''} ${post.repostOf.author.firstName || ''}`.trim() : t('common.unknown')}
+            </Text>
+            <Text style={styles.quoteDot}>·</Text>
+            <Text style={styles.quoteTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
           </View>
           {!!post.repostOf.title && (
-            <Text style={styles.repostEmbedTitle} numberOfLines={1}>{post.repostOf.title}</Text>
+            <Text style={styles.quoteTitle} numberOfLines={2}>{post.repostOf.title}</Text>
           )}
-          <Text style={styles.repostEmbedContent} numberOfLines={3}>{post.repostOf.content}</Text>
+          {!!post.repostOf.content?.trim() && (
+            <Text style={styles.quoteContent} numberOfLines={3}>{post.repostOf.content}</Text>
+          )}
           {post.repostOf.mediaUrls && post.repostOf.mediaUrls.length > 0 && (
             <Image
               source={{ uri: post.repostOf.mediaUrls[0] }}
-              style={styles.repostEmbedMedia}
+              style={styles.quoteMedia}
               contentFit="cover"
               cachePolicy="memory-disk"
               priority="high"
@@ -188,11 +201,16 @@ const PostContent = ({
               allowDownscaling={false}
             />
           )}
-          <View style={styles.repostEmbedStats}>
-            <Ionicons name="heart" size={12} color="#9CA3AF" />
-            <Text style={styles.repostEmbedStatText}>{formatNumber(post.repostOf.likesCount || 0)}</Text>
-            <Ionicons name="chatbubble" size={12} color="#9CA3AF" style={{ marginLeft: 8 }} />
-            <Text style={styles.repostEmbedStatText}>{formatNumber(post.repostOf.commentsCount || 0)}</Text>
+          <View style={styles.quoteFooter}>
+            <Ionicons name={typeConfig.icon as any} size={12} color={colors.textTertiary} />
+            <Text style={styles.quoteType} numberOfLines={1}>{typeConfig.label}</Text>
+            <View style={{ flex: 1 }} />
+            {!!typeConfig.ctaLabel && (
+              <>
+                <Text style={[styles.quoteCta, { color: typeConfig.color }]} numberOfLines={1}>{typeConfig.ctaLabel}</Text>
+                <Ionicons name="arrow-forward" size={12} color={typeConfig.color} />
+              </>
+            )}
           </View>
         </TouchableOpacity>
       )}
@@ -319,8 +337,10 @@ const PostContent = ({
         </View>
       )}
 
-      {/* Generic CTA Button (Courses, Projects, Events, Assignments) */}
-      {!post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && post.postType !== 'EVENT_CREATED' && post.postType !== 'CLUB_CREATED' && !!typeConfig.ctaLabel && (
+      {/* Generic CTA Button (Courses, Projects, Events, Assignments).
+          Suppressed on reposts — the CTA belongs to the quoted original and
+          now lives inside the quoted card's footer. */}
+      {!isRepost && !post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && post.postType !== 'EVENT_CREATED' && post.postType !== 'CLUB_CREATED' && !!typeConfig.ctaLabel && (
         <View style={styles.genericCtaContainer}>
           <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
             <View style={[styles.genericCtaButton, { backgroundColor: typeConfig.color + '15' }]}>
@@ -333,7 +353,9 @@ const PostContent = ({
         </View>
       )}
 
-      {/* ── Learning Badge Strip ── */}
+      {/* ── Learning Badge Strip ── (suppressed on reposts: the type tag
+          belongs to the quoted original and now sits in the quote footer) */}
+      {!isRepost && (
       <View style={styles.learningBar}>
 
         {/* Post-type gradient pill */}
@@ -397,6 +419,7 @@ const PostContent = ({
         </View>
 
       </View>
+      )}
     </View>
   );
 };
@@ -441,62 +464,82 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingTop: 3,
     paddingBottom: 1,
   },
-  repostEmbed: {
+  // Quote-tweet style quoted card — light, condensed, subtle border, no
+  // inner engagement counts (the repost's action bar owns engagement).
+  quoteCard: {
     marginHorizontal: 16,
     marginBottom: 12,
-    padding: 12,
-    borderWidth: 1,
+    marginTop: 2,
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: isDark ? colors.surfaceVariant : '#F9FAFB',
+    borderRadius: 14,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)',
   },
-  repostEmbedHeader: {
+  quoteHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    gap: 6,
+    marginBottom: 6,
   },
-  repostEmbedAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  quoteAvatar: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
   },
-  repostEmbedAuthor: {
-    fontSize: 13,
-    fontWeight: '600',
+  quoteAvatarFallback: {
+    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quoteAuthor: {
+    fontSize: 12.5,
+    fontWeight: '700',
     color: colors.text,
+    flexShrink: 1,
   },
-  repostEmbedTime: {
-    fontSize: 11,
+  quoteDot: {
+    fontSize: 12,
     color: colors.textTertiary,
   },
-  repostEmbedTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
+  quoteTime: {
+    fontSize: 11.5,
+    color: colors.textTertiary,
   },
-  repostEmbedContent: {
+  quoteTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 3,
+  },
+  quoteContent: {
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  repostEmbedMedia: {
+  quoteMedia: {
     width: '100%',
-    height: 150,
+    height: 130,
     borderRadius: 8,
     marginTop: 8,
     backgroundColor: colors.surfaceVariant,
   },
-  repostEmbedStats: {
+  quoteFooter: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
     marginTop: 8,
   },
-  repostEmbedStatText: {
-    fontSize: 11,
+  quoteType: {
+    fontSize: 11.5,
+    fontWeight: '600',
     color: colors.textTertiary,
-    marginLeft: 4,
+    flexShrink: 1,
+  },
+  quoteCta: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginRight: 2,
   },
   pollSection: {
     paddingHorizontal: 16,

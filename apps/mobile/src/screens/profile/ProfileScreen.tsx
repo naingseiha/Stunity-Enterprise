@@ -285,6 +285,14 @@ export default function ProfileScreen() {
   const feedItems = useFeedStore((state) => state.feedItems);
   const myPosts = useFeedStore((state) => state.myPosts);
   const fetchMyPosts = useFeedStore((state) => state.fetchMyPosts);
+  // Engagement actions for the Posts tab. These are pure store/API calls (no
+  // navigation), so they work from the Profile stack even though PostDetail /
+  // Comments live in the Feed stack. PostCard handles its own optimistic UI.
+  const likePost = useFeedStore((state) => state.likePost);
+  const unlikePost = useFeedStore((state) => state.unlikePost);
+  const reactToPost = useFeedStore((state) => state.reactToPost);
+  const bookmarkPostAction = useFeedStore((state) => state.bookmarkPost);
+  const voteOnPoll = useFeedStore((state) => state.voteOnPoll);
 
   // For the user's own profile, seed from the disk-backed cache (hydrated by
   // MainNavigator at boot) so the first paint is synchronous — no skeleton
@@ -940,19 +948,34 @@ export default function ProfileScreen() {
   }, [isOwnProfile, activeTab, fetchMyPosts]);
 
   const noop = useCallback(() => {}, []);
+  const handleProfilePostShare = useCallback(async (post: any) => {
+    try {
+      const { Share } = await import('react-native');
+      await Share.share({
+        message: `Check out this ${String(post.postType || 'post').toLowerCase()} on Stunity:\n\n${post.content || ''}\n\nhttps://stunity.com/posts/${post.id}`,
+        title: t('common.post'),
+        url: `https://stunity.com/posts/${post.id}`,
+      });
+    } catch { /* user dismissed */ }
+  }, [t]);
   const profilePostHandlersRef = useMemo(
     () => ({
       current: {
         navigation,
-        handleLikePost: noop,
-        handleSharePost: noop,
-        bookmarkPost: noop,
+        // Reactions + likes work here — pure store/API calls, no navigation.
+        handleLikePost: (post: any) => (post?.isLiked ? unlikePost(post.id) : likePost(post.id)),
+        handleReactPost: (post: any, type: string) => reactToPost(post.id, type),
+        bookmarkPost: (postId: string) => bookmarkPostAction(postId),
+        handleVoteOnPoll: (postId: string, optionId: string) => voteOnPoll(postId, optionId),
+        handleSharePost: handleProfilePostShare,
+        // PostDetail / Comments live in the Feed stack — not reachable from the
+        // Profile stack, so these stay inert here (no broken navigation).
+        notInterestedPost: noop,
         handleValuePost: noop,
         handlePostPress: noop,
-        handleVoteOnPoll: noop,
       },
     }),
-    [navigation, noop],
+    [navigation, noop, likePost, unlikePost, reactToPost, bookmarkPostAction, voteOnPoll, handleProfilePostShare],
   );
 
   const tabs = useMemo(

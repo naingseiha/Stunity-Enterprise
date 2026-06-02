@@ -193,6 +193,7 @@ interface ActionBarProps {
   myReaction?: string | null;
   likeCount: number;
   valued: boolean;
+  valueCount?: number;
   commentCount: number;
   shareCount: number;
   viewCount: number;
@@ -336,7 +337,7 @@ const ViewStatsIndicator = React.memo<{
 )});
 
 const ActionBar = React.memo<ActionBarProps>(({
-  liked, myReaction, likeCount, valued, commentCount, shareCount, viewCount,
+  liked, myReaction, likeCount, valued, valueCount, commentCount, shareCount, viewCount,
   onLike, onReact, onComment, onRepost, onShare, onValue, onViewStats, canOpenStats,
   styles, colors,
 }) => {
@@ -427,10 +428,13 @@ const ActionBar = React.memo<ActionBarProps>(({
         styles={styles}
         colors={colors}
       />
+      {/* Educational-value rating. The count makes its purpose legible —
+          it reads as "N peers rated this valuable", not a mystery glyph. */}
       <AnimatedActionButton
         icon="diamond-outline"
         activeIcon="diamond"
         active={valued}
+        count={valueCount}
         color={colors.text}
         activeColor="#8B5CF6"
         onPress={onValue}
@@ -905,6 +909,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
         myReaction={myReaction}
         likeCount={likeCount}
         valued={valued}
+        valueCount={post.edScoreCount}
         commentCount={post.comments}
         shareCount={post.shares}
         viewCount={post.views || 0}
@@ -1559,70 +1564,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
-  },
-  // Repost Embed Card
-  repostEmbed: {
-    marginHorizontal: 14,
-    marginBottom: 10,
-    borderRadius: 14,
-
-
-    backgroundColor: colors.surfaceVariant,
-    overflow: 'hidden',
-  },
-  repostEmbedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  repostEmbedAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  repostEmbedAuthor: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  repostEmbedTime: {
-    fontSize: 11,
-    color: colors.textTertiary,
-  },
-  repostEmbedTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    paddingHorizontal: 12,
-    marginBottom: 2,
-  },
-  repostEmbedContent: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-  },
-  repostEmbedMedia: {
-    width: '100%',
-    height: 140,
-  },
-  repostEmbedStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  repostEmbedStatText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.textTertiary,
   },
 });
 

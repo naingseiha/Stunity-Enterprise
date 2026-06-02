@@ -17,6 +17,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { feedApi } from '@/api/client';
@@ -30,8 +31,19 @@ import {
   CACHE_FRESHNESS_MS,
 } from './reelsCache';
 import useAuthStore from '@/stores/authStore';
+import { track } from '@/services/analytics';
+import { useFeatureFlag } from '@/config/featureFlags';
 
 const { width, height } = Dimensions.get('window');
+
+// Reaction palette — Ionicons only (no emoji, which render as tofu on-device).
+// Mirrors the feed's PostCard palette so reels and feed read identically.
+const REEL_REACTIONS: { type: string; icon: keyof typeof Ionicons.glyphMap; color: string; label: string }[] = [
+  { type: 'LIKE', icon: 'heart', color: '#FF4D6D', label: 'Like' },
+  { type: 'INSIGHTFUL', icon: 'bulb', color: '#F59E0B', label: 'Insightful' },
+  { type: 'CELEBRATE', icon: 'sparkles', color: '#8B5CF6', label: 'Celebrate' },
+  { type: 'SMART_TAKE', icon: 'rocket', color: '#0EA5E9', label: 'Smart take' },
+];
 
 // ─── Types ─────────────────────────────────────────────────────────────
 // Re-exported from reelsCache.ts so prefetch + screen share the same shape.
@@ -80,7 +92,9 @@ const fallbackReels: ReelFeedItem[] = [
     payload: {
       title: 'Quantum Wave-Particle Duality',
       description: 'Light behaves as both a wave and a particle.',
-      videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-starry-outer-space-background-12891-large.mp4',
+      // No placeholder media in production — the fallback reel renders as a
+      // gradient focus card (the render path guards on item.videoUrl). Real
+      // reel media comes from the reels API / reelsRanker.
       creator: { id: 't1', firstName: 'Albert', lastName: 'Einstein' },
       pausePoints: [
         {
@@ -141,6 +155,12 @@ const PREFETCH_THRESHOLD = 3;
 
 export const FocusReelsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  // The bottom tab bar now stays visible on Reels (TikTok/IG/FB style). Size
+  // each reel page to sit *above* the bar so captions / action buttons / the
+  // progress bar aren't hidden behind it. (Reels is always inside the bottom
+  // tab navigator, so this hook is always in context.)
+  const tabBarHeight = useBottomTabBarHeight();
+  const pageHeight = Math.max(0, height - tabBarHeight);
   // Hydrate from module cache when available so navigating back is instant.
   const [items, setItems] = useState<ReelFeedItem[]>(reelsCache.items);
   const [loading, setLoading] = useState(reelsCache.items.length === 0);
@@ -206,8 +226,10 @@ export const FocusReelsScreen: React.FC = () => {
       // Fire-and-forget; failures are silent and non-critical.
       const persistUserId = useAuthStore.getState().user?.id;
       if (persistUserId) void persistReelsCacheToDisk(persistUserId);
-      if (__DEV__ && ttiStart != null) {
-        console.log(`[Reels TTI] network cold-first-paint=${Date.now() - ttiStart}ms`);
+      if (ttiStart != null) {
+        const ms = Date.now() - ttiStart;
+        track('reels_tti', { ms, source: 'network' });
+        if (__DEV__) console.log(`[Reels TTI] network cold-first-paint=${ms}ms`);
       }
     } catch (err) {
       console.warn('Failed to fetch reels feed:', err);
@@ -230,7 +252,9 @@ export const FocusReelsScreen: React.FC = () => {
     const mountTs = Date.now();
     // Fast path 1: memory cache fresh (< 60s) — render instantly, zero I/O.
     if (isReelsCacheFresh()) {
-      if (__DEV__) console.log(`[Reels TTI] memory-cache hit=${Date.now() - mountTs}ms`);
+      const ms = Date.now() - mountTs;
+      track('reels_tti', { ms, source: 'memory-cache' });
+      if (__DEV__) console.log(`[Reels TTI] memory-cache hit=${ms}ms`);
       return;
     }
     // Fast path 2: MainNavigator's prefetch is still in flight (or finishing).
@@ -242,8 +266,10 @@ export const FocusReelsScreen: React.FC = () => {
           setNextCursor(reelsCache.nextCursor);
           setHasMore(reelsCache.hasMore);
           setLoading(false);
+          const ms = Date.now() - mountTs;
+          track('reels_tti', { ms, source: 'prefetch-await' });
           if (__DEV__) {
-            console.log(`[Reels TTI] prefetch-await first-paint=${Date.now() - mountTs}ms`);
+            console.log(`[Reels TTI] prefetch-await first-paint=${ms}ms`);
           }
         } else {
           fetchFeed();
@@ -361,7 +387,7 @@ export const FocusReelsScreen: React.FC = () => {
       ) : (
         <FlashList
           data={items}
-          estimatedItemSize={height}
+          estimatedItemSize={pageHeight}
           renderItem={({ item, index }) => (
             <ReelCard
               item={item}
@@ -369,6 +395,7 @@ export const FocusReelsScreen: React.FC = () => {
               shouldMountVideo={Math.abs(index - activeIndex) <= 1}
               muted={muted}
               onInteract={(payload) => handleInteraction(item.id, item.type, payload)}
+              pageHeight={pageHeight}
             />
           )}
           keyExtractor={(item) => `${item.type}-${item.id}`}
@@ -377,7 +404,7 @@ export const FocusReelsScreen: React.FC = () => {
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           decelerationRate="fast"
-          snapToInterval={height}
+          snapToInterval={pageHeight}
           snapToAlignment="start"
           refreshControl={
             <RefreshControl
@@ -606,11 +633,12 @@ interface CardProps {
   shouldMountVideo: boolean;
   muted: boolean;
   onInteract: (payload: InteractionPayload) => void;
+  pageHeight: number;
 }
 
-const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onInteract }: CardProps) => {
+const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onInteract, pageHeight }: CardProps) => {
   const gradient = useMemo(() => gradientFor(item.subject), [item.subject]);
-  const common = { item: item.payload, isActive, postId: item.postId, engagement: item.engagement, onInteract, gradient, muted };
+  const common = { item: item.payload, isActive, postId: item.postId, engagement: item.engagement, onInteract, gradient, muted, pageHeight };
 
   switch (item.type) {
     case 'FOCUS_REEL':
@@ -630,7 +658,8 @@ const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onIntera
   prev.item === next.item &&
   prev.isActive === next.isActive &&
   prev.shouldMountVideo === next.shouldMountVideo &&
-  prev.muted === next.muted
+  prev.muted === next.muted &&
+  prev.pageHeight === next.pageHeight
 ));
 
 // ─── Sidebar (right rail) ──────────────────────────────────────────────
@@ -658,8 +687,11 @@ const buildShareText = (item: any, postId?: string): { message: string; url?: st
 
 const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertical', postId, engagement, accent }) => {
   const navigation = useNavigation<any>();
+  const reactionsEnabled = useFeatureFlag('reactions');
   const [liked, setLiked] = useState<boolean>(!!engagement?.isLikedByMe);
   const [likesCount, setLikesCount] = useState<number>(engagement?.likesCount ?? 0);
+  const [myReaction, setMyReaction] = useState<string | null>(engagement?.myReaction ?? null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const commentsCount = engagement?.commentsCount ?? 0;
   const heartScale = useRef(new Animated.Value(1)).current;
 
@@ -667,7 +699,10 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
   useEffect(() => {
     setLiked(!!engagement?.isLikedByMe);
     setLikesCount(engagement?.likesCount ?? 0);
-  }, [engagement?.isLikedByMe, engagement?.likesCount]);
+    setMyReaction(engagement?.myReaction ?? null);
+  }, [engagement?.isLikedByMe, engagement?.likesCount, engagement?.myReaction]);
+
+  const reactionMeta = myReaction ? REEL_REACTIONS.find((r) => r.type === myReaction) : null;
 
   const onShare = async () => {
     try {
@@ -694,9 +729,12 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
     const optimisticLiked = !wasLiked;
     const optimisticCount = Math.max(0, likesCount + (optimisticLiked ? 1 : -1));
 
-    // Optimistic UI
+    const prevReaction = myReaction;
+
+    // Optimistic UI — a plain tap toggles a LIKE reaction.
     setLiked(optimisticLiked);
     setLikesCount(optimisticCount);
+    setMyReaction(optimisticLiked ? 'LIKE' : null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     animateHeart();
 
@@ -706,18 +744,71 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
       // existing state, not the request body). Reconcile if we guessed wrong.
       if (res.data && typeof res.data.liked === 'boolean' && res.data.liked !== optimisticLiked) {
         const corrected = res.data.liked;
+        const correctedCount = corrected ? optimisticCount : Math.max(0, optimisticCount - 1);
         setLiked(corrected);
+        setMyReaction(corrected ? 'LIKE' : null);
         setLikesCount((c) => Math.max(0, c + (corrected === optimisticLiked ? 0 : (corrected ? 2 : -2))));
-        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: corrected ? optimisticCount : Math.max(0, optimisticCount - 1) });
+        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: correctedCount, myReaction: corrected ? 'LIKE' : null });
       } else {
-        patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount });
+        patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount, myReaction: optimisticLiked ? 'LIKE' : null });
       }
     } catch (err) {
       // Roll back optimistic update
       setLiked(wasLiked);
       setLikesCount(likesCount);
+      setMyReaction(prevReaction);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.warn('Like API failed:', err);
+    }
+  };
+
+  // Pick a specific reaction (long-press). Reuses the feed's /react endpoint.
+  // Toggles off if the same reaction is chosen again.
+  const reactToReel = async (type: string) => {
+    setPickerOpen(false);
+    if (!postId) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    const prevReaction = myReaction;
+    const prevLiked = liked;
+    const prevCount = likesCount;
+
+    const isToggleOff = prevReaction === type;
+    const optimisticReaction = isToggleOff ? null : type;
+    // Count moves only when going none→reaction or reaction→none, not on a swap.
+    const optimisticCount = Math.max(
+      0,
+      likesCount + (!prevReaction && optimisticReaction ? 1 : prevReaction && !optimisticReaction ? -1 : 0),
+    );
+
+    setMyReaction(optimisticReaction);
+    setLiked(!!optimisticReaction);
+    setLikesCount(optimisticCount);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    animateHeart();
+
+    try {
+      const res = await feedApi.post<{ success: boolean; myReaction: string | null }>(
+        `/posts/${postId}/react`,
+        { type },
+      );
+      const serverReaction = res.data?.myReaction ?? null;
+      // Reconcile against the authoritative reaction the server stored.
+      setMyReaction(serverReaction);
+      setLiked(!!serverReaction);
+      patchEngagementInCache(postId, {
+        isLikedByMe: !!serverReaction,
+        likesCount: optimisticCount,
+        myReaction: serverReaction,
+      });
+      if (serverReaction) track('post_reaction', { surface: 'reels', type: serverReaction });
+    } catch (err) {
+      setMyReaction(prevReaction);
+      setLiked(prevLiked);
+      setLikesCount(prevCount);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      console.warn('React API failed:', err);
     }
   };
 
@@ -748,21 +839,49 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
       </View>
 
       <View style={horizontal ? styles.horizontalIconsWrap : { alignItems: 'center', gap: 22 }}>
-        <TouchableOpacity
-          style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
-          onPress={onLike}
-          disabled={!supportsSocial}
-          activeOpacity={supportsSocial ? 0.7 : 1}
-        >
-          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={horizontal ? 26 : 32}
-              color={liked ? '#FF4D6D' : supportsSocial ? '#FFF' : 'rgba(255,255,255,0.3)'}
-            />
-          </Animated.View>
-          <Text style={styles.sidebarText}>{formatCount(likesCount)}</Text>
-        </TouchableOpacity>
+        <View>
+          {/* Long-press reaction picker (flag-gated, only on post-backed reels) */}
+          {pickerOpen && (
+            <>
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => setPickerOpen(false)}
+                style={styles.reactionPickerBackdrop}
+              />
+              <View style={[styles.reactionPicker, horizontal ? styles.reactionPickerHorizontal : styles.reactionPickerVertical]}>
+                {REEL_REACTIONS.map((r) => (
+                  <TouchableOpacity
+                    key={r.type}
+                    onPress={() => reactToReel(r.type)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={r.label}
+                    style={styles.reactionPickerOption}
+                  >
+                    <Ionicons name={r.icon} size={26} color={r.color} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+          <TouchableOpacity
+            style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
+            onPress={onLike}
+            onLongPress={supportsSocial && reactionsEnabled ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setPickerOpen(true); } : undefined}
+            delayLongPress={220}
+            disabled={!supportsSocial}
+            activeOpacity={supportsSocial ? 0.7 : 1}
+          >
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              <Ionicons
+                name={reactionMeta ? reactionMeta.icon : liked ? 'heart' : 'heart-outline'}
+                size={horizontal ? 26 : 32}
+                color={reactionMeta ? reactionMeta.color : liked ? '#FF4D6D' : supportsSocial ? '#FFF' : 'rgba(255,255,255,0.3)'}
+              />
+            </Animated.View>
+            <Text style={styles.sidebarText}>{formatCount(likesCount)}</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
@@ -803,6 +922,8 @@ interface VariantProps {
   onInteract?: (payload: InteractionPayload) => void;
   gradient: [string, string, string];
   muted?: boolean;
+  /** Height of one reel page = window height − bottom tab bar height. */
+  pageHeight: number;
 }
 
 const TypePill: React.FC<{ type: ReelType; extra?: string }> = ({ type, extra }) => {
@@ -868,7 +989,7 @@ const useReelVideoPreload = (
 };
 
 const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
-  item, isActive, postId, engagement, onInteract, gradient, shouldMountVideo, muted,
+  item, isActive, postId, engagement, onInteract, gradient, shouldMountVideo, muted, pageHeight,
 }) => {
   const [questionPoint, setQuestionPoint] = useState<any | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -932,10 +1053,10 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   };
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       {shouldMountVideo && item.videoUrl && (
-        <VideoView player={player} style={styles.fullScreenAbsolute} contentFit="cover" nativeControls={false} pointerEvents="none" />
+        <VideoView player={player} style={[styles.fullScreenAbsolute, { height: pageHeight }]} contentFit="cover" nativeControls={false} pointerEvents="none" />
       )}
       <LinearGradient
         colors={['transparent', 'transparent', 'rgba(0,0,0,0.85)']}
@@ -1015,7 +1136,7 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   );
 };
 
-const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient }) => {
+const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
 
@@ -1030,7 +1151,7 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
   const wasCorrect = isAnswered && selectedOption === item.correctAnswer;
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="QUIZ_QUESTION" extra={`+${item.points || 10} XP`} />
@@ -1088,7 +1209,7 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
   );
 };
 
-const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient }) => {
+const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient, pageHeight }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [graded, setGraded] = useState(false);
   const flip = useRef(new Animated.Value(0)).current;
@@ -1121,7 +1242,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
   const strengthPct = Math.round((item.recallStrength ?? 0.4) * 100);
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="RECALL_CARD" />
@@ -1192,7 +1313,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
 };
 
 const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: string }> = ({
-  item, postId, engagement, gradient, bountyId, subject,
+  item, postId, engagement, gradient, bountyId, subject, pageHeight,
 }) => {
   const navigation = useNavigation<any>();
   const expiresAt = item.expiresAt ? new Date(item.expiresAt) : null;
@@ -1208,7 +1329,7 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
   };
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="BOUNTY" extra={`${item.bountyXp} XP`} />
@@ -1248,7 +1369,7 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
 };
 
 const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
-  item, isActive, postId, engagement, gradient, shouldMountVideo, muted,
+  item, isActive, postId, engagement, gradient, shouldMountVideo, muted, pageHeight,
 }) => {
   const [tapPaused, setTapPaused] = useState(false);
   const player = useVideoPlayer(item.isVideo && shouldMountVideo ? item.coverUrl : null, (p) => {
@@ -1271,10 +1392,10 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   }, [isActive, item.isVideo, player, shouldMountVideo, tapPaused]);
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       {item.isVideo && shouldMountVideo && item.coverUrl && (
-        <VideoView player={player} style={styles.fullScreenAbsolute} contentFit="cover" nativeControls={false} pointerEvents="none" />
+        <VideoView player={player} style={[styles.fullScreenAbsolute, { height: pageHeight }]} contentFit="cover" nativeControls={false} pointerEvents="none" />
       )}
       <LinearGradient
         colors={['transparent', 'transparent', 'rgba(0,0,0,0.9)']}
@@ -1531,6 +1652,29 @@ const styles = StyleSheet.create({
   rightSidebar: { position: 'absolute', right: 12, bottom: 130, alignItems: 'center', gap: 22, zIndex: 5, elevation: 5 },
   avatarWrap: { position: 'relative', borderWidth: 2, borderRadius: 32, padding: 2 },
   sidebarIconBtn: { alignItems: 'center', justifyContent: 'center' },
+  // Reaction picker — floats over the dark reel; large backdrop dismisses on tap-away.
+  reactionPickerBackdrop: { position: 'absolute', top: -1000, left: -1000, right: -1000, bottom: -1000, zIndex: 30 },
+  reactionPicker: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20,20,24,0.94)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 16,
+    zIndex: 40,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  // Vertical layout: heart sits at the right edge → open the bar to its left, above.
+  reactionPickerVertical: { bottom: 44, right: 0 },
+  // Horizontal layout: action bar at the bottom → open the bar above the heart.
+  reactionPickerHorizontal: { bottom: 40, left: -10 },
+  reactionPickerOption: { paddingHorizontal: 2, paddingVertical: 2 },
   sidebarText: {
     color: '#FFF',
     fontSize: 12,
