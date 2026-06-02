@@ -93,10 +93,21 @@ router.get('/state', authenticateToken, async (req: AuthRequest, res: Response) 
       select: { reelCombo: true, highestReelCombo: true, totalPoints: true },
     });
     const tDue = Date.now();
+    const nowDate = new Date();
+    const in24h = new Date(nowDate.getTime() + 24 * 60 * 60 * 1000);
     const duePromise = prismaRead.recallCard.count({
-      where: { userId, nextReviewAt: { lte: new Date() } },
+      where: { userId, nextReviewAt: { lte: nowDate } },
     });
-    const [user, dueRecallCount] = await Promise.all([userPromise, duePromise]);
+    // Cards becoming due within the next 24h — powers the "N coming up
+    // tomorrow" tomorrow-pull in the end-of-session celebration.
+    const upcomingPromise = prismaRead.recallCard.count({
+      where: { userId, nextReviewAt: { gt: nowDate, lte: in24h } },
+    });
+    const [user, dueRecallCount, upcomingRecallCount] = await Promise.all([
+      userPromise,
+      duePromise,
+      upcomingPromise,
+    ]);
     timings.user = Date.now() - tUser;
     timings.due = Date.now() - tDue;
 
@@ -105,6 +116,7 @@ router.get('/state', authenticateToken, async (req: AuthRequest, res: Response) 
       highestCombo: user?.highestReelCombo ?? 0,
       totalPoints: user?.totalPoints ?? 0,
       dueRecallCount,
+      upcomingRecallCount,
     };
     await feedCache.set(cacheKey, payload, REELS_STATE_TTL);
     timings.total = Date.now() - t0;
@@ -252,7 +264,7 @@ async function handleFocusReel(userId: string, reelId: string, body: any) {
   const correct = !!body.correct;
   const baseXp = clampInt(body.xpEarned, 0, 100) || (correct ? BASE_XP_CORRECT : 0);
 
-  const combo = await applyCombo(userId, correct, baseXp);
+  const combo = await applyCombo(userId, correct ? 'correct' : 'wrong', baseXp);
 
   await prisma.focusReelAttempt.upsert({
     where: { reelId_userId: { reelId, userId } },
@@ -267,7 +279,7 @@ async function handleFocusReel(userId: string, reelId: string, body: any) {
 async function handleQuizQuestion(userId: string, body: any) {
   const correct = !!body.correct;
   const baseXp = clampInt(body.xpEarned, 0, 100) || (correct ? BASE_XP_CORRECT : 0);
-  const combo = await applyCombo(userId, correct, baseXp);
+  const combo = await applyCombo(userId, correct ? 'correct' : 'wrong', baseXp);
 
   // Close the learning loop: a quiz-reel answer enters spaced repetition so it
   // feeds SM-2 scheduling + the subject-mastery tree, not just the combo HUD.
@@ -301,8 +313,10 @@ async function handleRecallCard(userId: string, cardId: string, body: any) {
     card.xpReward,
   );
 
-  const passed = grade !== 'again';
-  const combo = await applyCombo(userId, passed, outcome.xpEarned);
+  // Combo forgiveness: 'again' is honest forgetting (neutral, keeps the
+  // streak); 'good'/'easy' advance it.
+  const comboOutcome = grade === 'again' ? 'neutral' : 'correct';
+  const combo = await applyCombo(userId, comboOutcome, outcome.xpEarned);
 
   await prisma.$transaction([
     prisma.recallCard.update({
@@ -315,7 +329,7 @@ async function handleRecallCard(userId: string, cardId: string, body: any) {
         nextReviewAt: outcome.nextReviewAt,
         lastReviewedAt: new Date(),
         reviewCount: { increment: 1 },
-        incorrectCount: passed ? undefined : { increment: 1 },
+        incorrectCount: grade === 'again' ? { increment: 1 } : undefined,
       },
     }),
     prisma.recallReview.create({
@@ -362,7 +376,18 @@ async function invalidateUserState(userId: string): Promise<void> {
   try { await feedCache.set(`reels:state:${userId}`, null, 1); } catch { /* noop */ }
 }
 
-async function applyCombo(userId: string, correct: boolean, baseXp: number): Promise<ComboResult> {
+/**
+ * Combo outcome:
+ *   'correct' → +1 to the streak (loot every Nth).
+ *   'wrong'   → reset the streak to 0.
+ *   'neutral' → leave the streak untouched but still award baseXp. Used for a
+ *               recall "again" grade: honestly forgetting a card is a normal
+ *               part of spaced repetition, not a failure, so it shouldn't nuke
+ *               a hard-won combo (combo forgiveness).
+ */
+type ComboOutcome = 'correct' | 'wrong' | 'neutral';
+
+async function applyCombo(userId: string, result: ComboOutcome, baseXp: number): Promise<ComboResult> {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -375,18 +400,19 @@ async function applyCombo(userId: string, correct: boolean, baseXp: number): Pro
     let comboBonus = 0;
     let isComboFill = false;
 
-    if (correct) {
+    if (result === 'correct') {
       combo += 1;
       if (combo > highest) highest = combo;
       if (combo > 0 && combo % COMBO_FILL_EVERY === 0) {
         comboBonus = COMBO_FILL_BONUS;
         isComboFill = true;
       }
-    } else {
+    } else if (result === 'wrong') {
       combo = 0;
     }
+    // 'neutral' leaves combo as-is.
 
-    const xpEarned = correct ? baseXp + comboBonus : 0;
+    const xpEarned = result === 'wrong' ? 0 : baseXp + comboBonus;
     const totalPoints = user.totalPoints + xpEarned;
 
     const updated = await tx.user.update({

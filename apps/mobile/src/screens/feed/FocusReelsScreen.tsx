@@ -17,6 +17,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -175,14 +176,25 @@ export const FocusReelsScreen: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [dueRecallCount, setDueRecallCount] = useState(0);
+  // End-of-session celebration: track reviews cleared + XP earned since the
+  // last celebration, and how many cards are coming up in the next 24h.
+  const [upcomingRecallCount, setUpcomingRecallCount] = useState(0);
+  const [sessionReviewed, setSessionReviewed] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [showSessionComplete, setShowSessionComplete] = useState(false);
+  // Mirror of dueRecallCount for synchronous "did this review clear the pile?"
+  // detection inside handleInteraction (state would be stale in the closure).
+  const dueCountRef = useRef(0);
 
   // HUD warmup — combo / due recall counts persist across sessions.
   const fetchState = useCallback(async () => {
     try {
-      const res = await feedApi.get<{ combo: number; highestCombo: number; dueRecallCount: number }>('/reels/state');
+      const res = await feedApi.get<{ combo: number; highestCombo: number; dueRecallCount: number; upcomingRecallCount?: number }>('/reels/state');
       if (res.data) {
         setCombo(res.data.combo ?? 0);
         setDueRecallCount(res.data.dueRecallCount ?? 0);
+        dueCountRef.current = res.data.dueRecallCount ?? 0;
+        setUpcomingRecallCount(res.data.upcomingRecallCount ?? 0);
       }
     } catch { /* non-fatal — HUD just starts at 0 */ }
   }, []);
@@ -314,6 +326,7 @@ export const FocusReelsScreen: React.FC = () => {
       if (typeof newCombo === 'number') setCombo(newCombo);
       if (actualXp > 0) {
         setXpBurst(actualXp);
+        setSessionXp((x) => x + actualXp);
         setTimeout(() => setXpBurst(null), 1200);
       }
       if (isComboFill) {
@@ -325,8 +338,21 @@ export const FocusReelsScreen: React.FC = () => {
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
-      // After a recall review, decrement the due-count for the HUD.
-      if (itemType === 'RECALL_CARD') setDueRecallCount((c) => Math.max(0, c - 1));
+      // After a recall review, decrement the due-count for the HUD and detect
+      // when the learner has just cleared their entire due pile → celebrate.
+      if (itemType === 'RECALL_CARD') {
+        setSessionReviewed((n) => n + 1);
+        const prevDue = dueCountRef.current;
+        const nextDue = Math.max(0, prevDue - 1);
+        dueCountRef.current = nextDue;
+        setDueRecallCount(nextDue);
+        if (prevDue > 0 && nextDue === 0) {
+          // Refresh upcoming count, then show the session-complete celebration.
+          void fetchState();
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setShowSessionComplete(true);
+        }
+      }
     } catch (err) {
       console.warn('Interaction API failed (local-only update):', err);
       if (passed) {
@@ -337,7 +363,7 @@ export const FocusReelsScreen: React.FC = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
-  }, []);
+  }, [fetchState]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
@@ -383,6 +409,18 @@ export const FocusReelsScreen: React.FC = () => {
 
       {showComboFill && <ComboFillBurst />}
       {xpBurst != null && <XpBurst amount={xpBurst} />}
+      {showSessionComplete && (
+        <SessionCompleteOverlay
+          reviewed={sessionReviewed}
+          xp={sessionXp}
+          upcoming={upcomingRecallCount}
+          onDismiss={() => {
+            setShowSessionComplete(false);
+            setSessionReviewed(0);
+            setSessionXp(0);
+          }}
+        />
+      )}
 
       {items.length === 0 && loading ? (
         // Cold first load — render an empty card-shaped placeholder using the
@@ -595,6 +633,95 @@ const XpBurst: React.FC<{ amount: number }> = ({ amount }) => {
   return (
     <Animated.View style={[styles.xpBurst, { opacity, transform: [{ translateY }] }]} pointerEvents="none">
       <Text style={styles.xpBurstText}>+{amount} XP</Text>
+    </Animated.View>
+  );
+};
+
+// ─── End-of-session celebration ────────────────────────────────────────
+// Fires when the learner clears their entire due-recall pile in a sitting —
+// the moment that earns a "come back tomorrow" pull. Summarizes the session
+// (cards reviewed + XP) and surfaces how many cards return tomorrow.
+
+const SessionCompleteOverlay: React.FC<{
+  reviewed: number;
+  xp: number;
+  upcoming: number;
+  onDismiss: () => void;
+}> = ({ reviewed, xp, upcoming, onDismiss }) => {
+  const { t } = useTranslation();
+  const scale = useRef(new Animated.Value(0.8)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+    ]).start();
+  }, [scale, opacity]);
+
+  return (
+    <Animated.View style={[styles.sessionOverlay, { opacity }]}>
+      <Animated.View style={[styles.sessionCard, { transform: [{ scale }] }]}>
+        <View style={styles.sessionIconWrap}>
+          <LinearGradient
+            colors={['#A855F7', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <Ionicons name="checkmark-done" size={40} color="#FFF" />
+        </View>
+        <Text style={styles.sessionTitle}>
+          {t('reels.session.title', { defaultValue: 'Reviews cleared!' })}
+        </Text>
+        <Text style={styles.sessionSubtitle}>
+          {t('reels.session.subtitle', { defaultValue: "You've reviewed every card due today." })}
+        </Text>
+
+        <View style={styles.sessionStatsRow}>
+          <View style={styles.sessionStat}>
+            <Text style={styles.sessionStatValue}>{reviewed}</Text>
+            <Text style={styles.sessionStatLabel}>
+              {t('reels.session.reviewed', { defaultValue: 'Reviewed' })}
+            </Text>
+          </View>
+          <View style={styles.sessionStatDivider} />
+          <View style={styles.sessionStat}>
+            <Text style={styles.sessionStatValue}>+{xp}</Text>
+            <Text style={styles.sessionStatLabel}>
+              {t('reels.session.xp', { defaultValue: 'XP earned' })}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.sessionTomorrow}>
+          <Ionicons name="alarm-outline" size={16} color="#FDE047" />
+          <Text style={styles.sessionTomorrowText}>
+            {upcoming > 0
+              ? t('reels.session.upcoming', {
+                  count: upcoming,
+                  defaultValue: '{{count}} more coming up tomorrow',
+                })
+              : t('reels.session.allCaughtUp', {
+                  defaultValue: "You're all caught up — see you tomorrow!",
+                })}
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.sessionBtn} onPress={onDismiss} activeOpacity={0.85}>
+          <LinearGradient
+            colors={['#A855F7', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.sessionBtnGradient}
+          >
+            <Text style={styles.sessionBtnText}>
+              {t('reels.session.keepGoing', { defaultValue: 'Keep scrolling' })}
+            </Text>
+            <Ionicons name="arrow-forward" size={18} color="#FFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -1149,11 +1276,18 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
 
+  // Select-then-submit: tapping an option only highlights it. The answer isn't
+  // committed (and the combo isn't risked) until "Submit" — so a mistap can't
+  // nuke a streak, and the deliberate commit is better for retention.
   const handleSelect = (idx: number) => {
     if (isAnswered) return;
     setSelectedOption(idx);
+  };
+
+  const handleSubmit = () => {
+    if (isAnswered || selectedOption === null) return;
     setIsAnswered(true);
-    const correct = idx === item.correctAnswer;
+    const correct = selectedOption === item.correctAnswer;
     if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
   };
 
@@ -1166,7 +1300,7 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
         <TypePill type="QUIZ_QUESTION" extra={`+${item.points || 10} XP`} />
         <Text style={styles.bigQuestionText}>{item.question}</Text>
         <View style={{ width: '100%', gap: 12 }}>
-          {item.options.map((opt: string, idx: number) => {
+          {(item.options ?? []).map((opt: string, idx: number) => {
             const isCorrect = idx === item.correctAnswer;
             const isPicked = idx === selectedOption;
             let bg: string = 'rgba(255,255,255,0.08)';
@@ -1195,6 +1329,19 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
             );
           })}
         </View>
+        {selectedOption !== null && !isAnswered && (
+          <TouchableOpacity style={[styles.submitBtn, styles.quizSubmitBtn]} onPress={handleSubmit} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#A855F7', '#7C3AED']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.submitBtnGradient}
+            >
+              <Text style={styles.submitBtnText}>Submit Answer</Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFF" />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </View>
       {isAnswered && !!item.explanation && (
         <View style={styles.explanationCard}>
@@ -1270,7 +1417,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
             ]}
           >
             <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
-            <Text style={styles.bigQuestionText}>{item.question.question}</Text>
+            <Text style={styles.bigQuestionText}>{item.question?.question ?? '—'}</Text>
             <Text style={styles.tapHint}>Tap to reveal answer</Text>
           </Animated.View>
           <Animated.View
@@ -1283,7 +1430,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
             <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
             <Text style={styles.flashcardAnswerHeader}>Answer</Text>
             <Text style={styles.flashcardAnswerText}>
-              {item.question.options[item.question.correctAnswer]}
+              {item.question?.options?.[item.question?.correctAnswer ?? 0] ?? '—'}
             </Text>
           </Animated.View>
         </TouchableOpacity>
@@ -1484,6 +1631,52 @@ const styles = StyleSheet.create({
   comboFillTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 1.2 },
   comboFillSub: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700' },
 
+  // End-of-session celebration
+  sessionOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    zIndex: 300,
+  },
+  sessionCard: {
+    width: '100%',
+    backgroundColor: '#16161D',
+    borderRadius: 28,
+    padding: 26,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  sessionIconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 16,
+  },
+  sessionTitle: { color: '#FFF', fontSize: 22, fontWeight: '900', letterSpacing: 0.3, textAlign: 'center' },
+  sessionSubtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: '500', textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  sessionStatsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    marginTop: 22, marginBottom: 6, width: '100%',
+  },
+  sessionStat: { flex: 1, alignItems: 'center', gap: 4 },
+  sessionStatValue: { color: '#FFF', fontSize: 26, fontWeight: '900' },
+  sessionStatLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
+  sessionStatDivider: { width: 1, height: 38, backgroundColor: 'rgba(255,255,255,0.12)' },
+  sessionTomorrow: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    backgroundColor: 'rgba(253,224,71,0.12)',
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14,
+    marginTop: 18,
+  },
+  sessionTomorrowText: { color: '#FDE047', fontSize: 13, fontWeight: '700', flexShrink: 1 },
+  sessionBtn: { borderRadius: 24, overflow: 'hidden', marginTop: 22, width: '100%' },
+  sessionBtnGradient: { paddingVertical: 15, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  sessionBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
+
   // XP burst
   xpBurst: {
     position: 'absolute',
@@ -1559,6 +1752,7 @@ const styles = StyleSheet.create({
 
   // Submit
   submitBtn: { borderRadius: 24, overflow: 'hidden' },
+  quizSubmitBtn: { width: '100%', marginTop: 4 },
   submitBtnGradient: { padding: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   submitBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
 

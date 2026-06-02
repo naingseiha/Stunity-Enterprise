@@ -1,4 +1,15 @@
 {
+  "reels": {
+    "session": {
+      "title": "Reviews cleared!",
+      "subtitle": "You've reviewed every card due today.",
+      "reviewed": "Reviewed",
+      "xp": "XP earned",
+      "upcoming": "{{count}} more coming up tomorrow",
+      "allCaughtUp": "You're all caught up — see you tomorrow!",
+      "keepGoing": "Keep scrolling"
+    }
+  },
   "common": {
     "welcome": "Welcome to Stunity",
     "login": "Login",
