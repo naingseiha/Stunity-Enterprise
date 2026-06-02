@@ -54,6 +54,7 @@ import {
   BountyDetailScreen,
   CreateBountyScreen,
   FocusReelsScreen,
+  CreateFocusReelScreen,
 } from "@/screens/feed";
 import { prefetchReelsFeed, hydrateReelsCacheFromDisk } from "@/screens/feed/reelsCache";
 import { prefetchLearnHub, hydrateLearnHubFromDisk } from "@/screens/learn/learnHubCache";
@@ -155,6 +156,7 @@ const ConnectionsScreen = SuggestedUsersScreen;
 // Add Search to MainStack param list
 type ExtendedMainStackParamList = MainStackParamList & {
   Search: undefined;
+  CreateFocusReel: undefined;
 };
 
 const MainStack = createNativeStackNavigator<ExtendedMainStackParamList>();
@@ -835,6 +837,11 @@ function MainStackNavigatorTabletAware() {
           component={NotificationsScreen}
         />
         <MainStack.Screen name="Search" component={SearchScreen} />
+        <MainStack.Screen
+          name="CreateFocusReel"
+          component={CreateFocusReelScreen}
+          options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'modal' }}
+        />
       </MainStack.Navigator>
   );
 };

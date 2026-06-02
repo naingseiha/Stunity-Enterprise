@@ -154,8 +154,11 @@ const PREFETCH_THRESHOLD = 3;
 // ./reelsCache.ts so MainNavigator can prime the cache *before* this screen
 // mounts (the same pattern Instagram/TikTok use for instant tab entry).
 
+const AUTHORING_ROLES = ['TEACHER', 'ADMIN', 'SCHOOL_ADMIN', 'SUPER_ADMIN'];
+
 export const FocusReelsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const canAuthor = useAuthStore((s) => AUTHORING_ROLES.includes(s.user?.role ?? ''));
   // The bottom tab bar now stays visible on Reels (TikTok/IG/FB style). Size
   // each reel page to sit *above* the bar so captions / action buttons / the
   // progress bar aren't hidden behind it. (Reels is always inside the bottom
@@ -405,6 +408,16 @@ export const FocusReelsScreen: React.FC = () => {
         <TouchableOpacity style={styles.muteBtn} onPress={() => setMuted((m) => !m)}>
           <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={20} color="#FFF" />
         </TouchableOpacity>
+        {canAuthor && (
+          <TouchableOpacity
+            style={styles.muteBtn}
+            onPress={() => navigation.navigate('CreateFocusReel')}
+            accessibilityRole="button"
+            accessibilityLabel="Create reel"
+          >
+            <Ionicons name="add" size={26} color="#FFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {showComboFill && <ComboFillBurst />}

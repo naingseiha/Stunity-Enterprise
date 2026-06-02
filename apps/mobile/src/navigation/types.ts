@@ -138,6 +138,7 @@ export type FeedStackParamList = {
   BountyDetail: { bountyId: string; bountySubject?: string; bountyXp?: number };
   CreateBounty: undefined;
   FocusReels: undefined;
+  CreateFocusReel: undefined;
 };
 
 // Learn Stack
