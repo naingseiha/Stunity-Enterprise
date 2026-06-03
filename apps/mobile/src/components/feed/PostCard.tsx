@@ -57,6 +57,7 @@ import { FEED_POST_CARD_MARGIN_H } from '@/constants';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
+import { adjustReactionCounts } from '@/utils/reactionCounts';
 import { feedApi } from '@/api/client';
 
 interface PostCardProps {
@@ -164,6 +165,8 @@ const REACTIONS: { type: string; icon: keyof typeof Ionicons.glyphMap; color: st
   { type: 'CELEBRATE', icon: 'sparkles', color: '#8B5CF6', label: 'Celebrate' },
   { type: 'SMART_TAKE', icon: 'rocket', color: '#0EA5E9', label: 'Smart take' },
 ];
+
+const REACTION_BY_TYPE = new Map(REACTIONS.map((r) => [r.type, r]));
 
 const reactionPickerStyles = StyleSheet.create({
   // Large negative insets so a tap anywhere outside the bar dismisses the picker.
@@ -445,6 +448,50 @@ const ActionBar = React.memo<ActionBarProps>(({
   </View>
 )});
 
+// Social-proof summary: the distinct reaction types present on a post (stacked,
+// most-used first) + the total — the "who reacted, and how" signal. Renders
+// nothing until at least one known reaction exists, so it never duplicates a
+// bare like count.
+const ReactionSummary = React.memo<{
+  counts?: Record<string, number>;
+  styles: any;
+  colors: any;
+}>(({ counts, styles, colors }) => {
+  if (!counts) return null;
+  const entries = Object.entries(counts)
+    .filter(([type, n]) => n > 0 && REACTION_BY_TYPE.has(type))
+    .sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return null;
+
+  const total = entries.reduce((s, [, n]) => s + n, 0);
+  const top = entries.slice(0, 3);
+  const a11y = entries
+    .map(([type, n]) => `${n} ${REACTION_BY_TYPE.get(type)!.label}`)
+    .join(', ');
+
+  return (
+    <View style={styles.reactionSummary} accessibilityRole="text" accessibilityLabel={a11y}>
+      <View style={styles.reactionSummaryIcons}>
+        {top.map(([type], i) => {
+          const meta = REACTION_BY_TYPE.get(type)!;
+          return (
+            <View
+              key={type}
+              style={[
+                styles.reactionSummaryIconWrap,
+                { backgroundColor: colors.card, marginLeft: i === 0 ? 0 : -5, zIndex: top.length - i },
+              ]}
+            >
+              <Ionicons name={meta.icon} size={11} color={meta.color} />
+            </View>
+          );
+        })}
+      </View>
+      <Text style={styles.reactionSummaryCount}>{total}</Text>
+    </View>
+  );
+});
+
 // LIVE badge — isolated so animation only runs on LIVE posts.
 // Pulse runs on the UI thread via Reanimated worklets — no JS frame cost.
 const LiveBadge = React.memo<{ viewers?: number; t: any; styles: any }>(({ viewers, t, styles }) => {
@@ -543,6 +590,16 @@ const PostCardInner: React.FC<PostCardProps> = ({
     setIsFollowing(post.isFollowingAuthor || false);
     setValued(isValuedProp);
   }, [post.id, post.isLiked, post.myReaction, post.isBookmarked, post.likes, post.isFollowingAuthor, isValuedProp]);
+
+  // The reaction breakdown shown is the authoritative server counts with the
+  // viewer's own pending change folded in (their server-side reaction → their
+  // current local one), treating a plain like as a LIKE. Pure derivation, so it
+  // stays correct across every toggle/swap without a separate optimistic state.
+  const displayedReactionCounts = React.useMemo(() => {
+    const serverReaction = post.myReaction ?? (post.isLiked ? 'LIKE' : null);
+    const localReaction = myReaction ?? (liked ? 'LIKE' : null);
+    return adjustReactionCounts(post.reactionCounts ?? {}, serverReaction, localReaction);
+  }, [post.reactionCounts, post.myReaction, post.isLiked, myReaction, liked]);
 
   const handleLike = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
@@ -904,6 +961,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
       />
 
 
+      <ReactionSummary counts={displayedReactionCounts} styles={styles} colors={colors} />
+
       <ActionBar
         liked={liked}
         myReaction={myReaction}
@@ -962,6 +1021,7 @@ function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolea
     prev.post.id === next.post.id &&
     prev.post.isLiked === next.post.isLiked &&
     prev.post.myReaction === next.post.myReaction &&
+    prev.post.reactionCounts === next.post.reactionCounts &&
     prev.post.likes === next.post.likes &&
     prev.post.comments === next.post.comments &&
     prev.post.isBookmarked === next.post.isBookmarked &&
@@ -1403,6 +1463,32 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: colors.textTertiary,
+  },
+  reactionSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
+  reactionSummaryIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reactionSummaryIconWrap: {
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  reactionSummaryCount: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
   actionBar: {
     flexDirection: 'row',

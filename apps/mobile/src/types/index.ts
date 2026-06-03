@@ -315,6 +315,8 @@ export interface Post {
   isLiked: boolean;
   /** The signed-in user's reaction type, or null. LIKE | INSIGHTFUL | CELEBRATE | SMART_TAKE */
   myReaction?: string | null;
+  /** Per-type reaction counts for the social-proof summary, e.g. { INSIGHTFUL: 3, LIKE: 10 }. */
+  reactionCounts?: Record<string, number>;
   isBookmarked: boolean;
   isValued?: boolean;
   isFollowingAuthor?: boolean;

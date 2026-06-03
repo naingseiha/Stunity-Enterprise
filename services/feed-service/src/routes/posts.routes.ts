@@ -12,6 +12,7 @@ import { feedCache, EventPublisher } from '../redis';
 import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../utils/feedCursor';
 import { getLatestQuizAttemptsByQuizIds } from '../utils/quizAttempts';
+import { fetchReactionCounts } from '../utils/reactionCounts';
 
 const router = Router();
 const inFlightFeedResponses = new Map<string, Promise<{ payload: any; etag: string; hasMore: boolean }>>();
@@ -271,7 +272,7 @@ async function buildPersonalizedFeedResponse(
       : promise.catch(() => fallback);
 
   const personalizeStart = performance.now();
-  const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
+  const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts, reactionCountsMap] = await Promise.all([
     postIds.length > 0
       ? personalize('liked-state lookup', prismaRead.like.findMany({ where: { userId: params.userId, postId: { in: postIds } }, select: { postId: true, reactionType: true } }), [] as any[])
       : Promise.resolve([]),
@@ -290,6 +291,9 @@ async function buildPersonalizedFeedResponse(
         getLatestQuizAttemptsByQuizIds(prisma, params.userId, quizPostIds),
         new Map(),
       )
+      : Promise.resolve(new Map()),
+    postIds.length > 0
+      ? personalize('reaction-counts lookup', fetchReactionCounts(prismaRead, postIds), new Map())
       : Promise.resolve(new Map()),
   ]);
   mark?.('personalize', personalizeStart);
@@ -335,6 +339,7 @@ async function buildPersonalizedFeedResponse(
         _count: sp.post._count,
         isLikedByMe: likedSet.has(sp.post.id),
         myReaction: reactionMap.get(sp.post.id) ?? null,
+        reactionCounts: reactionCountsMap.get(sp.post.id) ?? {},
         isBookmarked: bookmarkedSet.has(sp.post.id),
         isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
         pollOptions: sp.post.pollOptions,
@@ -696,7 +701,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     const pollPostIds = pagePostRows.filter(p => p.postType === 'POLL').map(p => p.id);
     const quizPostIds = pagePosts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean) as string[];
 
-    const [userLikes, userFollows, userVotes, userQuizAttempts] = await Promise.all([
+    const [userLikes, userFollows, userVotes, userQuizAttempts, reactionCountsMap] = await Promise.all([
       prismaRead.like.findMany({ where: { postId: { in: postIds }, userId: req.user!.id }, select: { postId: true, reactionType: true } }),
       authorIds.length > 0
         ? prismaRead.follow.findMany({ where: { followerId: req.user!.id, followingId: { in: authorIds } }, select: { followingId: true } })
@@ -707,6 +712,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       quizPostIds.length > 0
         ? getLatestQuizAttemptsByQuizIds(prisma, req.user!.id, quizPostIds)
         : Promise.resolve(new Map()),
+      fetchReactionCounts(prismaRead, postIds),
     ]);
 
     const likedPostIds = new Set(userLikes.map(l => l.postId));
@@ -719,6 +725,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       ...post,
       isLikedByMe: likedPostIds.has(post.id),
       myReaction: reactionByPostId.get(post.id) ?? null,
+      reactionCounts: reactionCountsMap.get(post.id) ?? {},
       isFollowingAuthor: followingSet.has(post.authorId),
       likesCount: post.likesCount ?? 0,
       commentsCount: post.commentsCount ?? 0,
