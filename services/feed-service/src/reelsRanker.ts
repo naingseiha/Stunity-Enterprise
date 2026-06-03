@@ -73,19 +73,26 @@ export interface GenerateOptions {
 }
 
 // ── Slot weights (10 slots = one "block"). Easy to tune. ─────────────
-// Production has many Posts (QUIZ/QUESTION/POLL/TUTORIAL/...) and few native
-// reel rows (FocusReel/Bounty/RecallCard). Heavy POST weighting reflects that
-// — empty native pools still fall back to POST via fallbackOrder.
+// PHILOSOPHY: this is a *learning* feed, not a video feed. The atomic unit is
+// one rep of useful knowledge, so the mix leads with ACTIVE-RETRIEVAL cards
+// (recall + quiz + challenge) where the learner has to *do* something to earn
+// the reward. Video (FOCUS_REEL) is one small accent, not the headline — other
+// apps own video; our edge is that every swipe teaches/tests.
+//
+// 6/10 slots are active retrieval (recall ×3, quiz ×3), 1 challenge (bounty),
+// 1 video, 2 posts (knowledge-dense posts as connective tissue). Empty pools
+// fall back to the next LEARNING type first (see fallbackOrder), so a thin
+// pool degrades to another learning card before a passive post.
 const SLOT_PATTERN: ReelType[] = [
-  'POST',
-  'POST',
-  'FOCUS_REEL',
-  'POST',
+  'RECALL_CARD',
   'QUIZ_QUESTION',
   'POST',
   'RECALL_CARD',
-  'POST',
+  'QUIZ_QUESTION',
+  'FOCUS_REEL',
+  'RECALL_CARD',
   'BOUNTY',
+  'QUIZ_QUESTION',
   'POST',
 ];
 
@@ -437,7 +444,10 @@ function weaveByPattern(
   offset: number,
   limit: number,
 ): ReelDto[] {
-  const fallbackOrder: ReelType[] = ['POST', 'FOCUS_REEL', 'QUIZ_QUESTION', 'RECALL_CARD', 'BOUNTY'];
+  // Learning-first fallback: when a slot's pool is empty, fill it with the next
+  // ACTIVE-RETRIEVAL type before falling back to a passive post, so a thin pool
+  // degrades to "still a learning rep" rather than "another post to scroll past".
+  const fallbackOrder: ReelType[] = ['QUIZ_QUESTION', 'RECALL_CARD', 'BOUNTY', 'POST', 'FOCUS_REEL'];
   const out: ReelDto[] = [];
 
   for (let i = 0; i < limit; i++) {
