@@ -24,6 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -72,6 +73,22 @@ export const CreateFocusReelScreen: React.FC = () => {
   const [subject, setSubject] = useState<string>('physics');
   const [pausePoints, setPausePoints] = useState<DraftPausePoint[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+
+  // Preview of the picked video — muted + looping; tap to play/pause.
+  const previewPlayer = useVideoPlayer(videoUri, (p) => {
+    p.muted = true;
+    p.loop = true;
+  });
+  const togglePreview = useCallback(() => {
+    try {
+      if (previewPlaying) previewPlayer.pause();
+      else previewPlayer.play();
+      setPreviewPlaying((v) => !v);
+    } catch {
+      /* player mid-source-swap — non-fatal */
+    }
+  }, [previewPlaying, previewPlayer]);
 
   const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -92,6 +109,7 @@ export const CreateFocusReelScreen: React.FC = () => {
     if (!result.canceled && result.assets?.[0]) {
       const asset = result.assets[0];
       setVideoUri(asset.uri);
+      setPreviewPlaying(false);
       // expo-image-picker reports duration in ms.
       const secs = asset.duration ? Math.max(1, Math.round(asset.duration / 1000)) : 0;
       setDurationSec(secs);
@@ -228,21 +246,36 @@ export const CreateFocusReelScreen: React.FC = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          {/* Video picker */}
-          <TouchableOpacity style={styles.videoPicker} onPress={pickVideo} activeOpacity={0.85}>
-            {videoUri ? (
-              <View style={styles.videoSelected}>
-                <Ionicons name="checkmark-circle" size={26} color={colors.success} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.videoSelectedText} numberOfLines={1}>
-                    {t('reels.create.videoSelected', { defaultValue: 'Video selected' })}
-                    {durationSec > 0 ? ` · ${durationSec}s` : ''}
-                  </Text>
-                  <Text style={styles.videoChangeText}>{t('reels.create.changeVideo', { defaultValue: 'Tap to change' })}</Text>
-                </View>
-                <Ionicons name="videocam" size={22} color={colors.textSecondary} />
-              </View>
-            ) : (
+          {/* Video picker / preview */}
+          {videoUri ? (
+            <View style={styles.previewWrap}>
+              <TouchableOpacity activeOpacity={0.95} onPress={togglePreview} style={styles.previewVideoBox}>
+                <VideoView
+                  player={previewPlayer}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
+                  nativeControls={false}
+                  pointerEvents="none"
+                />
+                {!previewPlaying && (
+                  <View style={styles.previewPlayOverlay} pointerEvents="none">
+                    <Ionicons name="play-circle" size={56} color="rgba(255,255,255,0.92)" />
+                  </View>
+                )}
+                {durationSec > 0 && (
+                  <View style={styles.previewDuration}>
+                    <Ionicons name="time-outline" size={12} color="#FFF" />
+                    <Text style={styles.previewDurationText}>{durationSec}s</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.changeVideoBtn} onPress={pickVideo} activeOpacity={0.8}>
+                <Ionicons name="swap-horizontal" size={16} color={colors.primary} />
+                <Text style={styles.changeVideoBtnText}>{t('reels.create.changeVideo', { defaultValue: 'Change video' })}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.videoPicker} onPress={pickVideo} activeOpacity={0.85}>
               <View style={styles.videoEmpty}>
                 <Ionicons name="cloud-upload-outline" size={34} color={colors.primary} />
                 <Text style={styles.videoEmptyTitle}>{t('reels.create.pickVideo', { defaultValue: 'Pick a video' })}</Text>
@@ -250,8 +283,8 @@ export const CreateFocusReelScreen: React.FC = () => {
                   {t('reels.create.pickVideoHint', { defaultValue: 'Short, vertical videos work best' })}
                 </Text>
               </View>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )}
 
           {/* Title */}
           <Text style={styles.label}>{t('reels.create.fieldTitle', { defaultValue: 'Title' })}</Text>
@@ -437,9 +470,32 @@ const createStyles = (colors: any, isDark: boolean) =>
     videoEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 34, gap: 6 },
     videoEmptyTitle: { color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 4 },
     videoEmptyHint: { color: colors.textSecondary, fontSize: 13 },
-    videoSelected: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-    videoSelectedText: { color: colors.text, fontSize: 15, fontWeight: '700' },
-    videoChangeText: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+
+    previewWrap: { marginBottom: 18 },
+    previewVideoBox: {
+      height: 240,
+      borderRadius: 18,
+      overflow: 'hidden',
+      backgroundColor: '#000',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    previewPlayOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+    previewDuration: {
+      position: 'absolute',
+      bottom: 10,
+      right: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    previewDurationText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
+    changeVideoBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 },
+    changeVideoBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
 
     label: { color: colors.text, fontSize: 14, fontWeight: '800', marginBottom: 8, marginTop: 4 },
     input: {

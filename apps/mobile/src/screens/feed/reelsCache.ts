@@ -60,6 +60,17 @@ export const isReelsCacheFresh = (): boolean =>
   reelsCache.items.length > 0 && Date.now() - reelsCache.ts < CACHE_FRESHNESS_MS;
 
 /**
+ * Force the next Reels view to refetch from the network. Call after an action
+ * that changes what the feed should contain — e.g. publishing a new reel — so
+ * the author sees their content without waiting for the freshness window.
+ * Stamps the cache stale (keeps current items on screen until the refresh
+ * lands, avoiding a blank flash).
+ */
+export const invalidateReelsCache = (): void => {
+  reelsCache.ts = 0;
+};
+
+/**
  * Patch the cached engagement for a single postId so the next remount shows
  * the user's most recent like/comment state without waiting for the server.
  */

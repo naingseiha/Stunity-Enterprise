@@ -12,6 +12,7 @@ import * as FileSystem from 'expo-file-system';
 import { feedApi } from '@/api/client';
 import { Config } from '@/config/env';
 import { tokenService } from '@/services/token';
+import { invalidateReelsCache } from '@/screens/feed/reelsCache';
 
 export interface ReelPausePoint {
   time: number;
@@ -64,7 +65,11 @@ export async function uploadReelVideo(localUri: string): Promise<string> {
     body: JSON.stringify({ requests: [{ originalName, mimeType }] }),
   });
   if (!ticketRes.ok) {
-    throw new Error(`Could not start upload (${ticketRes.status}).`);
+    // 503 = R2 storage not configured on this server (common in dev/staging).
+    if (ticketRes.status === 503) {
+      throw new Error('Video uploads aren’t set up on this server yet. Ask an admin to configure storage.');
+    }
+    throw new Error('Could not start the video upload. Please try again.');
   }
   const ticketData = await ticketRes.json();
   const ticket = ticketData?.data?.[0];
@@ -94,5 +99,7 @@ export async function createFocusReel(input: CreateFocusReelInput): Promise<stri
   if (!res.data?.success || !res.data.data?.id) {
     throw new Error(res.data?.error || 'Failed to create reel.');
   }
+  // Force the Reels tab to refetch so the author sees their new reel.
+  invalidateReelsCache();
   return res.data.data.id;
 }
