@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { prisma } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { createFocusReelSchema } from '../validators/focusReel.validator';
+import { createFocusReelSchema, createQuestionCardSchema } from '../validators/focusReel.validator';
 
 const router = Router();
 
@@ -52,6 +52,63 @@ router.post('/reels', authenticateToken, async (req: AuthRequest, res: Response)
   } catch (error: any) {
     console.error('[POST /reels] error:', error);
     return res.status(500).json({ success: false, error: 'Failed to create focus reel' });
+  }
+});
+
+// POST /reels/cards — create a lightweight question "knowledge card" (no video).
+// Educator-gated. Creates a backing Post (type QUESTION) + a QuizQuestion row so
+// the card surfaces as a QUIZ_QUESTION reel and feeds the spaced-repetition loop.
+// This is the high-supply primitive — fast to author, no media pipeline.
+router.post('/reels/cards', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const role = req.user!.role || '';
+    if (!AUTHORING_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Only educators can create knowledge cards' });
+    }
+
+    const parsed = createQuestionCardSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid card',
+        details: parsed.error.flatten(),
+      });
+    }
+    const { question, options, correctAnswer, explanation, subject, points } = parsed.data;
+
+    // One transaction: the container Post + the QuizQuestion that powers the reel.
+    const result = await prisma.$transaction(async (tx) => {
+      const post = await tx.post.create({
+        data: {
+          authorId: userId,
+          schoolId: req.user!.schoolId || null,
+          content: question,
+          postType: 'QUESTION',
+          visibility: 'PUBLIC',
+          courseCode: subject,
+          topicTags: [subject],
+        },
+        select: { id: true },
+      });
+      const card = await tx.quizQuestion.create({
+        data: {
+          postId: post.id,
+          question,
+          options,
+          correctAnswer,
+          explanation: explanation ?? null,
+          points,
+        },
+        select: { id: true, postId: true, question: true, options: true, correctAnswer: true, points: true },
+      });
+      return { post, card };
+    });
+
+    return res.status(201).json({ success: true, data: result.card });
+  } catch (error: any) {
+    console.error('[POST /reels/cards] error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to create knowledge card' });
   }
 });
 

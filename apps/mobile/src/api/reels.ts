@@ -90,6 +90,31 @@ export async function uploadReelVideo(localUri: string): Promise<string> {
   return ticket.publicUrl as string;
 }
 
+export interface CreateQuestionCardInput {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation?: string;
+  subject: string;
+  points?: number;
+}
+
+/**
+ * Create a lightweight question "knowledge card" (no video). Resolves to the
+ * created question id. Surfaces as a QUIZ_QUESTION reel + feeds spaced rep.
+ */
+export async function createQuestionCard(input: CreateQuestionCardInput): Promise<string> {
+  const res = await feedApi.post<{ success: boolean; data?: { id: string }; error?: string }>(
+    '/reels/cards',
+    input,
+  );
+  if (!res.data?.success || !res.data.data?.id) {
+    throw new Error(res.data?.error || 'Failed to create card.');
+  }
+  invalidateReelsCache();
+  return res.data.data.id;
+}
+
 /** Create a FocusReel. Resolves to the created reel id. */
 export async function createFocusReel(input: CreateFocusReelInput): Promise<string> {
   const res = await feedApi.post<{ success: boolean; data?: { id: string }; error?: string }>(

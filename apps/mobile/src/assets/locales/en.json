@@ -10,7 +10,9 @@
       "keepGoing": "Keep scrolling"
     },
     "create": {
-      "title": "New Reel",
+      "title": "Video reel",
+      "chooserTitle": "Add to the learning feed",
+      "chooserBody": "What do you want to create?",
       "publish": "Publish",
       "permissionTitle": "Permission needed",
       "permissionBody": "Allow library access to pick a video.",
@@ -43,6 +45,27 @@
       "errPpCorrect": "Mark the correct answer on each checkpoint.",
       "publishedTitle": "Reel published!",
       "publishedBody": "Your reel is live in the feed.",
+      "publishFailed": "Publish failed",
+      "publishFailedBody": "Please try again."
+    },
+    "createCard": {
+      "title": "Quick question",
+      "publish": "Publish",
+      "hint": "A great question takes ~10 seconds and gives every learner a rep.",
+      "fieldQuestion": "Question",
+      "questionPlaceholder": "e.g. What organelle powers the cell?",
+      "fieldOptions": "Options (tap the circle to mark correct)",
+      "option": "Option",
+      "addOption": "Add option",
+      "fieldExplanation": "Explanation (optional)",
+      "explanationPlaceholder": "Why is that the answer? Shown after they answer.",
+      "fieldSubject": "Subject",
+      "cantPublish": "Can't publish yet",
+      "errNoQuestion": "Write a question.",
+      "errOptions": "Add at least 2 options.",
+      "errCorrect": "Mark the correct answer.",
+      "publishedTitle": "Card published!",
+      "publishedBody": "It’s live in the learning feed.",
       "publishFailed": "Publish failed",
       "publishFailedBody": "Please try again."
     }

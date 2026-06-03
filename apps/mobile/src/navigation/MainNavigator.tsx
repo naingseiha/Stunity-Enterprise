@@ -55,6 +55,7 @@ import {
   CreateBountyScreen,
   FocusReelsScreen,
   CreateFocusReelScreen,
+  CreateQuestionCardScreen,
 } from "@/screens/feed";
 import { prefetchReelsFeed, hydrateReelsCacheFromDisk } from "@/screens/feed/reelsCache";
 import { prefetchLearnHub, hydrateLearnHubFromDisk } from "@/screens/learn/learnHubCache";
@@ -157,6 +158,7 @@ const ConnectionsScreen = SuggestedUsersScreen;
 type ExtendedMainStackParamList = MainStackParamList & {
   Search: undefined;
   CreateFocusReel: undefined;
+  CreateQuestionCard: undefined;
 };
 
 const MainStack = createNativeStackNavigator<ExtendedMainStackParamList>();
@@ -840,6 +842,11 @@ function MainStackNavigatorTabletAware() {
         <MainStack.Screen
           name="CreateFocusReel"
           component={CreateFocusReelScreen}
+          options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'modal' }}
+        />
+        <MainStack.Screen
+          name="CreateQuestionCard"
+          component={CreateQuestionCardScreen}
           options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'modal' }}
         />
       </MainStack.Navigator>

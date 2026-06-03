@@ -43,3 +43,24 @@ export const createFocusReelSchema = z.object({
 });
 
 export type CreateFocusReelBody = z.infer<typeof createFocusReelSchema>;
+
+/**
+ * Lightweight "knowledge card" — a single quiz question with no video. This is
+ * the high-supply primitive: fast to author, surfaces as a QUIZ_QUESTION reel,
+ * and (via the reel-answer loop + seeding) feeds spaced repetition + mastery.
+ */
+export const createQuestionCardSchema = z
+  .object({
+    question: z.string().trim().min(1).max(500),
+    options: z.array(z.string().trim().min(1).max(200)).min(2).max(4),
+    correctAnswer: z.number().int().min(0),
+    explanation: z.string().trim().max(1000).optional(),
+    subject: z.string().trim().min(1).max(40),
+    points: z.number().int().min(1).max(100).optional().default(10),
+  })
+  .refine((c) => c.correctAnswer < c.options.length, {
+    message: 'correctAnswer must be a valid index into options',
+    path: ['correctAnswer'],
+  });
+
+export type CreateQuestionCardBody = z.infer<typeof createQuestionCardSchema>;

@@ -12,6 +12,7 @@ import {
   ViewToken,
   Share,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -158,7 +159,28 @@ const AUTHORING_ROLES = ['TEACHER', 'ADMIN', 'SCHOOL_ADMIN', 'SUPER_ADMIN'];
 
 export const FocusReelsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const canAuthor = useAuthStore((s) => AUTHORING_ROLES.includes(s.user?.role ?? ''));
+
+  // Authoring chooser: a quick question card is the primary (high-supply) path;
+  // a video reel is the secondary, heavier option.
+  const openCreateChooser = useCallback(() => {
+    Alert.alert(
+      t('reels.create.chooserTitle', { defaultValue: 'Add to the learning feed' }),
+      t('reels.create.chooserBody', { defaultValue: 'What do you want to create?' }),
+      [
+        {
+          text: t('reels.createCard.title', { defaultValue: 'Quick question' }),
+          onPress: () => navigation.navigate('CreateQuestionCard'),
+        },
+        {
+          text: t('reels.create.title', { defaultValue: 'Video reel' }),
+          onPress: () => navigation.navigate('CreateFocusReel'),
+        },
+        { text: t('common.cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
+      ],
+    );
+  }, [navigation, t]);
   // The bottom tab bar now stays visible on Reels (TikTok/IG/FB style). Size
   // each reel page to sit *above* the bar so captions / action buttons / the
   // progress bar aren't hidden behind it. (Reels is always inside the bottom
@@ -411,9 +433,9 @@ export const FocusReelsScreen: React.FC = () => {
         {canAuthor && (
           <TouchableOpacity
             style={styles.muteBtn}
-            onPress={() => navigation.navigate('CreateFocusReel')}
+            onPress={openCreateChooser}
             accessibilityRole="button"
-            accessibilityLabel="Create reel"
+            accessibilityLabel={t('reels.create.chooserTitle', { defaultValue: 'Add to the learning feed' })}
           >
             <Ionicons name="add" size={26} color="#FFF" />
           </TouchableOpacity>
