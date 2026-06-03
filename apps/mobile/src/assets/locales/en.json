@@ -9,6 +9,13 @@
       "allCaughtUp": "You're all caught up — see you tomorrow!",
       "keepGoing": "Keep scrolling"
     },
+    "tf": {
+      "prompt": "True or false?",
+      "true": "True",
+      "false": "False",
+      "correct": "Correct!",
+      "incorrect": "Not quite"
+    },
     "create": {
       "title": "Video reel",
       "chooserTitle": "Add to the learning feed",
@@ -52,9 +59,14 @@
       "title": "Quick question",
       "publish": "Publish",
       "hint": "A great question takes ~10 seconds and gives every learner a rep.",
+      "formatMcq": "Multiple choice",
+      "formatTf": "True / False",
       "fieldQuestion": "Question",
       "questionPlaceholder": "e.g. What organelle powers the cell?",
+      "fieldStatement": "Statement",
+      "statementPlaceholder": "e.g. The mitochondria is the powerhouse of the cell.",
       "fieldOptions": "Options (tap the circle to mark correct)",
+      "fieldAnswer": "Correct answer",
       "option": "Option",
       "addOption": "Add option",
       "fieldExplanation": "Explanation (optional)",
@@ -62,6 +74,7 @@
       "fieldSubject": "Subject",
       "cantPublish": "Can't publish yet",
       "errNoQuestion": "Write a question.",
+      "errNoStatement": "Write a statement.",
       "errOptions": "Add at least 2 options.",
       "errCorrect": "Mark the correct answer.",
       "publishedTitle": "Card published!",

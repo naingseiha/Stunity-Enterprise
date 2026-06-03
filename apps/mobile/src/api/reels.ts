@@ -92,11 +92,15 @@ export async function uploadReelVideo(localUri: string): Promise<string> {
 
 export interface CreateQuestionCardInput {
   question: string;
-  options: string[];
+  /** Omit for a True/False card (server forces the ['TRUE','FALSE'] sentinel). */
+  options?: string[];
+  /** For TF: 0 = True, 1 = False. For MCQ: index into options. */
   correctAnswer: number;
   explanation?: string;
   subject: string;
   points?: number;
+  /** 'TF' = one-tap True/False card; 'MCQ' (default) = multiple choice. */
+  format?: 'MCQ' | 'TF';
 }
 
 /**

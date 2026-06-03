@@ -8,6 +8,7 @@
  * The interaction body is discriminated by `itemType`:
  *   FOCUS_REEL    pause-point answered → FocusReelAttempt upsert, combo±
  *   QUIZ_QUESTION standalone quiz answered → combo±, XP
+ *   TF_CARD       true/false tap (a 2-option QuizQuestion) → same as QUIZ_QUESTION
  *   RECALL_CARD   SM-2 grade ('again'|'good'|'easy') → applyReview + RecallReview row
  *   BOUNTY        view/tap-through signal (no combo, just telemetry)
  *
@@ -244,6 +245,9 @@ router.post('/interactions', authenticateToken, async (req: AuthRequest, res: Re
       case 'FOCUS_REEL':
         return res.json(await handleFocusReel(userId, itemId, req.body));
       case 'QUIZ_QUESTION':
+      // A True/False card is a QuizQuestion under the hood, so its answer flows
+      // through the same handler → combo + SM-2 recall loop + mastery.
+      case 'TF_CARD':
         return res.json(await handleQuizQuestion(userId, req.body));
       case 'RECALL_CARD':
         return res.json(await handleRecallCard(userId, itemId, req.body));

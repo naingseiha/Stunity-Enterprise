@@ -52,15 +52,23 @@ export type CreateFocusReelBody = z.infer<typeof createFocusReelSchema>;
 export const createQuestionCardSchema = z
   .object({
     question: z.string().trim().min(1).max(500),
-    options: z.array(z.string().trim().min(1).max(200)).min(2).max(4),
+    // For a True/False card the client may omit options (the route forces the
+    // ['TRUE','FALSE'] sentinel); for an MCQ they're required (2–4 choices).
+    options: z.array(z.string().trim().min(1).max(200)).min(2).max(4).optional(),
     correctAnswer: z.number().int().min(0),
     explanation: z.string().trim().max(1000).optional(),
     subject: z.string().trim().min(1).max(40),
     points: z.number().int().min(1).max(100).optional().default(10),
+    // 'TF' = one-tap True/False card; 'MCQ' (default) = standard multiple choice.
+    format: z.enum(['MCQ', 'TF']).optional().default('MCQ'),
   })
-  .refine((c) => c.correctAnswer < c.options.length, {
-    message: 'correctAnswer must be a valid index into options',
-    path: ['correctAnswer'],
-  });
+  .refine((c) => c.format === 'TF' || (!!c.options && c.options.length >= 2), {
+    message: 'options are required for a multiple-choice card',
+    path: ['options'],
+  })
+  .refine(
+    (c) => (c.format === 'TF' ? c.correctAnswer <= 1 : c.correctAnswer < (c.options?.length ?? 0)),
+    { message: 'correctAnswer must be a valid index into options', path: ['correctAnswer'] },
+  );
 
 export type CreateQuestionCardBody = z.infer<typeof createQuestionCardSchema>;

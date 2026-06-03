@@ -75,7 +75,12 @@ router.post('/reels/cards', authenticateToken, async (req: AuthRequest, res: Res
         details: parsed.error.flatten(),
       });
     }
-    const { question, options, correctAnswer, explanation, subject, points } = parsed.data;
+    const { question, correctAnswer, explanation, subject, points, format } = parsed.data;
+    // A True/False card is stored as a QuizQuestion with the canonical
+    // ['TRUE','FALSE'] sentinel — the ranker keys off it to surface a TF_CARD,
+    // and mobile renders localized labels. correctAnswer: 0 = True, 1 = False.
+    const options = format === 'TF' ? ['TRUE', 'FALSE'] : parsed.data.options!;
+    const safeCorrect = Math.min(correctAnswer, options.length - 1);
 
     // One transaction: the container Post + the QuizQuestion that powers the reel.
     const result = await prisma.$transaction(async (tx) => {
@@ -96,7 +101,7 @@ router.post('/reels/cards', authenticateToken, async (req: AuthRequest, res: Res
           postId: post.id,
           question,
           options,
-          correctAnswer,
+          correctAnswer: safeCorrect,
           explanation: explanation ?? null,
           points,
         },

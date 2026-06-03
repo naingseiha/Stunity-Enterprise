@@ -43,12 +43,16 @@ export const CreateQuestionCardScreen: React.FC = () => {
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
+  const [format, setFormat] = useState<'MCQ' | 'TF'>('MCQ');
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
   const [correctAnswer, setCorrectAnswer] = useState(0);
+  // For True/False: 0 = True, 1 = False.
+  const [tfAnswer, setTfAnswer] = useState(0);
   const [explanation, setExplanation] = useState('');
   const [subject, setSubject] = useState<string>('general');
   const [submitting, setSubmitting] = useState(false);
+  const isTF = format === 'TF';
 
   const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -67,12 +71,16 @@ export const CreateQuestionCardScreen: React.FC = () => {
   };
 
   const validationError = useMemo((): string | null => {
+    if (isTF) {
+      if (!question.trim()) return t('reels.createCard.errNoStatement', { defaultValue: 'Write a statement.' });
+      return null;
+    }
     if (!question.trim()) return t('reels.createCard.errNoQuestion', { defaultValue: 'Write a question.' });
     const filled = options.filter((o) => o.trim());
     if (filled.length < 2) return t('reels.createCard.errOptions', { defaultValue: 'Add at least 2 options.' });
     if (!options[correctAnswer]?.trim()) return t('reels.createCard.errCorrect', { defaultValue: 'Mark the correct answer.' });
     return null;
-  }, [question, options, correctAnswer, t]);
+  }, [isTF, question, options, correctAnswer, t]);
 
   const canPublish = !validationError && !submitting;
 
@@ -83,15 +91,27 @@ export const CreateQuestionCardScreen: React.FC = () => {
     }
     setSubmitting(true);
     try {
-      const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
-      await createQuestionCard({
-        question: question.trim(),
-        options: cleanOptions,
-        correctAnswer: Math.min(correctAnswer, cleanOptions.length - 1),
-        explanation: explanation.trim() || undefined,
-        subject,
-      });
-      track('question_card_created', { subject, options: cleanOptions.length });
+      if (isTF) {
+        await createQuestionCard({
+          question: question.trim(),
+          correctAnswer: tfAnswer,
+          explanation: explanation.trim() || undefined,
+          subject,
+          format: 'TF',
+        });
+        track('question_card_created', { subject, format: 'tf' });
+      } else {
+        const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
+        await createQuestionCard({
+          question: question.trim(),
+          options: cleanOptions,
+          correctAnswer: Math.min(correctAnswer, cleanOptions.length - 1),
+          explanation: explanation.trim() || undefined,
+          subject,
+          format: 'MCQ',
+        });
+        track('question_card_created', { subject, format: 'mcq', options: cleanOptions.length });
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         t('reels.createCard.publishedTitle', { defaultValue: 'Card published!' }),
@@ -107,7 +127,7 @@ export const CreateQuestionCardScreen: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [validationError, options, question, correctAnswer, explanation, subject, navigation, t]);
+  }, [validationError, isTF, options, question, correctAnswer, tfAnswer, explanation, subject, navigation, t]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -142,17 +162,69 @@ export const CreateQuestionCardScreen: React.FC = () => {
             </Text>
           </View>
 
-          <Text style={styles.label}>{t('reels.createCard.fieldQuestion', { defaultValue: 'Question' })}</Text>
+          {/* Format selector — multiple choice vs the fast one-tap True/False. */}
+          <View style={styles.formatRow}>
+            {([
+              { key: 'MCQ' as const, icon: 'list-outline' as const, label: t('reels.createCard.formatMcq', { defaultValue: 'Multiple choice' }) },
+              { key: 'TF' as const, icon: 'swap-horizontal-outline' as const, label: t('reels.createCard.formatTf', { defaultValue: 'True / False' }) },
+            ]).map((f) => {
+              const active = format === f.key;
+              return (
+                <TouchableOpacity
+                  key={f.key}
+                  onPress={() => { animate(); setFormat(f.key); }}
+                  style={[styles.formatBtn, active && styles.formatBtnActive]}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name={f.icon} size={18} color={active ? '#FFF' : colors.textSecondary} />
+                  <Text style={[styles.formatBtnText, active && styles.formatBtnTextActive]}>{f.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={styles.label}>
+            {isTF
+              ? t('reels.createCard.fieldStatement', { defaultValue: 'Statement' })
+              : t('reels.createCard.fieldQuestion', { defaultValue: 'Question' })}
+          </Text>
           <TextInput
             style={[styles.input, styles.inputMultiline]}
             value={question}
             onChangeText={setQuestion}
-            placeholder={t('reels.createCard.questionPlaceholder', { defaultValue: 'e.g. What organelle powers the cell?' })}
+            placeholder={isTF
+              ? t('reels.createCard.statementPlaceholder', { defaultValue: 'e.g. The mitochondria is the powerhouse of the cell.' })
+              : t('reels.createCard.questionPlaceholder', { defaultValue: 'e.g. What organelle powers the cell?' })}
             placeholderTextColor={colors.textTertiary}
             multiline
             maxLength={500}
           />
 
+          {isTF ? (
+            <>
+              <Text style={styles.label}>{t('reels.createCard.fieldAnswer', { defaultValue: 'Correct answer' })}</Text>
+              <View style={styles.tfAnswerRow}>
+                {([
+                  { val: 0, icon: 'checkmark-circle' as const, label: t('reels.tf.true', { defaultValue: 'True' }), tint: colors.success },
+                  { val: 1, icon: 'close-circle' as const, label: t('reels.tf.false', { defaultValue: 'False' }), tint: colors.error },
+                ]).map((a) => {
+                  const active = tfAnswer === a.val;
+                  return (
+                    <TouchableOpacity
+                      key={a.val}
+                      onPress={() => setTfAnswer(a.val)}
+                      style={[styles.tfAnswerBtn, active && { borderColor: a.tint, backgroundColor: a.tint + '22' }]}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name={a.icon} size={28} color={active ? a.tint : colors.textTertiary} />
+                      <Text style={[styles.tfAnswerText, active && { color: a.tint }]}>{a.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          ) : (
+          <>
           <Text style={styles.label}>{t('reels.createCard.fieldOptions', { defaultValue: 'Options (tap the circle to mark correct)' })}</Text>
           {options.map((opt, idx) => {
             const correct = correctAnswer === idx;
@@ -186,6 +258,8 @@ export const CreateQuestionCardScreen: React.FC = () => {
               <Ionicons name="add" size={16} color={colors.primary} />
               <Text style={styles.addOptionText}>{t('reels.createCard.addOption', { defaultValue: 'Add option' })}</Text>
             </TouchableOpacity>
+          )}
+          </>
           )}
 
           <Text style={styles.label}>{t('reels.createCard.fieldExplanation', { defaultValue: 'Explanation (optional)' })}</Text>
@@ -296,6 +370,38 @@ const createStyles = (colors: any, _isDark: boolean) =>
     chipTextActive: { color: '#FFF' },
 
     validationHint: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginTop: 16 },
+
+    formatRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+    formatBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 11,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceVariant,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    formatBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    formatBtnText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
+    formatBtnTextActive: { color: '#FFF' },
+
+    tfAnswerRow: { flexDirection: 'row', gap: 12, marginBottom: 14 },
+    tfAnswerBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 18,
+      borderRadius: 14,
+      backgroundColor: colors.surfaceVariant,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    tfAnswerText: { color: colors.textSecondary, fontSize: 16, fontWeight: '800' },
   });
 
 export default CreateQuestionCardScreen;

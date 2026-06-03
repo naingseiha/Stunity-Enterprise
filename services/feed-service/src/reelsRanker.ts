@@ -19,7 +19,30 @@
 
 import { PrismaClient } from '@prisma/client';
 
-export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'BOUNTY' | 'POST';
+export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'TF_CARD' | 'BOUNTY' | 'POST';
+
+/**
+ * Canonical sentinel options that mark a QuizQuestion as a True/False card.
+ * A TF card is just a QuizQuestion whose `options` are exactly these tokens
+ * (correctAnswer 0 = True, 1 = False) — no schema change, so the SM-2 recall
+ * loop + mastery aggregation work on it unchanged. Mobile renders localized
+ * "True"/"False" labels; the DB stays language-neutral.
+ */
+export const TF_OPTIONS = ['TRUE', 'FALSE'] as const;
+
+/** True when a QuizQuestion's options match the TF sentinel. */
+function isTrueFalse(options: unknown): boolean {
+  return (
+    Array.isArray(options) &&
+    options.length === 2 &&
+    options[0] === TF_OPTIONS[0] &&
+    options[1] === TF_OPTIONS[1]
+  );
+}
+
+// Env kill-switch (feed-service has no flag registry — mirrors REELS_RECALL_SEED).
+// When off, the TF_CARD slot degrades to the next learning type (a quiz).
+const TF_CARDS_ENABLED = process.env.REELS_TF_CARDS !== 'false';
 
 /**
  * Post types that auto-promote into the Reels feed. Any new short-form,
@@ -79,16 +102,17 @@ export interface GenerateOptions {
 // the reward. Video (FOCUS_REEL) is one small accent, not the headline — other
 // apps own video; our edge is that every swipe teaches/tests.
 //
-// 6/10 slots are active retrieval (recall ×3, quiz ×3), 1 challenge (bounty),
-// 1 video, 2 posts (knowledge-dense posts as connective tissue). Empty pools
-// fall back to the next LEARNING type first (see fallbackOrder), so a thin
-// pool degrades to another learning card before a passive post.
+// 6/10 slots are active retrieval (recall ×3, quiz ×2, true/false ×1), 1
+// challenge (bounty), 1 video, 2 posts (knowledge-dense posts as connective
+// tissue). TF_CARD is the fast, one-tap game-feel rep that varies the rhythm.
+// Empty pools fall back to the next LEARNING type first (see fallbackOrder), so
+// a thin pool degrades to another learning card before a passive post.
 const SLOT_PATTERN: ReelType[] = [
   'RECALL_CARD',
   'QUIZ_QUESTION',
   'POST',
   'RECALL_CARD',
-  'QUIZ_QUESTION',
+  'TF_CARD',
   'FOCUS_REEL',
   'RECALL_CARD',
   'BOUNTY',
@@ -134,10 +158,11 @@ export class ReelsRanker {
     // Compute how many of each type we need from the slot pattern window.
     const counts = countSlotsInWindow(slotOffset, limit);
 
-    const [discovery, recall, quizzes, bounties, social, posts] = await Promise.all([
+    const [discovery, recall, quizzes, trueFalse, bounties, social, posts] = await Promise.all([
       time('discovery', () => this.fetchDiscovery(subject, counts.FOCUS_REEL, userId)),
       time('recall', () => this.fetchReinforcement(userId, subject, counts.RECALL_CARD)),
       time('quizzes', () => this.fetchQuizzes(subject, counts.QUIZ_QUESTION)),
+      time('truefalse', () => this.fetchTrueFalse(subject, counts.TF_CARD)),
       time('challenges', () => this.fetchChallenges(subject, counts.BOUNTY)),
       time('social', () => this.fetchSocial(user?.schoolId ?? null, subject, counts.FOCUS_REEL)),
       time('posts', () => this.fetchPostReels(userId, subject, counts.POST)),
@@ -151,6 +176,7 @@ export class ReelsRanker {
       FOCUS_REEL: focusReelPool.map(toFocusReelDto),
       RECALL_CARD: recall.map(toRecallDto),
       QUIZ_QUESTION: quizzes.map((q) => toQuizDto(q, userId)),
+      TF_CARD: trueFalse.map(toTfDto),
       BOUNTY: bounties.map(toBountyDto),
       POST: posts.map(toPostDto),
     };
@@ -229,7 +255,27 @@ export class ReelsRanker {
    */
   private async fetchQuizzes(subject: string | undefined, take: number) {
     if (take <= 0 || subject) return [];
+    // Exclude True/False cards — they're surfaced as their own TF_CARD type, not
+    // as a literal 2-option ("TRUE"/"FALSE") multiple-choice quiz.
     return this.prismaRead.quizQuestion.findMany({
+      where: { NOT: { options: { equals: [...TF_OPTIONS] } } },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: {
+        post: { select: { id: true, authorId: true, courseCode: true } },
+      },
+    });
+  }
+
+  /**
+   * True/False cards: QuizQuestions whose options are the TF sentinel. One-tap,
+   * instant-feedback game-feel reps. Env-gated (REELS_TF_CARDS) — when off the
+   * pool is empty so the TF_CARD slot degrades to the next learning type.
+   */
+  private async fetchTrueFalse(subject: string | undefined, take: number) {
+    if (take <= 0 || subject || !TF_CARDS_ENABLED) return [];
+    return this.prismaRead.quizQuestion.findMany({
+      where: { options: { equals: [...TF_OPTIONS] } },
       orderBy: { createdAt: 'desc' },
       take,
       include: {
@@ -373,6 +419,24 @@ function toQuizDto(q: any, _userId: string): ReelDto {
   };
 }
 
+function toTfDto(q: any): ReelDto {
+  return {
+    id: q.id,
+    type: 'TF_CARD',
+    subject: q.post?.courseCode ?? 'general',
+    createdAt: q.createdAt.toISOString(),
+    postId: q.postId,
+    payload: {
+      // The statement the learner judges true or false (stored in `question`).
+      claim: q.question,
+      // 0 = True, 1 = False (index into the TF_OPTIONS sentinel).
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation,
+      points: q.points,
+    },
+  };
+}
+
 function toPostDto(p: any): ReelDto {
   const firstMedia: string | undefined = p.mediaUrls?.[0];
   const isVideo = firstMedia ? /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(firstMedia) : false;
@@ -424,6 +488,7 @@ function countSlotsInWindow(offset: number, limit: number): Record<ReelType, num
     FOCUS_REEL: 0,
     RECALL_CARD: 0,
     QUIZ_QUESTION: 0,
+    TF_CARD: 0,
     BOUNTY: 0,
     POST: 0,
   };
@@ -447,7 +512,7 @@ function weaveByPattern(
   // Learning-first fallback: when a slot's pool is empty, fill it with the next
   // ACTIVE-RETRIEVAL type before falling back to a passive post, so a thin pool
   // degrades to "still a learning rep" rather than "another post to scroll past".
-  const fallbackOrder: ReelType[] = ['QUIZ_QUESTION', 'RECALL_CARD', 'BOUNTY', 'POST', 'FOCUS_REEL'];
+  const fallbackOrder: ReelType[] = ['QUIZ_QUESTION', 'TF_CARD', 'RECALL_CARD', 'BOUNTY', 'POST', 'FOCUS_REEL'];
   const out: ReelDto[] = [];
 
   for (let i = 0; i < limit; i++) {

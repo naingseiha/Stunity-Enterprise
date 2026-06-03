@@ -80,6 +80,7 @@ const TYPE_LABELS: Record<ReelType, { label: string; color: string }> = {
   FOCUS_REEL: { label: 'FOCUS REEL', color: '#A855F7' },
   RECALL_CARD: { label: 'FLASHCARD', color: '#3B82F6' },
   QUIZ_QUESTION: { label: 'QUICK QUIZ', color: '#10B981' },
+  TF_CARD: { label: 'TRUE OR FALSE', color: '#22D3EE' },
   BOUNTY: { label: 'BOUNTY', color: '#F59E0B' },
   POST: { label: 'POST', color: '#EC4899' },
 };
@@ -816,6 +817,8 @@ const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onIntera
       return <FocusReelItem {...common} shouldMountVideo={shouldMountVideo} />;
     case 'QUIZ_QUESTION':
       return <QuizCardItem {...common} />;
+    case 'TF_CARD':
+      return <TrueFalseCardItem {...common} />;
     case 'RECALL_CARD':
       return <RecallCardItem {...common} bountyId={item.id} />;
     case 'BOUNTY':
@@ -1400,6 +1403,86 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
   );
 };
 
+// True/False — the fast, one-tap game-feel rep. Unlike the quiz card there's no
+// select-then-Submit step: a tap IS the answer (the whole point is instant
+// feedback + a quick combo). Backed by a QuizQuestion with the ['TRUE','FALSE']
+// sentinel, so the answer feeds the same SM-2 recall loop + mastery.
+const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const { t } = useTranslation();
+  const [picked, setPicked] = useState<number | null>(null);
+  const isAnswered = picked !== null;
+
+  // 0 = True, 1 = False (index into the TF sentinel).
+  const choices = [
+    { idx: 0, label: t('reels.tf.true', { defaultValue: 'True' }), icon: 'checkmark-circle' as const, tint: '#10B981' },
+    { idx: 1, label: t('reels.tf.false', { defaultValue: 'False' }), icon: 'close-circle' as const, tint: '#EF4444' },
+  ];
+
+  const handleTap = (idx: number) => {
+    if (isAnswered) return;
+    setPicked(idx);
+    const correct = idx === item.correctAnswer;
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
+  };
+
+  const wasCorrect = isAnswered && picked === item.correctAnswer;
+
+  return (
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
+      <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
+      <View style={styles.cardCenterContent}>
+        <TypePill type="TF_CARD" extra={`+${item.points || 10} XP`} />
+        <Text style={styles.tfPrompt}>{t('reels.tf.prompt', { defaultValue: 'True or false?' })}</Text>
+        <Text style={styles.bigQuestionText}>{item.claim}</Text>
+        <View style={styles.tfRow}>
+          {choices.map((c) => {
+            const isCorrectChoice = c.idx === item.correctAnswer;
+            const isPicked = c.idx === picked;
+            let bg: string = 'rgba(255,255,255,0.10)';
+            let border: string = 'rgba(255,255,255,0.18)';
+            if (isAnswered) {
+              if (isCorrectChoice) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
+              else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+            }
+            return (
+              <TouchableOpacity
+                key={c.idx}
+                style={[styles.tfBtn, { backgroundColor: bg, borderColor: border }]}
+                onPress={() => handleTap(c.idx)}
+                activeOpacity={0.85}
+                disabled={isAnswered}
+              >
+                <Ionicons name={c.icon} size={40} color="#FFF" />
+                <Text style={styles.tfBtnText}>{c.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+      {isAnswered && !!item.explanation && (
+        <View style={styles.explanationCard}>
+          <View style={styles.explanationHeader}>
+            <Ionicons
+              name={wasCorrect ? 'checkmark-circle' : 'information-circle'}
+              size={18}
+              color={wasCorrect ? '#10B981' : '#FDE047'}
+            />
+            <Text style={[styles.explanationTitle, { color: wasCorrect ? '#10B981' : '#FDE047' }]}>
+              {wasCorrect
+                ? t('reels.tf.correct', { defaultValue: 'Correct!' })
+                : t('reels.tf.incorrect', { defaultValue: 'Not quite' })}
+            </Text>
+          </View>
+          <Text style={styles.explanationBody}>{item.explanation}</Text>
+        </View>
+      )}
+      <View style={styles.bottomHorizontalBarContainer}>
+        <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.TF_CARD.color} />
+      </View>
+    </View>
+  );
+};
+
 const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient, pageHeight }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [graded, setGraded] = useState(false);
@@ -1794,6 +1877,20 @@ const styles = StyleSheet.create({
   // Centered card layout
   cardCenterContent: { padding: 24, alignItems: 'center', gap: 14, width: '100%' },
   bigQuestionText: { color: '#FFF', fontSize: 22, fontWeight: '800', textAlign: 'center', lineHeight: 30 },
+
+  // True/False
+  tfPrompt: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  tfRow: { flexDirection: 'row', gap: 14, width: '100%', marginTop: 8 },
+  tfBtn: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  tfBtnText: { color: '#FFF', fontSize: 20, fontWeight: '800', letterSpacing: 0.3 },
 
   // Quiz
   quizOptionBtn: {
