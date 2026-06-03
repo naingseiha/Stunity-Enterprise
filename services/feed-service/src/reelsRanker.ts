@@ -55,6 +55,11 @@ const WEAK_SUBJECT_COUNT = 3;
 // the "learned" strength a freshly-correct card is seeded at (sm2/recall utils).
 const WEAK_STRENGTH_THRESHOLD = 0.6;
 
+// How many recently-served item ids the cursor remembers to suppress repeats
+// across pages. ~9 pages at the default limit of 10 — long enough that a card
+// never repeats within a session, short enough to keep the cursor compact.
+const SEEN_WINDOW = 90;
+
 /**
  * Post types that auto-promote into the Reels feed. Any new short-form,
  * visually-engaging PostType added later just needs to be appended here —
@@ -149,10 +154,10 @@ export class ReelsRanker {
     const limit = Math.min(Math.max(opts.limit ?? 10, 1), 30);
     const subject = opts.subject?.trim() || undefined;
 
-    // Cursor encodes the absolute slot index across calls, so the slot
-    // pattern stays stable across pagination (no duplicate slot types
-    // when the user keeps scrolling).
-    const slotOffset = parseCursor(opts.cursor) ?? 0;
+    // Cursor encodes the absolute slot index (so the slot pattern stays stable
+    // across pagination) plus a sliding window of recently-served ids (so the
+    // same card doesn't reappear every few swipes).
+    const { offset: slotOffset, seen } = parseCursor(opts.cursor);
 
     const t0 = Date.now();
     const timings: Record<string, number> = {};
@@ -176,13 +181,13 @@ export class ReelsRanker {
     const counts = countSlotsInWindow(slotOffset, limit);
 
     const [discovery, recall, quizzes, trueFalse, bounties, social, posts] = await Promise.all([
-      time('discovery', () => this.fetchDiscovery(subject, counts.FOCUS_REEL, userId, weakSubjects)),
-      time('recall', () => this.fetchReinforcement(userId, subject, counts.RECALL_CARD)),
-      time('quizzes', () => this.fetchQuizzes(subject, counts.QUIZ_QUESTION, weakSubjects)),
-      time('truefalse', () => this.fetchTrueFalse(subject, counts.TF_CARD, weakSubjects)),
-      time('challenges', () => this.fetchChallenges(subject, counts.BOUNTY)),
-      time('social', () => this.fetchSocial(user?.schoolId ?? null, subject, counts.FOCUS_REEL)),
-      time('posts', () => this.fetchPostReels(userId, subject, counts.POST)),
+      time('discovery', () => this.fetchDiscovery(subject, counts.FOCUS_REEL, userId, weakSubjects, seen)),
+      time('recall', () => this.fetchReinforcement(userId, subject, counts.RECALL_CARD, seen)),
+      time('quizzes', () => this.fetchQuizzes(subject, counts.QUIZ_QUESTION, weakSubjects, seen)),
+      time('truefalse', () => this.fetchTrueFalse(subject, counts.TF_CARD, weakSubjects, seen)),
+      time('challenges', () => this.fetchChallenges(subject, counts.BOUNTY, seen)),
+      time('social', () => this.fetchSocial(user?.schoolId ?? null, subject, counts.FOCUS_REEL, seen)),
+      time('posts', () => this.fetchPostReels(userId, subject, counts.POST, seen)),
     ]);
 
     // Interleave Discovery + Social into the FOCUS_REEL pool (~70/30)
@@ -200,11 +205,12 @@ export class ReelsRanker {
 
     const items = weaveByPattern(pools, slotOffset, limit);
     const nextOffset = slotOffset + items.length;
+    const nextSeen = [...seen, ...items.map((i) => i.id)];
     timings.total = Date.now() - t0;
 
     return {
       items,
-      nextCursor: items.length === limit ? encodeCursor(nextOffset) : null,
+      nextCursor: items.length === limit ? encodeCursor(nextOffset, nextSeen) : null,
       hasMore: items.length === limit,
       _timings: timings,
     };
@@ -245,12 +251,14 @@ export class ReelsRanker {
     take: number,
     userId: string,
     weakSubjects: Set<string> = new Set(),
+    seen: string[] = [],
   ) {
     if (take <= 0) return [];
     const reels = await this.prismaRead.focusReel.findMany({
       where: {
         ...(subject ? { subject } : {}),
         attempts: { none: { userId } },
+        ...notSeen(seen),
       },
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 4, 12), // overfetch; bias + merge step trims
@@ -265,13 +273,14 @@ export class ReelsRanker {
   }
 
   /** Reinforcement: SM-2 due cards. Order by overdueness. */
-  private async fetchReinforcement(userId: string, subject: string | undefined, take: number) {
+  private async fetchReinforcement(userId: string, subject: string | undefined, take: number, seen: string[] = []) {
     if (take <= 0) return [];
     return this.prismaRead.recallCard.findMany({
       where: {
         userId,
         nextReviewAt: { lte: new Date() },
         ...(subject ? { subject } : {}),
+        ...notSeen(seen),
       },
       orderBy: { nextReviewAt: 'asc' },
       take,
@@ -280,13 +289,14 @@ export class ReelsRanker {
   }
 
   /** Challenges: active bounties. */
-  private async fetchChallenges(subject: string | undefined, take: number) {
+  private async fetchChallenges(subject: string | undefined, take: number, seen: string[] = []) {
     if (take <= 0) return [];
     return this.prismaRead.bounty.findMany({
       where: {
         status: 'ACTIVE',
         expiresAt: { gt: new Date() },
         ...(subject ? { subject } : {}),
+        ...notSeen(seen),
       },
       orderBy: [{ bountyXp: 'desc' }, { createdAt: 'desc' }],
       take,
@@ -304,12 +314,12 @@ export class ReelsRanker {
    * Subject filter is best-effort — Post has no tags column today, so when
    * `subject` is set we just skip this pool rather than over-fetch.
    */
-  private async fetchQuizzes(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set()) {
+  private async fetchQuizzes(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set(), seen: string[] = []) {
     if (take <= 0 || subject) return [];
     // Exclude True/False cards — they're surfaced as their own TF_CARD type, not
     // as a literal 2-option ("TRUE"/"FALSE") multiple-choice quiz.
     const rows = await this.prismaRead.quizQuestion.findMany({
-      where: { NOT: { options: { equals: [...TF_OPTIONS] } } },
+      where: { NOT: { options: { equals: [...TF_OPTIONS] } }, ...notSeen(seen) },
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 8, 24), // overfetch so a weak-subject card buried past the newest few still surfaces
       include: {
@@ -324,10 +334,10 @@ export class ReelsRanker {
    * instant-feedback game-feel reps. Env-gated (REELS_TF_CARDS) — when off the
    * pool is empty so the TF_CARD slot degrades to the next learning type.
    */
-  private async fetchTrueFalse(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set()) {
+  private async fetchTrueFalse(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set(), seen: string[] = []) {
     if (take <= 0 || subject || !TF_CARDS_ENABLED) return [];
     const rows = await this.prismaRead.quizQuestion.findMany({
-      where: { options: { equals: [...TF_OPTIONS] } },
+      where: { options: { equals: [...TF_OPTIONS] }, ...notSeen(seen) },
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 8, 24),
       include: {
@@ -343,7 +353,7 @@ export class ReelsRanker {
    * surfacing layer, no data duplication. Enriches with the viewer's
    * isLikedByMe flag using a single batched Like lookup.
    */
-  private async fetchPostReels(userId: string, subject: string | undefined, take: number) {
+  private async fetchPostReels(userId: string, subject: string | undefined, take: number, seen: string[] = []) {
     if (take <= 0) return [];
 
     // Overfetch — we draw POSTs both for native POST slots and as the
@@ -353,6 +363,7 @@ export class ReelsRanker {
       where: {
         postType: { in: REEL_ELIGIBLE_POST_TYPES as unknown as any[] },
         ...(subject ? { courseCode: subject } : {}),
+        ...notSeen(seen),
       },
       orderBy: [{ likesCount: 'desc' }, { createdAt: 'desc' }],
       take: overfetch,
@@ -391,12 +402,14 @@ export class ReelsRanker {
     schoolId: string | null,
     subject: string | undefined,
     take: number,
+    seen: string[] = [],
   ) {
     if (take <= 0 || !schoolId) return [];
     return this.prismaRead.focusReel.findMany({
       where: {
         ...(subject ? { subject } : {}),
         creator: { schoolId },
+        ...notSeen(seen),
       },
       orderBy: { createdAt: 'desc' },
       take,
@@ -628,18 +641,45 @@ function mergeAlternating<T>(primary: T[], secondary: T[], secondaryRatio: numbe
   return out;
 }
 
-// ── Cursor (opaque base64-encoded slot offset) ───────────────────────
+// ── Cursor (opaque base64-encoded {offset, seen}) ─────────────────────
+//
+// Carries the absolute slot index (so the slot pattern stays stable across
+// pagination) AND a bounded sliding window of recently-served item ids, so the
+// pools can exclude what the learner just saw and the same card doesn't repeat
+// every few swipes. The window is capped (SEEN_WINDOW) to keep the cursor
+// small; once an id falls out of the window it may recur — which is fine (and
+// desirable for spaced repetition given a finite content pool).
 
-function parseCursor(cursor: string | null | undefined): number | null {
-  if (!cursor) return null;
+interface ParsedCursor {
+  offset: number;
+  seen: string[];
+}
+
+function parseCursor(cursor: string | null | undefined): ParsedCursor {
+  const empty: ParsedCursor = { offset: 0, seen: [] };
+  if (!cursor) return empty;
   try {
-    const n = parseInt(Buffer.from(cursor, 'base64url').toString('utf8'), 10);
-    return Number.isFinite(n) && n >= 0 ? n : null;
+    const raw = Buffer.from(cursor, 'base64url').toString('utf8');
+    // New format: JSON {o, s}. Legacy format: a bare slot-offset number.
+    if (raw.startsWith('{')) {
+      const parsed = JSON.parse(raw) as { o?: unknown; s?: unknown };
+      const offset = typeof parsed.o === 'number' && parsed.o >= 0 ? parsed.o : 0;
+      const seen = Array.isArray(parsed.s) ? parsed.s.filter((x): x is string => typeof x === 'string') : [];
+      return { offset, seen };
+    }
+    const n = parseInt(raw, 10);
+    return { offset: Number.isFinite(n) && n >= 0 ? n : 0, seen: [] };
   } catch {
-    return null;
+    return empty;
   }
 }
 
-function encodeCursor(offset: number): string {
-  return Buffer.from(String(offset), 'utf8').toString('base64url');
+function encodeCursor(offset: number, seen: string[]): string {
+  const trimmed = seen.length > SEEN_WINDOW ? seen.slice(seen.length - SEEN_WINDOW) : seen;
+  return Buffer.from(JSON.stringify({ o: offset, s: trimmed }), 'utf8').toString('base64url');
+}
+
+/** Prisma where-fragment excluding already-served ids (no-op when none). */
+function notSeen(seen: string[]): { id?: { notIn: string[] } } {
+  return seen.length ? { id: { notIn: seen } } : {};
 }
