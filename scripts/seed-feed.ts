@@ -423,11 +423,14 @@ async function seedFeed() {
         {
             title: 'Quantum Wave-Particle Duality',
             description: 'Learn why light behaves as both a wave and a stream of particles, and how observation collapses the state.',
-            videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-starry-outer-space-background-12891-large.mp4',
+            // Real, openly-licensed sample clip that actually streams (the old
+            // mixkit preview URLs 403'd / rendered as a blank card). Production
+            // reels come from real educator uploads via the authoring flow.
+            videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4',
             thumbnailUrl: null,
             subject: 'Physics',
             creatorId: emma.id,
-            duration: 30,
+            duration: 10,
             pausePoints: [
                 {
                     time: 5,
@@ -446,11 +449,11 @@ async function seedFeed() {
         {
             title: 'Helicase & DNA Unwinding',
             description: 'Watch helicase separate double-stranded DNA into single strands to allow replication.',
-            videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-tunnel-of-futuristic-blue-lights-42234-large.mp4',
+            videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4',
             thumbnailUrl: null,
             subject: 'Biology',
             creatorId: emma.id,
-            duration: 40,
+            duration: 10,
             pausePoints: [
                 {
                     time: 6,
