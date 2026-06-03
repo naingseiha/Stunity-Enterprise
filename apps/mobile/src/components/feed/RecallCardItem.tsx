@@ -54,21 +54,21 @@ interface SubjectVisual {
 }
 
 const SUBJECT_CONFIG: Record<RecallCardSubject, SubjectVisual> = {
-  biology:         { icon: 'leaf',        accent: '#16A34A', accentDeep: '#15803D', accentSoft: '#DCFCE7', accentSoftDark: 'rgba(34,197,94,0.18)' },
-  mathematics:     { icon: 'calculator',  accent: '#0284C7', accentDeep: '#0369A1', accentSoft: '#E0F2FE', accentSoftDark: 'rgba(14,165,233,0.18)' },
-  physics:         { icon: 'planet',      accent: '#4F46E5', accentDeep: '#4338CA', accentSoft: '#E0E7FF', accentSoftDark: 'rgba(99,102,241,0.18)' },
-  chemistry:       { icon: 'flask',       accent: '#9333EA', accentDeep: '#7E22CE', accentSoft: '#F3E8FF', accentSoftDark: 'rgba(168,85,247,0.18)' },
-  english:         { icon: 'book',        accent: '#EA580C', accentDeep: '#C2410C', accentSoft: '#FFEDD5', accentSoftDark: 'rgba(249,115,22,0.18)' },
-  history:         { icon: 'time',        accent: '#CA8A04', accentDeep: '#A16207', accentSoft: '#FEF9C3', accentSoftDark: 'rgba(234,179,8,0.18)' },
-  geography:       { icon: 'globe',       accent: '#0D9488', accentDeep: '#0F766E', accentSoft: '#CCFBF1', accentSoftDark: 'rgba(20,184,166,0.18)' },
-  computerScience: { icon: 'code-slash',  accent: '#DB2777', accentDeep: '#BE185D', accentSoft: '#FCE7F3', accentSoftDark: 'rgba(236,72,153,0.18)' },
+  biology:         { icon: 'leaf-outline',        accent: '#16A34A', accentDeep: '#15803D', accentSoft: '#DCFCE7', accentSoftDark: 'rgba(34,197,94,0.18)' },
+  mathematics:     { icon: 'calculator-outline',  accent: '#0284C7', accentDeep: '#0369A1', accentSoft: '#E0F2FE', accentSoftDark: 'rgba(14,165,233,0.18)' },
+  physics:         { icon: 'planet-outline',      accent: '#4F46E5', accentDeep: '#4338CA', accentSoft: '#E0E7FF', accentSoftDark: 'rgba(99,102,241,0.18)' },
+  chemistry:       { icon: 'flask-outline',       accent: '#9333EA', accentDeep: '#7E22CE', accentSoft: '#F3E8FF', accentSoftDark: 'rgba(168,85,247,0.18)' },
+  english:         { icon: 'book-outline',        accent: '#EA580C', accentDeep: '#C2410C', accentSoft: '#FFEDD5', accentSoftDark: 'rgba(249,115,22,0.18)' },
+  history:         { icon: 'time-outline',        accent: '#CA8A04', accentDeep: '#A16207', accentSoft: '#FEF9C3', accentSoftDark: 'rgba(234,179,8,0.18)' },
+  geography:       { icon: 'globe-outline',       accent: '#0D9488', accentDeep: '#0F766E', accentSoft: '#CCFBF1', accentSoftDark: 'rgba(20,184,166,0.18)' },
+  computerScience: { icon: 'code-slash-outline',  accent: '#DB2777', accentDeep: '#BE185D', accentSoft: '#FCE7F3', accentSoftDark: 'rgba(236,72,153,0.18)' },
 };
 
 // Fallback for any subject not in SUBJECT_CONFIG (e.g. cards generated from a
 // quiz whose topic tag isn't one of the known subjects, or 'general'/'quiz').
 // Keeps the component from ever crashing on an unmapped subject string.
 const DEFAULT_SUBJECT_VISUAL: SubjectVisual = {
-  icon: 'sparkles',
+  icon: 'refresh-outline',
   accent: '#6366F1',
   accentDeep: '#4F46E5',
   accentSoft: '#E0E7FF',
@@ -219,7 +219,7 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
       {/* ────────── HEADER (mirrors PostHeader pattern) ────────── */}
       <View style={styles.headerRow}>
         <View style={styles.iconWrapHeader}>
-          <Ionicons name={subject.icon} size={20} color={subject.accent} />
+          <Ionicons name={subject.icon} size={18} color={subject.accent} />
         </View>
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
@@ -230,17 +230,15 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
               <View
                 style={[
                   styles.roleBadge,
-                  { backgroundColor: isDark ? 'rgba(34,197,94,0.18)' : '#DCFCE7' },
+                  { borderColor: isDark ? '#4ADE80' : '#059669' },
                 ]}
               >
-                <Ionicons name="checkmark-circle" size={11} color={isDark ? '#4ADE80' : '#059669'} />
                 <Text style={[styles.roleBadgeText, { color: isDark ? '#86EFAC' : '#059669' }]}>
                   {t('feed.recall.doneToday', { defaultValue: 'Done' })}
                 </Text>
               </View>
             ) : (
-              <View style={[styles.roleBadge, { backgroundColor: decayStatus.bg }]}>
-                <Ionicons name={decayStatus.icon} size={11} color={decayStatus.color} />
+              <View style={[styles.roleBadge, { borderColor: decayStatus.color }]}>
                 <Text style={[styles.roleBadgeText, { color: decayStatus.color }]}>
                   {decayStatus.text}
                 </Text>
@@ -302,11 +300,11 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
               ]}
             >
               <AnimatedView style={[styles.strengthFillWrap, strengthFillAnim]}>
-                <LinearGradient
-                  colors={[subject.accent, subject.accentDeep]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.strengthFill}
+                <View
+                  style={[
+                    styles.strengthFill,
+                    { backgroundColor: subject.accent },
+                  ]}
                 />
               </AnimatedView>
             </View>
@@ -416,11 +414,10 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
             <View
               style={[
                 styles.typeChip,
-                { backgroundColor: isDark ? subject.accentSoftDark : subject.accentSoft },
+                { borderColor: subject.accent, borderWidth: 1 },
               ]}
             >
-              <Ionicons name={subject.icon} size={13} color={subject.accent} />
-              <Text style={[styles.typeChipText, { color: subject.accentDeep }]} numberOfLines={1}>
+              <Text style={[styles.typeChipText, { color: subject.accent }]} numberOfLines={1}>
                 {card.subjectLabel}
               </Text>
             </View>
@@ -428,11 +425,10 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
               <View
                 style={[
                   styles.typeChip,
-                  { backgroundColor: isDark ? 'rgba(249,115,22,0.18)' : '#FFEDD5' },
+                  { borderColor: '#EA580C', borderWidth: 1 },
                 ]}
               >
-                <Ionicons name="shield-checkmark" size={13} color="#EA580C" />
-                <Text style={[styles.typeChipText, { color: '#C2410C' }]}>
+                <Text style={[styles.typeChipText, { color: '#EA580C' }]}>
                   {t('feed.recall.streakShielded', { defaultValue: 'Streak shielded' })}
                 </Text>
               </View>
@@ -444,11 +440,10 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
             <View
               style={[
                 styles.typeChip,
-                { backgroundColor: isDark ? subject.accentSoftDark : subject.accentSoft },
+                { borderColor: subject.accent, borderWidth: 1 },
               ]}
             >
-              <Ionicons name="bulb" size={13} color={subject.accent} />
-              <Text style={[styles.typeChipText, { color: subject.accentDeep }]}>
+              <Text style={[styles.typeChipText, { color: subject.accent }]}>
                 {t('feed.recall.typeChip', { defaultValue: 'Memory' })}
               </Text>
             </View>
@@ -526,16 +521,16 @@ const GradeButton: React.FC<GradeButtonProps> = ({
         accessibilityRole="button"
         accessibilityLabel={`${label} — ${sub}`}
       >
-        {variant === 'primary' && gradientEnd ? (
-          <LinearGradient
-            colors={[color, gradientEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradeBtnPrimary}
+        {variant === 'primary' ? (
+          <View
+            style={[
+              styles.gradeBtnPrimary,
+              { backgroundColor: color },
+            ]}
           >
             <Text style={styles.gradeBtnLabelPrimary}>{label}</Text>
             <Text style={styles.gradeBtnSubPrimary} numberOfLines={1}>{sub}</Text>
-          </LinearGradient>
+          </View>
         ) : (
           <View
             style={[
@@ -627,22 +622,11 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
     // the only contained card in the stream. White body, soft shadow,
     // generous radius, no border — depth comes from shadow alone.
     outer: {
-      marginHorizontal: 14,
-      marginVertical: 10,
-      padding: 20,
-      borderRadius: 24,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
       backgroundColor: colors.card,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.06,
-          shadowRadius: 20,
-        },
-        android: {
-          elevation: 4,
-        },
-      }),
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
     },
 
     // ── Header (mirrors PostHeader: avatar + name + role badge + meta row) ──
@@ -653,9 +637,9 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       marginBottom: 12,
     },
     iconWrapHeader: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       backgroundColor: isDark ? subject.accentSoftDark : subject.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
@@ -678,9 +662,11 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 3,
-      paddingHorizontal: 6,
+      paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 4,
+      borderRadius: 999,
+      borderWidth: 1,
+      backgroundColor: 'transparent',
     },
     roleBadgeText: {
       fontSize: 10,
@@ -789,19 +775,21 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
     },
     gradeBtnWrap: { flex: 1 },
     gradeBtnPrimary: {
-      paddingVertical: 12,
+      paddingVertical: 11,
       paddingHorizontal: 8,
-      borderRadius: 12,
+      borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center',
     },
     gradeBtnGhost: {
-      paddingVertical: 11,
+      paddingVertical: 10,
       paddingHorizontal: 8,
-      borderRadius: 12,
+      borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: 'transparent',
     },
     gradeBtnLabelPrimary: {
       fontSize: 14,
@@ -818,13 +806,13 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       fontSize: 11,
       fontWeight: '600',
       color: '#FFFFFF',
-      opacity: 0.92,
+      opacity: 0.9,
       marginTop: 1,
     },
     gradeBtnSubGhost: {
       fontSize: 11,
       fontWeight: '600',
-      opacity: 0.85,
+      color: colors.textSecondary,
       marginTop: 1,
     },
 
@@ -843,7 +831,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       gap: 6,
       paddingHorizontal: 10,
       paddingVertical: 5,
-      borderRadius: 8,
+      borderRadius: 999,
     },
     typeChipText: {
       fontSize: 12,

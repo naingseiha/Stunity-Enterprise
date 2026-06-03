@@ -84,15 +84,14 @@ export const FeynmanBountyItem: React.FC<Props> = ({
       {/* ────────── HEADER ────────── */}
       <View style={styles.headerRow}>
         <View style={styles.iconWrapHeader}>
-          <Ionicons name="cash-outline" size={20} color={ACCENT} />
+          <Ionicons name="ribbon-outline" size={18} color={ACCENT} />
         </View>
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.name} numberOfLines={1}>
               {t('feed.bounty.title', { defaultValue: 'Bounty Question' })}
             </Text>
-            <View style={[styles.urgencyPill, { backgroundColor: urgency.bg }]}>
-              <Ionicons name="time" size={11} color={urgency.color} />
+            <View style={[styles.urgencyPill, { borderColor: urgency.color }]}>
               <Text style={[styles.urgencyText, { color: urgency.color }]}>
                 {t('feed.bounty.hoursLeft', {
                   defaultValue: '{{count}}h left',
@@ -117,7 +116,7 @@ export const FeynmanBountyItem: React.FC<Props> = ({
         </View>
         {/* Top-right Bounty XP Tag (Stack Overflow style) */}
         <View style={styles.xpBadge}>
-          <Ionicons name="diamond" size={12} color={ACCENT_DEEP} />
+          <Ionicons name="diamond" size={12} color={ACCENT} style={{ marginRight: 2 }} />
           <Text style={styles.xpBadgeText}>+{bounty.bountyXp} XP</Text>
         </View>
       </View>
@@ -177,7 +176,6 @@ export const FeynmanBountyItem: React.FC<Props> = ({
           onPress={handleSeeAnswers}
           style={({ pressed }) => [
             styles.secondaryCta,
-            { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9' },
             pressed && { opacity: 0.8 },
           ]}
           accessibilityRole="button"
@@ -203,17 +201,12 @@ export const FeynmanBountyItem: React.FC<Props> = ({
           })}
           style={styles.primaryCtaWrap}
         >
-          <LinearGradient
-            colors={[ACCENT, ACCENT_DEEP]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.primaryCta}
-          >
+          <View style={styles.primaryCta}>
             <Ionicons name="videocam-outline" size={16} color="#FFFFFF" />
             <Text style={styles.primaryCtaText}>
               {t('feed.bounty.explainCta', { defaultValue: 'Explain it' })}
             </Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -265,20 +258,11 @@ type StyleMap = {
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create<StyleMap>({
     outer: {
-      marginHorizontal: 14,
-      marginVertical: 10,
-      padding: 20,
-      borderRadius: 24,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
       backgroundColor: colors.card,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.06,
-          shadowRadius: 20,
-        },
-        android: { elevation: 4 },
-      }),
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
     },
 
     // ── Header ──
@@ -288,9 +272,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 12,
     },
     iconWrapHeader: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT,
       alignItems: 'center',
       justifyContent: 'center',
@@ -311,10 +295,10 @@ const createStyles = (colors: any, isDark: boolean) =>
     urgencyPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 3,
-      paddingHorizontal: 6,
+      paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 4,
+      borderRadius: 999,
+      borderWidth: 1,
     },
     urgencyText: {
       fontSize: 10,
@@ -340,16 +324,17 @@ const createStyles = (colors: any, isDark: boolean) =>
     xpBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
       paddingVertical: 4,
-      borderRadius: 6,
-      backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+      backgroundColor: 'transparent',
     },
     xpBadgeText: {
       fontSize: 12,
       fontWeight: '800',
-      color: ACCENT_DEEP,
+      color: ACCENT,
     },
 
     // ── Divider ──
@@ -375,13 +360,15 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingVertical: 4,
       paddingHorizontal: 8,
       borderRadius: 6,
-      backgroundColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT,
+      borderWidth: 1,
+      borderColor: isDark ? ACCENT_SOFT_DARK : ACCENT_SOFT,
       alignSelf: 'flex-start',
+      backgroundColor: 'transparent',
     },
     attachmentText: {
       fontSize: 12,
       fontWeight: '700',
-      color: ACCENT_DEEP,
+      color: ACCENT,
       letterSpacing: 0.1,
     },
 
@@ -441,8 +428,11 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
-      paddingVertical: 13,
+      paddingVertical: 12,
       borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: 'transparent',
     },
     secondaryCtaText: {
       fontSize: 13,
@@ -457,17 +447,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
-      paddingVertical: 13,
+      paddingVertical: 12,
       borderRadius: 999,
-      ...Platform.select({
-        ios: {
-          shadowColor: ACCENT,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.20,
-          shadowRadius: 8,
-        },
-        android: { elevation: 2 },
-      }),
+      backgroundColor: ACCENT,
     },
     primaryCtaText: {
       fontSize: 13,

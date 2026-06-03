@@ -127,7 +127,7 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
       {/* ────────── HEADER ────────── */}
       <View style={styles.headerRow}>
         <View style={styles.iconWrapHeader}>
-          <Ionicons name="flash" size={18} color={URGENT} />
+          <Ionicons name="flash-outline" size={18} color={URGENT} />
         </View>
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
@@ -150,7 +150,7 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
         {/* Sleek header timer */}
         {war.status === 'LIVE' ? (
           <View style={styles.timerBadge}>
-            <Ionicons name="timer-outline" size={13} color={URGENT} />
+            <Ionicons name="timer-outline" size={13} color={colors.textSecondary} />
             <Text style={styles.timerText}>{formatMMSS(remainingSec)}</Text>
           </View>
         ) : null}
@@ -174,13 +174,11 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
         {/* Team A */}
         <View style={styles.teamCol}>
           <View style={styles.teamBadgeRow}>
-            <View style={[styles.classBadge, { backgroundColor: war.teamA.color }]}>
-              <Text style={styles.classBadgeText}>{war.teamA.name}</Text>
-            </View>
+            <View style={[styles.teamColorDot, { backgroundColor: war.teamA.color }]} />
             <View style={styles.teamInfoCol}>
               <Text style={styles.teamScore}>{war.teamA.score}</Text>
               <Text style={styles.teamLabel} numberOfLines={1}>
-                {userTeam === 'A' ? t('feed.quizWar.yourTeam', { defaultValue: 'Your Class' }) : t('feed.quizWar.class', { defaultValue: 'Class A' })}
+                {war.teamA.name} {userTeam === 'A' ? `(${t('feed.quizWar.yourTeam', { defaultValue: 'Your Class' })})` : ''}
               </Text>
             </View>
           </View>
@@ -193,13 +191,11 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
         {/* Team B */}
         <View style={styles.teamCol}>
           <View style={[styles.teamBadgeRow, { flexDirection: 'row-reverse' }]}>
-            <View style={[styles.classBadge, { backgroundColor: war.teamB.color }]}>
-              <Text style={styles.classBadgeText}>{war.teamB.name}</Text>
-            </View>
+            <View style={[styles.teamColorDot, { backgroundColor: war.teamB.color }]} />
             <View style={[styles.teamInfoCol, { alignItems: 'flex-end' }]}>
               <Text style={styles.teamScore}>{war.teamB.score}</Text>
               <Text style={styles.teamLabel} numberOfLines={1}>
-                {userTeam === 'B' ? t('feed.quizWar.yourTeam', { defaultValue: 'Your Class' }) : t('feed.quizWar.class', { defaultValue: 'Class B' })}
+                {war.teamB.name} {userTeam === 'B' ? `(${t('feed.quizWar.yourTeam', { defaultValue: 'Your Class' })})` : ''}
               </Text>
             </View>
           </View>
@@ -238,21 +234,11 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
 
       {/* ────────── PRESENCE / SOCIAL PROOF ────────── */}
       <View style={styles.presenceRow}>
-        <View style={styles.avatarPile}>
-          <View style={[styles.pileAvatar, { backgroundColor: war.teamA.color, zIndex: 3 }]}>
-            <Text style={styles.pileAvatarText}>{war.teamA.name.substring(0, 2)}</Text>
-          </View>
-          <View style={[styles.pileAvatar, { backgroundColor: war.teamB.color, zIndex: 2, marginLeft: -8 }]}>
-            <Text style={styles.pileAvatarText}>{war.teamB.name.substring(0, 2)}</Text>
-          </View>
-          <View style={[styles.pileAvatar, { backgroundColor: colors.primary, zIndex: 1, marginLeft: -8 }]}>
-            <Ionicons name="people" size={10} color="#FFFFFF" />
-          </View>
-        </View>
+        <Ionicons name="people-outline" size={14} color={colors.textSecondary} style={{ marginRight: 6 }} />
         <Text style={styles.presenceText}>
           <Text style={styles.presenceHighlight}>
             {t('feed.quizWar.classmatesFighting', {
-              defaultValue: '{{count}} classmates fighting',
+              defaultValue: '{{count}} classmates active',
               count: war.classmatesFighting,
             })}
           </Text>
@@ -276,13 +262,7 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
         })}
         style={styles.ctaWrap}
       >
-        <LinearGradient
-          colors={[URGENT, URGENT_DEEP]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.cta}
-        >
-          <Ionicons name="play" size={16} color="#FFFFFF" />
+        <View style={styles.cta}>
           <Text style={styles.ctaText}>
             {war.isUserParticipating
               ? t('feed.quizWar.continueCta', {
@@ -292,12 +272,12 @@ export const QuizWarBanner: React.FC<Props> = ({ war: initialWar, onJoin }) => {
                   defaultValue: 'Join the Battle',
                 })}
           </Text>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
 
       {/* ────────── REWARD FOOTER ────────── */}
       <View style={styles.rewardRow}>
-        <Ionicons name="trophy" size={14} color="#D97706" />
+        <Ionicons name="trophy-outline" size={13} color={colors.textTertiary} />
         <Text style={styles.rewardText}>
           {t('feed.quizWar.reward', {
             defaultValue: 'Win: +{{xp}} XP to your class leaderboard',
@@ -335,8 +315,7 @@ type StyleMap = {
   teamsRow: ViewStyle;
   teamCol: ViewStyle;
   teamBadgeRow: ViewStyle;
-  classBadge: ViewStyle;
-  classBadgeText: TextStyle;
+  teamColorDot: ViewStyle;
   teamInfoCol: ViewStyle;
   teamScore: TextStyle;
   teamLabel: TextStyle;
@@ -349,9 +328,6 @@ type StyleMap = {
   tugPercentRow: ViewStyle;
   tugPercentText: TextStyle;
 
-  avatarPile: ViewStyle;
-  pileAvatar: ViewStyle;
-  pileAvatarText: TextStyle;
   presenceRow: ViewStyle;
   presenceText: TextStyle;
   presenceHighlight: TextStyle;
@@ -368,20 +344,11 @@ type StyleMap = {
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create<StyleMap>({
     outer: {
-      marginHorizontal: 14,
-      marginVertical: 10,
-      padding: 20,
-      borderRadius: 24,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
       backgroundColor: colors.card,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.06,
-          shadowRadius: 20,
-        },
-        android: { elevation: 4 },
-      }),
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
     },
 
     // ── Header ──
@@ -391,10 +358,10 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 12,
     },
     iconWrapHeader: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: isDark ? URGENT_SOFT_DARK : URGENT_SOFT,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -402,7 +369,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     nameRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 6,
     },
     name: {
       fontSize: 15,
@@ -420,31 +387,35 @@ const createStyles = (colors: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      paddingHorizontal: 7,
-      paddingVertical: 3,
-      borderRadius: 4,
-      backgroundColor: URGENT,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: URGENT,
+      backgroundColor: 'transparent',
     },
     liveDot: {
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: URGENT,
     },
     liveText: {
       fontSize: 10,
       fontWeight: '900',
-      color: '#FFFFFF',
+      color: URGENT,
       letterSpacing: 1.2,
     },
     timerBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
       paddingVertical: 4,
-      borderRadius: 6,
-      backgroundColor: isDark ? URGENT_SOFT_DARK : URGENT_SOFT,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+      backgroundColor: 'transparent',
     },
     timerIcon: {
       marginRight: 1,
@@ -452,7 +423,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     timerText: {
       fontSize: 12,
       fontWeight: '800',
-      color: URGENT,
+      color: colors.textSecondary,
       ...(Platform.OS === 'ios' ? { fontVariant: ['tabular-nums'] as any } : {}),
     },
     roundInfoWrap: {
@@ -487,28 +458,12 @@ const createStyles = (colors: any, isDark: boolean) =>
     teamBadgeRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 8,
     },
-    classBadge: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 3,
-        },
-        android: { elevation: 1 },
-      }),
-    },
-    classBadgeText: {
-      fontSize: 12,
-      fontWeight: '900',
-      color: '#FFFFFF',
+    teamColorDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
     teamInfoCol: {
       flex: 1,
@@ -540,8 +495,8 @@ const createStyles = (colors: any, isDark: boolean) =>
 
     // ── Tug-of-war bar ──
     tugBar: {
-      height: 6,
-      borderRadius: 3,
+      height: 4,
+      borderRadius: 2,
       overflow: 'hidden',
       flexDirection: 'row',
       marginTop: 16,
@@ -565,25 +520,6 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
 
     // ── Presence / Social Proof ──
-    avatarPile: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 6,
-    },
-    pileAvatar: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      borderWidth: 1.5,
-      borderColor: colors.card,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    pileAvatarText: {
-      fontSize: 8,
-      fontWeight: '800',
-      color: '#FFFFFF',
-    },
     presenceRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -611,18 +547,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
-      paddingVertical: 13,
+      paddingVertical: 12,
       borderRadius: 999,
-      ...Platform.select({
-        ios: {
-          shadowColor: URGENT,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
-        },
-        android: { elevation: 2 },
-      }),
+      backgroundColor: URGENT,
     },
     ctaText: {
       fontSize: 14,
@@ -642,7 +569,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     rewardText: {
       fontSize: 11,
       fontWeight: '700',
-      color: colors.textSecondary,
+      color: colors.textTertiary,
       letterSpacing: 0.1,
     },
   });

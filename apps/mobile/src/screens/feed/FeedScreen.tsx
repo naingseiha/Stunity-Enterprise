@@ -240,7 +240,7 @@ const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create
     backgroundColor: colors.card,
     borderWidth: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)',
   },
   inner: { padding: 14, borderRadius: 16, overflow: 'hidden' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
@@ -1765,7 +1765,7 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     borderWidth: 0,
     borderRadius: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)',
   },
   createPostRow: {
     flexDirection: 'row',

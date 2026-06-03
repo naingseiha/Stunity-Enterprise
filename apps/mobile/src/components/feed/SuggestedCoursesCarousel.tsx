@@ -83,7 +83,10 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
-        marginVertical: 12,
+        backgroundColor: colors.card,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
     },
     header: {
         flexDirection: 'row',
