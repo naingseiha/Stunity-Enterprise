@@ -44,6 +44,17 @@ function isTrueFalse(options: unknown): boolean {
 // When off, the TF_CARD slot degrades to the next learning type (a quiz).
 const TF_CARDS_ENABLED = process.env.REELS_TF_CARDS !== 'false';
 
+// Personalize the quiz/TF/video pools toward the learner's weakest subjects
+// (lowest avg recallStrength across their RecallCards). When off — or for a new
+// learner with no cards — the pools fall back to "newest" (the prior behavior).
+const PERSONALIZE_ENABLED = process.env.REELS_PERSONALIZE !== 'false';
+// How many of the learner's weakest subjects to bias toward.
+const WEAK_SUBJECT_COUNT = 3;
+// Only subjects whose avg recallStrength is *below* this count as "weak" — a
+// subject the learner has essentially mastered shouldn't be boosted. Matches
+// the "learned" strength a freshly-correct card is seeded at (sm2/recall utils).
+const WEAK_STRENGTH_THRESHOLD = 0.6;
+
 /**
  * Post types that auto-promote into the Reels feed. Any new short-form,
  * visually-engaging PostType added later just needs to be appended here —
@@ -150,19 +161,25 @@ export class ReelsRanker {
       try { return await fn(); } finally { timings[label] = Date.now() - start; }
     };
 
-    const user = await time('user', () => this.prismaRead.user.findUnique({
-      where: { id: userId },
-      select: { schoolId: true },
-    }));
+    // `user` (schoolId for the social pool) and `weakSubjects` (personalization
+    // signal) are both prerequisites for the pool fetches, so resolve them up
+    // front in parallel.
+    const [user, weakSubjects] = await Promise.all([
+      time('user', () => this.prismaRead.user.findUnique({
+        where: { id: userId },
+        select: { schoolId: true },
+      })),
+      time('weak', () => this.fetchWeakSubjects(userId)),
+    ]);
 
     // Compute how many of each type we need from the slot pattern window.
     const counts = countSlotsInWindow(slotOffset, limit);
 
     const [discovery, recall, quizzes, trueFalse, bounties, social, posts] = await Promise.all([
-      time('discovery', () => this.fetchDiscovery(subject, counts.FOCUS_REEL, userId)),
+      time('discovery', () => this.fetchDiscovery(subject, counts.FOCUS_REEL, userId, weakSubjects)),
       time('recall', () => this.fetchReinforcement(userId, subject, counts.RECALL_CARD)),
-      time('quizzes', () => this.fetchQuizzes(subject, counts.QUIZ_QUESTION)),
-      time('truefalse', () => this.fetchTrueFalse(subject, counts.TF_CARD)),
+      time('quizzes', () => this.fetchQuizzes(subject, counts.QUIZ_QUESTION, weakSubjects)),
+      time('truefalse', () => this.fetchTrueFalse(subject, counts.TF_CARD, weakSubjects)),
       time('challenges', () => this.fetchChallenges(subject, counts.BOUNTY)),
       time('social', () => this.fetchSocial(user?.schoolId ?? null, subject, counts.FOCUS_REEL)),
       time('posts', () => this.fetchPostReels(userId, subject, counts.POST)),
@@ -193,24 +210,58 @@ export class ReelsRanker {
     };
   }
 
+  // ── Personalization signal ─────────────────────────────────────────
+
+  /**
+   * The learner's weakest subjects, lowest avg recallStrength first. Reads the
+   * same RecallCards the mastery tree aggregates (subject derived from the
+   * backing post's first topicTag, which reels authoring sets == courseCode, so
+   * it lines up with the quiz/TF/video pools). Returns a lowercased set capped
+   * at WEAK_SUBJECT_COUNT. Empty when personalization is off, the learner has no
+   * cards, or every subject is equally fresh — the pools then fall back to
+   * "newest" (the prior behavior).
+   */
+  private async fetchWeakSubjects(userId: string): Promise<Set<string>> {
+    if (!PERSONALIZE_ENABLED) return new Set();
+    const grouped = await this.prismaRead.recallCard.groupBy({
+      by: ['subject'],
+      where: { userId },
+      _avg: { recallStrength: true },
+      _count: { _all: true },
+    });
+    const ranked = grouped
+      .filter((g) => g._count._all > 0 && (g._avg.recallStrength ?? 1) < WEAK_STRENGTH_THRESHOLD)
+      .sort((a, b) => (a._avg.recallStrength ?? 1) - (b._avg.recallStrength ?? 1))
+      .slice(0, WEAK_SUBJECT_COUNT)
+      .map((g) => g.subject.toLowerCase());
+    return new Set(ranked);
+  }
+
   // ── Pools ──────────────────────────────────────────────────────────
 
   /** Discovery: newest FocusReels, optionally subject-filtered, excluding what the user already attempted. */
-  private async fetchDiscovery(subject: string | undefined, take: number, userId: string) {
+  private async fetchDiscovery(
+    subject: string | undefined,
+    take: number,
+    userId: string,
+    weakSubjects: Set<string> = new Set(),
+  ) {
     if (take <= 0) return [];
-    return this.prismaRead.focusReel.findMany({
+    const reels = await this.prismaRead.focusReel.findMany({
       where: {
         ...(subject ? { subject } : {}),
         attempts: { none: { userId } },
       },
       orderBy: { createdAt: 'desc' },
-      take: take * 2, // overfetch; merge step trims
+      take: Math.max(take * 4, 12), // overfetch; bias + merge step trims
       include: {
         creator: {
           select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true },
         },
       },
     });
+    // Float weak-subject reels to the front before the merge/trim downstream.
+    return biasBySubjects(reels, weakSubjects, (r) => r.subject);
   }
 
   /** Reinforcement: SM-2 due cards. Order by overdueness. */
@@ -253,18 +304,19 @@ export class ReelsRanker {
    * Subject filter is best-effort — Post has no tags column today, so when
    * `subject` is set we just skip this pool rather than over-fetch.
    */
-  private async fetchQuizzes(subject: string | undefined, take: number) {
+  private async fetchQuizzes(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set()) {
     if (take <= 0 || subject) return [];
     // Exclude True/False cards — they're surfaced as their own TF_CARD type, not
     // as a literal 2-option ("TRUE"/"FALSE") multiple-choice quiz.
-    return this.prismaRead.quizQuestion.findMany({
+    const rows = await this.prismaRead.quizQuestion.findMany({
       where: { NOT: { options: { equals: [...TF_OPTIONS] } } },
       orderBy: { createdAt: 'desc' },
-      take,
+      take: Math.max(take * 8, 24), // overfetch so a weak-subject card buried past the newest few still surfaces
       include: {
-        post: { select: { id: true, authorId: true, courseCode: true } },
+        post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
       },
     });
+    return biasBySubjects(rows, weakSubjects, subjectOfQuiz, take);
   }
 
   /**
@@ -272,16 +324,17 @@ export class ReelsRanker {
    * instant-feedback game-feel reps. Env-gated (REELS_TF_CARDS) — when off the
    * pool is empty so the TF_CARD slot degrades to the next learning type.
    */
-  private async fetchTrueFalse(subject: string | undefined, take: number) {
+  private async fetchTrueFalse(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set()) {
     if (take <= 0 || subject || !TF_CARDS_ENABLED) return [];
-    return this.prismaRead.quizQuestion.findMany({
+    const rows = await this.prismaRead.quizQuestion.findMany({
       where: { options: { equals: [...TF_OPTIONS] } },
       orderBy: { createdAt: 'desc' },
-      take,
+      take: Math.max(take * 8, 24),
       include: {
-        post: { select: { id: true, authorId: true, courseCode: true } },
+        post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
       },
     });
+    return biasBySubjects(rows, weakSubjects, subjectOfQuiz, take);
   }
 
   /**
@@ -479,6 +532,34 @@ function toBountyDto(b: any): ReelDto {
       replyCount: b._count?.replies ?? 0,
     },
   };
+}
+
+// ── Personalization helpers ──────────────────────────────────────────
+
+/** A quiz/TF row's subject: the post's courseCode, falling back to its first topicTag. */
+function subjectOfQuiz(q: any): string | undefined {
+  return q.post?.courseCode ?? q.post?.topicTags?.[0];
+}
+
+/**
+ * Stable-partition `items` so those in a weak subject come first (preserving
+ * the original — newest-first — order within each group), then optionally trim
+ * to `take`. A no-op when `weak` is empty, so a new learner keeps the prior
+ * newest-first ordering. Matching is case-insensitive.
+ */
+function biasBySubjects<T>(
+  items: T[],
+  weak: Set<string>,
+  subjectOf: (t: T) => string | undefined,
+  take?: number,
+): T[] {
+  if (weak.size === 0) return take === undefined ? items : items.slice(0, take);
+  const isWeak = (t: T) => {
+    const s = subjectOf(t)?.toLowerCase();
+    return !!s && weak.has(s);
+  };
+  const ordered = [...items.filter(isWeak), ...items.filter((t) => !isWeak(t))];
+  return take === undefined ? ordered : ordered.slice(0, take);
 }
 
 // ── Slot weaving ─────────────────────────────────────────────────────
