@@ -35,6 +35,7 @@ import {
 import useAuthStore from '@/stores/authStore';
 import { track } from '@/services/analytics';
 import { useFeatureFlag } from '@/config/featureFlags';
+import { useReducedMotion } from '@/hooks';
 
 const { width, height } = Dimensions.get('window');
 
@@ -423,12 +424,25 @@ export const FocusReelsScreen: React.FC = () => {
           const canActuallyGoBack = state?.type === 'stack' && state.index > 0;
           if (!canActuallyGoBack) return null;
           return (
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => navigation.goBack()}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back', { defaultValue: 'Go back' })}
+            >
               <Ionicons name="chevron-back" size={26} color="#FFF" />
             </TouchableOpacity>
           );
         })()}
-        <TouchableOpacity style={styles.muteBtn} onPress={() => setMuted((m) => !m)}>
+        <TouchableOpacity
+          style={styles.muteBtn}
+          onPress={() => setMuted((m) => !m)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: muted }}
+          accessibilityLabel={muted
+            ? t('reels.a11y.unmute', { defaultValue: 'Unmute' })
+            : t('reels.a11y.mute', { defaultValue: 'Mute' })}
+        >
           <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={20} color="#FFF" />
         </TouchableOpacity>
         {canAuthor && (
@@ -511,12 +525,16 @@ export const FocusReelsScreen: React.FC = () => {
 // The combo bar + mute button above stay mounted, so the screen never blanks.
 
 const ReelLoadingPlaceholder: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   const spin = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.loop(
+    if (reduceMotion) return; // no perpetual spin under reduce-motion; static ring
+    const anim = Animated.loop(
       Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
-    ).start();
-  }, [spin]);
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [spin, reduceMotion]);
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -569,16 +587,21 @@ const EmptyState: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 const ComboBar: React.FC<{ combo: number; dueRecallCount: number }> = ({ combo, dueRecallCount }) => {
   const filledSegments = combo % COMBO_FILL_TARGET;
   const totalCycles = Math.floor(combo / COMBO_FILL_TARGET);
+  const reduceMotion = useReducedMotion();
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      progress.setValue(filledSegments); // jump straight to the filled state
+      return;
+    }
     Animated.spring(progress, {
       toValue: filledSegments,
       tension: 80,
       friction: 8,
       useNativeDriver: false,
     }).start();
-  }, [filledSegments, progress]);
+  }, [filledSegments, progress, reduceMotion]);
 
   return (
     <View style={styles.comboBar}>
@@ -621,10 +644,17 @@ const ComboBar: React.FC<{ combo: number; dueRecallCount: number }> = ({ combo, 
 };
 
 const ComboFillBurst: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(0.3)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      // Show it statically (no scale-pop / fade); the parent unmounts it on a timer.
+      scale.setValue(1);
+      opacity.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.spring(scale, { toValue: 1, tension: 60, friction: 6, useNativeDriver: true }),
       Animated.sequence([
@@ -633,7 +663,7 @@ const ComboFillBurst: React.FC = () => {
         Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]),
     ]).start();
-  }, [scale, opacity]);
+  }, [scale, opacity, reduceMotion]);
 
   return (
     <Animated.View style={[styles.comboFillCelebration, { opacity, transform: [{ scale }] }]} pointerEvents="none">
@@ -652,10 +682,16 @@ const ComboFillBurst: React.FC = () => {
 };
 
 const XpBurst: React.FC<{ amount: number }> = ({ amount }) => {
+  const reduceMotion = useReducedMotion();
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      // No upward drift; just show the tally (parent unmounts it on a timer).
+      opacity.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.timing(translateY, { toValue: -60, duration: 1100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.sequence([
@@ -664,7 +700,7 @@ const XpBurst: React.FC<{ amount: number }> = ({ amount }) => {
         Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
       ]),
     ]).start();
-  }, [translateY, opacity]);
+  }, [translateY, opacity, reduceMotion]);
 
   return (
     <Animated.View style={[styles.xpBurst, { opacity, transform: [{ translateY }] }]} pointerEvents="none">
@@ -685,15 +721,21 @@ const SessionCompleteOverlay: React.FC<{
   onDismiss: () => void;
 }> = ({ reviewed, xp, upcoming, onDismiss }) => {
   const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(0.8)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      scale.setValue(1);
+      opacity.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.spring(scale, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
       Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
     ]).start();
-  }, [scale, opacity]);
+  }, [scale, opacity, reduceMotion]);
 
   return (
     <Animated.View style={[styles.sessionOverlay, { opacity }]}>
@@ -765,15 +807,22 @@ const SessionCompleteOverlay: React.FC<{
 // ─── Skeleton loader ───────────────────────────────────────────────────
 
 const SkeletonScreen: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   const shimmer = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.loop(
+    if (reduceMotion) {
+      shimmer.setValue(0.5); // hold a mid, non-pulsing opacity
+      return;
+    }
+    const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, { toValue: 1, duration: 1100, useNativeDriver: true }),
         Animated.timing(shimmer, { toValue: 0, duration: 1100, useNativeDriver: true }),
       ]),
-    ).start();
-  }, [shimmer]);
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shimmer, reduceMotion]);
 
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.75] });
 
@@ -861,6 +910,8 @@ const buildShareText = (item: any, postId?: string): { message: string; url?: st
 
 const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertical', postId, engagement, accent }) => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const reactionsEnabled = useFeatureFlag('reactions');
   const [liked, setLiked] = useState<boolean>(!!engagement?.isLikedByMe);
   const [likesCount, setLikesCount] = useState<number>(engagement?.likesCount ?? 0);
@@ -888,6 +939,7 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
   const supportsSocial = !!postId;
 
   const animateHeart = () => {
+    if (reduceMotion) return; // skip the scale-pop; the icon/colour change still conveys the state
     Animated.sequence([
       Animated.spring(heartScale, { toValue: 1.4, tension: 200, friction: 5, useNativeDriver: true }),
       Animated.spring(heartScale, { toValue: 1, tension: 180, friction: 8, useNativeDriver: true }),
@@ -1045,6 +1097,14 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
             delayLongPress={220}
             disabled={!supportsSocial}
             activeOpacity={supportsSocial ? 0.7 : 1}
+            accessibilityRole="button"
+            accessibilityState={{ selected: liked, disabled: !supportsSocial }}
+            accessibilityLabel={liked
+              ? t('reels.a11y.unlike', { defaultValue: 'Unlike' })
+              : t('reels.a11y.like', { defaultValue: 'Like' })}
+            accessibilityHint={supportsSocial && reactionsEnabled
+              ? t('reels.a11y.reactHint', { defaultValue: 'Double tap to like, or long press to pick a reaction' })
+              : undefined}
           >
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
               <Ionicons
@@ -1062,6 +1122,9 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
           onPress={onComment}
           disabled={!supportsSocial}
           activeOpacity={supportsSocial ? 0.7 : 1}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !supportsSocial }}
+          accessibilityLabel={t('reels.a11y.comments', { count: commentsCount, defaultValue: 'Comments, {{count}}' })}
         >
           <Ionicons
             name="chatbubble-ellipses-outline"
@@ -1071,7 +1134,13 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
           <Text style={styles.sidebarText}>{formatCount(commentsCount)}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn} activeOpacity={0.7} onPress={onShare}>
+        <TouchableOpacity
+          style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
+          activeOpacity={0.7}
+          onPress={onShare}
+          accessibilityRole="button"
+          accessibilityLabel={t('reels.a11y.share', { defaultValue: 'Share' })}
+        >
           <Ionicons name="paper-plane-outline" size={horizontal ? 26 : 28} color="#FFF" />
           {!horizontal && <Text style={styles.sidebarText}>Share</Text>}
         </TouchableOpacity>
@@ -1170,6 +1239,7 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   const [answerStatus, setAnswerStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [answeredTimes, setAnsweredTimes] = useState<Set<number>>(new Set());
   const [tapPaused, setTapPaused] = useState(false);
+  const reduceMotion = useReducedMotion();
   const slideAnim = useRef(new Animated.Value(height)).current;
 
   const player = useVideoPlayer(shouldMountVideo ? item.videoUrl : null, (p) => {
@@ -1199,11 +1269,12 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
       if (targetPoint && !answeredTimes.has(targetPoint.time) && !questionPoint) {
         player.pause();
         setQuestionPoint(targetPoint);
-        Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+        if (reduceMotion) slideAnim.setValue(0);
+        else Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       }
     }, 250);
     return () => clearInterval(interval);
-  }, [isActive, player, item.pausePoints, answeredTimes, questionPoint, slideAnim, shouldMountVideo]);
+  }, [isActive, player, item.pausePoints, answeredTimes, questionPoint, slideAnim, shouldMountVideo, reduceMotion]);
 
   const handleSubmit = () => {
     if (selectedOption === null || !questionPoint) return;
@@ -1213,12 +1284,18 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
     setAnsweredTimes((prev) => new Set(prev).add(questionPoint.time));
     setTimeout(() => {
       if (isCorrect) {
-        Animated.timing(slideAnim, { toValue: height, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+        const onDone = () => {
           setQuestionPoint(null);
           setSelectedOption(null);
           setAnswerStatus('idle');
           if (shouldMountVideo && !tapPaused) player.play();
-        });
+        };
+        if (reduceMotion) {
+          slideAnim.setValue(height);
+          onDone();
+        } else {
+          Animated.timing(slideAnim, { toValue: height, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(onDone);
+        }
       } else {
         setSelectedOption(null);
         setAnswerStatus('idle');
@@ -1283,6 +1360,10 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
                     style={optStyle}
                     onPress={() => answerStatus === 'idle' && setSelectedOption(idx)}
                     activeOpacity={0.85}
+                    disabled={answerStatus !== 'idle'}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected, disabled: answerStatus !== 'idle' }}
+                    accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
                   >
                     <View style={styles.optionLetter}>
                       <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
@@ -1292,7 +1373,8 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
                 );
               })}
             </View>
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityLabel="Submit answer">
               <LinearGradient
                 colors={['#A855F7', '#7C3AED']}
                 start={{ x: 0, y: 0 }}
@@ -1356,6 +1438,10 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
                 style={[styles.quizOptionBtn, { backgroundColor: bg, borderColor: border }]}
                 onPress={() => handleSelect(idx)}
                 activeOpacity={0.85}
+                disabled={isAnswered}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
               >
                 <View style={styles.optionLetter}>
                   <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
@@ -1368,7 +1454,8 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
           })}
         </View>
         {selectedOption !== null && !isAnswered && (
-          <TouchableOpacity style={[styles.submitBtn, styles.quizSubmitBtn]} onPress={handleSubmit} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.submitBtn, styles.quizSubmitBtn]} onPress={handleSubmit} activeOpacity={0.85}
+            accessibilityRole="button" accessibilityLabel="Submit answer">
             <LinearGradient
               colors={['#A855F7', '#7C3AED']}
               start={{ x: 0, y: 0 }}
@@ -1451,6 +1538,9 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
                 onPress={() => handleTap(c.idx)}
                 activeOpacity={0.85}
                 disabled={isAnswered}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                accessibilityLabel={c.label}
               >
                 <Ionicons name={c.icon} size={40} color="#FFF" />
                 <Text style={styles.tfBtnText}>{c.label}</Text>
@@ -1486,6 +1576,7 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
 const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient, pageHeight }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [graded, setGraded] = useState(false);
+  const reduceMotion = useReducedMotion();
   const flip = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -1500,6 +1591,10 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
     if (graded) return;
     const next = !isFlipped;
     setIsFlipped(next);
+    if (reduceMotion) {
+      flip.setValue(next ? 1 : 0); // instant face swap, no 3D rotation
+      return;
+    }
     Animated.spring(flip, { toValue: next ? 1 : 0, tension: 70, friction: 12, useNativeDriver: true }).start();
   };
 
@@ -1527,7 +1622,14 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
         </View>
         <Text style={styles.strengthLabel}>Memory · {strengthPct}%</Text>
 
-        <TouchableOpacity onPress={toggleFlip} activeOpacity={0.95} style={styles.flashcardOuter}>
+        <TouchableOpacity
+          onPress={toggleFlip}
+          activeOpacity={0.95}
+          style={styles.flashcardOuter}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isFlipped }}
+          accessibilityLabel={isFlipped ? 'Show question' : 'Reveal answer'}
+        >
           <Animated.View
             style={[
               styles.flashcardFace,
@@ -1555,17 +1657,20 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
 
         {isFlipped && !graded && (
           <View style={styles.recallActions}>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityLabel="Again, plus 1 XP">
               <Ionicons name="refresh" size={16} color="#FFF" />
               <Text style={styles.recallBtnText}>Again</Text>
               <Text style={styles.recallBtnXp}>+1</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityLabel={`Good, plus ${item.xpReward ?? 5} XP`}>
               <Ionicons name="checkmark" size={16} color="#FFF" />
               <Text style={styles.recallBtnText}>Good</Text>
               <Text style={styles.recallBtnXp}>+{item.xpReward ?? 5}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityLabel={`Easy, plus ${Math.round((item.xpReward ?? 5) * 1.4)} XP`}>
               <Ionicons name="flash" size={16} color="#FFF" />
               <Text style={styles.recallBtnText}>Easy</Text>
               <Text style={styles.recallBtnXp}>+{Math.round((item.xpReward ?? 5) * 1.4)}</Text>

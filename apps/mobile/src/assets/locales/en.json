@@ -16,6 +16,15 @@
       "correct": "Correct!",
       "incorrect": "Not quite"
     },
+    "a11y": {
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "like": "Like",
+      "unlike": "Unlike",
+      "reactHint": "Double tap to like, or long press to pick a reaction",
+      "comments": "Comments, {{count}}",
+      "share": "Share"
+    },
     "create": {
       "title": "Video reel",
       "chooserTitle": "Add to the learning feed",
