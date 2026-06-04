@@ -29,6 +29,10 @@
       "correct": "Nailed it!",
       "incorrect": "Review again soon"
     },
+    "post": {
+      "answer": "Answer this",
+      "discuss": "Join the discussion"
+    },
     "a11y": {
       "mute": "Mute",
       "unmute": "Unmute",

@@ -428,26 +428,40 @@ export class ReelsRanker {
         author: {
           select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true },
         },
+        // Poll options so a POLL reel is votable inline (not a dead-end caption).
+        pollOptions: {
+          select: { id: true, text: true, votesCount: true },
+          orderBy: { position: 'asc' },
+        },
       },
     });
 
     if (posts.length === 0) return [];
 
     const postIdList = posts.map((p) => p.id);
-    const [liked, reactionCountsMap] = await Promise.all([
+    const pollPostIds = posts.filter((p) => p.postType === 'POLL').map((p) => p.id);
+    const [liked, reactionCountsMap, pollVotes] = await Promise.all([
       this.prismaRead.like.findMany({
         where: { userId, postId: { in: postIdList } },
         select: { postId: true, reactionType: true },
       }),
       fetchReactionCounts(this.prismaRead, postIdList),
+      pollPostIds.length > 0
+        ? this.prismaRead.pollVote.findMany({
+            where: { userId, postId: { in: pollPostIds } },
+            select: { postId: true, optionId: true },
+          })
+        : Promise.resolve([] as { postId: string; optionId: string }[]),
     ]);
     const reactionMap = new Map(liked.map((l) => [l.postId, l.reactionType ?? 'LIKE']));
+    const voteMap = new Map(pollVotes.map((v) => [v.postId, v.optionId]));
 
     return posts.map((p) => ({
       ...p,
       isLikedByMe: reactionMap.has(p.id),
       myReaction: reactionMap.get(p.id) ?? null,
       reactionCounts: reactionCountsMap.get(p.id) ?? {},
+      userVotedOptionId: voteMap.get(p.id) ?? null,
     }));
   }
 
@@ -656,6 +670,10 @@ function toPostDto(p: any): ReelDto {
       coverUrl: firstMedia,
       isVideo,
       author: p.author,
+      // Poll posts carry their options + the viewer's vote so the reel is
+      // votable inline; null/empty for every other post type.
+      pollOptions: p.postType === 'POLL' ? (p.pollOptions ?? []) : undefined,
+      userVotedOptionId: p.userVotedOptionId ?? null,
     },
   };
 }

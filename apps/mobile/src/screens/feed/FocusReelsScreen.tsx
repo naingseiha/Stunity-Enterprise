@@ -1970,9 +1970,76 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
   );
 };
 
+// Inline, votable poll for POLL reels — so a poll isn't a dead-end caption.
+// One tap votes; results (percentage bars + your pick) reveal after voting.
+const ReelPoll: React.FC<{
+  postId?: string;
+  options: { id: string; text: string; votesCount: number }[];
+  votedOptionId?: string | null;
+  accent: string;
+}> = ({ postId, options, votedOptionId, accent }) => {
+  const [voted, setVoted] = useState<string | null>(votedOptionId ?? null);
+  const [counts, setCounts] = useState<Record<string, number>>(
+    () => Object.fromEntries(options.map((o) => [o.id, o.votesCount ?? 0])),
+  );
+  const hasVoted = voted !== null;
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  const vote = async (optionId: string) => {
+    if (hasVoted || !postId) return;
+    setVoted(optionId);
+    setCounts((c) => ({ ...c, [optionId]: (c[optionId] ?? 0) + 1 }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await feedApi.post(`/posts/${postId}/vote`, { optionId });
+      track('reel_poll_vote', { postId });
+    } catch {
+      // best-effort: leave the optimistic state; a refetch will reconcile
+    }
+  };
+
+  return (
+    <View style={styles.reelPoll}>
+      {options.map((o) => {
+        const c = counts[o.id] ?? 0;
+        const pct = total > 0 ? Math.round((c / total) * 100) : 0;
+        const isMine = voted === o.id;
+        return (
+          <TouchableOpacity
+            key={o.id}
+            style={styles.reelPollOption}
+            onPress={() => vote(o.id)}
+            disabled={hasVoted}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isMine, disabled: hasVoted }}
+            accessibilityLabel={hasVoted ? `${o.text}, ${pct}%` : o.text}
+          >
+            {hasVoted && (
+              <View style={[styles.reelPollFill, { width: `${pct}%`, backgroundColor: isMine ? accent : 'rgba(255,255,255,0.16)' }]} />
+            )}
+            <View style={styles.reelPollRow}>
+              <Text style={styles.reelPollText} numberOfLines={1}>{o.text}</Text>
+              {hasVoted && <Text style={styles.reelPollPct}>{pct}%</Text>}
+              {isMine && <Ionicons name="checkmark-circle" size={16} color="#FFF" />}
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+      {hasVoted && (
+        <Text style={styles.reelPollTotal}>{total} {total === 1 ? 'vote' : 'votes'}</Text>
+      )}
+    </View>
+  );
+};
+
 const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   item, isActive, postId, engagement, gradient, shouldMountVideo, muted, pageHeight,
 }) => {
+  const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+  const isPoll = item.postType === 'POLL' && Array.isArray(item.pollOptions) && item.pollOptions.length > 0;
+  const isQuestion = item.postType === 'QUESTION';
   const [tapPaused, setTapPaused] = useState(false);
   const player = useVideoPlayer(item.isVideo && shouldMountVideo ? item.coverUrl : null, (p) => {
     p.loop = true;
@@ -2024,7 +2091,34 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
 
       <View style={styles.bottomDetails}>
         <TypePill type="POST" extra={item.postType} />
-        <Text style={styles.reelTitle} numberOfLines={4}>{item.content}</Text>
+        <Text style={styles.reelTitle} numberOfLines={isPoll ? 3 : 4}>{item.content}</Text>
+
+        {isPoll ? (
+          <ReelPoll
+            postId={postId}
+            options={item.pollOptions}
+            votedOptionId={item.userVotedOptionId}
+            accent={TYPE_LABELS.POST.color}
+          />
+        ) : postId ? (
+          <TouchableOpacity
+            style={styles.reelAnswerCta}
+            onPress={() => navigation.navigate('Comments', { postId })}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={isQuestion
+              ? t('reels.post.answer', { defaultValue: 'Answer this' })
+              : t('reels.post.discuss', { defaultValue: 'Join the discussion' })}
+          >
+            <Ionicons name={isQuestion ? 'chatbubble-ellipses' : 'arrow-forward-circle'} size={16} color="#FFF" />
+            <Text style={styles.reelAnswerCtaText}>
+              {isQuestion
+                ? t('reels.post.answer', { defaultValue: 'Answer this' })
+                : t('reels.post.discuss', { defaultValue: 'Join the discussion' })}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         <Text style={styles.creatorName}>@{item.author?.lastName} {item.author?.firstName}</Text>
       </View>
     </View>
@@ -2140,6 +2234,39 @@ const styles = StyleSheet.create({
   bottomDetails: { position: 'absolute', bottom: 56, left: 16, right: 86, zIndex: 5, elevation: 5, gap: 8 },
   creatorName: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
   reelTitle: { color: '#FFF', fontSize: 19, fontWeight: '800', lineHeight: 25 },
+
+  // Inline poll
+  reelPoll: { width: '100%', gap: 8, marginTop: 4, marginBottom: 2 },
+  reelPollOption: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+    minHeight: 42,
+    justifyContent: 'center',
+  },
+  reelPollFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
+  reelPollRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10 },
+  reelPollText: { color: '#FFF', fontSize: 15, fontWeight: '700', flex: 1 },
+  reelPollPct: { color: '#FFF', fontSize: 14, fontWeight: '800' },
+  reelPollTotal: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 2 },
+
+  // Answer / discuss CTA (question + other post types)
+  reelAnswerCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    marginTop: 2,
+  },
+  reelAnswerCtaText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
   reelSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: '500', lineHeight: 20 },
 
   // Type pills
