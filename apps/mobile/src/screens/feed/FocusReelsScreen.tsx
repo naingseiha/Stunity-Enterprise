@@ -628,27 +628,36 @@ const ReelNextCell: React.FC<{ pageHeight: number }> = ({ pageHeight }) => {
 
 // ─── Empty / error state ───────────────────────────────────────────────
 
-const EmptyState: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
-  <View style={styles.emptyContainer}>
-    <LinearGradient colors={DEFAULT_GRADIENT} style={StyleSheet.absoluteFill} />
-    <Ionicons name="sparkles-outline" size={56} color="rgba(255,255,255,0.6)" />
-    <Text style={styles.emptyTitle}>No reels yet</Text>
-    <Text style={styles.emptyBody}>
-      We couldn't find any learning reels for you right now. Pull down to refresh or come back soon.
-    </Text>
-    <TouchableOpacity style={styles.emptyRetryBtn} onPress={onRetry} activeOpacity={0.85}>
-      <LinearGradient
-        colors={['#A855F7', '#7C3AED']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.submitBtnGradient}
+const EmptyState: React.FC<{ onRetry: () => void }> = ({ onRetry }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.emptyContainer}>
+      <LinearGradient colors={DEFAULT_GRADIENT} style={StyleSheet.absoluteFill} />
+      <Ionicons name="sparkles-outline" size={56} color="rgba(255,255,255,0.6)" />
+      <Text style={styles.emptyTitle}>{t('reels.empty.title', { defaultValue: 'No reels yet' })}</Text>
+      <Text style={styles.emptyBody}>
+        {t('reels.empty.body', { defaultValue: "We couldn't find any learning reels for you right now. Pull down to refresh or come back soon." })}
+      </Text>
+      <TouchableOpacity
+        style={styles.emptyRetryBtn}
+        onPress={onRetry}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={t('reels.empty.retry', { defaultValue: 'Try again' })}
       >
-        <Ionicons name="refresh" size={18} color="#FFF" />
-        <Text style={styles.submitBtnText}>Try again</Text>
-      </LinearGradient>
-    </TouchableOpacity>
-  </View>
-);
+        <LinearGradient
+          colors={['#A855F7', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.submitBtnGradient}
+        >
+          <Ionicons name="refresh" size={18} color="#FFF" />
+          <Text style={styles.submitBtnText}>{t('reels.empty.retry', { defaultValue: 'Try again' })}</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 // ─── Combo Bar (top HUD) ───────────────────────────────────────────────
 
@@ -712,6 +721,7 @@ const ComboBar: React.FC<{ combo: number; dueRecallCount: number }> = ({ combo, 
 };
 
 const ComboFillBurst: React.FC = () => {
+  const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(0.3)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -742,8 +752,8 @@ const ComboFillBurst: React.FC = () => {
         style={styles.comboFillPill}
       >
         <Ionicons name="gift" size={28} color="#FFF" />
-        <Text style={styles.comboFillTitle}>LOOT BOX UNLOCKED</Text>
-        <Text style={styles.comboFillSub}>+50 XP bonus</Text>
+        <Text style={styles.comboFillTitle}>{t('reels.combo.lootUnlocked', { defaultValue: 'LOOT BOX UNLOCKED' })}</Text>
+        <Text style={styles.comboFillSub}>{t('reels.combo.xpBonus', { xp: 50, defaultValue: '+50 XP bonus' })}</Text>
       </LinearGradient>
     </Animated.View>
   );
@@ -875,6 +885,7 @@ const SessionCompleteOverlay: React.FC<{
 // ─── Skeleton loader ───────────────────────────────────────────────────
 
 const SkeletonScreen: React.FC = () => {
+  const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const shimmer = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -906,7 +917,7 @@ const SkeletonScreen: React.FC = () => {
         <Animated.View key={i} style={[styles.skeletonOption, { opacity }]} />
       ))}
       <View style={{ position: 'absolute', bottom: 100 }}>
-        <Text style={styles.skeletonHint}>Crafting your next learning loop…</Text>
+        <Text style={styles.skeletonHint}>{t('reels.skeleton.hint', { defaultValue: 'Crafting your next learning loop…' })}</Text>
       </View>
     </View>
   );
@@ -1062,12 +1073,16 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
       // Server returns the authoritative liked state (it toggles based on
       // existing state, not the request body). Reconcile if we guessed wrong.
       if (res.data && typeof res.data.liked === 'boolean' && res.data.liked !== optimisticLiked) {
-        const corrected = res.data.liked;
-        const correctedCount = corrected ? optimisticCount : Math.max(0, optimisticCount - 1);
+        // Server disagrees with our optimistic guess. Since we only ever toggle,
+        // `corrected !== optimisticLiked` means `corrected === wasLiked` — the
+        // post was ALREADY in the target state, so there is no net change. Snap
+        // both the heart and the count back to their pre-tap values (off-by-one
+        // bugs lived here before: the count and the cache patch diverged).
+        const corrected = res.data.liked; // === wasLiked
         setLiked(corrected);
         setMyReaction(corrected ? 'LIKE' : null);
-        setLikesCount((c) => Math.max(0, c + (corrected === optimisticLiked ? 0 : (corrected ? 2 : -2))));
-        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: correctedCount, myReaction: corrected ? 'LIKE' : null, reactionCounts: reactionCountsFor(corrected ? 'LIKE' : null) });
+        setLikesCount(likesCount);
+        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount, myReaction: corrected ? 'LIKE' : null, reactionCounts: reactionCountsFor(corrected ? 'LIKE' : null) });
       } else {
         patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount, myReaction: optimisticLiked ? 'LIKE' : null, reactionCounts: reactionCountsFor(optimisticLiked ? 'LIKE' : null) });
       }
@@ -1254,7 +1269,7 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
           accessibilityLabel={t('reels.a11y.share', { defaultValue: 'Share' })}
         >
           <Ionicons name="paper-plane-outline" size={horizontal ? 26 : 28} color="#FFF" />
-          {!horizontal && <Text style={styles.sidebarText}>Share</Text>}
+          {!horizontal && <Text style={styles.sidebarText}>{t('reels.actions.share', { defaultValue: 'Share' })}</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -1346,6 +1361,7 @@ const useReelVideoPreload = (
 const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   item, isActive, postId, engagement, onInteract, gradient, shouldMountVideo, muted, pageHeight,
 }) => {
+  const { t } = useTranslation();
   const [questionPoint, setQuestionPoint] = useState<any | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answerStatus, setAnswerStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -1508,14 +1524,14 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
               })}
             </View>
             <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.85}
-              accessibilityRole="button" accessibilityLabel="Submit answer">
+              accessibilityRole="button" accessibilityLabel={t('reels.a11y.submitAnswer', { defaultValue: 'Submit answer' })}>
               <LinearGradient
                 colors={['#A855F7', '#7C3AED']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.submitBtnGradient}
               >
-                <Text style={styles.submitBtnText}>Submit Answer</Text>
+                <Text style={styles.submitBtnText}>{t('reels.actions.submitAnswer', { defaultValue: 'Submit Answer' })}</Text>
                 <Ionicons name="arrow-forward" size={18} color="#FFF" />
               </LinearGradient>
             </TouchableOpacity>
@@ -1555,6 +1571,7 @@ const ReplayBar: React.FC<{ wasCorrect: boolean; onTryAgain: () => void; type: R
 };
 
 const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const { t } = useTranslation();
   const myResponse: MyResponse | undefined = item.myResponse;
   // Seed from the hydrated prior answer so the card replays its answered state
   // on return / cold restart instead of resetting to blank.
@@ -1652,14 +1669,14 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
         </View>
         {selectedOption !== null && !isAnswered && (
           <TouchableOpacity style={[styles.submitBtn, styles.quizSubmitBtn]} onPress={handleSubmit} activeOpacity={0.85}
-            accessibilityRole="button" accessibilityLabel="Submit answer">
+            accessibilityRole="button" accessibilityLabel={t('reels.a11y.submitAnswer', { defaultValue: 'Submit answer' })}>
             <LinearGradient
               colors={['#A855F7', '#7C3AED']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.submitBtnGradient}
             >
-              <Text style={styles.submitBtnText}>Submit Answer</Text>
+              <Text style={styles.submitBtnText}>{t('reels.actions.submitAnswer', { defaultValue: 'Submit Answer' })}</Text>
               <Ionicons name="arrow-forward" size={18} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
@@ -1967,7 +1984,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
         <View style={styles.strengthBar}>
           <View style={[styles.strengthFill, { width: `${strengthPct}%` }]} />
         </View>
-        <Text style={styles.strengthLabel}>Memory · {strengthPct}%</Text>
+        <Text style={styles.strengthLabel}>{t('reels.recall.memory', { pct: strengthPct, defaultValue: 'Memory · {{pct}}%' })}</Text>
 
         {hasOptions ? (
           <>
@@ -2055,16 +2072,18 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
               style={styles.flashcardOuter}
               accessibilityRole="button"
               accessibilityState={{ expanded: isFlipped }}
-              accessibilityLabel={isFlipped ? 'Show question' : 'Reveal answer'}
+              accessibilityLabel={isFlipped
+                ? t('reels.a11y.showQuestion', { defaultValue: 'Show question' })
+                : t('reels.a11y.revealAnswer', { defaultValue: 'Reveal answer' })}
             >
               <Animated.View style={[styles.flashcardFace, { opacity: frontOpacity, transform: [{ rotateY: frontRotate }] }]}>
                 <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
                 {renderPostBodyText(item.question?.question ?? '—', styles.bigQuestionText)}
-                <Text style={styles.tapHint}>Tap to reveal answer</Text>
+                <Text style={styles.tapHint}>{t('reels.recall.tapToReveal', { defaultValue: 'Tap to reveal answer' })}</Text>
               </Animated.View>
               <Animated.View style={[styles.flashcardFace, styles.flashcardBack, { opacity: backOpacity, transform: [{ rotateY: backRotate }] }]}>
                 <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
-                <Text style={styles.flashcardAnswerHeader}>Answer</Text>
+                <Text style={styles.flashcardAnswerHeader}>{t('reels.recall.answerHeader', { defaultValue: 'Answer' })}</Text>
                 {renderPostBodyText(item.question?.options?.[correctIdx] ?? '—', styles.flashcardAnswerText)}
               </Animated.View>
             </TouchableOpacity>
@@ -2072,21 +2091,21 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
             {isFlipped && !graded && (
               <View style={styles.recallActions}>
                 <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}
-                  accessibilityRole="button" accessibilityLabel="Again, plus 1 XP">
+                  accessibilityRole="button" accessibilityLabel={t('reels.a11y.gradeAgain', { xp: 1, defaultValue: 'Again, plus {{xp}} XP' })}>
                   <Ionicons name="refresh" size={16} color="#FFF" />
-                  <Text style={styles.recallBtnText}>Again</Text>
+                  <Text style={styles.recallBtnText}>{t('reels.recall.again', { defaultValue: 'Again' })}</Text>
                   <Text style={styles.recallBtnXp}>+1</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}
-                  accessibilityRole="button" accessibilityLabel={`Good, plus ${xpGood} XP`}>
+                  accessibilityRole="button" accessibilityLabel={t('reels.a11y.gradeGood', { xp: xpGood, defaultValue: 'Good, plus {{xp}} XP' })}>
                   <Ionicons name="checkmark" size={16} color="#FFF" />
-                  <Text style={styles.recallBtnText}>Good</Text>
+                  <Text style={styles.recallBtnText}>{t('reels.recall.good', { defaultValue: 'Good' })}</Text>
                   <Text style={styles.recallBtnXp}>+{xpGood}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}
-                  accessibilityRole="button" accessibilityLabel={`Easy, plus ${xpEasy} XP`}>
+                  accessibilityRole="button" accessibilityLabel={t('reels.a11y.gradeEasy', { xp: xpEasy, defaultValue: 'Easy, plus {{xp}} XP' })}>
                   <Ionicons name="flash" size={16} color="#FFF" />
-                  <Text style={styles.recallBtnText}>Easy</Text>
+                  <Text style={styles.recallBtnText}>{t('reels.recall.easy', { defaultValue: 'Easy' })}</Text>
                   <Text style={styles.recallBtnXp}>+{xpEasy}</Text>
                 </TouchableOpacity>
               </View>
@@ -2097,7 +2116,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
         {graded && (
           <View style={styles.gradedBanner}>
             <Ionicons name="arrow-down-circle" size={18} color="#FDE047" />
-            <Text style={styles.gradedText}>Scroll for the next reel</Text>
+            <Text style={styles.gradedText}>{t('reels.recall.scrollNext', { defaultValue: 'Scroll for the next reel' })}</Text>
           </View>
         )}
       </View>
@@ -2124,6 +2143,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
 const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: string }> = ({
   item, postId, engagement, gradient, bountyId, subject, pageHeight,
 }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const expiresAt = item.expiresAt ? new Date(item.expiresAt) : null;
   const hoursLeft = expiresAt ? Math.max(0, Math.round((expiresAt.getTime() - Date.now()) / 36e5)) : null;
@@ -2143,11 +2163,11 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
       <View style={styles.cardCenterContent}>
         <TypePill type="BOUNTY" extra={`${item.bountyXp} XP`} />
         <View style={styles.bountyMetaRow}>
-          <Text style={styles.recallSubject}>Asked by @{item.asker?.lastName}</Text>
+          <Text style={styles.recallSubject}>{t('reels.bounty.askedBy', { name: item.asker?.lastName ?? '', defaultValue: 'Asked by @{{name}}' })}</Text>
           {hoursLeft != null && (
             <View style={styles.bountyExpiryChip}>
               <Ionicons name="time-outline" size={12} color="#FDE047" />
-              <Text style={styles.bountyExpiryText}>{hoursLeft}h left</Text>
+              <Text style={styles.bountyExpiryText}>{t('reels.bounty.hoursLeft', { count: hoursLeft, defaultValue: '{{count}}h left' })}</Text>
             </View>
           )}
         </View>
@@ -2155,10 +2175,20 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
           <Ionicons name="trophy" size={28} color="#FDE047" style={{ marginBottom: 12 }} />
           {renderPostBodyText(item.questionText, styles.bigQuestionText)}
           {!!item.replyCount && (
-            <Text style={styles.bountyReplyCount}>{item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'} so far</Text>
+            <Text style={styles.bountyReplyCount}>
+              {item.replyCount === 1
+                ? t('reels.bounty.replyOne', { count: item.replyCount, defaultValue: '{{count}} reply so far' })
+                : t('reels.bounty.replyOther', { count: item.replyCount, defaultValue: '{{count}} replies so far' })}
+            </Text>
           )}
         </View>
-        <TouchableOpacity style={styles.submitBtn} activeOpacity={0.85} onPress={openBounty}>
+        <TouchableOpacity
+          style={styles.submitBtn}
+          activeOpacity={0.85}
+          onPress={openBounty}
+          accessibilityRole="button"
+          accessibilityLabel={t('reels.bounty.answerClaim', { defaultValue: 'Answer & claim bounty' })}
+        >
           <LinearGradient
             colors={['#F59E0B', '#EA580C']}
             start={{ x: 0, y: 0 }}
@@ -2166,7 +2196,7 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
             style={styles.submitBtnGradient}
           >
             <Ionicons name="trophy" size={16} color="#FFF" />
-            <Text style={styles.submitBtnText}>Answer & claim bounty</Text>
+            <Text style={styles.submitBtnText}>{t('reels.bounty.answerClaim', { defaultValue: 'Answer & claim bounty' })}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

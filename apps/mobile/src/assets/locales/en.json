@@ -24,14 +24,43 @@
     "recall": {
       "prompt": "Do you remember?",
       "gradePrompt": "How well did you know it?",
+      "again": "Again",
       "good": "Good",
       "easy": "Easy",
+      "tapToReveal": "Tap to reveal answer",
+      "answerHeader": "Answer",
+      "scrollNext": "Scroll for the next reel",
+      "memory": "Memory · {{pct}}%",
       "correct": "Nailed it!",
       "incorrect": "Review again soon"
     },
+    "empty": {
+      "title": "No reels yet",
+      "body": "We couldn't find any learning reels for you right now. Pull down to refresh or come back soon.",
+      "retry": "Try again"
+    },
+    "combo": {
+      "lootUnlocked": "LOOT BOX UNLOCKED",
+      "xpBonus": "+{{xp}} XP bonus"
+    },
+    "skeleton": {
+      "hint": "Crafting your next learning loop…"
+    },
+    "actions": {
+      "share": "Share",
+      "submitAnswer": "Submit Answer"
+    },
+    "bounty": {
+      "askedBy": "Asked by @{{name}}",
+      "hoursLeft": "{{count}}h left",
+      "replyOne": "{{count}} reply so far",
+      "replyOther": "{{count}} replies so far",
+      "answerClaim": "Answer & claim bounty"
+    },
     "post": {
       "answer": "Answer this",
-      "discuss": "Join the discussion"
+      "discuss": "Join the discussion",
+      "takeQuiz": "Take quiz"
     },
     "replay": {
       "answeredAgain": "You answered this before",
@@ -48,7 +77,13 @@
       "reactHint": "Double tap to like, or long press to pick a reaction",
       "comments": "Comments, {{count}}",
       "share": "Share",
-      "loadingNext": "Loading more reels"
+      "loadingNext": "Loading more reels",
+      "submitAnswer": "Submit answer",
+      "revealAnswer": "Reveal answer",
+      "showQuestion": "Show question",
+      "gradeAgain": "Again, plus {{xp}} XP",
+      "gradeGood": "Good, plus {{xp}} XP",
+      "gradeEasy": "Easy, plus {{xp}} XP"
     },
     "create": {
       "title": "Video reel",
