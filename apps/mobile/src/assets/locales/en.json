@@ -21,6 +21,14 @@
       "correct": "Correct!",
       "incorrect": "Not quite"
     },
+    "recall": {
+      "prompt": "Do you remember?",
+      "gradePrompt": "How well did you know it?",
+      "good": "Good",
+      "easy": "Easy",
+      "correct": "Nailed it!",
+      "incorrect": "Review again soon"
+    },
     "a11y": {
       "mute": "Mute",
       "unmute": "Unmute",

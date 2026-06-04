@@ -1702,42 +1702,75 @@ const ClozeCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInt
   );
 };
 
+// Spaced-repetition recall. ACTIVE-RETRIEVAL FIRST: when the card has answer
+// options (the common case — recall cards are seeded from quiz questions), the
+// learner must pick an answer *before* anything is revealed — no passive
+// flip-to-peek. A wrong pick auto-grades 'again' (forgiven by the combo); a
+// correct pick then asks the metacognitive Good/Easy for SM-2. Genuine
+// free-recall cards (no options) fall back to the flip + self-grade.
 const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient, pageHeight }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [graded, setGraded] = useState(false);
+  const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+
+  const options: string[] | undefined = item.question?.options;
+  const hasOptions = Array.isArray(options) && options.length >= 2;
+  const correctIdx: number = item.question?.correctAnswer ?? 0;
+  const explanation: string | undefined = item.question?.explanation;
+  const strengthPct = Math.round((item.recallStrength ?? 0.4) * 100);
+  const xpGood = item.xpReward ?? 5;
+  const xpEasy = Math.round(xpGood * 1.4);
+
+  // MCQ path state
+  const [selected, setSelected] = useState<number | null>(null);
+  // flip path state (free-recall fallback)
+  const [isFlipped, setIsFlipped] = useState(false);
   const flip = useRef(new Animated.Value(0)).current;
+  // shared
+  const [graded, setGraded] = useState(false);
 
   useEffect(() => {
     if (!isActive) {
+      setSelected(null);
       setIsFlipped(false);
       setGraded(false);
       flip.setValue(0);
     }
   }, [isActive, flip]);
 
-  const toggleFlip = () => {
-    if (graded) return;
-    const next = !isFlipped;
-    setIsFlipped(next);
-    if (reduceMotion) {
-      flip.setValue(next ? 1 : 0); // instant face swap, no 3D rotation
-      return;
-    }
-    Animated.spring(flip, { toValue: next ? 1 : 0, tension: 70, friction: 12, useNativeDriver: true }).start();
-  };
+  const isAnswered = selected !== null;
+  const wasCorrect = isAnswered && selected === correctIdx;
 
-  const handleGrade = (grade: 'again' | 'good' | 'easy') => {
+  // Active MCQ: pick first, reveal after. Wrong → auto 'again'; correct waits
+  // for the Good/Easy metacognitive grade.
+  const answer = (idx: number) => {
+    if (isAnswered) return;
+    setSelected(idx);
+    if (idx !== correctIdx) {
+      setGraded(true);
+      if (onInteract) onInteract({ grade: 'again' });
+    }
+  };
+  const gradeCorrect = (grade: 'good' | 'easy') => {
     setGraded(true);
     if (onInteract) onInteract({ grade });
   };
 
+  // Free-recall flip path
+  const toggleFlip = () => {
+    if (graded) return;
+    const next = !isFlipped;
+    setIsFlipped(next);
+    if (reduceMotion) { flip.setValue(next ? 1 : 0); return; }
+    Animated.spring(flip, { toValue: next ? 1 : 0, tension: 70, friction: 12, useNativeDriver: true }).start();
+  };
+  const handleGrade = (grade: 'again' | 'good' | 'easy') => {
+    setGraded(true);
+    if (onInteract) onInteract({ grade });
+  };
   const frontRotate = flip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   const backRotate = flip.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
   const frontOpacity = flip.interpolate({ inputRange: [0, 0.5, 0.5], outputRange: [1, 1, 0] });
   const backOpacity = flip.interpolate({ inputRange: [0.5, 0.5, 1], outputRange: [0, 1, 1] });
-
-  const strengthPct = Math.round((item.recallStrength ?? 0.4) * 100);
 
   return (
     <View style={[styles.reelContainer, { height: pageHeight }]}>
@@ -1751,61 +1784,109 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
         </View>
         <Text style={styles.strengthLabel}>Memory · {strengthPct}%</Text>
 
-        <TouchableOpacity
-          onPress={toggleFlip}
-          activeOpacity={0.95}
-          style={styles.flashcardOuter}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: isFlipped }}
-          accessibilityLabel={isFlipped ? 'Show question' : 'Reveal answer'}
-        >
-          <Animated.View
-            style={[
-              styles.flashcardFace,
-              { opacity: frontOpacity, transform: [{ rotateY: frontRotate }] },
-            ]}
-          >
-            <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
+        {hasOptions ? (
+          <>
+            <Text style={styles.tfPrompt}>{t('reels.recall.prompt', { defaultValue: 'Do you remember?' })}</Text>
             <Text style={styles.bigQuestionText}>{item.question?.question ?? '—'}</Text>
-            <Text style={styles.tapHint}>Tap to reveal answer</Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.flashcardFace,
-              styles.flashcardBack,
-              { opacity: backOpacity, transform: [{ rotateY: backRotate }] },
-            ]}
-          >
-            <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
-            <Text style={styles.flashcardAnswerHeader}>Answer</Text>
-            <Text style={styles.flashcardAnswerText}>
-              {item.question?.options?.[item.question?.correctAnswer ?? 0] ?? '—'}
-            </Text>
-          </Animated.View>
-        </TouchableOpacity>
+            <View style={{ width: '100%', gap: 12 }}>
+              {options!.map((opt: string, idx: number) => {
+                const isCorrect = idx === correctIdx;
+                const isPicked = idx === selected;
+                let bg: string = 'rgba(255,255,255,0.08)';
+                let border: string = 'rgba(255,255,255,0.15)';
+                if (isAnswered) {
+                  if (isCorrect) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
+                  else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+                }
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.quizOptionBtn, { backgroundColor: bg, borderColor: border }]}
+                    onPress={() => answer(idx)}
+                    activeOpacity={0.85}
+                    disabled={isAnswered}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                    accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
+                  >
+                    <View style={styles.optionLetter}>
+                      <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+                    </View>
+                    <Text style={styles.quizOptionText}>{opt}</Text>
+                    {isAnswered && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#FFF" />}
+                    {isAnswered && isPicked && !isCorrect && <Ionicons name="close-circle" size={22} color="#FFF" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-        {isFlipped && !graded && (
-          <View style={styles.recallActions}>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}
-              accessibilityRole="button" accessibilityLabel="Again, plus 1 XP">
-              <Ionicons name="refresh" size={16} color="#FFF" />
-              <Text style={styles.recallBtnText}>Again</Text>
-              <Text style={styles.recallBtnXp}>+1</Text>
+            {isAnswered && wasCorrect && !graded && (
+              <>
+                <Text style={styles.recallGradePrompt}>{t('reels.recall.gradePrompt', { defaultValue: 'How well did you know it?' })}</Text>
+                <View style={styles.recallActions}>
+                  <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => gradeCorrect('good')} activeOpacity={0.85}
+                    accessibilityRole="button" accessibilityLabel={`Good, plus ${xpGood} XP`}>
+                    <Ionicons name="checkmark" size={16} color="#FFF" />
+                    <Text style={styles.recallBtnText}>{t('reels.recall.good', { defaultValue: 'Good' })}</Text>
+                    <Text style={styles.recallBtnXp}>+{xpGood}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => gradeCorrect('easy')} activeOpacity={0.85}
+                    accessibilityRole="button" accessibilityLabel={`Easy, plus ${xpEasy} XP`}>
+                    <Ionicons name="flash" size={16} color="#FFF" />
+                    <Text style={styles.recallBtnText}>{t('reels.recall.easy', { defaultValue: 'Easy' })}</Text>
+                    <Text style={styles.recallBtnXp}>+{xpEasy}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              onPress={toggleFlip}
+              activeOpacity={0.95}
+              style={styles.flashcardOuter}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: isFlipped }}
+              accessibilityLabel={isFlipped ? 'Show question' : 'Reveal answer'}
+            >
+              <Animated.View style={[styles.flashcardFace, { opacity: frontOpacity, transform: [{ rotateY: frontRotate }] }]}>
+                <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
+                <Text style={styles.bigQuestionText}>{item.question?.question ?? '—'}</Text>
+                <Text style={styles.tapHint}>Tap to reveal answer</Text>
+              </Animated.View>
+              <Animated.View style={[styles.flashcardFace, styles.flashcardBack, { opacity: backOpacity, transform: [{ rotateY: backRotate }] }]}>
+                <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
+                <Text style={styles.flashcardAnswerHeader}>Answer</Text>
+                <Text style={styles.flashcardAnswerText}>{item.question?.options?.[correctIdx] ?? '—'}</Text>
+              </Animated.View>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}
-              accessibilityRole="button" accessibilityLabel={`Good, plus ${item.xpReward ?? 5} XP`}>
-              <Ionicons name="checkmark" size={16} color="#FFF" />
-              <Text style={styles.recallBtnText}>Good</Text>
-              <Text style={styles.recallBtnXp}>+{item.xpReward ?? 5}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}
-              accessibilityRole="button" accessibilityLabel={`Easy, plus ${Math.round((item.xpReward ?? 5) * 1.4)} XP`}>
-              <Ionicons name="flash" size={16} color="#FFF" />
-              <Text style={styles.recallBtnText}>Easy</Text>
-              <Text style={styles.recallBtnXp}>+{Math.round((item.xpReward ?? 5) * 1.4)}</Text>
-            </TouchableOpacity>
-          </View>
+
+            {isFlipped && !graded && (
+              <View style={styles.recallActions}>
+                <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityLabel="Again, plus 1 XP">
+                  <Ionicons name="refresh" size={16} color="#FFF" />
+                  <Text style={styles.recallBtnText}>Again</Text>
+                  <Text style={styles.recallBtnXp}>+1</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityLabel={`Good, plus ${xpGood} XP`}>
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                  <Text style={styles.recallBtnText}>Good</Text>
+                  <Text style={styles.recallBtnXp}>+{xpGood}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityLabel={`Easy, plus ${xpEasy} XP`}>
+                  <Ionicons name="flash" size={16} color="#FFF" />
+                  <Text style={styles.recallBtnText}>Easy</Text>
+                  <Text style={styles.recallBtnXp}>+{xpEasy}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
+
         {graded && (
           <View style={styles.gradedBanner}>
             <Ionicons name="arrow-down-circle" size={18} color="#FDE047" />
@@ -1813,6 +1894,19 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
           </View>
         )}
       </View>
+      {/* Absolute-positioned — sits above the sidebar, so it must be a direct
+          child of the card root (not nested in cardCenterContent). */}
+      {isAnswered && !!explanation && (
+        <View style={styles.explanationCard}>
+          <View style={styles.explanationHeader}>
+            <Ionicons name={wasCorrect ? 'checkmark-circle' : 'information-circle'} size={18} color={wasCorrect ? '#10B981' : '#FDE047'} />
+            <Text style={[styles.explanationTitle, { color: wasCorrect ? '#10B981' : '#FDE047' }]}>
+              {wasCorrect ? t('reels.recall.correct', { defaultValue: 'Nailed it!' }) : t('reels.recall.incorrect', { defaultValue: 'Review again soon' })}
+            </Text>
+          </View>
+          <Text style={styles.explanationBody}>{explanation}</Text>
+        </View>
+      )}
       <View style={styles.bottomHorizontalBarContainer}>
         <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.RECALL_CARD.color} />
       </View>
@@ -2178,6 +2272,7 @@ const styles = StyleSheet.create({
   tapHint: { color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
   flashcardAnswerHeader: { color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
   flashcardAnswerText: { color: '#10B981', fontSize: 22, fontWeight: '900', textAlign: 'center' },
+  recallGradePrompt: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700', marginTop: 18, textAlign: 'center' },
   recallActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' },
   recallBtn: { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 12, paddingHorizontal: 6, borderRadius: 16 },
   recallBtnForgot: { backgroundColor: 'rgba(239,68,68,0.85)' },
