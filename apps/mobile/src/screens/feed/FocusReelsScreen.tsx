@@ -1971,7 +1971,9 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
 };
 
 // Inline, votable poll for POLL reels — so a poll isn't a dead-end caption.
-// One tap votes; results (percentage bars + your pick) reveal after voting.
+// Styled to match the quiz card: full-width, letter-badged options on a
+// centered card. One tap votes; results (percentage fill + your pick) reveal
+// after voting.
 const ReelPoll: React.FC<{
   postId?: string;
   options: { id: string; text: string; votesCount: number }[];
@@ -1999,15 +2001,16 @@ const ReelPoll: React.FC<{
   };
 
   return (
-    <View style={styles.reelPoll}>
-      {options.map((o) => {
+    <View style={{ width: '100%', gap: 12 }}>
+      {options.map((o, idx) => {
         const c = counts[o.id] ?? 0;
         const pct = total > 0 ? Math.round((c / total) * 100) : 0;
         const isMine = voted === o.id;
+        const border = isMine ? accent : 'rgba(255,255,255,0.15)';
         return (
           <TouchableOpacity
             key={o.id}
-            style={styles.reelPollOption}
+            style={[styles.quizOptionBtn, styles.pollOptionBtn, { borderColor: border }]}
             onPress={() => vote(o.id)}
             disabled={hasVoted}
             activeOpacity={0.85}
@@ -2016,13 +2019,14 @@ const ReelPoll: React.FC<{
             accessibilityLabel={hasVoted ? `${o.text}, ${pct}%` : o.text}
           >
             {hasVoted && (
-              <View style={[styles.reelPollFill, { width: `${pct}%`, backgroundColor: isMine ? accent : 'rgba(255,255,255,0.16)' }]} />
+              <View style={[styles.pollFill, { width: `${pct}%`, backgroundColor: isMine ? accent : 'rgba(255,255,255,0.16)' }]} />
             )}
-            <View style={styles.reelPollRow}>
-              <Text style={styles.reelPollText} numberOfLines={1}>{o.text}</Text>
-              {hasVoted && <Text style={styles.reelPollPct}>{pct}%</Text>}
-              {isMine && <Ionicons name="checkmark-circle" size={16} color="#FFF" />}
+            <View style={styles.optionLetter}>
+              <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
             </View>
+            <Text style={styles.quizOptionText} numberOfLines={2}>{o.text}</Text>
+            {hasVoted && <Text style={styles.pollPct}>{pct}%</Text>}
+            {isMine && <Ionicons name="checkmark-circle" size={20} color="#FFF" />}
           </TouchableOpacity>
         );
       })}
@@ -2040,6 +2044,17 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   const navigation = useNavigation<any>();
   const isPoll = item.postType === 'POLL' && Array.isArray(item.pollOptions) && item.pollOptions.length > 0;
   const isQuestion = item.postType === 'QUESTION';
+  // A quiz reel deep-links into the full scored quiz (QuizDetails self-hydrates
+  // from the id) — the same "Take Quiz" destination the news feed uses — rather
+  // than dead-ending at the discuss CTA.
+  const isQuiz = item.postType === 'QUIZ' && !!item.quizId;
+  const openQuiz = useCallback(() => {
+    if (!item.quizId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate('QuizDetails', {
+      quiz: { id: item.quizId, title: item.title || undefined, description: item.content },
+    });
+  }, [navigation, item.quizId, item.title, item.content]);
   const [tapPaused, setTapPaused] = useState(false);
   const player = useVideoPlayer(item.isVideo && shouldMountVideo ? item.coverUrl : null, (p) => {
     p.loop = true;
@@ -2059,6 +2074,31 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
     if (isActive && !tapPaused) player.play();
     else player.pause();
   }, [isActive, item.isVideo, player, shouldMountVideo, tapPaused]);
+
+  // Polls render as a centered card — same layout language as the quiz card
+  // (TypePill, big prompt, full-width letter-badged options, horizontal action
+  // bar) — so a poll reads as a first-class interactive card, not a caption.
+  if (isPoll) {
+    return (
+      <View style={[styles.reelContainer, { height: pageHeight }]}>
+        <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
+        <View style={styles.cardCenterContent}>
+          <TypePill type="POST" extra="POLL" />
+          <Text style={styles.bigQuestionText}>{item.content}</Text>
+          <ReelPoll
+            postId={postId}
+            options={item.pollOptions}
+            votedOptionId={item.userVotedOptionId}
+            accent={TYPE_LABELS.POST.color}
+          />
+          <Text style={styles.creatorName}>@{item.author?.lastName} {item.author?.firstName}</Text>
+        </View>
+        <View style={styles.bottomHorizontalBarContainer}>
+          <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.POST.color} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.reelContainer, { height: pageHeight }]}>
@@ -2091,15 +2131,23 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
 
       <View style={styles.bottomDetails}>
         <TypePill type="POST" extra={item.postType} />
-        <Text style={styles.reelTitle} numberOfLines={isPoll ? 3 : 4}>{item.content}</Text>
+        <Text style={styles.reelTitle} numberOfLines={4}>{item.content}</Text>
 
-        {isPoll ? (
-          <ReelPoll
-            postId={postId}
-            options={item.pollOptions}
-            votedOptionId={item.userVotedOptionId}
-            accent={TYPE_LABELS.POST.color}
-          />
+        {isQuiz ? (
+          <TouchableOpacity
+            style={styles.reelQuizCta}
+            onPress={openQuiz}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('reels.post.takeQuiz', { defaultValue: 'Take quiz' })}
+          >
+            <Ionicons name="rocket" size={16} color="#FFF" />
+            <Text style={styles.reelAnswerCtaText}>
+              {t('reels.post.takeQuiz', { defaultValue: 'Take quiz' })}
+              {item.quizQuestionCount ? ` · ${item.quizQuestionCount} Qs` : ''}
+            </Text>
+            <Ionicons name="arrow-forward" size={15} color="rgba(255,255,255,0.85)" />
+          </TouchableOpacity>
         ) : postId ? (
           <TouchableOpacity
             style={styles.reelAnswerCta}
@@ -2235,21 +2283,14 @@ const styles = StyleSheet.create({
   creatorName: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
   reelTitle: { color: '#FFF', fontSize: 19, fontWeight: '800', lineHeight: 25 },
 
-  // Inline poll
-  reelPoll: { width: '100%', gap: 8, marginTop: 4, marginBottom: 2 },
-  reelPollOption: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  // Poll (quiz-card style) — the option fill bar sits behind the row, so the
+  // button needs to clip its overflow and the letter/text/pct stay above it.
+  pollOptionBtn: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
-    minHeight: 42,
-    justifyContent: 'center',
   },
-  reelPollFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  reelPollRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10 },
-  reelPollText: { color: '#FFF', fontSize: 15, fontWeight: '700', flex: 1 },
-  reelPollPct: { color: '#FFF', fontSize: 14, fontWeight: '800' },
+  pollFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
+  pollPct: { color: '#FFF', fontSize: 15, fontWeight: '800' },
   reelPollTotal: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 2 },
 
   // Answer / discuss CTA (question + other post types)
@@ -2267,6 +2308,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   reelAnswerCtaText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  // Quiz "Take quiz" CTA — accented (vs the translucent discuss CTA) so the
+  // primary action on a quiz reel reads as the news-feed "Take Quiz" button.
+  reelQuizCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(16,185,129,0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.6)',
+    marginTop: 2,
+  },
   reelSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: '500', lineHeight: 20 },
 
   // Type pills

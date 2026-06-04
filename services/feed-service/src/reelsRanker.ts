@@ -433,6 +433,13 @@ export class ReelsRanker {
           select: { id: true, text: true, votesCount: true },
           orderBy: { position: 'asc' },
         },
+        // QUIZ posts: pull the Quiz row so a quiz reel can deep-link into the
+        // full scored quiz (QuizDetails) — same "Take Quiz" path the news feed
+        // uses — instead of dead-ending at the generic discuss CTA.
+        quiz: {
+          select: { id: true, questions: true },
+        },
+        title: true,
       },
     });
 
@@ -650,6 +657,9 @@ function toClozeDto(q: any): ReelDto {
 function toPostDto(p: any): ReelDto {
   const firstMedia: string | undefined = p.mediaUrls?.[0];
   const isVideo = firstMedia ? /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(firstMedia) : false;
+  // QUIZ posts carry the backing Quiz so the reel can deep-link into the full
+  // scored quiz. questionCount lets mobile label the CTA ("Take quiz · N Qs").
+  const quizQuestionCount = Array.isArray(p.quiz?.questions) ? p.quiz.questions.length : 0;
   return {
     id: p.id,
     type: 'POST',
@@ -666,6 +676,7 @@ function toPostDto(p: any): ReelDto {
     payload: {
       postType: p.postType,
       content: p.content,
+      title: p.title ?? null,
       mediaUrls: p.mediaUrls ?? [],
       coverUrl: firstMedia,
       isVideo,
@@ -674,6 +685,10 @@ function toPostDto(p: any): ReelDto {
       // votable inline; null/empty for every other post type.
       pollOptions: p.postType === 'POLL' ? (p.pollOptions ?? []) : undefined,
       userVotedOptionId: p.userVotedOptionId ?? null,
+      // QUIZ posts: the Quiz id (for the QuizDetails deep-link) + question count.
+      // Absent on non-quiz posts so mobile only shows the "Take quiz" CTA here.
+      quizId: p.quiz?.id ?? undefined,
+      quizQuestionCount: p.quiz ? quizQuestionCount : undefined,
     },
   };
 }
