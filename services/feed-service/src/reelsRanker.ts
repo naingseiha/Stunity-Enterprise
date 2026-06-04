@@ -476,6 +476,64 @@ export class ReelsRanker {
   }
 }
 
+// ── Option shuffling ─────────────────────────────────────────────────
+// Authored/seeded questions often store the correct answer at a fixed index
+// (the seed pool is all correctAnswer=0), which makes a multiple-choice card
+// gameable — "always tap A". Shuffle the options *deterministically* per
+// question id so the order is stable across pagination and cache regenerations
+// (a learner never sees the same card reorder), while the correct answer no
+// longer sits in a predictable slot. True/False is never shuffled.
+const SHUFFLE_OPTIONS_ENABLED = process.env.REELS_SHUFFLE_OPTIONS !== 'false';
+
+/** FNV-1a string hash → 32-bit seed. */
+function hashToSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** mulberry32 — a tiny deterministic PRNG. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Deterministically shuffle `options`, remapping `correctAnswer` to the new
+ * index of the originally-correct option. Stable per `seed` (the question id).
+ * No-op for <2 options, an out-of-range correctAnswer, or when disabled.
+ */
+function shuffleOptions(
+  options: unknown,
+  correctAnswer: number,
+  seed: string,
+): { options: any; correctAnswer: number } {
+  if (!SHUFFLE_OPTIONS_ENABLED || !Array.isArray(options) || options.length < 2) {
+    return { options, correctAnswer };
+  }
+  if (correctAnswer < 0 || correctAnswer >= options.length) {
+    return { options, correctAnswer };
+  }
+  const rand = mulberry32(hashToSeed(seed));
+  const order = options.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return {
+    options: order.map((i) => options[i]),
+    correctAnswer: order.indexOf(correctAnswer),
+  };
+}
+
 // ── DTO mappers ──────────────────────────────────────────────────────
 
 function toFocusReelDto(r: any): ReelDto {
@@ -513,8 +571,9 @@ function toRecallDto(c: any): ReelDto {
         ? {
             id: c.question.id,
             question: c.question.question,
-            options: c.question.options,
-            correctAnswer: c.question.correctAnswer,
+            // Shuffle by the question id so the order matches the same question
+            // wherever it appears (quiz or recall) and is stable across pages.
+            ...shuffleOptions(c.question.options, c.question.correctAnswer, c.question.id),
             explanation: c.question.explanation,
           }
         : null,
@@ -531,8 +590,7 @@ function toQuizDto(q: any, _userId: string): ReelDto {
     postId: q.postId,
     payload: {
       question: q.question,
-      options: q.options,
-      correctAnswer: q.correctAnswer,
+      ...shuffleOptions(q.options, q.correctAnswer, q.id),
       explanation: q.explanation,
       points: q.points,
     },
@@ -568,8 +626,7 @@ function toClozeDto(q: any): ReelDto {
       // The sentence with the blank marker (a run of underscores); mobile splits
       // on it to render the gap, then fills it with the chosen word on answer.
       sentence: q.question,
-      options: q.options,
-      correctAnswer: q.correctAnswer,
+      ...shuffleOptions(q.options, q.correctAnswer, q.id),
       explanation: q.explanation,
       points: q.points,
     },
