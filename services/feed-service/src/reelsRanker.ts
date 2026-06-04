@@ -20,7 +20,20 @@
 import { PrismaClient } from '@prisma/client';
 import { fetchReactionCounts } from './utils/reactionCounts';
 
-export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'TF_CARD' | 'BOUNTY' | 'POST';
+export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'TF_CARD' | 'CLOZE_CARD' | 'BOUNTY' | 'POST';
+
+/**
+ * A cloze (fill-in-the-blank) card is a QuizQuestion whose `question` contains a
+ * blank — a run of ≥3 underscores — with the answer choices in `options`. The
+ * underscores read naturally everywhere (feed, post body), so there's no schema
+ * change and no ugly sentinel token. Mobile renders the sentence with the blank
+ * filled on answer. Detection is a substring match (kept in sync with the DB
+ * `contains` filter in fetchCloze/fetchQuizzes).
+ */
+export const CLOZE_BLANK = '___';
+function isCloze(question: unknown): boolean {
+  return typeof question === 'string' && question.includes(CLOZE_BLANK);
+}
 
 /**
  * Canonical sentinel options that mark a QuizQuestion as a True/False card.
@@ -44,6 +57,8 @@ function isTrueFalse(options: unknown): boolean {
 // Env kill-switch (feed-service has no flag registry — mirrors REELS_RECALL_SEED).
 // When off, the TF_CARD slot degrades to the next learning type (a quiz).
 const TF_CARDS_ENABLED = process.env.REELS_TF_CARDS !== 'false';
+// When off, the CLOZE_CARD slot degrades to the next learning type.
+const CLOZE_CARDS_ENABLED = process.env.REELS_CLOZE_CARDS !== 'false';
 
 // Personalize the quiz/TF/video pools toward the learner's weakest subjects
 // (lowest avg recallStrength across their RecallCards). When off — or for a new
@@ -121,11 +136,12 @@ export interface GenerateOptions {
 // the reward. Video (FOCUS_REEL) is one small accent, not the headline — other
 // apps own video; our edge is that every swipe teaches/tests.
 //
-// 6/10 slots are active retrieval (recall ×3, quiz ×2, true/false ×1), 1
-// challenge (bounty), 1 video, 2 posts (knowledge-dense posts as connective
-// tissue). TF_CARD is the fast, one-tap game-feel rep that varies the rhythm.
-// Empty pools fall back to the next LEARNING type first (see fallbackOrder), so
-// a thin pool degrades to another learning card before a passive post.
+// 6/10 slots are active retrieval (recall ×3, quiz ×1, true/false ×1, cloze ×1),
+// 1 challenge (bounty), 1 video, 2 posts (knowledge-dense posts as connective
+// tissue). TF_CARD and CLOZE_CARD are the fast, game-feel reps that vary the
+// rhythm — TF is recognition, cloze adds the generation effect. Empty pools fall
+// back to the next LEARNING type first (see fallbackOrder), so a thin pool
+// degrades to another learning card before a passive post.
 const SLOT_PATTERN: ReelType[] = [
   'RECALL_CARD',
   'QUIZ_QUESTION',
@@ -135,7 +151,7 @@ const SLOT_PATTERN: ReelType[] = [
   'FOCUS_REEL',
   'RECALL_CARD',
   'BOUNTY',
-  'QUIZ_QUESTION',
+  'CLOZE_CARD',
   'POST',
 ];
 
@@ -183,11 +199,12 @@ export class ReelsRanker {
     // Compute how many of each type we need from the slot pattern window.
     const counts = countSlotsInWindow(slotOffset, limit);
 
-    const [discovery, recall, quizzes, trueFalse, bounties, social, posts] = await Promise.all([
+    const [discovery, recall, quizzes, trueFalse, cloze, bounties, social, posts] = await Promise.all([
       time('discovery', () => this.fetchDiscovery(subject, counts.FOCUS_REEL, userId, weakSubjects, seen)),
       time('recall', () => this.fetchReinforcement(userId, subject, counts.RECALL_CARD, seen)),
       time('quizzes', () => this.fetchQuizzes(subject, counts.QUIZ_QUESTION, weakSubjects, seen)),
       time('truefalse', () => this.fetchTrueFalse(subject, counts.TF_CARD, weakSubjects, seen)),
+      time('cloze', () => this.fetchCloze(subject, counts.CLOZE_CARD, weakSubjects, seen)),
       time('challenges', () => this.fetchChallenges(subject, counts.BOUNTY, seen)),
       time('social', () => this.fetchSocial(user?.schoolId ?? null, subject, counts.FOCUS_REEL, seen)),
       time('posts', () => this.fetchPostReels(userId, subject, counts.POST, seen)),
@@ -202,6 +219,7 @@ export class ReelsRanker {
       RECALL_CARD: recall.map(toRecallDto),
       QUIZ_QUESTION: quizzes.map((q) => toQuizDto(q, userId)),
       TF_CARD: trueFalse.map(toTfDto),
+      CLOZE_CARD: cloze.map(toClozeDto),
       BOUNTY: bounties.map(toBountyDto),
       POST: posts.map(toPostDto),
     };
@@ -319,12 +337,40 @@ export class ReelsRanker {
    */
   private async fetchQuizzes(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set(), seen: string[] = []) {
     if (take <= 0 || subject) return [];
-    // Exclude True/False cards — they're surfaced as their own TF_CARD type, not
-    // as a literal 2-option ("TRUE"/"FALSE") multiple-choice quiz.
+    // Plain MCQ only — exclude True/False (sentinel options) and cloze (blank in
+    // the question); each surfaces as its own card type.
     const rows = await this.prismaRead.quizQuestion.findMany({
-      where: { NOT: { options: { equals: [...TF_OPTIONS] } }, ...notSeen(seen) },
+      where: {
+        AND: [
+          { NOT: { options: { equals: [...TF_OPTIONS] } } },
+          { NOT: { question: { contains: CLOZE_BLANK } } },
+        ],
+        ...notSeen(seen),
+      },
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 8, 24), // overfetch so a weak-subject card buried past the newest few still surfaces
+      include: {
+        post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
+      },
+    });
+    return biasBySubjects(rows, weakSubjects, subjectOfQuiz, take);
+  }
+
+  /**
+   * Cloze (fill-in-the-blank) cards: QuizQuestions whose question contains the
+   * blank marker, with the answer choices in options. Adds the generation
+   * effect to the active-retrieval mix. Env-gated (REELS_CLOZE_CARDS).
+   */
+  private async fetchCloze(subject: string | undefined, take: number, weakSubjects: Set<string> = new Set(), seen: string[] = []) {
+    if (take <= 0 || subject || !CLOZE_CARDS_ENABLED) return [];
+    const rows = await this.prismaRead.quizQuestion.findMany({
+      where: {
+        question: { contains: CLOZE_BLANK },
+        NOT: { options: { equals: [...TF_OPTIONS] } },
+        ...notSeen(seen),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.max(take * 8, 24),
       include: {
         post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
       },
@@ -511,6 +557,25 @@ function toTfDto(q: any): ReelDto {
   };
 }
 
+function toClozeDto(q: any): ReelDto {
+  return {
+    id: q.id,
+    type: 'CLOZE_CARD',
+    subject: q.post?.courseCode ?? 'general',
+    createdAt: q.createdAt.toISOString(),
+    postId: q.postId,
+    payload: {
+      // The sentence with the blank marker (a run of underscores); mobile splits
+      // on it to render the gap, then fills it with the chosen word on answer.
+      sentence: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation,
+      points: q.points,
+    },
+  };
+}
+
 function toPostDto(p: any): ReelDto {
   const firstMedia: string | undefined = p.mediaUrls?.[0];
   const isVideo = firstMedia ? /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(firstMedia) : false;
@@ -592,6 +657,7 @@ function countSlotsInWindow(offset: number, limit: number): Record<ReelType, num
     RECALL_CARD: 0,
     QUIZ_QUESTION: 0,
     TF_CARD: 0,
+    CLOZE_CARD: 0,
     BOUNTY: 0,
     POST: 0,
   };
@@ -615,7 +681,7 @@ function weaveByPattern(
   // Learning-first fallback: when a slot's pool is empty, fill it with the next
   // ACTIVE-RETRIEVAL type before falling back to a passive post, so a thin pool
   // degrades to "still a learning rep" rather than "another post to scroll past".
-  const fallbackOrder: ReelType[] = ['QUIZ_QUESTION', 'TF_CARD', 'RECALL_CARD', 'BOUNTY', 'POST', 'FOCUS_REEL'];
+  const fallbackOrder: ReelType[] = ['QUIZ_QUESTION', 'TF_CARD', 'CLOZE_CARD', 'RECALL_CARD', 'BOUNTY', 'POST', 'FOCUS_REEL'];
   const out: ReelDto[] = [];
 
   for (let i = 0; i < limit; i++) {

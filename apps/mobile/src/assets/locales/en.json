@@ -16,6 +16,11 @@
       "correct": "Correct!",
       "incorrect": "Not quite"
     },
+    "cloze": {
+      "prompt": "Fill in the blank",
+      "correct": "Correct!",
+      "incorrect": "Not quite"
+    },
     "a11y": {
       "mute": "Mute",
       "unmute": "Unmute",
@@ -70,11 +75,15 @@
       "hint": "A great question takes ~10 seconds and gives every learner a rep.",
       "formatMcq": "Multiple choice",
       "formatTf": "True / False",
+      "formatCloze": "Fill the blank",
       "fieldQuestion": "Question",
       "questionPlaceholder": "e.g. What organelle powers the cell?",
       "fieldStatement": "Statement",
       "statementPlaceholder": "e.g. The mitochondria is the powerhouse of the cell.",
+      "fieldSentence": "Sentence (use ___ for the blank)",
+      "sentencePlaceholder": "e.g. The powerhouse of the cell is the ___.",
       "fieldOptions": "Options (tap the circle to mark correct)",
+      "fieldWords": "Word choices (tap the circle to mark the answer)",
       "fieldAnswer": "Correct answer",
       "option": "Option",
       "addOption": "Add option",
@@ -84,6 +93,8 @@
       "cantPublish": "Can't publish yet",
       "errNoQuestion": "Write a question.",
       "errNoStatement": "Write a statement.",
+      "errNoSentence": "Write a sentence.",
+      "errNoBlank": "Mark the blank with ___ (3+ underscores).",
       "errOptions": "Add at least 2 options.",
       "errCorrect": "Mark the correct answer.",
       "publishedTitle": "Card published!",

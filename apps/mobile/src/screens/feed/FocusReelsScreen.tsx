@@ -85,6 +85,7 @@ const TYPE_LABELS: Record<ReelType, { label: string; color: string }> = {
   RECALL_CARD: { label: 'FLASHCARD', color: '#3B82F6' },
   QUIZ_QUESTION: { label: 'QUICK QUIZ', color: '#10B981' },
   TF_CARD: { label: 'TRUE OR FALSE', color: '#22D3EE' },
+  CLOZE_CARD: { label: 'FILL THE BLANK', color: '#F472B6' },
   BOUNTY: { label: 'BOUNTY', color: '#F59E0B' },
   POST: { label: 'POST', color: '#EC4899' },
 };
@@ -871,6 +872,8 @@ const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onIntera
       return <QuizCardItem {...common} />;
     case 'TF_CARD':
       return <TrueFalseCardItem {...common} />;
+    case 'CLOZE_CARD':
+      return <ClozeCardItem {...common} />;
     case 'RECALL_CARD':
       return <RecallCardItem {...common} bountyId={item.id} />;
     case 'BOUNTY':
@@ -1611,6 +1614,94 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
   );
 };
 
+// Cloze (fill-in-the-blank) — adds the generation effect to the mix. The
+// sentence shows a gap; tapping a word from the bank fills it (one tap commits,
+// like the TF card). Backed by a QuizQuestion whose question holds the blank, so
+// it feeds the same SM-2 recall loop + mastery.
+const ClozeCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const { t } = useTranslation();
+  const [picked, setPicked] = useState<number | null>(null);
+  const isAnswered = picked !== null;
+  const wasCorrect = isAnswered && picked === item.correctAnswer;
+
+  const [before, ...rest] = String(item.sentence ?? '').split(/_{3,}/);
+  const after = rest.join(' ');
+  const blankWord = isAnswered ? (item.options?.[picked!] ?? '') : '______';
+
+  const handleTap = (idx: number) => {
+    if (isAnswered) return;
+    setPicked(idx);
+    const correct = idx === item.correctAnswer;
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
+  };
+
+  return (
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
+      <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
+      <View style={styles.cardCenterContent}>
+        <TypePill type="CLOZE_CARD" extra={`+${item.points || 10} XP`} />
+        <Text style={styles.tfPrompt}>{t('reels.cloze.prompt', { defaultValue: 'Fill in the blank' })}</Text>
+        <Text style={styles.bigQuestionText}>
+          {before}
+          <Text style={[
+            styles.clozeBlank,
+            isAnswered && { color: wasCorrect ? '#10B981' : '#EF4444' },
+          ]}>
+            {blankWord}
+          </Text>
+          {after}
+        </Text>
+        <View style={styles.clozeOptionsWrap}>
+          {(item.options ?? []).map((opt: string, idx: number) => {
+            const isCorrect = idx === item.correctAnswer;
+            const isPicked = idx === picked;
+            let bg: string = 'rgba(255,255,255,0.10)';
+            let border: string = 'rgba(255,255,255,0.18)';
+            if (isAnswered) {
+              if (isCorrect) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
+              else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+            }
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={[styles.clozeOptionChip, { backgroundColor: bg, borderColor: border }]}
+                onPress={() => handleTap(idx)}
+                activeOpacity={0.85}
+                disabled={isAnswered}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                accessibilityLabel={opt}
+              >
+                <Text style={styles.clozeOptionText}>{opt}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+      {isAnswered && !!item.explanation && (
+        <View style={styles.explanationCard}>
+          <View style={styles.explanationHeader}>
+            <Ionicons
+              name={wasCorrect ? 'checkmark-circle' : 'information-circle'}
+              size={18}
+              color={wasCorrect ? '#10B981' : '#FDE047'}
+            />
+            <Text style={[styles.explanationTitle, { color: wasCorrect ? '#10B981' : '#FDE047' }]}>
+              {wasCorrect
+                ? t('reels.cloze.correct', { defaultValue: 'Correct!' })
+                : t('reels.cloze.incorrect', { defaultValue: 'Not quite' })}
+            </Text>
+          </View>
+          <Text style={styles.explanationBody}>{item.explanation}</Text>
+        </View>
+      )}
+      <View style={styles.bottomHorizontalBarContainer}>
+        <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.CLOZE_CARD.color} />
+      </View>
+    </View>
+  );
+};
+
 const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient, pageHeight }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [graded, setGraded] = useState(false);
@@ -2034,6 +2125,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tfBtnText: { color: '#FFF', fontSize: 20, fontWeight: '800', letterSpacing: 0.3 },
+
+  // Cloze (fill-in-the-blank)
+  clozeBlank: { color: '#FDE047', fontWeight: '900', textDecorationLine: 'underline' },
+  clozeOptionsWrap: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 12 },
+  clozeOptionChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  clozeOptionText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
 
   // Quiz
   quizOptionBtn: {

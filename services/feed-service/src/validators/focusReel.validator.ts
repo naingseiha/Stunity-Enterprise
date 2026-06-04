@@ -59,12 +59,17 @@ export const createQuestionCardSchema = z
     explanation: z.string().trim().max(1000).optional(),
     subject: z.string().trim().min(1).max(40),
     points: z.number().int().min(1).max(100).optional().default(10),
-    // 'TF' = one-tap True/False card; 'MCQ' (default) = standard multiple choice.
-    format: z.enum(['MCQ', 'TF']).optional().default('MCQ'),
+    // 'TF' = one-tap True/False; 'CLOZE' = fill-in-the-blank (question must
+    // contain a blank — a run of ≥3 underscores); 'MCQ' (default) = multiple choice.
+    format: z.enum(['MCQ', 'TF', 'CLOZE']).optional().default('MCQ'),
   })
   .refine((c) => c.format === 'TF' || (!!c.options && c.options.length >= 2), {
-    message: 'options are required for a multiple-choice card',
+    message: 'options are required for a multiple-choice or cloze card',
     path: ['options'],
+  })
+  .refine((c) => c.format !== 'CLOZE' || /_{3,}/.test(c.question), {
+    message: 'a cloze card’s question must contain a blank (e.g. ___)',
+    path: ['question'],
   })
   .refine(
     (c) => (c.format === 'TF' ? c.correctAnswer <= 1 : c.correctAnswer < (c.options?.length ?? 0)),

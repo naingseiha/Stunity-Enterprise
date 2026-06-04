@@ -99,8 +99,8 @@ export interface CreateQuestionCardInput {
   explanation?: string;
   subject: string;
   points?: number;
-  /** 'TF' = one-tap True/False card; 'MCQ' (default) = multiple choice. */
-  format?: 'MCQ' | 'TF';
+  /** 'TF' = True/False; 'CLOZE' = fill-in-the-blank; 'MCQ' (default) = multiple choice. */
+  format?: 'MCQ' | 'TF' | 'CLOZE';
 }
 
 /**

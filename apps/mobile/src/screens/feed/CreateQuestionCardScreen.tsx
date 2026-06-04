@@ -43,7 +43,7 @@ export const CreateQuestionCardScreen: React.FC = () => {
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
-  const [format, setFormat] = useState<'MCQ' | 'TF'>('MCQ');
+  const [format, setFormat] = useState<'MCQ' | 'TF' | 'CLOZE'>('MCQ');
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
   const [correctAnswer, setCorrectAnswer] = useState(0);
@@ -53,6 +53,7 @@ export const CreateQuestionCardScreen: React.FC = () => {
   const [subject, setSubject] = useState<string>('general');
   const [submitting, setSubmitting] = useState(false);
   const isTF = format === 'TF';
+  const isCloze = format === 'CLOZE';
 
   const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -75,12 +76,17 @@ export const CreateQuestionCardScreen: React.FC = () => {
       if (!question.trim()) return t('reels.createCard.errNoStatement', { defaultValue: 'Write a statement.' });
       return null;
     }
-    if (!question.trim()) return t('reels.createCard.errNoQuestion', { defaultValue: 'Write a question.' });
+    if (isCloze) {
+      if (!question.trim()) return t('reels.createCard.errNoSentence', { defaultValue: 'Write a sentence.' });
+      if (!/_{3,}/.test(question)) return t('reels.createCard.errNoBlank', { defaultValue: 'Mark the blank with ___ (3+ underscores).' });
+    } else if (!question.trim()) {
+      return t('reels.createCard.errNoQuestion', { defaultValue: 'Write a question.' });
+    }
     const filled = options.filter((o) => o.trim());
     if (filled.length < 2) return t('reels.createCard.errOptions', { defaultValue: 'Add at least 2 options.' });
     if (!options[correctAnswer]?.trim()) return t('reels.createCard.errCorrect', { defaultValue: 'Mark the correct answer.' });
     return null;
-  }, [isTF, question, options, correctAnswer, t]);
+  }, [isTF, isCloze, question, options, correctAnswer, t]);
 
   const canPublish = !validationError && !submitting;
 
@@ -108,9 +114,9 @@ export const CreateQuestionCardScreen: React.FC = () => {
           correctAnswer: Math.min(correctAnswer, cleanOptions.length - 1),
           explanation: explanation.trim() || undefined,
           subject,
-          format: 'MCQ',
+          format: isCloze ? 'CLOZE' : 'MCQ',
         });
-        track('question_card_created', { subject, format: 'mcq', options: cleanOptions.length });
+        track('question_card_created', { subject, format: isCloze ? 'cloze' : 'mcq', options: cleanOptions.length });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
@@ -127,7 +133,7 @@ export const CreateQuestionCardScreen: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [validationError, isTF, options, question, correctAnswer, tfAnswer, explanation, subject, navigation, t]);
+  }, [validationError, isTF, isCloze, options, question, correctAnswer, tfAnswer, explanation, subject, navigation, t]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -162,11 +168,12 @@ export const CreateQuestionCardScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* Format selector — multiple choice vs the fast one-tap True/False. */}
+          {/* Format selector — multiple choice, one-tap True/False, or cloze. */}
           <View style={styles.formatRow}>
             {([
               { key: 'MCQ' as const, icon: 'list-outline' as const, label: t('reels.createCard.formatMcq', { defaultValue: 'Multiple choice' }) },
               { key: 'TF' as const, icon: 'swap-horizontal-outline' as const, label: t('reels.createCard.formatTf', { defaultValue: 'True / False' }) },
+              { key: 'CLOZE' as const, icon: 'create-outline' as const, label: t('reels.createCard.formatCloze', { defaultValue: 'Fill the blank' }) },
             ]).map((f) => {
               const active = format === f.key;
               return (
@@ -186,7 +193,9 @@ export const CreateQuestionCardScreen: React.FC = () => {
           <Text style={styles.label}>
             {isTF
               ? t('reels.createCard.fieldStatement', { defaultValue: 'Statement' })
-              : t('reels.createCard.fieldQuestion', { defaultValue: 'Question' })}
+              : isCloze
+                ? t('reels.createCard.fieldSentence', { defaultValue: 'Sentence (use ___ for the blank)' })
+                : t('reels.createCard.fieldQuestion', { defaultValue: 'Question' })}
           </Text>
           <TextInput
             style={[styles.input, styles.inputMultiline]}
@@ -194,7 +203,9 @@ export const CreateQuestionCardScreen: React.FC = () => {
             onChangeText={setQuestion}
             placeholder={isTF
               ? t('reels.createCard.statementPlaceholder', { defaultValue: 'e.g. The mitochondria is the powerhouse of the cell.' })
-              : t('reels.createCard.questionPlaceholder', { defaultValue: 'e.g. What organelle powers the cell?' })}
+              : isCloze
+                ? t('reels.createCard.sentencePlaceholder', { defaultValue: 'e.g. The powerhouse of the cell is the ___.' })
+                : t('reels.createCard.questionPlaceholder', { defaultValue: 'e.g. What organelle powers the cell?' })}
             placeholderTextColor={colors.textTertiary}
             multiline
             maxLength={500}
@@ -225,7 +236,11 @@ export const CreateQuestionCardScreen: React.FC = () => {
             </>
           ) : (
           <>
-          <Text style={styles.label}>{t('reels.createCard.fieldOptions', { defaultValue: 'Options (tap the circle to mark correct)' })}</Text>
+          <Text style={styles.label}>
+            {isCloze
+              ? t('reels.createCard.fieldWords', { defaultValue: 'Word choices (tap the circle to mark the answer)' })
+              : t('reels.createCard.fieldOptions', { defaultValue: 'Options (tap the circle to mark correct)' })}
+          </Text>
           {options.map((opt, idx) => {
             const correct = correctAnswer === idx;
             return (

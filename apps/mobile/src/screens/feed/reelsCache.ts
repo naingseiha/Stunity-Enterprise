@@ -17,7 +17,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { feedApi } from '@/api/client';
 
-export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'TF_CARD' | 'BOUNTY' | 'POST';
+export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'TF_CARD' | 'CLOZE_CARD' | 'BOUNTY' | 'POST';
 
 export interface ReelEngagement {
   likesCount: number;
