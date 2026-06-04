@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { Haptics } from '@/services/haptics';
+import { QUIZ_LIMITS } from '@/constants';
 
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
 
@@ -93,14 +94,14 @@ export function QuizQuestionInput({
   const theme = QUESTION_CONFIG[question.type];
 
   const addOption = () => {
-    if (question.options.length < 6) {
+    if (question.options.length < QUIZ_LIMITS.MAX_OPTIONS) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onUpdate({ options: [...question.options, ''] });
     }
   };
 
   const removeOption = (optionIndex: number) => {
-    if (question.options.length > 2) {
+    if (question.options.length > QUIZ_LIMITS.MIN_OPTIONS) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onUpdate({ options: question.options.filter((_, i) => i !== optionIndex) });
     }
@@ -219,15 +220,16 @@ export function QuizQuestionInput({
                 placeholderTextColor="#D1D5DB"
                 value={opt}
                 onChangeText={(text) => updateOption(idx, text)}
+                maxLength={QUIZ_LIMITS.OPTION_MAX_LEN}
               />
-              {question.options.length > 2 && (
+              {question.options.length > QUIZ_LIMITS.MIN_OPTIONS && (
                 <TouchableOpacity onPress={() => removeOption(idx)} style={styles.removeOptionBtn}>
                   <Ionicons name="trash-outline" size={18} color="#EF4444" />
                 </TouchableOpacity>
               )}
             </View>
           ))}
-          {question.options.length < 6 && (
+          {question.options.length < QUIZ_LIMITS.MAX_OPTIONS && (
             <TouchableOpacity onPress={addOption} style={[styles.addOptionBtn, { borderColor: theme.color }]}>
               <Ionicons name="add" size={18} color={theme.color} />
               <Text style={[styles.addOptionText, { color: theme.color }]}>{t('feed.createPost.quizQuestion.addItem')}</Text>
@@ -269,7 +271,7 @@ export function QuizQuestionInput({
                     updateOption(idx, newOpt);
                   }}
                 />
-                {question.options.length > 2 && (
+                {question.options.length > QUIZ_LIMITS.MIN_OPTIONS && (
                   <TouchableOpacity onPress={() => removeOption(idx)}>
                     <Ionicons name="trash-outline" size={18} color="#EF4444" />
                   </TouchableOpacity>
@@ -277,7 +279,7 @@ export function QuizQuestionInput({
               </View>
             );
           })}
-          {question.options.length < 6 && (
+          {question.options.length < QUIZ_LIMITS.MAX_OPTIONS && (
             <TouchableOpacity onPress={() => onUpdate({ options: [...question.options, ':::'] })} style={[styles.addOptionBtn, { borderColor: theme.color }]}>
               <Ionicons name="add" size={18} color={theme.color} />
               <Text style={[styles.addOptionText, { color: theme.color }]}>{t('feed.createPost.quizQuestion.addPair')}</Text>
@@ -311,9 +313,10 @@ export function QuizQuestionInput({
               placeholderTextColor="#D1D5DB"
               value={option}
               onChangeText={(text) => updateOption(idx, text)}
+              maxLength={QUIZ_LIMITS.OPTION_MAX_LEN}
             />
 
-            {question.options.length > 2 && (
+            {question.options.length > QUIZ_LIMITS.MIN_OPTIONS && (
               <TouchableOpacity onPress={() => removeOption(idx)} style={styles.removeOptionBtn}>
                 <Ionicons name="trash-outline" size={18} color="#EF4444" />
               </TouchableOpacity>
@@ -321,7 +324,7 @@ export function QuizQuestionInput({
           </View>
         ))}
 
-        {question.options.length < 6 && (
+        {question.options.length < QUIZ_LIMITS.MAX_OPTIONS && (
           <TouchableOpacity onPress={addOption} style={[styles.addOptionBtn, { borderColor: theme.color }]}>
             <Ionicons name="add" size={18} color={theme.color} />
             <Text style={[styles.addOptionText, { color: theme.color }]}>{t('feed.createPost.quizQuestion.addOption')}</Text>

@@ -180,3 +180,22 @@ export const ANIMATION = {
 
 /** Horizontal margin on feed post cards — 0 for LinkedIn-style full-bleed cards. */
 export const FEED_POST_CARD_MARGIN_H = 0;
+
+/**
+ * Canonical content limits for polls and quizzes (WI1 + WI2).
+ * MUST mirror services/feed-service/src/constants/limits.ts exactly — the server
+ * re-validates and is authoritative. Max 6 options keeps every option legible
+ * (percentage bars + tap targets) on a phone and avoids choice overload.
+ */
+export const POLL_LIMITS = {
+  MIN_OPTIONS: 2,
+  MAX_OPTIONS: 6,
+  OPTION_MAX_LEN: 80,
+} as const;
+
+export const QUIZ_LIMITS = {
+  MIN_OPTIONS: 2,
+  MAX_OPTIONS: 6,
+  OPTION_MAX_LEN: 120,
+  QUESTION_MAX_LEN: 500,
+} as const;

@@ -34,9 +34,11 @@ import {
 } from './reelsCache';
 import useAuthStore from '@/stores/authStore';
 import { track } from '@/services/analytics';
+import { POLL_LIMITS } from '@/constants';
 import { useFeatureFlag } from '@/config/featureFlags';
 import { useReducedMotion } from '@/hooks';
 import { adjustReactionCounts } from '@/utils/reactionCounts';
+import { renderPostBodyText } from '@/utils/renderEmojiText';
 
 const { width, height } = Dimensions.get('window');
 
@@ -80,14 +82,14 @@ const gradientFor = (subject?: string): [string, string, string] => {
   return SUBJECT_GRADIENTS[key] ?? DEFAULT_GRADIENT;
 };
 
-const TYPE_LABELS: Record<ReelType, { label: string; color: string }> = {
-  FOCUS_REEL: { label: 'FOCUS REEL', color: '#A855F7' },
-  RECALL_CARD: { label: 'FLASHCARD', color: '#3B82F6' },
-  QUIZ_QUESTION: { label: 'QUICK QUIZ', color: '#10B981' },
-  TF_CARD: { label: 'TRUE OR FALSE', color: '#22D3EE' },
-  CLOZE_CARD: { label: 'FILL THE BLANK', color: '#F472B6' },
-  BOUNTY: { label: 'BOUNTY', color: '#F59E0B' },
-  POST: { label: 'POST', color: '#EC4899' },
+const TYPE_LABELS: Record<ReelType, { label: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  FOCUS_REEL: { label: 'FOCUS REEL', color: '#A855F7', icon: 'videocam' },
+  RECALL_CARD: { label: 'FLASHCARD', color: '#3B82F6', icon: 'repeat' },
+  QUIZ_QUESTION: { label: 'QUICK QUIZ', color: '#10B981', icon: 'help-circle' },
+  TF_CARD: { label: 'TRUE OR FALSE', color: '#22D3EE', icon: 'checkmark-circle' },
+  CLOZE_CARD: { label: 'FILL THE BLANK', color: '#F472B6', icon: 'create' },
+  BOUNTY: { label: 'BOUNTY', color: '#F59E0B', icon: 'trophy' },
+  POST: { label: 'POST', color: '#EC4899', icon: 'document-text' },
 };
 
 // ─── Fallback Data ─────────────────────────────────────────────────────
@@ -338,7 +340,7 @@ export const FocusReelsScreen: React.FC = () => {
   const handleInteraction = useCallback(async (
     itemId: string,
     itemType: ReelType,
-    payload: { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy' },
+    payload: { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy'; chosenIndex?: number },
   ) => {
     // RECALL_CARD uses SM-2 grade; everything else uses correct boolean.
     const passed = itemType === 'RECALL_CARD' ? payload.grade !== 'again' : !!payload.correct;
@@ -850,7 +852,14 @@ const SkeletonScreen: React.FC = () => {
 
 // ─── Card Router (memoized) ────────────────────────────────────────────
 
-type InteractionPayload = { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy' };
+type InteractionPayload = { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy'; chosenIndex?: number };
+
+/**
+ * The viewer's prior answer to an interactive reel card, hydrated by the feed
+ * (reels.routes.ts → hydrateReelResponses). Lets a card replay its answered
+ * state on return + cold restart instead of resetting to blank.
+ */
+type MyResponse = { chosenIndex: number; correct: boolean; attemptNumber: number };
 
 interface CardProps {
   item: ReelFeedItem;
@@ -1211,10 +1220,10 @@ interface VariantProps {
 }
 
 const TypePill: React.FC<{ type: ReelType; extra?: string }> = ({ type, extra }) => {
-  const { label, color } = TYPE_LABELS[type];
+  const { label, color, icon } = TYPE_LABELS[type];
   return (
     <View style={[styles.typePill, { backgroundColor: color }]}>
-      <Ionicons name="sparkles" size={10} color="#FFF" />
+      <Ionicons name={icon} size={11} color="#FFF" />
       <Text style={styles.typePillText}>{label}{extra ? ` · ${extra}` : ''}</Text>
     </View>
   );
@@ -1385,10 +1394,32 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
               <Ionicons name="bulb" size={14} color="#FDE047" />
               <Text style={styles.questionPillText}>PAUSE & ANSWER · +{questionPoint.xp || 15} XP</Text>
             </View>
-            <Text style={styles.questionText}>{questionPoint.question}</Text>
+            {renderPostBodyText(questionPoint.question, styles.questionText)}
             <View style={styles.optionsList}>
               {questionPoint.options.map((opt: string, idx: number) => {
                 const isSelected = selectedOption === idx;
+                const isCorrect = isSelected && answerStatus === 'correct';
+                const isIncorrect = isSelected && answerStatus === 'incorrect';
+                const isPickedIdle = isSelected && answerStatus === 'idle';
+
+                let letterBg = 'rgba(255,255,255,0.15)';
+                let letterTextColor = '#FFF';
+                let isBold = false;
+
+                if (isCorrect) {
+                  letterBg = '#FFF';
+                  letterTextColor = '#10B981';
+                  isBold = true;
+                } else if (isIncorrect) {
+                  letterBg = '#FFF';
+                  letterTextColor = '#EF4444';
+                  isBold = true;
+                } else if (isPickedIdle) {
+                  letterBg = '#FFF';
+                  letterTextColor = '#A855F7';
+                  isBold = true;
+                }
+
                 const optStyle = [
                   styles.optionBtn,
                   isSelected && answerStatus === 'correct' && styles.optionCorrect,
@@ -1406,10 +1437,10 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
                     accessibilityState={{ selected: isSelected, disabled: answerStatus !== 'idle' }}
                     accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
                   >
-                    <View style={styles.optionLetter}>
-                      <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+                    <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+                      <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
                     </View>
-                    <Text style={styles.optionText}>{opt}</Text>
+                    <Text style={[styles.optionText, isBold && { fontWeight: '800' }]}>{opt}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -1433,9 +1464,43 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   );
 };
 
+/**
+ * Shown on an interactive card once it's been answered AND the answer is known
+ * from a prior session (item.myResponse hydrated by the feed). Tells the learner
+ * they've answered before and offers an explicit, reward-neutral re-attempt.
+ */
+const ReplayBar: React.FC<{ wasCorrect: boolean; onTryAgain: () => void; type: ReelType }> = ({ wasCorrect, onTryAgain, type }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.replayBar}>
+      <View style={styles.replayRow}>
+        <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.85)" />
+        <Text style={styles.replayText}>{t('reels.replay.answeredAgain', { defaultValue: 'You answered this before' })}</Text>
+      </View>
+      <TouchableOpacity
+        onPress={onTryAgain}
+        activeOpacity={0.85}
+        style={styles.replayBtn}
+        accessibilityRole="button"
+        accessibilityLabel={t('reels.replay.tryAgain', { defaultValue: 'Answer again' })}
+        accessibilityHint={t('reels.replay.tryAgainHint', { defaultValue: 'Start a new attempt. Re-attempts are practice only — no XP or streak change.' })}
+      >
+        <Ionicons name="refresh" size={16} color="#FFF" />
+        <Text style={styles.replayBtnText}>{t('reels.replay.tryAgain', { defaultValue: 'Answer again' })}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
+  const myResponse: MyResponse | undefined = item.myResponse;
+  // Seed from the hydrated prior answer so the card replays its answered state
+  // on return / cold restart instead of resetting to blank.
+  const [selectedOption, setSelectedOption] = useState<number | null>(myResponse ? myResponse.chosenIndex : null);
+  const [isAnswered, setIsAnswered] = useState<boolean>(!!myResponse);
+  // True while the answered state came from a prior session (vs a just-now tap),
+  // which is when we surface the "answered before" + "Answer again" affordance.
+  const [fromPrior, setFromPrior] = useState<boolean>(!!myResponse);
 
   // Select-then-submit: tapping an option only highlights it. The answer isn't
   // committed (and the combo isn't risked) until "Submit" — so a mistap can't
@@ -1449,30 +1514,59 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
     if (isAnswered || selectedOption === null) return;
     setIsAnswered(true);
     const correct = selectedOption === item.correctAnswer;
-    if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10, chosenIndex: selectedOption });
   };
 
-  const wasCorrect = isAnswered && selectedOption === item.correctAnswer;
+  // Explicit, reward-neutral re-attempt: clear local state for a fresh answer.
+  // The next submit posts with a higher attemptNumber, which the server records
+  // but does not reward (no XP / combo / SM-2 change).
+  const handleTryAgain = () => {
+    track('reel_answer_again', { type: 'QUIZ_QUESTION' });
+    setSelectedOption(null);
+    setIsAnswered(false);
+    setFromPrior(false);
+  };
+
+  const wasCorrect = isAnswered && (myResponse && fromPrior ? myResponse.correct : selectedOption === item.correctAnswer);
 
   return (
     <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="QUIZ_QUESTION" extra={`+${item.points || 10} XP`} />
-        <Text style={styles.bigQuestionText}>{item.question}</Text>
+        {renderPostBodyText(item.question, styles.bigQuestionText)}
         <View style={{ width: '100%', gap: 12 }}>
           {(item.options ?? []).map((opt: string, idx: number) => {
             const isCorrect = idx === item.correctAnswer;
             const isPicked = idx === selectedOption;
-            let bg: string = 'rgba(255,255,255,0.08)';
-            let border: string = 'rgba(255,255,255,0.15)';
+            let bg: string = 'rgba(255,255,255,0.06)';
+            let border: string = 'rgba(255,255,255,0.12)';
+            let letterBg: string = 'rgba(255,255,255,0.15)';
+            let letterTextColor: string = '#FFF';
+            let isBold = false;
+
             if (isAnswered) {
-              if (isCorrect) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
-              else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+              if (isCorrect) {
+                bg = 'rgba(16,185,129,0.92)';
+                border = '#10B981';
+                letterBg = '#FFF';
+                letterTextColor = '#10B981';
+                isBold = true;
+              } else if (isPicked) {
+                bg = 'rgba(239,68,68,0.85)';
+                border = '#EF4444';
+                letterBg = '#FFF';
+                letterTextColor = '#EF4444';
+                isBold = true;
+              }
             } else if (isPicked) {
-              bg = 'rgba(255,255,255,0.15)';
+              bg = 'rgba(255,255,255,0.18)';
               border = '#FFF';
+              letterBg = '#FFF';
+              letterTextColor = '#7C3AED';
+              isBold = true;
             }
+
             return (
               <TouchableOpacity
                 key={idx}
@@ -1484,10 +1578,10 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
                 accessibilityState={{ selected: isPicked, disabled: isAnswered }}
                 accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
               >
-                <View style={styles.optionLetter}>
-                  <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+                <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+                  <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
                 </View>
-                <Text style={styles.quizOptionText}>{opt}</Text>
+                <Text style={[styles.quizOptionText, isBold && { fontWeight: '800' }]} numberOfLines={3} ellipsizeMode="tail">{opt}</Text>
                 {isAnswered && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#FFF" />}
                 {isAnswered && isPicked && !isCorrect && <Ionicons name="close-circle" size={22} color="#FFF" />}
               </TouchableOpacity>
@@ -1507,6 +1601,9 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
               <Ionicons name="arrow-forward" size={18} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
+        )}
+        {isAnswered && fromPrior && (
+          <ReplayBar wasCorrect={!!wasCorrect} onTryAgain={handleTryAgain} type="QUIZ_QUESTION" />
         )}
       </View>
       {isAnswered && !!item.explanation && (
@@ -1537,7 +1634,10 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
 // sentinel, so the answer feeds the same SM-2 recall loop + mastery.
 const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
   const { t } = useTranslation();
-  const [picked, setPicked] = useState<number | null>(null);
+  const myResponse: MyResponse | undefined = item.myResponse;
+  // Seed from the hydrated prior answer so the card replays its answered state.
+  const [picked, setPicked] = useState<number | null>(myResponse ? myResponse.chosenIndex : null);
+  const [fromPrior, setFromPrior] = useState<boolean>(!!myResponse);
   const isAnswered = picked !== null;
 
   // 0 = True, 1 = False (index into the TF sentinel).
@@ -1550,10 +1650,17 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
     if (isAnswered) return;
     setPicked(idx);
     const correct = idx === item.correctAnswer;
-    if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10, chosenIndex: idx });
   };
 
-  const wasCorrect = isAnswered && picked === item.correctAnswer;
+  // Reward-neutral re-attempt (server records but does not reward).
+  const handleTryAgain = () => {
+    track('reel_answer_again', { type: 'TF_CARD' });
+    setPicked(null);
+    setFromPrior(false);
+  };
+
+  const wasCorrect = isAnswered && (myResponse && fromPrior ? myResponse.correct : picked === item.correctAnswer);
 
   return (
     <View style={[styles.reelContainer, { height: pageHeight }]}>
@@ -1561,7 +1668,7 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
       <View style={styles.cardCenterContent}>
         <TypePill type="TF_CARD" extra={`+${item.points || 10} XP`} />
         <Text style={styles.tfPrompt}>{t('reels.tf.prompt', { defaultValue: 'True or false?' })}</Text>
-        <Text style={styles.bigQuestionText}>{item.claim}</Text>
+        {renderPostBodyText(item.claim, styles.bigQuestionText)}
         <View style={styles.tfRow}>
           {choices.map((c) => {
             const isCorrectChoice = c.idx === item.correctAnswer;
@@ -1589,6 +1696,9 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
             );
           })}
         </View>
+        {isAnswered && fromPrior && (
+          <ReplayBar wasCorrect={!!wasCorrect} onTryAgain={handleTryAgain} type="TF_CARD" />
+        )}
       </View>
       {isAnswered && !!item.explanation && (
         <View style={styles.explanationCard}>
@@ -1620,9 +1730,12 @@ const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, o
 // it feeds the same SM-2 recall loop + mastery.
 const ClozeCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
   const { t } = useTranslation();
-  const [picked, setPicked] = useState<number | null>(null);
+  const myResponse: MyResponse | undefined = item.myResponse;
+  // Seed from the hydrated prior answer so the card replays its answered state.
+  const [picked, setPicked] = useState<number | null>(myResponse ? myResponse.chosenIndex : null);
+  const [fromPrior, setFromPrior] = useState<boolean>(!!myResponse);
   const isAnswered = picked !== null;
-  const wasCorrect = isAnswered && picked === item.correctAnswer;
+  const wasCorrect = isAnswered && (myResponse && fromPrior ? myResponse.correct : picked === item.correctAnswer);
 
   const [before, ...rest] = String(item.sentence ?? '').split(/_{3,}/);
   const after = rest.join(' ');
@@ -1632,7 +1745,14 @@ const ClozeCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInt
     if (isAnswered) return;
     setPicked(idx);
     const correct = idx === item.correctAnswer;
-    if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10, chosenIndex: idx });
+  };
+
+  // Reward-neutral re-attempt (server records but does not reward).
+  const handleTryAgain = () => {
+    track('reel_answer_again', { type: 'CLOZE_CARD' });
+    setPicked(null);
+    setFromPrior(false);
   };
 
   return (
@@ -1672,11 +1792,14 @@ const ClozeCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInt
                 accessibilityState={{ selected: isPicked, disabled: isAnswered }}
                 accessibilityLabel={opt}
               >
-                <Text style={styles.clozeOptionText}>{opt}</Text>
+                <Text style={styles.clozeOptionText} numberOfLines={2} ellipsizeMode="tail">{opt}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
+        {isAnswered && fromPrior && (
+          <ReplayBar wasCorrect={!!wasCorrect} onTryAgain={handleTryAgain} type="CLOZE_CARD" />
+        )}
       </View>
       {isAnswered && !!item.explanation && (
         <View style={styles.explanationCard}>
@@ -1787,17 +1910,39 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
         {hasOptions ? (
           <>
             <Text style={styles.tfPrompt}>{t('reels.recall.prompt', { defaultValue: 'Do you remember?' })}</Text>
-            <Text style={styles.bigQuestionText}>{item.question?.question ?? '—'}</Text>
+            {renderPostBodyText(item.question?.question ?? '—', styles.bigQuestionText)}
             <View style={{ width: '100%', gap: 12 }}>
               {options!.map((opt: string, idx: number) => {
                 const isCorrect = idx === correctIdx;
                 const isPicked = idx === selected;
-                let bg: string = 'rgba(255,255,255,0.08)';
-                let border: string = 'rgba(255,255,255,0.15)';
+                let bg: string = 'rgba(255,255,255,0.06)';
+                let border: string = 'rgba(255,255,255,0.12)';
+                let letterBg: string = 'rgba(255,255,255,0.15)';
+                let letterTextColor: string = '#FFF';
+                let isBold = false;
+
                 if (isAnswered) {
-                  if (isCorrect) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
-                  else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+                  if (isCorrect) {
+                    bg = 'rgba(16,185,129,0.92)';
+                    border = '#10B981';
+                    letterBg = '#FFF';
+                    letterTextColor = '#10B981';
+                    isBold = true;
+                  } else if (isPicked) {
+                    bg = 'rgba(239,68,68,0.85)';
+                    border = '#EF4444';
+                    letterBg = '#FFF';
+                    letterTextColor = '#EF4444';
+                    isBold = true;
+                  }
+                } else if (isPicked) {
+                  bg = 'rgba(255,255,255,0.18)';
+                  border = '#FFF';
+                  letterBg = '#FFF';
+                  letterTextColor = '#7C3AED';
+                  isBold = true;
                 }
+
                 return (
                   <TouchableOpacity
                     key={idx}
@@ -1809,10 +1954,10 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
                     accessibilityState={{ selected: isPicked, disabled: isAnswered }}
                     accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
                   >
-                    <View style={styles.optionLetter}>
-                      <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+                    <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+                      <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
                     </View>
-                    <Text style={styles.quizOptionText}>{opt}</Text>
+                    <Text style={[styles.quizOptionText, isBold && { fontWeight: '800' }]}>{opt}</Text>
                     {isAnswered && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#FFF" />}
                     {isAnswered && isPicked && !isCorrect && <Ionicons name="close-circle" size={22} color="#FFF" />}
                   </TouchableOpacity>
@@ -1852,13 +1997,13 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
             >
               <Animated.View style={[styles.flashcardFace, { opacity: frontOpacity, transform: [{ rotateY: frontRotate }] }]}>
                 <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.bigQuestionText}>{item.question?.question ?? '—'}</Text>
+                {renderPostBodyText(item.question?.question ?? '—', styles.bigQuestionText)}
                 <Text style={styles.tapHint}>Tap to reveal answer</Text>
               </Animated.View>
               <Animated.View style={[styles.flashcardFace, styles.flashcardBack, { opacity: backOpacity, transform: [{ rotateY: backRotate }] }]}>
                 <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
                 <Text style={styles.flashcardAnswerHeader}>Answer</Text>
-                <Text style={styles.flashcardAnswerText}>{item.question?.options?.[correctIdx] ?? '—'}</Text>
+                {renderPostBodyText(item.question?.options?.[correctIdx] ?? '—', styles.flashcardAnswerText)}
               </Animated.View>
             </TouchableOpacity>
 
@@ -1946,7 +2091,7 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
         </View>
         <View style={styles.bountyBox}>
           <Ionicons name="trophy" size={28} color="#FDE047" style={{ marginBottom: 12 }} />
-          <Text style={styles.bigQuestionText}>{item.questionText}</Text>
+          {renderPostBodyText(item.questionText, styles.bigQuestionText)}
           {!!item.replyCount && (
             <Text style={styles.bountyReplyCount}>{item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'} so far</Text>
           )}
@@ -1985,7 +2130,12 @@ const ReelPoll: React.FC<{
     () => Object.fromEntries(options.map((o) => [o.id, o.votesCount ?? 0])),
   );
   const hasVoted = voted !== null;
+  // Percentages stay accurate across ALL options; only the rendered list is
+  // capped so a legacy over-cap poll (created before the WI1 limit) never breaks
+  // the layout on a phone.
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const visibleOptions = options.slice(0, POLL_LIMITS.MAX_OPTIONS);
+  const hiddenCount = options.length - visibleOptions.length;
 
   const vote = async (optionId: string) => {
     if (hasVoted || !postId) return;
@@ -2002,11 +2152,27 @@ const ReelPoll: React.FC<{
 
   return (
     <View style={{ width: '100%', gap: 12 }}>
-      {options.map((o, idx) => {
+      {visibleOptions.map((o, idx) => {
         const c = counts[o.id] ?? 0;
         const pct = total > 0 ? Math.round((c / total) * 100) : 0;
         const isMine = voted === o.id;
         const border = isMine ? accent : 'rgba(255,255,255,0.15)';
+
+        let letterBg = 'rgba(255,255,255,0.15)';
+        let letterTextColor = '#FFF';
+        let isBold = false;
+
+        if (hasVoted) {
+          if (isMine) {
+            letterBg = '#FFF';
+            letterTextColor = accent;
+            isBold = true;
+          } else {
+            letterBg = 'rgba(255,255,255,0.12)';
+            letterTextColor = 'rgba(255,255,255,0.6)';
+          }
+        }
+
         return (
           <TouchableOpacity
             key={o.id}
@@ -2019,17 +2185,25 @@ const ReelPoll: React.FC<{
             accessibilityLabel={hasVoted ? `${o.text}, ${pct}%` : o.text}
           >
             {hasVoted && (
-              <View style={[styles.pollFill, { width: `${pct}%`, backgroundColor: isMine ? accent : 'rgba(255,255,255,0.16)' }]} />
+              <LinearGradient
+                colors={isMine ? [accent + 'b0', accent + '60'] : ['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.06)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.pollFill, { right: `${100 - pct}%` }]}
+              />
             )}
-            <View style={styles.optionLetter}>
-              <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+            <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+              <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
             </View>
-            <Text style={styles.quizOptionText} numberOfLines={2}>{o.text}</Text>
-            {hasVoted && <Text style={styles.pollPct}>{pct}%</Text>}
+            <Text style={[styles.quizOptionText, isBold && { fontWeight: '800' }]} numberOfLines={2}>{o.text}</Text>
+            {hasVoted && <Text style={[styles.pollPct, isMine && { color: '#FFF', fontWeight: '900' }]}>{pct}%</Text>}
             {isMine && <Ionicons name="checkmark-circle" size={20} color="#FFF" />}
           </TouchableOpacity>
         );
       })}
+      {hiddenCount > 0 && (
+        <Text style={styles.reelPollTotal}>+{hiddenCount} more</Text>
+      )}
       {hasVoted && (
         <Text style={styles.reelPollTotal}>{total} {total === 1 ? 'vote' : 'votes'}</Text>
       )}
@@ -2084,7 +2258,7 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
         <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
         <View style={styles.cardCenterContent}>
           <TypePill type="POST" extra="POLL" />
-          <Text style={styles.bigQuestionText}>{item.content}</Text>
+          {renderPostBodyText(item.content, styles.bigQuestionText)}
           <ReelPoll
             postId={postId}
             options={item.pollOptions}
@@ -2131,7 +2305,7 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
 
       <View style={styles.bottomDetails}>
         <TypePill type="POST" extra={item.postType} />
-        <Text style={styles.reelTitle} numberOfLines={4}>{item.content}</Text>
+        {renderPostBodyText(item.content, styles.reelTitle, 4)}
 
         {isQuiz ? (
           <TouchableOpacity
@@ -2151,7 +2325,10 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
         ) : postId ? (
           <TouchableOpacity
             style={styles.reelAnswerCta}
-            onPress={() => navigation.navigate('Comments', { postId })}
+            onPress={() => {
+              track(isQuestion ? 'question_answer_open' : 'reel_post_discuss', { postId });
+              navigation.navigate('Comments', { postId, postType: item.postType });
+            }}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel={isQuestion
@@ -2163,6 +2340,7 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
               {isQuestion
                 ? t('reels.post.answer', { defaultValue: 'Answer this' })
                 : t('reels.post.discuss', { defaultValue: 'Join the discussion' })}
+              {isQuestion && (engagement?.commentsCount ?? 0) > 0 ? ` · ${formatCount(engagement!.commentsCount)}` : ''}
             </Text>
           </TouchableOpacity>
         ) : null}
@@ -2209,7 +2387,9 @@ const styles = StyleSheet.create({
   dueRecallChip: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: 'rgba(59,130,246,0.18)',
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, marginLeft: 4,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999, marginLeft: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(93,173,243,0.3)',
   },
   dueRecallText: { color: '#93C5FD', fontSize: 11, fontWeight: '800' },
 
@@ -2331,9 +2511,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   typePillText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
 
@@ -2346,9 +2528,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'rgba(253,224,71,0.18)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(253,224,71,0.3)',
     marginBottom: 14,
   },
   questionPillText: { color: '#FDE047', fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
@@ -2360,7 +2544,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -2395,7 +2579,7 @@ const styles = StyleSheet.create({
   tfBtn: {
     flex: 1,
     aspectRatio: 1,
-    borderRadius: 20,
+    borderRadius: 9999,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2409,8 +2593,9 @@ const styles = StyleSheet.create({
   clozeOptionChip: {
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 9999,
     borderWidth: 1.5,
+    maxWidth: '100%',
   },
   clozeOptionText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
 
@@ -2421,7 +2606,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 28,
     borderWidth: 1.5,
   },
   quizOptionText: { color: '#FFF', fontSize: 16, fontWeight: '700', flex: 1 },
@@ -2471,7 +2656,9 @@ const styles = StyleSheet.create({
   bountyExpiryChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: 'rgba(253,224,71,0.15)',
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9999,
+    borderWidth: 0.5,
+    borderColor: 'rgba(253,224,71,0.25)',
   },
   bountyExpiryText: { color: '#FDE047', fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   bountyReplyCount: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginTop: 10 },
@@ -2499,6 +2686,30 @@ const styles = StyleSheet.create({
   explanationHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   explanationTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
   explanationBody: { color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: '500', lineHeight: 19 },
+
+  // "Answered before" replay affordance (WI4 — persisted prior response).
+  replayBar: {
+    width: '100%',
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  replayRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  replayText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  replayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  },
+  replayBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
 
   // Empty state
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 12 },

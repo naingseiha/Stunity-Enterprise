@@ -126,6 +126,7 @@ import {
   TakeQuizScreen,
   QuizResultsScreen,
   QuizDetailsScreen,
+  QuizHistoryScreen,
 } from "@/screens/quiz";
 import QuizDashboardScreen from "@/screens/quiz/QuizDashboardScreen";
 import BrowseQuizzesScreen from "@/screens/quiz/BrowseQuizzesScreen";
@@ -802,6 +803,7 @@ function MainStackNavigatorTabletAware() {
         <MainStack.Screen name="QuizDetails" component={QuizDetailsScreen} />
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
         <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />
+        <MainStack.Screen name="QuizHistory" component={QuizHistoryScreen} />
         <MainStack.Screen
           name="BrowseQuizzes"
           component={BrowseQuizzesScreen}

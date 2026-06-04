@@ -654,6 +654,7 @@ model User {
   verificationRequests         VerificationRequest[]
   recallCards                  RecallCard[]
   recallReviews                RecallReview[]
+  reelResponses                ReelResponse[]
   verifiedPosts                Post[]                       @relation("PostsVerifiedBy")
   bountiesAsked                Bounty[]                     @relation("BountiesAsked")
   bountyReplies                BountyReply[]                @relation("BountyReplies")
@@ -2920,6 +2921,43 @@ model RecallReview {
   @@index([userId, reviewedAt])
   @@index([recallCardId, reviewedAt])
   @@map("recall_reviews")
+}
+
+// ─────────────────────────────────────────────────────────
+// Reel Responses — per-user, per-item answer record for the interactive
+// reel cards (quiz / true-false / cloze). Lets a card render its prior
+// answer + result on return and across cold restarts, instead of resetting
+// to blank (local useState was the only store before). Polls are NOT recorded
+// here — they already persist via PollVote.
+//
+// Multiple attempts are allowed (attemptNumber increments), but only the FIRST
+// attempt earns XP / moves the combo / reschedules SM-2 (anti-farming). Write +
+// read paths live in services/feed-service/src/routes/reels.routes.ts.
+// ─────────────────────────────────────────────────────────
+
+model ReelResponse {
+  id     String @id @default(cuid())
+  userId String
+
+  // QuizQuestion.id for QUIZ_QUESTION / TF_CARD / CLOZE_CARD (all three are
+  // QuizQuestions under the hood — see reelsRanker.ts).
+  itemId   String
+  itemType String // 'QUIZ_QUESTION' | 'TF_CARD' | 'CLOZE_CARD'
+
+  // Index into the SHUFFLED options the client rendered. The shuffle is
+  // deterministic per question id (shuffleOptions in reelsRanker.ts), so the
+  // same index maps to the same option on replay.
+  chosenIndex   Int
+  correct       Boolean
+  attemptNumber Int     @default(1)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, itemId]) // batch hydrate by user across feed itemIds
+  @@index([userId, itemId, createdAt(sort: Desc)]) // latest-attempt lookup
+  @@map("reel_responses")
 }
 
 // ─────────────────────────────────────────────────────────

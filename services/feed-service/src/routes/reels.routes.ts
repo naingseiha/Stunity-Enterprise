@@ -22,6 +22,12 @@ import { ReelsRanker } from '../reelsRanker';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { applyReview, RecallGrade } from '../utils/sm2';
 import { upsertRecallCardFromReelAnswer, seedRecallCardsFromQuizPool } from '../utils/recallCardsFromQuiz';
+import {
+  REEL_RESPONSE_TYPES,
+  planReelReward,
+  latestResponsesByItem,
+  attachMyResponses,
+} from '../utils/reelResponses';
 import { feedCache } from '../redis';
 
 // Ranker uses the read replica for all 6 pool queries; writes (interactions,
@@ -166,6 +172,28 @@ async function hydrateLikedState(items: any[], userId: string): Promise<any[]> {
   );
 }
 
+/**
+ * Attach the viewer's prior answer to each interactive reel card (quiz / TF /
+ * cloze) so the card can render its previously-answered state on return AND
+ * across cold restarts — the local-useState-only behavior reset to blank.
+ *
+ * Per-viewer state, so (like isLikedByMe) it's hydrated fresh outside the cache.
+ * One batched indexed query regardless of cache hit/miss — no per-card calls.
+ */
+async function hydrateReelResponses(items: any[], userId: string): Promise<any[]> {
+  const itemIds = items
+    .filter((it) => REEL_RESPONSE_TYPES.has(it.type) && typeof it.id === 'string')
+    .map((it) => it.id as string);
+  if (itemIds.length === 0) return items;
+
+  const rows = await prismaRead.reelResponse.findMany({
+    where: { userId, itemId: { in: itemIds } },
+    orderBy: { createdAt: 'desc' },
+    select: { itemId: true, chosenIndex: true, correct: true, attemptNumber: true },
+  });
+  return attachMyResponses(items, latestResponsesByItem(rows));
+}
+
 router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) => {
   const t0 = Date.now();
   const timings: Record<string, number> = {};
@@ -206,9 +234,11 @@ router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) =
       result = cacheable as typeof result;
     }
 
-    // Always hydrate fresh isLikedByMe — never cache the viewer's per-post like state.
+    // Always hydrate fresh per-viewer state outside the cache: isLikedByMe and
+    // the viewer's prior reel answers (so cards replay their answered state).
     const tHydrate = Date.now();
-    const hydratedItems = await hydrateLikedState(result.items ?? [], userId);
+    const likedItems = await hydrateLikedState(result.items ?? [], userId);
+    const hydratedItems = await hydrateReelResponses(likedItems, userId);
     timings.hydrate = Date.now() - tHydrate;
     timings.total = Date.now() - t0;
 
@@ -284,19 +314,49 @@ async function handleFocusReel(userId: string, reelId: string, body: any) {
 
 async function handleQuizQuestion(userId: string, body: any) {
   const correct = !!body.correct;
+  const itemId = typeof body.itemId === 'string' ? body.itemId : null;
+  const itemType = REEL_RESPONSE_TYPES.has(body.itemType) ? (body.itemType as string) : 'QUIZ_QUESTION';
+  // Index into the SHUFFLED options the client rendered. -1 = unknown (older
+  // clients that don't send it yet) — still recorded so the attempt counts.
+  const chosenIndex = clampInt(body.chosenIndex, -1, 64);
+
+  // Multiple attempts are allowed, but only the FIRST attempt earns XP / moves
+  // the combo / reschedules SM-2 (anti-farming). Re-attempts are practice-only:
+  // recorded + shown, but reward-neutral. See planReelReward.
+  const priorAttempts = itemId
+    ? await prisma.reelResponse.count({ where: { userId, itemId } })
+    : 0;
+  const attemptNumber = priorAttempts + 1;
+  const plan = planReelReward(attemptNumber, correct);
+
   const baseXp = clampInt(body.xpEarned, 0, 100) || (correct ? BASE_XP_CORRECT : 0);
-  const combo = await applyCombo(userId, correct ? 'correct' : 'wrong', baseXp);
+  // First attempt moves the combo (and may earn XP); re-attempts pass 'neutral'
+  // with 0 XP, leaving combo/points untouched but still returning the current
+  // HUD snapshot so the client stays consistent.
+  const combo = await applyCombo(userId, plan.comboOutcome, plan.earnsReward ? baseXp : 0);
+
+  // Persist the answer so the card can replay it on return + cold restart.
+  // Best-effort — never blocks the interaction response.
+  if (itemId) {
+    try {
+      await prisma.reelResponse.create({
+        data: { userId, itemId, itemType, chosenIndex, correct, attemptNumber },
+      });
+    } catch (err) {
+      console.warn('[Reels] ReelResponse persist failed (non-fatal):', err);
+    }
+  }
 
   // Close the learning loop: a quiz-reel answer enters spaced repetition so it
   // feeds SM-2 scheduling + the subject-mastery tree, not just the combo HUD.
-  // Best-effort — never blocks the interaction response.
+  // Only the first attempt reschedules SM-2 — re-attempts must not farm reviews.
   let recallCarded = false;
-  if (typeof body.itemId === 'string') {
-    recallCarded = await upsertRecallCardFromReelAnswer(prisma, userId, body.itemId, correct);
+  if (itemId && plan.reschedulesSm2) {
+    recallCarded = await upsertRecallCardFromReelAnswer(prisma, userId, itemId, correct);
   }
 
   await invalidateUserState(userId);
-  return { success: true, recallCarded, ...combo };
+  return { success: true, recallCarded, attemptNumber, alreadyAnswered: attemptNumber > 1, ...combo };
 }
 
 async function handleRecallCard(userId: string, cardId: string, body: any) {

@@ -33,6 +33,13 @@
       "answer": "Answer this",
       "discuss": "Join the discussion"
     },
+    "replay": {
+      "answeredAgain": "You answered this before",
+      "tryAgain": "Answer again",
+      "tryAgainHint": "Start a new attempt. Re-attempts are practice only — no XP or streak change.",
+      "correct": "You got this right",
+      "incorrect": "You missed this one"
+    },
     "a11y": {
       "mute": "Mute",
       "unmute": "Unmute",
@@ -620,7 +627,8 @@
       "label": "Poll",
       "openVoting": "Open voting",
       "finalResults": "Final results",
-      "timeLeft": "{{count}}{{unit}} left"
+      "timeLeft": "{{count}}{{unit}} left",
+      "moreOptions": "+{{count}} more options"
     },
     "resource": "Resource",
     "newPost": "1 New Post",
@@ -1064,6 +1072,10 @@
       "writeComment": "Write a comment...",
       "noComments": "No comments yet",
       "beFirst": "Be the first!",
+      "answers": "Answers",
+      "writeAnswer": "Write your answer…",
+      "noAnswers": "No answers yet",
+      "beFirstAnswer": "Be the first to answer",
       "beFirstComment": "Be the first to share your thoughts!",
       "replyingTo": "Replying to {{name}}",
       "delete": "Delete",
@@ -1927,6 +1939,26 @@
     }
   },
   "quiz": {
+    "history": {
+      "title": "Quiz history",
+      "best": "Best",
+      "latest": "Latest",
+      "average": "Average",
+      "attempts": "Attempts",
+      "passRate": "Pass rate",
+      "trend": "Trend",
+      "retake": "Retake quiz",
+      "reviewLatest": "Review latest",
+      "startQuiz": "Take quiz",
+      "weakTopics": "Questions to review",
+      "questionN": "Question {{number}}",
+      "timeline": "Attempt history",
+      "attemptN": "Attempt {{number}}",
+      "passed": "Passed",
+      "failed": "Failed",
+      "empty": "No attempts yet. Take the quiz to start your history.",
+      "viewHistory": "View attempt history"
+    },
     "results": {
       "title": "Quiz Results",
       "passed": "Passed",
@@ -1940,6 +1972,7 @@
       "rankings": "Rankings",
       "myStats": "My Stats",
       "badges": "Badges",
+      "history": "History",
       "hideDetails": "Hide Details",
       "reviewAnswers": "Review Answers",
       "backToDashboard": "Back to Dashboard",

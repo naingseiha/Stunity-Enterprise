@@ -14,6 +14,7 @@ import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
+import { POLL_LIMITS } from '@/constants';
 import { useTranslation } from 'react-i18next';
 
 interface PollFormProps {
@@ -94,7 +95,11 @@ export function PollForm({ options, onOptionsChange, onDataChange, initialPollSe
   const handleAcceptAI = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (aiPreviewData && Array.isArray(aiPreviewData.options)) {
-      onOptionsChange(aiPreviewData.options.slice(0, 10));
+      onOptionsChange(
+        aiPreviewData.options
+          .slice(0, POLL_LIMITS.MAX_OPTIONS)
+          .map((o: string) => String(o).slice(0, POLL_LIMITS.OPTION_MAX_LEN)),
+      );
     }
     setAiPreviewData(null);
   };
@@ -110,7 +115,7 @@ export function PollForm({ options, onOptionsChange, onDataChange, initialPollSe
   }, [options, duration, resultsVisibility, allowMultipleSelections, anonymousVoting]);
 
   const addOption = () => {
-    if (options.length < 10) {
+    if (options.length < POLL_LIMITS.MAX_OPTIONS) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onOptionsChange([...options, '']);
@@ -118,7 +123,7 @@ export function PollForm({ options, onOptionsChange, onDataChange, initialPollSe
   };
 
   const removeOption = (index: number) => {
-    if (options.length > 2) {
+    if (options.length > POLL_LIMITS.MIN_OPTIONS) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onOptionsChange(options.filter((_, i) => i !== index));
@@ -154,7 +159,7 @@ export function PollForm({ options, onOptionsChange, onDataChange, initialPollSe
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{options.length}/10</Text>
+              <Text style={styles.badgeText}>{options.length}/{POLL_LIMITS.MAX_OPTIONS}</Text>
             </View>
             <AIGenerateButton
               label={t('feed.createPost.poll.suggest')}
@@ -180,8 +185,9 @@ export function PollForm({ options, onOptionsChange, onDataChange, initialPollSe
                 placeholderTextColor={colors.textTertiary}
                 value={option}
                 onChangeText={(text) => updateOption(index, text)}
+                maxLength={POLL_LIMITS.OPTION_MAX_LEN}
               />
-              {options.length > 2 && (
+              {options.length > POLL_LIMITS.MIN_OPTIONS && (
                 <TouchableOpacity
                   onPress={() => removeOption(index)}
                   style={styles.removeButton}
@@ -192,7 +198,7 @@ export function PollForm({ options, onOptionsChange, onDataChange, initialPollSe
             </View>
           ))}
 
-          {options.length < 10 && (
+          {options.length < POLL_LIMITS.MAX_OPTIONS && (
             <TouchableOpacity onPress={addOption} style={styles.addButton}>
               <View style={styles.addButtonIcon}>
                 <Ionicons name="add" size={20} color="#6366F1" />
