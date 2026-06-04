@@ -129,7 +129,7 @@ export default function BookmarksScreen() {
         post={item}
         onLike={() => handleLikePost(item)}
         onReact={(type: string) => reactToPost(item.id, type)}
-        onComment={() => navigation.navigate('Comments' as any, { postId: item.id })}
+        onComment={() => navigation.navigate('Comments' as any, { postId: item.id, postType: item.postType })}
         onShare={() => sharePost(item.id)}
         onBookmark={() => bookmarkPost(item.id)}
         onUserPress={() => navigation.navigate('UserProfile' as any, { userId: item.author.id })}

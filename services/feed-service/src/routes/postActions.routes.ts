@@ -12,6 +12,7 @@ import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { updateUserFeedSignals } from './signals.routes';
 import { createPostSchema, createCommentSchema } from '../validators/post.validator';
+import { POLL_MIN_OPTIONS, POLL_MAX_OPTIONS, POLL_OPTION_MAX_LEN } from '../constants/limits';
 import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 
 const router = Router();
@@ -1517,10 +1518,13 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
     if (post.postType === 'POLL' && pollOptions && Array.isArray(pollOptions)) {
       const validOptions = pollOptions
         .filter((opt: string) => opt && opt.trim())
-        .map((text: string) => text.trim());
+        .map((text: string) => text.trim().slice(0, POLL_OPTION_MAX_LEN));
 
-      if (validOptions.length < 2) {
-        return res.status(400).json({ success: false, error: 'Poll must have at least 2 options' });
+      if (validOptions.length < POLL_MIN_OPTIONS) {
+        return res.status(400).json({ success: false, error: `Poll must have at least ${POLL_MIN_OPTIONS} options` });
+      }
+      if (validOptions.length > POLL_MAX_OPTIONS) {
+        return res.status(400).json({ success: false, error: `Poll can have at most ${POLL_MAX_OPTIONS} options` });
       }
 
       const existingVote = await prismaRead.pollVote.findFirst({

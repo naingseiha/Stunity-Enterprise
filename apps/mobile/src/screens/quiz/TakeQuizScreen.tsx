@@ -546,7 +546,7 @@ export function TakeQuizScreen() {
                             {OPTION_LETTERS[index]}
                           </Text>
                         </View>
-                        <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                        <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={4} ellipsizeMode="tail">
                           {option}
                         </Text>
                         {isSelected && (

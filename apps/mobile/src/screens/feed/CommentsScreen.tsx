@@ -29,6 +29,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Haptics } from '@/services/haptics';
+import { track } from '@/services/analytics';
 
 
 import { Avatar } from '@/components/common';
@@ -41,7 +42,7 @@ import { createKeyedDebouncer } from '@/utils/debounce';
 
 const scheduleCommentRefresh = createKeyedDebouncer(600);
 
-type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string } }, 'Comments'>;
+type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string; postType?: string } }, 'Comments'>;
 
 export default function CommentsScreen() {
     const { t } = useTranslation();
@@ -65,6 +66,10 @@ export default function CommentsScreen() {
 
   const postItem = feedItems.find((p) => p.type === 'POST' && p.data.id === postId) as { type: 'POST', data: any } | undefined;
   const post = postItem?.data;
+  // QUESTION posts reframe the whole surface as Q&A (answers, not generic
+  // comments). Prefer the route param so it's correct even when the post isn't
+  // in the feed store (e.g. opened from a reel), falling back to the loaded post.
+  const isQuestion = (route.params.postType ?? post?.postType) === 'QUESTION';
   const postComments = comments[postId] || [];
   const isLoading = isLoadingComments[postId] || false;
   const isSubmitting = isSubmittingComment[postId] || false;
@@ -128,6 +133,7 @@ export default function CommentsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const success = await addComment(postId, newComment.trim());
     if (success) {
+      track(isQuestion ? 'question_answer_submit' : 'comment_submit', { postId });
       setNewComment('');
     }
   };
@@ -254,11 +260,15 @@ export default function CommentsScreen() {
     <Animated.View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
         <View style={styles.emptyIconGradient}>
-          <Ionicons name="chatbubbles-outline" size={44} color="#0066FF" />
+          <Ionicons name={isQuestion ? 'help-circle-outline' : 'chatbubbles-outline'} size={44} color="#0066FF" />
         </View>
       </View>
-      <Text style={styles.emptyTitle}>{t('feed.sections.noComments')}</Text>
-      <Text style={styles.emptySubtitle}>{t('feed.sections.beFirst')}</Text>
+      <Text style={styles.emptyTitle}>
+        {isQuestion ? t('feed.sections.noAnswers', { defaultValue: 'No answers yet' }) : t('feed.sections.noComments')}
+      </Text>
+      <Text style={styles.emptySubtitle}>
+        {isQuestion ? t('feed.sections.beFirstAnswer', { defaultValue: 'Be the first to answer' }) : t('feed.sections.beFirst')}
+      </Text>
     </Animated.View>
   );
 
@@ -279,7 +289,9 @@ export default function CommentsScreen() {
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>{t('feed.sections.comments')}</Text>
+              <Text style={styles.headerTitle}>
+                {isQuestion ? t('feed.sections.answers', { defaultValue: 'Answers' }) : t('feed.sections.comments')}
+              </Text>
               {postComments.length > 0 && (
                 <View style={styles.commentCountBadge}>
                   <Text style={styles.commentCountText}>{postComments.length}</Text>
@@ -349,7 +361,7 @@ export default function CommentsScreen() {
             <View style={styles.inputField}>
               <TextInput
                 style={styles.input}
-                placeholder={t("feed.sections.writeComment")}
+                placeholder={isQuestion ? t('feed.sections.writeAnswer', { defaultValue: 'Write your answer…' }) : t("feed.sections.writeComment")}
                 placeholderTextColor="#A3A3A3"
                 value={newComment}
                 onChangeText={setNewComment}

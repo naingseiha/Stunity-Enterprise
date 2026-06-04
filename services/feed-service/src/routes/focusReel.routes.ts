@@ -28,22 +28,40 @@ router.post('/reels', authenticateToken, async (req: AuthRequest, res: Response)
     }
     const { title, description, subject, videoUrl, thumbnailUrl, duration, pausePoints } = parsed.data;
 
-    const reel = await prisma.focusReel.create({
-      data: {
-        title,
-        description: description ?? null,
-        subject,
-        videoUrl,
-        thumbnailUrl: thumbnailUrl ?? null,
-        duration,
-        pausePoints: pausePoints as any, // validated above; stored as Json
-        creatorId: userId,
-      },
-      include: {
-        creator: {
-          select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true },
+    const reel = await prisma.$transaction(async (tx) => {
+      const post = await tx.post.create({
+        data: {
+          authorId: userId,
+          schoolId: req.user!.schoolId || null,
+          content: description || title,
+          title,
+          postType: 'TUTORIAL',
+          visibility: 'PUBLIC',
+          courseCode: subject,
+          topicTags: [subject],
+          mediaUrls: [videoUrl],
         },
-      },
+        select: { id: true },
+      });
+
+      return tx.focusReel.create({
+        data: {
+          id: post.id,
+          title,
+          description: description ?? null,
+          subject,
+          videoUrl,
+          thumbnailUrl: thumbnailUrl ?? null,
+          duration,
+          pausePoints: pausePoints as any, // validated above; stored as Json
+          creatorId: userId,
+        },
+        include: {
+          creator: {
+            select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true },
+          },
+        },
+      });
     });
 
     // The new reel enters the DISCOVERY pool on the next feed cache miss

@@ -331,6 +331,54 @@ export const getQuizAttempts = async (
   }
 };
 
+// ─── Quiz history (WI5) ──────────────────────────────────────────────────────
+
+export interface QuizHistoryAttempt {
+  id: string;
+  score: number;
+  passed: boolean;
+  pointsEarned: number;
+  submittedAt: string;
+}
+
+export interface QuizHistoryAggregates {
+  attemptCount: number;
+  bestScore: number;
+  latestScore: number;
+  firstScore: number;
+  averageScore: number;
+  passCount: number;
+  passRate: number;
+  trend: 'up' | 'down' | 'flat';
+  perQuestionAccuracy: { questionId: string; correct: number; total: number; accuracy: number }[];
+}
+
+export interface QuizHistory {
+  quiz: { id: string; quizId: string; title: string; passingScore: number; totalPoints: number };
+  aggregates: QuizHistoryAggregates;
+  timeline: QuizHistoryAttempt[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
+/**
+ * GET /quizzes/:id/history — paginated attempt timeline + progress aggregates
+ * for the current user (WI5 Quiz History surface).
+ */
+export const getQuizHistory = async (
+  quizId: string,
+  page = 1,
+  limit = 20,
+): Promise<QuizHistory | null> => {
+  try {
+    const response = await quizApi.get(`/quizzes/${quizId}/history`, { params: { page, limit } });
+    if (!response.data.success) return null;
+    return response.data.data as QuizHistory;
+  } catch (error: any) {
+    console.error('❌ [QUIZ API] Get quiz history error:', error);
+    return null;
+  }
+};
+
 /**
  * GET /attempts/:id — Get specific attempt details
  */
@@ -358,6 +406,7 @@ export const quizService = {
   getMyQuizAttempts,
   getQuizAttempts,
   getQuizAttemptDetails,
+  getQuizHistory,
 };
 
 export const quizAPI = quizService; // Alias

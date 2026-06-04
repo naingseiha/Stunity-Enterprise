@@ -479,14 +479,36 @@ async function seedFeed() {
         if (existing) {
             console.log(`  ⏭️  Focus Reel already exists: "${reel.title}"`);
         } else {
-            await prisma.focusReel.create({
-                data: {
-                    ...reel,
-                    pausePoints: reel.pausePoints as any
-                }
+            await prisma.$transaction(async (tx) => {
+                const post = await tx.post.create({
+                    data: {
+                        authorId: reel.creatorId,
+                        content: reel.description || reel.title,
+                        title: reel.title,
+                        postType: 'TUTORIAL',
+                        visibility: 'PUBLIC',
+                        courseCode: reel.subject,
+                        topicTags: [reel.subject],
+                        mediaUrls: [reel.videoUrl],
+                    },
+                    select: { id: true }
+                });
+                await tx.focusReel.create({
+                    data: {
+                        id: post.id,
+                        title: reel.title,
+                        description: reel.description,
+                        videoUrl: reel.videoUrl,
+                        thumbnailUrl: reel.thumbnailUrl,
+                        subject: reel.subject,
+                        creatorId: reel.creatorId,
+                        duration: reel.duration,
+                        pausePoints: reel.pausePoints as any
+                    }
+                });
             });
             reelCount++;
-            console.log(`  ✅ Created Focus Reel: "${reel.title}"`);
+            console.log(`  ✅ Created Focus Reel (and backing Post): "${reel.title}"`);
         }
     }
 
