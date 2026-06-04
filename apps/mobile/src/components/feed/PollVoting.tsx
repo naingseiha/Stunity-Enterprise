@@ -22,6 +22,7 @@ import {
   UIManager, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Haptics } from '@/services/haptics';
+import { renderPostBodyText } from '@/utils/renderEmojiText';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -155,9 +156,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
           style={[styles.optionPill, { borderColor: isDark ? `${colorSet.border}66` : colorSet.border, backgroundColor: optionSurface }]}
         >
           <View style={[styles.optionDot, { backgroundColor: colorSet.border }]} />
-          <Text style={[styles.optionText, { color: optionText }]} numberOfLines={2} ellipsizeMode="tail">
-            {option.text}
-          </Text>
+          {renderPostBodyText(option.text, [styles.optionText, { color: optionText }], 2)}
         </TouchableOpacity>
       );
     }
@@ -192,16 +191,14 @@ export const PollVoting: React.FC<PollVotingProps> = ({
                   style={{ marginRight: 6 }}
                 />
               )}
-              <Text
-                style={[
+              {renderPostBodyText(
+                option.text,
+                [
                   styles.resultText,
                   isHighlighted && { fontWeight: '700', color: optionText },
-                ]}
-                numberOfLines={2}
-                ellipsizeMode="tail"
-              >
-                {option.text}
-              </Text>
+                ],
+                2
+              )}
             </View>
             <Text style={[
               styles.percentText,
@@ -258,11 +255,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 
   // ── Unvoted pill buttons ──
   optionPill: {
-    height: 44,
-    borderRadius: 22,
+    minHeight: 44,
+    borderRadius: 9999,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
+    paddingVertical: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
   optionDot: {
@@ -279,21 +277,22 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 
   // ── Voted result pills ──
   resultContainer: {
-    height: 44,
+    minHeight: 44,
   },
   resultPill: {
     flex: 1,
-    borderRadius: 22,
+    borderRadius: 9999,
     overflow: 'hidden',
     backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     position: 'relative',
+    minHeight: 44,
   },
   progressFill: {
     position: 'absolute',
     top: 0,
     left: 0,
     bottom: 0,
-    borderRadius: 24,
+    borderRadius: 9999,
     overflow: 'hidden',
   },
   progressGradient: {

@@ -2531,7 +2531,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
-  pollFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
+  pollFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 9999 },
   pollPct: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   reelPollTotal: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 2 },
 
