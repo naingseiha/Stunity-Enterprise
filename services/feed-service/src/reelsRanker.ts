@@ -18,6 +18,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { fetchReactionCounts } from './utils/reactionCounts';
 
 export type ReelType = 'FOCUS_REEL' | 'RECALL_CARD' | 'QUIZ_QUESTION' | 'TF_CARD' | 'BOUNTY' | 'POST';
 
@@ -81,6 +82,8 @@ export interface ReelEngagement {
   isLikedByMe: boolean;
   /** The viewer's reaction type (LIKE/INSIGHTFUL/CELEBRATE/SMART_TAKE) or null. */
   myReaction: string | null;
+  /** Per-type reaction counts for the social-proof summary, e.g. { INSIGHTFUL: 3 }. */
+  reactionCounts: Record<string, number>;
 }
 
 export interface ReelDto<TPayload = unknown> {
@@ -384,16 +387,21 @@ export class ReelsRanker {
 
     if (posts.length === 0) return [];
 
-    const liked = await this.prismaRead.like.findMany({
-      where: { userId, postId: { in: posts.map((p) => p.id) } },
-      select: { postId: true, reactionType: true },
-    });
+    const postIdList = posts.map((p) => p.id);
+    const [liked, reactionCountsMap] = await Promise.all([
+      this.prismaRead.like.findMany({
+        where: { userId, postId: { in: postIdList } },
+        select: { postId: true, reactionType: true },
+      }),
+      fetchReactionCounts(this.prismaRead, postIdList),
+    ]);
     const reactionMap = new Map(liked.map((l) => [l.postId, l.reactionType ?? 'LIKE']));
 
     return posts.map((p) => ({
       ...p,
       isLikedByMe: reactionMap.has(p.id),
       myReaction: reactionMap.get(p.id) ?? null,
+      reactionCounts: reactionCountsMap.get(p.id) ?? {},
     }));
   }
 
@@ -517,6 +525,7 @@ function toPostDto(p: any): ReelDto {
       commentsCount: p.commentsCount ?? 0,
       isLikedByMe: !!p.isLikedByMe,
       myReaction: p.myReaction ?? null,
+      reactionCounts: p.reactionCounts ?? {},
     },
     payload: {
       postType: p.postType,

@@ -25,6 +25,8 @@ export interface ReelEngagement {
   isLikedByMe: boolean;
   /** Viewer's reaction type (LIKE/INSIGHTFUL/CELEBRATE/SMART_TAKE) or null. */
   myReaction?: string | null;
+  /** Per-type reaction counts for the social-proof summary, e.g. { INSIGHTFUL: 3 }. */
+  reactionCounts?: Record<string, number>;
 }
 
 export interface ReelFeedItem {
@@ -84,6 +86,7 @@ export const patchEngagementInCache = (postId: string, patch: Partial<ReelEngage
             commentsCount: patch.commentsCount ?? it.engagement?.commentsCount ?? 0,
             isLikedByMe: patch.isLikedByMe ?? it.engagement?.isLikedByMe ?? false,
             myReaction: patch.myReaction !== undefined ? patch.myReaction : (it.engagement?.myReaction ?? null),
+            reactionCounts: patch.reactionCounts ?? it.engagement?.reactionCounts ?? {},
           },
         }
       : it,

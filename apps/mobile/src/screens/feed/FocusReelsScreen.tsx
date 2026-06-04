@@ -36,6 +36,7 @@ import useAuthStore from '@/stores/authStore';
 import { track } from '@/services/analytics';
 import { useFeatureFlag } from '@/config/featureFlags';
 import { useReducedMotion } from '@/hooks';
+import { adjustReactionCounts } from '@/utils/reactionCounts';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,6 +48,8 @@ const REEL_REACTIONS: { type: string; icon: keyof typeof Ionicons.glyphMap; colo
   { type: 'CELEBRATE', icon: 'sparkles', color: '#8B5CF6', label: 'Celebrate' },
   { type: 'SMART_TAKE', icon: 'rocket', color: '#0EA5E9', label: 'Smart take' },
 ];
+
+const REEL_REACTION_BY_TYPE = new Map(REEL_REACTIONS.map((r) => [r.type, r]));
 
 // ─── Types ─────────────────────────────────────────────────────────────
 // Re-exported from reelsCache.ts so prefetch + screen share the same shape.
@@ -929,6 +932,22 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
 
   const reactionMeta = myReaction ? REEL_REACTIONS.find((r) => r.type === myReaction) : null;
 
+  // Social-proof breakdown: the authoritative server counts with the viewer's
+  // own reaction folded onto them (same pure derivation as the feed's PostCard).
+  // `reactionCountsFor` also feeds the cache patch so a remount reflects it.
+  const baseServerReaction = engagement?.myReaction ?? (engagement?.isLikedByMe ? 'LIKE' : null);
+  const reactionCountsFor = (to: string | null): Record<string, number> =>
+    adjustReactionCounts(engagement?.reactionCounts ?? {}, baseServerReaction, to);
+  const summaryTypes = useMemo(() => {
+    const localReaction = myReaction ?? (liked ? 'LIKE' : null);
+    const counts = reactionCountsFor(localReaction);
+    return Object.entries(counts)
+      .filter(([type, n]) => n > 0 && REEL_REACTION_BY_TYPE.has(type))
+      .sort((a, b) => b[1] - a[1]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engagement?.reactionCounts, engagement?.myReaction, engagement?.isLikedByMe, myReaction, liked]);
+  const showReactionSummary = layout !== 'horizontal' && (summaryTypes.length > 1 || (summaryTypes.length === 1 && summaryTypes[0][0] !== 'LIKE'));
+
   const onShare = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -974,9 +993,9 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
         setLiked(corrected);
         setMyReaction(corrected ? 'LIKE' : null);
         setLikesCount((c) => Math.max(0, c + (corrected === optimisticLiked ? 0 : (corrected ? 2 : -2))));
-        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: correctedCount, myReaction: corrected ? 'LIKE' : null });
+        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: correctedCount, myReaction: corrected ? 'LIKE' : null, reactionCounts: reactionCountsFor(corrected ? 'LIKE' : null) });
       } else {
-        patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount, myReaction: optimisticLiked ? 'LIKE' : null });
+        patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount, myReaction: optimisticLiked ? 'LIKE' : null, reactionCounts: reactionCountsFor(optimisticLiked ? 'LIKE' : null) });
       }
     } catch (err) {
       // Roll back optimistic update
@@ -1027,6 +1046,7 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
         isLikedByMe: !!serverReaction,
         likesCount: optimisticCount,
         myReaction: serverReaction,
+        reactionCounts: reactionCountsFor(serverReaction),
       });
       if (serverReaction) track('post_reaction', { surface: 'reels', type: serverReaction });
     } catch (err) {
@@ -1115,6 +1135,24 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
             </Animated.View>
             <Text style={styles.sidebarText}>{formatCount(likesCount)}</Text>
           </TouchableOpacity>
+          {showReactionSummary && (
+            <View
+              style={styles.reelReactionSummary}
+              pointerEvents="none"
+              accessibilityLabel={summaryTypes
+                .map(([type, n]) => `${n} ${REEL_REACTION_BY_TYPE.get(type)!.label}`)
+                .join(', ')}
+            >
+              {summaryTypes.slice(0, 3).map(([type], i) => {
+                const meta = REEL_REACTION_BY_TYPE.get(type)!;
+                return (
+                  <View key={type} style={[styles.reelReactionDot, { marginLeft: i === 0 ? 0 : -4, zIndex: 3 - i }]}>
+                    <Ionicons name={meta.icon} size={9} color={meta.color} />
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
@@ -2123,6 +2161,22 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.7)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  reelReactionSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 3,
+  },
+  reelReactionDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
 
   // Horizontal action bar (for quiz/recall/bounty cards)
