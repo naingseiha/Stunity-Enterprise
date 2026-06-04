@@ -144,6 +144,15 @@ export default function NotificationsScreen() {
             return;
         }
 
+        // Weekly progress digest + streak reminders link here; the Profile screen
+        // opens on the performance tab by default.
+        if (linkPath.startsWith('/profile')) {
+            navigation.navigate('ProfileTab' as any, {
+                screen: 'Profile',
+            });
+            return;
+        }
+
         if (linkPath.includes('/grades') || linkPath.startsWith('/academic') || linkPath.startsWith('/parent/child/')) {
             navigation.navigate('ProfileTab' as any, {
                 screen: 'AcademicProfile',

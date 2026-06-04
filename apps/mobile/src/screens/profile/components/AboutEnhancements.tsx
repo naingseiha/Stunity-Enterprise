@@ -9,7 +9,7 @@
  * - Project Showcase
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import type { Certification, User, UserStats } from '@/types';
 import { useThemeContext } from '@/contexts';
+import { fetchProfileStrength, type ProfileStrength } from '@/api/profileApi';
 
 // ── Certification Card ───────────────────────────────────────────
 
@@ -178,8 +179,21 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
         { label: t('profile.about.interests'), icon: 'heart', done: (profile.interests?.length ?? 0) > 0, color: '#EC4899' },
     ];
 
+    // Authoritative strength from the backend (also refreshes the persisted
+    // profileCompleteness the weekly digest reads). Falls back to the local
+    // checklist calc if the request fails.
+    const [strength, setStrength] = useState<ProfileStrength | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        fetchProfileStrength()
+            .then((s) => { if (!cancelled) setStrength(s); })
+            .catch(() => { /* optional — keep local fallback */ });
+        return () => { cancelled = true; };
+    }, []);
+
     const completed = items.filter(i => i.done).length;
-    const pct = Math.round((completed / items.length) * 100);
+    const localPct = Math.round((completed / items.length) * 100);
+    const pct = strength?.completeness ?? localPct;
     const ringSize = 60;
     const sw = 5;
     const r = (ringSize - sw) / 2;
@@ -214,6 +228,14 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
                     )}
                 </View>
             </View>
+            {strength?.nextAction ? (
+                <View style={[cmpStyles.nudge, { backgroundColor: isDark ? '#0F2F37' : '#EFF6FF' }]}>
+                    <Ionicons name="arrow-forward-circle" size={16} color="#0EA5E9" />
+                    <Text style={[cmpStyles.nudgeText, { color: isDark ? '#7DD3FC' : '#0369A1' }]} numberOfLines={2}>
+                        {strength.nextAction}
+                    </Text>
+                </View>
+            ) : null}
             <View style={cmpStyles.checklist}>
                 {items.map((item, i) => (
                     <View key={i} style={cmpStyles.checkRow}>
@@ -244,6 +266,8 @@ const cmpStyles = StyleSheet.create({
     topSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
     editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start' },
     editText: { fontSize: 12, fontWeight: '600', color: '#0EA5E9' },
+    nudge: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
+    nudgeText: { flex: 1, fontSize: 12, fontWeight: '700' },
     checklist: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
     checkRow: { flexDirection: 'row', alignItems: 'center', gap: 6, width: '47%' },
     checkIcon: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

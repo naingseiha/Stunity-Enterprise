@@ -21,6 +21,8 @@ import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { NotificationProvider, ThemeProvider } from '@/contexts';
 import { hydrateAppPreferences } from '@/services/appPreferences';
+import { loadFeatureFlags } from '@/config/featureFlags';
+import { track } from '@/services/analytics';
 import { hydrateServerHostOverride } from '@/services/serverConfig';
 import {
   KHMER_FONT_ASSETS,
@@ -93,6 +95,10 @@ export default function App() {
         // Prefetch in background to warm up caches
         learnApi.prefetchLearnHub().catch(() => {});
         clubsApi.prefetchClubs().catch(() => {});
+        // Resolve feature flags for this user (gates rolled-out features).
+        loadFeatureFlags().catch(() => {});
+        // Record the session open (drives WAD/MAU active-day rollup).
+        track('app_open');
       }
     });
   }, []);

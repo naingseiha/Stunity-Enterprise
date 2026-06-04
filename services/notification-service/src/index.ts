@@ -54,4 +54,7 @@ app.get('/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Notification Service running on port ${PORT}`);
+  // Start the in-process job scheduler (no-op when ENABLE_INTERNAL_CRON=false).
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('./scheduler').startInternalScheduler();
 });

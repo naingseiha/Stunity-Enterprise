@@ -59,6 +59,8 @@ import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
 import { fetchActiveQuizWar, joinQuizWar } from '@/api/quizWars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
+import { StreakWidget } from '@/components/streak';
+import { useFeatureFlag } from '@/config/featureFlags';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
@@ -238,7 +240,7 @@ const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create
     backgroundColor: colors.card,
     borderWidth: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)',
   },
   inner: { padding: 14, borderRadius: 16, overflow: 'hidden' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
@@ -284,6 +286,7 @@ export default function FeedScreen() {
   // (login/logout/profile update). Previously `useAuthStore()` re-rendered the
   // entire FeedScreen on every auth-store action, including transient ones.
   const user = useAuthStore(s => s.user);
+  const streakRingEnabled = useFeatureFlag('streak_ring');
   const { openSidebar } = useNavigationContext();
 
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
@@ -300,6 +303,7 @@ export default function FeedScreen() {
   const applyPendingPosts = useFeedStore(s => s.applyPendingPosts);
   const likePost = useFeedStore(s => s.likePost);
   const unlikePost = useFeedStore(s => s.unlikePost);
+  const reactToPost = useFeedStore(s => s.reactToPost);
   const bookmarkPost = useFeedStore(s => s.bookmarkPost);
   const notInterestedPost = useFeedStore(s => s.notInterestedPost);
   const voteOnPoll = useFeedStore(s => s.voteOnPoll);
@@ -793,6 +797,10 @@ export default function FeedScreen() {
     }
   }, [likePost, unlikePost]);
 
+  const handleReactPost = useCallback((post: Post, type: string) => {
+    reactToPost(post.id, type);
+  }, [reactToPost]);
+
   const handleSharePost = useCallback(async (post: Post) => {
     try {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
@@ -898,6 +906,13 @@ export default function FeedScreen() {
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
+            {user?.id && streakRingEnabled ? (
+              <StreakWidget
+                userId={user.id}
+                compact
+                onPress={() => navigation.navigate('Profile' as any)}
+              />
+            ) : null}
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
@@ -983,13 +998,13 @@ export default function FeedScreen() {
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
-    handleLikePost, handleSharePost, handleValuePost, handlePostPress,
+    handleLikePost, handleReactPost, handleSharePost, handleValuePost, handlePostPress,
     handleVoteOnPoll, bookmarkPost, notInterestedPost, navigation,
   });
   // Update ref on every render so callbacks are fresh but identity is stable
   useEffect(() => {
     handlersRef.current = {
-      handleLikePost, handleSharePost, handleValuePost, handlePostPress,
+      handleLikePost, handleReactPost, handleSharePost, handleValuePost, handlePostPress,
       handleVoteOnPoll, bookmarkPost, notInterestedPost, navigation,
     };
   });
@@ -1750,7 +1765,7 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     borderWidth: 0,
     borderRadius: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)',
   },
   createPostRow: {
     flexDirection: 'row',

@@ -387,6 +387,20 @@ export function QuizResultsScreen() {
                     <Text style={styles.exploreLabel}>{t('quiz.results.badges')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
+
+                {!!quiz?.id && (
+                  <TouchableOpacity
+                    style={styles.exploreCard}
+                    onPress={() => navigation.navigate('QuizHistory' as any, { quizId: quiz.id, title: normalizedQuiz?.title ?? quiz.title })}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('quiz.results.history', { defaultValue: 'History' })}
+                  >
+                    <LinearGradient colors={['rgba(16, 185, 129, 0.25)', 'rgba(16, 185, 129, 0.1)']} style={styles.exploreGradient}>
+                      <Ionicons name="time" size={24} color="#10B981" />
+                      <Text style={styles.exploreLabel}>{t('quiz.results.history', { defaultValue: 'History' })}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 

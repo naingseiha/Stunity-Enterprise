@@ -142,7 +142,14 @@ export function QuizDetailsScreen() {
         </View>
 
         {!!quiz.userAttempt && (
-          <View style={styles.attemptCard}>
+          <TouchableOpacity
+            style={styles.attemptCard}
+            activeOpacity={quiz.id ? 0.8 : 1}
+            disabled={!quiz.id}
+            onPress={() => quiz.id && navigation.navigate('QuizHistory' as any, { quizId: quiz.id, title: quiz.title })}
+            accessibilityRole="button"
+            accessibilityLabel={t('quiz.history.viewHistory', { defaultValue: 'View attempt history' })}
+          >
             <Ionicons
               name={quiz.userAttempt.passed ? 'checkmark-circle' : 'refresh-circle'}
               size={24}
@@ -154,7 +161,8 @@ export function QuizDetailsScreen() {
                 {t('quiz.details.previousScore', { score: Math.round(quiz.userAttempt.score || 0) })}
               </Text>
             </View>
-          </View>
+            {!!quiz.id && <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />}
+          </TouchableOpacity>
         )}
 
         <View style={styles.infoPanel}>

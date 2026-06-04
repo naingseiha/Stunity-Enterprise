@@ -580,6 +580,7 @@ model User {
   id                           String                       @id @default(cuid())
   schoolId                     String?
   email                        String?                      @unique
+  username                     String?                      @unique
   password                     String
   firstName                    String
   lastName                     String
@@ -650,8 +651,10 @@ model User {
   challengeParticipations      ChallengeParticipant[]
   learningStreak               LearningStreak?
   quizAttemptRecords           QuizAttemptRecord[]
+  verificationRequests         VerificationRequest[]
   recallCards                  RecallCard[]
   recallReviews                RecallReview[]
+  reelResponses                ReelResponse[]
   verifiedPosts                Post[]                       @relation("PostsVerifiedBy")
   bountiesAsked                Bounty[]                     @relation("BountiesAsked")
   bountyReplies                BountyReply[]                @relation("BountyReplies")
@@ -914,12 +917,13 @@ model Comment {
 }
 
 model Like {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  postId       String
+  userId       String
+  reactionType String   @default("LIKE") // LIKE, INSIGHTFUL, CELEBRATE, SMART_TAKE
+  createdAt    DateTime @default(now())
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([userId])
@@ -2920,6 +2924,43 @@ model RecallReview {
 }
 
 // ─────────────────────────────────────────────────────────
+// Reel Responses — per-user, per-item answer record for the interactive
+// reel cards (quiz / true-false / cloze). Lets a card render its prior
+// answer + result on return and across cold restarts, instead of resetting
+// to blank (local useState was the only store before). Polls are NOT recorded
+// here — they already persist via PollVote.
+//
+// Multiple attempts are allowed (attemptNumber increments), but only the FIRST
+// attempt earns XP / moves the combo / reschedules SM-2 (anti-farming). Write +
+// read paths live in services/feed-service/src/routes/reels.routes.ts.
+// ─────────────────────────────────────────────────────────
+
+model ReelResponse {
+  id     String @id @default(cuid())
+  userId String
+
+  // QuizQuestion.id for QUIZ_QUESTION / TF_CARD / CLOZE_CARD (all three are
+  // QuizQuestions under the hood — see reelsRanker.ts).
+  itemId   String
+  itemType String // 'QUIZ_QUESTION' | 'TF_CARD' | 'CLOZE_CARD'
+
+  // Index into the SHUFFLED options the client rendered. The shuffle is
+  // deterministic per question id (shuffleOptions in reelsRanker.ts), so the
+  // same index maps to the same option on replay.
+  chosenIndex   Int
+  correct       Boolean
+  attemptNumber Int     @default(1)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, itemId]) // batch hydrate by user across feed itemIds
+  @@index([userId, itemId, createdAt(sort: Desc)]) // latest-attempt lookup
+  @@map("reel_responses")
+}
+
+// ─────────────────────────────────────────────────────────
 // Feynman Bounties — XP-staked Q&A. Asker stakes XP at creation; the
 // stake sits in escrow (UserStats.xp debit + Bounty row holding the
 // amount) until either the asker awards a reply or the bounty
@@ -3167,7 +3208,7 @@ model LearningStreak {
   longestStreak Int        @default(0)
   lastQuizDate  DateTime?
   freezesUsed   Int        @default(0)
-  freezesTotal  Int        @default(3)
+  freezesTotal  Int        @default(0) // freezes currently available; earned per 7-day milestone, capped at 1
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   userStatsId   String?
@@ -4338,4 +4379,50 @@ model FocusReelAttempt {
 
   @@unique([reelId, userId])
   @@map("focus_reel_attempts")
+}
+
+model VerificationRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  documentUrl String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@map("verification_requests")
+}
+
+// Raw product-analytics event stream (app_open, recall_review, post_reaction, …).
+// userId is a plain scalar (no FK) to keep ingestion decoupled and fast.
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  props     Json?
+  schoolId  String?
+  sessionId String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([name, createdAt])
+  @@index([schoolId, createdAt])
+  @@map("analytics_events")
+}
+
+// Daily active-day rollup — one row per (user, day). Upserted on any event so
+// WAD/MAU is a cheap distinct-day count instead of scanning the event stream.
+model UserActiveDay {
+  id        String   @id @default(cuid())
+  userId    String
+  day       DateTime @db.Date
+  schoolId  String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, day])
+  @@index([day])
+  @@map("user_active_days")
 }

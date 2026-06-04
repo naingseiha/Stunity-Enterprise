@@ -50,16 +50,20 @@ import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSection
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
 import PostOptionsSheet, { PostOptionAction } from './PostOptionsSheet';
+import { RepostComposer } from './RepostComposer';
+import { useFeatureFlag } from '@/config/featureFlags';
 import { verifyPost, unverifyPost, canVerifyPosts } from '@/api/postVerification';
 import { FEED_POST_CARD_MARGIN_H } from '@/constants';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
+import { adjustReactionCounts } from '@/utils/reactionCounts';
 import { feedApi } from '@/api/client';
 
 interface PostCardProps {
   post: Post;
   onLike?: () => void;
+  onReact?: (type: string) => void;
   onComment?: () => void;
   onShare?: () => void;
   onRepost?: () => void;
@@ -154,14 +158,50 @@ const getTimeRemaining = (deadline: string, t: any): { text: string; isUrgent: b
 };
 
 // Memoized action bar — isolates like/comment/share state from header/content re-renders
+// Reaction palette — Ionicons only (no emoji, which can render as tofu boxes).
+const REACTIONS: { type: string; icon: keyof typeof Ionicons.glyphMap; color: string; label: string }[] = [
+  { type: 'LIKE', icon: 'heart', color: '#EF4444', label: 'Like' },
+  { type: 'INSIGHTFUL', icon: 'bulb', color: '#F59E0B', label: 'Insightful' },
+  { type: 'CELEBRATE', icon: 'sparkles', color: '#8B5CF6', label: 'Celebrate' },
+  { type: 'SMART_TAKE', icon: 'rocket', color: '#0EA5E9', label: 'Smart take' },
+];
+
+const REACTION_BY_TYPE = new Map(REACTIONS.map((r) => [r.type, r]));
+
+const reactionPickerStyles = StyleSheet.create({
+  // Large negative insets so a tap anywhere outside the bar dismisses the picker.
+  backdrop: { position: 'absolute', top: -1000, left: -1000, right: -1000, bottom: -1000, zIndex: 10 },
+  bar: {
+    position: 'absolute',
+    bottom: 42,
+    left: -6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    zIndex: 20,
+  },
+  option: { padding: 3 },
+});
+
 interface ActionBarProps {
   liked: boolean;
+  myReaction?: string | null;
   likeCount: number;
   valued: boolean;
+  valueCount?: number;
   commentCount: number;
   shareCount: number;
   viewCount: number;
   onLike: () => void;
+  onReact?: (type: string) => void;
   onComment: () => void;
   onRepost: () => void;
   onShare: () => void;
@@ -181,6 +221,7 @@ interface AnimatedActionButtonProps {
   color: string;
   activeColor: string;
   onPress: () => void;
+  onLongPress?: () => void;
   size?: number;
   styles: any;
   accessibilityLabel: string;
@@ -194,6 +235,7 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
   color,
   activeColor,
   onPress,
+  onLongPress,
   size = 24,
   styles,
   accessibilityLabel,
@@ -240,6 +282,8 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
   return (
     <Pressable
       onPress={handlePress}
+      onLongPress={onLongPress}
+      delayLongPress={220}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
@@ -296,25 +340,60 @@ const ViewStatsIndicator = React.memo<{
 )});
 
 const ActionBar = React.memo<ActionBarProps>(({
-  liked, likeCount, valued, commentCount, shareCount, viewCount,
-  onLike, onComment, onRepost, onShare, onValue, onViewStats, canOpenStats,
+  liked, myReaction, likeCount, valued, valueCount, commentCount, shareCount, viewCount,
+  onLike, onReact, onComment, onRepost, onShare, onValue, onViewStats, canOpenStats,
   styles, colors,
 }) => {
   const { t } = useTranslation();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const reactionMeta = myReaction ? REACTIONS.find((r) => r.type === myReaction) : null;
+
+  const handleReactPick = useCallback((type: string) => {
+    setPickerOpen(false);
+    onReact?.(type);
+  }, [onReact]);
+
   return (
     <View style={styles.actionBar}>
     <View style={styles.actionBarLeft}>
-      <AnimatedActionButton
-        icon="heart-outline"
-        activeIcon="heart"
-        active={liked}
-        count={likeCount}
-        color={colors.text}
-        activeColor="#EF4444"
-        onPress={onLike}
-        styles={styles}
-        accessibilityLabel={t('feed.actions.like')}
-      />
+      <View>
+        {pickerOpen ? (
+          <>
+            {/* Tap-away backdrop to dismiss the picker */}
+            <Pressable
+              onPress={() => setPickerOpen(false)}
+              style={reactionPickerStyles.backdrop}
+              accessibilityLabel={t('common.close')}
+            />
+            <View style={[reactionPickerStyles.bar, { backgroundColor: colors.card }]}>
+              {REACTIONS.map((r) => (
+                <Pressable
+                  key={r.type}
+                  onPress={() => handleReactPick(r.type)}
+                  hitSlop={6}
+                  style={reactionPickerStyles.option}
+                  accessibilityRole="button"
+                  accessibilityLabel={r.label}
+                >
+                  <Ionicons name={r.icon} size={24} color={r.color} />
+                </Pressable>
+              ))}
+            </View>
+          </>
+        ) : null}
+        <AnimatedActionButton
+          icon="heart-outline"
+          activeIcon={reactionMeta ? reactionMeta.icon : 'heart'}
+          active={liked}
+          count={likeCount}
+          color={colors.text}
+          activeColor={reactionMeta ? reactionMeta.color : '#EF4444'}
+          onPress={() => { setPickerOpen(false); onLike(); }}
+          onLongPress={onReact ? () => setPickerOpen(true) : undefined}
+          styles={styles}
+          accessibilityLabel={t('feed.actions.like')}
+        />
+      </View>
       <AnimatedActionButton
         icon="chatbubble-outline"
         count={commentCount}
@@ -352,10 +431,13 @@ const ActionBar = React.memo<ActionBarProps>(({
         styles={styles}
         colors={colors}
       />
+      {/* Educational-value rating. The count makes its purpose legible —
+          it reads as "N peers rated this valuable", not a mystery glyph. */}
       <AnimatedActionButton
         icon="diamond-outline"
         activeIcon="diamond"
         active={valued}
+        count={valueCount}
         color={colors.text}
         activeColor="#8B5CF6"
         onPress={onValue}
@@ -365,6 +447,50 @@ const ActionBar = React.memo<ActionBarProps>(({
     </View>
   </View>
 )});
+
+// Social-proof summary: the distinct reaction types present on a post (stacked,
+// most-used first) + the total — the "who reacted, and how" signal. Renders
+// nothing until at least one known reaction exists, so it never duplicates a
+// bare like count.
+const ReactionSummary = React.memo<{
+  counts?: Record<string, number>;
+  styles: any;
+  colors: any;
+}>(({ counts, styles, colors }) => {
+  if (!counts) return null;
+  const entries = Object.entries(counts)
+    .filter(([type, n]) => n > 0 && REACTION_BY_TYPE.has(type))
+    .sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return null;
+
+  const total = entries.reduce((s, [, n]) => s + n, 0);
+  const top = entries.slice(0, 3);
+  const a11y = entries
+    .map(([type, n]) => `${n} ${REACTION_BY_TYPE.get(type)!.label}`)
+    .join(', ');
+
+  return (
+    <View style={styles.reactionSummary} accessibilityRole="text" accessibilityLabel={a11y}>
+      <View style={styles.reactionSummaryIcons}>
+        {top.map(([type], i) => {
+          const meta = REACTION_BY_TYPE.get(type)!;
+          return (
+            <View
+              key={type}
+              style={[
+                styles.reactionSummaryIconWrap,
+                { backgroundColor: colors.card, marginLeft: i === 0 ? 0 : -5, zIndex: top.length - i },
+              ]}
+            >
+              <Ionicons name={meta.icon} size={11} color={meta.color} />
+            </View>
+          );
+        })}
+      </View>
+      <Text style={styles.reactionSummaryCount}>{total}</Text>
+    </View>
+  );
+});
 
 // LIVE badge — isolated so animation only runs on LIVE posts.
 // Pulse runs on the UI thread via Reanimated worklets — no JS frame cost.
@@ -405,6 +531,7 @@ const LiveBadge = React.memo<{ viewers?: number; t: any; styles: any }>(({ viewe
 const PostCardInner: React.FC<PostCardProps> = ({
   post,
   onLike,
+  onReact,
   onComment,
   onShare,
   onRepost,
@@ -420,6 +547,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   navigate,
 }) => {
   const { colors, isDark } = useThemeContext();
+  const reactionsEnabled = useFeatureFlag('reactions');
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const { t, i18n } = useTranslation();
@@ -443,9 +571,11 @@ const PostCardInner: React.FC<PostCardProps> = ({
   // Instead of state, we can use a "derived state" pattern or useLayoutEffect to sync.
 
   const [liked, setLiked] = useState(post.isLiked);
+  const [myReaction, setMyReaction] = useState<string | null>(post.myReaction ?? null);
   const [bookmarked, setBookmarked] = useState(post.isBookmarked);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
+  const [showRepostComposer, setShowRepostComposer] = useState(false);
   const [valued, setValued] = useState(isValuedProp);
   const [isFollowing, setIsFollowing] = useState(post.isFollowingAuthor || false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -454,23 +584,56 @@ const PostCardInner: React.FC<PostCardProps> = ({
   // useLayoutEffect runs before paint to avoid a frame of stale UI.
   React.useLayoutEffect(() => {
     setLiked(post.isLiked);
+    setMyReaction(post.myReaction ?? null);
     setBookmarked(post.isBookmarked);
     setLikeCount(post.likes);
     setIsFollowing(post.isFollowingAuthor || false);
     setValued(isValuedProp);
-  }, [post.id, post.isLiked, post.isBookmarked, post.likes, post.isFollowingAuthor, isValuedProp]);
+  }, [post.id, post.isLiked, post.myReaction, post.isBookmarked, post.likes, post.isFollowingAuthor, isValuedProp]);
+
+  // The reaction breakdown shown is the authoritative server counts with the
+  // viewer's own pending change folded in (their server-side reaction → their
+  // current local one), treating a plain like as a LIKE. Pure derivation, so it
+  // stays correct across every toggle/swap without a separate optimistic state.
+  const displayedReactionCounts = React.useMemo(() => {
+    const serverReaction = post.myReaction ?? (post.isLiked ? 'LIKE' : null);
+    const localReaction = myReaction ?? (liked ? 'LIKE' : null);
+    return adjustReactionCounts(post.reactionCounts ?? {}, serverReaction, localReaction);
+  }, [post.reactionCounts, post.myReaction, post.isLiked, myReaction, liked]);
 
   const handleLike = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
 
     if (liked) {
       setLikeCount((prev) => prev - 1);
+      setLiked(false);
+      setMyReaction(null);
     } else {
       setLikeCount((prev) => prev + 1);
+      setLiked(true);
+      setMyReaction('LIKE');
     }
-    setLiked(!liked);
     onLike?.();
   }, [liked, onLike]);
+
+  // Pick a specific reaction (long-press). Toggles off if the same one is chosen.
+  const handleReact = useCallback((type: string) => {
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
+    setMyReaction((prevReaction) => {
+      const same = prevReaction === type;
+      if (same) {
+        setLiked(false);
+        setLikeCount((c) => Math.max(0, c - 1));
+        return null;
+      }
+      if (!prevReaction) {
+        setLikeCount((c) => c + 1);
+      }
+      setLiked(true);
+      return type;
+    });
+    onReact?.(type);
+  }, [onReact]);
 
   const handleValue = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
@@ -501,35 +664,9 @@ const PostCardInner: React.FC<PostCardProps> = ({
       return;
     }
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
-    // Show repost confirmation
-    Alert.alert(
-      t('feed.repost'),
-      t('feed.repostConfirm', { name: post.author.firstName }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('feed.repost'),
-          onPress: async () => {
-            try {
-              const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: '' });
-              if (res.data.success) {
-                // Refresh feed so the repost appears
-                const { fetchPosts } = require('@/stores').useFeedStore.getState();
-                fetchPosts(true);
-                onRepost?.();
-                Alert.alert(t('common.success'), t('feed.repostSuccess'));
-              } else {
-                Alert.alert(t('common.error'), res.data.error || 'Failed to repost');
-              }
-            } catch (err: any) {
-              const msg = err?.response?.data?.error || 'Failed to repost';
-              Alert.alert(t('common.error'), msg);
-            }
-          },
-        },
-      ],
-    );
-  }, [isCurrentUser, post.author.firstName, post.id, onRepost, t]);
+    // Open the quote composer — the user can add commentary (or repost as-is).
+    setShowRepostComposer(true);
+  }, [isCurrentUser, t]);
 
   const handleShare = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
@@ -824,14 +961,19 @@ const PostCardInner: React.FC<PostCardProps> = ({
       />
 
 
+      <ReactionSummary counts={displayedReactionCounts} styles={styles} colors={colors} />
+
       <ActionBar
         liked={liked}
+        myReaction={myReaction}
         likeCount={likeCount}
         valued={valued}
+        valueCount={post.edScoreCount}
         commentCount={post.comments}
         shareCount={post.shares}
         viewCount={post.views || 0}
         onLike={handleLike}
+        onReact={onReact && reactionsEnabled ? handleReact : undefined}
         onComment={handleComment}
         onRepost={handleRepost}
         onShare={handleShare}
@@ -849,6 +991,15 @@ const PostCardInner: React.FC<PostCardProps> = ({
         actions={menuActions}
         onClose={() => setShowMenu(false)}
       />
+
+      {showRepostComposer && (
+        <RepostComposer
+          visible={showRepostComposer}
+          post={post}
+          onClose={() => setShowRepostComposer(false)}
+          onReposted={onRepost}
+        />
+      )}
     </View>
   );
 };
@@ -869,6 +1020,8 @@ function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolea
   return (
     prev.post.id === next.post.id &&
     prev.post.isLiked === next.post.isLiked &&
+    prev.post.myReaction === next.post.myReaction &&
+    prev.post.reactionCounts === next.post.reactionCounts &&
     prev.post.likes === next.post.likes &&
     prev.post.comments === next.post.comments &&
     prev.post.isBookmarked === next.post.isBookmarked &&
@@ -901,7 +1054,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingTop: 14,
     overflow: 'hidden',
     borderBottomWidth: 1,
-    borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB',
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
   },
   // LIVE Badge styles
   liveBadge: {
@@ -1311,6 +1464,32 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontWeight: '500',
     color: colors.textTertiary,
   },
+  reactionSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
+  reactionSummaryIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reactionSummaryIconWrap: {
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  reactionSummaryCount: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1471,70 +1650,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
-  },
-  // Repost Embed Card
-  repostEmbed: {
-    marginHorizontal: 14,
-    marginBottom: 10,
-    borderRadius: 14,
-
-
-    backgroundColor: colors.surfaceVariant,
-    overflow: 'hidden',
-  },
-  repostEmbedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  repostEmbedAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  repostEmbedAuthor: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  repostEmbedTime: {
-    fontSize: 11,
-    color: colors.textTertiary,
-  },
-  repostEmbedTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    paddingHorizontal: 12,
-    marginBottom: 2,
-  },
-  repostEmbedContent: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-  },
-  repostEmbedMedia: {
-    width: '100%',
-    height: 140,
-  },
-  repostEmbedStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  repostEmbedStatText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.textTertiary,
   },
 });
 

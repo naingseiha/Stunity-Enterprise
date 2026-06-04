@@ -39,6 +39,8 @@ export function transformPost(post: any): Post | null {
             shares: post.sharesCount || 0,
             views: post.viewsCount ?? post._count?.views ?? post.views ?? 0,
             isLiked: post.isLikedByMe || post.isLiked || false,
+            myReaction: post.myReaction ?? null,
+            reactionCounts: post.reactionCounts ?? undefined,
             isBookmarked: post.isBookmarked || false,
             isValued: post.isValuedByMe || post.isValued || false,
             isFollowingAuthor: post.isFollowingAuthor || false,

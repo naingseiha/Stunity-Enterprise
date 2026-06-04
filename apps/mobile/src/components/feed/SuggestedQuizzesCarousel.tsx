@@ -117,7 +117,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerIcon}>
-            <Ionicons name="sparkles" size={16} color="#7C3AED" />
+            <Ionicons name="sparkles-outline" size={15} color="#7C3AED" />
           </View>
           <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
         </View>
@@ -162,7 +162,10 @@ type QuizCarouselStyles = {
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCarouselStyles>({
   container: {
-    marginVertical: 12,
+    backgroundColor: colors.card,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
   },
   header: {
     flexDirection: 'row',
@@ -180,7 +183,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
   headerIcon: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 999,
     backgroundColor: isDark ? 'rgba(124,58,237,0.18)' : '#F3E8FF',
     alignItems: 'center',
     justifyContent: 'center',

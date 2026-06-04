@@ -49,11 +49,22 @@ router.get('/users/:id/skills', authenticateToken, async (req: AuthRequest, res:
       ],
     });
 
+    // Which of these skills the viewer has already endorsed (for one-tap toggle state).
+    let myEndorsedSkillIds = new Set<string>();
+    if (currentUserId && currentUserId !== userId && skills.length > 0) {
+      const mine = await prismaRead.skillEndorsement.findMany({
+        where: { endorserId: currentUserId, skillId: { in: skills.map(s => s.id) } },
+        select: { skillId: true },
+      });
+      myEndorsedSkillIds = new Set(mine.map(e => e.skillId));
+    }
+
     res.json({
       success: true,
       skills: skills.map(skill => ({
         ...skill,
         endorsementCount: skill._count.endorsements,
+        endorsedByMe: myEndorsedSkillIds.has(skill.id),
       })),
     });
   } catch (error: any) {
@@ -177,6 +188,22 @@ router.post('/skills/:skillId/endorse', authenticateToken, async (req: AuthReque
     });
 
     res.json({ success: true, endorsement });
+
+    // Notify the recipient so the endorsement is "seen" (social-proof hook §3.4).
+    const endorserName = `${endorsement.endorser.firstName} ${endorsement.endorser.lastName}`.trim();
+    Promise.all([
+      prisma.notification.create({
+        data: {
+          recipientId: skill.userId,
+          actorId: endorserId,
+          type: 'SKILL_ENDORSED',
+          title: 'New Endorsement',
+          message: `${endorserName} endorsed you for ${skill.skillName}`,
+          link: `/users/${skill.userId}/profile`,
+        },
+      }),
+      EventPublisher.skillEndorsed(skill.userId, endorserId, endorserName, skill.skillName),
+    ]).catch(err => console.error('Endorse notification failed:', err));
   } catch (error: any) {
     if (error.code === 'P2002') {
       return res.status(400).json({ success: false, error: 'Already endorsed' });

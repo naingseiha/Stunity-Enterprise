@@ -12,6 +12,7 @@ import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { updateUserFeedSignals } from './signals.routes';
 import { createPostSchema, createCommentSchema } from '../validators/post.validator';
+import { POLL_MIN_OPTIONS, POLL_MAX_OPTIONS, POLL_OPTION_MAX_LEN } from '../constants/limits';
 import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 
 const router = Router();
@@ -364,7 +365,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       },
       likes: {
         where: { userId: req.user!.id },
-        select: { id: true },
+        select: { id: true, reactionType: true },
         take: 1,
       },
       bookmarks: {
@@ -458,12 +459,13 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         : Promise.resolve(null),
     ]);
     const postWithState = post as typeof post & {
-      likes?: { id: string }[];
+      likes?: { id: string; reactionType: string }[];
       bookmarks?: { id: string }[];
       educationalValueRatings?: { id: string }[];
       viewsCount?: number;
     };
     const isLikedByMe = (postWithState.likes?.length || 0) > 0;
+    const myReaction = postWithState.likes?.[0]?.reactionType ?? null;
     const isBookmarked = (postWithState.bookmarks?.length || 0) > 0;
     const isValuedByMe = (postWithState.educationalValueRatings?.length || 0) > 0;
     const userVotedOptionId = pollRows.find((option) => option.userVotedOptionId)?.userVotedOptionId || null;
@@ -496,6 +498,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
           attempts: undefined,
         } : undefined,
         isLikedByMe,
+        myReaction,
         isBookmarked,
         isValuedByMe,
         likesCount: post.likesCount ?? 0,
@@ -587,6 +590,100 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
   } catch (error: any) {
     console.error('Like post error:', error);
     res.status(500).json({ success: false, error: 'Failed to like post' });
+  }
+});
+
+// Reaction types supported beyond a plain like (growth-plan §3.4).
+const REACTION_TYPES = ['LIKE', 'INSIGHTFUL', 'CELEBRATE', 'SMART_TAKE'] as const;
+type ReactionType = (typeof REACTION_TYPES)[number];
+
+// POST /posts/:id/react - Set, change, or toggle off a reaction on a post.
+// One reaction per user per post (unique postId+userId). Tapping the current
+// reaction again removes it; a different type swaps it. likesCount tracks the
+// total reaction count across all types, so existing UI keeps working.
+router.post('/posts/:id/react', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+    const type = String(req.body?.type || '').toUpperCase() as ReactionType;
+
+    if (!REACTION_TYPES.includes(type)) {
+      return res.status(400).json({ success: false, error: 'Invalid reaction type' });
+    }
+
+    const targetPost = await findAccessiblePost(postId, req, { id: true, authorId: true });
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.like.findUnique({
+        where: { postId_userId: { postId: targetPost.id, userId } },
+        select: { id: true, reactionType: true },
+      });
+
+      if (!existing) {
+        await tx.like.create({ data: { postId: targetPost.id, userId, reactionType: type } });
+        await tx.post.update({
+          where: { id: targetPost.id },
+          data: { likesCount: { increment: 1 } },
+        });
+        return { myReaction: type as ReactionType | null, isNew: true };
+      }
+
+      if (existing.reactionType === type) {
+        // Same reaction tapped again → remove it.
+        await tx.like.delete({ where: { id: existing.id } });
+        await tx.post.update({
+          where: { id: targetPost.id },
+          data: { likesCount: { decrement: 1 } },
+        });
+        return { myReaction: null, isNew: false };
+      }
+
+      // Switch reaction type — count is unchanged.
+      await tx.like.update({ where: { id: existing.id }, data: { reactionType: type } });
+      return { myReaction: type as ReactionType | null, isNew: false };
+    });
+
+    res.json({ success: true, myReaction: result.myReaction });
+
+    runAfterResponse('reaction side effects', async () => {
+      await Promise.all([
+        feedCache.invalidateUser(userId),
+        feedCache.invalidateUser(targetPost.authorId),
+      ]);
+
+      if (!result.myReaction) return; // reaction removed — nothing else to do
+      await updateUserFeedSignals(userId, targetPost.id, 'like');
+
+      // Notify only on a brand-new reaction, not a type swap, and never self.
+      if (!result.isNew || targetPost.authorId === userId) return;
+
+      const reactor = await prismaRead.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true },
+      });
+      if (!reactor) return;
+
+      const reactorName = `${reactor.firstName} ${reactor.lastName}`;
+      await prisma.notification.create({
+        data: {
+          recipientId: targetPost.authorId,
+          actorId: userId,
+          type: 'LIKE',
+          title: 'New Reaction',
+          message: `${reactorName} reacted to your post`,
+          postId: targetPost.id,
+          link: `/posts/${targetPost.id}`,
+        },
+      });
+
+      await EventPublisher.newLike(targetPost.authorId, userId, reactorName, targetPost.id);
+    });
+  } catch (error: any) {
+    console.error('React to post error:', error);
+    res.status(500).json({ success: false, error: 'Failed to react to post' });
   }
 });
 
@@ -1421,10 +1518,13 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
     if (post.postType === 'POLL' && pollOptions && Array.isArray(pollOptions)) {
       const validOptions = pollOptions
         .filter((opt: string) => opt && opt.trim())
-        .map((text: string) => text.trim());
+        .map((text: string) => text.trim().slice(0, POLL_OPTION_MAX_LEN));
 
-      if (validOptions.length < 2) {
-        return res.status(400).json({ success: false, error: 'Poll must have at least 2 options' });
+      if (validOptions.length < POLL_MIN_OPTIONS) {
+        return res.status(400).json({ success: false, error: `Poll must have at least ${POLL_MIN_OPTIONS} options` });
+      }
+      if (validOptions.length > POLL_MAX_OPTIONS) {
+        return res.status(400).json({ success: false, error: `Poll can have at most ${POLL_MAX_OPTIONS} options` });
       }
 
       const existingVote = await prismaRead.pollVote.findFirst({
@@ -1807,6 +1907,35 @@ router.get('/my-posts', authenticateToken, async (req: AuthRequest, res: Respons
           },
           pollOptions: {
             select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+          },
+          // Embed the original post so reposts render their quoted card here too.
+          repostOf: {
+            select: {
+              id: true,
+              authorId: true,
+              content: true,
+              title: true,
+              postType: true,
+              mediaUrls: true,
+              mediaMetadata: true,
+              mediaAspectRatio: true,
+              createdAt: true,
+              likesCount: true,
+              commentsCount: true,
+              sharesCount: true,
+              repostOfId: true,
+              repostComment: true,
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  role: true,
+                  isVerified: true,
+                },
+              },
+            },
           },
           _count: { select: { comments: true, likes: true } },
         },

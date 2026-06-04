@@ -16,4 +16,6 @@ export { SuggestedUsersScreen } from './SuggestedUsersScreen';
 export { default as BountyDetailScreen } from './BountyDetailScreen';
 export { default as CreateBountyScreen } from './CreateBountyScreen';
 export { FocusReelsScreen } from './FocusReelsScreen';
+export { default as CreateFocusReelScreen } from './CreateFocusReelScreen';
+export { default as CreateQuestionCardScreen } from './CreateQuestionCardScreen';
 

@@ -43,6 +43,8 @@ import {
     getAppPreferences,
     saveAppPreferences,
     setAppPreference,
+    DEFAULT_APP_PREFERENCES,
+    PUSH_CATEGORY_KEYS,
     type AppPreferenceKey,
     type AppPreferences,
 } from '@/services/appPreferences';
@@ -59,6 +61,23 @@ import StunityLogo from '../../../assets/Stunity.svg';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
+// Per-category push toggle metadata, shown under the master push switch.
+const PUSH_CATEGORY_META: {
+    key: AppPreferenceKey;
+    icon: IoniconsName;
+    iconColor: string;
+    iconBg: string;
+    label: string;
+    sublabel: string;
+}[] = [
+    { key: 'pushStreakReminders', icon: 'flame-outline', iconColor: '#F97316', iconBg: '#FFF7ED', label: 'Streak reminders', sublabel: "Don't lose your daily streak" },
+    { key: 'pushWeeklyDigest', icon: 'stats-chart-outline', iconColor: '#8B5CF6', iconBg: '#F5F3FF', label: 'Weekly progress digest', sublabel: 'Your Sunday summary' },
+    { key: 'pushFollows', icon: 'person-add-outline', iconColor: '#0EA5E9', iconBg: '#F0F9FF', label: 'Followers & new posts', sublabel: 'People you follow' },
+    { key: 'pushClubActivity', icon: 'people-outline', iconColor: '#10B981', iconBg: '#ECFDF5', label: 'Club activity', sublabel: 'Your study clubs' },
+    { key: 'pushGrades', icon: 'school-outline', iconColor: '#EF4444', iconBg: '#FEF2F2', label: 'Grade releases', sublabel: 'When new grades are posted' },
+    { key: 'pushAssignments', icon: 'document-text-outline', iconColor: '#F59E0B', iconBg: '#FFFBEB', label: 'Assignment reminders', sublabel: 'Upcoming due dates' },
+];
+
 interface SettingItem {
     icon: IoniconsName;
     iconColor: string;
@@ -71,6 +90,7 @@ interface SettingItem {
     onToggle?: (val: boolean) => void;
     danger?: boolean;
     badge?: string;
+    disabled?: boolean;
 }
 
 interface SettingSection {
@@ -134,10 +154,11 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
                     <Switch
                         value={item.value}
                         onValueChange={item.onToggle}
+                        disabled={item.disabled}
                         trackColor={{ false: colors.border, true: '#7DD3FC' }}
                         thumbColor={item.value ? colors.primary : colors.textTertiary}
                         ios_backgroundColor={colors.border}
-                        style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                        style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }], opacity: item.disabled ? 0.4 : 1 }}
                     />
                 )}
                 {item.type === 'navigate' && (
@@ -176,6 +197,10 @@ export default function SettingsScreen() {
     // Toggle states
     const [pushNotifications, setPushNotifications] = useState(true);
     const [emailNotifications, setEmailNotifications] = useState(true);
+    // Per-category push opt-in (keyed by AppPreferences key).
+    const [pushCategories, setPushCategories] = useState<Record<string, boolean>>(() =>
+        Object.fromEntries(PUSH_CATEGORY_KEYS.map((k) => [k, DEFAULT_APP_PREFERENCES[k]])),
+    );
     const { colors, isDark, themeMode, setThemeMode } = useThemeContext();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [biometrics, setBiometrics] = useState(false);
@@ -241,6 +266,7 @@ export default function SettingsScreen() {
             setOnlineStatus(preferences.showOnlineStatus);
             setAutoPlay(preferences.autoPlayVideos);
             setHapticFeedback(preferences.hapticFeedback);
+            setPushCategories(Object.fromEntries(PUSH_CATEGORY_KEYS.map((k) => [k, preferences[k]])));
             updateUser({ isOnline: preferences.showOnlineStatus });
         };
 
@@ -490,6 +516,17 @@ export default function SettingsScreen() {
         });
     }, [emailNotifications, persistAppSetting, t]);
 
+    const handlePushCategoryToggle = useCallback((key: AppPreferenceKey, enabled: boolean) => {
+        const previous = pushCategories[key] ?? true;
+        setPushCategories((prev) => ({ ...prev, [key]: enabled }));
+
+        persistAppSetting(key, enabled).catch(() => {
+            setPushCategories((prev) => ({ ...prev, [key]: previous }));
+            void setAppPreference(key, previous);
+            Alert.alert(t('common.error'), 'Failed to update notification preference.');
+        });
+    }, [pushCategories, persistAppSetting, t]);
+
     const handleAutoPlayToggle = useCallback((enabled: boolean) => {
         const previous = autoPlay;
         setAutoPlay(enabled);
@@ -708,6 +745,17 @@ export default function SettingsScreen() {
                     value: emailNotifications,
                     onToggle: handleEmailNotificationsToggle,
                 },
+                ...PUSH_CATEGORY_META.map((meta): SettingItem => ({
+                    icon: meta.icon,
+                    iconColor: meta.iconColor,
+                    iconBg: meta.iconBg,
+                    label: meta.label,
+                    sublabel: meta.sublabel,
+                    type: 'toggle',
+                    value: pushCategories[meta.key] ?? true,
+                    disabled: !pushNotifications,
+                    onToggle: (enabled) => handlePushCategoryToggle(meta.key, enabled),
+                })),
             ],
         },
         {

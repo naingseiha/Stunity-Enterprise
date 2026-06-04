@@ -24,11 +24,13 @@ import shopRoutes from './gamification/routes/shop.routes';
 import {
   buildWeekActivityFromDates,
   computeStreakStatus,
+  computeStreakTransition,
   getWeekStartMonday,
   loadWeekActivityForUser,
 } from './utils/streakCalendar';
 import { prisma } from './lib/prisma';
 import { shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
+import { resolveFlagsForUser } from './featureFlags';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -703,7 +705,8 @@ app.get('/live/:code/results', authenticateToken, async (req: Request, res: Resp
 
 // XP & Level Calculation Helpers
 const calculateXPForLevel = (level: number): number => {
-  return Math.floor(100 * Math.pow(1.5, level - 1));
+  // Smooth progression: Base 100 XP, increases by 50 per level.
+  return 100 + (level - 1) * 50;
 };
 
 const calculateCumulativeXPForLevel = (level: number): number => {
@@ -1153,24 +1156,33 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
       nextWinStreak = 0;
     }
 
-    // Update user stats
-    console.log('📝 [Analytics] Updating user stats...');
-    const updatedStats = await prisma.userStats.update({
-      where: { userId },
-      data: {
-        xp: newXP,
-        level: newLevel,
-        totalQuizzes: { increment: 1 },
-        totalPoints: { increment: resolved.pointsEarned },
-        correctAnswers: { increment: resolved.correctCount },
-        totalAnswers: { increment: resolved.questionCount },
-        winStreak: nextWinStreak,
-        bestStreak: nextBestStreak,
-        liveQuizWins: type === 'live' && isWin ? { increment: 1 } : undefined,
-        liveQuizTotal: type === 'live' ? { increment: 1 } : undefined,
-      },
-    });
-    console.log('📝 [Analytics] User stats updated');
+    // Update user stats and sync User model via transaction
+    console.log('📝 [Analytics] Updating user stats and syncing user...');
+    const [updatedStats] = await prisma.$transaction([
+      prisma.userStats.update({
+        where: { userId },
+        data: {
+          xp: newXP,
+          level: newLevel,
+          totalQuizzes: { increment: 1 },
+          totalPoints: { increment: resolved.pointsEarned },
+          correctAnswers: { increment: resolved.correctCount },
+          totalAnswers: { increment: resolved.questionCount },
+          winStreak: nextWinStreak,
+          bestStreak: nextBestStreak,
+          liveQuizWins: type === 'live' && isWin ? { increment: 1 } : undefined,
+          liveQuizTotal: type === 'live' ? { increment: 1 } : undefined,
+        },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          level: newLevel,
+          totalPoints: { increment: resolved.pointsEarned }
+        }
+      })
+    ]);
+    console.log('📝 [Analytics] User stats and core User model updated');
 
     // Record attempt
     console.log('📝 [Analytics] Creating quiz attempt record...');
@@ -1702,6 +1714,247 @@ app.listen(PORT, () => {
 // PHASE 1.3: STREAKS & ACHIEVEMENTS ENDPOINTS
 // ============================================================
 
+// GET /feature-flags - Resolved feature flags for the calling user (deterministic
+// %-rollout). Mobile fetches this on launch to gate features. GrowthBook can later
+// replace the resolver without changing this contract.
+app.get('/feature-flags', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    res.json({ success: true, flags: resolveFlagsForUser(userId) });
+  } catch (error: any) {
+    console.error('Feature flags error:', error);
+    res.status(500).json({ success: false, error: 'Failed to resolve feature flags' });
+  }
+});
+
+// POST /events - Batched product-analytics ingestion. Writes raw events and
+// upserts the caller's active-day rollup (powers WAD/MAU).
+app.post('/events', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const schoolId = req.user!.schoolId || null;
+    const events = Array.isArray(req.body?.events) ? req.body.events : null;
+    if (!events || events.length === 0) {
+      return res.status(400).json({ success: false, error: 'events array required' });
+    }
+
+    const now = new Date();
+    const rows = events
+      .slice(0, 100) // cap batch
+      .filter((e: any) => e && typeof e.name === 'string')
+      .map((e: any) => ({
+        userId,
+        schoolId,
+        name: String(e.name).slice(0, 100),
+        props: e.props && typeof e.props === 'object' ? e.props : undefined,
+        sessionId: typeof e.sessionId === 'string' ? e.sessionId.slice(0, 100) : null,
+        createdAt: e.ts ? new Date(e.ts) : now,
+      }));
+
+    const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    await Promise.all([
+      rows.length > 0 ? prisma.analyticsEvent.createMany({ data: rows }) : Promise.resolve(),
+      prisma.userActiveDay.upsert({
+        where: { userId_day: { userId, day } },
+        create: { userId, day, schoolId },
+        update: {},
+      }),
+    ]);
+
+    res.json({ success: true, accepted: rows.length });
+  } catch (error: any) {
+    console.error('Event ingestion error:', error);
+    res.status(500).json({ success: false, error: 'Failed to ingest events' });
+  }
+});
+
+// GET /metrics/summary - North-star + guardrail metrics (admin only). Scoped to the
+// admin's school; SUPER_ADMIN sees global. (growth-plan §7)
+app.get('/metrics/summary', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const role = req.user!.role;
+    if (!['SUPER_ADMIN', 'ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    const isSuper = role === 'SUPER_ADMIN';
+    const schoolScope = isSuper ? {} : { schoolId: req.user!.schoolId || '__none__' };
+
+    const now = new Date();
+    const startToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const start7 = new Date(startToday); start7.setUTCDate(start7.getUTCDate() - 6);
+    const start30 = new Date(startToday); start30.setUTCDate(start30.getUTCDate() - 29);
+
+    const round = (n: number) => Math.round(n);
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+
+    const [mauRows, weeklyActiveDays, dauRows, newUsers7d, profileComplete80] = await Promise.all([
+      prisma.userActiveDay.findMany({
+        where: { ...schoolScope, day: { gte: start30 } },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      prisma.userActiveDay.count({ where: { ...schoolScope, day: { gte: start7 } } }),
+      prisma.userActiveDay.findMany({
+        where: { ...schoolScope, day: startToday },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      prisma.user.count({ where: { ...(isSuper ? {} : schoolScope), createdAt: { gte: start7 } } }),
+      prisma.user.count({
+        where: { ...(isSuper ? {} : schoolScope), createdAt: { gte: start7 }, profileCompleteness: { gte: 80 } },
+      }),
+    ]);
+
+    const mau = mauRows.length;
+    const dau = dauRows.length;
+    const dauUserIds = dauRows.map((r) => r.userId);
+
+    // Engagement loop + anti-metric, scoped to today's active users.
+    const [recallReviewers, notifCount] = await Promise.all([
+      dauUserIds.length > 0
+        ? prisma.recallReview.findMany({
+            where: { userId: { in: dauUserIds }, reviewedAt: { gte: startToday } },
+            select: { userId: true },
+            distinct: ['userId'],
+          })
+        : Promise.resolve([] as { userId: string }[]),
+      dauUserIds.length > 0
+        ? prisma.notification.count({
+            where: { recipientId: { in: dauUserIds }, type: 'SYSTEM', createdAt: { gte: startToday } },
+          })
+        : Promise.resolve(0),
+    ]);
+
+    const dauWithRecall = recallReviewers.length;
+
+    res.json({
+      success: true,
+      scope: isSuper ? 'global' : 'school',
+      generatedAt: now.toISOString(),
+      northStar: {
+        wadPerMau: mau > 0 ? round2(weeklyActiveDays / mau) : 0, // avg weekly active days per MAU
+        dau,
+        mau,
+        weeklyActiveDays,
+      },
+      topOfFunnel: {
+        newUsers7d,
+        profileComplete80,
+        pct: newUsers7d > 0 ? round((profileComplete80 / newUsers7d) * 100) : 0,
+      },
+      engagementLoop: {
+        dau,
+        dauWithRecall,
+        pctDauRecall: dau > 0 ? round((dauWithRecall / dau) * 100) : 0,
+      },
+      antiMetric: {
+        nonUrgentNotifsPerDauToday: dau > 0 ? round2(notifCount / dau) : 0,
+        cap: 3,
+      },
+    });
+  } catch (error: any) {
+    console.error('Metrics summary error:', error);
+    res.status(500).json({ success: false, error: 'Failed to compute metrics' });
+  }
+});
+
+// GET /streak/leaderboard?scope=school|class|club - Streak ranking within a scope
+// (growth-plan §3.2). Registered BEFORE /streak/:userId so it isn't captured by it.
+app.get('/streak/leaderboard', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const scope = String(req.query.scope || 'school');
+    const LIMIT = 50;
+
+    const empty = (extra: object = {}) =>
+      res.json({ success: true, scope, entries: [], myRank: null, myStreak: 0, ...extra });
+
+    // Build the streak filter for the requested scope.
+    let whereStreak: any;
+
+    if (scope === 'school') {
+      const me = await prisma.user.findUnique({ where: { id: userId }, select: { schoolId: true } });
+      if (!me?.schoolId) return empty();
+      whereStreak = { currentStreak: { gt: 0 }, user: { schoolId: me.schoolId } };
+    } else if (scope === 'class') {
+      const me = await prisma.user.findUnique({ where: { id: userId }, select: { studentId: true } });
+      if (!me?.studentId) return empty();
+      const myClasses = await prisma.studentClass.findMany({
+        where: { studentId: me.studentId, status: 'ACTIVE' },
+        select: { classId: true },
+      });
+      const classIds = myClasses.map((c) => c.classId);
+      if (classIds.length === 0) return empty();
+      const classmates = await prisma.studentClass.findMany({
+        where: { classId: { in: classIds }, status: 'ACTIVE' },
+        select: { studentId: true },
+      });
+      const studentIds = [...new Set(classmates.map((c) => c.studentId))];
+      const users = await prisma.user.findMany({
+        where: { studentId: { in: studentIds } },
+        select: { id: true },
+      });
+      whereStreak = { currentStreak: { gt: 0 }, userId: { in: users.map((u) => u.id) } };
+    } else if (scope === 'club') {
+      const myClubs = await prisma.clubMember.findMany({
+        where: { userId, isActive: true },
+        select: { clubId: true },
+      });
+      const clubIds = myClubs.map((c) => c.clubId);
+      if (clubIds.length === 0) return empty();
+      const members = await prisma.clubMember.findMany({
+        where: { clubId: { in: clubIds }, isActive: true },
+        select: { userId: true },
+      });
+      whereStreak = { currentStreak: { gt: 0 }, userId: { in: [...new Set(members.map((m) => m.userId))] } };
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid scope' });
+    }
+
+    const rows = await prisma.learningStreak.findMany({
+      where: whereStreak,
+      orderBy: [{ currentStreak: 'desc' }, { longestStreak: 'desc' }],
+      take: LIMIT,
+      select: {
+        userId: true,
+        currentStreak: true,
+        longestStreak: true,
+        user: { select: { firstName: true, lastName: true, profilePictureUrl: true } },
+      },
+    });
+
+    const entries = rows.map((r, i) => ({
+      rank: i + 1,
+      userId: r.userId,
+      name: `${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}`.trim() || 'Learner',
+      avatar: r.user?.profilePictureUrl ?? null,
+      currentStreak: r.currentStreak,
+      longestStreak: r.longestStreak,
+      isMe: r.userId === userId,
+    }));
+
+    // The caller's own standing (even if outside the top N).
+    const myStreakRec = await prisma.learningStreak.findUnique({
+      where: { userId },
+      select: { currentStreak: true },
+    });
+    const myStreak = myStreakRec?.currentStreak ?? 0;
+    let myRank: number | null = null;
+    if (myStreak > 0) {
+      const higher = await prisma.learningStreak.count({
+        where: { ...whereStreak, currentStreak: { gt: myStreak } },
+      });
+      myRank = higher + 1;
+    }
+
+    res.json({ success: true, scope, entries, myRank, myStreak });
+  } catch (error: any) {
+    console.error('Streak leaderboard error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get streak leaderboard' });
+  }
+});
+
 // GET /streak/:userId - Get user's streak
 app.get('/streak/:userId', authenticateToken, async (req: Request, res: Response) => {
   try {
@@ -1719,7 +1972,7 @@ app.get('/streak/:userId', authenticateToken, async (req: Request, res: Response
           currentStreak: 0,
           longestStreak: 0,
           lastQuizDate: null,
-          freezesTotal: 1, // Start with 1 freeze
+          freezesTotal: 0, // earned per 7-day milestone, not granted up front
         },
       });
     }
@@ -1748,7 +2001,7 @@ app.post('/streak/update', authenticateToken, async (req: Request, res: Response
           currentStreak: 1,
           longestStreak: 1,
           lastQuizDate: new Date(),
-          freezesTotal: 1,
+          freezesTotal: 0, // earned per 7-day milestone, not granted up front
         },
       });
 
@@ -1766,57 +2019,18 @@ app.post('/streak/update', authenticateToken, async (req: Request, res: Response
       });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const lastQuiz = streak.lastQuizDate ? new Date(streak.lastQuizDate) : null;
-    if (lastQuiz) lastQuiz.setHours(0, 0, 0, 0);
-
-    let newCurrentStreak = streak.currentStreak;
-    let streakIncreased = false;
-    let achievementUnlocked = null;
-
-    if (!lastQuiz) {
-      // First quiz
-      newCurrentStreak = 1;
-      streakIncreased = true;
-    } else {
-      const daysDiff = Math.floor((today.getTime() - lastQuiz.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff === 0) {
-        // Same day — keep count, but ensure first quiz of the day counts as day 1
-        if (newCurrentStreak < 1) {
-          newCurrentStreak = 1;
-          streakIncreased = true;
-        }
-      } else if (daysDiff === 1) {
-        // Next day, increase streak
-        newCurrentStreak = streak.currentStreak + 1;
-        streakIncreased = true;
-
-        // Check for streak achievements
-        if (newCurrentStreak === 7) {
-          achievementUnlocked = 'STREAK_7_DAYS';
-        } else if (newCurrentStreak === 30) {
-          achievementUnlocked = 'STREAK_30_DAYS';
-        } else if (newCurrentStreak === 100) {
-          achievementUnlocked = 'STREAK_100_DAYS';
-        }
-      } else {
-        // Missed a day, reset streak
-        newCurrentStreak = 1;
-      }
-    }
-
-    const newLongestStreak = Math.max(streak.longestStreak, newCurrentStreak);
+    const transition = computeStreakTransition(streak);
+    const { streakIncreased, achievementUnlocked, freezeEarned, freezeSpent } = transition;
 
     // Update streak
     const updatedStreak = await prisma.learningStreak.update({
       where: { userId },
       data: {
-        currentStreak: newCurrentStreak,
-        longestStreak: newLongestStreak,
+        currentStreak: transition.currentStreak,
+        longestStreak: transition.longestStreak,
         lastQuizDate: new Date(),
+        freezesTotal: transition.freezesTotal,
+        freezesUsed: transition.freezesUsed,
       },
     });
 
@@ -1828,6 +2042,9 @@ app.post('/streak/update', authenticateToken, async (req: Request, res: Response
       streak: updatedStreak,
       streakIncreased,
       achievementUnlocked,
+      freezeEarned,
+      freezeSpent,
+      freezesAvailable: updatedStreak.freezesTotal,
       weekActivity,
       studiedToday: streakStatus.studiedToday,
       streakAtRisk: streakStatus.streakAtRisk,
@@ -1858,6 +2075,7 @@ app.post('/streak/freeze', authenticateToken, async (req: Request, res: Response
       where: { userId },
       data: {
         freezesTotal: streak.freezesTotal - 1,
+        freezesUsed: streak.freezesUsed + 1,
         lastQuizDate: new Date(),
       },
     });
@@ -1868,6 +2086,7 @@ app.post('/streak/freeze', authenticateToken, async (req: Request, res: Response
     res.json({
       success: true,
       streak: updatedStreak,
+      freezesAvailable: updatedStreak.freezesTotal,
       weekActivity,
       studiedToday: streakStatus.studiedToday,
       streakAtRisk: streakStatus.streakAtRisk,

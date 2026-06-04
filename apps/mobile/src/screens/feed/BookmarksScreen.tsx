@@ -42,6 +42,7 @@ export default function BookmarksScreen() {
     fetchBookmarks,
     likePost,
     unlikePost,
+    reactToPost,
     bookmarkPost,
     voteOnPoll,
     sharePost,
@@ -127,7 +128,8 @@ export default function BookmarksScreen() {
       <PostCard
         post={item}
         onLike={() => handleLikePost(item)}
-        onComment={() => navigation.navigate('Comments' as any, { postId: item.id })}
+        onReact={(type: string) => reactToPost(item.id, type)}
+        onComment={() => navigation.navigate('Comments' as any, { postId: item.id, postType: item.postType })}
         onShare={() => sharePost(item.id)}
         onBookmark={() => bookmarkPost(item.id)}
         onUserPress={() => navigation.navigate('UserProfile' as any, { userId: item.author.id })}

@@ -231,6 +231,25 @@ export interface Streak {
   updatedAt: string;
 }
 
+export type StreakScope = 'school' | 'class' | 'club';
+
+export interface StreakLeaderEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  avatar: string | null;
+  currentStreak: number;
+  longestStreak: number;
+  isMe: boolean;
+}
+
+export interface StreakLeaderboard {
+  scope: StreakScope;
+  entries: StreakLeaderEntry[];
+  myRank: number | null;
+  myStreak: number;
+}
+
 export interface StreakUpdateResult {
   success: boolean;
   streak: Streak;
@@ -450,6 +469,36 @@ class StatsService {
       weekActivity: payload.weekActivity,
       studiedToday: payload.studiedToday,
       streakAtRisk: payload.streakAtRisk,
+    };
+  }
+
+  /**
+   * Send a batch of product-analytics events.
+   */
+  async postEvents(events: { name: string; props?: Record<string, unknown>; ts?: number }[]): Promise<void> {
+    if (!events.length) return;
+    await analyticsApi.post('/events', { events });
+  }
+
+  /**
+   * Resolved feature flags for the signed-in user (deterministic %-rollout).
+   */
+  async getFeatureFlags(): Promise<Record<string, boolean>> {
+    const response = await analyticsApi.get('/feature-flags');
+    return response.data?.flags ?? {};
+  }
+
+  /**
+   * Scoped streak leaderboard (school | class | club) for the signed-in user.
+   */
+  async getStreakLeaderboard(scope: StreakScope): Promise<StreakLeaderboard> {
+    const response = await analyticsApi.get('/streak/leaderboard', { params: { scope } });
+    const d = response.data || {};
+    return {
+      scope,
+      entries: d.entries ?? [],
+      myRank: d.myRank ?? null,
+      myStreak: d.myStreak ?? 0,
     };
   }
 

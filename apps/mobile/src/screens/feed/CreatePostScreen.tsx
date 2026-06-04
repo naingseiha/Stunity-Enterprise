@@ -40,6 +40,7 @@ import { Avatar } from '@/components/common';
 import { useThemeContext } from '@/contexts';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { MediaMetadata, PostType } from '@/types';
+import { POLL_LIMITS } from '@/constants';
 import { QuizForm } from './create-post/forms/QuizForm';
 import { QuestionForm } from './create-post/forms/QuestionForm';
 import { PollForm } from './create-post/forms/PollForm';
@@ -272,7 +273,7 @@ export default function CreatePostScreen() {
 
   // Add poll option with animation
   const addPollOption = () => {
-    if (pollOptions.length < 6) {
+    if (pollOptions.length < POLL_LIMITS.MAX_OPTIONS) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setPollOptions([...pollOptions, '']);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -281,7 +282,7 @@ export default function CreatePostScreen() {
 
   // Remove poll option with animation
   const removePollOption = (index: number) => {
-    if (pollOptions.length > 2) {
+    if (pollOptions.length > POLL_LIMITS.MIN_OPTIONS) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setPollOptions(pollOptions.filter((_, i) => i !== index));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -406,7 +407,7 @@ export default function CreatePostScreen() {
     // Validate poll if it's a poll post
     if (postType === 'POLL') {
       const validOptions = pollOptions.filter(opt => opt.trim().length > 0);
-      if (validOptions.length < 2) {
+      if (validOptions.length < POLL_LIMITS.MIN_OPTIONS || validOptions.length > POLL_LIMITS.MAX_OPTIONS) {
         Alert.alert(t('feed.createPost.invalidPoll'), t('feed.createPost.invalidPollMessage'));
         return;
       }

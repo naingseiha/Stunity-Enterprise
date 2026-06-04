@@ -164,7 +164,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.card,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : colors.border,
     },
     header: {
         flexDirection: 'row',

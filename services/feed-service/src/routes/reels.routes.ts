@@ -8,6 +8,8 @@
  * The interaction body is discriminated by `itemType`:
  *   FOCUS_REEL    pause-point answered → FocusReelAttempt upsert, combo±
  *   QUIZ_QUESTION standalone quiz answered → combo±, XP
+ *   TF_CARD       true/false tap (a 2-option QuizQuestion) → same as QUIZ_QUESTION
+ *   CLOZE_CARD    fill-in-the-blank (a QuizQuestion with a blank) → same as QUIZ_QUESTION
  *   RECALL_CARD   SM-2 grade ('again'|'good'|'easy') → applyReview + RecallReview row
  *   BOUNTY        view/tap-through signal (no combo, just telemetry)
  *
@@ -19,6 +21,13 @@ import { prisma, prismaRead } from '../context';
 import { ReelsRanker } from '../reelsRanker';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { applyReview, RecallGrade } from '../utils/sm2';
+import { upsertRecallCardFromReelAnswer, seedRecallCardsFromQuizPool } from '../utils/recallCardsFromQuiz';
+import {
+  REEL_RESPONSE_TYPES,
+  planReelReward,
+  latestResponsesByItem,
+  attachMyResponses,
+} from '../utils/reelResponses';
 import { feedCache } from '../redis';
 
 // Ranker uses the read replica for all 6 pool queries; writes (interactions,
@@ -31,6 +40,11 @@ const COMBO_FILL_BONUS = 50;
 const BASE_XP_CORRECT = 5;
 const REELS_FEED_TTL = 60; // seconds — short enough that fresh posts surface within a minute
 const REELS_STATE_TTL = 15; // HUD warmup — combo updates frequently, so keep TTL tight
+
+// Flag-gated (default ON; set REELS_RECALL_SEED=false to disable). When the
+// learner's due-recall pool is thin, lazily seed cards from real quiz content
+// so recall reels have something to show from day one.
+const RECALL_SEED_ENABLED = process.env.REELS_RECALL_SEED !== 'false';
 
 // ── Lightweight in-process metrics ──────────────────────────────────
 // Counts cache hits/misses for /feed and /state. Logged once per minute
@@ -87,10 +101,21 @@ router.get('/state', authenticateToken, async (req: AuthRequest, res: Response) 
       select: { reelCombo: true, highestReelCombo: true, totalPoints: true },
     });
     const tDue = Date.now();
+    const nowDate = new Date();
+    const in24h = new Date(nowDate.getTime() + 24 * 60 * 60 * 1000);
     const duePromise = prismaRead.recallCard.count({
-      where: { userId, nextReviewAt: { lte: new Date() } },
+      where: { userId, nextReviewAt: { lte: nowDate } },
     });
-    const [user, dueRecallCount] = await Promise.all([userPromise, duePromise]);
+    // Cards becoming due within the next 24h — powers the "N coming up
+    // tomorrow" tomorrow-pull in the end-of-session celebration.
+    const upcomingPromise = prismaRead.recallCard.count({
+      where: { userId, nextReviewAt: { gt: nowDate, lte: in24h } },
+    });
+    const [user, dueRecallCount, upcomingRecallCount] = await Promise.all([
+      userPromise,
+      duePromise,
+      upcomingPromise,
+    ]);
     timings.user = Date.now() - tUser;
     timings.due = Date.now() - tDue;
 
@@ -99,6 +124,7 @@ router.get('/state', authenticateToken, async (req: AuthRequest, res: Response) 
       highestCombo: user?.highestReelCombo ?? 0,
       totalPoints: user?.totalPoints ?? 0,
       dueRecallCount,
+      upcomingRecallCount,
     };
     await feedCache.set(cacheKey, payload, REELS_STATE_TTL);
     timings.total = Date.now() - t0;
@@ -146,6 +172,28 @@ async function hydrateLikedState(items: any[], userId: string): Promise<any[]> {
   );
 }
 
+/**
+ * Attach the viewer's prior answer to each interactive reel card (quiz / TF /
+ * cloze) so the card can render its previously-answered state on return AND
+ * across cold restarts — the local-useState-only behavior reset to blank.
+ *
+ * Per-viewer state, so (like isLikedByMe) it's hydrated fresh outside the cache.
+ * One batched indexed query regardless of cache hit/miss — no per-card calls.
+ */
+async function hydrateReelResponses(items: any[], userId: string): Promise<any[]> {
+  const itemIds = items
+    .filter((it) => REEL_RESPONSE_TYPES.has(it.type) && typeof it.id === 'string')
+    .map((it) => it.id as string);
+  if (itemIds.length === 0) return items;
+
+  const rows = await prismaRead.reelResponse.findMany({
+    where: { userId, itemId: { in: itemIds } },
+    orderBy: { createdAt: 'desc' },
+    select: { itemId: true, chosenIndex: true, correct: true, attemptNumber: true },
+  });
+  return attachMyResponses(items, latestResponsesByItem(rows));
+}
+
 router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) => {
   const t0 = Date.now();
   const timings: Record<string, number> = {};
@@ -169,6 +217,13 @@ router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) =
       metrics.feed.hit++;
     } else {
       metrics.feed.miss++;
+      // Top up the recall pool from real quiz content before ranking, but only
+      // on the first page (deep pages keep the slot pattern stable). Best-effort
+      // and self-quiescing — a no-op once the user has enough due cards.
+      if (RECALL_SEED_ENABLED && !cursor) {
+        const seeded = await seedRecallCardsFromQuizPool(prisma, userId);
+        if (seeded > 0) console.log(`[Reels] seeded ${seeded} recall card(s) for user=${userId}`);
+      }
       const tRank = Date.now();
       result = await reelsRanker.generateFeed(userId, { cursor, limit, subject });
       timings.rank = Date.now() - tRank;
@@ -179,9 +234,11 @@ router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) =
       result = cacheable as typeof result;
     }
 
-    // Always hydrate fresh isLikedByMe — never cache the viewer's per-post like state.
+    // Always hydrate fresh per-viewer state outside the cache: isLikedByMe and
+    // the viewer's prior reel answers (so cards replay their answered state).
     const tHydrate = Date.now();
-    const hydratedItems = await hydrateLikedState(result.items ?? [], userId);
+    const likedItems = await hydrateLikedState(result.items ?? [], userId);
+    const hydratedItems = await hydrateReelResponses(likedItems, userId);
     timings.hydrate = Date.now() - tHydrate;
     timings.total = Date.now() - t0;
 
@@ -219,6 +276,10 @@ router.post('/interactions', authenticateToken, async (req: AuthRequest, res: Re
       case 'FOCUS_REEL':
         return res.json(await handleFocusReel(userId, itemId, req.body));
       case 'QUIZ_QUESTION':
+      // True/False and cloze cards are QuizQuestions under the hood, so their
+      // answers flow through the same handler → combo + SM-2 recall loop + mastery.
+      case 'TF_CARD':
+      case 'CLOZE_CARD':
         return res.json(await handleQuizQuestion(userId, req.body));
       case 'RECALL_CARD':
         return res.json(await handleRecallCard(userId, itemId, req.body));
@@ -239,7 +300,7 @@ async function handleFocusReel(userId: string, reelId: string, body: any) {
   const correct = !!body.correct;
   const baseXp = clampInt(body.xpEarned, 0, 100) || (correct ? BASE_XP_CORRECT : 0);
 
-  const combo = await applyCombo(userId, correct, baseXp);
+  const combo = await applyCombo(userId, correct ? 'correct' : 'wrong', baseXp);
 
   await prisma.focusReelAttempt.upsert({
     where: { reelId_userId: { reelId, userId } },
@@ -253,10 +314,49 @@ async function handleFocusReel(userId: string, reelId: string, body: any) {
 
 async function handleQuizQuestion(userId: string, body: any) {
   const correct = !!body.correct;
+  const itemId = typeof body.itemId === 'string' ? body.itemId : null;
+  const itemType = REEL_RESPONSE_TYPES.has(body.itemType) ? (body.itemType as string) : 'QUIZ_QUESTION';
+  // Index into the SHUFFLED options the client rendered. -1 = unknown (older
+  // clients that don't send it yet) — still recorded so the attempt counts.
+  const chosenIndex = clampInt(body.chosenIndex, -1, 64);
+
+  // Multiple attempts are allowed, but only the FIRST attempt earns XP / moves
+  // the combo / reschedules SM-2 (anti-farming). Re-attempts are practice-only:
+  // recorded + shown, but reward-neutral. See planReelReward.
+  const priorAttempts = itemId
+    ? await prisma.reelResponse.count({ where: { userId, itemId } })
+    : 0;
+  const attemptNumber = priorAttempts + 1;
+  const plan = planReelReward(attemptNumber, correct);
+
   const baseXp = clampInt(body.xpEarned, 0, 100) || (correct ? BASE_XP_CORRECT : 0);
-  const combo = await applyCombo(userId, correct, baseXp);
+  // First attempt moves the combo (and may earn XP); re-attempts pass 'neutral'
+  // with 0 XP, leaving combo/points untouched but still returning the current
+  // HUD snapshot so the client stays consistent.
+  const combo = await applyCombo(userId, plan.comboOutcome, plan.earnsReward ? baseXp : 0);
+
+  // Persist the answer so the card can replay it on return + cold restart.
+  // Best-effort — never blocks the interaction response.
+  if (itemId) {
+    try {
+      await prisma.reelResponse.create({
+        data: { userId, itemId, itemType, chosenIndex, correct, attemptNumber },
+      });
+    } catch (err) {
+      console.warn('[Reels] ReelResponse persist failed (non-fatal):', err);
+    }
+  }
+
+  // Close the learning loop: a quiz-reel answer enters spaced repetition so it
+  // feeds SM-2 scheduling + the subject-mastery tree, not just the combo HUD.
+  // Only the first attempt reschedules SM-2 — re-attempts must not farm reviews.
+  let recallCarded = false;
+  if (itemId && plan.reschedulesSm2) {
+    recallCarded = await upsertRecallCardFromReelAnswer(prisma, userId, itemId, correct);
+  }
+
   await invalidateUserState(userId);
-  return { success: true, ...combo };
+  return { success: true, recallCarded, attemptNumber, alreadyAnswered: attemptNumber > 1, ...combo };
 }
 
 async function handleRecallCard(userId: string, cardId: string, body: any) {
@@ -279,8 +379,10 @@ async function handleRecallCard(userId: string, cardId: string, body: any) {
     card.xpReward,
   );
 
-  const passed = grade !== 'again';
-  const combo = await applyCombo(userId, passed, outcome.xpEarned);
+  // Combo forgiveness: 'again' is honest forgetting (neutral, keeps the
+  // streak); 'good'/'easy' advance it.
+  const comboOutcome = grade === 'again' ? 'neutral' : 'correct';
+  const combo = await applyCombo(userId, comboOutcome, outcome.xpEarned);
 
   await prisma.$transaction([
     prisma.recallCard.update({
@@ -293,7 +395,7 @@ async function handleRecallCard(userId: string, cardId: string, body: any) {
         nextReviewAt: outcome.nextReviewAt,
         lastReviewedAt: new Date(),
         reviewCount: { increment: 1 },
-        incorrectCount: passed ? undefined : { increment: 1 },
+        incorrectCount: grade === 'again' ? { increment: 1 } : undefined,
       },
     }),
     prisma.recallReview.create({
@@ -340,7 +442,18 @@ async function invalidateUserState(userId: string): Promise<void> {
   try { await feedCache.set(`reels:state:${userId}`, null, 1); } catch { /* noop */ }
 }
 
-async function applyCombo(userId: string, correct: boolean, baseXp: number): Promise<ComboResult> {
+/**
+ * Combo outcome:
+ *   'correct' → +1 to the streak (loot every Nth).
+ *   'wrong'   → reset the streak to 0.
+ *   'neutral' → leave the streak untouched but still award baseXp. Used for a
+ *               recall "again" grade: honestly forgetting a card is a normal
+ *               part of spaced repetition, not a failure, so it shouldn't nuke
+ *               a hard-won combo (combo forgiveness).
+ */
+type ComboOutcome = 'correct' | 'wrong' | 'neutral';
+
+async function applyCombo(userId: string, result: ComboOutcome, baseXp: number): Promise<ComboResult> {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -353,18 +466,19 @@ async function applyCombo(userId: string, correct: boolean, baseXp: number): Pro
     let comboBonus = 0;
     let isComboFill = false;
 
-    if (correct) {
+    if (result === 'correct') {
       combo += 1;
       if (combo > highest) highest = combo;
       if (combo > 0 && combo % COMBO_FILL_EVERY === 0) {
         comboBonus = COMBO_FILL_BONUS;
         isComboFill = true;
       }
-    } else {
+    } else if (result === 'wrong') {
       combo = 0;
     }
+    // 'neutral' leaves combo as-is.
 
-    const xpEarned = correct ? baseXp + comboBonus : 0;
+    const xpEarned = result === 'wrong' ? 0 : baseXp + comboBonus;
     const totalPoints = user.totalPoints + xpEarned;
 
     const updated = await tx.user.update({

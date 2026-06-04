@@ -49,7 +49,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Notifications: undefined;
   Search: undefined;
-  Comments: { postId: string };
+  Comments: { postId: string; postType?: string };
   ImageViewer: { images: string[]; initialIndex?: number };
   ForceChangePassword: undefined;
 };
@@ -90,6 +90,7 @@ export type MainStackParamList = {
   Messages: NavigatorScreenParams<MessagesStackParamList>;
   BrowseQuizzes: { category?: string; search?: string } | undefined;
   MyJoinedQuizzes: undefined;
+  QuizHistory: { quizId: string; title?: string };
   QuizStudio: undefined;
 };
 
@@ -124,7 +125,7 @@ export type FeedStackParamList = {
   CreatePost: { initialPostType?: string } | undefined;
   EditPost: { post: Post };
   PostDetail: { postId: string };
-  Comments: { postId: string };
+  Comments: { postId: string; postType?: string };
   Bookmarks: undefined;
   MyPosts: undefined;
   UserProfile: { userId: string };
@@ -138,6 +139,7 @@ export type FeedStackParamList = {
   BountyDetail: { bountyId: string; bountySubject?: string; bountyXp?: number };
   CreateBounty: undefined;
   FocusReels: undefined;
+  CreateFocusReel: undefined;
 };
 
 // Learn Stack
@@ -166,6 +168,7 @@ export type QuizStackParamList = {
   QuizDashboard: undefined;
   BrowseQuizzes: { category?: string; search?: string } | undefined;
   MyJoinedQuizzes: undefined;
+  QuizHistory: { quizId: string; title?: string };
 };
 
 // Messages Stack

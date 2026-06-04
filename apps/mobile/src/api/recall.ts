@@ -11,6 +11,7 @@
  */
 
 import { feedApi } from './client';
+import { track } from '@/services/analytics';
 import type { RecallCard } from '@/types';
 
 export type RecallGrade = 'again' | 'good' | 'easy';
@@ -34,6 +35,31 @@ export interface FetchDueCardsOptions {
  * Returns an empty array if the user has no due cards or if the request
  * fails (caller logs and falls back to mocks).
  */
+export interface MasteryTopic {
+  label: string;
+  mastery: number;
+  cardCount: number;
+  dueCount: number;
+}
+
+export interface MasterySubject {
+  subject: string;
+  label: string;
+  mastery: number;
+  cardCount: number;
+  dueCount: number;
+  topics: MasteryTopic[];
+}
+
+/** Subject → topic mastery tree for the signed-in user (Progress hook). */
+export async function fetchMasteryTree(): Promise<MasterySubject[]> {
+  const response = await feedApi.get<{ success: boolean; subjects: MasterySubject[] }>(
+    '/recall/mastery',
+  );
+  if (!response.data?.success) return [];
+  return response.data.subjects ?? [];
+}
+
 export async function fetchDueCards(
   options: FetchDueCardsOptions = {},
 ): Promise<RecallCard[]> {
@@ -67,5 +93,6 @@ export async function submitRecallReview(
   if (!response.data?.success) {
     throw new Error('Recall review submission failed');
   }
+  track('recall_review', { grade });
   return response.data.data;
 }

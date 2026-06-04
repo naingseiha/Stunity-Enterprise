@@ -12,11 +12,14 @@ import {
   ViewToken,
   Share,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { feedApi } from '@/api/client';
@@ -30,8 +33,25 @@ import {
   CACHE_FRESHNESS_MS,
 } from './reelsCache';
 import useAuthStore from '@/stores/authStore';
+import { track } from '@/services/analytics';
+import { POLL_LIMITS } from '@/constants';
+import { useFeatureFlag } from '@/config/featureFlags';
+import { useReducedMotion } from '@/hooks';
+import { adjustReactionCounts } from '@/utils/reactionCounts';
+import { renderPostBodyText } from '@/utils/renderEmojiText';
 
 const { width, height } = Dimensions.get('window');
+
+// Reaction palette — Ionicons only (no emoji, which render as tofu on-device).
+// Mirrors the feed's PostCard palette so reels and feed read identically.
+const REEL_REACTIONS: { type: string; icon: keyof typeof Ionicons.glyphMap; color: string; label: string }[] = [
+  { type: 'LIKE', icon: 'heart', color: '#FF4D6D', label: 'Like' },
+  { type: 'INSIGHTFUL', icon: 'bulb', color: '#F59E0B', label: 'Insightful' },
+  { type: 'CELEBRATE', icon: 'sparkles', color: '#8B5CF6', label: 'Celebrate' },
+  { type: 'SMART_TAKE', icon: 'rocket', color: '#0EA5E9', label: 'Smart take' },
+];
+
+const REEL_REACTION_BY_TYPE = new Map(REEL_REACTIONS.map((r) => [r.type, r]));
 
 // ─── Types ─────────────────────────────────────────────────────────────
 // Re-exported from reelsCache.ts so prefetch + screen share the same shape.
@@ -62,12 +82,14 @@ const gradientFor = (subject?: string): [string, string, string] => {
   return SUBJECT_GRADIENTS[key] ?? DEFAULT_GRADIENT;
 };
 
-const TYPE_LABELS: Record<ReelType, { label: string; color: string }> = {
-  FOCUS_REEL: { label: 'FOCUS REEL', color: '#A855F7' },
-  RECALL_CARD: { label: 'FLASHCARD', color: '#3B82F6' },
-  QUIZ_QUESTION: { label: 'QUICK QUIZ', color: '#10B981' },
-  BOUNTY: { label: 'BOUNTY', color: '#F59E0B' },
-  POST: { label: 'POST', color: '#EC4899' },
+const TYPE_LABELS: Record<ReelType, { label: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  FOCUS_REEL: { label: 'FOCUS REEL', color: '#A855F7', icon: 'videocam' },
+  RECALL_CARD: { label: 'FLASHCARD', color: '#3B82F6', icon: 'repeat' },
+  QUIZ_QUESTION: { label: 'QUICK QUIZ', color: '#10B981', icon: 'help-circle' },
+  TF_CARD: { label: 'TRUE OR FALSE', color: '#22D3EE', icon: 'checkmark-circle' },
+  CLOZE_CARD: { label: 'FILL THE BLANK', color: '#F472B6', icon: 'create' },
+  BOUNTY: { label: 'BOUNTY', color: '#F59E0B', icon: 'trophy' },
+  POST: { label: 'POST', color: '#EC4899', icon: 'document-text' },
 };
 
 // ─── Fallback Data ─────────────────────────────────────────────────────
@@ -80,7 +102,9 @@ const fallbackReels: ReelFeedItem[] = [
     payload: {
       title: 'Quantum Wave-Particle Duality',
       description: 'Light behaves as both a wave and a particle.',
-      videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-starry-outer-space-background-12891-large.mp4',
+      // No placeholder media in production — the fallback reel renders as a
+      // gradient focus card (the render path guards on item.videoUrl). Real
+      // reel media comes from the reels API / reelsRanker.
       creator: { id: 't1', firstName: 'Albert', lastName: 'Einstein' },
       pausePoints: [
         {
@@ -139,8 +163,38 @@ const PREFETCH_THRESHOLD = 3;
 // ./reelsCache.ts so MainNavigator can prime the cache *before* this screen
 // mounts (the same pattern Instagram/TikTok use for instant tab entry).
 
+const AUTHORING_ROLES = ['TEACHER', 'ADMIN', 'SCHOOL_ADMIN', 'SUPER_ADMIN'];
+
 export const FocusReelsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+  const canAuthor = useAuthStore((s) => AUTHORING_ROLES.includes(s.user?.role ?? ''));
+
+  // Authoring chooser: a quick question card is the primary (high-supply) path;
+  // a video reel is the secondary, heavier option.
+  const openCreateChooser = useCallback(() => {
+    Alert.alert(
+      t('reels.create.chooserTitle', { defaultValue: 'Add to the learning feed' }),
+      t('reels.create.chooserBody', { defaultValue: 'What do you want to create?' }),
+      [
+        {
+          text: t('reels.createCard.title', { defaultValue: 'Quick question' }),
+          onPress: () => navigation.navigate('CreateQuestionCard'),
+        },
+        {
+          text: t('reels.create.title', { defaultValue: 'Video reel' }),
+          onPress: () => navigation.navigate('CreateFocusReel'),
+        },
+        { text: t('common.cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
+      ],
+    );
+  }, [navigation, t]);
+  // The bottom tab bar now stays visible on Reels (TikTok/IG/FB style). Size
+  // each reel page to sit *above* the bar so captions / action buttons / the
+  // progress bar aren't hidden behind it. (Reels is always inside the bottom
+  // tab navigator, so this hook is always in context.)
+  const tabBarHeight = useBottomTabBarHeight();
+  const pageHeight = Math.max(0, height - tabBarHeight);
   // Hydrate from module cache when available so navigating back is instant.
   const [items, setItems] = useState<ReelFeedItem[]>(reelsCache.items);
   const [loading, setLoading] = useState(reelsCache.items.length === 0);
@@ -155,14 +209,25 @@ export const FocusReelsScreen: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [dueRecallCount, setDueRecallCount] = useState(0);
+  // End-of-session celebration: track reviews cleared + XP earned since the
+  // last celebration, and how many cards are coming up in the next 24h.
+  const [upcomingRecallCount, setUpcomingRecallCount] = useState(0);
+  const [sessionReviewed, setSessionReviewed] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [showSessionComplete, setShowSessionComplete] = useState(false);
+  // Mirror of dueRecallCount for synchronous "did this review clear the pile?"
+  // detection inside handleInteraction (state would be stale in the closure).
+  const dueCountRef = useRef(0);
 
   // HUD warmup — combo / due recall counts persist across sessions.
   const fetchState = useCallback(async () => {
     try {
-      const res = await feedApi.get<{ combo: number; highestCombo: number; dueRecallCount: number }>('/reels/state');
+      const res = await feedApi.get<{ combo: number; highestCombo: number; dueRecallCount: number; upcomingRecallCount?: number }>('/reels/state');
       if (res.data) {
         setCombo(res.data.combo ?? 0);
         setDueRecallCount(res.data.dueRecallCount ?? 0);
+        dueCountRef.current = res.data.dueRecallCount ?? 0;
+        setUpcomingRecallCount(res.data.upcomingRecallCount ?? 0);
       }
     } catch { /* non-fatal — HUD just starts at 0 */ }
   }, []);
@@ -206,8 +271,10 @@ export const FocusReelsScreen: React.FC = () => {
       // Fire-and-forget; failures are silent and non-critical.
       const persistUserId = useAuthStore.getState().user?.id;
       if (persistUserId) void persistReelsCacheToDisk(persistUserId);
-      if (__DEV__ && ttiStart != null) {
-        console.log(`[Reels TTI] network cold-first-paint=${Date.now() - ttiStart}ms`);
+      if (ttiStart != null) {
+        const ms = Date.now() - ttiStart;
+        track('reels_tti', { ms, source: 'network' });
+        if (__DEV__) console.log(`[Reels TTI] network cold-first-paint=${ms}ms`);
       }
     } catch (err) {
       console.warn('Failed to fetch reels feed:', err);
@@ -230,7 +297,9 @@ export const FocusReelsScreen: React.FC = () => {
     const mountTs = Date.now();
     // Fast path 1: memory cache fresh (< 60s) — render instantly, zero I/O.
     if (isReelsCacheFresh()) {
-      if (__DEV__) console.log(`[Reels TTI] memory-cache hit=${Date.now() - mountTs}ms`);
+      const ms = Date.now() - mountTs;
+      track('reels_tti', { ms, source: 'memory-cache' });
+      if (__DEV__) console.log(`[Reels TTI] memory-cache hit=${ms}ms`);
       return;
     }
     // Fast path 2: MainNavigator's prefetch is still in flight (or finishing).
@@ -242,8 +311,10 @@ export const FocusReelsScreen: React.FC = () => {
           setNextCursor(reelsCache.nextCursor);
           setHasMore(reelsCache.hasMore);
           setLoading(false);
+          const ms = Date.now() - mountTs;
+          track('reels_tti', { ms, source: 'prefetch-await' });
           if (__DEV__) {
-            console.log(`[Reels TTI] prefetch-await first-paint=${Date.now() - mountTs}ms`);
+            console.log(`[Reels TTI] prefetch-await first-paint=${ms}ms`);
           }
         } else {
           fetchFeed();
@@ -269,16 +340,26 @@ export const FocusReelsScreen: React.FC = () => {
   const handleInteraction = useCallback(async (
     itemId: string,
     itemType: ReelType,
-    payload: { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy' },
+    payload: { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy'; chosenIndex?: number },
   ) => {
     // RECALL_CARD uses SM-2 grade; everything else uses correct boolean.
     const passed = itemType === 'RECALL_CARD' ? payload.grade !== 'again' : !!payload.correct;
+    // Instrument the core learning event so accuracy/completion is measurable
+    // (answer accuracy, per-type engagement). Fire before the network call so a
+    // dropped request still records that the learner attempted retrieval.
+    track('reel_answer', {
+      type: itemType,
+      passed,
+      ...(payload.grade ? { grade: payload.grade } : { correct: !!payload.correct }),
+      xp: payload.xpEarned ?? 0,
+    });
     try {
       const res = await feedApi.post('/reels/interactions', { itemId, itemType, ...payload });
       const { combo: newCombo, isComboFill, xpEarned: actualXp } = res.data;
       if (typeof newCombo === 'number') setCombo(newCombo);
       if (actualXp > 0) {
         setXpBurst(actualXp);
+        setSessionXp((x) => x + actualXp);
         setTimeout(() => setXpBurst(null), 1200);
       }
       if (isComboFill) {
@@ -290,8 +371,21 @@ export const FocusReelsScreen: React.FC = () => {
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
-      // After a recall review, decrement the due-count for the HUD.
-      if (itemType === 'RECALL_CARD') setDueRecallCount((c) => Math.max(0, c - 1));
+      // After a recall review, decrement the due-count for the HUD and detect
+      // when the learner has just cleared their entire due pile → celebrate.
+      if (itemType === 'RECALL_CARD') {
+        setSessionReviewed((n) => n + 1);
+        const prevDue = dueCountRef.current;
+        const nextDue = Math.max(0, prevDue - 1);
+        dueCountRef.current = nextDue;
+        setDueRecallCount(nextDue);
+        if (prevDue > 0 && nextDue === 0) {
+          // Refresh upcoming count, then show the session-complete celebration.
+          void fetchState();
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setShowSessionComplete(true);
+        }
+      }
     } catch (err) {
       console.warn('Interaction API failed (local-only update):', err);
       if (passed) {
@@ -302,7 +396,7 @@ export const FocusReelsScreen: React.FC = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
-  }, []);
+  }, [fetchState]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
@@ -336,18 +430,53 @@ export const FocusReelsScreen: React.FC = () => {
           const canActuallyGoBack = state?.type === 'stack' && state.index > 0;
           if (!canActuallyGoBack) return null;
           return (
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => navigation.goBack()}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back', { defaultValue: 'Go back' })}
+            >
               <Ionicons name="chevron-back" size={26} color="#FFF" />
             </TouchableOpacity>
           );
         })()}
-        <TouchableOpacity style={styles.muteBtn} onPress={() => setMuted((m) => !m)}>
+        <TouchableOpacity
+          style={styles.muteBtn}
+          onPress={() => setMuted((m) => !m)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: muted }}
+          accessibilityLabel={muted
+            ? t('reels.a11y.unmute', { defaultValue: 'Unmute' })
+            : t('reels.a11y.mute', { defaultValue: 'Mute' })}
+        >
           <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={20} color="#FFF" />
         </TouchableOpacity>
+        {canAuthor && (
+          <TouchableOpacity
+            style={styles.muteBtn}
+            onPress={openCreateChooser}
+            accessibilityRole="button"
+            accessibilityLabel={t('reels.create.chooserTitle', { defaultValue: 'Add to the learning feed' })}
+          >
+            <Ionicons name="add" size={26} color="#FFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {showComboFill && <ComboFillBurst />}
       {xpBurst != null && <XpBurst amount={xpBurst} />}
+      {showSessionComplete && (
+        <SessionCompleteOverlay
+          reviewed={sessionReviewed}
+          xp={sessionXp}
+          upcoming={upcomingRecallCount}
+          onDismiss={() => {
+            setShowSessionComplete(false);
+            setSessionReviewed(0);
+            setSessionXp(0);
+          }}
+        />
+      )}
 
       {items.length === 0 && loading ? (
         // Cold first load — render an empty card-shaped placeholder using the
@@ -361,7 +490,7 @@ export const FocusReelsScreen: React.FC = () => {
       ) : (
         <FlashList
           data={items}
-          estimatedItemSize={height}
+          estimatedItemSize={pageHeight}
           renderItem={({ item, index }) => (
             <ReelCard
               item={item}
@@ -369,6 +498,7 @@ export const FocusReelsScreen: React.FC = () => {
               shouldMountVideo={Math.abs(index - activeIndex) <= 1}
               muted={muted}
               onInteract={(payload) => handleInteraction(item.id, item.type, payload)}
+              pageHeight={pageHeight}
             />
           )}
           keyExtractor={(item) => `${item.type}-${item.id}`}
@@ -377,7 +507,7 @@ export const FocusReelsScreen: React.FC = () => {
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           decelerationRate="fast"
-          snapToInterval={height}
+          snapToInterval={pageHeight}
           snapToAlignment="start"
           refreshControl={
             <RefreshControl
@@ -401,12 +531,16 @@ export const FocusReelsScreen: React.FC = () => {
 // The combo bar + mute button above stay mounted, so the screen never blanks.
 
 const ReelLoadingPlaceholder: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   const spin = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.loop(
+    if (reduceMotion) return; // no perpetual spin under reduce-motion; static ring
+    const anim = Animated.loop(
       Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
-    ).start();
-  }, [spin]);
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [spin, reduceMotion]);
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -459,16 +593,21 @@ const EmptyState: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
 const ComboBar: React.FC<{ combo: number; dueRecallCount: number }> = ({ combo, dueRecallCount }) => {
   const filledSegments = combo % COMBO_FILL_TARGET;
   const totalCycles = Math.floor(combo / COMBO_FILL_TARGET);
+  const reduceMotion = useReducedMotion();
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      progress.setValue(filledSegments); // jump straight to the filled state
+      return;
+    }
     Animated.spring(progress, {
       toValue: filledSegments,
       tension: 80,
       friction: 8,
       useNativeDriver: false,
     }).start();
-  }, [filledSegments, progress]);
+  }, [filledSegments, progress, reduceMotion]);
 
   return (
     <View style={styles.comboBar}>
@@ -511,10 +650,17 @@ const ComboBar: React.FC<{ combo: number; dueRecallCount: number }> = ({ combo, 
 };
 
 const ComboFillBurst: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(0.3)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      // Show it statically (no scale-pop / fade); the parent unmounts it on a timer.
+      scale.setValue(1);
+      opacity.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.spring(scale, { toValue: 1, tension: 60, friction: 6, useNativeDriver: true }),
       Animated.sequence([
@@ -523,7 +669,7 @@ const ComboFillBurst: React.FC = () => {
         Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]),
     ]).start();
-  }, [scale, opacity]);
+  }, [scale, opacity, reduceMotion]);
 
   return (
     <Animated.View style={[styles.comboFillCelebration, { opacity, transform: [{ scale }] }]} pointerEvents="none">
@@ -542,10 +688,16 @@ const ComboFillBurst: React.FC = () => {
 };
 
 const XpBurst: React.FC<{ amount: number }> = ({ amount }) => {
+  const reduceMotion = useReducedMotion();
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      // No upward drift; just show the tally (parent unmounts it on a timer).
+      opacity.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.timing(translateY, { toValue: -60, duration: 1100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.sequence([
@@ -554,7 +706,7 @@ const XpBurst: React.FC<{ amount: number }> = ({ amount }) => {
         Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
       ]),
     ]).start();
-  }, [translateY, opacity]);
+  }, [translateY, opacity, reduceMotion]);
 
   return (
     <Animated.View style={[styles.xpBurst, { opacity, transform: [{ translateY }] }]} pointerEvents="none">
@@ -563,18 +715,120 @@ const XpBurst: React.FC<{ amount: number }> = ({ amount }) => {
   );
 };
 
+// ─── End-of-session celebration ────────────────────────────────────────
+// Fires when the learner clears their entire due-recall pile in a sitting —
+// the moment that earns a "come back tomorrow" pull. Summarizes the session
+// (cards reviewed + XP) and surfaces how many cards return tomorrow.
+
+const SessionCompleteOverlay: React.FC<{
+  reviewed: number;
+  xp: number;
+  upcoming: number;
+  onDismiss: () => void;
+}> = ({ reviewed, xp, upcoming, onDismiss }) => {
+  const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(0.8)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (reduceMotion) {
+      scale.setValue(1);
+      opacity.setValue(1);
+      return;
+    }
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, tension: 70, friction: 8, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+    ]).start();
+  }, [scale, opacity, reduceMotion]);
+
+  return (
+    <Animated.View style={[styles.sessionOverlay, { opacity }]}>
+      <Animated.View style={[styles.sessionCard, { transform: [{ scale }] }]}>
+        <View style={styles.sessionIconWrap}>
+          <LinearGradient
+            colors={['#A855F7', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <Ionicons name="checkmark-done" size={40} color="#FFF" />
+        </View>
+        <Text style={styles.sessionTitle}>
+          {t('reels.session.title', { defaultValue: 'Reviews cleared!' })}
+        </Text>
+        <Text style={styles.sessionSubtitle}>
+          {t('reels.session.subtitle', { defaultValue: "You've reviewed every card due today." })}
+        </Text>
+
+        <View style={styles.sessionStatsRow}>
+          <View style={styles.sessionStat}>
+            <Text style={styles.sessionStatValue}>{reviewed}</Text>
+            <Text style={styles.sessionStatLabel}>
+              {t('reels.session.reviewed', { defaultValue: 'Reviewed' })}
+            </Text>
+          </View>
+          <View style={styles.sessionStatDivider} />
+          <View style={styles.sessionStat}>
+            <Text style={styles.sessionStatValue}>+{xp}</Text>
+            <Text style={styles.sessionStatLabel}>
+              {t('reels.session.xp', { defaultValue: 'XP earned' })}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.sessionTomorrow}>
+          <Ionicons name="alarm-outline" size={16} color="#FDE047" />
+          <Text style={styles.sessionTomorrowText}>
+            {upcoming > 0
+              ? t('reels.session.upcoming', {
+                  count: upcoming,
+                  defaultValue: '{{count}} more coming up tomorrow',
+                })
+              : t('reels.session.allCaughtUp', {
+                  defaultValue: "You're all caught up — see you tomorrow!",
+                })}
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.sessionBtn} onPress={onDismiss} activeOpacity={0.85}>
+          <LinearGradient
+            colors={['#A855F7', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.sessionBtnGradient}
+          >
+            <Text style={styles.sessionBtnText}>
+              {t('reels.session.keepGoing', { defaultValue: 'Keep scrolling' })}
+            </Text>
+            <Ionicons name="arrow-forward" size={18} color="#FFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+    </Animated.View>
+  );
+};
+
 // ─── Skeleton loader ───────────────────────────────────────────────────
 
 const SkeletonScreen: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   const shimmer = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.loop(
+    if (reduceMotion) {
+      shimmer.setValue(0.5); // hold a mid, non-pulsing opacity
+      return;
+    }
+    const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, { toValue: 1, duration: 1100, useNativeDriver: true }),
         Animated.timing(shimmer, { toValue: 0, duration: 1100, useNativeDriver: true }),
       ]),
-    ).start();
-  }, [shimmer]);
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shimmer, reduceMotion]);
 
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.75] });
 
@@ -598,7 +852,14 @@ const SkeletonScreen: React.FC = () => {
 
 // ─── Card Router (memoized) ────────────────────────────────────────────
 
-type InteractionPayload = { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy' };
+type InteractionPayload = { correct?: boolean; xpEarned?: number; grade?: 'again' | 'good' | 'easy'; chosenIndex?: number };
+
+/**
+ * The viewer's prior answer to an interactive reel card, hydrated by the feed
+ * (reels.routes.ts → hydrateReelResponses). Lets a card replay its answered
+ * state on return + cold restart instead of resetting to blank.
+ */
+type MyResponse = { chosenIndex: number; correct: boolean; attemptNumber: number };
 
 interface CardProps {
   item: ReelFeedItem;
@@ -606,17 +867,22 @@ interface CardProps {
   shouldMountVideo: boolean;
   muted: boolean;
   onInteract: (payload: InteractionPayload) => void;
+  pageHeight: number;
 }
 
-const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onInteract }: CardProps) => {
+const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onInteract, pageHeight }: CardProps) => {
   const gradient = useMemo(() => gradientFor(item.subject), [item.subject]);
-  const common = { item: item.payload, isActive, postId: item.postId, engagement: item.engagement, onInteract, gradient, muted };
+  const common = { item: item.payload, isActive, postId: item.postId, engagement: item.engagement, onInteract, gradient, muted, pageHeight };
 
   switch (item.type) {
     case 'FOCUS_REEL':
       return <FocusReelItem {...common} shouldMountVideo={shouldMountVideo} />;
     case 'QUIZ_QUESTION':
       return <QuizCardItem {...common} />;
+    case 'TF_CARD':
+      return <TrueFalseCardItem {...common} />;
+    case 'CLOZE_CARD':
+      return <ClozeCardItem {...common} />;
     case 'RECALL_CARD':
       return <RecallCardItem {...common} bountyId={item.id} />;
     case 'BOUNTY':
@@ -630,7 +896,8 @@ const ReelCard = React.memo(({ item, isActive, shouldMountVideo, muted, onIntera
   prev.item === next.item &&
   prev.isActive === next.isActive &&
   prev.shouldMountVideo === next.shouldMountVideo &&
-  prev.muted === next.muted
+  prev.muted === next.muted &&
+  prev.pageHeight === next.pageHeight
 ));
 
 // ─── Sidebar (right rail) ──────────────────────────────────────────────
@@ -658,8 +925,13 @@ const buildShareText = (item: any, postId?: string): { message: string; url?: st
 
 const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertical', postId, engagement, accent }) => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
+  const reactionsEnabled = useFeatureFlag('reactions');
   const [liked, setLiked] = useState<boolean>(!!engagement?.isLikedByMe);
   const [likesCount, setLikesCount] = useState<number>(engagement?.likesCount ?? 0);
+  const [myReaction, setMyReaction] = useState<string | null>(engagement?.myReaction ?? null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const commentsCount = engagement?.commentsCount ?? 0;
   const heartScale = useRef(new Animated.Value(1)).current;
 
@@ -667,7 +939,26 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
   useEffect(() => {
     setLiked(!!engagement?.isLikedByMe);
     setLikesCount(engagement?.likesCount ?? 0);
-  }, [engagement?.isLikedByMe, engagement?.likesCount]);
+    setMyReaction(engagement?.myReaction ?? null);
+  }, [engagement?.isLikedByMe, engagement?.likesCount, engagement?.myReaction]);
+
+  const reactionMeta = myReaction ? REEL_REACTIONS.find((r) => r.type === myReaction) : null;
+
+  // Social-proof breakdown: the authoritative server counts with the viewer's
+  // own reaction folded onto them (same pure derivation as the feed's PostCard).
+  // `reactionCountsFor` also feeds the cache patch so a remount reflects it.
+  const baseServerReaction = engagement?.myReaction ?? (engagement?.isLikedByMe ? 'LIKE' : null);
+  const reactionCountsFor = (to: string | null): Record<string, number> =>
+    adjustReactionCounts(engagement?.reactionCounts ?? {}, baseServerReaction, to);
+  const summaryTypes = useMemo(() => {
+    const localReaction = myReaction ?? (liked ? 'LIKE' : null);
+    const counts = reactionCountsFor(localReaction);
+    return Object.entries(counts)
+      .filter(([type, n]) => n > 0 && REEL_REACTION_BY_TYPE.has(type))
+      .sort((a, b) => b[1] - a[1]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engagement?.reactionCounts, engagement?.myReaction, engagement?.isLikedByMe, myReaction, liked]);
+  const showReactionSummary = layout !== 'horizontal' && (summaryTypes.length > 1 || (summaryTypes.length === 1 && summaryTypes[0][0] !== 'LIKE'));
 
   const onShare = async () => {
     try {
@@ -679,6 +970,7 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
   const supportsSocial = !!postId;
 
   const animateHeart = () => {
+    if (reduceMotion) return; // skip the scale-pop; the icon/colour change still conveys the state
     Animated.sequence([
       Animated.spring(heartScale, { toValue: 1.4, tension: 200, friction: 5, useNativeDriver: true }),
       Animated.spring(heartScale, { toValue: 1, tension: 180, friction: 8, useNativeDriver: true }),
@@ -694,9 +986,12 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
     const optimisticLiked = !wasLiked;
     const optimisticCount = Math.max(0, likesCount + (optimisticLiked ? 1 : -1));
 
-    // Optimistic UI
+    const prevReaction = myReaction;
+
+    // Optimistic UI — a plain tap toggles a LIKE reaction.
     setLiked(optimisticLiked);
     setLikesCount(optimisticCount);
+    setMyReaction(optimisticLiked ? 'LIKE' : null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     animateHeart();
 
@@ -706,18 +1001,72 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
       // existing state, not the request body). Reconcile if we guessed wrong.
       if (res.data && typeof res.data.liked === 'boolean' && res.data.liked !== optimisticLiked) {
         const corrected = res.data.liked;
+        const correctedCount = corrected ? optimisticCount : Math.max(0, optimisticCount - 1);
         setLiked(corrected);
+        setMyReaction(corrected ? 'LIKE' : null);
         setLikesCount((c) => Math.max(0, c + (corrected === optimisticLiked ? 0 : (corrected ? 2 : -2))));
-        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: corrected ? optimisticCount : Math.max(0, optimisticCount - 1) });
+        patchEngagementInCache(postId, { isLikedByMe: corrected, likesCount: correctedCount, myReaction: corrected ? 'LIKE' : null, reactionCounts: reactionCountsFor(corrected ? 'LIKE' : null) });
       } else {
-        patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount });
+        patchEngagementInCache(postId, { isLikedByMe: optimisticLiked, likesCount: optimisticCount, myReaction: optimisticLiked ? 'LIKE' : null, reactionCounts: reactionCountsFor(optimisticLiked ? 'LIKE' : null) });
       }
     } catch (err) {
       // Roll back optimistic update
       setLiked(wasLiked);
       setLikesCount(likesCount);
+      setMyReaction(prevReaction);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.warn('Like API failed:', err);
+    }
+  };
+
+  // Pick a specific reaction (long-press). Reuses the feed's /react endpoint.
+  // Toggles off if the same reaction is chosen again.
+  const reactToReel = async (type: string) => {
+    setPickerOpen(false);
+    if (!postId) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    const prevReaction = myReaction;
+    const prevLiked = liked;
+    const prevCount = likesCount;
+
+    const isToggleOff = prevReaction === type;
+    const optimisticReaction = isToggleOff ? null : type;
+    // Count moves only when going none→reaction or reaction→none, not on a swap.
+    const optimisticCount = Math.max(
+      0,
+      likesCount + (!prevReaction && optimisticReaction ? 1 : prevReaction && !optimisticReaction ? -1 : 0),
+    );
+
+    setMyReaction(optimisticReaction);
+    setLiked(!!optimisticReaction);
+    setLikesCount(optimisticCount);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    animateHeart();
+
+    try {
+      const res = await feedApi.post<{ success: boolean; myReaction: string | null }>(
+        `/posts/${postId}/react`,
+        { type },
+      );
+      const serverReaction = res.data?.myReaction ?? null;
+      // Reconcile against the authoritative reaction the server stored.
+      setMyReaction(serverReaction);
+      setLiked(!!serverReaction);
+      patchEngagementInCache(postId, {
+        isLikedByMe: !!serverReaction,
+        likesCount: optimisticCount,
+        myReaction: serverReaction,
+        reactionCounts: reactionCountsFor(serverReaction),
+      });
+      if (serverReaction) track('post_reaction', { surface: 'reels', type: serverReaction });
+    } catch (err) {
+      setMyReaction(prevReaction);
+      setLiked(prevLiked);
+      setLikesCount(prevCount);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      console.warn('React API failed:', err);
     }
   };
 
@@ -748,27 +1097,84 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
       </View>
 
       <View style={horizontal ? styles.horizontalIconsWrap : { alignItems: 'center', gap: 22 }}>
-        <TouchableOpacity
-          style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
-          onPress={onLike}
-          disabled={!supportsSocial}
-          activeOpacity={supportsSocial ? 0.7 : 1}
-        >
-          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={horizontal ? 26 : 32}
-              color={liked ? '#FF4D6D' : supportsSocial ? '#FFF' : 'rgba(255,255,255,0.3)'}
-            />
-          </Animated.View>
-          <Text style={styles.sidebarText}>{formatCount(likesCount)}</Text>
-        </TouchableOpacity>
+        <View>
+          {/* Long-press reaction picker (flag-gated, only on post-backed reels) */}
+          {pickerOpen && (
+            <>
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => setPickerOpen(false)}
+                style={styles.reactionPickerBackdrop}
+              />
+              <View style={[styles.reactionPicker, horizontal ? styles.reactionPickerHorizontal : styles.reactionPickerVertical]}>
+                {REEL_REACTIONS.map((r) => (
+                  <TouchableOpacity
+                    key={r.type}
+                    onPress={() => reactToReel(r.type)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={r.label}
+                    style={styles.reactionPickerOption}
+                  >
+                    <Ionicons name={r.icon} size={26} color={r.color} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+          <TouchableOpacity
+            style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
+            onPress={onLike}
+            onLongPress={supportsSocial && reactionsEnabled ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setPickerOpen(true); } : undefined}
+            delayLongPress={220}
+            disabled={!supportsSocial}
+            activeOpacity={supportsSocial ? 0.7 : 1}
+            accessibilityRole="button"
+            accessibilityState={{ selected: liked, disabled: !supportsSocial }}
+            accessibilityLabel={liked
+              ? t('reels.a11y.unlike', { defaultValue: 'Unlike' })
+              : t('reels.a11y.like', { defaultValue: 'Like' })}
+            accessibilityHint={supportsSocial && reactionsEnabled
+              ? t('reels.a11y.reactHint', { defaultValue: 'Double tap to like, or long press to pick a reaction' })
+              : undefined}
+          >
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              <Ionicons
+                name={reactionMeta ? reactionMeta.icon : liked ? 'heart' : 'heart-outline'}
+                size={horizontal ? 26 : 32}
+                color={reactionMeta ? reactionMeta.color : liked ? '#FF4D6D' : supportsSocial ? '#FFF' : 'rgba(255,255,255,0.3)'}
+              />
+            </Animated.View>
+            <Text style={styles.sidebarText}>{formatCount(likesCount)}</Text>
+          </TouchableOpacity>
+          {showReactionSummary && (
+            <View
+              style={styles.reelReactionSummary}
+              pointerEvents="none"
+              accessibilityLabel={summaryTypes
+                .map(([type, n]) => `${n} ${REEL_REACTION_BY_TYPE.get(type)!.label}`)
+                .join(', ')}
+            >
+              {summaryTypes.slice(0, 3).map(([type], i) => {
+                const meta = REEL_REACTION_BY_TYPE.get(type)!;
+                return (
+                  <View key={type} style={[styles.reelReactionDot, { marginLeft: i === 0 ? 0 : -4, zIndex: 3 - i }]}>
+                    <Ionicons name={meta.icon} size={9} color={meta.color} />
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
 
         <TouchableOpacity
           style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
           onPress={onComment}
           disabled={!supportsSocial}
           activeOpacity={supportsSocial ? 0.7 : 1}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !supportsSocial }}
+          accessibilityLabel={t('reels.a11y.comments', { count: commentsCount, defaultValue: 'Comments, {{count}}' })}
         >
           <Ionicons
             name="chatbubble-ellipses-outline"
@@ -778,7 +1184,13 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
           <Text style={styles.sidebarText}>{formatCount(commentsCount)}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn} activeOpacity={0.7} onPress={onShare}>
+        <TouchableOpacity
+          style={horizontal ? styles.horizontalIconBtn : styles.sidebarIconBtn}
+          activeOpacity={0.7}
+          onPress={onShare}
+          accessibilityRole="button"
+          accessibilityLabel={t('reels.a11y.share', { defaultValue: 'Share' })}
+        >
           <Ionicons name="paper-plane-outline" size={horizontal ? 26 : 28} color="#FFF" />
           {!horizontal && <Text style={styles.sidebarText}>Share</Text>}
         </TouchableOpacity>
@@ -803,13 +1215,15 @@ interface VariantProps {
   onInteract?: (payload: InteractionPayload) => void;
   gradient: [string, string, string];
   muted?: boolean;
+  /** Height of one reel page = window height − bottom tab bar height. */
+  pageHeight: number;
 }
 
 const TypePill: React.FC<{ type: ReelType; extra?: string }> = ({ type, extra }) => {
-  const { label, color } = TYPE_LABELS[type];
+  const { label, color, icon } = TYPE_LABELS[type];
   return (
     <View style={[styles.typePill, { backgroundColor: color }]}>
-      <Ionicons name="sparkles" size={10} color="#FFF" />
+      <Ionicons name={icon} size={11} color="#FFF" />
       <Text style={styles.typePillText}>{label}{extra ? ` · ${extra}` : ''}</Text>
     </View>
   );
@@ -868,13 +1282,14 @@ const useReelVideoPreload = (
 };
 
 const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
-  item, isActive, postId, engagement, onInteract, gradient, shouldMountVideo, muted,
+  item, isActive, postId, engagement, onInteract, gradient, shouldMountVideo, muted, pageHeight,
 }) => {
   const [questionPoint, setQuestionPoint] = useState<any | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [answerStatus, setAnswerStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [answeredTimes, setAnsweredTimes] = useState<Set<number>>(new Set());
   const [tapPaused, setTapPaused] = useState(false);
+  const reduceMotion = useReducedMotion();
   const slideAnim = useRef(new Animated.Value(height)).current;
 
   const player = useVideoPlayer(shouldMountVideo ? item.videoUrl : null, (p) => {
@@ -904,11 +1319,12 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
       if (targetPoint && !answeredTimes.has(targetPoint.time) && !questionPoint) {
         player.pause();
         setQuestionPoint(targetPoint);
-        Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+        if (reduceMotion) slideAnim.setValue(0);
+        else Animated.timing(slideAnim, { toValue: 0, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       }
     }, 250);
     return () => clearInterval(interval);
-  }, [isActive, player, item.pausePoints, answeredTimes, questionPoint, slideAnim, shouldMountVideo]);
+  }, [isActive, player, item.pausePoints, answeredTimes, questionPoint, slideAnim, shouldMountVideo, reduceMotion]);
 
   const handleSubmit = () => {
     if (selectedOption === null || !questionPoint) return;
@@ -918,12 +1334,18 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
     setAnsweredTimes((prev) => new Set(prev).add(questionPoint.time));
     setTimeout(() => {
       if (isCorrect) {
-        Animated.timing(slideAnim, { toValue: height, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+        const onDone = () => {
           setQuestionPoint(null);
           setSelectedOption(null);
           setAnswerStatus('idle');
           if (shouldMountVideo && !tapPaused) player.play();
-        });
+        };
+        if (reduceMotion) {
+          slideAnim.setValue(height);
+          onDone();
+        } else {
+          Animated.timing(slideAnim, { toValue: height, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(onDone);
+        }
       } else {
         setSelectedOption(null);
         setAnswerStatus('idle');
@@ -932,10 +1354,10 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   };
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       {shouldMountVideo && item.videoUrl && (
-        <VideoView player={player} style={styles.fullScreenAbsolute} contentFit="cover" nativeControls={false} pointerEvents="none" />
+        <VideoView player={player} style={[styles.fullScreenAbsolute, { height: pageHeight }]} contentFit="cover" nativeControls={false} pointerEvents="none" />
       )}
       <LinearGradient
         colors={['transparent', 'transparent', 'rgba(0,0,0,0.85)']}
@@ -972,10 +1394,32 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
               <Ionicons name="bulb" size={14} color="#FDE047" />
               <Text style={styles.questionPillText}>PAUSE & ANSWER · +{questionPoint.xp || 15} XP</Text>
             </View>
-            <Text style={styles.questionText}>{questionPoint.question}</Text>
+            {renderPostBodyText(questionPoint.question, styles.questionText)}
             <View style={styles.optionsList}>
               {questionPoint.options.map((opt: string, idx: number) => {
                 const isSelected = selectedOption === idx;
+                const isCorrect = isSelected && answerStatus === 'correct';
+                const isIncorrect = isSelected && answerStatus === 'incorrect';
+                const isPickedIdle = isSelected && answerStatus === 'idle';
+
+                let letterBg = 'rgba(255,255,255,0.15)';
+                let letterTextColor = '#FFF';
+                let isBold = false;
+
+                if (isCorrect) {
+                  letterBg = '#FFF';
+                  letterTextColor = '#10B981';
+                  isBold = true;
+                } else if (isIncorrect) {
+                  letterBg = '#FFF';
+                  letterTextColor = '#EF4444';
+                  isBold = true;
+                } else if (isPickedIdle) {
+                  letterBg = '#FFF';
+                  letterTextColor = '#A855F7';
+                  isBold = true;
+                }
+
                 const optStyle = [
                   styles.optionBtn,
                   isSelected && answerStatus === 'correct' && styles.optionCorrect,
@@ -988,16 +1432,21 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
                     style={optStyle}
                     onPress={() => answerStatus === 'idle' && setSelectedOption(idx)}
                     activeOpacity={0.85}
+                    disabled={answerStatus !== 'idle'}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected, disabled: answerStatus !== 'idle' }}
+                    accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
                   >
-                    <View style={styles.optionLetter}>
-                      <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+                    <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+                      <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
                     </View>
-                    <Text style={styles.optionText}>{opt}</Text>
+                    <Text style={[styles.optionText, isBold && { fontWeight: '800' }]}>{opt}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.85}
+              accessibilityRole="button" accessibilityLabel="Submit answer">
               <LinearGradient
                 colors={['#A855F7', '#7C3AED']}
                 start={{ x: 0, y: 0 }}
@@ -1015,56 +1464,147 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
   );
 };
 
-const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient }) => {
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
+/**
+ * Shown on an interactive card once it's been answered AND the answer is known
+ * from a prior session (item.myResponse hydrated by the feed). Tells the learner
+ * they've answered before and offers an explicit, reward-neutral re-attempt.
+ */
+const ReplayBar: React.FC<{ wasCorrect: boolean; onTryAgain: () => void; type: ReelType }> = ({ wasCorrect, onTryAgain, type }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.replayBar}>
+      <View style={styles.replayRow}>
+        <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.85)" />
+        <Text style={styles.replayText}>{t('reels.replay.answeredAgain', { defaultValue: 'You answered this before' })}</Text>
+      </View>
+      <TouchableOpacity
+        onPress={onTryAgain}
+        activeOpacity={0.85}
+        style={styles.replayBtn}
+        accessibilityRole="button"
+        accessibilityLabel={t('reels.replay.tryAgain', { defaultValue: 'Answer again' })}
+        accessibilityHint={t('reels.replay.tryAgainHint', { defaultValue: 'Start a new attempt. Re-attempts are practice only — no XP or streak change.' })}
+      >
+        <Ionicons name="refresh" size={16} color="#FFF" />
+        <Text style={styles.replayBtnText}>{t('reels.replay.tryAgain', { defaultValue: 'Answer again' })}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
+const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const myResponse: MyResponse | undefined = item.myResponse;
+  // Seed from the hydrated prior answer so the card replays its answered state
+  // on return / cold restart instead of resetting to blank.
+  const [selectedOption, setSelectedOption] = useState<number | null>(myResponse ? myResponse.chosenIndex : null);
+  const [isAnswered, setIsAnswered] = useState<boolean>(!!myResponse);
+  // True while the answered state came from a prior session (vs a just-now tap),
+  // which is when we surface the "answered before" + "Answer again" affordance.
+  const [fromPrior, setFromPrior] = useState<boolean>(!!myResponse);
+
+  // Select-then-submit: tapping an option only highlights it. The answer isn't
+  // committed (and the combo isn't risked) until "Submit" — so a mistap can't
+  // nuke a streak, and the deliberate commit is better for retention.
   const handleSelect = (idx: number) => {
     if (isAnswered) return;
     setSelectedOption(idx);
-    setIsAnswered(true);
-    const correct = idx === item.correctAnswer;
-    if (onInteract) onInteract({ correct, xpEarned: item.points || 10 });
   };
 
-  const wasCorrect = isAnswered && selectedOption === item.correctAnswer;
+  const handleSubmit = () => {
+    if (isAnswered || selectedOption === null) return;
+    setIsAnswered(true);
+    const correct = selectedOption === item.correctAnswer;
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10, chosenIndex: selectedOption });
+  };
+
+  // Explicit, reward-neutral re-attempt: clear local state for a fresh answer.
+  // The next submit posts with a higher attemptNumber, which the server records
+  // but does not reward (no XP / combo / SM-2 change).
+  const handleTryAgain = () => {
+    track('reel_answer_again', { type: 'QUIZ_QUESTION' });
+    setSelectedOption(null);
+    setIsAnswered(false);
+    setFromPrior(false);
+  };
+
+  const wasCorrect = isAnswered && (myResponse && fromPrior ? myResponse.correct : selectedOption === item.correctAnswer);
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="QUIZ_QUESTION" extra={`+${item.points || 10} XP`} />
-        <Text style={styles.bigQuestionText}>{item.question}</Text>
+        {renderPostBodyText(item.question, styles.bigQuestionText)}
         <View style={{ width: '100%', gap: 12 }}>
-          {item.options.map((opt: string, idx: number) => {
+          {(item.options ?? []).map((opt: string, idx: number) => {
             const isCorrect = idx === item.correctAnswer;
             const isPicked = idx === selectedOption;
-            let bg: string = 'rgba(255,255,255,0.08)';
-            let border: string = 'rgba(255,255,255,0.15)';
+            let bg: string = 'rgba(255,255,255,0.06)';
+            let border: string = 'rgba(255,255,255,0.12)';
+            let letterBg: string = 'rgba(255,255,255,0.15)';
+            let letterTextColor: string = '#FFF';
+            let isBold = false;
+
             if (isAnswered) {
-              if (isCorrect) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
-              else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+              if (isCorrect) {
+                bg = 'rgba(16,185,129,0.92)';
+                border = '#10B981';
+                letterBg = '#FFF';
+                letterTextColor = '#10B981';
+                isBold = true;
+              } else if (isPicked) {
+                bg = 'rgba(239,68,68,0.85)';
+                border = '#EF4444';
+                letterBg = '#FFF';
+                letterTextColor = '#EF4444';
+                isBold = true;
+              }
             } else if (isPicked) {
-              bg = 'rgba(255,255,255,0.15)';
+              bg = 'rgba(255,255,255,0.18)';
               border = '#FFF';
+              letterBg = '#FFF';
+              letterTextColor = '#7C3AED';
+              isBold = true;
             }
+
             return (
               <TouchableOpacity
                 key={idx}
                 style={[styles.quizOptionBtn, { backgroundColor: bg, borderColor: border }]}
                 onPress={() => handleSelect(idx)}
                 activeOpacity={0.85}
+                disabled={isAnswered}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
               >
-                <View style={styles.optionLetter}>
-                  <Text style={styles.optionLetterText}>{String.fromCharCode(65 + idx)}</Text>
+                <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+                  <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
                 </View>
-                <Text style={styles.quizOptionText}>{opt}</Text>
+                <Text style={[styles.quizOptionText, isBold && { fontWeight: '800' }]} numberOfLines={3} ellipsizeMode="tail">{opt}</Text>
                 {isAnswered && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#FFF" />}
                 {isAnswered && isPicked && !isCorrect && <Ionicons name="close-circle" size={22} color="#FFF" />}
               </TouchableOpacity>
             );
           })}
         </View>
+        {selectedOption !== null && !isAnswered && (
+          <TouchableOpacity style={[styles.submitBtn, styles.quizSubmitBtn]} onPress={handleSubmit} activeOpacity={0.85}
+            accessibilityRole="button" accessibilityLabel="Submit answer">
+            <LinearGradient
+              colors={['#A855F7', '#7C3AED']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.submitBtnGradient}
+            >
+              <Text style={styles.submitBtnText}>Submit Answer</Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFF" />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+        {isAnswered && fromPrior && (
+          <ReplayBar wasCorrect={!!wasCorrect} onTryAgain={handleTryAgain} type="QUIZ_QUESTION" />
+        )}
       </View>
       {isAnswered && !!item.explanation && (
         <View style={styles.explanationCard}>
@@ -1088,40 +1628,275 @@ const QuizCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInte
   );
 };
 
-const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient }) => {
+// True/False — the fast, one-tap game-feel rep. Unlike the quiz card there's no
+// select-then-Submit step: a tap IS the answer (the whole point is instant
+// feedback + a quick combo). Backed by a QuizQuestion with the ['TRUE','FALSE']
+// sentinel, so the answer feeds the same SM-2 recall loop + mastery.
+const TrueFalseCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const { t } = useTranslation();
+  const myResponse: MyResponse | undefined = item.myResponse;
+  // Seed from the hydrated prior answer so the card replays its answered state.
+  const [picked, setPicked] = useState<number | null>(myResponse ? myResponse.chosenIndex : null);
+  const [fromPrior, setFromPrior] = useState<boolean>(!!myResponse);
+  const isAnswered = picked !== null;
+
+  // 0 = True, 1 = False (index into the TF sentinel).
+  const choices = [
+    { idx: 0, label: t('reels.tf.true', { defaultValue: 'True' }), icon: 'checkmark-circle' as const, tint: '#10B981' },
+    { idx: 1, label: t('reels.tf.false', { defaultValue: 'False' }), icon: 'close-circle' as const, tint: '#EF4444' },
+  ];
+
+  const handleTap = (idx: number) => {
+    if (isAnswered) return;
+    setPicked(idx);
+    const correct = idx === item.correctAnswer;
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10, chosenIndex: idx });
+  };
+
+  // Reward-neutral re-attempt (server records but does not reward).
+  const handleTryAgain = () => {
+    track('reel_answer_again', { type: 'TF_CARD' });
+    setPicked(null);
+    setFromPrior(false);
+  };
+
+  const wasCorrect = isAnswered && (myResponse && fromPrior ? myResponse.correct : picked === item.correctAnswer);
+
+  return (
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
+      <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
+      <View style={styles.cardCenterContent}>
+        <TypePill type="TF_CARD" extra={`+${item.points || 10} XP`} />
+        <Text style={styles.tfPrompt}>{t('reels.tf.prompt', { defaultValue: 'True or false?' })}</Text>
+        {renderPostBodyText(item.claim, styles.bigQuestionText)}
+        <View style={styles.tfRow}>
+          {choices.map((c) => {
+            const isCorrectChoice = c.idx === item.correctAnswer;
+            const isPicked = c.idx === picked;
+            let bg: string = 'rgba(255,255,255,0.10)';
+            let border: string = 'rgba(255,255,255,0.18)';
+            if (isAnswered) {
+              if (isCorrectChoice) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
+              else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+            }
+            return (
+              <TouchableOpacity
+                key={c.idx}
+                style={[styles.tfBtn, { backgroundColor: bg, borderColor: border }]}
+                onPress={() => handleTap(c.idx)}
+                activeOpacity={0.85}
+                disabled={isAnswered}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                accessibilityLabel={c.label}
+              >
+                <Ionicons name={c.icon} size={40} color="#FFF" />
+                <Text style={styles.tfBtnText}>{c.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {isAnswered && fromPrior && (
+          <ReplayBar wasCorrect={!!wasCorrect} onTryAgain={handleTryAgain} type="TF_CARD" />
+        )}
+      </View>
+      {isAnswered && !!item.explanation && (
+        <View style={styles.explanationCard}>
+          <View style={styles.explanationHeader}>
+            <Ionicons
+              name={wasCorrect ? 'checkmark-circle' : 'information-circle'}
+              size={18}
+              color={wasCorrect ? '#10B981' : '#FDE047'}
+            />
+            <Text style={[styles.explanationTitle, { color: wasCorrect ? '#10B981' : '#FDE047' }]}>
+              {wasCorrect
+                ? t('reels.tf.correct', { defaultValue: 'Correct!' })
+                : t('reels.tf.incorrect', { defaultValue: 'Not quite' })}
+            </Text>
+          </View>
+          <Text style={styles.explanationBody}>{item.explanation}</Text>
+        </View>
+      )}
+      <View style={styles.bottomHorizontalBarContainer}>
+        <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.TF_CARD.color} />
+      </View>
+    </View>
+  );
+};
+
+// Cloze (fill-in-the-blank) — adds the generation effect to the mix. The
+// sentence shows a gap; tapping a word from the bank fills it (one tap commits,
+// like the TF card). Backed by a QuizQuestion whose question holds the blank, so
+// it feeds the same SM-2 recall loop + mastery.
+const ClozeCardItem: React.FC<VariantProps> = ({ item, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const { t } = useTranslation();
+  const myResponse: MyResponse | undefined = item.myResponse;
+  // Seed from the hydrated prior answer so the card replays its answered state.
+  const [picked, setPicked] = useState<number | null>(myResponse ? myResponse.chosenIndex : null);
+  const [fromPrior, setFromPrior] = useState<boolean>(!!myResponse);
+  const isAnswered = picked !== null;
+  const wasCorrect = isAnswered && (myResponse && fromPrior ? myResponse.correct : picked === item.correctAnswer);
+
+  const [before, ...rest] = String(item.sentence ?? '').split(/_{3,}/);
+  const after = rest.join(' ');
+  const blankWord = isAnswered ? (item.options?.[picked!] ?? '') : '______';
+
+  const handleTap = (idx: number) => {
+    if (isAnswered) return;
+    setPicked(idx);
+    const correct = idx === item.correctAnswer;
+    if (onInteract) onInteract({ correct, xpEarned: item.points || 10, chosenIndex: idx });
+  };
+
+  // Reward-neutral re-attempt (server records but does not reward).
+  const handleTryAgain = () => {
+    track('reel_answer_again', { type: 'CLOZE_CARD' });
+    setPicked(null);
+    setFromPrior(false);
+  };
+
+  return (
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
+      <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
+      <View style={styles.cardCenterContent}>
+        <TypePill type="CLOZE_CARD" extra={`+${item.points || 10} XP`} />
+        <Text style={styles.tfPrompt}>{t('reels.cloze.prompt', { defaultValue: 'Fill in the blank' })}</Text>
+        <Text style={styles.bigQuestionText}>
+          {before}
+          <Text style={[
+            styles.clozeBlank,
+            isAnswered && { color: wasCorrect ? '#10B981' : '#EF4444' },
+          ]}>
+            {blankWord}
+          </Text>
+          {after}
+        </Text>
+        <View style={styles.clozeOptionsWrap}>
+          {(item.options ?? []).map((opt: string, idx: number) => {
+            const isCorrect = idx === item.correctAnswer;
+            const isPicked = idx === picked;
+            let bg: string = 'rgba(255,255,255,0.10)';
+            let border: string = 'rgba(255,255,255,0.18)';
+            if (isAnswered) {
+              if (isCorrect) { bg = 'rgba(16,185,129,0.92)'; border = '#10B981'; }
+              else if (isPicked) { bg = 'rgba(239,68,68,0.85)'; border = '#EF4444'; }
+            }
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={[styles.clozeOptionChip, { backgroundColor: bg, borderColor: border }]}
+                onPress={() => handleTap(idx)}
+                activeOpacity={0.85}
+                disabled={isAnswered}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                accessibilityLabel={opt}
+              >
+                <Text style={styles.clozeOptionText} numberOfLines={2} ellipsizeMode="tail">{opt}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {isAnswered && fromPrior && (
+          <ReplayBar wasCorrect={!!wasCorrect} onTryAgain={handleTryAgain} type="CLOZE_CARD" />
+        )}
+      </View>
+      {isAnswered && !!item.explanation && (
+        <View style={styles.explanationCard}>
+          <View style={styles.explanationHeader}>
+            <Ionicons
+              name={wasCorrect ? 'checkmark-circle' : 'information-circle'}
+              size={18}
+              color={wasCorrect ? '#10B981' : '#FDE047'}
+            />
+            <Text style={[styles.explanationTitle, { color: wasCorrect ? '#10B981' : '#FDE047' }]}>
+              {wasCorrect
+                ? t('reels.cloze.correct', { defaultValue: 'Correct!' })
+                : t('reels.cloze.incorrect', { defaultValue: 'Not quite' })}
+            </Text>
+          </View>
+          <Text style={styles.explanationBody}>{item.explanation}</Text>
+        </View>
+      )}
+      <View style={styles.bottomHorizontalBarContainer}>
+        <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.CLOZE_CARD.color} />
+      </View>
+    </View>
+  );
+};
+
+// Spaced-repetition recall. ACTIVE-RETRIEVAL FIRST: when the card has answer
+// options (the common case — recall cards are seeded from quiz questions), the
+// learner must pick an answer *before* anything is revealed — no passive
+// flip-to-peek. A wrong pick auto-grades 'again' (forgiven by the combo); a
+// correct pick then asks the metacognitive Good/Easy for SM-2. Genuine
+// free-recall cards (no options) fall back to the flip + self-grade.
+const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, isActive, postId, engagement, onInteract, gradient, pageHeight }) => {
+  const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
+
+  const options: string[] | undefined = item.question?.options;
+  const hasOptions = Array.isArray(options) && options.length >= 2;
+  const correctIdx: number = item.question?.correctAnswer ?? 0;
+  const explanation: string | undefined = item.question?.explanation;
+  const strengthPct = Math.round((item.recallStrength ?? 0.4) * 100);
+  const xpGood = item.xpReward ?? 5;
+  const xpEasy = Math.round(xpGood * 1.4);
+
+  // MCQ path state
+  const [selected, setSelected] = useState<number | null>(null);
+  // flip path state (free-recall fallback)
   const [isFlipped, setIsFlipped] = useState(false);
-  const [graded, setGraded] = useState(false);
   const flip = useRef(new Animated.Value(0)).current;
+  // shared
+  const [graded, setGraded] = useState(false);
 
   useEffect(() => {
     if (!isActive) {
+      setSelected(null);
       setIsFlipped(false);
       setGraded(false);
       flip.setValue(0);
     }
   }, [isActive, flip]);
 
-  const toggleFlip = () => {
-    if (graded) return;
-    const next = !isFlipped;
-    setIsFlipped(next);
-    Animated.spring(flip, { toValue: next ? 1 : 0, tension: 70, friction: 12, useNativeDriver: true }).start();
-  };
+  const isAnswered = selected !== null;
+  const wasCorrect = isAnswered && selected === correctIdx;
 
-  const handleGrade = (grade: 'again' | 'good' | 'easy') => {
+  // Active MCQ: pick first, reveal after. Wrong → auto 'again'; correct waits
+  // for the Good/Easy metacognitive grade.
+  const answer = (idx: number) => {
+    if (isAnswered) return;
+    setSelected(idx);
+    if (idx !== correctIdx) {
+      setGraded(true);
+      if (onInteract) onInteract({ grade: 'again' });
+    }
+  };
+  const gradeCorrect = (grade: 'good' | 'easy') => {
     setGraded(true);
     if (onInteract) onInteract({ grade });
   };
 
+  // Free-recall flip path
+  const toggleFlip = () => {
+    if (graded) return;
+    const next = !isFlipped;
+    setIsFlipped(next);
+    if (reduceMotion) { flip.setValue(next ? 1 : 0); return; }
+    Animated.spring(flip, { toValue: next ? 1 : 0, tension: 70, friction: 12, useNativeDriver: true }).start();
+  };
+  const handleGrade = (grade: 'again' | 'good' | 'easy') => {
+    setGraded(true);
+    if (onInteract) onInteract({ grade });
+  };
   const frontRotate = flip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   const backRotate = flip.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
   const frontOpacity = flip.interpolate({ inputRange: [0, 0.5, 0.5], outputRange: [1, 1, 0] });
   const backOpacity = flip.interpolate({ inputRange: [0.5, 0.5, 1], outputRange: [0, 1, 1] });
 
-  const strengthPct = Math.round((item.recallStrength ?? 0.4) * 100);
-
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="RECALL_CARD" />
@@ -1132,51 +1907,131 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
         </View>
         <Text style={styles.strengthLabel}>Memory · {strengthPct}%</Text>
 
-        <TouchableOpacity onPress={toggleFlip} activeOpacity={0.95} style={styles.flashcardOuter}>
-          <Animated.View
-            style={[
-              styles.flashcardFace,
-              { opacity: frontOpacity, transform: [{ rotateY: frontRotate }] },
-            ]}
-          >
-            <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
-            <Text style={styles.bigQuestionText}>{item.question.question}</Text>
-            <Text style={styles.tapHint}>Tap to reveal answer</Text>
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.flashcardFace,
-              styles.flashcardBack,
-              { opacity: backOpacity, transform: [{ rotateY: backRotate }] },
-            ]}
-          >
-            <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
-            <Text style={styles.flashcardAnswerHeader}>Answer</Text>
-            <Text style={styles.flashcardAnswerText}>
-              {item.question.options[item.question.correctAnswer]}
-            </Text>
-          </Animated.View>
-        </TouchableOpacity>
+        {hasOptions ? (
+          <>
+            <Text style={styles.tfPrompt}>{t('reels.recall.prompt', { defaultValue: 'Do you remember?' })}</Text>
+            {renderPostBodyText(item.question?.question ?? '—', styles.bigQuestionText)}
+            <View style={{ width: '100%', gap: 12 }}>
+              {options!.map((opt: string, idx: number) => {
+                const isCorrect = idx === correctIdx;
+                const isPicked = idx === selected;
+                let bg: string = 'rgba(255,255,255,0.06)';
+                let border: string = 'rgba(255,255,255,0.12)';
+                let letterBg: string = 'rgba(255,255,255,0.15)';
+                let letterTextColor: string = '#FFF';
+                let isBold = false;
 
-        {isFlipped && !graded && (
-          <View style={styles.recallActions}>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}>
-              <Ionicons name="refresh" size={16} color="#FFF" />
-              <Text style={styles.recallBtnText}>Again</Text>
-              <Text style={styles.recallBtnXp}>+1</Text>
+                if (isAnswered) {
+                  if (isCorrect) {
+                    bg = 'rgba(16,185,129,0.92)';
+                    border = '#10B981';
+                    letterBg = '#FFF';
+                    letterTextColor = '#10B981';
+                    isBold = true;
+                  } else if (isPicked) {
+                    bg = 'rgba(239,68,68,0.85)';
+                    border = '#EF4444';
+                    letterBg = '#FFF';
+                    letterTextColor = '#EF4444';
+                    isBold = true;
+                  }
+                } else if (isPicked) {
+                  bg = 'rgba(255,255,255,0.18)';
+                  border = '#FFF';
+                  letterBg = '#FFF';
+                  letterTextColor = '#7C3AED';
+                  isBold = true;
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.quizOptionBtn, { backgroundColor: bg, borderColor: border }]}
+                    onPress={() => answer(idx)}
+                    activeOpacity={0.85}
+                    disabled={isAnswered}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isPicked, disabled: isAnswered }}
+                    accessibilityLabel={`${String.fromCharCode(65 + idx)}. ${opt}`}
+                  >
+                    <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+                      <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
+                    </View>
+                    <Text style={[styles.quizOptionText, isBold && { fontWeight: '800' }]}>{opt}</Text>
+                    {isAnswered && isCorrect && <Ionicons name="checkmark-circle" size={22} color="#FFF" />}
+                    {isAnswered && isPicked && !isCorrect && <Ionicons name="close-circle" size={22} color="#FFF" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {isAnswered && wasCorrect && !graded && (
+              <>
+                <Text style={styles.recallGradePrompt}>{t('reels.recall.gradePrompt', { defaultValue: 'How well did you know it?' })}</Text>
+                <View style={styles.recallActions}>
+                  <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => gradeCorrect('good')} activeOpacity={0.85}
+                    accessibilityRole="button" accessibilityLabel={`Good, plus ${xpGood} XP`}>
+                    <Ionicons name="checkmark" size={16} color="#FFF" />
+                    <Text style={styles.recallBtnText}>{t('reels.recall.good', { defaultValue: 'Good' })}</Text>
+                    <Text style={styles.recallBtnXp}>+{xpGood}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => gradeCorrect('easy')} activeOpacity={0.85}
+                    accessibilityRole="button" accessibilityLabel={`Easy, plus ${xpEasy} XP`}>
+                    <Ionicons name="flash" size={16} color="#FFF" />
+                    <Text style={styles.recallBtnText}>{t('reels.recall.easy', { defaultValue: 'Easy' })}</Text>
+                    <Text style={styles.recallBtnXp}>+{xpEasy}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              onPress={toggleFlip}
+              activeOpacity={0.95}
+              style={styles.flashcardOuter}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: isFlipped }}
+              accessibilityLabel={isFlipped ? 'Show question' : 'Reveal answer'}
+            >
+              <Animated.View style={[styles.flashcardFace, { opacity: frontOpacity, transform: [{ rotateY: frontRotate }] }]}>
+                <Ionicons name="help-circle-outline" size={28} color="rgba(255,255,255,0.6)" />
+                {renderPostBodyText(item.question?.question ?? '—', styles.bigQuestionText)}
+                <Text style={styles.tapHint}>Tap to reveal answer</Text>
+              </Animated.View>
+              <Animated.View style={[styles.flashcardFace, styles.flashcardBack, { opacity: backOpacity, transform: [{ rotateY: backRotate }] }]}>
+                <Ionicons name="checkmark-done-circle" size={28} color="#10B981" />
+                <Text style={styles.flashcardAnswerHeader}>Answer</Text>
+                {renderPostBodyText(item.question?.options?.[correctIdx] ?? '—', styles.flashcardAnswerText)}
+              </Animated.View>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}>
-              <Ionicons name="checkmark" size={16} color="#FFF" />
-              <Text style={styles.recallBtnText}>Good</Text>
-              <Text style={styles.recallBtnXp}>+{item.xpReward ?? 5}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}>
-              <Ionicons name="flash" size={16} color="#FFF" />
-              <Text style={styles.recallBtnText}>Easy</Text>
-              <Text style={styles.recallBtnXp}>+{Math.round((item.xpReward ?? 5) * 1.4)}</Text>
-            </TouchableOpacity>
-          </View>
+
+            {isFlipped && !graded && (
+              <View style={styles.recallActions}>
+                <TouchableOpacity style={[styles.recallBtn, styles.recallBtnForgot]} onPress={() => handleGrade('again')} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityLabel="Again, plus 1 XP">
+                  <Ionicons name="refresh" size={16} color="#FFF" />
+                  <Text style={styles.recallBtnText}>Again</Text>
+                  <Text style={styles.recallBtnXp}>+1</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.recallBtn, styles.recallBtnGood]} onPress={() => handleGrade('good')} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityLabel={`Good, plus ${xpGood} XP`}>
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                  <Text style={styles.recallBtnText}>Good</Text>
+                  <Text style={styles.recallBtnXp}>+{xpGood}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.recallBtn, styles.recallBtnEasy]} onPress={() => handleGrade('easy')} activeOpacity={0.85}
+                  accessibilityRole="button" accessibilityLabel={`Easy, plus ${xpEasy} XP`}>
+                  <Ionicons name="flash" size={16} color="#FFF" />
+                  <Text style={styles.recallBtnText}>Easy</Text>
+                  <Text style={styles.recallBtnXp}>+{xpEasy}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
+
         {graded && (
           <View style={styles.gradedBanner}>
             <Ionicons name="arrow-down-circle" size={18} color="#FDE047" />
@@ -1184,6 +2039,19 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
           </View>
         )}
       </View>
+      {/* Absolute-positioned — sits above the sidebar, so it must be a direct
+          child of the card root (not nested in cardCenterContent). */}
+      {isAnswered && !!explanation && (
+        <View style={styles.explanationCard}>
+          <View style={styles.explanationHeader}>
+            <Ionicons name={wasCorrect ? 'checkmark-circle' : 'information-circle'} size={18} color={wasCorrect ? '#10B981' : '#FDE047'} />
+            <Text style={[styles.explanationTitle, { color: wasCorrect ? '#10B981' : '#FDE047' }]}>
+              {wasCorrect ? t('reels.recall.correct', { defaultValue: 'Nailed it!' }) : t('reels.recall.incorrect', { defaultValue: 'Review again soon' })}
+            </Text>
+          </View>
+          <Text style={styles.explanationBody}>{explanation}</Text>
+        </View>
+      )}
       <View style={styles.bottomHorizontalBarContainer}>
         <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.RECALL_CARD.color} />
       </View>
@@ -1192,7 +2060,7 @@ const RecallCardItem: React.FC<VariantProps & { bountyId?: string }> = ({ item, 
 };
 
 const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: string }> = ({
-  item, postId, engagement, gradient, bountyId, subject,
+  item, postId, engagement, gradient, bountyId, subject, pageHeight,
 }) => {
   const navigation = useNavigation<any>();
   const expiresAt = item.expiresAt ? new Date(item.expiresAt) : null;
@@ -1208,7 +2076,7 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
   };
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       <View style={styles.cardCenterContent}>
         <TypePill type="BOUNTY" extra={`${item.bountyXp} XP`} />
@@ -1223,7 +2091,7 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
         </View>
         <View style={styles.bountyBox}>
           <Ionicons name="trophy" size={28} color="#FDE047" style={{ marginBottom: 12 }} />
-          <Text style={styles.bigQuestionText}>{item.questionText}</Text>
+          {renderPostBodyText(item.questionText, styles.bigQuestionText)}
           {!!item.replyCount && (
             <Text style={styles.bountyReplyCount}>{item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'} so far</Text>
           )}
@@ -1247,9 +2115,120 @@ const BountyCardItem: React.FC<VariantProps & { bountyId?: string; subject?: str
   );
 };
 
+// Inline, votable poll for POLL reels — so a poll isn't a dead-end caption.
+// Styled to match the quiz card: full-width, letter-badged options on a
+// centered card. One tap votes; results (percentage fill + your pick) reveal
+// after voting.
+const ReelPoll: React.FC<{
+  postId?: string;
+  options: { id: string; text: string; votesCount: number }[];
+  votedOptionId?: string | null;
+  accent: string;
+}> = ({ postId, options, votedOptionId, accent }) => {
+  const [voted, setVoted] = useState<string | null>(votedOptionId ?? null);
+  const [counts, setCounts] = useState<Record<string, number>>(
+    () => Object.fromEntries(options.map((o) => [o.id, o.votesCount ?? 0])),
+  );
+  const hasVoted = voted !== null;
+  // Percentages stay accurate across ALL options; only the rendered list is
+  // capped so a legacy over-cap poll (created before the WI1 limit) never breaks
+  // the layout on a phone.
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const visibleOptions = options.slice(0, POLL_LIMITS.MAX_OPTIONS);
+  const hiddenCount = options.length - visibleOptions.length;
+
+  const vote = async (optionId: string) => {
+    if (hasVoted || !postId) return;
+    setVoted(optionId);
+    setCounts((c) => ({ ...c, [optionId]: (c[optionId] ?? 0) + 1 }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await feedApi.post(`/posts/${postId}/vote`, { optionId });
+      track('reel_poll_vote', { postId });
+    } catch {
+      // best-effort: leave the optimistic state; a refetch will reconcile
+    }
+  };
+
+  return (
+    <View style={{ width: '100%', gap: 12 }}>
+      {visibleOptions.map((o, idx) => {
+        const c = counts[o.id] ?? 0;
+        const pct = total > 0 ? Math.round((c / total) * 100) : 0;
+        const isMine = voted === o.id;
+        const border = isMine ? accent : 'rgba(255,255,255,0.15)';
+
+        let letterBg = 'rgba(255,255,255,0.15)';
+        let letterTextColor = '#FFF';
+        let isBold = false;
+
+        if (hasVoted) {
+          if (isMine) {
+            letterBg = '#FFF';
+            letterTextColor = accent;
+            isBold = true;
+          } else {
+            letterBg = 'rgba(255,255,255,0.12)';
+            letterTextColor = 'rgba(255,255,255,0.6)';
+          }
+        }
+
+        return (
+          <TouchableOpacity
+            key={o.id}
+            style={[styles.quizOptionBtn, styles.pollOptionBtn, { borderColor: border }]}
+            onPress={() => vote(o.id)}
+            disabled={hasVoted}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isMine, disabled: hasVoted }}
+            accessibilityLabel={hasVoted ? `${o.text}, ${pct}%` : o.text}
+          >
+            {hasVoted && (
+              <LinearGradient
+                colors={isMine ? [accent + 'b0', accent + '60'] : ['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.06)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.pollFill, { right: `${100 - pct}%` }]}
+              />
+            )}
+            <View style={[styles.optionLetter, { backgroundColor: letterBg }]}>
+              <Text style={[styles.optionLetterText, { color: letterTextColor }]}>{String.fromCharCode(65 + idx)}</Text>
+            </View>
+            <Text style={[styles.quizOptionText, isBold && { fontWeight: '800' }]} numberOfLines={2}>{o.text}</Text>
+            {hasVoted && <Text style={[styles.pollPct, isMine && { color: '#FFF', fontWeight: '900' }]}>{pct}%</Text>}
+            {isMine && <Ionicons name="checkmark-circle" size={20} color="#FFF" />}
+          </TouchableOpacity>
+        );
+      })}
+      {hiddenCount > 0 && (
+        <Text style={styles.reelPollTotal}>+{hiddenCount} more</Text>
+      )}
+      {hasVoted && (
+        <Text style={styles.reelPollTotal}>{total} {total === 1 ? 'vote' : 'votes'}</Text>
+      )}
+    </View>
+  );
+};
+
 const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
-  item, isActive, postId, engagement, gradient, shouldMountVideo, muted,
+  item, isActive, postId, engagement, gradient, shouldMountVideo, muted, pageHeight,
 }) => {
+  const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+  const isPoll = item.postType === 'POLL' && Array.isArray(item.pollOptions) && item.pollOptions.length > 0;
+  const isQuestion = item.postType === 'QUESTION';
+  // A quiz reel deep-links into the full scored quiz (QuizDetails self-hydrates
+  // from the id) — the same "Take Quiz" destination the news feed uses — rather
+  // than dead-ending at the discuss CTA.
+  const isQuiz = item.postType === 'QUIZ' && !!item.quizId;
+  const openQuiz = useCallback(() => {
+    if (!item.quizId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate('QuizDetails', {
+      quiz: { id: item.quizId, title: item.title || undefined, description: item.content },
+    });
+  }, [navigation, item.quizId, item.title, item.content]);
   const [tapPaused, setTapPaused] = useState(false);
   const player = useVideoPlayer(item.isVideo && shouldMountVideo ? item.coverUrl : null, (p) => {
     p.loop = true;
@@ -1270,11 +2249,36 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
     else player.pause();
   }, [isActive, item.isVideo, player, shouldMountVideo, tapPaused]);
 
+  // Polls render as a centered card — same layout language as the quiz card
+  // (TypePill, big prompt, full-width letter-badged options, horizontal action
+  // bar) — so a poll reads as a first-class interactive card, not a caption.
+  if (isPoll) {
+    return (
+      <View style={[styles.reelContainer, { height: pageHeight }]}>
+        <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
+        <View style={styles.cardCenterContent}>
+          <TypePill type="POST" extra="POLL" />
+          {renderPostBodyText(item.content, styles.bigQuestionText)}
+          <ReelPoll
+            postId={postId}
+            options={item.pollOptions}
+            votedOptionId={item.userVotedOptionId}
+            accent={TYPE_LABELS.POST.color}
+          />
+          <Text style={styles.creatorName}>@{item.author?.lastName} {item.author?.firstName}</Text>
+        </View>
+        <View style={styles.bottomHorizontalBarContainer}>
+          <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.POST.color} />
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.reelContainer}>
+    <View style={[styles.reelContainer, { height: pageHeight }]}>
       <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} />
       {item.isVideo && shouldMountVideo && item.coverUrl && (
-        <VideoView player={player} style={styles.fullScreenAbsolute} contentFit="cover" nativeControls={false} pointerEvents="none" />
+        <VideoView player={player} style={[styles.fullScreenAbsolute, { height: pageHeight }]} contentFit="cover" nativeControls={false} pointerEvents="none" />
       )}
       <LinearGradient
         colors={['transparent', 'transparent', 'rgba(0,0,0,0.9)']}
@@ -1301,7 +2305,46 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
 
       <View style={styles.bottomDetails}>
         <TypePill type="POST" extra={item.postType} />
-        <Text style={styles.reelTitle} numberOfLines={4}>{item.content}</Text>
+        {renderPostBodyText(item.content, styles.reelTitle, 4)}
+
+        {isQuiz ? (
+          <TouchableOpacity
+            style={styles.reelQuizCta}
+            onPress={openQuiz}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('reels.post.takeQuiz', { defaultValue: 'Take quiz' })}
+          >
+            <Ionicons name="rocket" size={16} color="#FFF" />
+            <Text style={styles.reelAnswerCtaText}>
+              {t('reels.post.takeQuiz', { defaultValue: 'Take quiz' })}
+              {item.quizQuestionCount ? ` · ${item.quizQuestionCount} Qs` : ''}
+            </Text>
+            <Ionicons name="arrow-forward" size={15} color="rgba(255,255,255,0.85)" />
+          </TouchableOpacity>
+        ) : postId ? (
+          <TouchableOpacity
+            style={styles.reelAnswerCta}
+            onPress={() => {
+              track(isQuestion ? 'question_answer_open' : 'reel_post_discuss', { postId });
+              navigation.navigate('Comments', { postId, postType: item.postType });
+            }}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={isQuestion
+              ? t('reels.post.answer', { defaultValue: 'Answer this' })
+              : t('reels.post.discuss', { defaultValue: 'Join the discussion' })}
+          >
+            <Ionicons name={isQuestion ? 'chatbubble-ellipses' : 'arrow-forward-circle'} size={16} color="#FFF" />
+            <Text style={styles.reelAnswerCtaText}>
+              {isQuestion
+                ? t('reels.post.answer', { defaultValue: 'Answer this' })
+                : t('reels.post.discuss', { defaultValue: 'Join the discussion' })}
+              {isQuestion && (engagement?.commentsCount ?? 0) > 0 ? ` · ${formatCount(engagement!.commentsCount)}` : ''}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         <Text style={styles.creatorName}>@{item.author?.lastName} {item.author?.firstName}</Text>
       </View>
     </View>
@@ -1344,7 +2387,9 @@ const styles = StyleSheet.create({
   dueRecallChip: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: 'rgba(59,130,246,0.18)',
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, marginLeft: 4,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999, marginLeft: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(93,173,243,0.3)',
   },
   dueRecallText: { color: '#93C5FD', fontSize: 11, fontWeight: '800' },
 
@@ -1353,6 +2398,52 @@ const styles = StyleSheet.create({
   comboFillPill: { paddingHorizontal: 28, paddingVertical: 18, borderRadius: 28, alignItems: 'center', gap: 4 },
   comboFillTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 1.2 },
   comboFillSub: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700' },
+
+  // End-of-session celebration
+  sessionOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    zIndex: 300,
+  },
+  sessionCard: {
+    width: '100%',
+    backgroundColor: '#16161D',
+    borderRadius: 28,
+    padding: 26,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  sessionIconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 16,
+  },
+  sessionTitle: { color: '#FFF', fontSize: 22, fontWeight: '900', letterSpacing: 0.3, textAlign: 'center' },
+  sessionSubtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: '500', textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  sessionStatsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    marginTop: 22, marginBottom: 6, width: '100%',
+  },
+  sessionStat: { flex: 1, alignItems: 'center', gap: 4 },
+  sessionStatValue: { color: '#FFF', fontSize: 26, fontWeight: '900' },
+  sessionStatLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
+  sessionStatDivider: { width: 1, height: 38, backgroundColor: 'rgba(255,255,255,0.12)' },
+  sessionTomorrow: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    backgroundColor: 'rgba(253,224,71,0.12)',
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14,
+    marginTop: 18,
+  },
+  sessionTomorrowText: { color: '#FDE047', fontSize: 13, fontWeight: '700', flexShrink: 1 },
+  sessionBtn: { borderRadius: 24, overflow: 'hidden', marginTop: 22, width: '100%' },
+  sessionBtnGradient: { paddingVertical: 15, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  sessionBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
 
   // XP burst
   xpBurst: {
@@ -1371,6 +2462,47 @@ const styles = StyleSheet.create({
   bottomDetails: { position: 'absolute', bottom: 56, left: 16, right: 86, zIndex: 5, elevation: 5, gap: 8 },
   creatorName: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
   reelTitle: { color: '#FFF', fontSize: 19, fontWeight: '800', lineHeight: 25 },
+
+  // Poll (quiz-card style) — the option fill bar sits behind the row, so the
+  // button needs to clip its overflow and the letter/text/pct stay above it.
+  pollOptionBtn: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  pollFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
+  pollPct: { color: '#FFF', fontSize: 15, fontWeight: '800' },
+  reelPollTotal: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 2 },
+
+  // Answer / discuss CTA (question + other post types)
+  reelAnswerCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    marginTop: 2,
+  },
+  reelAnswerCtaText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  // Quiz "Take quiz" CTA — accented (vs the translucent discuss CTA) so the
+  // primary action on a quiz reel reads as the news-feed "Take Quiz" button.
+  reelQuizCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(16,185,129,0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.6)',
+    marginTop: 2,
+  },
   reelSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: '500', lineHeight: 20 },
 
   // Type pills
@@ -1379,9 +2511,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   typePillText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
 
@@ -1394,9 +2528,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'rgba(253,224,71,0.18)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(253,224,71,0.3)',
     marginBottom: 14,
   },
   questionPillText: { color: '#FDE047', fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
@@ -1408,7 +2544,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -1429,12 +2565,39 @@ const styles = StyleSheet.create({
 
   // Submit
   submitBtn: { borderRadius: 24, overflow: 'hidden' },
+  quizSubmitBtn: { width: '100%', marginTop: 4 },
   submitBtnGradient: { padding: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   submitBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.4 },
 
   // Centered card layout
   cardCenterContent: { padding: 24, alignItems: 'center', gap: 14, width: '100%' },
   bigQuestionText: { color: '#FFF', fontSize: 22, fontWeight: '800', textAlign: 'center', lineHeight: 30 },
+
+  // True/False
+  tfPrompt: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  tfRow: { flexDirection: 'row', gap: 14, width: '100%', marginTop: 8 },
+  tfBtn: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  tfBtnText: { color: '#FFF', fontSize: 20, fontWeight: '800', letterSpacing: 0.3 },
+
+  // Cloze (fill-in-the-blank)
+  clozeBlank: { color: '#FDE047', fontWeight: '900', textDecorationLine: 'underline' },
+  clozeOptionsWrap: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 12 },
+  clozeOptionChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    maxWidth: '100%',
+  },
+  clozeOptionText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
 
   // Quiz
   quizOptionBtn: {
@@ -1443,7 +2606,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 28,
     borderWidth: 1.5,
   },
   quizOptionText: { color: '#FFF', fontSize: 16, fontWeight: '700', flex: 1 },
@@ -1477,6 +2640,7 @@ const styles = StyleSheet.create({
   tapHint: { color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
   flashcardAnswerHeader: { color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
   flashcardAnswerText: { color: '#10B981', fontSize: 22, fontWeight: '900', textAlign: 'center' },
+  recallGradePrompt: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700', marginTop: 18, textAlign: 'center' },
   recallActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' },
   recallBtn: { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 12, paddingHorizontal: 6, borderRadius: 16 },
   recallBtnForgot: { backgroundColor: 'rgba(239,68,68,0.85)' },
@@ -1492,7 +2656,9 @@ const styles = StyleSheet.create({
   bountyExpiryChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: 'rgba(253,224,71,0.15)',
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9999,
+    borderWidth: 0.5,
+    borderColor: 'rgba(253,224,71,0.25)',
   },
   bountyExpiryText: { color: '#FDE047', fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   bountyReplyCount: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginTop: 10 },
@@ -1521,6 +2687,30 @@ const styles = StyleSheet.create({
   explanationTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
   explanationBody: { color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: '500', lineHeight: 19 },
 
+  // "Answered before" replay affordance (WI4 — persisted prior response).
+  replayBar: {
+    width: '100%',
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  replayRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  replayText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  replayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  },
+  replayBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
+
   // Empty state
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 12 },
   emptyTitle: { color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 8 },
@@ -1531,6 +2721,29 @@ const styles = StyleSheet.create({
   rightSidebar: { position: 'absolute', right: 12, bottom: 130, alignItems: 'center', gap: 22, zIndex: 5, elevation: 5 },
   avatarWrap: { position: 'relative', borderWidth: 2, borderRadius: 32, padding: 2 },
   sidebarIconBtn: { alignItems: 'center', justifyContent: 'center' },
+  // Reaction picker — floats over the dark reel; large backdrop dismisses on tap-away.
+  reactionPickerBackdrop: { position: 'absolute', top: -1000, left: -1000, right: -1000, bottom: -1000, zIndex: 30 },
+  reactionPicker: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20,20,24,0.94)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 16,
+    zIndex: 40,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  // Vertical layout: heart sits at the right edge → open the bar to its left, above.
+  reactionPickerVertical: { bottom: 44, right: 0 },
+  // Horizontal layout: action bar at the bottom → open the bar above the heart.
+  reactionPickerHorizontal: { bottom: 40, left: -10 },
+  reactionPickerOption: { paddingHorizontal: 2, paddingVertical: 2 },
   sidebarText: {
     color: '#FFF',
     fontSize: 12,
@@ -1539,6 +2752,22 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.7)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  reelReactionSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 3,
+  },
+  reelReactionDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
 
   // Horizontal action bar (for quiz/recall/bounty cards)

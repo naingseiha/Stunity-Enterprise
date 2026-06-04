@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Keyboard, KeyboardEvent, Platform, AppState, AppStateStatus } from 'react-native';
+import { Keyboard, KeyboardEvent, Platform, AppState, AppStateStatus, AccessibilityInfo } from 'react-native';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { Haptics, type ImpactFeedbackStyle, type NotificationFeedbackType } from '@/services/haptics';
 
@@ -93,6 +93,30 @@ export function useAppState() {
   }, []);
 
   return appState;
+}
+
+/**
+ * Reduced-motion hook — tracks the OS "Reduce Motion" accessibility setting
+ * (iOS: Settings ▸ Accessibility ▸ Motion; Android: Remove animations).
+ * Use it to skip decorative/looping animations for users who get motion sick
+ * or find them distracting. Updates live if the setting is toggled.
+ */
+export function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) setReduced(v);
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
+
+  return reduced;
 }
 
 /**

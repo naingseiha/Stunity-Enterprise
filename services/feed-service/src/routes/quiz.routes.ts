@@ -13,6 +13,7 @@ import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visib
 import { getLatestQuizAttemptForUser } from '../utils/quizAttempts';
 import { getUserJoinedQuizzesPage } from '../utils/joinedQuizzes';
 import { gradeQuizSubmission } from '../utils/quizGrading';
+import { buildQuizHistoryAggregates } from '../utils/quizHistory';
 import { normalizeQuizQuestionsForGrading } from '../utils/quizQuestions';
 import { createRecallCardsForFailedAnswers } from '../utils/recallCardsFromQuiz';
 
@@ -638,6 +639,73 @@ router.get('/quizzes/:id/attempts/my', authenticateToken, async (req: AuthReques
   } catch (error: any) {
     console.error('Get my attempts error:', error);
     res.status(500).json({ success: false, error: 'Failed to get attempts' });
+  }
+});
+
+// GET /quizzes/:id/history - WI5: paginated attempt timeline + progress aggregates
+// for the current user (per-quiz history surface). Aggregates cover ALL attempts;
+// the `timeline` page is sliced for display.
+router.get('/quizzes/:id/history', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const quizId = req.params.id;
+    const userId = req.user!.id;
+    const page = Math.max(parseInt((req.query.page as string) || '1', 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || '20', 10) || 20, 1), 50);
+
+    const quiz = await prismaRead.quiz.findUnique({
+      where: { id: quizId },
+      select: { questions: true, passingScore: true, totalPoints: true, post: { select: { id: true, title: true } } },
+    });
+    if (!quiz) return res.status(404).json({ success: false, error: 'Quiz not found' });
+
+    // All of the user's attempts (read replica) — newest first for the timeline.
+    const attempts = await prismaRead.quizAttempt.findMany({
+      where: { quizId, userId },
+      orderBy: { submittedAt: 'desc' },
+      select: { id: true, score: true, passed: true, pointsEarned: true, submittedAt: true, answers: true },
+    });
+
+    // Grade each stored attempt to recover per-question correctness for the
+    // accuracy rollup. gradeQuizSubmission is pure + cheap for a single user's
+    // attempts on one quiz.
+    const summaries = attempts.map((a) => {
+      const storedAnswers = Array.isArray(a.answers)
+        ? (a.answers as Array<{ questionId: string; answer: unknown }>)
+        : [];
+      const graded = gradeQuizSubmission(quiz.questions, quizId, storedAnswers, quiz.passingScore);
+      return {
+        id: a.id,
+        score: a.score,
+        passed: a.passed,
+        pointsEarned: a.pointsEarned,
+        submittedAt: a.submittedAt,
+        perQuestion: graded.results.map((r) => ({ questionId: r.questionId, correct: r.correct })),
+      };
+    });
+
+    const aggregates = buildQuizHistoryAggregates(summaries);
+
+    const start = (page - 1) * limit;
+    const timeline = attempts.slice(start, start + limit).map((a) => ({
+      id: a.id,
+      score: a.score,
+      passed: a.passed,
+      pointsEarned: a.pointsEarned,
+      submittedAt: a.submittedAt,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        quiz: { id: quiz.post.id, quizId, title: quiz.post.title || 'Quiz', passingScore: quiz.passingScore, totalPoints: quiz.totalPoints },
+        aggregates,
+        timeline,
+        pagination: { page, limit, total: attempts.length, pages: Math.ceil(attempts.length / limit) },
+      },
+    });
+  } catch (error: any) {
+    console.error('Get quiz history error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get quiz history' });
   }
 });
 

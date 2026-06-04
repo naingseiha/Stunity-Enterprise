@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { Avatar, ImageCarousel } from '@/components/common';
 import { EducationalValueModal, type EducationalValue, PollVoting } from '@/components/feed';
 import PostOptionsSheet, { PostOptionAction } from '@/components/feed/PostOptionsSheet';
+import { RepostComposer } from '@/components/feed/RepostComposer';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -214,6 +215,7 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showRepostComposer, setShowRepostComposer] = useState(false);
   const [detailMediaContentWidth, setDetailMediaContentWidth] = useState<number | undefined>(undefined);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
@@ -464,7 +466,7 @@ export default function PostDetailScreen() {
   const handleRepost = useCallback(() => {
     if (!post) return;
     if (currentUserOwnsPost) {
-      Alert.alert('Error', 'You cannot repost your own post.');
+      Alert.alert(t('common.error'), t('feed.repostOwnError'));
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -472,31 +474,10 @@ export default function PostDetailScreen() {
       Animated.spring(actionScale, { toValue: 1.25, friction: 4, tension: 40, useNativeDriver: true }),
       Animated.spring(actionScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
     ]).start();
-    Alert.alert(
-      'Repost',
-      `Repost ${post.author.firstName || 'this author'}'s post to your feed?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Repost',
-          onPress: async () => {
-            try {
-              const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: '' });
-              if (res.data.success) {
-                await useFeedStore.getState().fetchPosts(true);
-                setShareCount((prev) => prev + 1);
-                Alert.alert('Success', 'Post reposted to your feed.');
-              } else {
-                Alert.alert('Error', res.data.error || 'Failed to repost.');
-              }
-            } catch (error: any) {
-              Alert.alert('Error', error?.response?.data?.error || 'Failed to repost.');
-            }
-          },
-        },
-      ]
-    );
-  }, [post, currentUserOwnsPost, actionScale]);
+    // Open the quote composer (parity with the feed) so the user can add
+    // commentary or repost as-is — instead of the old bare confirm Alert.
+    setShowRepostComposer(true);
+  }, [post, currentUserOwnsPost, actionScale, t]);
 
   const handleScrollToComments = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1059,6 +1040,15 @@ export default function PostDetailScreen() {
         actions={detailMenuActions}
         onClose={() => setShowMenu(false)}
       />
+
+      {showRepostComposer && post && (
+        <RepostComposer
+          visible={showRepostComposer}
+          post={post}
+          onClose={() => setShowRepostComposer(false)}
+          onReposted={() => setShareCount((prev) => prev + 1)}
+        />
+      )}
     </View>
   );
 }

@@ -37,6 +37,8 @@ import type {
 } from "@/services/stats";
 import type { ProfileVisitor } from "@/api/profileApi";
 import { LearningStreakCard } from "@/components/streak";
+import { SubjectMasteryTree } from "./SubjectMasteryTree";
+import { StreakLeaderboard } from "./StreakLeaderboard";
 import type { UserStats as ProfileUserStats } from "@/types";
 import { Shadows } from "@/config";
 import { useThemeContext } from "@/contexts";
@@ -918,6 +920,12 @@ export default function PerformanceTab({
         onUseFreeze={onUseStreakFreeze}
         isFreezing={isFreezingStreak}
       />
+
+      {/* Subject mastery tree — own profile only (self-guarded) */}
+      <SubjectMasteryTree profileUserId={profile?.id} />
+
+      {/* Scoped streak leaderboard — own profile only (self-guarded) */}
+      <StreakLeaderboard profileUserId={profile?.id} />
 
       {/* Core Stats Overview */}
       <View style={[s.card, cardStyle]}>

@@ -11,6 +11,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
+import { POLL_LIMITS } from '@/constants';
 import {
   View,
   Text,
@@ -85,6 +86,12 @@ export const PollVoting: React.FC<PollVotingProps> = ({
   // Calculate total votes and percentages
   const totalVotes = options.reduce((sum, opt) => sum + (opt.votes ?? opt.votesCount ?? opt._count?.votes ?? 0), 0);
 
+  // Cap the rendered options so a legacy over-cap poll (created before the WI1
+  // limit) never overflows. Percentages above still use the full option set, so
+  // they stay accurate.
+  const visibleOptions = options.slice(0, POLL_LIMITS.MAX_OPTIONS);
+  const hiddenOptionCount = options.length - visibleOptions.length;
+
   const getPercentage = (option: PollOption) => {
     const votes = option.votes ?? option.votesCount ?? option._count?.votes ?? 0;
     if (totalVotes === 0) return 0;
@@ -148,7 +155,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
           style={[styles.optionPill, { borderColor: isDark ? `${colorSet.border}66` : colorSet.border, backgroundColor: optionSurface }]}
         >
           <View style={[styles.optionDot, { backgroundColor: colorSet.border }]} />
-          <Text style={[styles.optionText, { color: optionText }]}>
+          <Text style={[styles.optionText, { color: optionText }]} numberOfLines={2} ellipsizeMode="tail">
             {option.text}
           </Text>
         </TouchableOpacity>
@@ -185,10 +192,14 @@ export const PollVoting: React.FC<PollVotingProps> = ({
                   style={{ marginRight: 6 }}
                 />
               )}
-              <Text style={[
-                styles.resultText,
-                isHighlighted && { fontWeight: '700', color: optionText },
-              ]}>
+              <Text
+                style={[
+                  styles.resultText,
+                  isHighlighted && { fontWeight: '700', color: optionText },
+                ]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
                 {option.text}
               </Text>
             </View>
@@ -208,7 +219,12 @@ export const PollVoting: React.FC<PollVotingProps> = ({
     <View style={styles.container}>
       {/* Options List */}
       <View style={styles.optionsList}>
-        {options.map((option, index) => renderOption(option, index))}
+        {visibleOptions.map((option, index) => renderOption(option, index))}
+        {hiddenOptionCount > 0 && (
+          <Text style={styles.hiddenOptionsNote}>
+            {t('feed.poll.moreOptions', { count: hiddenOptionCount, defaultValue: '+{{count}} more options' })}
+          </Text>
+        )}
       </View>
 
       {/* Footer Info */}
@@ -231,6 +247,13 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   optionsList: {
     gap: 10,
+  },
+  hiddenOptionsNote: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    paddingTop: 2,
+    paddingHorizontal: 4,
   },
 
   // ── Unvoted pill buttons ──
