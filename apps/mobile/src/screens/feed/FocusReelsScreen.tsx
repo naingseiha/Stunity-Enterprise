@@ -159,6 +159,13 @@ const fallbackReels: ReelFeedItem[] = [
 const COMBO_FILL_TARGET = 5;
 const PREFETCH_THRESHOLD = 3;
 
+// Sentinel appended to the list while `hasMore` so the gesture is never blocked
+// at the page boundary: the user can always scroll into one extra "next" cell
+// (a non-blocking skeleton) instead of hitting a hard stop at the last loaded
+// reel while the next page is in flight. Replaced by real content on append.
+const LOADING_SENTINEL_ID = '__reels_next_sentinel__';
+const isSentinel = (it: { id: string }) => it.id === LOADING_SENTINEL_ID;
+
 // reelsCache, patchEngagementInCache, and CACHE_FRESHNESS_MS now live in
 // ./reelsCache.ts so MainNavigator can prime the cache *before* this screen
 // mounts (the same pattern Instagram/TikTok use for instant tab entry).
@@ -406,6 +413,15 @@ export const FocusReelsScreen: React.FC = () => {
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
+  // Append a non-blocking "next" cell while there's more to load so the boundary
+  // is always scrollable (see LOADING_SENTINEL_ID). Skipped once the list is
+  // exhausted, and never shown on the cold first page (handled by the
+  // placeholder branch above) — only when we already have content on screen.
+  const listData = useMemo<ReelFeedItem[]>(() => {
+    if (!hasMore || items.length === 0) return items;
+    return [...items, { id: LOADING_SENTINEL_ID, type: '__LOADING__' as ReelType, payload: {} }];
+  }, [items, hasMore]);
+
   // Note: no early `loading` return any more. Instagram/TikTok never blank the
   // screen on tab entry — they render the first card "frame" immediately and
   // stream content in. We do the same: the FlashList branch below renders an
@@ -489,18 +505,21 @@ export const FocusReelsScreen: React.FC = () => {
         <EmptyState onRetry={onRefresh} />
       ) : (
         <FlashList
-          data={items}
+          data={listData}
           estimatedItemSize={pageHeight}
-          renderItem={({ item, index }) => (
-            <ReelCard
-              item={item}
-              isActive={index === activeIndex}
-              shouldMountVideo={Math.abs(index - activeIndex) <= 1}
-              muted={muted}
-              onInteract={(payload) => handleInteraction(item.id, item.type, payload)}
-              pageHeight={pageHeight}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            if (isSentinel(item)) return <ReelNextCell pageHeight={pageHeight} />;
+            return (
+              <ReelCard
+                item={item}
+                isActive={index === activeIndex}
+                shouldMountVideo={Math.abs(index - activeIndex) <= 1}
+                muted={muted}
+                onInteract={(payload) => handleInteraction(item.id, item.type, payload)}
+                pageHeight={pageHeight}
+              />
+            );
+          }}
           keyExtractor={(item) => `${item.type}-${item.id}`}
           pagingEnabled
           showsVerticalScrollIndicator={false}
@@ -554,6 +573,49 @@ const ReelLoadingPlaceholder: React.FC = () => {
           height: 22,
           borderRadius: 11,
           borderWidth: 2,
+          borderColor: 'rgba(255,255,255,0.25)',
+          borderTopColor: '#FFF',
+          transform: [{ rotate }],
+        }}
+        pointerEvents="none"
+      />
+    </View>
+  );
+};
+
+// ─── Next-page cell ────────────────────────────────────────────────────
+// The scrollable cell the user lands on if they out-run prefetch at the page
+// boundary. Full-page-height so paging snaps to it like any reel; shows the
+// same gradient + spinner as the cold placeholder so the wait reads as
+// "loading the next reel", never a dead end. Almost always scrolled past
+// before it's seen, because prefetch fires PREFETCH_THRESHOLD cards earlier.
+
+const ReelNextCell: React.FC<{ pageHeight: number }> = ({ pageHeight }) => {
+  const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
+  const spin = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduceMotion) return;
+    const anim = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [spin, reduceMotion]);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <View
+      style={{ height: pageHeight, alignItems: 'center', justifyContent: 'center' }}
+      accessibilityRole="progressbar"
+      accessibilityLabel={t('reels.a11y.loadingNext', { defaultValue: 'Loading more reels' })}
+    >
+      <LinearGradient colors={DEFAULT_GRADIENT} style={StyleSheet.absoluteFill} />
+      <Animated.View
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 15,
+          borderWidth: 2.5,
           borderColor: 'rgba(255,255,255,0.25)',
           borderTopColor: '#FFF',
           transform: [{ rotate }],

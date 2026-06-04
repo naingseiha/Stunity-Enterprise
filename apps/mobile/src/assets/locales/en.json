@@ -47,7 +47,8 @@
       "unlike": "Unlike",
       "reactHint": "Double tap to like, or long press to pick a reaction",
       "comments": "Comments, {{count}}",
-      "share": "Share"
+      "share": "Share",
+      "loadingNext": "Loading more reels"
     },
     "create": {
       "title": "Video reel",

@@ -39,17 +39,21 @@ import { formatRelativeTime } from '@/utils';
 import { Colors, Shadows } from '@/config';
 import { supabase } from '@/lib/supabase';
 import { createKeyedDebouncer } from '@/utils/debounce';
+import { useThemeContext } from '@/contexts';
+import { renderPostBodyText } from '@/utils/renderEmojiText';
 
 const scheduleCommentRefresh = createKeyedDebouncer(600);
 
 type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string; postType?: string } }, 'Comments'>;
 
 export default function CommentsScreen() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<CommentsScreenRouteProp>();
   const { postId } = route.params;
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const {
     feedItems,
@@ -199,7 +203,7 @@ export default function CommentsScreen() {
                 )}
               </View>
 
-              <Text style={styles.commentText}>{comment.content}</Text>
+              {renderPostBodyText(comment.content, styles.commentText)}
 
               <View style={styles.commentFooter}>
                 <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
@@ -260,7 +264,7 @@ export default function CommentsScreen() {
     <Animated.View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
         <View style={styles.emptyIconGradient}>
-          <Ionicons name={isQuestion ? 'help-circle-outline' : 'chatbubbles-outline'} size={44} color="#0066FF" />
+          <Ionicons name={isQuestion ? 'help-circle-outline' : 'chatbubbles-outline'} size={44} color={colors.primary} />
         </View>
       </View>
       <Text style={styles.emptyTitle}>
@@ -285,7 +289,7 @@ export default function CommentsScreen() {
               }}
               style={styles.backButton}
             >
-              <Ionicons name="chevron-back" size={22} color="#262626" />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
@@ -304,65 +308,83 @@ export default function CommentsScreen() {
         </View>
       </View>
 
-      {/* Post Preview Card */}
-      {post && (
-        <Animated.View style={styles.postPreviewCard}>
-          <View style={styles.postPreviewHeader}>
-            <Avatar
-              uri={post.author.profilePictureUrl || undefined}
-              name={`${post.author.lastName || ''} ${post.author.firstName || ''}`.trim()}
-              size="sm"
-              variant="post"
-            />
-            <View style={styles.postAuthorInfo}>
-              <Text style={styles.postAuthor}>
-                {post.author.lastName} {post.author.firstName}
-              </Text>
-              <Text style={styles.postTime}>{formatRelativeTime(post.createdAt)}</Text>
+      <View style={styles.mainContent}>
+        {/* Post Preview Card */}
+        {post && (
+          <Animated.View style={styles.postPreviewCardWrapper}>
+          <LinearGradient
+            colors={isQuestion ? ['#312E81', '#1E1B4B', '#111827'] : (isDark ? ['#1E293B', '#0F172A'] : ['#FFFFFF', '#F8FAFC'])}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.postPreviewCard}
+          >
+            <View style={styles.postPreviewHeader}>
+              <Avatar
+                uri={post.author.profilePictureUrl || undefined}
+                name={`${post.author.lastName || ''} ${post.author.firstName || ''}`.trim()}
+                size="sm"
+                variant="post"
+              />
+              <View style={styles.postAuthorInfo}>
+                <Text style={[styles.postAuthor, isQuestion ? { color: '#FFFFFF' } : { color: colors.text }]}>
+                  {post.author.lastName} {post.author.firstName}
+                </Text>
+                <Text style={[styles.postTime, isQuestion ? { color: 'rgba(255,255,255,0.7)' } : { color: colors.textSecondary }]}>
+                  {formatRelativeTime(post.createdAt)}
+                </Text>
+              </View>
+              {isQuestion && (
+                <View style={styles.questionBadge}>
+                  <Ionicons name="help-circle" size={14} color="#FDE047" />
+                  <Text style={styles.questionBadgeText}>{t('feed.sections.question', { defaultValue: 'Question' })}</Text>
+                </View>
+              )}
             </View>
-          </View>
-          <Text style={styles.postContent} numberOfLines={3}>
-            {post.content}
-          </Text>
-        </Animated.View>
-      )}
-
-      {/* Comments List */}
-      <KeyboardAvoidingView
-        style={styles.content}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        {isLoading ? (
-          renderLoadingSkeleton()
-        ) : postComments.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <FlashList
-            data={postComments}
-            renderItem={renderComment}
-            keyExtractor={(item) => item.id}
-            estimatedItemSize={80}
-            contentContainerStyle={styles.commentsList}
-            showsVerticalScrollIndicator={false}
-          />
+            {renderPostBodyText(
+              post.content,
+              [styles.postContent, isQuestion ? { color: '#F8FAFC', fontSize: 16, fontWeight: '600', lineHeight: 24 } : { color: colors.text }],
+              3
+            )}
+          </LinearGradient>
+          </Animated.View>
         )}
 
-        {/* Input Area */}
-        <View style={styles.inputWrapper}>
-          <View style={[styles.inputContainer, Shadows.md]}>
-            <Avatar
-              uri={user?.profilePictureUrl || undefined}
-              name={user ? `${user.lastName} ${user.firstName}` : 'You'}
-              size="sm"
-              gradientBorder="blue"
+        {/* Comments List */}
+        <KeyboardAvoidingView
+          style={styles.content}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          {isLoading ? (
+            renderLoadingSkeleton()
+          ) : postComments.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <FlashList
+              data={postComments}
+              renderItem={renderComment}
+              keyExtractor={(item) => item.id}
+              estimatedItemSize={80}
+              contentContainerStyle={styles.commentsList}
+              showsVerticalScrollIndicator={false}
             />
+          )}
+
+          {/* Input Area */}
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <Avatar
+                uri={user?.profilePictureUrl || undefined}
+                name={user ? `${user.lastName} ${user.firstName}` : 'You'}
+                size="sm"
+                gradientBorder="blue"
+              />
 
             <View style={styles.inputField}>
               <TextInput
                 style={styles.input}
                 placeholder={isQuestion ? t('feed.sections.writeAnswer', { defaultValue: 'Write your answer…' }) : t("feed.sections.writeComment")}
-                placeholderTextColor="#A3A3A3"
+                placeholderTextColor={isDark ? '#6B7280' : '#A3A3A3'}
                 value={newComment}
                 onChangeText={setNewComment}
                 multiline
@@ -379,44 +401,49 @@ export default function CommentsScreen() {
                 (!newComment.trim() || isSubmitting) && styles.sendButtonDisabled,
               ]}
             >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#0066FF" />
-              ) : (
-                <LinearGradient
-                  colors={newComment.trim() ? ['#0066FF', '#0052CC'] : ['#E8E8E8', '#D4D4D4']}
-                  style={styles.sendButtonGradient}
-                >
+              <LinearGradient
+                colors={newComment.trim() ? [colors.primary, '#4F46E5'] : (isDark ? ['#27272A', '#27272A'] : ['#F4F4F5', '#F4F5F6'])}
+                style={styles.sendButtonGradient}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
                   <Ionicons
-                    name="send"
-                    size={16}
-                    color={newComment.trim() ? '#fff' : '#A3A3A3'}
+                    name="arrow-up"
+                    size={20}
+                    color={newComment.trim() ? '#fff' : (isDark ? '#52525B' : '#A1A1AA')}
                   />
-                </LinearGradient>
-              )}
+                )}
+              </LinearGradient>
             </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.card,
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
 
   // Header Styles - Clean and Professional
   headerWrapper: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.border,
     ...Shadows.sm,
   },
   headerGradient: {
     paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   headerContent: {
     flexDirection: 'row',
@@ -431,7 +458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -441,36 +468,39 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
     letterSpacing: 0.2,
   },
   commentCountBadge: {
-    backgroundColor: '#F0F7FF',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.15)' : '#F0F7FF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
-
-    borderColor: '#DBEAFE',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(14,165,233,0.3)' : '#DBEAFE',
   },
   commentCountText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0066FF',
+    color: colors.primary,
   },
   headerRight: {
     width: 40,
   },
 
-  // Post Preview Card - Soft and Elegant
-  postPreviewCard: {
-    backgroundColor: '#FAFAFA',
+  // Post Preview Card - Rich and Elegant
+  postPreviewCardWrapper: {
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
-    padding: 14,
-    borderRadius: 12,
-
-    borderColor: '#F0F0F0',
+    borderRadius: 20,
+    ...Shadows.md,
+  },
+  postPreviewCard: {
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.15)',
   },
   postPreviewHeader: {
     flexDirection: 'row',
@@ -483,18 +513,35 @@ const styles = StyleSheet.create({
   },
   postAuthor: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#262626',
+    fontWeight: '700',
+    color: colors.text,
     marginBottom: 2,
   },
   postTime: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
+  },
+  questionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(253,224,71,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(253,224,71,0.3)',
+  },
+  questionBadgeText: {
+    color: '#FDE047',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   postContent: {
-    fontSize: 14,
-    color: '#4A4A4A',
-    lineHeight: 20,
+    fontSize: 15,
+    color: colors.text,
+    lineHeight: 22,
   },
 
   // Content Area
@@ -506,7 +553,7 @@ const styles = StyleSheet.create({
   commentsList: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 100, // Space for input
+    paddingBottom: 120, // Space for floating input
   },
   commentWrapper: {
     marginBottom: 16,
@@ -519,20 +566,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentBubble: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 16,
-    borderTopLeftRadius: 4,
-    padding: 12,
-
-    borderColor: '#F0F0F0',
+    backgroundColor: colors.card,
+    borderRadius: 22,
+    borderTopLeftRadius: 6,
+    padding: 14,
+    shadowColor: isDark ? '#000' : '#94A3B8',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.3 : 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   ownCommentBubble: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E3F2FD',
+    backgroundColor: colors.card,
+    borderColor: isDark ? colors.primary + '60' : '#E3F2FD',
   },
   verifiedAnswerBubble: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
+    backgroundColor: isDark ? '#1E1B4B' : '#FFFBEB',
+    borderColor: isDark ? '#312E81' : '#FDE68A',
     borderWidth: 1,
   },
   commentHeader: {
@@ -544,38 +596,38 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
   },
   verifiedBadge: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#0066FF',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   teacherBadge: {
-    backgroundColor: '#FFF4E5',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.15)' : '#FFF4E5',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    borderColor: '#FFE4C4',
+    borderColor: isDark ? 'rgba(14,165,233,0.3)' : '#FFE4C4',
   },
   teacherBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#0284C7',
+    color: colors.primary,
   },
   goldenCheckmarkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FEF3C7',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A',
     marginLeft: 'auto',
   },
   goldenCheckmarkText: {
@@ -585,7 +637,7 @@ const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: 14,
-    color: '#262626',
+    color: colors.text,
     lineHeight: 20,
     marginBottom: 6,
   },
@@ -596,7 +648,7 @@ const styles = StyleSheet.create({
   },
   commentTime: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   verifyButton: {
     flexDirection: 'row',
@@ -605,7 +657,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5',
   },
   verifyText: {
     fontSize: 12,
@@ -619,7 +671,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(239,68,68,0.15)' : '#FEF2F2',
   },
   deleteText: {
     fontSize: 12,
@@ -640,7 +692,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.skeleton,
   },
   skeletonBubble: {
     flex: 1,
@@ -648,7 +700,7 @@ const styles = StyleSheet.create({
   },
   skeletonLine: {
     height: 12,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.skeleton,
     borderRadius: 6,
   },
 
@@ -669,76 +721,76 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0F7FF',
+    backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
     borderWidth: 2,
-    borderColor: '#E3F2FD',
+    borderColor: isDark ? colors.border : '#EFF6FF',
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
 
-  // Input Area - Clean and Modern
+  // Input Area - Floating Pill
   inputWrapper: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    ...Shadows.md,
+    bottom: Platform.OS === 'ios' ? 24 : 16,
+    left: 16,
+    right: 16,
+    backgroundColor: colors.card,
+    borderRadius: 32,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: isDark ? 0.3 : 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 10,
-    backgroundColor: '#F9F9F9',
-    borderRadius: 22,
-    padding: 8,
-
-    borderColor: '#E8E8E8',
+    paddingLeft: 6,
+    paddingRight: 2,
   },
   inputField: {
     flex: 1,
   },
   input: {
     fontSize: 15,
-    color: '#262626',
+    color: colors.text,
     maxHeight: 100,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     lineHeight: 20,
   },
   sendButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   sendButtonGradient: {
-    width: 36,
-    height: 36,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0066FF',
-
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.4 : 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });

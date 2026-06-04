@@ -29,6 +29,8 @@ import {
   attachMyResponses,
 } from '../utils/reelResponses';
 import { feedCache } from '../redis';
+import { fetchReactionCounts } from '../utils/reactionCounts';
+import { mergeEngagement } from '../utils/reelEngagement';
 
 // Ranker uses the read replica for all 6 pool queries; writes (interactions,
 // combo, SM-2 reviews) stay on the primary via `prisma` below.
@@ -138,38 +140,57 @@ router.get('/state', authenticateToken, async (req: AuthRequest, res: Response) 
 });
 
 /**
- * Re-resolve `isLikedByMe` for every post-backed item right before responding.
- * The feed list itself is cacheable (item shape + likesCount don't change
- * within the TTL), but per-viewer `isLikedByMe` must always be fresh —
- * otherwise a user's like is "forgotten" until the cache TTL expires.
+ * Re-resolve the FULL engagement block for every post-backed item right before
+ * responding — for ALL card types, not just POST.
  *
- * Single indexed Like.findMany — cheap regardless of cache hit/miss.
+ * Why this exists: only `toPostDto` populates `engagement` in the ranker. But
+ * Quiz / Cloze / TF / Recall / FocusReel cards now also carry a real `postId`
+ * (a parent post, or — for FocusReels — a 1:1 backing post). If we only patched
+ * `isLikedByMe` here (the old behaviour) those cards rendered a filled heart
+ * driven by a real like while `likesCount`/`commentsCount`/`reactionCounts` were
+ * hardcoded 0 — a visible heart-vs-count desync. We instead hydrate the whole
+ * block from one source of truth (the Post row + this viewer's Like) so the
+ * heart, the count, and the reaction summary always agree.
+ *
+ * Per-viewer fields (`isLikedByMe`, `myReaction`) must stay outside the feed
+ * cache so a like is never "forgotten" until the TTL expires. The denormalized
+ * Post counts are re-read here too so every card type reflects the live total.
+ *
+ * Three batched indexed queries (Post counts, this viewer's Likes, grouped
+ * reaction counts) regardless of cache hit/miss — no per-card calls.
  */
-async function hydrateLikedState(items: any[], userId: string): Promise<any[]> {
-  const postIds = items
-    .map((it) => it.postId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+async function hydrateEngagement(items: any[], userId: string): Promise<any[]> {
+  const postIds = Array.from(
+    new Set(
+      items
+        .map((it) => it.postId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    ),
+  );
   if (postIds.length === 0) return items;
 
-  // Read-only; route via replica so per-request hydration doesn't tax
-  // the primary's pool slots while writes are happening.
-  const liked = await prismaRead.like.findMany({
-    where: { userId, postId: { in: postIds } },
-    select: { postId: true },
-  });
-  const likedSet = new Set(liked.map((l) => l.postId));
+  // Read-only; route via the replica so per-request hydration doesn't tax the
+  // primary's pool slots while writes (interactions, combo) are happening.
+  const [posts, myLikes, reactionCountsMap] = await Promise.all([
+    prismaRead.post.findMany({
+      where: { id: { in: postIds } },
+      select: { id: true, likesCount: true, commentsCount: true },
+    }),
+    prismaRead.like.findMany({
+      where: { userId, postId: { in: postIds } },
+      select: { postId: true, reactionType: true },
+    }),
+    fetchReactionCounts(prismaRead, postIds),
+  ]);
 
-  return items.map((it) =>
-    it.postId
-      ? {
-          ...it,
-          engagement: {
-            ...(it.engagement ?? { likesCount: 0, commentsCount: 0 }),
-            isLikedByMe: likedSet.has(it.postId),
-          },
-        }
-      : it,
+  const countsByPost = new Map(
+    posts.map((p) => [p.id, { likesCount: p.likesCount ?? 0, commentsCount: p.commentsCount ?? 0 }]),
   );
+  const myReactionByPost = new Map<string, string>(
+    myLikes.map((l) => [l.postId, l.reactionType ?? 'LIKE']),
+  );
+
+  return mergeEngagement(items, countsByPost, myReactionByPost, reactionCountsMap);
 }
 
 /**
@@ -237,8 +258,8 @@ router.get('/feed', authenticateToken, async (req: AuthRequest, res: Response) =
     // Always hydrate fresh per-viewer state outside the cache: isLikedByMe and
     // the viewer's prior reel answers (so cards replay their answered state).
     const tHydrate = Date.now();
-    const likedItems = await hydrateLikedState(result.items ?? [], userId);
-    const hydratedItems = await hydrateReelResponses(likedItems, userId);
+    const engagedItems = await hydrateEngagement(result.items ?? [], userId);
+    const hydratedItems = await hydrateReelResponses(engagedItems, userId);
     timings.hydrate = Date.now() - tHydrate;
     timings.total = Date.now() - t0;
 
