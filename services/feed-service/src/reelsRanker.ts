@@ -563,6 +563,7 @@ function toFocusReelDto(r: any): ReelDto {
     type: 'FOCUS_REEL',
     subject: r.subject,
     createdAt: r.createdAt.toISOString(),
+    postId: r.id,
     payload: {
       title: r.title,
       description: r.description,
@@ -581,6 +582,7 @@ function toRecallDto(c: any): ReelDto {
     type: 'RECALL_CARD',
     subject: c.subject,
     createdAt: c.createdAt.toISOString(),
+    postId: c.question?.postId,
     payload: {
       subjectLabel: c.subjectLabel,
       courseTitle: c.courseTitle,
