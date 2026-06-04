@@ -258,11 +258,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 
   // ── Unvoted pill buttons ──
   optionPill: {
-    height: 48,
-    borderRadius: 24,
+    height: 44,
+    borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     borderWidth: StyleSheet.hairlineWidth,
   },
   optionDot: {
@@ -272,17 +272,18 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginRight: 12,
   },
   optionText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
+    lineHeight: 22,
   },
 
   // ── Voted result pills ──
   resultContainer: {
-    height: 48,
+    height: 44,
   },
   resultPill: {
     flex: 1,
-    borderRadius: 24,
+    borderRadius: 22,
     overflow: 'hidden',
     backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     position: 'relative',
@@ -313,12 +314,13 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
   },
   resultText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text,
+    lineHeight: 20,
   },
   percentText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },

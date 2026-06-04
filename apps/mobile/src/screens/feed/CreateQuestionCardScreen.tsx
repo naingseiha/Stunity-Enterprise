@@ -169,7 +169,7 @@ export const CreateQuestionCardScreen: React.FC = () => {
           </View>
 
           {/* Format selector — multiple choice, one-tap True/False, or cloze. */}
-          <View style={styles.formatRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.formatRow}>
             {([
               { key: 'MCQ' as const, icon: 'list-outline' as const, label: t('reels.createCard.formatMcq', { defaultValue: 'Multiple choice' }) },
               { key: 'TF' as const, icon: 'swap-horizontal-outline' as const, label: t('reels.createCard.formatTf', { defaultValue: 'True / False' }) },
@@ -188,7 +188,7 @@ export const CreateQuestionCardScreen: React.FC = () => {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
 
           <Text style={styles.label}>
             {isTF
@@ -355,9 +355,9 @@ const createStyles = (colors: any, _isDark: boolean) =>
     label: { color: colors.text, fontSize: 14, fontWeight: '800', marginBottom: 8, marginTop: 4 },
     input: {
       backgroundColor: colors.surfaceVariant,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: Platform.OS === 'ios' ? 12 : 9,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: Platform.OS === 'ios' ? 14 : 11,
       color: colors.text,
       fontSize: 15,
       borderWidth: 1,
@@ -386,15 +386,15 @@ const createStyles = (colors: any, _isDark: boolean) =>
 
     validationHint: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginTop: 16 },
 
-    formatRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+    formatRow: { gap: 10, marginBottom: 18, paddingRight: 16 },
     formatBtn: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
-      paddingVertical: 11,
-      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 18,
+      borderRadius: 9999,
       backgroundColor: colors.surfaceVariant,
       borderWidth: 1,
       borderColor: colors.border,

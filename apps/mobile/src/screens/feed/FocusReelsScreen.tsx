@@ -2523,7 +2523,7 @@ const styles = StyleSheet.create({
   // Bottom details
   bottomDetails: { position: 'absolute', bottom: 56, left: 16, right: 86, zIndex: 5, elevation: 5, gap: 8 },
   creatorName: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
-  reelTitle: { color: '#FFF', fontSize: 19, fontWeight: '800', lineHeight: 25 },
+  reelTitle: { color: '#FFF', fontSize: 16, fontWeight: '800', lineHeight: 26 },
 
   // Poll (quiz-card style) — the option fill bar sits behind the row, so the
   // button needs to clip its overflow and the letter/text/pct stay above it.
@@ -2532,7 +2532,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pollFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  pollPct: { color: '#FFF', fontSize: 15, fontWeight: '800' },
+  pollPct: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   reelPollTotal: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 2 },
 
   // Answer / discuss CTA (question + other post types)
@@ -2565,7 +2565,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(16,185,129,0.6)',
     marginTop: 2,
   },
-  reelSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  reelSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: '500', lineHeight: 22 },
 
   // Type pills
   typePill: {
@@ -2598,15 +2598,16 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   questionPillText: { color: '#FDE047', fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
-  questionText: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 18, lineHeight: 25 },
+  questionText: { color: '#FFF', fontSize: 16, fontWeight: '700', marginBottom: 18, lineHeight: 24 },
 
   optionsList: { gap: 10, marginBottom: 20 },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 26,
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 9999,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -2615,15 +2616,15 @@ const styles = StyleSheet.create({
   optionCorrect: { backgroundColor: 'rgba(16,185,129,0.92)', borderColor: '#10B981' },
   optionIncorrect: { backgroundColor: 'rgba(239,68,68,0.92)', borderColor: '#EF4444' },
   optionLetter: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionLetterText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
-  optionText: { color: '#FFF', fontSize: 14, fontWeight: '600', flex: 1 },
+  optionLetterText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
+  optionText: { color: '#FFF', fontSize: 14, fontWeight: '600', flex: 1, lineHeight: 22 },
 
   // Submit
   submitBtn: { borderRadius: 24, overflow: 'hidden' },
@@ -2633,7 +2634,7 @@ const styles = StyleSheet.create({
 
   // Centered card layout
   cardCenterContent: { padding: 24, alignItems: 'center', gap: 14, width: '100%' },
-  bigQuestionText: { color: '#FFF', fontSize: 22, fontWeight: '800', textAlign: 'center', lineHeight: 30 },
+  bigQuestionText: { color: '#FFF', fontSize: 18, fontWeight: '800', textAlign: 'center', lineHeight: 28 },
 
   // True/False
   tfPrompt: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
@@ -2666,12 +2667,13 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    borderRadius: 28,
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 9999,
     borderWidth: 1.5,
   },
-  quizOptionText: { color: '#FFF', fontSize: 16, fontWeight: '700', flex: 1 },
+  quizOptionText: { color: '#FFF', fontSize: 14, fontWeight: '700', flex: 1, lineHeight: 22 },
 
   // Recall
   recallSubject: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
