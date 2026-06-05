@@ -39,6 +39,7 @@ import { Avatar, ImageCarousel } from '@/components/common';
 import { EducationalValueModal, type EducationalValue, PollVoting } from '@/components/feed';
 import PostOptionsSheet, { PostOptionAction } from '@/components/feed/PostOptionsSheet';
 import { RepostComposer } from '@/components/feed/RepostComposer';
+import { useFeatureFlag } from '@/config/featureFlags';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -178,6 +179,7 @@ const CommentItem: React.FC<{
 export default function PostDetailScreen() {
   const { t } = useTranslation();
   const { colors, isDark } = useThemeContext();
+  const repostEnabled = useFeatureFlag('repost_quote');
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation();
   const route = useRoute<PostDetailRouteProp>();
@@ -464,6 +466,7 @@ export default function PostDetailScreen() {
   }, []);
 
   const handleRepost = useCallback(() => {
+    if (!repostEnabled) return; // repost_quote kill switch (button is also hidden)
     if (!post) return;
     if (currentUserOwnsPost) {
       Alert.alert(t('common.error'), t('feed.repostOwnError'));
@@ -477,7 +480,7 @@ export default function PostDetailScreen() {
     // Open the quote composer (parity with the feed) so the user can add
     // commentary or repost as-is — instead of the old bare confirm Alert.
     setShowRepostComposer(true);
-  }, [post, currentUserOwnsPost, actionScale, t]);
+  }, [repostEnabled, post, currentUserOwnsPost, actionScale, t]);
 
   const handleScrollToComments = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -917,12 +920,14 @@ export default function PostDetailScreen() {
                     {commentCount > 0 && <Text style={styles.feedActionText}>{formatNumber(commentCount)}</Text>}
                   </TouchableOpacity>
                 </Animated.View>
-                <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
-                  <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleRepost}>
-                    <Ionicons name="repeat-outline" size={26} color={colors.text} />
-                    {shareCount > 0 && <Text style={styles.feedActionText}>{formatNumber(shareCount)}</Text>}
-                  </TouchableOpacity>
-                </Animated.View>
+                {repostEnabled && (
+                  <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
+                    <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleRepost}>
+                      <Ionicons name="repeat-outline" size={26} color={colors.text} />
+                      {shareCount > 0 && <Text style={styles.feedActionText}>{formatNumber(shareCount)}</Text>}
+                    </TouchableOpacity>
+                  </Animated.View>
+                )}
                 <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
                   <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleShare}>
                     <Ionicons name="paper-plane-outline" size={23} color={colors.text} />

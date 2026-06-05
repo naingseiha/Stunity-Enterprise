@@ -50,11 +50,28 @@ async function findActiveUserIds(since: Date): Promise<string[]> {
   return Array.from(ids);
 }
 
+/**
+ * Master kill switch for the weekly digest, owned by this service (the feature
+ * is entirely backend — there is no client UI to gate). Set
+ * WEEKLY_DIGEST_ENABLED=false to instantly stop the digest from both the
+ * internal scheduler and the service-auth HTTP endpoint without a redeploy of
+ * other services. Defaults to on. (The mobile remote-flag resolver does NOT
+ * govern this — nothing on the client consumes a weekly_digest flag.)
+ */
+function isDigestEnabled(): boolean {
+  return process.env.WEEKLY_DIGEST_ENABLED !== 'false';
+}
+
 export async function runWeeklyProgressDigestJob(): Promise<{
   candidates: number;
   pushed: number;
   skipped: number;
 }> {
+  if (!isDigestEnabled()) {
+    console.log('[weekly-digest] disabled via WEEKLY_DIGEST_ENABLED=false — skipping run');
+    return { candidates: 0, pushed: 0, skipped: 0 };
+  }
+
   const sevenDaysAgo = startOfLast7Days();
   const today = startOfToday();
 

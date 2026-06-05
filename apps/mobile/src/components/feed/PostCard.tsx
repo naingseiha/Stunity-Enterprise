@@ -203,7 +203,9 @@ interface ActionBarProps {
   onLike: () => void;
   onReact?: (type: string) => void;
   onComment: () => void;
-  onRepost: () => void;
+  // Optional: when undefined (repost_quote flag off) the repost button is hidden
+  // entirely — same convention as onReact gating the reaction picker.
+  onRepost?: () => void;
   onShare: () => void;
   onValue: () => void;
   onViewStats?: () => void;
@@ -403,16 +405,18 @@ const ActionBar = React.memo<ActionBarProps>(({
         styles={styles}
         accessibilityLabel={t('feed.actions.comment')}
       />
-      <AnimatedActionButton
-        icon="repeat-outline"
-        count={shareCount}
-        color={colors.text}
-        activeColor="#00BA7C"
-        onPress={onRepost}
-        size={26}
-        styles={styles}
-        accessibilityLabel={t('feed.repost')}
-      />
+      {onRepost && (
+        <AnimatedActionButton
+          icon="repeat-outline"
+          count={shareCount}
+          color={colors.text}
+          activeColor="#00BA7C"
+          onPress={onRepost}
+          size={26}
+          styles={styles}
+          accessibilityLabel={t('feed.repost')}
+        />
+      )}
       <AnimatedActionButton
         icon="paper-plane-outline"
         color={colors.text}
@@ -548,6 +552,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
 }) => {
   const { colors, isDark } = useThemeContext();
   const reactionsEnabled = useFeatureFlag('reactions');
+  const repostEnabled = useFeatureFlag('repost_quote');
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const { t, i18n } = useTranslation();
@@ -659,6 +664,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   }, [onComment]);
 
   const handleRepost = useCallback(() => {
+    if (!repostEnabled) return; // repost_quote kill switch (button is also hidden)
     if (isCurrentUser) {
       Alert.alert(t('common.error'), t('feed.repostOwnError'));
       return;
@@ -666,7 +672,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
     // Open the quote composer — the user can add commentary (or repost as-is).
     setShowRepostComposer(true);
-  }, [isCurrentUser, t]);
+  }, [repostEnabled, isCurrentUser, t]);
 
   const handleShare = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
@@ -975,7 +981,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
         onLike={handleLike}
         onReact={onReact && reactionsEnabled ? handleReact : undefined}
         onComment={handleComment}
-        onRepost={handleRepost}
+        onRepost={repostEnabled ? handleRepost : undefined}
         onShare={handleShare}
         onValue={handleValue}
         onViewStats={handleViewAnalytics}
