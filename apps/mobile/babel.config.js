@@ -52,6 +52,15 @@ module.exports = function (api) {
           ['transform-remove-console', { exclude: ['error', 'warn'] }],
         ],
       },
+      test: {
+        plugins: [
+          // Jest can't execute real dynamic import() without
+          // --experimental-vm-modules; this rewrites import() to a
+          // require()-based promise so modules that lazy-import to break circular
+          // deps (e.g. services/token → api/client) load under jest.
+          'dynamic-import-node',
+        ],
+      },
     },
   };
 };

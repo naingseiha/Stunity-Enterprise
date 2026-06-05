@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem, MediaMetadata } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
+import { dedupeFeedItems } from '@/utils/dedupeFeedItems';
 import { track } from '@/services/analytics';
 import { feedApi, quizApi, learnApi } from '@/api/client';
 import { InteractionManager } from 'react-native';
@@ -609,16 +610,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         }
 
         // Deduplicate posts by ID to prevent FlashList layout issues
-        const seenIds = new Set<string>();
-        let finalFeedItems = combinedFeedItems.filter(item => {
-          if (item?.type === 'POST') {
-            const postId = item.data?.id;
-            if (!postId) return false; // Filter out corrupted POST items
-            if (seenIds.has(postId)) return false;
-            seenIds.add(postId);
-          }
-          return true;
-        });
+        let finalFeedItems = dedupeFeedItems(combinedFeedItems);
 
         // Keep a bounded rolling window instead of letting the RN heap grow forever.
         // On append, preserve the newest page at the tail; the old first-500 cap
