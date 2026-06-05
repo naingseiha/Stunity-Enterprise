@@ -46,6 +46,10 @@ ALLOWLIST=(
   'services/analytics-service/src/index.ts'
   'services/timetable-service/src/index.ts'
   'services/notification-service/src/lib/prisma.ts'
+  # Sanctioned read-replica clients: getPooledPrismaClient() for the primary +
+  # one extra `new PrismaClient` for DATABASE_READ_URL. feed/learn keep this in
+  # context.ts (already allowed above); club-service keeps it in lib/prisma.ts.
+  'services/club-service/src/lib/prisma.ts'
 )
 
 FAIL=0
