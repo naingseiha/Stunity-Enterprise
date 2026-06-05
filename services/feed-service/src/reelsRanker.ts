@@ -305,7 +305,21 @@ export class ReelsRanker {
       },
       orderBy: { nextReviewAt: 'asc' },
       take,
-      include: { question: true },
+      include: {
+        question: {
+          include: {
+            // Source author of the underlying quiz question, for the card's
+            // avatar → profile deep-link (see fetchQuizzes).
+            post: {
+              select: {
+                author: {
+                  select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -350,7 +364,20 @@ export class ReelsRanker {
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 8, 24), // overfetch so a weak-subject card buried past the newest few still surfaces
       include: {
-        post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
+        post: {
+          select: {
+            id: true,
+            authorId: true,
+            courseCode: true,
+            topicTags: true,
+            // Source author (the educator who created the quiz/post) so the
+            // card's avatar/@username can deep-link to their profile, matching
+            // FocusReel (creator) / Post (author) / Bounty (asker).
+            author: {
+              select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true },
+            },
+          },
+        },
       },
     });
     return biasBySubjects(rows, weakSubjects, subjectOfQuiz, take);
@@ -372,7 +399,20 @@ export class ReelsRanker {
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 8, 24),
       include: {
-        post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
+        post: {
+          select: {
+            id: true,
+            authorId: true,
+            courseCode: true,
+            topicTags: true,
+            // Source author (the educator who created the quiz/post) so the
+            // card's avatar/@username can deep-link to their profile, matching
+            // FocusReel (creator) / Post (author) / Bounty (asker).
+            author: {
+              select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true },
+            },
+          },
+        },
       },
     });
     return biasBySubjects(rows, weakSubjects, subjectOfQuiz, take);
@@ -390,7 +430,20 @@ export class ReelsRanker {
       orderBy: { createdAt: 'desc' },
       take: Math.max(take * 8, 24),
       include: {
-        post: { select: { id: true, authorId: true, courseCode: true, topicTags: true } },
+        post: {
+          select: {
+            id: true,
+            authorId: true,
+            courseCode: true,
+            topicTags: true,
+            // Source author (the educator who created the quiz/post) so the
+            // card's avatar/@username can deep-link to their profile, matching
+            // FocusReel (creator) / Post (author) / Bounty (asker).
+            author: {
+              select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true },
+            },
+          },
+        },
       },
     });
     return biasBySubjects(rows, weakSubjects, subjectOfQuiz, take);
@@ -576,7 +629,7 @@ function toFocusReelDto(r: any): ReelDto {
   };
 }
 
-function toRecallDto(c: any): ReelDto {
+export function toRecallDto(c: any): ReelDto {
   return {
     id: c.id,
     type: 'RECALL_CARD',
@@ -590,6 +643,7 @@ function toRecallDto(c: any): ReelDto {
       xpReward: c.xpReward,
       protectsStreak: c.protectsStreak,
       lastReviewedAt: c.lastReviewedAt,
+      author: c.question?.post?.author ?? null,
       question: c.question
         ? {
             id: c.question.id,
@@ -604,7 +658,7 @@ function toRecallDto(c: any): ReelDto {
   };
 }
 
-function toQuizDto(q: any, _userId: string): ReelDto {
+export function toQuizDto(q: any, _userId: string): ReelDto {
   return {
     id: q.id,
     type: 'QUIZ_QUESTION',
@@ -616,11 +670,12 @@ function toQuizDto(q: any, _userId: string): ReelDto {
       ...shuffleOptions(q.options, q.correctAnswer, q.id),
       explanation: q.explanation,
       points: q.points,
+      author: q.post?.author ?? null,
     },
   };
 }
 
-function toTfDto(q: any): ReelDto {
+export function toTfDto(q: any): ReelDto {
   return {
     id: q.id,
     type: 'TF_CARD',
@@ -634,11 +689,12 @@ function toTfDto(q: any): ReelDto {
       correctAnswer: q.correctAnswer,
       explanation: q.explanation,
       points: q.points,
+      author: q.post?.author ?? null,
     },
   };
 }
 
-function toClozeDto(q: any): ReelDto {
+export function toClozeDto(q: any): ReelDto {
   return {
     id: q.id,
     type: 'CLOZE_CARD',
@@ -652,6 +708,7 @@ function toClozeDto(q: any): ReelDto {
       ...shuffleOptions(q.options, q.correctAnswer, q.id),
       explanation: q.explanation,
       points: q.points,
+      author: q.post?.author ?? null,
     },
   };
 }
