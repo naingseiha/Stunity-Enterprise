@@ -1,6 +1,7 @@
 import { withTranslation, WithTranslation } from 'react-i18next';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { captureException } from '@/services/monitoring';
 
 interface Props extends WithTranslation {
     children: ReactNode;
@@ -29,6 +30,10 @@ class ErrorBoundary extends Component<Props, State> {
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('ErrorBoundary caught:', error, errorInfo);
+        // Forward React render-tree crashes to Sentry (no-op until monitoring
+        // is initialized / a DSN is configured). The component stack pinpoints
+        // which subtree threw — far more useful than the bare error in prod.
+        captureException(error, { componentStack: errorInfo.componentStack });
         this.setState({ errorInfo });
     }
 

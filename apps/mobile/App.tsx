@@ -23,12 +23,18 @@ import { NotificationProvider, ThemeProvider } from '@/contexts';
 import { hydrateAppPreferences } from '@/services/appPreferences';
 import { loadFeatureFlags } from '@/config/featureFlags';
 import { track } from '@/services/analytics';
+import { initMonitoring, wrapWithMonitoring } from '@/services/monitoring';
 import { hydrateServerHostOverride } from '@/services/serverConfig';
 import {
   KHMER_FONT_ASSETS,
   initializeKhmerTypography,
   setKhmerTypographyLanguage,
 } from '@/lib/khmerTypography';
+
+// Initialize crash reporting before anything else so the global error/rejection
+// handlers are installed up front and errors during startup are captured.
+// No-op when no Sentry DSN is configured (see services/monitoring).
+initMonitoring();
 
 // Ignore specific warnings in development
 if (__DEV__) {
@@ -56,7 +62,7 @@ function scheduleExpoImageCacheReset() {
   });
 }
 
-export default function App() {
+function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const { initialize } = useAuthStore();
@@ -173,3 +179,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+// Wrap the root with Sentry for touch/navigation breadcrumbs and proper error
+// boundary wiring. Safe when monitoring is disabled — wrap() just renders the
+// app unchanged if Sentry was never initialized.
+export default wrapWithMonitoring(App);

@@ -63,10 +63,21 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "stunity.app", "pathPrefix": "/posts" },
-            { "scheme": "https", "host": "www.stunity.app", "pathPrefix": "/posts" }
+            {
+              "scheme": "https",
+              "host": "stunity.app",
+              "pathPrefix": "/posts"
+            },
+            {
+              "scheme": "https",
+              "host": "www.stunity.app",
+              "pathPrefix": "/posts"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "newArchEnabled": true
@@ -100,7 +111,8 @@
       "expo-font",
       "expo-localization",
       "expo-notifications",
-      "expo-video"
+      "expo-video",
+      "@sentry/react-native"
     ],
     "extra": {
       "eas": {
