@@ -34,6 +34,7 @@ import {
 } from './reelsCache';
 import useAuthStore from '@/stores/authStore';
 import { track } from '@/services/analytics';
+import { captureException } from '@/services/monitoring';
 import { POLL_LIMITS } from '@/constants';
 import { useFeatureFlag } from '@/config/featureFlags';
 import { useReducedMotion } from '@/hooks';
@@ -2363,8 +2364,10 @@ const ReelPoll: React.FC<{
     try {
       await feedApi.post(`/posts/${postId}/vote`, { optionId });
       track('reel_poll_vote', { postId });
-    } catch {
-      // best-effort: leave the optimistic state; a refetch will reconcile
+    } catch (e) {
+      // Leave the optimistic state (a refetch reconciles), but report: a poll
+      // vote that fails to persist is a silent write failure worth surfacing.
+      captureException(e, { feature: 'reel_poll_vote', postId, optionId });
     }
   };
 
