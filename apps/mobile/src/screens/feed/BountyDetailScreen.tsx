@@ -43,6 +43,7 @@ import Animated, {
 
 import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
+import { captureException } from '@/services/monitoring';
 import { Colors, ColorScale, Spacing, BorderRadius, Shadows } from '@/config';
 import { Avatar } from '@/components/common';
 import { Haptics } from '@/services/haptics';
@@ -124,7 +125,11 @@ export default function BountyDetailScreen() {
           ? { ...r, ahaCount: result.ahaCount, hasAha: result.added }
           : r,
       ));
-    } catch { /* silent */ }
+    } catch (e) {
+      // Silent to the user, but report: a swallowed "aha" toggle is a lost
+      // engagement action and likely signals a backend bug.
+      captureException(e, { feature: 'bounty_aha_toggle', bountyId, replyId });
+    }
   }, [bountyId]);
 
   const handleAward = useCallback(async (replyId: string) => {

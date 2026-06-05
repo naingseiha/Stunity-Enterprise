@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuthStore } from '@/stores';
 import { statsAPI } from '@/services/stats';
+import { captureException } from '@/services/monitoring';
 import { fetchDailyQuiz, fetchRecommendedQuizzes, QuizItem } from '@/services/quiz';
 import { fetchLeaderboard } from '@/api/profileApi';
 import { NetworkStatus } from '@/components/common';
@@ -58,7 +59,9 @@ export default function QuizDashboardScreen() {
                 winRate: Math.round(stats.winRate || 0),
             }));
         } catch (e) {
-            // Keep defaults on error
+            // Keep defaults on screen, but report: silently-zeroed stats mask a
+            // broken stats endpoint.
+            captureException(e, { feature: 'quiz_dashboard_stats', userId: user?.id });
         }
     }, [user?.id]);
 

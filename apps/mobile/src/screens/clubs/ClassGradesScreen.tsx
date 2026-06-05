@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { classesApi, gradeApi } from '@/api';
 import { useAuthStore } from '@/stores';
+import { captureException } from '@/services/monitoring';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -443,6 +444,9 @@ export default function ClassGradesScreen() {
       }
       setStudentMonthlyGrades(filtered);
     } catch (error) {
+      // Grades fail to load silently (blank table, no signal); report so a
+      // broken grade endpoint is visible.
+      captureException(error, { feature: 'class_student_grades', classId, studentId: effectiveStudentId });
     } finally {
       if (studentScoreRequestRef.current === requestId) {
         setStudentScoreRowsLoading(false);

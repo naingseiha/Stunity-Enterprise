@@ -50,6 +50,16 @@
       "share": "ចែករំលែក",
       "submitAnswer": "ដាក់ស្នើចម្លើយ"
     },
+    "share": {
+      "title": "Stunity",
+      "reel": "មើលរីលសិក្សានេះនៅលើ Stunity",
+      "question": "ឆ្លើយសំណួរនេះនៅលើ Stunity",
+      "quiz": "ធ្វើតេស្តនេះនៅលើ Stunity",
+      "poll": "បោះឆ្នោតក្នុងការស្ទង់មតិនេះនៅលើ Stunity",
+      "post": "មើលការបង្ហោះនេះនៅលើ Stunity",
+      "bounty": "ជួយឆ្លើយសំណួរនេះនៅលើ Stunity",
+      "practice": "សាកល្បងខ្លួនអ្នកនៅលើ Stunity"
+    },
     "bounty": {
       "askedBy": "សួរដោយ @{{name}}",
       "hoursLeft": "នៅសល់ {{count}} ម៉ោង",
@@ -77,6 +87,7 @@
       "reactHint": "ប៉ះពីរដងដើម្បីចូលចិត្ត ឬចុចសង្កត់ដើម្បីជ្រើសប្រតិកម្ម",
       "comments": "មតិ, {{count}}",
       "share": "ចែករំលែក",
+      "openProfile": "មើលប្រវត្តិរូបរបស់ {{name}}",
       "loadingNext": "កំពុងផ្ទុករីលបន្ថែម",
       "submitAnswer": "ដាក់ស្នើចម្លើយ",
       "revealAnswer": "បង្ហាញចម្លើយ",

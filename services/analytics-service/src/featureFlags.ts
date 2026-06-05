@@ -21,6 +21,13 @@ export interface FlagDefinition {
 
 // All engagement features default to fully on (100%) — they're shipped. Lower a
 // rollout to stage a change, or set enabled:false as an instant kill switch.
+//
+// Only flags the mobile client actually reads belong here (this map is the
+// contract served by GET /feature-flags). Two former entries were dropped in the
+// 2026-06 flag audit because nothing consumed them:
+//   • weekly_digest  — a backend-only notification cron; its kill switch is now
+//                      WEEKLY_DIGEST_ENABLED in notification-service.
+//   • public_profile — had no implementation on client or server.
 export const FLAG_DEFINITIONS: FlagDefinition[] = [
   { key: 'reactions', description: 'Reaction picker beyond like', enabled: true, rollout: 100 },
   { key: 'repost_quote', description: 'Repost with quote composer', enabled: true, rollout: 100 },
@@ -29,8 +36,6 @@ export const FLAG_DEFINITIONS: FlagDefinition[] = [
   { key: 'streak_leaderboard', description: 'Scoped streak leaderboards', enabled: true, rollout: 100 },
   { key: 'streak_ring', description: 'Streak chip in feed header', enabled: true, rollout: 100 },
   { key: 'profile_strength', description: 'Profile strength meter + nudge', enabled: true, rollout: 100 },
-  { key: 'weekly_digest', description: 'Weekly progress digest', enabled: true, rollout: 100 },
-  { key: 'public_profile', description: 'Public profile share', enabled: true, rollout: 100 },
 ];
 
 /** Stable 0-99 bucket for a (user, flag) pair. */

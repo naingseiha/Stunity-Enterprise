@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
 import { feedApi } from '@/api/client';
 import { track } from '@/services/analytics';
+import { captureException } from '@/services/monitoring';
 import type { Post } from '@/types';
 
 interface RepostComposerProps {
@@ -56,8 +57,10 @@ export const RepostComposer: React.FC<RepostComposerProps> = ({ visible, post, o
         onReposted?.();
         onClose();
       }
-    } catch {
-      // Keep the modal open so the user can retry; backend errors are non-fatal here.
+    } catch (e) {
+      // Keep the modal open so the user can retry; still report — a failed
+      // repost POST is a backend error worth surfacing.
+      captureException(e, { feature: 'repost_create', postId: post.id });
     } finally {
       setSubmitting(false);
     }

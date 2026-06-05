@@ -113,7 +113,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   FeedTab: NavigatorScreenParams<FeedStackParamList>;
   LearnTab: NavigatorScreenParams<LearnStackParamList>;
-  ReelsTab: undefined;
+  ReelsTab: NavigatorScreenParams<ReelsStackParamList>;
   QuizTab: NavigatorScreenParams<QuizStackParamList>;
   ClubsTab: NavigatorScreenParams<ClubsStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
@@ -140,6 +140,19 @@ export type FeedStackParamList = {
   CreateBounty: undefined;
   FocusReels: undefined;
   CreateFocusReel: undefined;
+};
+
+// Reels Stack — the Reels tab is its own stack so deep-links opened from a
+// reel (Comments / BountyDetail / UserProfile) push *within* the Reels context
+// and Back returns to the originating reel instead of unwinding to the news
+// feed. FeedStack keeps its own copies of these screens for the feed entry
+// points; registering a screen in two stacks mirrors how ProfileScreen is
+// already shared (UserProfile in FeedStack, Profile in ProfileStack).
+export type ReelsStackParamList = {
+  FocusReels: undefined;
+  Comments: { postId: string; postType?: string };
+  BountyDetail: { bountyId: string; bountySubject?: string; bountyXp?: number };
+  UserProfile: { userId: string };
 };
 
 // Learn Stack

@@ -25,6 +25,7 @@ import {
   MessagesStackParamList,
   ProfileStackParamList,
   ClubsStackParamList,
+  ReelsStackParamList,
 } from "./types";
 import { Colors, Typography, Shadows } from "@/config";
 import { Sidebar } from "@/components/navigation";
@@ -168,6 +169,7 @@ const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const QuizStack = createNativeStackNavigator<QuizStackParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const ReelsStack = createNativeStackNavigator<ReelsStackParamList>();
 
 // Clubs Stack
 const ClubsStack = createNativeStackNavigator<ClubsStackParamList>();
@@ -286,6 +288,34 @@ const FeedStackNavigator = () => (
   </FeedStack.Navigator>
 );
 
+// Reels Stack Navigator
+//
+// The Reels tab is a stack (not a bare screen) so that deep-links launched
+// from a reel — Comments ("Join the discussion" / "Answer this question"),
+// BountyDetail, and a tapped author's UserProfile — push *onto the Reels
+// stack* and return to the exact reel on Back. Previously these screens lived
+// only in FeedStack, so navigating to them from the Reels tab landed the user
+// on the news feed when they pressed Back. QuizDetails stays on MainStack
+// (reachable from anywhere; Back already returns to the reel).
+const ReelsStackNavigator = () => (
+  <ReelsStack.Navigator
+    screenOptions={{
+      headerShown: false,
+      animation: "slide_from_right",
+      gestureEnabled: true,
+    }}
+  >
+    <ReelsStack.Screen name="FocusReels" component={FocusReelsScreen} />
+    <ReelsStack.Screen name="Comments" component={CommentsScreen} />
+    <ReelsStack.Screen
+      name="BountyDetail"
+      component={BountyDetailScreen}
+      options={{ headerShown: false, animation: "slide_from_right" }}
+    />
+    <ReelsStack.Screen name="UserProfile" component={ProfileScreen} />
+  </ReelsStack.Navigator>
+);
+
 // Learn Stack Navigator
 const LearnStackNavigator = () => (
   <LearnStack.Navigator
@@ -394,7 +424,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Wrap each visible tab root so horizontal flicks switch tabs (Instagram-style).
 // The wrapper bails out on vertical scrolls and on deep-stack screens.
 const SwipeableFeed = withSwipeableTab(FeedStackNavigator, "FeedTab");
-const SwipeableReels = withSwipeableTab(FocusReelsScreen, "ReelsTab");
+const SwipeableReels = withSwipeableTab(ReelsStackNavigator, "ReelsTab");
 const SwipeableLearn = withSwipeableTab(LearnStackNavigator, "LearnTab");
 const SwipeableClubs = withSwipeableTab(ClubsStackNavigator, "ClubsTab");
 const SwipeableProfile = withSwipeableTab(ProfileStackNavigator, "ProfileTab");
@@ -649,25 +679,37 @@ const MainNavigatorContent = () => {
         <Tab.Screen
           name="ReelsTab"
           component={SwipeableReels}
-          // Keep the bottom tab bar visible on Reels (like TikTok / Instagram /
-          // Facebook). The reel pages size themselves to sit above the bar
-          // (FocusReelsScreen uses useBottomTabBarHeight), so nothing is hidden.
-          // Reels are always a dark, immersive surface, so the bar goes dark +
-          // light-tinted while focused (regardless of the app's light/dark
-          // theme) to match — same as TikTok/IG. Reverts when another tab is
-          // focused (that screen's options take over).
-          options={{
-            tabBarActiveTintColor: "#FFFFFF",
-            tabBarInactiveTintColor: "rgba(255,255,255,0.6)",
-            tabBarStyle: {
-              backgroundColor: "#000000",
-              borderTopWidth: 0.5,
-              borderTopColor: "rgba(255,255,255,0.12)",
-              height: Platform.OS === "ios" ? 80 : 60,
-              paddingTop: 8,
-              paddingBottom: Platform.OS === "ios" ? 24 : 8,
-              elevation: 0,
-            },
+          // Keep the bottom tab bar visible on the reel itself (like TikTok /
+          // Instagram / Facebook). The reel pages size themselves to sit above
+          // the bar (FocusReelsScreen uses useBottomTabBarHeight), so nothing
+          // is hidden. The reel is a dark, immersive surface, so the bar goes
+          // dark + light-tinted while focused (regardless of the app's
+          // light/dark theme) to match — same as TikTok/IG.
+          //
+          // On deep screens pushed within the Reels stack (Comments,
+          // BountyDetail, UserProfile) the bar is hidden entirely, matching how
+          // FeedTab/ClubsTab/ProfileTab hide it on their detail screens.
+          options={({ route }) => {
+            const routeName =
+              getFocusedRouteNameFromRoute(route) ?? "FocusReels";
+            if (
+              ["Comments", "BountyDetail", "UserProfile"].includes(routeName)
+            ) {
+              return { tabBarStyle: { display: "none" } };
+            }
+            return {
+              tabBarActiveTintColor: "#FFFFFF",
+              tabBarInactiveTintColor: "rgba(255,255,255,0.6)",
+              tabBarStyle: {
+                backgroundColor: "#000000",
+                borderTopWidth: 0.5,
+                borderTopColor: "rgba(255,255,255,0.12)",
+                height: Platform.OS === "ios" ? 80 : 60,
+                paddingTop: 8,
+                paddingBottom: Platform.OS === "ios" ? 24 : 8,
+                elevation: 0,
+              },
+            };
           }}
         />
         <Tab.Screen

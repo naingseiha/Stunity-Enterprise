@@ -27,7 +27,9 @@ import {
   planReelReward,
   latestResponsesByItem,
   attachMyResponses,
+  type ComboOutcome,
 } from '../utils/reelResponses';
+import { computeCombo } from '../utils/combo';
 import { feedCache } from '../redis';
 import { fetchReactionCounts } from '../utils/reactionCounts';
 import { mergeEngagement } from '../utils/reelEngagement';
@@ -37,8 +39,6 @@ import { mergeEngagement } from '../utils/reelEngagement';
 const reelsRanker = new ReelsRanker(prisma, prismaRead);
 const router = Router();
 
-const COMBO_FILL_EVERY = 5;
-const COMBO_FILL_BONUS = 50;
 const BASE_XP_CORRECT = 5;
 const REELS_FEED_TTL = 60; // seconds — short enough that fresh posts surface within a minute
 const REELS_STATE_TTL = 15; // HUD warmup — combo updates frequently, so keep TTL tight
@@ -472,8 +472,6 @@ async function invalidateUserState(userId: string): Promise<void> {
  *               part of spaced repetition, not a failure, so it shouldn't nuke
  *               a hard-won combo (combo forgiveness).
  */
-type ComboOutcome = 'correct' | 'wrong' | 'neutral';
-
 async function applyCombo(userId: string, result: ComboOutcome, baseXp: number): Promise<ComboResult> {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
@@ -482,29 +480,20 @@ async function applyCombo(userId: string, result: ComboOutcome, baseXp: number):
     });
     if (!user) throw new Error('User not found');
 
-    let combo = user.reelCombo;
-    let highest = user.highestReelCombo;
-    let comboBonus = 0;
-    let isComboFill = false;
-
-    if (result === 'correct') {
-      combo += 1;
-      if (combo > highest) highest = combo;
-      if (combo > 0 && combo % COMBO_FILL_EVERY === 0) {
-        comboBonus = COMBO_FILL_BONUS;
-        isComboFill = true;
-      }
-    } else if (result === 'wrong') {
-      combo = 0;
-    }
-    // 'neutral' leaves combo as-is.
-
-    const xpEarned = result === 'wrong' ? 0 : baseXp + comboBonus;
-    const totalPoints = user.totalPoints + xpEarned;
+    // Pure combo/XP math lives in utils/combo (unit-tested); this fn only does I/O.
+    const next = computeCombo(
+      { combo: user.reelCombo, highestCombo: user.highestReelCombo, totalPoints: user.totalPoints },
+      result,
+      baseXp,
+    );
 
     const updated = await tx.user.update({
       where: { id: userId },
-      data: { reelCombo: combo, highestReelCombo: highest, totalPoints },
+      data: {
+        reelCombo: next.combo,
+        highestReelCombo: next.highestCombo,
+        totalPoints: next.totalPoints,
+      },
       select: { reelCombo: true, highestReelCombo: true, totalPoints: true },
     });
 
@@ -512,9 +501,9 @@ async function applyCombo(userId: string, result: ComboOutcome, baseXp: number):
       combo: updated.reelCombo,
       highestCombo: updated.highestReelCombo,
       totalPoints: updated.totalPoints,
-      xpEarned,
-      comboBonus,
-      isComboFill,
+      xpEarned: next.xpEarned,
+      comboBonus: next.comboBonus,
+      isComboFill: next.isComboFill,
     };
   });
 }

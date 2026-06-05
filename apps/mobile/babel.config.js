@@ -39,5 +39,28 @@ module.exports = function (api) {
       ],
       'react-native-reanimated/plugin',
     ],
+    // Production-only transforms. Babel sets BABEL_ENV/NODE_ENV to "production"
+    // for release bundles (EAS / `expo export`), so this block is skipped by
+    // the Metro dev server, which keeps every console call. The `env` key is
+    // resolved by Babel itself, so it works correctly alongside api.cache(true).
+    env: {
+      production: {
+        plugins: [
+          // Strip console.log/info/debug from production bundles to cut noise
+          // and avoid leaking diagnostics. error + warn are kept on purpose so
+          // crash reporting (Sentry) and breadcrumbs still see them.
+          ['transform-remove-console', { exclude: ['error', 'warn'] }],
+        ],
+      },
+      test: {
+        plugins: [
+          // Jest can't execute real dynamic import() without
+          // --experimental-vm-modules; this rewrites import() to a
+          // require()-based promise so modules that lazy-import to break circular
+          // deps (e.g. services/token → api/client) load under jest.
+          'dynamic-import-node',
+        ],
+      },
+    },
   };
 };

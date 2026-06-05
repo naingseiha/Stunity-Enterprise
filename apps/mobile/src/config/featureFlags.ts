@@ -19,6 +19,20 @@ export const FEATURE_FLAGS = {
   MESSAGING_ENABLED: false,
 } as const;
 
+// Remote flags that actually gate client UI. Each key below has a verified
+// consumer (useFeatureFlag/isFeatureEnabled) AND a working backend endpoint:
+//   reactions          → POST /posts/:id/react            (feed-service)
+//   repost_quote       → repost/quote composer + POST /posts/:id/repost (feed-service)
+//   endorsements       → /users/:id/skills, /skills/:id/endorse (feed-service)
+//   mastery_tree       → GET /recall/mastery              (feed-service)
+//   streak_leaderboard → GET /streak/leaderboard          (analytics-service)
+//   streak_ring        → feed-header streak chip (data from analytics-service)
+//   profile_strength   → strength meter; backend exists (GET profile strength,
+//                        feed-service) but client UI is not wired yet — kept so
+//                        the flag is ready when the meter ships. Audit: 2026-06.
+// Removed (were default-ON but gated nothing): `weekly_digest` is a backend-only
+// notification cron now gated by WEEKLY_DIGEST_ENABLED in notification-service;
+// `public_profile` had no implementation on either side.
 export type RemoteFlagKey =
   | 'reactions'
   | 'repost_quote'
@@ -26,9 +40,7 @@ export type RemoteFlagKey =
   | 'mastery_tree'
   | 'streak_leaderboard'
   | 'streak_ring'
-  | 'profile_strength'
-  | 'weekly_digest'
-  | 'public_profile';
+  | 'profile_strength';
 
 const DEFAULT_REMOTE_FLAGS: Record<RemoteFlagKey, boolean> = {
   reactions: true,
@@ -38,8 +50,6 @@ const DEFAULT_REMOTE_FLAGS: Record<RemoteFlagKey, boolean> = {
   streak_leaderboard: true,
   streak_ring: true,
   profile_strength: true,
-  weekly_digest: true,
-  public_profile: true,
 };
 
 const STORAGE_KEY = 'stunity_feature_flags_v1';
