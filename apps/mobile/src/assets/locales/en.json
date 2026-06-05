@@ -50,6 +50,16 @@
       "share": "Share",
       "submitAnswer": "Submit Answer"
     },
+    "share": {
+      "title": "Stunity",
+      "reel": "Watch this learning reel on Stunity",
+      "question": "Answer this question on Stunity",
+      "quiz": "Take this quiz on Stunity",
+      "poll": "Vote in this poll on Stunity",
+      "post": "See this post on Stunity",
+      "bounty": "Help answer this on Stunity",
+      "practice": "Test yourself on Stunity"
+    },
     "bounty": {
       "askedBy": "Asked by @{{name}}",
       "hoursLeft": "{{count}}h left",
@@ -77,6 +87,7 @@
       "reactHint": "Double tap to like, or long press to pick a reaction",
       "comments": "Comments, {{count}}",
       "share": "Share",
+      "openProfile": "View {{name}}'s profile",
       "loadingNext": "Loading more reels",
       "submitAnswer": "Submit answer",
       "revealAnswer": "Reveal answer",

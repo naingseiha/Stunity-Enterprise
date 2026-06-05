@@ -209,6 +209,8 @@ export const FocusReelsScreen: React.FC = () => {
   const [nextCursor, setNextCursor] = useState<string | null>(reelsCache.nextCursor);
   const [hasMore, setHasMore] = useState(reelsCache.hasMore);
   const fetchingMore = useRef(false);
+  const listRef = useRef<FlashList<any>>(null);
+  const reduceMotion = useReducedMotion();
 
   const [combo, setCombo] = useState(0);
   const [showComboFill, setShowComboFill] = useState(false);
@@ -413,6 +415,30 @@ export const FocusReelsScreen: React.FC = () => {
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
+  // Re-tapping the already-active Reels tab jumps back to the first reel
+  // (Instagram / TikTok / Facebook convention: tap active tab → scroll to top).
+  // Scroll-only — deliberately NO refresh: a refresh would invalidate the
+  // module cache mid-session and disrupt the combo/XP + SM-2 recall session and
+  // any in-flight pagination. The tabPress event is owned by the parent tab
+  // navigator (this screen now sits inside the Reels stack), so we listen there.
+  // We act only when the reel is already focused (re-tap) and at the stack root;
+  // a press that switches *to* Reels from another tab is ignored (the reel
+  // isn't focused yet), and a press while a pushed screen is open lets the
+  // default pop-to-root happen.
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return;
+    const unsub = parent.addListener('tabPress', () => {
+      if (!navigation.isFocused()) return;
+      const stackState = navigation.getState();
+      if (stackState?.type === 'stack' && stackState.index !== 0) return;
+      listRef.current?.scrollToOffset({ offset: 0, animated: !reduceMotion });
+      setActiveIndex(0);
+      track('reels_tab_scroll_top');
+    });
+    return unsub;
+  }, [navigation, reduceMotion]);
+
   // Append a non-blocking "next" cell while there's more to load so the boundary
   // is always scrollable (see LOADING_SENTINEL_ID). Skipped once the list is
   // exhausted, and never shown on the cold first page (handled by the
@@ -505,6 +531,7 @@ export const FocusReelsScreen: React.FC = () => {
         <EmptyState onRetry={onRefresh} />
       ) : (
         <FlashList
+          ref={listRef}
           data={listData}
           estimatedItemSize={pageHeight}
           renderItem={({ item, index }) => {
@@ -983,17 +1010,59 @@ interface SidebarProps {
   accent?: string;
 }
 
-const buildShareText = (item: any, postId?: string): { message: string; url?: string } => {
-  const title =
+// Build the share payload for a reel. Mainstream social share = a short
+// quoted hook + a one-line framing of what the link is + an openable URL.
+//
+// • Post-backed cards share the canonical post link
+//   (https://stunity.app/posts/:id) which the app's deep-link config resolves
+//   to PostDetail (and the web app can render). The framing line is tailored
+//   per card type so the preview reads correctly (quiz vs poll vs question…).
+// • Cards with no post (standalone recall/quiz/TF/cloze question cards) have
+//   no canonical content URL, so they degrade gracefully to a generic
+//   https://stunity.app app link plus a "practice on Stunity" framing — never
+//   a bare, context-free string.
+const shareFrameKey = (item: any): string => {
+  switch (item?.type) {
+    case 'FOCUS_REEL':
+      return 'reels.share.reel';
+    case 'BOUNTY':
+      return 'reels.share.bounty';
+    case 'POST':
+      return item?.postType === 'QUIZ'
+        ? 'reels.share.quiz'
+        : item?.postType === 'POLL'
+        ? 'reels.share.poll'
+        : item?.postType === 'QUESTION'
+        ? 'reels.share.question'
+        : 'reels.share.post';
+    default:
+      return 'reels.share.practice';
+  }
+};
+
+const buildShareText = (
+  item: any,
+  postId: string | undefined,
+  t: (k: string, o?: any) => string,
+): { message: string; url: string; title: string } => {
+  const rawTitle =
     item?.title ??
     item?.question?.question ??
     item?.question ??
     item?.questionText ??
     item?.content ??
-    'Check out this Stunity reel';
-  const trimmed = String(title).slice(0, 140);
-  const url = postId ? `https://stunity.app/posts/${postId}` : undefined;
-  return { message: url ? `${trimmed}\n\n${url}` : trimmed, url };
+    '';
+  const hook = String(rawTitle).trim().slice(0, 140);
+  const frame = t(shareFrameKey(item), { defaultValue: 'Learn on Stunity' });
+  const url = postId ? `https://stunity.app/posts/${postId}` : 'https://stunity.app';
+  const message = [hook ? `“${hook}”` : null, frame, url]
+    .filter(Boolean)
+    .join('\n\n');
+  return {
+    message,
+    url,
+    title: t('reels.share.title', { defaultValue: 'Stunity' }),
+  };
 };
 
 const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertical', postId, engagement, accent }) => {
@@ -1036,7 +1105,8 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
   const onShare = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await Share.share(buildShareText(item, postId));
+      track('reel_share', { postId: postId ?? null, cardType: item?.type });
+      await Share.share(buildShareText(item, postId, t));
     } catch { /* user dismissed the sheet */ }
   };
 
@@ -1160,9 +1230,32 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
     'Stunity';
   const avatarUri = item.creator?.profilePictureUrl || item.asker?.profilePictureUrl || item.author?.profilePictureUrl;
 
+  // Tapping the avatar / @username opens that user's profile (Instagram /
+  // TikTok / Facebook convention). Resolve the id from whichever author shape
+  // this card carries: creator (FocusReel), asker (Bounty), author (Post).
+  // Self-tap is fine — UserProfile/ProfileScreen derives isOwnProfile when the
+  // id matches the signed-in user.
+  const authorId: string | undefined =
+    item.creator?.id ?? item.asker?.id ?? item.author?.id;
+  const openAuthorProfile = () => {
+    if (!authorId) return;
+    Haptics.selectionAsync();
+    track('reel_author_open', { userId: authorId, cardType: item.type });
+    navigation.navigate('UserProfile', { userId: authorId });
+  };
+
   return (
     <View style={horizontal ? styles.horizontalActionBar : styles.rightSidebar}>
-      <View style={horizontal ? styles.horizontalAuthorWrap : { alignItems: 'center', gap: 6 }}>
+      <TouchableOpacity
+        style={horizontal ? styles.horizontalAuthorWrap : { alignItems: 'center', gap: 6 }}
+        onPress={openAuthorProfile}
+        disabled={!authorId}
+        activeOpacity={authorId ? 0.7 : 1}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !authorId }}
+        accessibilityLabel={t('reels.a11y.openProfile', { name: avatarName, defaultValue: "View {{name}}'s profile" })}
+      >
         <View style={[styles.avatarWrap, { borderColor: accent ?? '#A855F7' }]}>
           <Avatar uri={avatarUri} name={avatarName} size={horizontal ? 'sm' : 'md'} />
         </View>
@@ -1171,7 +1264,7 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
             @{item.creator?.lastName || item.asker?.lastName || item.author?.lastName || 'stunity'}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
 
       <View style={horizontal ? styles.horizontalIconsWrap : { alignItems: 'center', gap: 22 }}>
         <View>
@@ -1275,6 +1368,39 @@ const ReelSidebar: React.FC<SidebarProps> = React.memo(({ item, layout = 'vertic
     </View>
   );
 });
+
+// Pressable @username caption shown beneath a card's body text. Tapping it
+// opens the author's profile — the same affordance as the avatar in
+// ReelSidebar, so the vertical layout (where the sidebar shows only an avatar)
+// still lets users open a profile by tapping the visible @name.
+const AuthorCaption: React.FC<{
+  author?: { id?: string; firstName?: string; lastName?: string } | null;
+  cardType?: string;
+  style?: any;
+}> = ({ author, cardType, style }) => {
+  const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+  const name = `@${author?.lastName ?? ''} ${author?.firstName ?? ''}`.trim();
+  const openProfile = () => {
+    if (!author?.id) return;
+    Haptics.selectionAsync();
+    track('reel_author_open', { userId: author.id, cardType });
+    navigation.navigate('UserProfile', { userId: author.id });
+  };
+  return (
+    <TouchableOpacity
+      onPress={openProfile}
+      disabled={!author?.id}
+      activeOpacity={author?.id ? 0.7 : 1}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !author?.id }}
+      accessibilityLabel={t('reels.a11y.openProfile', { name: name || '@stunity', defaultValue: "View {{name}}'s profile" })}
+    >
+      <Text style={style ?? styles.creatorName}>{name || '@stunity'}</Text>
+    </TouchableOpacity>
+  );
+};
 
 const formatCount = (n: number): string => {
   if (n < 1000) return String(n);
@@ -1462,7 +1588,7 @@ const FocusReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
         <TypePill type="FOCUS_REEL" />
         <Text style={styles.reelTitle} numberOfLines={2}>{item.title}</Text>
         {!!item.description && <Text style={styles.reelSubtitle} numberOfLines={2}>{item.description}</Text>}
-        <Text style={styles.creatorName}>@{item.creator?.lastName} {item.creator?.firstName}</Text>
+        <AuthorCaption author={item.creator} cardType={item.type} />
       </View>
 
       {questionPoint && (
@@ -2357,7 +2483,7 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
             votedOptionId={item.userVotedOptionId}
             accent={TYPE_LABELS.POST.color}
           />
-          <Text style={styles.creatorName}>@{item.author?.lastName} {item.author?.firstName}</Text>
+          <AuthorCaption author={item.author} cardType={item.type} />
         </View>
         <View style={styles.bottomHorizontalBarContainer}>
           <ReelSidebar item={item} layout="horizontal" postId={postId} engagement={engagement} accent={TYPE_LABELS.POST.color} />
@@ -2437,7 +2563,7 @@ const PostReelItem: React.FC<VariantProps & { shouldMountVideo: boolean }> = ({
           </TouchableOpacity>
         ) : null}
 
-        <Text style={styles.creatorName}>@{item.author?.lastName} {item.author?.firstName}</Text>
+        <AuthorCaption author={item.author} cardType={item.type} />
       </View>
     </View>
   );

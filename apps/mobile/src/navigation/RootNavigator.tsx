@@ -63,13 +63,42 @@ const RootNavigator: React.FC = () => {
   }
 
   // Deep linking configuration
+  //
+  // Canonical web domain is stunity.app (matches share URLs across the app —
+  // posts, profiles). The custom scheme (stunity://) opens the app directly
+  // today. For the https universal links to open the app instead of the
+  // browser, the native side must also claim the domain:
+  //   • iOS: app.json ios.associatedDomains → applinks:stunity.app
+  //   • Android: app.json android.intentFilters (autoVerify) for stunity.app
+  // AND the site must host the matching apple-app-site-association /
+  // .well-known/assetlinks.json files (web/infra task — see app.json comment).
+  // Until those files are live, https links open in the browser and the
+  // stunity:// scheme is the reliable in-app path; the route map below applies
+  // the moment the OS hands a matching URL to the app.
   const linking = {
-    prefixes: ['stunity://', 'https://stunity.com'],
+    prefixes: ['stunity://', 'https://stunity.app', 'https://www.stunity.app'],
     config: {
       screens: {
         Auth: {
           screens: {
             ResetPassword: 'reset-password',
+          },
+        },
+        // Authenticated deep targets. A shared reel/post link
+        // (https://stunity.app/posts/:postId) resolves to PostDetail inside the
+        // Feed tab's stack; Back returns to the feed, the expected place for a
+        // link opened cold.
+        Main: {
+          screens: {
+            MainTabs: {
+              screens: {
+                FeedTab: {
+                  screens: {
+                    PostDetail: 'posts/:postId',
+                  },
+                },
+              },
+            },
           },
         },
       },

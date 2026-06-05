@@ -58,6 +58,7 @@ const NO_SWIPE_ROUTES = new Set<string>([
   'LessonViewer',
   'BountyDetail',
   'CreateBounty',
+  'UserProfile',
   'EditProfile',
   'Settings',
   'PasswordSecurity',
