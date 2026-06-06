@@ -410,8 +410,15 @@ const PostContent = ({
               <Text style={[styles.statPillText, { color: '#F59E0B' }]}>+{learningMeta.xpReward}</Text>
             </View>
           )}
-          <View style={styles.statPill}>
-            <Ionicons name="bar-chart" size={11} color={colors.textTertiary} />
+          {/* Combined engagement (likes + comments). Uses a "pulse" activity
+              glyph — NOT a chart icon — so it doesn't read as a duplicate of the
+              views/impressions indicator ("stats-chart") in the action bar. */}
+          <View
+            style={styles.statPill}
+            accessibilityRole="text"
+            accessibilityLabel={t('feed.engagementCount', { count: post.likes + post.comments })}
+          >
+            <Ionicons name="pulse" size={11} color={colors.textTertiary} />
             <Text style={[styles.statPillText, { color: colors.textTertiary }]}>
               {formatNumber(post.likes + post.comments)}
             </Text>

@@ -686,15 +686,15 @@ const MainNavigatorContent = () => {
           // dark + light-tinted while focused (regardless of the app's
           // light/dark theme) to match — same as TikTok/IG.
           //
-          // On deep screens pushed within the Reels stack (Comments,
-          // BountyDetail, UserProfile) the bar is hidden entirely, matching how
-          // FeedTab/ClubsTab/ProfileTab hide it on their detail screens.
+          // On Comments (the immersive reply/answer surface) the bar is hidden,
+          // matching how FeedTab hides it on Comments. UserProfile and
+          // BountyDetail intentionally KEEP the bar so the Reels stack behaves
+          // exactly like the feed — opening an author's profile or a bounty from
+          // the feed keeps the bar, so opening them from a reel must too.
           options={({ route }) => {
             const routeName =
               getFocusedRouteNameFromRoute(route) ?? "FocusReels";
-            if (
-              ["Comments", "BountyDetail", "UserProfile"].includes(routeName)
-            ) {
+            if (["Comments"].includes(routeName)) {
               return { tabBarStyle: { display: "none" } };
             }
             return {
