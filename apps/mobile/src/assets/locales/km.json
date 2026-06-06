@@ -1221,6 +1221,7 @@
     "answerCount_other": "{{count}} ចម្លើយ",
     "answerCount": "{{count}} ចម្លើយ",
     "viewsCount": "មើល {{count}} ដង",
+    "engagementCount": "ការចូលរួម {{count}}",
     "progress": "វឌ្ឍនភាព",
     "stepsCompleted": "បានបញ្ចប់ {{completed}}/{{total}} ជំហាន",
     "academicMatch": "ត្រូវនឹងការសិក្សា",

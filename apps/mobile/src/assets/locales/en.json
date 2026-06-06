@@ -1221,6 +1221,7 @@
     "answerCount_other": "{{count}} answers",
     "answerCount": "{{count}} answers",
     "viewsCount": "{{count}} views",
+    "engagementCount": "{{count}} engagements",
     "progress": "Progress",
     "stepsCompleted": "{{completed}}/{{total}} steps completed",
     "academicMatch": "Academic Match",
