@@ -497,7 +497,11 @@ export default function ClubsScreen() {
   }, [selectedYearId, t, user?.role, user?.schoolId, user?.teacher?.id, user?.teacherId]);
 
   const loadAdminClasses = useCallback(async (query = '') => {
-    if (!isAdminOrStaff) return;
+    // `/classes` is school-scoped: class-service requires a `schoolId` in the
+    // token and otherwise 401s with "Invalid token format". `isAdminOrStaff`
+    // includes SUPER_ADMIN, who can have no school, so guard on schoolId too —
+    // mirroring loadAllSchoolClasses — to avoid a futile call + error overlay.
+    if (!isAdminOrStaff || !user?.schoolId) return;
     try {
       setLoadingAdminClasses(true);
       const data = await classesApi.getClasses({ search: query });
@@ -507,7 +511,7 @@ export default function ClubsScreen() {
     } finally {
       setLoadingAdminClasses(false);
     }
-  }, [isAdminOrStaff]);
+  }, [isAdminOrStaff, user?.schoolId]);
 
   const loadInvites = useCallback(async () => {
     try {
