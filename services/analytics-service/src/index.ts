@@ -1840,6 +1840,20 @@ app.get('/metrics/summary', authenticateToken, async (req: Request, res: Respons
 
     const dauWithRecall = recallReviewers.length;
 
+    // Skill-gap nudge experiment (flag: skill_gap_nudge) — shown→review
+    // conversion over the trailing 7 days. Counts come from AnalyticsEvent
+    // (client-emitted), scoped to the admin's school. This is the go/no-go
+    // metric: invest in the full nudge engine only if conversionPct holds up
+    // (and retention doesn't regress).
+    const [nudgeShown, nudgeReviewed] = await Promise.all([
+      prisma.analyticsEvent.count({
+        where: { ...schoolScope, name: 'skill_nudge_shown', createdAt: { gte: start7 } },
+      }),
+      prisma.analyticsEvent.count({
+        where: { ...schoolScope, name: 'skill_nudge_review', createdAt: { gte: start7 } },
+      }),
+    ]);
+
     res.json({
       success: true,
       scope: isSuper ? 'global' : 'school',
@@ -1859,6 +1873,12 @@ app.get('/metrics/summary', authenticateToken, async (req: Request, res: Respons
         dau,
         dauWithRecall,
         pctDauRecall: dau > 0 ? round((dauWithRecall / dau) * 100) : 0,
+      },
+      skillNudge: {
+        windowDays: 7,
+        shown: nudgeShown,
+        reviewed: nudgeReviewed,
+        conversionPct: nudgeShown > 0 ? round((nudgeReviewed / nudgeShown) * 100) : 0,
       },
       antiMetric: {
         nonUrgentNotifsPerDauToday: dau > 0 ? round2(notifCount / dau) : 0,

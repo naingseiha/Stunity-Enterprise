@@ -15,7 +15,7 @@
  *     card's level number + XP progress bar)
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -81,12 +81,26 @@ interface Props {
   card: RecallCard;
   onGrade?: (cardId: string, grade: Grade) => void;
   onDefer?: (cardId: string) => void;
+  // Experiment (skill_gap_nudge): when set, a contextual reason line renders
+  // above the question ("You haven't reviewed English in 3 days…"). Undefined
+  // ⇒ the card renders exactly as before (zero regression when the flag is off).
+  nudgeReason?: string;
+  // Fired once when a nudged card mounts, so the parent can log impression
+  // analytics (it owns dedup + the subject/days payload).
+  onNudgeShown?: (cardId: string) => void;
 }
 
-export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
+export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer, nudgeReason, onNudgeShown }) => {
   const { colors, isDark } = useThemeContext();
   const { t } = useTranslation();
   const subject = SUBJECT_CONFIG[card.subject] ?? DEFAULT_SUBJECT_VISUAL;
+
+  // Impression tracking for the experiment — fire once per mount when this card
+  // is the nudge target. Parent dedups across FlashList recycles.
+  useEffect(() => {
+    if (nudgeReason) onNudgeShown?.(card.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nudgeReason, card.id]);
 
   const styles = useMemo(
     () => createStyles(colors, isDark, subject),
@@ -264,6 +278,23 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer }) => {
           </View>
         </View>
       </View>
+
+      {/* ────────── SKILL-GAP NUDGE (experiment) ────────── */}
+      {/* Contextual reason line. Only while the card is still actionable —
+          once completed the success state speaks for itself. */}
+      {nudgeReason && stage !== 'completed' ? (
+        <View
+          style={[
+            styles.nudgeBanner,
+            { backgroundColor: isDark ? subject.accentSoftDark : subject.accentSoft },
+          ]}
+          accessibilityRole="text"
+          accessibilityLabel={nudgeReason}
+        >
+          <Ionicons name="bulb" size={14} color={subject.accentDeep} />
+          <Text style={[styles.nudgeText, { color: subject.accentDeep }]}>{nudgeReason}</Text>
+        </View>
+      ) : null}
 
       {/* ────────── BODY ────────── */}
       {stage === 'completed' ? (
@@ -564,6 +595,9 @@ type StyleMap = {
   metaText: TextStyle;
   metaDot: TextStyle;
 
+  nudgeBanner: ViewStyle;
+  nudgeText: TextStyle;
+
   question: TextStyle;
   hintRow: ViewStyle;
   hintText: TextStyle;
@@ -688,6 +722,24 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       fontSize: 12,
       color: colors.textTertiary,
       marginHorizontal: 6,
+    },
+
+    // ── Skill-gap nudge banner (experiment) ──
+    nudgeBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    nudgeText: {
+      flex: 1,
+      fontSize: 12.5,
+      lineHeight: 17,
+      fontWeight: '700',
+      letterSpacing: 0.1,
     },
 
     // ── Question body (like post body text) ──

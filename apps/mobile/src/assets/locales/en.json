@@ -585,6 +585,7 @@
     "recall": {
       "title": "Memory Check",
       "doneToday": "Done",
+      "nudgeReason": "You haven't reviewed {{subject}} in {{count}} days — a quick check?",
       "memoryFresh": "Fresh",
       "memoryFading": "Fading",
       "memoryDim": "Forgotten",

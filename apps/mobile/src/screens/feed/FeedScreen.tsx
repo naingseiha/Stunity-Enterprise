@@ -49,6 +49,8 @@ import {
 import RecallCardItem from '@/components/feed/RecallCardItem';
 import { getMockRecallCards, injectRecallCards } from '@/utils/mockRecallCards';
 import { fetchDueCards, submitRecallReview, type RecallGrade } from '@/api/recall';
+import { pickSkillGapCard, shortSubjectName } from '@/utils/skillGapNudge';
+import { track } from '@/services/analytics';
 import { applyMockEdScores } from '@/utils/mockEdScores';
 import BrainModeToggle from '@/components/feed/BrainModeToggle';
 import FeynmanBountyItem from '@/components/feed/FeynmanBountyItem';
@@ -287,6 +289,7 @@ export default function FeedScreen() {
   // entire FeedScreen on every auth-store action, including transient ones.
   const user = useAuthStore(s => s.user);
   const streakRingEnabled = useFeatureFlag('streak_ring');
+  const skillGapNudgeEnabled = useFeatureFlag('skill_gap_nudge');
   const { openSidebar } = useNavigationContext();
 
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
@@ -474,6 +477,12 @@ export default function FeedScreen() {
     if (cardId.startsWith('recall-')) return;
     try {
       await submitRecallReview(cardId, grade);
+      // Experiment conversion: this review came from a nudged card → log it so
+      // /metrics/summary can compute shown→reviewed conversion.
+      const n = skillNudgeRef.current;
+      if (n && n.cardId === cardId) {
+        track('skill_nudge_review', { subject: n.subject, grade });
+      }
       const refreshed = await fetchDueCards({ limit: 10 });
       setServerRecallCards(refreshed);
       if (CACHE_KEYS.recallCards) {
@@ -610,6 +619,45 @@ export default function FeedScreen() {
     serverQuizWar,     // async: quiz war data
     deferredCardIds,   // session-deferred cards
   ]);
+
+  // ── Skill-gap nudge (experiment, flag: skill_gap_nudge) ────────────────
+  // Pick ONE real recall card to decorate with a contextual reason line.
+  // Only real server cards qualify (never mocks), and deferred cards are
+  // excluded so a skipped card can't keep nagging. Flag OFF ⇒ null ⇒ every
+  // RecallCardItem renders exactly as before.
+  const skillNudge = useMemo(() => {
+    if (!skillGapNudgeEnabled) return null;
+    if (!serverRecallCards || serverRecallCards.length === 0) return null;
+    const active = deferredCardIds.size > 0
+      ? serverRecallCards.filter(c => !deferredCardIds.has(c.id))
+      : serverRecallCards;
+    const picked = pickSkillGapCard(active);
+    if (!picked) return null;
+    const subjectName = shortSubjectName(picked.card);
+    return {
+      cardId: picked.card.id,
+      subject: picked.subject,
+      daysSince: picked.daysSince,
+      reason: t('feed.recall.nudgeReason', {
+        defaultValue: "You haven't reviewed {{subject}} in {{count}} days — a quick check?",
+        subject: subjectName,
+        count: picked.daysSince,
+      }),
+    };
+  }, [skillGapNudgeEnabled, serverRecallCards, deferredCardIds, t]);
+
+  // Refs keep the stable handlers (handleRecallGrade / renderPost) from
+  // recreating when the nudge target changes.
+  const skillNudgeRef = useRef(skillNudge);
+  skillNudgeRef.current = skillNudge;
+  const nudgeShownRef = useRef<Set<string>>(new Set());
+
+  const handleNudgeShown = useCallback((cardId: string) => {
+    const n = skillNudgeRef.current;
+    if (!n || n.cardId !== cardId || nudgeShownRef.current.has(cardId)) return;
+    nudgeShownRef.current.add(cardId);
+    track('skill_nudge_shown', { subject: n.subject, daysSince: n.daysSince });
+  }, []);
 
   const handleToggleBrainMode = useCallback(() => {
     toggleFeedMode(feedMode === 'BRAIN_MODE' ? 'FOR_YOU' : 'BRAIN_MODE');
@@ -1029,6 +1077,8 @@ export default function FeedScreen() {
           card={item.data}
           onGrade={handleRecallGrade}
           onDefer={handleRecallDefer}
+          nudgeReason={skillNudge?.cardId === item.data.id ? skillNudge.reason : undefined}
+          onNudgeShown={handleNudgeShown}
         />
       );
     }
@@ -1061,7 +1111,7 @@ export default function FeedScreen() {
   // now stable — they close over refs not state — so they're excluded
   // from deps. renderPost only recreates when valuedPostIds changes
   // (user rates a post), which is intentional.
-  }, [valuedPostIds, handleRecallGrade, handleRecallDefer, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin]);
+  }, [valuedPostIds, handleRecallGrade, handleRecallDefer, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin, skillNudge, handleNudgeShown]);
 
   const getItemType = useCallback((item: FeedItem) => {
     if (!item) return 'unknown';
