@@ -36,6 +36,10 @@ export const FLAG_DEFINITIONS: FlagDefinition[] = [
   { key: 'streak_leaderboard', description: 'Scoped streak leaderboards', enabled: true, rollout: 100 },
   { key: 'streak_ring', description: 'Streak chip in feed header', enabled: true, rollout: 100 },
   { key: 'profile_strength', description: 'Profile strength meter + nudge', enabled: true, rollout: 100 },
+  // EXPERIMENT (default dark): contextual skill-gap reason line on recall cards.
+  // Keep rollout at 0 until the in-feed slice is verified; bump to 20 to start
+  // the A/B, then gate go/no-go on /metrics/summary.skillNudge.conversionPct.
+  { key: 'skill_gap_nudge', description: 'Contextual skill-gap reason on recall cards (experiment)', enabled: true, rollout: 0 },
 ];
 
 /** Stable 0-99 bucket for a (user, flag) pair. */

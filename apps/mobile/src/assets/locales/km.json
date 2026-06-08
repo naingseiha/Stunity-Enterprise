@@ -585,6 +585,7 @@
     "recall": {
       "title": "រំលឹកការចងចាំ",
       "doneToday": "រួចរាល់",
+      "nudgeReason": "អ្នកមិនបានរំលឹក {{subject}} អស់ {{count}} ថ្ងៃ — សាកល្បងបន្តិចទេ?",
       "memoryFresh": "ចងចាំល្អ",
       "memoryFading": "ចាប់ផ្តើមភ្លេច",
       "memoryDim": "ភ្លេចបាត់ហើយ",

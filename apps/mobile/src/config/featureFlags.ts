@@ -40,7 +40,8 @@ export type RemoteFlagKey =
   | 'mastery_tree'
   | 'streak_leaderboard'
   | 'streak_ring'
-  | 'profile_strength';
+  | 'profile_strength'
+  | 'skill_gap_nudge';
 
 const DEFAULT_REMOTE_FLAGS: Record<RemoteFlagKey, boolean> = {
   reactions: true,
@@ -50,6 +51,10 @@ const DEFAULT_REMOTE_FLAGS: Record<RemoteFlagKey, boolean> = {
   streak_leaderboard: true,
   streak_ring: true,
   profile_strength: true,
+  // Experiment — default OFF so a cold launch (before server flags load) never
+  // shows it; the server resolver is the authority and stays at rollout 0
+  // until we deliberately start the A/B.
+  skill_gap_nudge: false,
 };
 
 const STORAGE_KEY = 'stunity_feature_flags_v1';
