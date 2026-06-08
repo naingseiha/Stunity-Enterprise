@@ -101,6 +101,12 @@ app.use(cors({
   },
 }));
 
+// Body parsing — express 4 has no built-in parser. Without this, req.body is
+// undefined on every POST and routes reading it (e.g. /events ingestion) fail.
+// Mirrors feed-service's limits.
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'healthy',
