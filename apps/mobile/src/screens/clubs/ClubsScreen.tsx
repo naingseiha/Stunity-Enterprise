@@ -497,7 +497,11 @@ export default function ClubsScreen() {
   }, [selectedYearId, t, user?.role, user?.schoolId, user?.teacher?.id, user?.teacherId]);
 
   const loadAdminClasses = useCallback(async (query = '') => {
-    if (!isAdminOrStaff) return;
+    // `/classes` is school-scoped: class-service requires a `schoolId` in the
+    // token and otherwise 401s with "Invalid token format". `isAdminOrStaff`
+    // includes SUPER_ADMIN, who can have no school, so guard on schoolId too —
+    // mirroring loadAllSchoolClasses — to avoid a futile call + error overlay.
+    if (!isAdminOrStaff || !user?.schoolId) return;
     try {
       setLoadingAdminClasses(true);
       const data = await classesApi.getClasses({ search: query });
@@ -507,7 +511,7 @@ export default function ClubsScreen() {
     } finally {
       setLoadingAdminClasses(false);
     }
-  }, [isAdminOrStaff]);
+  }, [isAdminOrStaff, user?.schoolId]);
 
   const loadInvites = useCallback(async () => {
     try {
@@ -1105,13 +1109,18 @@ export default function ClubsScreen() {
               </View>
             ) : previewClasses.length === 0 ? (
               <View style={[styles.schoolClassesEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Ionicons name="information-circle-outline" size={20} color={colors.textTertiary} />
-                <Text style={[styles.schoolClassesEmptyText, { color: colors.textSecondary }]}>
-                  {isAdminOrStaff 
+                <View style={[styles.schoolClassesEmptyIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF' }]}>
+                  <Ionicons name="albums-outline" size={26} color={isDark ? '#A5B4FC' : '#6366F1'} />
+                </View>
+                <Text style={[styles.schoolClassesEmptyTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
+                  {isAdminOrStaff
                     ? t('clubs.screen.noClassesDirectory')
                     : user?.role === 'PARENT'
                       ? t('clubs.screen.noLinkedChildClasses')
                       : t('clubs.screen.noClassesYear')}
+                </Text>
+                <Text style={[styles.schoolClassesEmptySubtitle, { color: colors.textTertiary }]}>
+                  {t('clubs.screen.noClassesHint')}
                 </Text>
               </View>
             ) : isTeacherClassLayout ? (
@@ -2258,16 +2267,32 @@ const createStyles = (
     marginHorizontal: 16,
     borderWidth: 1.5,
     borderRadius: 20,
-    paddingVertical: 24,
+    paddingVertical: 32,
     paddingHorizontal: 20,
-    flexDirection: 'row',
+    minHeight: 188,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    gap: 10,
   },
-  schoolClassesEmptyText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
+  schoolClassesEmptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  schoolClassesEmptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  schoolClassesEmptySubtitle: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
   schoolClassesGrid: {
     paddingHorizontal: 16,

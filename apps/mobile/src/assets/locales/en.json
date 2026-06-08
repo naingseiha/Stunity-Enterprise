@@ -2277,6 +2277,7 @@
       "noClassesDirectory": "No classes found in directory",
       "noLinkedChildClasses": "No linked child classes found for this academic year",
       "noClassesYear": "No classes found for this academic year",
+      "noClassesHint": "Try a different search, or check back once classes are added.",
       "seeAllCount": "See all ({{count}})",
       "seeAllMyClassesCount": "See all my classes ({{count}})",
       "seeAllTeachingCount": "See all teaching classes ({{count}})",
