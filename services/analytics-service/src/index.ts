@@ -55,15 +55,27 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction): voi
   }
 
   try {
-    const user = jwt.verify(token, JWT_SECRET) as {
-      id: string;
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id?: string;
+      userId?: string;
       email?: string;
       role: string;
       schoolId?: string;
       teacherId?: string;
       parentId?: string;
     };
-    req.user = user;
+    // auth-service mints access tokens with a `userId` claim (every other
+    // service reads `decoded.userId`); only older/hand-minted test tokens use
+    // `id`. analytics handlers all read `req.user.id`, so a `userId`-only token
+    // left `req.user.id` undefined — which silently flowed into Prisma `where`
+    // clauses (e.g. learningStreak.findUnique({ where: { userId: undefined } }))
+    // and 500'd. Normalize both claim shapes to `id` here.
+    const id = decoded.id || decoded.userId;
+    if (!id) {
+      res.status(403).json({ success: false, error: 'Invalid token' });
+      return;
+    }
+    req.user = { ...decoded, id };
     next();
   } catch {
     res.status(403).json({ success: false, error: 'Invalid token' });
