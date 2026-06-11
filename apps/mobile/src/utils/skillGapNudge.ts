@@ -56,10 +56,37 @@ export function pickSkillGapCard(cards: RecallCard[] | null | undefined): SkillG
 }
 
 /**
+ * Generic, non-subject placeholders that recall-card creation can emit when a
+ * quiz post's first topic tag isn't a real subject (e.g. a literal "#quiz"
+ * tag). Nudging on these reads as "you haven't reviewed quiz" — meaningless —
+ * so we skip the placeholder and fall back to the quiz-title segment instead.
+ */
+const GENERIC_SUBJECT_TOKENS = new Set(['quiz', 'general', 'quiz review']);
+
+/**
  * Short, display-friendly subject name from a RecallCard's subjectLabel
  * ("Biology · Cell Structure" → "Biology"). Used by the caller to build copy.
+ *
+ * subjectLabel is "<tag> · <quiz title>". When the leading tag is a generic
+ * placeholder ("quiz"), fall back to the title segment and clean it up: strip a
+ * "Quiz:" label prefix and drop a trailing " - <topic>" detail so the nudge
+ * names the actual subject ("quiz · Quiz: អង់គ្លេសថ្នាក់ទី១២ - Vocabulary"
+ * → "អង់គ្លេសថ្នាក់ទី១២") rather than the word "quiz".
  */
 export function shortSubjectName(card: RecallCard): string {
   const label = card.subjectLabel || card.subject || '';
-  return label.split('·')[0].trim() || label;
+  const segments = label.split('·').map((s) => s.trim()).filter(Boolean);
+  let name = segments[0] || label;
+
+  // Generic leading tag → use the quiz-title segment instead, when present.
+  if (segments.length > 1 && GENERIC_SUBJECT_TOKENS.has(name.toLowerCase())) {
+    name = segments.slice(1).join(' · ');
+  }
+  // Strip a leading "Quiz:"/"Quiz -" label some titles carry.
+  name = name.replace(/^quiz\s*[:\-–]\s*/i, '').trim();
+  // Keep the subject, drop a trailing " - <topic>" detail.
+  const [subjectPart] = name.split(/\s+[-–]\s+/);
+  name = (subjectPart || name).trim();
+
+  return name || label;
 }

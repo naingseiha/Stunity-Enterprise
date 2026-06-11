@@ -36,10 +36,12 @@ export const FLAG_DEFINITIONS: FlagDefinition[] = [
   { key: 'streak_leaderboard', description: 'Scoped streak leaderboards', enabled: true, rollout: 100 },
   { key: 'streak_ring', description: 'Streak chip in feed header', enabled: true, rollout: 100 },
   { key: 'profile_strength', description: 'Profile strength meter + nudge', enabled: true, rollout: 100 },
-  // EXPERIMENT (default dark): contextual skill-gap reason line on recall cards.
-  // Keep rollout at 0 until the in-feed slice is verified; bump to 20 to start
-  // the A/B, then gate go/no-go on /metrics/summary.skillNudge.conversionPct.
-  { key: 'skill_gap_nudge', description: 'Contextual skill-gap reason on recall cards (experiment)', enabled: true, rollout: 0 },
+  // EXPERIMENT: contextual skill-gap reason line on recall cards. Verified
+  // end-to-end (2026-06-08), now starting the A/B at 20%. Gate go/no-go on
+  // /metrics/summary.skillNudge.conversionPct (target ≥15%) with WAD/MAU +
+  // pctDauRecall held flat as the retention guardrail. Requires the analytics
+  // /events JSON body parser fix to be deployed, else the metric reads 0.
+  { key: 'skill_gap_nudge', description: 'Contextual skill-gap reason on recall cards (experiment)', enabled: true, rollout: 20 },
 ];
 
 /** Stable 0-99 bucket for a (user, flag) pair. */

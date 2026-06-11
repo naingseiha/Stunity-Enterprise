@@ -58,4 +58,17 @@ describe('shortSubjectName', () => {
   it('falls back to the whole label when there is no separator', () => {
     expect(shortSubjectName(card({ subjectLabel: 'Physics' }))).toBe('Physics');
   });
+  it('skips a generic "quiz" tag and names the subject from the title', () => {
+    expect(
+      shortSubjectName(card({ subjectLabel: 'quiz · Quiz: អង់គ្លេសថ្នាក់ទី១២ - Vocabulary' })),
+    ).toBe('អង់គ្លេសថ្នាក់ទី១២');
+  });
+  it('handles a generic tag whose title has no topic suffix', () => {
+    expect(
+      shortSubjectName(card({ subjectLabel: 'quiz · Quiz: Cambodia និងអាស៊ីអាគ្នេយ៍' })),
+    ).toBe('Cambodia និងអាស៊ីអាគ្នេយ៍');
+  });
+  it('leaves a real subject tag untouched', () => {
+    expect(shortSubjectName(card({ subjectLabel: 'Mathematics · Limits' }))).toBe('Mathematics');
+  });
 });
