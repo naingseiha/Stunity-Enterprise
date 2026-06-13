@@ -30,7 +30,7 @@ import {
 } from './utils/streakCalendar';
 import { prisma } from './lib/prisma';
 import { shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
-import { resolveFlagsForUser } from './featureFlags';
+import { resolveFlagsForUser, FLAG_DEFINITIONS, isFlagEnabledForUser } from './featureFlags';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -102,12 +102,15 @@ app.use(cors({
 }));
 
 // JSON body parser, applied PER-ROUTE (not globally). express 4 has no built-in
-// parser, so req.body is undefined without this. We scope it to the routes that
-// the feature needs (analytics ingestion) rather than adding it globally,
-// because several other POST handlers (e.g. /stats/record-attempt, which awards
-// XP) have never had a body parser in this standalone/Docker deploy — silently
-// enabling them all in one change risks behaviour shifts (e.g. double XP) that
-// need their own validation. Tracked as a separate follow-up.
+// parser, so req.body is undefined without this, and this service deploys
+// standalone (Docker → node dist/index.js) with no gateway/platform parser in
+// front. Attach `jsonBody` to every route that reads req.body. These routes
+// (record-attempt, live/*, challenge/*, achievements/unlock, gamification
+// sub-routers) had been dormant/500ing since the service had no parser at all;
+// re-enabling restores their intended behaviour. Double-award was ruled out
+// before enabling: quiz XP has exactly ONE writer (record-attempt), and
+// feed-service's UserStats.xp writes are separate sources (bounty, recall
+// review), so there is no competing quiz-XP writer to double-count.
 const jsonBody = express.json({ limit: '1mb' });
 
 app.get('/health', (_req: Request, res: Response) => {
@@ -188,7 +191,7 @@ const generateSessionCode = (): string => {
 const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
 
 // POST /live/create - Host creates a live quiz session
-app.post('/live/create', authenticateToken, async (req: Request, res: Response) => {
+app.post('/live/create', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const { quizId, settings } = req.body;
     const hostId = req.user!.id;
@@ -490,7 +493,7 @@ app.post('/live/:code/start', authenticateToken, async (req: Request, res: Respo
 });
 
 // POST /live/:code/submit - Submit answer for current question
-app.post('/live/:code/submit', authenticateToken, async (req: Request, res: Response) => {
+app.post('/live/:code/submit', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { answer } = req.body;
@@ -1078,7 +1081,7 @@ app.get('/stats/:userId', authenticateToken, async (req: Request, res: Response)
 });
 
 // POST /stats/record-attempt - Record quiz attempt & award XP
-app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: Response) => {
+app.post('/stats/record-attempt', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     console.log('📝 [Analytics] Recording attempt for user:', userId);
@@ -1098,6 +1101,13 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
       passed,
       questionCount,
     } = req.body;
+
+    // quizId is required: the QuizAttemptRecord.quiz relation is mandatory, so a
+    // missing quizId would otherwise award XP and then 500 on the attempt-record
+    // create (XP desync, since the client swallows the error). Fail fast with 400.
+    if (!quizId) {
+      return res.status(400).json({ success: false, error: 'quizId is required' });
+    }
 
     const resolved = resolveRecordAttemptScores({
       score,
@@ -1177,8 +1187,25 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
       nextWinStreak = 0;
     }
 
-    // Update user stats and sync User model via transaction
-    console.log('📝 [Analytics] Updating user stats and syncing user...');
+    // Update user stats, sync User model, AND record the attempt in ONE
+    // transaction. These must be atomic: if the attempt-record create fails
+    // (e.g. quiz was deleted), the XP/stats writes roll back too, so we never
+    // award XP without a matching QuizAttemptRecord (the client swallows the
+    // error, so a partial commit would silently desync its XP cache).
+    console.log('📝 [Analytics] Updating user stats, syncing user, recording attempt...');
+    const attemptData = {
+      userId,
+      quizId,
+      score: resolved.pointsEarned,
+      totalPoints: resolved.totalPoints,
+      accuracy,
+      timeSpent,
+      rank,
+      xpEarned,
+      type,
+      sessionCode,
+      userStatsId: stats.id,
+    };
     const [updatedStats] = await prisma.$transaction([
       prisma.userStats.update({
         where: { userId },
@@ -1201,31 +1228,12 @@ app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: R
           level: newLevel,
           totalPoints: { increment: resolved.pointsEarned }
         }
-      })
+      }),
+      prisma.quizAttemptRecord.create({
+        data: attemptData,
+      }),
     ]);
-    console.log('📝 [Analytics] User stats and core User model updated');
-
-    // Record attempt
-    console.log('📝 [Analytics] Creating quiz attempt record...');
-    const attemptData = {
-      userId,
-      quizId,
-      score: resolved.pointsEarned,
-      totalPoints: resolved.totalPoints,
-      accuracy,
-      timeSpent,
-      rank,
-      xpEarned,
-      type,
-      sessionCode,
-      userStatsId: stats.id,
-    };
-    console.log('📝 [Analytics] Attempt data:', JSON.stringify(attemptData, null, 2));
-
-    await prisma.quizAttemptRecord.create({
-      data: attemptData,
-    });
-    console.log('📝 [Analytics] Quiz attempt record created');
+    console.log('📝 [Analytics] User stats synced + quiz attempt recorded');
 
     res.json({
       success: true,
@@ -1496,7 +1504,7 @@ app.get('/leaderboard/learning-streak', authenticateToken, async (req: Request, 
 });
 
 // POST /challenge/create - Challenge a friend
-app.post('/challenge/create', authenticateToken, async (req: Request, res: Response) => {
+app.post('/challenge/create', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const challengerId = req.user!.id;
     const { opponentId, quizId } = req.body;
@@ -1603,7 +1611,7 @@ app.get('/challenge/my-challenges', authenticateToken, async (req: Request, res:
 });
 
 // POST /challenge/:id/submit - Submit challenge result
-app.post('/challenge/:id/submit', authenticateToken, async (req: Request, res: Response) => {
+app.post('/challenge/:id/submit', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
@@ -1683,12 +1691,14 @@ app.post('/challenge/:id/submit', authenticateToken, async (req: Request, res: R
 // Enhanced Gamification - Phase 1 Foundation
 // ========================================
 
-app.use('/api/v1/gamification/currency', authenticateToken, currencyRoutes);
-app.use('/api/v1/gamification/achievements', authenticateToken, achievementRoutes);
-app.use('/api/v1/gamification/challenges', authenticateToken, challengeRoutes);
-app.use('/api/v1/gamification/leaderboards', authenticateToken, leaderboardRoutes);
-app.use('/api/v1/gamification/team-challenges', authenticateToken, teamChallengeRoutes);
-app.use('/api/v1/gamification/shop', authenticateToken, shopRoutes);
+// jsonBody so the gamification sub-routers' POST handlers (e.g.
+// challenges increment, team-challenges create/contribute) can read req.body.
+app.use('/api/v1/gamification/currency', authenticateToken, jsonBody, currencyRoutes);
+app.use('/api/v1/gamification/achievements', authenticateToken, jsonBody, achievementRoutes);
+app.use('/api/v1/gamification/challenges', authenticateToken, jsonBody, challengeRoutes);
+app.use('/api/v1/gamification/leaderboards', authenticateToken, jsonBody, leaderboardRoutes);
+app.use('/api/v1/gamification/team-challenges', authenticateToken, jsonBody, teamChallengeRoutes);
+app.use('/api/v1/gamification/shop', authenticateToken, jsonBody, shopRoutes);
 
 app.listen(PORT, () => {
   console.log('');
@@ -1809,13 +1819,18 @@ app.get('/metrics/summary', authenticateToken, async (req: Request, res: Respons
     const round = (n: number) => Math.round(n);
     const round2 = (n: number) => Math.round(n * 100) / 100;
 
-    const [mauRows, weeklyActiveDays, dauRows, newUsers7d, profileComplete80] = await Promise.all([
+    const [mauRows, weeklyActiveDayRows, dauRows, newUsers7d, profileComplete80] = await Promise.all([
       prisma.userActiveDay.findMany({
         where: { ...schoolScope, day: { gte: start30 } },
         select: { userId: true },
         distinct: ['userId'],
       }),
-      prisma.userActiveDay.count({ where: { ...schoolScope, day: { gte: start7 } } }),
+      // NOT distinct: weeklyActiveDays counts active-DAYS (one row per user per
+      // day); we keep userId so the experiment block can split by flag bucket.
+      prisma.userActiveDay.findMany({
+        where: { ...schoolScope, day: { gte: start7 } },
+        select: { userId: true },
+      }),
       prisma.userActiveDay.findMany({
         where: { ...schoolScope, day: startToday },
         select: { userId: true },
@@ -1830,6 +1845,7 @@ app.get('/metrics/summary', authenticateToken, async (req: Request, res: Respons
     const mau = mauRows.length;
     const dau = dauRows.length;
     const dauUserIds = dauRows.map((r) => r.userId);
+    const weeklyActiveDays = weeklyActiveDayRows.length;
 
     // Engagement loop + anti-metric, scoped to today's active users.
     const [recallReviewers, notifCount] = await Promise.all([
@@ -1854,14 +1870,63 @@ app.get('/metrics/summary', authenticateToken, async (req: Request, res: Respons
     // (client-emitted), scoped to the admin's school. This is the go/no-go
     // metric: invest in the full nudge engine only if conversionPct holds up
     // (and retention doesn't regress).
-    const [nudgeShown, nudgeReviewed] = await Promise.all([
-      prisma.analyticsEvent.count({
+    const [nudgeShownRows, nudgeReviewedRows] = await Promise.all([
+      prisma.analyticsEvent.findMany({
         where: { ...schoolScope, name: 'skill_nudge_shown', createdAt: { gte: start7 } },
+        select: { userId: true },
       }),
-      prisma.analyticsEvent.count({
+      prisma.analyticsEvent.findMany({
         where: { ...schoolScope, name: 'skill_nudge_review', createdAt: { gte: start7 } },
+        select: { userId: true },
       }),
     ]);
+    const nudgeShown = nudgeShownRows.length;
+    const nudgeReviewed = nudgeReviewedRows.length;
+
+    // ── Experiment split (skill_gap_nudge) ──────────────────────────────────
+    // The flag bucket is a deterministic hash of (userId, key), so we can label
+    // every active user as exposed vs holdout at read time — no event tagging or
+    // schema change needed. This turns the school-scoped before/after read into a
+    // proper randomized A/B: compare the guardrail retention metrics (wadPerMau,
+    // pctDauRecall) across arms, and confirm nudge events only fire for exposed
+    // users. NOTE: only valid for windows AFTER the rollout went >0 (2026-06-08);
+    // active-day data from the dark period predates exposure.
+    const skillGapDef = FLAG_DEFINITIONS.find((d) => d.key === 'skill_gap_nudge');
+    const isExposed = (userId: string): boolean =>
+      skillGapDef ? isFlagEnabledForUser(skillGapDef, userId) : false;
+    const partition = (userIds: string[]): { exposed: number; holdout: number } => {
+      let exposed = 0;
+      for (const id of userIds) if (isExposed(id)) exposed += 1;
+      return { exposed, holdout: userIds.length - exposed };
+    };
+
+    const recallReviewerIds = recallReviewers.map((r) => r.userId);
+    const mauSplit = partition(mauRows.map((r) => r.userId));
+    const dauSplit = partition(dauUserIds);
+    const wadSplit = partition(weeklyActiveDayRows.map((r) => r.userId));
+    const recallSplit = partition(recallReviewerIds);
+    const shownSplit = partition(nudgeShownRows.map((r) => r.userId));
+    const reviewedSplit = partition(nudgeReviewedRows.map((r) => r.userId));
+
+    const arm = (which: 'exposed' | 'holdout') => {
+      const armMau = mauSplit[which];
+      const armDau = dauSplit[which];
+      const armWad = wadSplit[which];
+      const armRecall = recallSplit[which];
+      const armShown = shownSplit[which];
+      const armReviewed = reviewedSplit[which];
+      return {
+        mau: armMau,
+        dau: armDau,
+        weeklyActiveDays: armWad,
+        wadPerMau: armMau > 0 ? round2(armWad / armMau) : 0,
+        dauWithRecall: armRecall,
+        pctDauRecall: armDau > 0 ? round((armRecall / armDau) * 100) : 0,
+        nudgeShown: armShown,
+        nudgeReviewed: armReviewed,
+        conversionPct: armShown > 0 ? round((armReviewed / armShown) * 100) : 0,
+      };
+    };
 
     res.json({
       success: true,
@@ -1888,6 +1953,16 @@ app.get('/metrics/summary', authenticateToken, async (req: Request, res: Respons
         shown: nudgeShown,
         reviewed: nudgeReviewed,
         conversionPct: nudgeShown > 0 ? round((nudgeReviewed / nudgeShown) * 100) : 0,
+      },
+      // Randomized A/B view of the same window, split by the skill_gap_nudge
+      // flag bucket. Read go/no-go off exposed vs holdout: conversion on
+      // exposed, with wadPerMau + pctDauRecall NOT lower on exposed than holdout.
+      experiment: {
+        flag: 'skill_gap_nudge',
+        rollout: skillGapDef?.rollout ?? 0,
+        windowDays: 7,
+        exposed: arm('exposed'),
+        holdout: arm('holdout'),
       },
       antiMetric: {
         nonUrgentNotifsPerDauToday: dau > 0 ? round2(notifCount / dau) : 0,
@@ -2171,7 +2246,7 @@ app.get('/achievements/:userId', authenticateToken, async (req: Request, res: Re
 });
 
 // POST /achievements/unlock - Unlock achievement
-app.post('/achievements/unlock', authenticateToken, async (req: Request, res: Response) => {
+app.post('/achievements/unlock', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const { achievementId } = req.body;
