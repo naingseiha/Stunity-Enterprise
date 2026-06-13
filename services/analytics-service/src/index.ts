@@ -101,11 +101,14 @@ app.use(cors({
   },
 }));
 
-// Body parsing — express 4 has no built-in parser. Without this, req.body is
-// undefined on every POST and routes reading it (e.g. /events ingestion) fail.
-// Mirrors feed-service's limits.
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// JSON body parser, applied PER-ROUTE (not globally). express 4 has no built-in
+// parser, so req.body is undefined without this. We scope it to the routes that
+// the feature needs (analytics ingestion) rather than adding it globally,
+// because several other POST handlers (e.g. /stats/record-attempt, which awards
+// XP) have never had a body parser in this standalone/Docker deploy — silently
+// enabling them all in one change risks behaviour shifts (e.g. double XP) that
+// need their own validation. Tracked as a separate follow-up.
+const jsonBody = express.json({ limit: '1mb' });
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -1747,7 +1750,7 @@ app.get('/feature-flags', authenticateToken, async (req: Request, res: Response)
 
 // POST /events - Batched product-analytics ingestion. Writes raw events and
 // upserts the caller's active-day rollup (powers WAD/MAU).
-app.post('/events', authenticateToken, async (req: Request, res: Response) => {
+app.post('/events', authenticateToken, jsonBody, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const schoolId = req.user!.schoolId || null;
