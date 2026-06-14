@@ -527,23 +527,27 @@ const upsertStudentMonthlySummary = async (
   classId: string,
   month: string,
   monthNumber: number,
-  year: number
+  year: number,
+  schoolId?: string | null
 ) => {
-  const grades = await prisma.grade.findMany({
-    where: {
-      studentId,
-      classId,
-      month,
-      year,
-    },
-    include: {
-      subject: {
-        select: {
-          coefficient: true,
-        },
+  const [grades, gradeScale, coefficientMap] = await Promise.all([
+    prisma.grade.findMany({
+      where: {
+        studentId,
+        classId,
+        month,
+        year,
       },
-    },
-  });
+      select: {
+        studentId: true,
+        subjectId: true,
+        score: true,
+        maxScore: true,
+      },
+    }),
+    resolveSchoolGradeScale(schoolId),
+    getSubjectCoefficientMap(),
+  ]);
 
   if (grades.length === 0) {
     await prisma.studentMonthlySummary.deleteMany({
@@ -559,19 +563,22 @@ const upsertStudentMonthlySummary = async (
 
   let totalScore = 0;
   let totalMaxScore = 0;
-  let totalWeightedScore = 0;
   let totalCoefficient = 0;
 
   grades.forEach((grade) => {
     totalScore += grade.score;
     totalMaxScore += grade.maxScore;
-    totalWeightedScore += grade.weightedScore || 0;
-    totalCoefficient += grade.subject.coefficient;
+    totalCoefficient += coefficientMap.get(grade.subjectId) ?? 0;
   });
 
-  const average = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0;
-  const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-  const gradeLevel = calculateGradeLevel(percentage);
+  // System-aware average: scores already embed the coefficient on a
+  // 0–(coeff×50) scale, so MoEYS uses Σscore/Σcoeff (same shared helper as the
+  // leaderboard). totalWeightedScore is kept consistent with the average so the
+  // stored column still satisfies average = totalWeightedScore / totalCoefficient.
+  const average =
+    buildStudentAverageMap(attachCoefficients(grades, coefficientMap), gradeScale).get(studentId) || 0;
+  const totalWeightedScore = Math.round(average * totalCoefficient * 100) / 100;
+  const gradeLevel = gradeLevelForScale(gradeScale, average);
 
   const existingSummary = await prisma.studentMonthlySummary.findFirst({
     where: {
@@ -1722,7 +1729,8 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
           item.classId,
           item.month,
           item.monthNumber,
-          item.year
+          item.year,
+          schoolId
         );
         if (summary) {
           syncedSummaries++;
@@ -2038,7 +2046,8 @@ app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: Auth
           gradeForMonth.classId,
           summaryMonth,
           summaryMonthNumber,
-          summaryYear
+          summaryYear,
+          schoolId
         );
 
         if (regenerated) {
@@ -2086,7 +2095,8 @@ app.post('/grades/monthly-summary', authenticateToken, async (req: AuthRequest, 
       classId,
       normalizedMonth,
       normalizedMonthNumber,
-      currentYear
+      currentYear,
+      schoolId
     );
 
     if (!summary) {
@@ -2840,7 +2850,8 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
         lowestScore: 100,
       };
 
-      const percentage = grade.percentage ?? 0;
+      // grade.percentage is null on most rows — derive it from score/maxScore.
+      const percentage = grade.maxScore > 0 ? (grade.score / grade.maxScore) * 100 : 0;
       existing.gradesCount += 1;
       existing.totalScore += percentage;
       existing.highestScore = existing.gradesCount === 1 ? percentage : Math.max(existing.highestScore, percentage);
@@ -2987,9 +2998,13 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
     };
 
     grades.forEach((grade) => {
+      // grade.percentage is null on most rows — derive it from score/maxScore so
+      // the charts reflect real data instead of averaging in zeros.
+      const percentage = grade.maxScore > 0 ? (grade.score / grade.maxScore) * 100 : 0;
+
       const monthKey = `${grade.year}-${grade.monthNumber}`;
       const monthData = monthlyTotals.get(monthKey) || { total: 0, count: 0 };
-      monthData.total += grade.percentage ?? 0;
+      monthData.total += percentage;
       monthData.count += 1;
       monthlyTotals.set(monthKey, monthData);
 
@@ -2998,12 +3013,12 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
         total: 0,
         count: 0,
       };
-      subjectData.total += grade.percentage ?? 0;
+      subjectData.total += percentage;
       subjectData.count += 1;
       subjectPerformanceMap.set(grade.subjectId, subjectData);
 
       const category = normalizeAnalyticsCategory(grade.subject);
-      categoryTotals[category].total += grade.percentage ?? 0;
+      categoryTotals[category].total += percentage;
       categoryTotals[category].count += 1;
     });
 
