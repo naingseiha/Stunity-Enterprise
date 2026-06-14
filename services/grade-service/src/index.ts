@@ -242,7 +242,9 @@ const resolveGradeAccess = async (
 const gradeGridCache = new Map<string, { data: any; timestamp: number }>();
 const GRADE_GRID_CACHE_TTL_MS = 2 * 60 * 1000;
 const gradeReportCache = new Map<string, { data: any; timestamp: number }>();
-const GRADE_REPORT_CACHE_TTL_MS = 2 * 60 * 1000;
+// Grade writes call clearGradeCaches(), so a longer TTL is safe and keeps the
+// leaderboard/report served from memory across repeat views.
+const GRADE_REPORT_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function readGradeGridCache(cacheKey: string) {
   const cached = gradeGridCache.get(cacheKey);
@@ -301,6 +303,66 @@ function clearGradeReportCache(schoolId?: string | null) {
 function clearGradeCaches(schoolId?: string | null) {
   clearGradeGridCache(schoolId);
   clearGradeReportCache(schoolId);
+}
+
+// ---------------------------------------------------------------------------
+// Slowly-changing reference caches.
+// The DB is a remote pooler where every round-trip costs ~100s of ms while the
+// query itself runs in <1ms, so caching rarely-changing reference data removes
+// whole round-trips from the hot report path. Both are invalidated by TTL; the
+// values change only via school/subject admin, not via grade entry.
+// ---------------------------------------------------------------------------
+const REFERENCE_CACHE_TTL_MS = 10 * 60 * 1000;
+
+const schoolEducationModelCache = new Map<string, { model: string | null; timestamp: number }>();
+
+/** Resolve a school's grading scale, caching the educationModel lookup. */
+async function resolveSchoolGradeScale(schoolId?: string | null): Promise<GradeScale> {
+  if (!schoolId) return resolveGradeScale(null);
+
+  const cached = schoolEducationModelCache.get(schoolId);
+  if (cached && Date.now() - cached.timestamp <= REFERENCE_CACHE_TTL_MS) {
+    return resolveGradeScale(cached.model);
+  }
+
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    select: { educationModel: true },
+  });
+  const model = school?.educationModel ?? null;
+  schoolEducationModelCache.set(schoolId, { model, timestamp: Date.now() });
+  return resolveGradeScale(model);
+}
+
+let subjectCoefficientCache: { map: Map<string, number>; timestamp: number } | null = null;
+
+/**
+ * subjectId → coefficient for all active subjects (only ~100 rows), cached so
+ * report queries can fetch grades lean instead of joining the subject table on
+ * every row (the join is a whole extra DB round-trip).
+ */
+async function getSubjectCoefficientMap(): Promise<Map<string, number>> {
+  if (subjectCoefficientCache && Date.now() - subjectCoefficientCache.timestamp <= REFERENCE_CACHE_TTL_MS) {
+    return subjectCoefficientCache.map;
+  }
+
+  const subjects = await prisma.subject.findMany({ select: { id: true, coefficient: true } });
+  const map = new Map(subjects.map((subject) => [subject.id, subject.coefficient]));
+  subjectCoefficientCache = { map, timestamp: Date.now() };
+  return map;
+}
+
+/** Shape lean grade rows (no subject join) for buildStudentAverageMap. */
+function attachCoefficients(
+  grades: Array<{ studentId: string; subjectId: string; score: number }>,
+  coefficientMap: Map<string, number>
+) {
+  return grades.map((grade) => ({
+    studentId: grade.studentId,
+    subjectId: grade.subjectId,
+    score: grade.score,
+    subject: { coefficient: coefficientMap.get(grade.subjectId) ?? 0 },
+  }));
 }
 
 // ========================================
@@ -753,19 +815,6 @@ function buildGradePeriodWhere(periods: ReportPeriod[]) {
 
 function reportPeriodCacheKey(context: ReportTermContext) {
   return context.periods.map((period) => `${period.year}-${period.monthNumber}`).join(',');
-}
-
-/**
- * Resolve the grading scale for a school from its educationModel.
- * Falls back to the GENERIC 0–100 scale when the school can't be determined.
- */
-async function resolveSchoolGradeScale(schoolId?: string | null): Promise<GradeScale> {
-  if (!schoolId) return resolveGradeScale(null);
-  const school = await prisma.school.findUnique({
-    where: { id: schoolId },
-    select: { educationModel: true },
-  });
-  return resolveGradeScale(school?.educationModel);
 }
 
 function normalizeAnalyticsCategory(subject?: { name?: string | null; category?: string | null }) {
@@ -2332,12 +2381,10 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
               classId: student.classId,
               ...gradePeriodWhere,
             },
-            include: {
-              subject: {
-                select: {
-                  coefficient: true,
-                },
-              },
+            select: {
+              studentId: true,
+              subjectId: true,
+              score: true,
             },
           })
         : Promise.resolve([]),
@@ -2390,7 +2437,10 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
 
     // Calculate overall semester average (system-aware: scores already embed
     // the coefficient on a 0–(coeff×50) scale, so MoEYS uses Σscore/Σcoeff).
-    const gradeScale = await resolveSchoolGradeScale(schoolId);
+    const [gradeScale, coefficientMap] = await Promise.all([
+      resolveSchoolGradeScale(schoolId),
+      getSubjectCoefficientMap(),
+    ]);
     const overallAverage = buildStudentAverageMap(
       grades as Array<{
         studentId: string;
@@ -2405,12 +2455,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     const overallGradeLevel = gradeLevelForScale(gradeScale, overallAverage);
 
     const classAverageMap = buildStudentAverageMap(
-      classGrades as Array<{
-        studentId: string;
-        subjectId: string;
-        score: number;
-        subject: { coefficient: number };
-      }>,
+      attachCoefficients(classGrades, coefficientMap),
       gradeScale
     );
     const rankedAverages = activeStudentClasses
@@ -2506,22 +2551,39 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       gradeYearParsed > 1900;
     const monthLabelForWhere = typeof monthLabelQ === 'string' ? monthLabelQ.trim() || null : null;
 
-    const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
-    let termContext: ReportTermContext;
-    let gradeWhere: Record<string, unknown>;
-    let cacheKey: string;
+    // Monthly mode (the leaderboard's common path) keys off explicit query
+    // params only, so a cache hit can be served with ZERO DB round-trips.
+    let cacheKey: string | undefined;
+    if (monthlyMode) {
+      cacheKey = `${schoolId}:class-report:${classId}:${String(
+        semester
+      )}:${gradeYearParsed}:${normalizedRankScope}:monthly:${gradeYearParsed}:${monthNumParsed}:${monthLabelForWhere || 'noname'}`;
+      const earlyHit = readGradeReportCache(cacheKey);
+      if (earlyHit) return res.json(earlyHit);
+    }
 
-    const classInfo = await prisma.class.findFirst({
-      where: { id: classId, schoolId },
-      select: {
-        id: true,
-        name: true,
-        grade: true,
-        section: true,
-        track: true,
-        academicYearId: true,
-      },
-    });
+    // Independent reads run together — every DB hit is a ~100s-of-ms remote
+    // round-trip, so serial awaits dominate latency. Scale + coefficients come
+    // from in-memory reference caches (≈free after warmup).
+    const [currentYear, classInfo, gradeScale, coefficientMap] = await Promise.all([
+      resolveReportAcademicStartYear(schoolId, year as string | undefined),
+      prisma.class.findFirst({
+        where: { id: classId, schoolId },
+        select: {
+          id: true,
+          name: true,
+          grade: true,
+          section: true,
+          track: true,
+          academicYearId: true,
+        },
+      }),
+      resolveSchoolGradeScale(schoolId),
+      getSubjectCoefficientMap(),
+    ]);
+
+    let termContext: ReportTermContext | undefined;
+    let gradeWhere: Record<string, unknown>;
 
     if (!classInfo) {
       return res.status(404).json({ message: 'Class not found in your school' });
@@ -2540,7 +2602,8 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
         : { class: scopedClassWhere };
 
     if (monthlyMode) {
-      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+      // Monthly mode keys off the explicit gradeYear/monthNumber row, so the
+      // term context is never consulted — skip that round-trip entirely.
       if (monthLabelForWhere) {
         gradeWhere = {
           ...scopedClassFilter,
@@ -2554,9 +2617,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
           monthNumber: monthNumParsed,
         };
       }
-      cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
-        semester
-      )}:${currentYear}:${normalizedRankScope}:monthly:${gradeYearParsed}:${monthNumParsed}:${monthLabelForWhere || 'noname'}`;
+      // cacheKey already built (and checked) above for monthly mode.
     } else {
       termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
       gradeWhere = {
@@ -2566,12 +2627,10 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(
         semester
       )}:${currentYear}:${normalizedRankScope}:${reportPeriodCacheKey(termContext)}`;
-    }
-
-    const cachedResponse = readGradeReportCache(cacheKey);
-
-    if (cachedResponse) {
-      return res.json(cachedResponse);
+      const cachedResponse = readGradeReportCache(cacheKey);
+      if (cachedResponse) {
+        return res.json(cachedResponse);
+      }
     }
 
     const [studentClasses, grades] = await Promise.all([
@@ -2612,18 +2671,15 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       }),
       prisma.grade.findMany({
         where: gradeWhere as any,
-        include: {
-          subject: {
-            select: {
-              coefficient: true,
-            },
-          },
+        select: {
+          studentId: true,
+          subjectId: true,
+          score: true,
         },
       }),
     ]);
 
-    const gradeScale = await resolveSchoolGradeScale(schoolId);
-    const averageMap = buildStudentAverageMap(grades, gradeScale);
+    const averageMap = buildStudentAverageMap(attachCoefficients(grades, coefficientMap), gradeScale);
     const rankedStudents = studentClasses
       .map(({ student }) => ({
         studentId: student.id,
@@ -2656,10 +2712,10 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
           months: [{ year: gradeYearParsed, monthNumber: monthNumParsed }],
         }
       : {
-          name: termContext.termName,
-          startDate: termContext.startDate.toISOString(),
-          endDate: termContext.endDate.toISOString(),
-          months: termContext.periods,
+          name: termContext!.termName,
+          startDate: termContext!.startDate.toISOString(),
+          endDate: termContext!.endDate.toISOString(),
+          months: termContext!.periods,
         };
 
     const result = {
@@ -2693,7 +2749,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
 
     console.log(`✅ Generated class report for ${classInfo?.name} - ${rankedStudentsWithMetadata.length} students`);
 
-    writeGradeReportCache(cacheKey, result);
+    if (cacheKey) writeGradeReportCache(cacheKey, result);
     res.json(result);
   } catch (error: any) {
     console.error('❌ Error generating class report:', error);
