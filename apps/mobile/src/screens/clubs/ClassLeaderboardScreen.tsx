@@ -120,11 +120,6 @@ const getRankColor = (rank?: number) => {
   if (rank === 3) return '#B8863B';
   return COLORS.blue;
 };
-const getScoreTone = (score: number) => {
-  if (score >= 80) return COLORS.success;
-  if (score >= 50) return COLORS.warning;
-  return COLORS.danger;
-};
 
 const RankingAvatar = React.memo(({
   student,
