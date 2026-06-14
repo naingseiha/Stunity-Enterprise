@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.stunity.mobile",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "_comment_associatedDomains": "Universal Links for shared post/reel URLs (https://stunity.app/posts/:id). REQUIRES the site to host /.well-known/apple-app-site-association for appID <TEAM_ID>.app.stunity.mobile — until that file is live, https links open in Safari, not the app. The stunity:// scheme works without it.",
       "associatedDomains": [
         "applinks:stunity.app",
@@ -38,7 +38,7 @@
     "android": {
       "package": "app.stunity.mobile",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 14,
+      "versionCode": 15,
       "icon": "./assets/android-icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-adaptive-foreground.png",
