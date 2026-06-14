@@ -13,6 +13,13 @@ import {
   resolveMonthlyTemplateId,
 } from './reports/monthly/monthly-template-registry';
 import * as MoeysMonthly from './reports/monthly/khm-moeys-logic';
+import {
+  type GradeScale,
+  resolveGradeScale,
+  gradeLevelForScale,
+  isPassingForScale,
+  buildStudentAverageMap,
+} from './reports/grade-systems';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
 
 // Load environment variables from root .env
@@ -748,52 +755,17 @@ function reportPeriodCacheKey(context: ReportTermContext) {
   return context.periods.map((period) => `${period.year}-${period.monthNumber}`).join(',');
 }
 
-function buildSemesterAverageMap(
-  grades: Array<{
-    studentId: string;
-    subjectId: string;
-    score: number;
-    subject: {
-      coefficient: number;
-    };
-  }>
-) {
-  const studentSubjectTotals = new Map<
-    string,
-    Map<string, { total: number; count: number; coefficient: number }>
-  >();
-
-  grades.forEach((grade) => {
-    const subjectTotals = studentSubjectTotals.get(grade.studentId) || new Map();
-    const subjectData = subjectTotals.get(grade.subjectId) || {
-      total: 0,
-      count: 0,
-      coefficient: grade.subject.coefficient,
-    };
-
-    subjectData.total += grade.score;
-    subjectData.count += 1;
-    subjectData.coefficient = grade.subject.coefficient;
-    subjectTotals.set(grade.subjectId, subjectData);
-    studentSubjectTotals.set(grade.studentId, subjectTotals);
+/**
+ * Resolve the grading scale for a school from its educationModel.
+ * Falls back to the GENERIC 0–100 scale when the school can't be determined.
+ */
+async function resolveSchoolGradeScale(schoolId?: string | null): Promise<GradeScale> {
+  if (!schoolId) return resolveGradeScale(null);
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    select: { educationModel: true },
   });
-
-  const averages = new Map<string, number>();
-
-  studentSubjectTotals.forEach((subjectTotals, studentId) => {
-    let totalWeighted = 0;
-    let totalCoefficient = 0;
-
-    subjectTotals.forEach((data) => {
-      const average = data.count > 0 ? data.total / data.count : 0;
-      totalWeighted += average * data.coefficient;
-      totalCoefficient += data.coefficient;
-    });
-
-    averages.set(studentId, totalCoefficient > 0 ? totalWeighted / totalCoefficient : 0);
-  });
-
-  return averages;
+  return resolveGradeScale(school?.educationModel);
 }
 
 function normalizeAnalyticsCategory(subject?: { name?: string | null; category?: string | null }) {
@@ -1864,6 +1836,9 @@ app.post('/grades/calculate/average', authenticateToken, async (req: AuthRequest
       },
     });
 
+    const gradeScale = await resolveSchoolGradeScale(getSchoolId(req));
+    const averageMap = buildStudentAverageMap(grades, gradeScale);
+
     // Group by student
     const studentGrades = new Map<string, any[]>();
 
@@ -1890,9 +1865,11 @@ app.post('/grades/calculate/average', authenticateToken, async (req: AuthRequest
         totalCoefficient += grade.subject.coefficient;
       });
 
-      const average = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0;
+      // System-aware average (scores already embed the coefficient, so MoEYS
+      // uses Σscore/Σcoeff); percentage stays a 0–100 normalisation.
+      const average = averageMap.get(studentId) || 0;
       const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-      const gradeLevel = calculateGradeLevel(percentage);
+      const gradeLevel = gradeLevelForScale(gradeScale, average);
 
       averages.push({
         studentId,
@@ -2411,26 +2388,30 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
       };
     });
 
-    // Calculate overall semester average
-    let totalWeightedScore = 0;
-    let totalCoefficient = 0;
+    // Calculate overall semester average (system-aware: scores already embed
+    // the coefficient on a 0–(coeff×50) scale, so MoEYS uses Σscore/Σcoeff).
+    const gradeScale = await resolveSchoolGradeScale(schoolId);
+    const overallAverage = buildStudentAverageMap(
+      grades as Array<{
+        studentId: string;
+        subjectId: string;
+        score: number;
+        subject: { coefficient: number };
+      }>,
+      gradeScale
+    ).get(studentId) || 0;
+    const overallPercentage =
+      gradeScale.maxAverage > 0 ? (overallAverage / gradeScale.maxAverage) * 100 : 0;
+    const overallGradeLevel = gradeLevelForScale(gradeScale, overallAverage);
 
-    subjectResults.forEach((result) => {
-      totalWeightedScore += result.weightedScore;
-      totalCoefficient += result.coefficient;
-    });
-
-    const overallAverage = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0;
-    const overallPercentage = overallAverage; // Since each subject is out of 100
-    const overallGradeLevel = calculateGradeLevel(overallPercentage);
-
-    const classAverageMap = buildSemesterAverageMap(
+    const classAverageMap = buildStudentAverageMap(
       classGrades as Array<{
         studentId: string;
         subjectId: string;
         score: number;
         subject: { coefficient: number };
-      }>
+      }>,
+      gradeScale
     );
     const rankedAverages = activeStudentClasses
       .map(({ studentId: activeStudentId }) => ({
@@ -2473,7 +2454,12 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
         overallGradeLevel,
         classRank: classRank.rank,
         totalStudents: classRank.total,
-        isPassing: overallPercentage >= 50,
+        isPassing: isPassingForScale(gradeScale, overallAverage),
+        scale: {
+          system: gradeScale.system,
+          maxAverage: gradeScale.maxAverage,
+          passingMark: gradeScale.passingMark,
+        },
       },
       attendance: attendanceSummary,
       generatedAt: new Date().toISOString(),
@@ -2636,7 +2622,8 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       }),
     ]);
 
-    const averageMap = buildSemesterAverageMap(grades);
+    const gradeScale = await resolveSchoolGradeScale(schoolId);
+    const averageMap = buildStudentAverageMap(grades, gradeScale);
     const rankedStudents = studentClasses
       .map(({ student }) => ({
         studentId: student.id,
@@ -2657,8 +2644,8 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
     const rankedStudentsWithMetadata = rankedStudents.map((s, index) => ({
       ...s,
       rank: index + 1,
-      gradeLevel: calculateGradeLevel(s.average),
-      isPassing: s.average >= 50,
+      gradeLevel: gradeLevelForScale(gradeScale, s.average),
+      isPassing: isPassingForScale(gradeScale, s.average),
     }));
 
     const termPayload = monthlyMode
@@ -2682,6 +2669,11 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       year: monthlyMode ? gradeYearParsed : currentYear,
       monthlyScope: monthlyMode ? { gradeYear: gradeYearParsed, monthNumber: monthNumParsed } : undefined,
       term: termPayload,
+      scale: {
+        system: gradeScale.system,
+        maxAverage: gradeScale.maxAverage,
+        passingMark: gradeScale.passingMark,
+      },
       totalStudents: rankedStudentsWithMetadata.length,
       students: rankedStudentsWithMetadata,
       statistics: {
@@ -2905,7 +2897,8 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
       }),
     ]);
 
-    const averageMap = buildSemesterAverageMap(grades);
+    const gradeScale = await resolveSchoolGradeScale(schoolId);
+    const averageMap = buildStudentAverageMap(grades, gradeScale);
     const rankedStudents = studentClasses
       .map(({ student }) => ({
         studentId: student.id,
@@ -2923,8 +2916,8 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
       .map((student, index) => ({
         ...student,
         rank: index + 1,
-        gradeLevel: calculateGradeLevel(student.average),
-        isPassing: student.average >= 50,
+        gradeLevel: gradeLevelForScale(gradeScale, student.average),
+        isPassing: isPassingForScale(gradeScale, student.average),
       }));
 
     const monthlyTotals = new Map<string, { total: number; count: number }>();
