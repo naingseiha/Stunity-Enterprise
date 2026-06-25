@@ -36,7 +36,7 @@ import {
   toKh,
 } from './data';
 import { GRADES, SUBJECTS } from '../lesson-planner/data';
-import { getDraft, isAuthed, saveDraft } from '../lib/drafts';
+import { cloudUpsert, getDraft, isAuthed, saveDraft } from '../lib/drafts';
 
 type Screen = 'hub' | 'config' | 'generating' | 'result';
 type Toast = { id: number; message: string; type: 'success' | 'info' | 'error' };
@@ -165,8 +165,15 @@ function ExamBuilder() {
       payload: { subject, grade, chapters, duration, count, difficulty, format },
     });
     setDraftId(d.id);
-    notify('បានរក្សាទុកក្នុងឧបករណ៍នេះ');
-    if (!isAuthed()) setShowGate(true);
+    if (!isAuthed()) {
+      notify('បានរក្សាទុកក្នុងឧបករណ៍នេះ');
+      setShowGate(true);
+      return;
+    }
+    notify('បានរក្សាទុក');
+    cloudUpsert(d).then((ok) => {
+      if (ok) notify('បាន sync ទៅគណនី');
+    });
   };
 
   const toggleChapter = (no: string) => setChapters((c) => ({ ...c, [no]: !c[no] }));

@@ -40,7 +40,7 @@ import {
   SUGGESTIONS,
   toKh,
 } from './data';
-import { getDraft, isAuthed, saveDraft } from '../lib/drafts';
+import { cloudUpsert, getDraft, isAuthed, saveDraft } from '../lib/drafts';
 
 type Screen = 'hub' | 'create' | 'generating' | 'result';
 type InputMode = 'title' | 'paste' | 'upload';
@@ -189,10 +189,16 @@ function LessonPlanner() {
       payload: { title, subject, grade, chapterNo, lessonNo, duration, depth, count },
     });
     setDraftId(d.id);
-    // Drafts are device-local for now (cloud sync is a follow-up), so keep the
-    // confirmation honest and don't claim the work left this device.
-    notify('បានរក្សាទុកក្នុងឧបករណ៍នេះ');
-    if (!isAuthed()) setShowGate(true);
+    if (!isAuthed()) {
+      notify('បានរក្សាទុកក្នុងឧបករណ៍នេះ');
+      setShowGate(true);
+      return;
+    }
+    // Signed in → also sync to the account so the work follows the user.
+    notify('បានរក្សាទុក');
+    cloudUpsert(d).then((ok) => {
+      if (ok) notify('បាន sync ទៅគណនី');
+    });
   };
 
   // ── Render ────────────────────────────────────────────────────────

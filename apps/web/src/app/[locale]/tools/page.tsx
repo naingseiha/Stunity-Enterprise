@@ -19,7 +19,7 @@ import {
   Trash2,
   Wand2,
 } from 'lucide-react';
-import { deleteDraft, listDrafts, type Draft } from './lib/drafts';
+import { cloudDelete, deleteDraft, loadDrafts, type Draft } from './lib/drafts';
 
 export default function ToolsHubPage() {
   const locale = useLocale();
@@ -28,12 +28,13 @@ export default function ToolsHubPage() {
   const fontKh = isKm ? "'Battambang', sans-serif" : undefined;
 
   useEffect(() => {
-    setDrafts(listDrafts());
+    loadDrafts().then(setDrafts);
   }, []);
 
   const remove = (id: string) => {
     deleteDraft(id);
-    setDrafts(listDrafts());
+    void cloudDelete(id);
+    setDrafts((d) => d.filter((x) => x.id !== id));
   };
 
   const t = {
