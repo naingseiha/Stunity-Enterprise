@@ -68,3 +68,10 @@ services/feed-service/uploads/
 scripts/migrate-v1-to-v2/data/export-*/
 scripts/admin/data/subject-reconcile-*.json
 cloudbuild.tmp.yaml
+
+# TypeScript incremental build cache (regenerated on every build)
+*.tsbuildinfo
+
+# Claude Code per-developer config (machine-local, not shared)
+.claude/settings.local.json
+.claude/launch.json
