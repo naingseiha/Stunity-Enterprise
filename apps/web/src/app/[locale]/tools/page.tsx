@@ -55,7 +55,7 @@ export default function ToolsHubPage() {
 
   const tools = [
     { icon: Wand2, name: isKm ? 'កិច្ចតែងការបង្រៀន' : 'Lesson Planner', desc: isKm ? 'កិច្ចតែងការ MoEYS ពេញលេញ' : 'Full MoEYS lesson plans', href: `/${locale}/tools/lesson-planner`, live: true, hue: 'from-orange-500 to-amber-600' },
-    { icon: FileText, name: isKm ? 'វិញ្ញាសាប្រឡង' : 'Exam Builder', desc: isKm ? 'បង្កើតវិញ្ញាសាស្វ័យប្រវត្តិ' : 'Auto-generate exams', href: '#', live: false, hue: 'from-rose-500 to-pink-600' },
+    { icon: FileText, name: isKm ? 'វិញ្ញាសាប្រឡង' : 'Exam Builder', desc: isKm ? 'បង្កើតវិញ្ញាសាស្វ័យប្រវត្តិ' : 'Auto-generate exams', href: `/${locale}/tools/exam`, live: true, hue: 'from-rose-500 to-pink-600' },
     { icon: Presentation, name: isKm ? 'ស្លាយបង្ហាញ' : 'Slides', desc: isKm ? 'ស្លាយបង្រៀនពី AI' : 'AI teaching decks', href: '#', live: false, hue: 'from-violet-500 to-indigo-600' },
     { icon: BookOpen, name: isKm ? 'សៀវភៅកិច្ចតែងការ' : 'Lesson Book', desc: isKm ? 'ចងក្រងជាសៀវភៅ' : 'Compile into a book', href: '#', live: false, hue: 'from-emerald-500 to-teal-600' },
     { icon: CreditCard, name: isKm ? 'ប័ណ្ណសិស្ស' : 'Student Cards', desc: isKm ? 'រចនាប័ណ្ណសម្គាល់' : 'Design ID cards', href: '#', live: false, hue: 'from-sky-500 to-cyan-600' },
