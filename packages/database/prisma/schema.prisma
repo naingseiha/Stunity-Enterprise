@@ -4426,3 +4426,23 @@ model UserActiveDay {
   @@index([day])
   @@map("user_active_days")
 }
+
+// Creator-tools drafts (Lesson Planner, Exam, …) — personal, not school-scoped.
+// Synced from the web Tools UI so anonymous, device-local work persists once a
+// user signs in. Loosely coupled (userId only, no FK) to match the repo's
+// additive migration style.
+model ToolDraft {
+  id        String   @id @default(cuid())
+  userId    String
+  tool      String
+  title     String
+  subject   String?
+  grade     String?
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, tool])
+  @@map("tool_drafts")
+}

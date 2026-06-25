@@ -12,6 +12,7 @@ import hpp from 'hpp';
 import compression from 'compression';
 import { prisma } from './context';
 import coursesRouter from './routes/courses.routes';
+import toolDraftsRouter from './routes/tool-drafts.routes';
 import { authenticateToken } from './middleware/auth';
 import { CertificateController } from './controllers/certificate.controller';
 import { MediaController } from './controllers/media.controller';
@@ -92,6 +93,7 @@ app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
 app.use('/courses', authenticateToken as any, coursesRouter);
 app.use('/learning-paths', authenticateToken as any, coursesRouter);
 app.use('/media', authenticateToken as any, MediaController.getPresignedUrl as any);
+app.use('/tool-drafts', authenticateToken as any, toolDraftsRouter);
 
 // Public Routes
 app.get('/certificates/verify/:code', CertificateController.verifyCertificate as any);
