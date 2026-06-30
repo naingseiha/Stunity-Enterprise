@@ -28,17 +28,19 @@ import {
   Italic,
   Layers,
   LayoutTemplate,
+  Minus,
   Palette,
   Play,
   Plus,
   Presentation,
+  Redo2,
   RefreshCw,
   RemoveFormatting,
   Sparkles,
   Strikethrough,
   Trash2,
-  Type,
   Underline,
+  Undo2,
   Upload,
   Wallpaper,
   Wand2,
@@ -46,12 +48,16 @@ import {
 } from 'lucide-react';
 import {
   ABSTRACTS,
+  addLine,
   applyEdit,
   blankSlide,
   buildDeck,
   CHAPTERS,
   convertSlide,
   GRADES,
+  GRADIENTS,
+  lineKind,
+  removeLine,
   renumber,
   resolveTheme,
   slideBackground,
@@ -151,6 +157,60 @@ function SlidesBuilder() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   // The generated deck is editable state once on the result screen.
   const [deck, setDeck] = useState<Slide[]>([]);
+  // Undo / redo history — past + future snapshots of the deck. Refs hold the
+  // stacks (no re-render on push); bumpHist re-renders so canUndo/canRedo and the
+  // ribbon buttons reflect the current stack depth.
+  const past = useRef<Slide[][]>([]);
+  const future = useRef<Slide[][]>([]);
+  const [, forceHist] = useState(0);
+  const bumpHist = useCallback(() => forceHist((v) => v + 1), []);
+  const HIST_MAX = 80;
+
+  // History-tracked deck update — used by every editing op. Pushes the current
+  // deck onto the past stack and clears the redo future.
+  const commitDeck = useCallback((updater: (d: Slide[]) => Slide[]) => {
+    setDeck((cur) => {
+      const next = updater(cur);
+      if (next === cur) return cur;
+      past.current = [...past.current.slice(-(HIST_MAX - 1)), cur];
+      future.current = [];
+      return next;
+    });
+    bumpHist();
+  }, [bumpHist]);
+
+  // Full deck replacement (generate / draft-load) — clears history.
+  const resetDeck = useCallback((d: Slide[]) => {
+    past.current = [];
+    future.current = [];
+    setDeck(d);
+    bumpHist();
+  }, [bumpHist]);
+
+  const undo = useCallback(() => {
+    if (!past.current.length) return;
+    setDeck((cur) => {
+      const prev = past.current[past.current.length - 1];
+      past.current = past.current.slice(0, -1);
+      future.current = [cur, ...future.current].slice(0, HIST_MAX);
+      return prev;
+    });
+    bumpHist();
+  }, [bumpHist]);
+
+  const redo = useCallback(() => {
+    if (!future.current.length) return;
+    setDeck((cur) => {
+      const nxt = future.current[0];
+      future.current = future.current.slice(1);
+      past.current = [...past.current.slice(-(HIST_MAX - 1)), cur];
+      return nxt;
+    });
+    bumpHist();
+  }, [bumpHist]);
+
+  const canUndo = past.current.length > 0;
+  const canRedo = future.current.length > 0;
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
@@ -187,7 +247,7 @@ function SlidesBuilder() {
     const tick = () => {
       i += 1;
       if (i >= steps.length) {
-        setDeck(buildDeck({ subject, grade, chapter, lessonTitle, length }));
+        resetDeck(buildDeck({ subject, grade, chapter, lessonTitle, length }));
         setScreen('result');
         notify('បង្កើតស្លាយបង្ហាញដោយជោគជ័យ');
         return;
@@ -219,10 +279,10 @@ function SlidesBuilder() {
     if (typeof p.length === 'string') setLength(p.length);
     // Restore the edited deck if the draft has one; otherwise rebuild from config.
     if (Array.isArray(p.slides) && p.slides.length) {
-      setDeck(renumber(p.slides as Slide[]));
+      resetDeck(renumber(p.slides as Slide[]));
     } else {
       const ch = CHAPTERS.find((c) => c.no === p.chapterNo) || CHAPTERS[0];
-      setDeck(buildDeck({
+      resetDeck(buildDeck({
         subject: typeof p.subject === 'string' ? p.subject : subject,
         grade: typeof p.grade === 'string' ? p.grade : grade,
         chapter: ch,
@@ -242,16 +302,16 @@ function SlidesBuilder() {
   const slidePrev = useCallback(() => setSlideIndex((i) => Math.max(0, i - 1)), []);
   const slideNext = useCallback(() => setSlideIndex((i) => Math.min(deck.length - 1, i + 1)), [deck.length]);
 
-  // ── Deck editing ──
+  // ── Deck editing ── (all history-tracked via commitDeck)
   const editSlide = (patch: EditPatch) =>
-    setDeck((d) => d.map((s, k) => (k === idx ? applyEdit(s, patch) : s)));
+    commitDeck((d) => d.map((s, k) => (k === idx ? applyEdit(s, patch) : s)));
   const addSlide = (kind: Slide['kind']) => {
-    setDeck((d) => renumber([...d.slice(0, idx + 1), blankSlide(kind), ...d.slice(idx + 1)]));
+    commitDeck((d) => renumber([...d.slice(0, idx + 1), blankSlide(kind), ...d.slice(idx + 1)]));
     setSlideIndex(idx + 1);
     notify('បានបន្ថែមស្លាយ');
   };
   const duplicateSlide = () => {
-    setDeck((d) => renumber([...d.slice(0, idx + 1), { ...d[idx] }, ...d.slice(idx + 1)]));
+    commitDeck((d) => renumber([...d.slice(0, idx + 1), { ...d[idx] }, ...d.slice(idx + 1)]));
     setSlideIndex(idx + 1);
     notify('បានចម្លងស្លាយ');
   };
@@ -260,14 +320,14 @@ function SlidesBuilder() {
       notify('ត្រូវមានស្លាយយ៉ាងតិច ១', 'error');
       return;
     }
-    setDeck((d) => renumber(d.filter((_, k) => k !== idx)));
+    commitDeck((d) => renumber(d.filter((_, k) => k !== idx)));
     setSlideIndex((i) => Math.max(0, Math.min(deck.length - 2, i)));
     notify('បានលុបស្លាយ');
   };
   const moveSlide = (dir: -1 | 1) => {
     const j = idx + dir;
     if (j < 0 || j >= deck.length) return;
-    setDeck((d) => {
+    commitDeck((d) => {
       const nd = [...d];
       [nd[idx], nd[j]] = [nd[j], nd[idx]];
       return renumber(nd);
@@ -275,11 +335,15 @@ function SlidesBuilder() {
     setSlideIndex(j);
   };
   const changeLayout = (kind: Slide['kind']) =>
-    setDeck((d) => d.map((s, k) => (k === idx ? convertSlide(s, kind) : s)));
+    commitDeck((d) => d.map((s, k) => (k === idx ? convertSlide(s, kind) : s)));
+  const addLineAt = (index: number) =>
+    commitDeck((d) => d.map((s, k) => (k === idx ? addLine(s, index) : s)));
+  const removeLineAt = (index: number) =>
+    commitDeck((d) => d.map((s, k) => (k === idx ? removeLine(s, index) : s)));
   const setBg = (bg: SlideBg | undefined) =>
-    setDeck((d) => d.map((s, k) => (k === idx ? { ...s, bg } : s)));
+    commitDeck((d) => d.map((s, k) => (k === idx ? { ...s, bg } : s)));
   const setBgAll = (bg: SlideBg | undefined) => {
-    setDeck((d) => d.map((s) => ({ ...s, bg })));
+    commitDeck((d) => d.map((s) => ({ ...s, bg })));
     notify('បានដាក់ផ្ទៃខាងក្រោយគ្រប់ស្លាយ');
   };
 
@@ -299,6 +363,29 @@ function SlidesBuilder() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [presenting, slideNext, slidePrev]);
+
+  // Undo / redo shortcuts on the editor. Skip when focus is inside an editable /
+  // form field so the browser's native text undo still works there.
+  useEffect(() => {
+    if (screen !== 'result' || presenting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k !== 'z' && k !== 'y') return;
+      const el = document.activeElement as HTMLElement | null;
+      const inField = !!el && (el.getAttribute('contenteditable') === 'true' || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
+      if (inField) return;
+      if (k === 'y' || (k === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      } else if (k === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [screen, presenting, undo, redo]);
 
   const handleSave = () => {
     const d = saveDraft({
@@ -395,8 +482,14 @@ function SlidesBuilder() {
             onDelete={deleteSlide}
             onMove={moveSlide}
             onChangeLayout={changeLayout}
+            onAddLine={addLineAt}
+            onRemoveLine={removeLineAt}
             onSetBg={setBg}
             onSetBgAll={setBgAll}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
         )}
       </main>
@@ -695,10 +788,16 @@ function Result(props: {
   onDelete: () => void;
   onMove: (dir: -1 | 1) => void;
   onChangeLayout: (kind: Slide['kind']) => void;
+  onAddLine: (index: number) => void;
+  onRemoveLine: (index: number) => void;
   onSetBg: (bg: SlideBg | undefined) => void;
   onSetBgAll: (bg: SlideBg | undefined) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }) {
-  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onChangeLayout, onSetBg, onSetBgAll } = props;
+  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onUndo, onRedo, canUndo, canRedo } = props;
   if (!deck.length) return null;
   return (
     <>
@@ -717,6 +816,10 @@ function Result(props: {
         onDuplicate={onDuplicate}
         onMove={onMove}
         onDelete={onDelete}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         bg={deck[idx].bg}
         onSetBg={onSetBg}
         onSetBgAll={onSetBgAll}
@@ -749,7 +852,7 @@ function Result(props: {
           <div style={{ position: 'relative', flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 16, padding: '34px 20px 70px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: '100%' }}>
               <NavArrow onClick={onPrev} disabled={idx <= 0}><ChevronLeft size={22} /></NavArrow>
-              <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} />
+              <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} />
               <NavArrow onClick={onNext} disabled={idx >= deck.length - 1}><ChevronRight size={22} /></NavArrow>
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, fontSize: 12.5, fontWeight: 700, color: C.muted2, fontFamily: KO }}>
@@ -821,16 +924,22 @@ function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPi
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-          <div style={{ position: 'absolute', top: '120%', right: 0, zIndex: 41, width: 286, padding: 14, borderRadius: 16, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 20px 44px -16px rgba(28,27,25,.5)' }}>
+          <div style={{ position: 'absolute', top: '120%', right: 0, zIndex: 41, width: 300, maxHeight: 'min(70vh, 540px)', overflowY: 'auto', padding: 14, borderRadius: 16, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 20px 44px -16px rgba(28,27,25,.5)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <span style={{ fontFamily: KO, fontSize: 14, color: C.ink }}>ផ្ទៃខាងក្រោយ</span>
               <button onClick={() => setAll((a) => !a)} title="ដាក់គ្រប់ស្លាយ" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 100, cursor: 'pointer', border: `1px solid ${all ? C.accent : C.border}`, background: all ? ACCENT_SOFT : '#fff', color: all ? C.accent : C.muted2, fontSize: 11, fontWeight: 700 }}>
                 {all && <Check size={12} />} ទាំងអស់
               </button>
             </div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, marginBottom: 7 }}>រចនាបថ</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {tile('none', !bg, { background: theme.bg, position: 'relative' }, () => apply(undefined), 'គ្មាន')}
               {ABSTRACTS.map((a) => tile(a.id, bg?.type === 'abstract' && bg.value === a.id, a.css(theme), () => apply({ type: 'abstract', value: a.id }), a.name))}
+            </div>
+
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>ពណ៌ Gradient</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+              {GRADIENTS.map((g) => tile(g.id, bg?.type === 'gradient' && bg.value === g.id, { backgroundImage: g.css }, () => apply({ type: 'gradient', value: g.id }), g.name))}
             </div>
 
             <div style={{ height: 1, background: C.borderSoft, margin: '12px 0' }} />
@@ -901,7 +1010,7 @@ function presentArrow(side: 'left' | 'right', disabled: boolean): React.CSSPrope
 // ════════════════════════════════════════════════════════════════════
 // Slide rendering — native 880×495, scaled by the container
 // ════════════════════════════════════════════════════════════════════
-function ScaledSlide({ slide, theme, total, width, shadow, edit }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void }) {
+function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void }) {
   // The native 880×495 board is always scaled to the *actual* rendered width via
   // a container query (100cqw / 880). This keeps the scale honest even when
   // maxWidth clamps the wrapper on a narrow viewport, so the board never clips.
@@ -920,7 +1029,7 @@ function ScaledSlide({ slide, theme, total, width, shadow, edit }: { slide: Slid
       }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, width: SLIDE_W, height: SLIDE_H, transform: `scale(calc(100cqw / ${SLIDE_W}px))`, transformOrigin: 'top left' }}>
-        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} />
+        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} />
       </div>
     </div>
   );
@@ -1028,12 +1137,16 @@ function EditorToolbar(props: {
   onDuplicate: () => void;
   onMove: (d: -1 | 1) => void;
   onDelete: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   theme: Theme;
   bg?: SlideBg;
   onSetBg: (b: SlideBg | undefined) => void;
   onSetBgAll: (b: SlideBg | undefined) => void;
 }) {
-  const { kind, idx, total, themeId, setThemeId, accentId, setAccentId, onAddSlide, onChangeLayout, onDuplicate, onMove, onDelete, theme, bg, onSetBg, onSetBgAll } = props;
+  const { kind, idx, total, themeId, setThemeId, accentId, setAccentId, onAddSlide, onChangeLayout, onDuplicate, onMove, onDelete, onUndo, onRedo, canUndo, canRedo, theme, bg, onSetBg, onSetBgAll } = props;
   const [menu, setMenu] = useState<null | 'font' | 'size' | 'color' | 'hilite'>(null);
   const [active, setActive] = useState<Record<string, boolean>>({});
   const [curFont, setCurFont] = useState('Battambang');
@@ -1065,6 +1178,12 @@ function EditorToolbar(props: {
 
   return (
     <div className="sl-no-print sl-ribbon" style={{ flex: 'none', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: '10px 18px', borderBottom: `1px solid ${C.borderSoft}`, background: 'linear-gradient(180deg, rgba(247,245,255,.85), rgba(246,245,242,.8))', backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 5 }}>
+      {/* undo / redo */}
+      <RibGroup>
+        <RibBtn onClick={onUndo} disabled={!canUndo} title="មិនធ្វើវិញ (Ctrl+Z)"><Undo2 size={16} /></RibBtn>
+        <RibBtn onClick={onRedo} disabled={!canRedo} title="ធ្វើវិញ (Ctrl+Y)"><Redo2 size={16} /></RibBtn>
+      </RibGroup>
+
       {/* slide ops */}
       <RibGroup icon={<Layers size={14} />}>
         <KindMenu label="បន្ថែម" icon={<Plus size={15} />} onPick={onAddSlide} />
@@ -1221,11 +1340,28 @@ function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: string) =>
   );
 }
 
-function SlideBoard({ slide, theme, total, edit }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void }) {
+function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void }) {
   const isDark = theme.bg === '#241d18';
   const subTint = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.028)';
   const kh: React.CSSProperties = { fontFamily: KO, letterSpacing: '.5px' };
   const body: React.CSSProperties = { fontFamily: KH };
+
+  // Line editing controls — only on the editable stage, for list-like kinds.
+  const editingLines = !!(edit && onAddLine && onRemoveLine) && !!lineKind(slide);
+  // A small "−" to delete a line; clicking commits after the blur of any focused line.
+  const delBtn = (index: number) =>
+    editingLines ? (
+      <button onMouseDown={(e) => e.preventDefault()} onClick={() => onRemoveLine!(index)} title="លុបជួរ" style={{ flex: 'none', width: 28, height: 28, borderRadius: 9, border: 'none', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: theme.sub, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', opacity: 0.85 }}>
+        <Minus size={16} />
+      </button>
+    ) : null;
+  // A dashed "+ add line" pill placed after a list.
+  const addBtn = (afterIndex: number) =>
+    editingLines ? (
+      <button onMouseDown={(e) => e.preventDefault()} onClick={() => onAddLine!(afterIndex)} style={{ marginTop: 18, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 100, border: `1.5px dashed ${theme.accent}66`, background: 'transparent', color: theme.accent, cursor: 'pointer', fontFamily: KH, fontSize: 16, fontWeight: 700 }}>
+        <Plus size={17} /> បន្ថែមជួរ
+      </button>
+    ) : null;
 
   // Render a text node: inline rich-text editable on the result stage, static
   // HTML otherwise (thumbnails / present / config preview).
@@ -1269,8 +1405,10 @@ function SlideBoard({ slide, theme, total, edit }: { slide: Slide; theme: Theme;
             <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
               <div style={{ width: 30, height: 30, borderRadius: 9, flex: 'none', background: theme.sw, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', ...kh, fontSize: 15, paddingTop: 2 }}>{toKh(i + 1)}</div>
               {T('bullet', b, { ...body, fontSize: 22, lineHeight: 1.5, color: theme.ink, flex: 1, minWidth: 0 }, i)}
+              {delBtn(i)}
             </div>
           ))}
+          {addBtn(slide.bullets.length - 1)}
         </div>
       </div>
     );
@@ -1290,12 +1428,14 @@ function SlideBoard({ slide, theme, total, edit }: { slide: Slide; theme: Theme;
                   <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                     <div style={{ width: 10, height: 10, borderRadius: 3, background: theme.accent, flex: 'none', marginTop: 9, transform: 'rotate(45deg)' }} />
                     {T('bullet', b, { ...body, fontSize: 20, lineHeight: 1.55, color: theme.ink, flex: 1, minWidth: 0 }, gi)}
+                    {delBtn(gi)}
                   </div>
                 );
               })}
             </div>
           ))}
         </div>
+        {addBtn(slide.bullets.length - 1)}
       </div>
     );
   } else if (slide.kind === 'example') {
@@ -1308,8 +1448,10 @@ function SlideBoard({ slide, theme, total, edit }: { slide: Slide; theme: Theme;
             <div key={i} style={{ display: 'flex', gap: 18, alignItems: 'flex-start', padding: '18px 22px', borderRadius: 14, background: subTint }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', flex: 'none', background: theme.sw, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', ...kh, fontSize: 18, paddingTop: 2 }}>{toKh(i + 1)}</div>
               {T('step', st, { ...body, fontSize: 21, lineHeight: 1.5, color: theme.ink, flex: 1, minWidth: 0 }, i)}
+              {delBtn(i)}
             </div>
           ))}
+          {addBtn(slide.steps.length - 1)}
         </div>
       </div>
     );
@@ -1320,12 +1462,18 @@ function SlideBoard({ slide, theme, total, edit }: { slide: Slide; theme: Theme;
         {titleEl(slide.title)}
         <div style={{ display: 'flex', gap: 18, marginTop: 28, flex: 1, alignItems: 'stretch' }}>
           {slide.stats.map((st, i) => (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '22px 14px', borderRadius: 18, background: subTint, border: `1.5px solid ${theme.accent}22` }}>
+            <div key={i} style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '22px 14px', borderRadius: 18, background: subTint, border: `1.5px solid ${theme.accent}22` }}>
+              {editingLines && slide.stats.length > 1 && (
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => onRemoveLine!(i)} title="លុប" style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 7, border: 'none', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)', color: theme.sub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={13} />
+                </button>
+              )}
               {T('statNum', st.num, { ...kh, fontSize: 52, lineHeight: 1, color: theme.accent, marginBottom: 12, textAlign: 'center' }, i)}
               {T('statLabel', st.label, { ...body, fontSize: 17, color: theme.sub, textAlign: 'center', lineHeight: 1.45 }, i)}
             </div>
           ))}
         </div>
+        {addBtn(slide.stats.length - 1)}
       </div>
     );
   } else if (slide.kind === 'quote') {
@@ -1348,9 +1496,15 @@ function SlideBoard({ slide, theme, total, edit }: { slide: Slide; theme: Theme;
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: theme.sw, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', ...kh, fontSize: 16, flex: 'none', zIndex: 1, paddingTop: 2 }}>{toKh(i + 1)}</div>
               {i < slide.steps.length - 1 && <div style={{ position: 'absolute', top: 18, left: '50%', width: '100%', height: 3, background: `${theme.accent}44` }} />}
               {T('step', ev, { ...body, fontSize: 19, lineHeight: 1.4, color: theme.ink, textAlign: 'center', marginTop: 16, padding: '0 10px' }, i)}
+              {editingLines && slide.steps.length > 1 && (
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => onRemoveLine!(i)} title="លុប" style={{ marginTop: 10, width: 24, height: 24, borderRadius: 7, border: 'none', cursor: 'pointer', background: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)', color: theme.sub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={13} />
+                </button>
+              )}
             </div>
           ))}
         </div>
+        {addBtn(slide.steps.length - 1)}
       </div>
     );
   } else {

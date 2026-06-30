@@ -69,8 +69,28 @@ export function resolveTheme(themeId: string, accentId: string): Theme {
   };
 }
 
-// ─── Slide backgrounds (abstract presets + image) ──────────────────
-export type SlideBg = { type: 'abstract'; value: string } | { type: 'image'; value: string };
+// ─── Slide backgrounds (abstract presets + gradients + image) ──────
+export type SlideBg =
+  | { type: 'abstract'; value: string }
+  | { type: 'gradient'; value: string }
+  | { type: 'image'; value: string };
+
+/** Curated, vivid colour gradients (Gamma-style full-bleed fills). Independent
+ *  of the slide theme; a readability scrim keeps theme-coloured text legible. */
+export const GRADIENTS: { id: string; name: string; css: string }[] = [
+  { id: 'sunrise', name: 'ព្រឹក', css: 'linear-gradient(135deg,#ffe7ba 0%,#ffb88c 48%,#ff8aa0 100%)' },
+  { id: 'sky', name: 'មេឃ', css: 'linear-gradient(135deg,#a8edea 0%,#86a8e7 55%,#b5a7f5 100%)' },
+  { id: 'leaf', name: 'ស្លឹក', css: 'linear-gradient(135deg,#d4fc79 0%,#96e6a1 100%)' },
+  { id: 'bloom', name: 'ផ្ការីក', css: 'linear-gradient(135deg,#ffd1dc 0%,#ffaeb9 52%,#ffc3a0 100%)' },
+  { id: 'lavender', name: 'ស្វាយ', css: 'linear-gradient(135deg,#e0c3fc 0%,#8ec5fc 100%)' },
+  { id: 'sand', name: 'ខ្សាច់', css: 'linear-gradient(135deg,#f6e6c7 0%,#e7c8a0 100%)' },
+  { id: 'dusk', name: 'ល្ងាច', css: 'linear-gradient(135deg,#5b6ab0 0%,#8a5bb0 55%,#b05b8e 100%)' },
+  { id: 'forest', name: 'ព្រៃ', css: 'linear-gradient(135deg,#234b3b 0%,#3f7a52 60%,#6bbf86 100%)' },
+];
+
+export function gradientById(id: string) {
+  return GRADIENTS.find((g) => g.id === id);
+}
 
 function wavesSvg(a: string) {
   return `<svg xmlns='http://www.w3.org/2000/svg' width='880' height='495'><path d='M0 360 C 220 300 380 430 600 370 S 880 350 880 395 L880 495 L0 495 Z' fill='${a}' opacity='0.10'/><path d='M0 410 C 250 360 430 470 660 415 S 880 405 880 440 L880 495 L0 495 Z' fill='${a}' opacity='0.17'/></svg>`;
@@ -93,6 +113,9 @@ export const ABSTRACTS: { id: string; name: string; css: (t: Theme) => Record<st
   { id: 'grid', name: 'ក្រឡា', css: (t) => ({ backgroundColor: t.bg, backgroundImage: `linear-gradient(${t.accent}16 1px, transparent 1px), linear-gradient(90deg, ${t.accent}16 1px, transparent 1px)`, backgroundSize: '44px 44px' }) },
   { id: 'waves', name: 'រលក', css: (t) => ({ backgroundColor: t.bg, backgroundImage: svgUrl(wavesSvg(t.accent)), backgroundSize: 'cover', backgroundPosition: 'bottom' }) },
   { id: 'blobs', name: 'Blob', css: (t) => ({ backgroundColor: t.bg, backgroundImage: svgUrl(blobsSvg(t.accent, t.dot)), backgroundSize: 'cover' }) },
+  { id: 'corner', name: 'ជ្រុង', css: (t) => ({ background: `radial-gradient(82% 82% at 112% 116%, ${t.accent}3a, transparent 58%), radial-gradient(46% 46% at -8% -8%, ${t.dot}24, transparent 60%), ${t.bg}` }) },
+  { id: 'duotone', name: 'ពីរពណ៌', css: (t) => ({ background: `linear-gradient(118deg, ${t.accent}1f 0%, transparent 46%), linear-gradient(300deg, ${t.dot}1c 0%, transparent 46%), ${t.bg}` }) },
+  { id: 'rays', name: 'កាំរស្មី', css: (t) => ({ backgroundColor: t.bg, backgroundImage: `repeating-conic-gradient(from 0deg at 50% -6%, ${t.accent}12 0deg 5deg, transparent 5deg 13deg)` }) },
 ];
 
 export function abstractById(id: string) {
@@ -103,13 +126,21 @@ export function abstractById(id: string) {
  *  optional readability scrim for images). */
 export function slideBackground(bg: SlideBg | undefined, theme: Theme): { base: string; layer: Record<string, string>; scrim?: string } {
   if (!bg) return { base: theme.bg, layer: {} };
+  const dark = theme.bg === '#241d18';
+  // Soft, theme-aware scrim that keeps theme-coloured text legible over a busy
+  // fill while preserving most of the colour.
+  const imageScrim = dark ? 'linear-gradient(rgba(18,14,10,.55),rgba(18,14,10,.42))' : 'linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.4))';
+  const colorScrim = dark ? 'linear-gradient(rgba(18,14,10,.4),rgba(18,14,10,.28))' : 'linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.28))';
   if (bg.type === 'image') {
-    const dark = theme.bg === '#241d18';
     return {
       base: theme.bg,
       layer: { backgroundImage: `url("${bg.value}")`, backgroundSize: 'cover', backgroundPosition: 'center' },
-      scrim: dark ? 'linear-gradient(rgba(18,14,10,.55),rgba(18,14,10,.42))' : 'linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.4))',
+      scrim: imageScrim,
     };
+  }
+  if (bg.type === 'gradient') {
+    const g = gradientById(bg.value);
+    return { base: theme.bg, layer: g ? { backgroundImage: g.css } : {}, scrim: g ? colorScrim : undefined };
   }
   const a = abstractById(bg.value);
   return { base: theme.bg, layer: a ? a.css(theme) : {} };
@@ -300,4 +331,44 @@ export function applyEdit(s: Slide, patch: EditPatch): Slide {
     default:
       return s;
   }
+}
+
+/** Kinds whose body is a list of editable lines that can grow / shrink. */
+export function lineKind(s: Slide): 'bullets' | 'steps' | 'stats' | null {
+  if ('bullets' in s) return 'bullets';
+  if ('steps' in s) return 'steps';
+  if (s.kind === 'data') return 'stats';
+  return null;
+}
+
+const MAX_LINES: Record<string, number> = { bullets: 8, steps: 6, stats: 5 };
+
+/** Insert a blank line after `index` (clamped to the kind's max). */
+export function addLine(s: Slide, index: number): Slide {
+  const k = lineKind(s);
+  if (!k) return s;
+  if (k === 'stats' && s.kind === 'data') {
+    if (s.stats.length >= MAX_LINES.stats) return s;
+    const stats = [...s.stats];
+    stats.splice(index + 1, 0, { num: '០', label: 'ស្លាក' });
+    return { ...s, stats };
+  }
+  const arr = (s as unknown as Record<string, string[]>)[k];
+  if (arr.length >= (MAX_LINES[k] ?? 8)) return s;
+  const next = [...arr];
+  next.splice(index + 1, 0, 'ចំណុចថ្មី');
+  return { ...s, [k]: next } as Slide;
+}
+
+/** Remove the line at `index` (keeps at least one line). */
+export function removeLine(s: Slide, index: number): Slide {
+  const k = lineKind(s);
+  if (!k) return s;
+  if (k === 'stats' && s.kind === 'data') {
+    if (s.stats.length <= 1) return s;
+    return { ...s, stats: s.stats.filter((_, i) => i !== index) };
+  }
+  const arr = (s as unknown as Record<string, string[]>)[k];
+  if (arr.length <= 1) return s;
+  return { ...s, [k]: arr.filter((_, i) => i !== index) } as Slide;
 }
