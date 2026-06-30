@@ -471,6 +471,7 @@ textarea {
 .hero-delay-3 { animation-delay: 0.4s; }
 .hero-delay-4 { animation-delay: 0.55s; }
 .hero-delay-5 { animation-delay: 0.7s; }
+.hero-delay-6 { animation-delay: 0.85s; }
 
 /* Card 3D tilt hover */
 .card-3d {

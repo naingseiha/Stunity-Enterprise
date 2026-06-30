@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Menu,
   MessagesSquare,
+  Presentation,
   School,
   Sparkles,
   X,
@@ -225,6 +226,101 @@ const T = {
     },
   },
 } satisfies Record<Lang, unknown>;
+
+/* ─────────────────────────────────────────────────────────────
+   Hero product mockup — a framed "Studio" app window showing a
+   teaching slide. Gives the hero a real product shot (enterprise
+   landing pages always show the product, not just copy).
+   ───────────────────────────────────────────────────────────── */
+function HeroMockup({ isKm, fontTitle, fontBody }: { isKm: boolean; fontTitle: string; fontBody: string }) {
+  const kicker = isKm ? 'រូបវិទ្យា · ថ្នាក់ទី១០' : 'PHYSICS · GRADE 10';
+  const title = isKm ? 'ច្បាប់ញូតុនទី ១' : "Newton's First Law";
+  const bullets = isKm
+    ? ['វត្ថុរក្សាស្ថានភាពនឹង រហូតមានកម្លាំងមកធ្វើ', 'កម្លាំងសុទ្ធ = សូន្យ ⇒ ល្បឿនថេរ', 'ឧទាហរណ៍ក្នុងជីវភាពប្រចាំថ្ងៃ']
+    : ['An object stays at rest unless acted on', 'Net force = zero ⇒ constant velocity', 'Everyday real-world examples'];
+  const ribbon = ['Aa', 'B', 'I', 'U'];
+  return (
+    <div className="hero-entrance hero-delay-5 relative mx-auto mt-16 max-w-3xl">
+      {/* ambient glow under the window */}
+      <div aria-hidden className="absolute -inset-6 rounded-[36px] bg-gradient-to-tr from-indigo-300/30 via-purple-300/25 to-pink-300/20 blur-3xl" />
+      <div className="relative rounded-2xl border border-gray-200/70 bg-white shadow-[0_40px_90px_-35px_rgba(79,70,229,0.45)] overflow-hidden">
+        {/* window chrome */}
+        <div className="flex items-center gap-2.5 h-11 px-4 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+          <span className="flex gap-1.5">
+            <i className="h-2.5 w-2.5 rounded-full bg-rose-300" />
+            <i className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+            <i className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+          </span>
+          <div className="ml-2 flex items-center gap-2">
+            <span className="h-5 w-5 rounded-md bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center text-white">
+              <Presentation size={11} />
+            </span>
+            <span className="text-[10px] font-extrabold tracking-[1.5px] text-gray-400">STUNITY STUDIO</span>
+          </div>
+          <div className="ml-auto hidden sm:flex items-center gap-1">
+            {ribbon.map((r) => (
+              <span key={r} className="h-6 min-w-[24px] px-1.5 rounded-md bg-white border border-gray-200/80 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                {r}
+              </span>
+            ))}
+          </div>
+        </div>
+        {/* body: filmstrip + slide */}
+        <div className="flex bg-[#faf9ff]">
+          <div className="hidden sm:flex flex-col gap-2.5 w-[116px] flex-none p-3 border-r border-gray-100 bg-white/60">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`aspect-video rounded-md bg-white p-2 transition ${i === 0 ? 'ring-2 ring-indigo-400 border border-indigo-300' : 'border border-gray-200'}`}
+              >
+                <div className="h-1 w-2/3 rounded-full bg-gray-200" />
+                <div className="mt-1.5 h-0.5 w-full rounded-full bg-gray-100" />
+                <div className="mt-1 h-0.5 w-4/5 rounded-full bg-gray-100" />
+              </div>
+            ))}
+          </div>
+          <div className="flex-1 p-4 sm:p-6">
+            {/* slide card with a gradient background + readability scrim */}
+            <div
+              className="relative aspect-video rounded-xl overflow-hidden border border-gray-200/60 shadow-[0_18px_40px_-20px_rgba(20,12,40,0.4)]"
+              style={{ background: 'linear-gradient(135deg,#e0c3fc 0%,#8ec5fc 100%)' }}
+            >
+              <div className="absolute inset-0 bg-white/45" />
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+              <div className="relative h-full px-5 py-4 sm:px-8 sm:py-6 flex flex-col justify-center text-left">
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-[9px] sm:text-[10px] font-bold text-indigo-700 tracking-wide" style={{ fontFamily: fontBody }}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> {kicker}
+                </span>
+                <h4 className="mt-2.5 text-base sm:text-2xl font-bold text-gray-900" style={{ fontFamily: fontTitle, lineHeight: isKm ? '1.6' : '1.15' }}>
+                  {title}
+                </h4>
+                <div className="mt-3 space-y-1.5 sm:space-y-2.5">
+                  {bullets.map((b) => (
+                    <div key={b} className="flex items-start gap-2">
+                      <span className="mt-1 h-2 w-2 flex-none rounded-sm bg-indigo-500 rotate-45" />
+                      <span className="text-[10px] sm:text-[13px] text-gray-700" style={{ fontFamily: fontBody, lineHeight: isKm ? '1.7' : '1.45' }}>
+                        {b}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* floating accent badge */}
+      <div className="absolute -right-3 -top-3 sm:-right-5 sm:-top-4 rounded-xl bg-white px-3 py-2 shadow-xl shadow-indigo-500/10 border border-gray-100 flex items-center gap-2 animate-float">
+        <span className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+          <Sparkles size={14} />
+        </span>
+        <span className="text-[10px] font-bold text-gray-700" style={{ fontFamily: fontBody }}>
+          {isKm ? 'បង្កើតក្នុង ១០ វិនាទី' : 'Built in 10s'}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const locale = useLocale();
@@ -482,8 +578,11 @@ export default function HomePage() {
             </Link>
           </div>
 
+          {/* Hero Product Mockup */}
+          <HeroMockup isKm={isKm} fontTitle={fontTitle} fontBody={fontBody} />
+
           {/* Trusted By — Animated Marquee */}
-          <div className="hero-entrance hero-delay-5 mt-16 pt-8 border-t border-gray-100/80">
+          <div className="hero-entrance hero-delay-6 mt-16 pt-8 border-t border-gray-100/80">
             <p className="text-xs font-medium text-gray-400 mb-6">{c.trustedBy}</p>
             <div className="relative overflow-hidden mx-auto max-w-lg">
               <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
