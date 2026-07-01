@@ -26,6 +26,7 @@ import {
   Download,
   Highlighter,
   Home,
+  Image as ImageIcon,
   Italic,
   Layers,
   LayoutTemplate,
@@ -361,6 +362,8 @@ function SlidesBuilder() {
   };
   const setNotes = (value: string) =>
     commitDeck((d) => d.map((s, k) => (k === idx ? { ...s, notes: value } : s)));
+  const setMediaImage = (url: string | undefined) =>
+    commitDeck((d) => d.map((s, k) => (k === idx && s.kind === 'media' ? { ...s, image: url } : s)));
 
   // Present-mode keyboard nav.
   useEffect(() => {
@@ -503,6 +506,7 @@ function SlidesBuilder() {
             onSetBg={setBg}
             onSetBgAll={setBgAll}
             onSetNotes={setNotes}
+            onSetImage={setMediaImage}
             onUndo={undo}
             onRedo={redo}
             canUndo={canUndo}
@@ -811,12 +815,13 @@ function Result(props: {
   onSetBg: (bg: SlideBg | undefined) => void;
   onSetBgAll: (bg: SlideBg | undefined) => void;
   onSetNotes: (value: string) => void;
+  onSetImage: (url: string | undefined) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
 }) {
-  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onUndo, onRedo, canUndo, canRedo } = props;
+  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onSetImage, onUndo, onRedo, canUndo, canRedo } = props;
   // Drag-reorder state for the filmstrip.
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -890,7 +895,7 @@ function Result(props: {
           <div style={{ position: 'relative', flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 16, padding: '34px 20px 70px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: '100%' }}>
               <NavArrow onClick={onPrev} disabled={idx <= 0}><ChevronLeft size={22} /></NavArrow>
-              <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} />
+              <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} />
               <NavArrow onClick={onNext} disabled={idx >= deck.length - 1}><ChevronRight size={22} /></NavArrow>
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, fontSize: 12.5, fontWeight: 700, color: C.muted2, fontFamily: KO }}>
@@ -1024,6 +1029,60 @@ function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPi
   );
 }
 
+// Content-image picker for a `media` slide — upload / URL, sits as a small
+// trigger button overlaid on the image box (only rendered while editing).
+function MediaImageMenu({ image, onSet }: { image?: string; onSet: (url: string | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState('');
+  const [err, setErr] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > 4 * 1024 * 1024) {
+      setErr('រូបភាពធំពេក (≤ ៤MB)');
+      return;
+    }
+    const r = new FileReader();
+    r.onload = () => { onSet(String(r.result)); setOpen(false); };
+    r.readAsDataURL(f);
+  };
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setOpen((o) => !o)}
+        title="ប្តូររូបភាព"
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 9, border: 'none', cursor: 'pointer', background: 'rgba(15,12,10,.55)', backdropFilter: 'blur(4px)', color: '#fff' }}
+      >
+        <ImageIcon size={15} />
+      </button>
+      {open && (
+        <>
+          <div onMouseDown={(e) => e.preventDefault()} onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div onMouseDown={(e) => e.preventDefault()} style={{ position: 'absolute', top: '115%', right: 0, zIndex: 41, width: 240, padding: 12, borderRadius: 14, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 16px 34px -14px rgba(28,27,25,.45)' }}>
+            <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+            <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', padding: 10, borderRadius: 10, cursor: 'pointer', border: `1px dashed ${C.border}`, background: '#faf9ff', color: C.accent, fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>
+              <Upload size={15} /> បញ្ចូលរូបភាព
+            </button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL រូបភាព" style={{ ...inputStyle, padding: '8px 10px', fontSize: 12 }} />
+              <button onClick={() => { if (url.trim()) { onSet(url.trim()); setOpen(false); } }} style={{ flex: 'none', padding: '0 14px', borderRadius: 10, border: 'none', cursor: 'pointer', background: ACCENT_GRAD, color: '#fff', fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>ប្រើ</button>
+            </div>
+            {image && (
+              <button onClick={() => { onSet(undefined); setOpen(false); }} style={{ marginTop: 8, width: '100%', padding: '8px 0', borderRadius: 9, border: 'none', cursor: 'pointer', background: 'transparent', color: '#b8472f', fontFamily: KH, fontSize: 12, fontWeight: 700 }}>
+                លុបរូបភាព
+              </button>
+            )}
+            {err && <div style={{ marginTop: 8, fontSize: 11.5, color: '#b8472f' }}>{err}</div>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════════════════════════════
 // Present (fullscreen)
 // ════════════════════════════════════════════════════════════════════
@@ -1105,7 +1164,7 @@ function presentArrow(side: 'left' | 'right', disabled: boolean): React.CSSPrope
 // ════════════════════════════════════════════════════════════════════
 // Slide rendering — native 880×495, scaled by the container
 // ════════════════════════════════════════════════════════════════════
-function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void }) {
+function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine, onSetImage }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void }) {
   // The native 880×495 board is always scaled to the *actual* rendered width via
   // a container query (100cqw / 880). This keeps the scale honest even when
   // maxWidth clamps the wrapper on a narrow viewport, so the board never clips.
@@ -1124,7 +1183,7 @@ function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRe
       }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, width: SLIDE_W, height: SLIDE_H, transform: `scale(calc(100cqw / ${SLIDE_W}px))`, transformOrigin: 'top left' }}>
-        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} />
+        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} />
       </div>
     </div>
   );
@@ -1435,7 +1494,7 @@ function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: string) =>
   );
 }
 
-function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void }) {
+function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetImage }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void }) {
   const isDark = theme.bg === '#241d18';
   const subTint = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.028)';
   const kh: React.CSSProperties = { fontFamily: KO, letterSpacing: '.5px' };
@@ -1602,8 +1661,30 @@ function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine }: { sl
         {addBtn(slide.steps.length - 1)}
       </div>
     );
-  } else {
-    // summary
+  } else if (slide.kind === 'media') {
+    content = (
+      <div style={{ flex: 1, padding: '40px 60px 34px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {labelTag(slide.label)}
+        {titleEl(slide.title)}
+        <div style={{ position: 'relative', flex: 1, minHeight: 0, marginTop: 16, borderRadius: 16, overflow: 'hidden', background: subTint, border: slide.image ? 'none' : `1.5px dashed ${theme.accent}55` }}>
+          {slide.image ? (
+            <img src={slide.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: theme.sub }}>
+              <ImageIcon size={30} style={{ opacity: 0.5 }} />
+              <span style={{ ...body, fontSize: 13.5, opacity: 0.75 }}>គ្មានរូបភាព</span>
+            </div>
+          )}
+          {edit && onSetImage && (
+            <div style={{ position: 'absolute', top: 10, right: 10 }}>
+              <MediaImageMenu image={slide.image} onSet={onSetImage} />
+            </div>
+          )}
+        </div>
+        {T('caption', slide.caption, { ...body, fontSize: 15, color: theme.sub, marginTop: 12, textAlign: 'center' })}
+      </div>
+    );
+  } else if (slide.kind === 'summary') {
     content = (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '50px 80px', textAlign: 'center' }}>
         <div style={{ width: 64, height: 64, borderRadius: 20, background: theme.sw, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, color: '#fff' }}>
