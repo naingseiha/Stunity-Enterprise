@@ -14,6 +14,8 @@ import {
   removeLine,
   renumber,
   resolveTheme,
+  SCENES,
+  sceneById,
   SLIDE_ACCENTS,
   slideBackground,
   slideLines,
@@ -139,6 +141,29 @@ describe('slide backgrounds', () => {
     const withNotes: Slide = { ...buildDeck({ ...base, length: 'short' })[1], notes: 'say this aloud' } as Slide;
     expect(applyEdit(withNotes, { field: 'title', value: 'x' }).notes).toBe('say this aloud');
     expect(convertSlide(withNotes, 'timeline').notes).toBe('say this aloud');
+  });
+});
+
+describe('scene artwork', () => {
+  it('exposes unique ids with a valid inline SVG data URI each', () => {
+    const ids = SCENES.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const s of SCENES) {
+      expect(s.dataUrl).toMatch(/^data:image\/svg\+xml,/);
+      expect(decodeURIComponent(s.dataUrl.replace('data:image/svg+xml,', ''))).toContain('<svg');
+    }
+  });
+
+  it('resolves a scene by id', () => {
+    expect(sceneById('memphis')?.name).toBe('Memphis');
+    expect(sceneById('nope')).toBeUndefined();
+  });
+
+  it('renders as an image background with a readability scrim (reuses the image type)', () => {
+    const scene = SCENES[0];
+    const r = slideBackground({ type: 'image', value: scene.dataUrl }, THEMES[0]);
+    expect(r.layer.backgroundImage).toContain(scene.dataUrl);
+    expect(r.scrim).toBeTruthy();
   });
 });
 

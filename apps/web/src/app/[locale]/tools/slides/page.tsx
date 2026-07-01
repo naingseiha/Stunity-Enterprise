@@ -65,6 +65,7 @@ import {
   removeLine,
   renumber,
   resolveTheme,
+  SCENES,
   slideBackground,
   SLIDE_ACCENTS,
   SLIDE_GEN_STEPS,
@@ -1127,6 +1128,11 @@ function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPi
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>ពណ៌ Gradient</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {GRADIENTS.map((g) => tile(g.id, bg?.type === 'gradient' && bg.value === g.id, { backgroundImage: g.css }, () => apply({ type: 'gradient', value: g.id }), g.name))}
+            </div>
+
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>សិល្បៈ</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+              {SCENES.map((s) => tile(s.id, bg?.type === 'image' && bg.value === s.dataUrl, { backgroundImage: `url("${s.dataUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }, () => apply({ type: 'image', value: s.dataUrl }), s.name))}
             </div>
 
             <div style={{ height: 1, background: C.borderSoft, margin: '12px 0' }} />
