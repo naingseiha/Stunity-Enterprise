@@ -140,6 +140,26 @@ function DotGrid() {
   );
 }
 
+// Signature decorative backdrop for the studio's chrome screens (Hub,
+// Generating) — a fluid multi-hue gradient mesh + Memphis-style outline
+// dots/squiggle, distinct from the plain slide-content backgrounds.
+function StudioAura() {
+  return (
+    <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      <div className="sl-blob" style={{ position: 'absolute', top: '-16%', left: '2%', width: 460, height: 460, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,108,255,.26), transparent 68%)', filter: 'blur(6px)' }} />
+      <div className="sl-blob" style={{ position: 'absolute', bottom: '-20%', right: '-2%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,140,190,.20), transparent 65%)', filter: 'blur(6px)', animationDelay: '-5s' }} />
+      <div className="sl-blob" style={{ position: 'absolute', top: '36%', right: '10%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,180,120,.20), transparent 70%)', filter: 'blur(6px)', animationDelay: '-9s' }} />
+      <div className="sl-blob" style={{ position: 'absolute', bottom: '8%', left: '9%', width: 210, height: 210, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,190,255,.18), transparent 70%)', filter: 'blur(6px)', animationDelay: '-2s' }} />
+      <svg width="220" height="220" viewBox="0 0 220 220" style={{ position: 'absolute', top: 36, right: 36, opacity: 0.55 }}>
+        <path d="M10 120 Q 70 40 140 90 T 210 60" stroke="#a78bfa" strokeWidth="1.5" fill="none" />
+        <circle cx="26" cy="150" r="6" fill="none" stroke="#a78bfa" strokeWidth="1.4" />
+        <circle cx="26" cy="172" r="6" fill="none" stroke="#a78bfa" strokeWidth="1.4" />
+        <circle cx="26" cy="194" r="6" fill="none" stroke="#a78bfa" strokeWidth="1.4" />
+      </svg>
+    </div>
+  );
+}
+
 export default function SlidesPage() {
   return (
     <Suspense fallback={null}>
@@ -714,12 +734,7 @@ function TopBar({ screen, onHome, onConfig, onExit, title, status, actions }: { 
 function Hub({ onStart }: { onStart: () => void }) {
   return (
     <section style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '70px 40px', textAlign: 'center', overflow: 'hidden' }}>
-      {/* Layered ambient blobs — softly drifting, behind the dot-grid */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div className="sl-blob" style={{ position: 'absolute', top: '-14%', left: '4%', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,108,255,.20), transparent 68%)', filter: 'blur(8px)' }} />
-        <div className="sl-blob" style={{ position: 'absolute', bottom: '-18%', right: '2%', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,160,110,.16), transparent 65%)', filter: 'blur(8px)', animationDelay: '-4s' }} />
-        <div className="sl-blob" style={{ position: 'absolute', top: '30%', right: '18%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(164,123,255,.14), transparent 70%)', filter: 'blur(6px)', animationDelay: '-8s' }} />
-      </div>
+      <StudioAura />
       <DotGrid />
 
       <div className="sl-hero-in sl-hero-d1" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, marginBottom: 26, fontSize: 12, fontWeight: 700, color: C.accent, boxShadow: '0 8px 22px -14px rgba(28,27,25,.4)' }}>
@@ -859,17 +874,25 @@ function Config(props: {
 function Generating({ step, theme, lessonTitle }: { step: number; theme: Theme; lessonTitle: string }) {
   const pct = Math.round(((step + 1) / SLIDE_GEN_STEPS.length) * 100);
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-      <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg,#7c6cff,#a47bff)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', marginBottom: 26, boxShadow: '0 16px 34px -14px rgba(109,91,240,.6)', animation: 'slPulse 1.4s ease infinite' }}>
-        <Presentation size={34} />
-      </div>
-      <h2 style={{ fontFamily: KO, fontSize: 27, color: C.ink, letterSpacing: '.4px', marginBottom: 6 }}>កំពុងបង្កើតស្លាយ</h2>
-      <p style={{ fontSize: 13.5, color: C.muted, marginBottom: 26 }}>ស្លាយ ៖ {lessonTitle}</p>
+    <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, overflow: 'hidden' }}>
+      <StudioAura />
+      <DotGrid />
 
-      <div style={{ width: 380, maxWidth: '90%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ flex: 1, height: 7, background: '#e7e4dd', borderRadius: 7, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: theme.band, borderRadius: 7, transition: 'width .5s ease' }} />
+      <div style={{ position: 'relative', width: 88, height: 88, marginBottom: 28 }}>
+        <div aria-hidden style={{ position: 'absolute', inset: -6, borderRadius: 26, background: 'conic-gradient(from 0deg, transparent, rgba(124,108,255,.6), transparent 30%)', animation: 'sl-ring-spin 2.1s linear infinite' }} />
+        <div style={{ position: 'relative', width: 88, height: 88, borderRadius: 22, background: 'linear-gradient(135deg,#7c6cff,#a47bff)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 18px 40px -16px rgba(109,91,240,.65)', animation: 'slPulse 1.4s ease infinite' }}>
+          <Presentation size={38} />
+        </div>
+      </div>
+      <h2 className="sl-hero-in sl-hero-d1" style={{ position: 'relative', fontFamily: KO, fontSize: 27, color: C.ink, letterSpacing: '.4px', marginBottom: 6 }}>កំពុងបង្កើតស្លាយ</h2>
+      <p className="sl-hero-in sl-hero-d2" style={{ position: 'relative', fontSize: 13.5, color: C.muted, marginBottom: 26 }}>ស្លាយ ៖ {lessonTitle}</p>
+
+      <div className="sl-hero-in sl-hero-d3" style={{ position: 'relative', width: 400, maxWidth: '90%', background: C.panel, borderRadius: 20, border: `1px solid ${C.borderSoft}`, boxShadow: '0 20px 46px -24px rgba(28,27,25,.35)', padding: '20px 22px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div style={{ flex: 1, height: 8, background: '#e7e4dd', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: ACCENT_GRAD, borderRadius: 8, transition: 'width .5s ease', position: 'relative', overflow: 'hidden' }}>
+              <div className="sl-shimmer" aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent)' }} />
+            </div>
           </div>
           <span style={{ fontSize: 15, color: theme.accent, minWidth: 42, fontFamily: KO }}>{pct}%</span>
         </div>
@@ -888,7 +911,13 @@ function Generating({ step, theme, lessonTitle }: { step: number; theme: Theme; 
           })}
         </div>
       </div>
-      <style>{`@keyframes slPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.85}}`}</style>
+      <style>{`
+        @keyframes slPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.85}}
+        @keyframes sl-ring-spin{to{transform:rotate(360deg)}}
+        .sl-shimmer{animation:sl-shimmer 1.6s linear infinite}
+        @keyframes sl-shimmer{from{transform:translateX(-100%)}to{transform:translateX(220%)}}
+        @media (prefers-reduced-motion: reduce){.sl-shimmer{animation:none!important}}
+      `}</style>
     </div>
   );
 }
