@@ -637,7 +637,7 @@ function SlidesBuilder() {
         @keyframes sl-blob-float { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(3%,-4%) scale(1.06); } }
         .sl-cta-pulse:hover { transform: translateY(-1px) scale(1.015); box-shadow: 0 16px 34px -12px rgba(109,91,240,.68); }
         .sl-cta-pulse { transition: transform .2s ease, box-shadow .2s ease; }
-        .sl-navpill-inactive:hover { background: rgba(109,91,240,.08) !important; color: #6d5bf0 !important; }
+        .sl-navpill-inactive:hover { color: #1c1b19 !important; }
         .sl-topbar-back:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -8px rgba(28,27,25,.35); }
         .sl-film-item:hover { transform: translateX(2px); }
         .sl-film-no { display: inline; }
@@ -686,19 +686,16 @@ function TopBar({ screen, onHome, onConfig, onExit, title, status, actions }: { 
     fontSize: 13.5,
     letterSpacing: '.3px',
     color: active ? '#fff' : C.muted2,
-    background: active ? ACCENT_GRAD : 'transparent',
-    boxShadow: active ? '0 6px 16px -7px rgba(109,91,240,.65)' : 'none',
+    background: active ? C.ink : 'transparent',
     transition: 'all .18s cubic-bezier(.16,1,.3,1)',
   });
   return (
-    <header className="sl-topbar" style={{ position: 'sticky', height: 64, flex: 'none', display: 'flex', alignItems: 'center', gap: 14, padding: '0 18px', background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(18px)', borderBottom: `1px solid ${C.borderSoft}`, top: 0, zIndex: 30 }}>
-      <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, background: ACCENT_GRAD, opacity: 0.4 }} />
+    <header className="sl-topbar" style={{ position: 'sticky', height: 64, flex: 'none', display: 'flex', alignItems: 'center', gap: 14, padding: '0 18px', background: 'rgba(255,255,255,.8)', backdropFilter: 'blur(18px)', borderBottom: `1px solid ${C.borderSoft}`, top: 0, zIndex: 30 }}>
       <button onClick={onExit} className="sl-topbar-back" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 12, border: `1px solid ${C.border}`, background: C.panel, cursor: 'pointer', color: C.muted2, flex: 'none', transition: 'transform .15s, box-shadow .15s' }} title="ឧបករណ៍ទាំងអស់">
         <ArrowLeft size={17} />
       </button>
-      <div style={{ position: 'relative', width: 36, height: 36, borderRadius: 11, background: ACCENT_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flex: 'none', boxShadow: ACCENT_SHADOW, overflow: 'hidden' }}>
-        <div aria-hidden style={{ position: 'absolute', top: -10, left: -10, width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,.4)', filter: 'blur(5px)' }} />
-        <Presentation size={18} style={{ position: 'relative' }} />
+      <div style={{ width: 36, height: 36, borderRadius: 11, background: ACCENT_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flex: 'none' }}>
+        <Presentation size={18} />
       </div>
 
       {editor ? (
@@ -717,7 +714,7 @@ function TopBar({ screen, onHome, onConfig, onExit, title, status, actions }: { 
             <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '2px', color: C.accent, lineHeight: 1.2 }}>STUNITY STUDIO</span>
           </div>
           <div style={{ flex: 1 }} />
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 3, padding: 4, borderRadius: 100, background: 'linear-gradient(180deg,#ffffff,#faf9ff)', border: '1px solid rgba(109,91,240,.14)', boxShadow: '0 8px 20px -12px rgba(109,91,240,.35)' }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 3, padding: 4, borderRadius: 100, background: '#f3f4f6', border: `1px solid ${C.borderSoft}` }}>
             <button onClick={onHome} className={screen === 'hub' ? '' : 'sl-navpill-inactive'} style={tab(screen === 'hub')}>
               <Home size={15} />
               <span className="sl-hide-sm">ទំព័រដើម</span>
