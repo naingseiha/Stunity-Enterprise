@@ -122,6 +122,98 @@ export function abstractById(id: string) {
   return ABSTRACTS.find((a) => a.id === id);
 }
 
+// ─── Scene artwork (curated illustrated backgrounds) ───────────────
+// Fixed, vivid compositions — unlike ABSTRACTS these aren't theme-tinted,
+// they're standalone illustrations (Memphis dots, wave mesh, poster blob,
+// organic tide). Applied as an `image` background so the existing
+// readability scrim keeps slide text legible over the busier artwork.
+function svgDataUri(svg: string) {
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function memphisScene(): string {
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='880' height='495' viewBox='0 0 880 495'>
+    <defs>
+      <linearGradient id='m1' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#c7b7fb'/><stop offset='100%' stop-color='#f3b8e6'/></linearGradient>
+      <pattern id='mdots' width='13' height='13' patternUnits='userSpaceOnUse'><circle cx='2' cy='2' r='1.3' fill='#8f7fd6' opacity='.55'/></pattern>
+    </defs>
+    <rect width='880' height='495' fill='#faf9ff'/>
+    <rect x='-20' y='-20' width='190' height='190' fill='url(#mdots)'/>
+    <rect x='714' y='330' width='186' height='185' fill='url(#mdots)'/>
+    <path d='M30 90 Q 210 20 380 110 T 720 70' stroke='#a78bfa' stroke-width='1.6' fill='none' opacity='.45'/>
+    <circle cx='118' cy='250' r='50' fill='url(#m1)'/>
+    <circle cx='792' cy='118' r='34' fill='url(#m1)' opacity='.9'/>
+    <circle cx='806' cy='400' r='26' fill='url(#m1)' opacity='.85'/>
+    <g stroke='#a78bfa' stroke-width='1.4' fill='none' opacity='.5'>
+      <circle cx='214' cy='392' r='7'/><circle cx='214' cy='418' r='7'/><circle cx='214' cy='444' r='7'/>
+    </g>
+    <rect x='606' y='56' width='150' height='24' rx='12' fill='none' stroke='#a78bfa' stroke-width='1.4' opacity='.4'/>
+  </svg>`;
+}
+
+function waveMeshScene(): string {
+  const lines = Array.from({ length: 16 }, (_, i) => {
+    const y = 20 + i * 7.5;
+    const o = (0.12 + i * 0.018).toFixed(2);
+    return `<path d='M470 ${y} C 610 ${y - 34}, 700 ${y + 46}, 880 ${y - 12}' stroke='#ffffff' stroke-width='1' fill='none' opacity='${o}'/>`;
+  }).join('');
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='880' height='495' viewBox='0 0 880 495'>
+    <defs>
+      <linearGradient id='w1' x1='0' y1='1' x2='1' y2='0'><stop offset='0%' stop-color='#7c93c9'/><stop offset='55%' stop-color='#e2a3a0'/><stop offset='100%' stop-color='#ef7f5f'/></linearGradient>
+      <pattern id='wgrid' width='15' height='15' patternUnits='userSpaceOnUse'><path d='M15 0H0V15' fill='none' stroke='#5b6a8f' stroke-width='.6' opacity='.6'/></pattern>
+      <clipPath id='wclip'><circle cx='58' cy='58' r='58'/></clipPath>
+    </defs>
+    <rect width='880' height='495' fill='url(#w1)'/>
+    ${lines}
+    <rect x='0' y='0' width='116' height='116' fill='url(#wgrid)' clip-path='url(#wclip)' opacity='.6'/>
+    <rect x='18' y='400' width='150' height='22' rx='11' fill='none' stroke='#ffffff' stroke-width='1' opacity='.55'/>
+  </svg>`;
+}
+
+function posterScene(): string {
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='880' height='495' viewBox='0 0 880 495'>
+    <defs>
+      <linearGradient id='p1' x1='0' y1='1' x2='1' y2='0'><stop offset='0%' stop-color='#3552c9'/><stop offset='55%' stop-color='#6d4fd1'/><stop offset='100%' stop-color='#b34fd1'/></linearGradient>
+      <linearGradient id='p2' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#e879c9'/><stop offset='100%' stop-color='#7c6cff'/></linearGradient>
+    </defs>
+    <rect width='880' height='495' fill='url(#p1)'/>
+    <path d='M560 470 C 500 400 520 330 590 280 C 670 225 690 150 630 60 C 700 130 730 220 660 300 C 600 360 610 420 660 470 Z' fill='url(#p2)' opacity='.55'/>
+    <line x1='70' y1='430' x2='190' y2='320' stroke='#ffffff' stroke-width='1' opacity='.5'/>
+    <polyline points='40,470 60,450 55,430 75,415' fill='none' stroke='#ffffff' stroke-width='1' opacity='.5'/>
+    <rect x='700' y='40' width='150' height='6' rx='3' fill='#ffffff' opacity='.7'/>
+    <rect x='700' y='52' width='110' height='6' rx='3' fill='#ffffff' opacity='.4'/>
+  </svg>`;
+}
+
+function organicScene(): string {
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='880' height='495' viewBox='0 0 880 495'>
+    <defs>
+      <linearGradient id='o1' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#38b6d9'/><stop offset='100%' stop-color='#2f5fe0'/></linearGradient>
+      <linearGradient id='o2' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#5fd0c8'/><stop offset='100%' stop-color='#3d8fe0'/></linearGradient>
+    </defs>
+    <rect width='880' height='495' fill='#dcf0fb'/>
+    <path d='M0 40 C 60 -10 130 20 118 80 C 106 140 40 170 0 150 Z' fill='url(#o2)'/>
+    <path d='M120 150 L 195 90' stroke='url(#o1)' stroke-width='26' stroke-linecap='round'/>
+    <path d='M60 250 L 110 205' stroke='url(#o1)' stroke-width='18' stroke-linecap='round'/>
+    <circle cx='34' cy='190' r='13' fill='url(#o1)'/>
+    <path d='M880 300 C 830 260 850 220 900 235 C 940 250 930 320 890 330 Z' fill='url(#o2)'/>
+    <path d='M760 300 L 840 340' stroke='url(#o1)' stroke-width='22' stroke-linecap='round'/>
+    <circle cx='700' cy='330' r='11' fill='url(#o1)'/>
+    <path d='M120 470 Q 220 410 300 470 T 480 460' stroke='url(#o2)' stroke-width='34' fill='none' stroke-linecap='round' opacity='.9'/>
+  </svg>`;
+}
+
+export const SCENES: { id: string; name: string; dataUrl: string }[] = [
+  { id: 'memphis', name: 'Memphis', dataUrl: svgDataUri(memphisScene()) },
+  { id: 'wavemesh', name: 'រលកលាយ', dataUrl: svgDataUri(waveMeshScene()) },
+  { id: 'poster', name: 'ផ្ទាំងប៉ូស្ទ័រ', dataUrl: svgDataUri(posterScene()) },
+  { id: 'organic', name: 'សរីរាង្គ', dataUrl: svgDataUri(organicScene()) },
+];
+
+export function sceneById(id: string) {
+  return SCENES.find((s) => s.id === id);
+}
+
 /** Resolve a slide's background into render layers (base colour + overlay + an
  *  optional readability scrim for images). */
 export function slideBackground(bg: SlideBg | undefined, theme: Theme): { base: string; layer: Record<string, string>; scrim?: string } {
@@ -384,3 +476,43 @@ export function removeLine(s: Slide, index: number): Slide {
   if (arr.length <= 1) return s;
   return { ...s, [k]: arr.filter((_, i) => i !== index) } as Slide;
 }
+
+// ─── Deck-wide header / footer chrome ──────────────────────────────
+// Unlike per-slide fields above, these apply to the whole deck (like
+// PowerPoint's "Insert > Header & Footer" dialog) — not undo-tracked,
+// same as theme/accent selection.
+
+/** Arrangement of the logo / footer text / page number along the bottom. */
+export type FooterLayout = 'branded' | 'minimal' | 'centered' | 'split';
+
+export const FOOTER_LAYOUTS: { id: FooterLayout; name: string }[] = [
+  { id: 'branded', name: 'តាមម៉ាក' },
+  { id: 'minimal', name: 'សាមញ្ញ' },
+  { id: 'centered', name: 'កណ្ដាល' },
+  { id: 'split', name: 'ពីរចុង' },
+];
+
+export type DeckSettings = {
+  headerEnabled: boolean;
+  headerText: string;
+  headerAlign: 'left' | 'right';
+  footerLayout: FooterLayout;
+  footerLogo: boolean;
+  footerTextEnabled: boolean;
+  footerText: string;
+  pageNumber: boolean;
+  /** Show header/footer chrome on the title (cover) slide too. */
+  showOnCover: boolean;
+};
+
+export const DEFAULT_DECK_SETTINGS: DeckSettings = {
+  headerEnabled: false,
+  headerText: '',
+  headerAlign: 'right',
+  footerLayout: 'branded',
+  footerLogo: true,
+  footerTextEnabled: true,
+  footerText: 'Stunity',
+  pageNumber: true,
+  showOnCover: false,
+};

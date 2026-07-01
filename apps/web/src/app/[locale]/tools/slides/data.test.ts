@@ -12,8 +12,12 @@ import {
   LENGTH_PICK,
   lineKind,
   removeLine,
+  DEFAULT_DECK_SETTINGS,
+  FOOTER_LAYOUTS,
   renumber,
   resolveTheme,
+  SCENES,
+  sceneById,
   SLIDE_ACCENTS,
   slideBackground,
   slideLines,
@@ -139,6 +143,29 @@ describe('slide backgrounds', () => {
     const withNotes: Slide = { ...buildDeck({ ...base, length: 'short' })[1], notes: 'say this aloud' } as Slide;
     expect(applyEdit(withNotes, { field: 'title', value: 'x' }).notes).toBe('say this aloud');
     expect(convertSlide(withNotes, 'timeline').notes).toBe('say this aloud');
+  });
+});
+
+describe('scene artwork', () => {
+  it('exposes unique ids with a valid inline SVG data URI each', () => {
+    const ids = SCENES.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const s of SCENES) {
+      expect(s.dataUrl).toMatch(/^data:image\/svg\+xml,/);
+      expect(decodeURIComponent(s.dataUrl.replace('data:image/svg+xml,', ''))).toContain('<svg');
+    }
+  });
+
+  it('resolves a scene by id', () => {
+    expect(sceneById('memphis')?.name).toBe('Memphis');
+    expect(sceneById('nope')).toBeUndefined();
+  });
+
+  it('renders as an image background with a readability scrim (reuses the image type)', () => {
+    const scene = SCENES[0];
+    const r = slideBackground({ type: 'image', value: scene.dataUrl }, THEMES[0]);
+    expect(r.layer.backgroundImage).toContain(scene.dataUrl);
+    expect(r.scrim).toBeTruthy();
   });
 });
 
@@ -276,5 +303,21 @@ describe('deck editing', () => {
       if (s.kind !== 'list') throw new Error('nope');
       expect(s.bullets.length).toBeLessThanOrEqual(8);
     });
+  });
+});
+
+describe('deck-wide header/footer chrome', () => {
+  it('offers 4 footer layout templates with unique ids', () => {
+    const ids = FOOTER_LAYOUTS.map((l) => l.id);
+    expect(new Set(ids).size).toBe(4);
+    expect(ids).toEqual(['branded', 'minimal', 'centered', 'split']);
+  });
+
+  it('defaults to a sensible branded footer with page numbers on, header off', () => {
+    expect(DEFAULT_DECK_SETTINGS.footerLayout).toBe('branded');
+    expect(DEFAULT_DECK_SETTINGS.pageNumber).toBe(true);
+    expect(DEFAULT_DECK_SETTINGS.footerLogo).toBe(true);
+    expect(DEFAULT_DECK_SETTINGS.headerEnabled).toBe(false);
+    expect(DEFAULT_DECK_SETTINGS.showOnCover).toBe(false);
   });
 });
