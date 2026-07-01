@@ -147,7 +147,7 @@ export function slideBackground(bg: SlideBg | undefined, theme: Theme): { base: 
 }
 
 // ─── Deck ──────────────────────────────────────────────────────────
-type SlideBase = { no: string; label: string; bg?: SlideBg };
+type SlideBase = { no: string; label: string; bg?: SlideBg; notes?: string };
 export type Slide = SlideBase &
   (
     | { kind: 'title'; kicker: string; title: string; sub: string; foot: string }
@@ -266,11 +266,12 @@ export function blankSlide(kind: Slide['kind']): Slide {
   }
 }
 
-/** Convert a slide to another layout, carrying over title + body lines + bg. */
+/** Convert a slide to another layout, carrying over title + body lines + bg + notes. */
 export function convertSlide(s: Slide, kind: Slide['kind']): Slide {
   if (s.kind === kind) return s;
   const no = s.no;
   const bg = s.bg;
+  const notes = s.notes;
   const title = slideTitle(s) || 'ចំណងជើង';
   const lines = slideLines(s).filter(Boolean);
   const take = (n: number, fb: string[]) => {
@@ -297,7 +298,8 @@ export function convertSlide(s: Slide, kind: Slide['kind']): Slide {
       return { kind, no, label: 'សង្ខេប', title, sub: lines[0] || '', bullets: take(3, ['ចំណុច១']) };
   }
   })();
-  return bg ? { ...out, bg } : out;
+  const merged = bg ? { ...out, bg } : out;
+  return notes ? { ...merged, notes } : merged;
 }
 
 export type EditField = 'title' | 'sub' | 'kicker' | 'foot' | 'quote' | 'author' | 'bullet' | 'step' | 'statNum' | 'statLabel';
