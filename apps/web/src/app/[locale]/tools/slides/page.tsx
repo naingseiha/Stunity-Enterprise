@@ -589,6 +589,27 @@ function SlidesBuilder() {
         .sl-only-sm { display: none; }
         .sl-spin { animation: sl-spin .8s linear infinite; }
         @keyframes sl-spin { to { transform: rotate(360deg); } }
+        .sl-hero-in { opacity: 0; animation: sl-hero-up .7s cubic-bezier(.16,1,.3,1) forwards; }
+        .sl-hero-d1 { animation-delay: .05s; }
+        .sl-hero-d2 { animation-delay: .16s; }
+        .sl-hero-d3 { animation-delay: .28s; }
+        .sl-hero-d4 { animation-delay: .4s; }
+        .sl-hero-d5 { animation-delay: .52s; }
+        @keyframes sl-hero-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .sl-blob { animation: sl-blob-float 14s ease-in-out infinite; }
+        @keyframes sl-blob-float { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(3%,-4%) scale(1.06); } }
+        .sl-cta-pulse:hover { transform: translateY(-1px) scale(1.015); box-shadow: 0 16px 34px -12px rgba(109,91,240,.68); }
+        .sl-cta-pulse { transition: transform .2s ease, box-shadow .2s ease; }
+        .sl-film-item:hover { transform: translateX(2px); }
+        .sl-film-no { display: inline; }
+        .sl-film-gripicon { display: none; }
+        .sl-film-item:hover .sl-film-no { display: none; }
+        .sl-film-item:hover .sl-film-gripicon { display: inline; }
+        .sl-stage-in { animation: sl-stage-in .28s cubic-bezier(.16,1,.3,1); }
+        @keyframes sl-stage-in { from { opacity: .45; transform: scale(.986); } to { opacity: 1; transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) {
+          .sl-hero-in, .sl-blob, .sl-cta-pulse, .sl-stage-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+        }
         @media (max-width: 900px) { .sl-hide-md { display: none !important; } }
         .sl-ribbon::-webkit-scrollbar { height: 6px; }
         .sl-ribbon::-webkit-scrollbar-thumb { background: rgba(28,27,25,.18); border-radius: 6px; }
@@ -676,27 +697,37 @@ function TopBar({ screen, onHome, onConfig, onExit, title, status, actions }: { 
 function Hub({ onStart }: { onStart: () => void }) {
   return (
     <section style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '70px 40px', textAlign: 'center', overflow: 'hidden' }}>
+      {/* Layered ambient blobs — softly drifting, behind the dot-grid */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div className="sl-blob" style={{ position: 'absolute', top: '-14%', left: '4%', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,108,255,.20), transparent 68%)', filter: 'blur(8px)' }} />
+        <div className="sl-blob" style={{ position: 'absolute', bottom: '-18%', right: '2%', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,160,110,.16), transparent 65%)', filter: 'blur(8px)', animationDelay: '-4s' }} />
+        <div className="sl-blob" style={{ position: 'absolute', top: '30%', right: '18%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(164,123,255,.14), transparent 70%)', filter: 'blur(6px)', animationDelay: '-8s' }} />
+      </div>
       <DotGrid />
-      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, marginBottom: 26, fontSize: 12, fontWeight: 700, color: C.accent, boxShadow: '0 8px 22px -14px rgba(28,27,25,.4)' }}>
+
+      <div className="sl-hero-in sl-hero-d1" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, marginBottom: 26, fontSize: 12, fontWeight: 700, color: C.accent, boxShadow: '0 8px 22px -14px rgba(28,27,25,.4)' }}>
         <span style={{ width: 18, height: 18, borderRadius: 6, background: ACCENT_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><Sparkles size={11} /></span>
         AI Presentation Studio
       </div>
-      <h1 style={{ position: 'relative', fontFamily: KO, fontSize: 'clamp(38px, 5.5vw, 66px)', lineHeight: 1.1, color: C.ink, letterSpacing: '.5px', marginBottom: 20 }}>
+      <h1 className="sl-hero-in sl-hero-d2" style={{ position: 'relative', fontFamily: KO, fontSize: 'clamp(38px, 5.5vw, 66px)', lineHeight: 1.1, color: C.ink, letterSpacing: '.5px', marginBottom: 20 }}>
         បម្លែងមេរៀន
         <br />
         ទៅជា <span style={{ background: ACCENT_GRAD, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>ស្លាយបង្រៀន</span>
       </h1>
-      <p style={{ position: 'relative', fontSize: 16, color: C.muted, maxWidth: 520, lineHeight: 1.8, marginBottom: 32 }}>
+      <p className="sl-hero-in sl-hero-d3" style={{ position: 'relative', fontSize: 16, color: C.muted, maxWidth: 520, lineHeight: 1.8, marginBottom: 32 }}>
         ជ្រើសមុខវិជ្ជា ថ្នាក់ និងមេរៀន រួច AI បង្កើតស្លាយ ១៦:៩ ពេញលេញ
         ដែលអ្នកអាចកែ និងបង្ហាញបានភ្លាម។
       </p>
-      <button onClick={onStart} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 10, padding: '16px 32px', border: 'none', borderRadius: 16, cursor: 'pointer', fontFamily: KO, fontSize: 17, letterSpacing: '.5px', color: '#fff', background: ACCENT_GRAD, boxShadow: ACCENT_SHADOW }}>
+      <button onClick={onStart} className="sl-hero-in sl-hero-d4 sl-cta-pulse" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 10, padding: '16px 32px', border: 'none', borderRadius: 16, cursor: 'pointer', fontFamily: KO, fontSize: 17, letterSpacing: '.5px', color: '#fff', background: ACCENT_GRAD, boxShadow: ACCENT_SHADOW }}>
         <Wand2 size={20} /> ចាប់ផ្តើមបង្កើត
       </button>
-      <div style={{ position: 'relative', marginTop: 22, display: 'flex', gap: 18, flexWrap: 'wrap', justifyContent: 'center', fontSize: 12.5, color: C.muted }}>
+      <div className="sl-hero-in sl-hero-d5" style={{ position: 'relative', marginTop: 24, display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
         {['រចនាបថ ៣ + ពណ៌', 'កែអក្សរ inline', 'Present ពេញអេក្រង់'].map((f) => (
-          <span key={f} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Check size={14} style={{ color: C.accent }} /> {f}
+          <span key={f} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px 6px 10px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, fontSize: 12, fontWeight: 700, color: C.muted2, boxShadow: '0 4px 14px -10px rgba(28,27,25,.35)' }}>
+            <span style={{ width: 15, height: 15, borderRadius: '50%', background: ACCENT_SOFT, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <Check size={9.5} style={{ color: C.accent }} strokeWidth={3} />
+            </span>
+            {f}
           </span>
         ))}
       </div>
@@ -930,10 +961,14 @@ function Result(props: {
                   onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
                   onClick={() => onSelect(i)}
                   title="អូសដើម្បីផ្លាស់ទីលំដាប់"
-                  style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 9, padding: 0, cursor: 'grab', textAlign: 'left', opacity: isDragging ? 0.4 : 1, transition: 'opacity .15s' }}
+                  className="sl-film-item"
+                  style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 9, padding: 0, cursor: 'grab', textAlign: 'left', opacity: isDragging ? 0.4 : 1, transition: 'opacity .15s, transform .15s' }}
                 >
                   {isOver && <span aria-hidden style={{ position: 'absolute', top: -7, left: 22, right: 0, height: 3, borderRadius: 3, background: C.accent, boxShadow: '0 0 0 3px rgba(109,91,240,.18)' }} />}
-                  <span style={{ fontFamily: KO, fontSize: 12, width: 18, flex: 'none', color: active ? C.accent : C.faintLabel }}>{sl.no}</span>
+                  <span className="sl-film-grip" style={{ fontFamily: KO, fontSize: 12, width: 18, flex: 'none', color: active ? C.accent : C.faintLabel, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="sl-film-no">{sl.no}</span>
+                    <GripVertical className="sl-film-gripicon" size={13} />
+                  </span>
                   <span style={{ flex: 1, borderRadius: 9, overflow: 'hidden', border: `2px solid ${active ? C.accent : isOver ? `${C.accent}66` : 'transparent'}`, boxShadow: active ? '0 8px 20px -10px rgba(109,91,240,.5)' : '0 2px 8px -4px rgba(28,27,25,.25)', transition: 'all .15s', pointerEvents: 'none' }}>
                     <ScaledSlide slide={sl} theme={theme} total={deck.length} width="100%" />
                   </span>
@@ -950,7 +985,9 @@ function Result(props: {
           <div style={{ position: 'relative', flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 16, padding: '34px 20px 70px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: '100%' }}>
               <NavArrow onClick={onPrev} disabled={idx <= 0}><ChevronLeft size={22} /></NavArrow>
-              <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} />
+              <div key={idx} className="sl-stage-in" style={{ maxWidth: '100%' }}>
+                <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} />
+              </div>
               <NavArrow onClick={onNext} disabled={idx >= deck.length - 1}><ChevronRight size={22} /></NavArrow>
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, fontSize: 12.5, fontWeight: 700, color: C.muted2, fontFamily: KO }}>
@@ -970,21 +1007,46 @@ function Result(props: {
 // Speaker-notes editor under the slide stage. Uncontrolled (keyed by slide
 // index so it resets on slide change) — commits to deck state on blur.
 function NotesPanel({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
+  const [expanded, setExpanded] = useState(!!value.trim());
   const [focused, setFocused] = useState(false);
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 4, padding: '8px 16px', borderRadius: 100, border: `1.5px dashed ${C.border}`, background: C.panel, color: C.muted2, cursor: 'pointer', fontFamily: KH, fontSize: 12.5, fontWeight: 700, transition: 'border-color .15s, color .15s' }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted2; }}
+      >
+        <StickyNote size={13} /> បន្ថែមកំណត់ចំណាំវាគ្មិន
+      </button>
+    );
+  }
+
   return (
     <div style={{ width: 820, maxWidth: 'calc(100vw - 120px)', marginTop: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, paddingLeft: 2 }}>
-        <StickyNote size={13} style={{ color: C.accent }} />
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.4px', color: C.muted2 }}>កំណត់ចំណាំវាគ្មិន</span>
-        <span style={{ fontSize: 10.5, color: C.faintLabel }}>· បង្ហាញតែពេលបង្ហាញ (ចុច N)</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7, paddingLeft: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ width: 20, height: 20, borderRadius: 7, background: ACCENT_SOFT, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <StickyNote size={11} style={{ color: C.accent }} />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.4px', color: C.muted2 }}>កំណត់ចំណាំវាគ្មិន</span>
+          <span style={{ fontSize: 10.5, color: C.faintLabel }}>· បង្ហាញតែពេលបង្ហាញ (ចុច N)</span>
+        </div>
+        {!value.trim() && (
+          <button onClick={() => setExpanded(false)} title="លាក់" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: C.faintLabel, display: 'flex', alignItems: 'center' }}>
+            <ChevronUp size={15} />
+          </button>
+        )}
       </div>
       <textarea
+        autoFocus={!value.trim()}
         defaultValue={value}
         onFocus={() => setFocused(true)}
         onBlur={(e) => { setFocused(false); if (e.target.value !== value) onCommit(e.target.value); }}
         placeholder="សរសេរចំណាំសម្រាប់ការបង្រៀន — អ្វីដែលអ្នកនឹងនិយាយលើស្លាយនេះ…"
         rows={3}
-        style={{ width: '100%', resize: 'vertical', minHeight: 66, padding: '12px 14px', borderRadius: 14, border: `1.5px solid ${focused ? C.accent : C.borderSoft}`, boxShadow: focused ? '0 0 0 3px rgba(109,91,240,.14)' : '0 2px 10px -6px rgba(28,27,25,.2)', background: C.panel, color: C.body, fontFamily: KH, fontSize: 14, lineHeight: 1.7, outline: 'none', transition: 'border-color .15s, box-shadow .15s', boxSizing: 'border-box' }}
+        style={{ width: '100%', resize: 'vertical', minHeight: 66, padding: '12px 14px', borderRadius: 14, border: `1.5px solid ${focused ? C.accent : C.borderSoft}`, borderTop: `2.5px solid ${focused ? C.accent : `${C.accent}55`}`, boxShadow: focused ? '0 0 0 3px rgba(109,91,240,.14)' : '0 2px 10px -6px rgba(28,27,25,.2)', background: C.panel, color: C.body, fontFamily: KH, fontSize: 14, lineHeight: 1.7, outline: 'none', transition: 'border-color .15s, box-shadow .15s', boxSizing: 'border-box' }}
       />
     </div>
   );
