@@ -34,6 +34,7 @@ import {
   Loader2,
   Minus,
   Palette,
+  PanelBottom,
   Play,
   Plus,
   Presentation,
@@ -59,6 +60,8 @@ import {
   buildDeck,
   CHAPTERS,
   convertSlide,
+  DEFAULT_DECK_SETTINGS,
+  FOOTER_LAYOUTS,
   GRADES,
   GRADIENTS,
   lineKind,
@@ -77,8 +80,10 @@ import {
   THEMES,
   toKh,
   type Chapter,
+  type DeckSettings,
   type EditField,
   type EditPatch,
+  type FooterLayout,
   type Slide,
   type SlideBg,
   type Theme,
@@ -156,6 +161,10 @@ function SlidesBuilder() {
   const [themeId, setThemeId] = useState('classic');
   const [accentId, setAccentId] = useState('');
   const [length, setLength] = useState('medium');
+  // Deck-wide header/footer chrome (like PowerPoint's Header & Footer dialog) —
+  // not undo-tracked, same as theme/accent selection.
+  const [deckSettings, setDeckSettings] = useState<DeckSettings>(DEFAULT_DECK_SETTINGS);
+  const patchDeckSettings = (patch: Partial<DeckSettings>) => setDeckSettings((d) => ({ ...d, ...patch }));
   const [slideIndex, setSlideIndex] = useState(0);
   const [genStep, setGenStep] = useState(0);
   const [presenting, setPresenting] = useState(false);
@@ -288,6 +297,9 @@ function SlidesBuilder() {
     if (typeof p.themeId === 'string') setThemeId(p.themeId);
     if (typeof p.accentId === 'string') setAccentId(p.accentId);
     if (typeof p.length === 'string') setLength(p.length);
+    if (p.deckSettings && typeof p.deckSettings === 'object') {
+      setDeckSettings({ ...DEFAULT_DECK_SETTINGS, ...(p.deckSettings as Partial<DeckSettings>) });
+    }
     // Restore the edited deck if the draft has one; otherwise rebuild from config.
     if (Array.isArray(p.slides) && p.slides.length) {
       resetDeck(renumber(p.slides as Slide[]));
@@ -420,7 +432,7 @@ function SlidesBuilder() {
       title: `ស្លាយ ${lessonTitle}`,
       subject,
       grade,
-      payload: { subject, grade, chapterNo, lessonTitle, themeId, accentId, length, slides: deck },
+      payload: { subject, grade, chapterNo, lessonTitle, themeId, accentId, length, slides: deck, deckSettings },
     });
     setDraftId(d.id);
     if (!isAuthed()) {
@@ -519,6 +531,7 @@ function SlidesBuilder() {
             theme={theme}
             deck={previewDeck}
             onGenerate={generate}
+            deckSettings={deckSettings}
           />
         )}
 
@@ -553,6 +566,8 @@ function SlidesBuilder() {
             onRedo={redo}
             canUndo={canUndo}
             canRedo={canRedo}
+            deckSettings={deckSettings}
+            onPatchDeckSettings={patchDeckSettings}
           />
         )}
       </main>
@@ -565,6 +580,7 @@ function SlidesBuilder() {
           onPrev={slidePrev}
           onNext={slideNext}
           onClose={() => setPresenting(false)}
+          deckSettings={deckSettings}
         />
       )}
 
@@ -574,7 +590,7 @@ function SlidesBuilder() {
         <div ref={exportRef} aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
           {deck.map((s, i) => (
             <div key={i} data-export-slide={i} style={{ width: SLIDE_W, height: SLIDE_H, position: 'relative', overflow: 'hidden' }}>
-              <SlideBoard slide={s} theme={theme} total={deck.length} />
+              <SlideBoard slide={s} theme={theme} total={deck.length} deckSettings={deckSettings} />
             </div>
           ))}
         </div>
@@ -758,10 +774,11 @@ function Config(props: {
   theme: Theme;
   deck: Slide[];
   onGenerate: () => void;
+  deckSettings: DeckSettings;
 }) {
   const {
     subject, setSubject, grade, setGrade, chapterNo, setChapter, chapter, lessonTitle, setLessonTitle,
-    themeId, setThemeId, accentId, setAccentId, length, setLength, theme, deck, onGenerate,
+    themeId, setThemeId, accentId, setAccentId, length, setLength, theme, deck, onGenerate, deckSettings,
   } = props;
 
   return (
@@ -828,8 +845,8 @@ function Config(props: {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start', fontSize: 11.5, fontWeight: 700, color: C.muted2, letterSpacing: '.3px' }}>
             <Presentation size={14} style={{ color: theme.accent }} /> ស្លាយ · 16:9 · មើលជាមុន · {toKh(deck.length)} ស្លាយ
           </div>
-          <ScaledSlide slide={deck[0]} theme={theme} total={deck.length} width={620} shadow />
-          <ThumbStrip deck={deck} idx={-1} theme={theme} onSelect={() => {}} />
+          <ScaledSlide slide={deck[0]} theme={theme} total={deck.length} width={620} shadow deckSettings={deckSettings} />
+          <ThumbStrip deck={deck} idx={-1} theme={theme} onSelect={() => {}} deckSettings={deckSettings} />
         </div>
       </div>
     </>
@@ -907,8 +924,10 @@ function Result(props: {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  deckSettings: DeckSettings;
+  onPatchDeckSettings: (patch: Partial<DeckSettings>) => void;
 }) {
-  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onSetImage, onUndo, onRedo, canUndo, canRedo } = props;
+  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onSetImage, onUndo, onRedo, canUndo, canRedo, deckSettings, onPatchDeckSettings } = props;
   // Drag-reorder state for the filmstrip.
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -937,6 +956,8 @@ function Result(props: {
         bg={deck[idx].bg}
         onSetBg={onSetBg}
         onSetBgAll={onSetBgAll}
+        deckSettings={deckSettings}
+        onPatchDeckSettings={onPatchDeckSettings}
       />
 
       {/* body: filmstrip + canvas */}
@@ -971,7 +992,7 @@ function Result(props: {
                     <GripVertical className="sl-film-gripicon" size={13} />
                   </span>
                   <span style={{ flex: 1, borderRadius: 9, overflow: 'hidden', border: `2px solid ${active ? C.accent : isOver ? `${C.accent}66` : 'transparent'}`, boxShadow: active ? '0 8px 20px -10px rgba(109,91,240,.5)' : '0 2px 8px -4px rgba(28,27,25,.25)', transition: 'all .15s', pointerEvents: 'none' }}>
-                    <ScaledSlide slide={sl} theme={theme} total={deck.length} width="100%" />
+                    <ScaledSlide slide={sl} theme={theme} total={deck.length} width="100%" deckSettings={deckSettings} />
                   </span>
                 </div>
               );
@@ -987,7 +1008,7 @@ function Result(props: {
             <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: '100%' }}>
               <NavArrow onClick={onPrev} disabled={idx <= 0}><ChevronLeft size={22} /></NavArrow>
               <div key={idx} className="sl-stage-in" style={{ maxWidth: '100%' }}>
-                <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} />
+                <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} deckSettings={deckSettings} />
               </div>
               <NavArrow onClick={onNext} disabled={idx >= deck.length - 1}><ChevronRight size={22} /></NavArrow>
             </div>
@@ -1152,6 +1173,118 @@ function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPi
   );
 }
 
+// Small pill switch used inside the header/footer settings popover.
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!on)}
+      role="switch"
+      aria-checked={on}
+      style={{ position: 'relative', width: 34, height: 20, borderRadius: 100, border: 'none', cursor: 'pointer', background: on ? C.accent : 'rgba(28,27,25,.16)', flex: 'none', transition: 'background .15s' }}
+    >
+      <span style={{ position: 'absolute', top: 2, left: on ? 16 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.3)', transition: 'left .15s' }} />
+    </button>
+  );
+}
+
+function SettingsRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 0' }}>
+      <span style={{ fontFamily: KH, fontSize: 12.5, fontWeight: 700, color: C.body }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+// Deck-wide header/footer settings — logo, footer text, page number, and a
+// choice of footer layout templates (like PowerPoint's Header & Footer dialog).
+function HeaderFooterMenu({ settings, onPatch }: { settings: DeckSettings; onPatch: (patch: Partial<DeckSettings>) => void }) {
+  const [open, setOpen] = useState(false);
+  const layoutPreview = (id: FooterLayout): React.ReactNode => {
+    const dot = <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.accent, flex: 'none' }} />;
+    const bar = <span style={{ width: 14, height: 4, borderRadius: 2, background: C.faintLabel, flex: 'none' }} />;
+    if (id === 'minimal') return <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>{bar}</div>;
+    if (id === 'centered') return <div style={{ display: 'flex', justifyContent: 'center', gap: 4, width: '100%' }}>{dot}{bar}</div>;
+    if (id === 'split') return <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>{dot}{bar}</div>;
+    return <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}><span style={{ display: 'flex', gap: 3 }}>{dot}{bar}</span>{bar}</div>;
+  };
+  return (
+    <div style={{ position: 'relative' }}>
+      <RibBtn onClick={() => setOpen((o) => !o)} title="ក្បាល / បាតទំព័រ"><PanelBottom size={15} /><span className="sl-hide-md">ក្បាល/បាត</span><ChevronDown size={12} /></RibBtn>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{ position: 'absolute', top: '120%', left: 0, zIndex: 41, width: 300, maxHeight: 'min(70vh, 560px)', overflowY: 'auto', padding: 14, borderRadius: 16, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 20px 44px -16px rgba(28,27,25,.5)' }}>
+            <div style={{ fontFamily: KO, fontSize: 14, color: C.ink, marginBottom: 10 }}>ក្បាល & បាតទំព័រ</div>
+
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, marginBottom: 6 }}>គំរូបាតទំព័រ</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
+              {FOOTER_LAYOUTS.map((l) => {
+                const active = settings.footerLayout === l.id;
+                return (
+                  <button key={l.id} onClick={() => onPatch({ footerLayout: l.id })} title={l.name} style={{ padding: 0, border: `1.5px solid ${active ? C.accent : C.borderSoft}`, borderRadius: 9, cursor: 'pointer', background: active ? ACCENT_SOFT : '#fff', overflow: 'hidden' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', height: 30, padding: '0 6px', width: '100%', boxSizing: 'border-box' }}>{layoutPreview(l.id)}</span>
+                    <span style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: active ? C.accent : C.muted2, padding: '2px 0 4px', textAlign: 'center' }}>{l.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ height: 1, background: C.borderSoft, margin: '4px 0 4px' }} />
+            <SettingsRow label="ឡូហ្គោ">
+              <Toggle on={settings.footerLogo} onChange={(v) => onPatch({ footerLogo: v })} />
+            </SettingsRow>
+            <SettingsRow label="អត្ថបទបាតទំព័រ">
+              <Toggle on={settings.footerTextEnabled} onChange={(v) => onPatch({ footerTextEnabled: v })} />
+            </SettingsRow>
+            {settings.footerTextEnabled && (
+              <input
+                value={settings.footerText}
+                onChange={(e) => onPatch({ footerText: e.target.value })}
+                placeholder="ឧ. ឈ្មោះសាលា, មុខវិជ្ជា…"
+                style={{ ...inputStyle, marginBottom: 8, padding: '8px 10px', fontSize: 12.5 }}
+              />
+            )}
+            <SettingsRow label="លេខទំព័រ">
+              <Toggle on={settings.pageNumber} onChange={(v) => onPatch({ pageNumber: v })} />
+            </SettingsRow>
+
+            <div style={{ height: 1, background: C.borderSoft, margin: '8px 0 4px' }} />
+            <SettingsRow label="ក្បាលទំព័រ (Header)">
+              <Toggle on={settings.headerEnabled} onChange={(v) => onPatch({ headerEnabled: v })} />
+            </SettingsRow>
+            {settings.headerEnabled && (
+              <>
+                <input
+                  value={settings.headerText}
+                  onChange={(e) => onPatch({ headerText: e.target.value })}
+                  placeholder="ឧ. ថ្ងៃទី ១ កក្កដា ២០២៦"
+                  style={{ ...inputStyle, marginBottom: 8, padding: '8px 10px', fontSize: 12.5 }}
+                />
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  {(['left', 'right'] as const).map((a) => (
+                    <button key={a} onClick={() => onPatch({ headerAlign: a })} style={{ flex: 1, padding: '7px 0', borderRadius: 9, cursor: 'pointer', border: `1.5px solid ${settings.headerAlign === a ? C.accent : C.borderSoft}`, background: settings.headerAlign === a ? ACCENT_SOFT : '#fff', color: settings.headerAlign === a ? C.accent : C.muted2, fontFamily: KH, fontSize: 12, fontWeight: 700 }}>
+                      {a === 'left' ? 'ឆ្វេង' : 'ស្ដាំ'}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ height: 1, background: C.borderSoft, margin: '4px 0 8px' }} />
+            <button onClick={() => onPatch({ showOnCover: !settings.showOnCover })} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '2px 0', border: 'none', background: 'transparent', cursor: 'pointer' }}>
+              <span style={{ width: 16, height: 16, borderRadius: 5, border: `1.5px solid ${settings.showOnCover ? C.accent : C.border}`, background: settings.showOnCover ? C.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                {settings.showOnCover && <Check size={11} style={{ color: '#fff' }} strokeWidth={3} />}
+              </span>
+              <span style={{ fontFamily: KH, fontSize: 12, fontWeight: 700, color: C.muted2, textAlign: 'left' }}>បង្ហាញលើស្លាយក្រប</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Content-image picker for a `media` slide — upload / URL, sits as a small
 // trigger button overlaid on the image box (only rendered while editing).
 function MediaImageMenu({ image, onSet }: { image?: string; onSet: (url: string | undefined) => void }) {
@@ -1209,7 +1342,7 @@ function MediaImageMenu({ image, onSet }: { image?: string; onSet: (url: string 
 // ════════════════════════════════════════════════════════════════════
 // Present (fullscreen)
 // ════════════════════════════════════════════════════════════════════
-function Present({ deck, idx, theme, onPrev, onNext, onClose }: { deck: Slide[]; idx: number; theme: Theme; onPrev: () => void; onNext: () => void; onClose: () => void }) {
+function Present({ deck, idx, theme, onPrev, onNext, onClose, deckSettings }: { deck: Slide[]; idx: number; theme: Theme; onPrev: () => void; onNext: () => void; onClose: () => void; deckSettings: DeckSettings }) {
   const [showNotes, setShowNotes] = useState(false);
   const notes = (deck[idx].notes || '').trim();
   // 'N' toggles the presenter-notes overlay.
@@ -1226,7 +1359,7 @@ function Present({ deck, idx, theme, onPrev, onNext, onClose }: { deck: Slide[];
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#0b0907', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: 'min(96vw, calc(94vh * 880 / 495))' }}>
-        <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width="100%" />
+        <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width="100%" deckSettings={deckSettings} />
       </div>
 
       <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,.12)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Exit">
@@ -1287,7 +1420,7 @@ function presentArrow(side: 'left' | 'right', disabled: boolean): React.CSSPrope
 // ════════════════════════════════════════════════════════════════════
 // Slide rendering — native 880×495, scaled by the container
 // ════════════════════════════════════════════════════════════════════
-function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine, onSetImage }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void }) {
+function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine, onSetImage, deckSettings }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void; deckSettings?: DeckSettings }) {
   // The native 880×495 board is always scaled to the *actual* rendered width via
   // a container query (100cqw / 880). This keeps the scale honest even when
   // maxWidth clamps the wrapper on a narrow viewport, so the board never clips.
@@ -1306,7 +1439,7 @@ function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRe
       }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, width: SLIDE_W, height: SLIDE_H, transform: `scale(calc(100cqw / ${SLIDE_W}px))`, transformOrigin: 'top left' }}>
-        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} />
+        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} deckSettings={deckSettings} />
       </div>
     </div>
   );
@@ -1422,8 +1555,10 @@ function EditorToolbar(props: {
   bg?: SlideBg;
   onSetBg: (b: SlideBg | undefined) => void;
   onSetBgAll: (b: SlideBg | undefined) => void;
+  deckSettings: DeckSettings;
+  onPatchDeckSettings: (patch: Partial<DeckSettings>) => void;
 }) {
-  const { kind, idx, total, themeId, setThemeId, accentId, setAccentId, onAddSlide, onChangeLayout, onDuplicate, onMove, onDelete, onUndo, onRedo, canUndo, canRedo, theme, bg, onSetBg, onSetBgAll } = props;
+  const { kind, idx, total, themeId, setThemeId, accentId, setAccentId, onAddSlide, onChangeLayout, onDuplicate, onMove, onDelete, onUndo, onRedo, canUndo, canRedo, theme, bg, onSetBg, onSetBgAll, deckSettings, onPatchDeckSettings } = props;
   const [menu, setMenu] = useState<null | 'font' | 'size' | 'color' | 'hilite'>(null);
   const [active, setActive] = useState<Record<string, boolean>>({});
   const [curFont, setCurFont] = useState('Battambang');
@@ -1512,6 +1647,7 @@ function EditorToolbar(props: {
       {/* design: background + theme + accent */}
       <RibGroup icon={<Palette size={14} />}>
         <BgMenu bg={bg} theme={theme} onPick={onSetBg} onAll={onSetBgAll} />
+        <HeaderFooterMenu settings={deckSettings} onPatch={onPatchDeckSettings} />
         <Rule />
         {THEMES.map((t) => (
           <button key={t.id} onClick={() => setThemeId(t.id)} title={t.name} style={{ width: 24, height: 24, borderRadius: '50%', cursor: 'pointer', border: themeId === t.id ? `2px solid ${C.accent}` : '1px solid rgba(28,27,25,.16)', background: t.panel, flex: 'none', boxShadow: themeId === t.id ? '0 0 0 3px rgba(109,91,240,.16)' : 'none' }} />
@@ -1617,7 +1753,7 @@ function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: string) =>
   );
 }
 
-function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetImage }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void }) {
+function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetImage, deckSettings = DEFAULT_DECK_SETTINGS }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void; deckSettings?: DeckSettings }) {
   const isDark = theme.bg === '#241d18';
   const subTint = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.028)';
   const kh: React.CSSProperties = { fontFamily: KO, letterSpacing: '.5px' };
@@ -1825,6 +1961,60 @@ function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetI
     );
   }
 
+  // ── Header / footer chrome (deck-wide, configurable) ──
+  const ds = deckSettings;
+  const isCover = slide.kind === 'title';
+  const showChrome = !isCover || ds.showOnCover;
+  const logoChip = (
+    <div style={{ width: 20, height: 20, borderRadius: 6, background: theme.sw, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+      <span style={{ ...kh, color: '#fff', fontSize: 11, paddingTop: 1 }}>S</span>
+    </div>
+  );
+  const footerTextEl = ds.footerTextEnabled && ds.footerText.trim() ? (
+    <span style={{ fontFamily: KH, fontSize: 10, fontWeight: 700, letterSpacing: '1px', color: theme.sub, whiteSpace: 'nowrap' }}>{ds.footerText}</span>
+  ) : null;
+  const pageNumEl = ds.pageNumber ? (
+    <span style={{ fontFamily: KO, fontSize: 13, fontWeight: 700, color: theme.sub, flex: 'none' }}>{slide.no} / {toKh(total)}</span>
+  ) : null;
+  const brandEl = ds.footerLogo || footerTextEl ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>{ds.footerLogo && logoChip}{footerTextEl}</div>
+  ) : null;
+
+  let footerNode: React.ReactNode = null;
+  if (showChrome && (brandEl || pageNumEl)) {
+    if (ds.footerLayout === 'minimal') {
+      footerNode = pageNumEl && <div style={{ position: 'absolute', zIndex: 1, right: 34, bottom: 22 }}>{pageNumEl}</div>;
+    } else if (ds.footerLayout === 'centered') {
+      footerNode = (
+        <div style={{ position: 'absolute', zIndex: 1, left: 0, right: 0, bottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          {brandEl}{pageNumEl}
+        </div>
+      );
+    } else if (ds.footerLayout === 'split') {
+      footerNode = (
+        <div style={{ position: 'absolute', zIndex: 1, left: 34, right: 34, bottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>{ds.footerLogo && logoChip}</div>
+          <div>{footerTextEl}</div>
+          <div>{pageNumEl}</div>
+        </div>
+      );
+    } else {
+      // 'branded' (default): logo+text bottom-left, page number bottom-right.
+      footerNode = (
+        <>
+          {brandEl && <div style={{ position: 'absolute', zIndex: 1, left: 34, bottom: 22 }}>{brandEl}</div>}
+          {pageNumEl && <div style={{ position: 'absolute', zIndex: 1, right: 34, bottom: 24 }}>{pageNumEl}</div>}
+        </>
+      );
+    }
+  }
+
+  const headerNode = ds.headerEnabled && ds.headerText.trim() && showChrome ? (
+    <div style={{ position: 'absolute', zIndex: 1, top: 20, [ds.headerAlign]: 34, fontFamily: KH, fontSize: 10.5, fontWeight: 700, letterSpacing: '.6px', color: theme.sub, opacity: 0.85 }}>
+      {ds.headerText}
+    </div>
+  ) : null;
+
   const bg = slideBackground(slide.bg, theme);
   return (
     <div style={{ width: SLIDE_W, height: SLIDE_H, background: bg.base, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
@@ -1836,28 +2026,20 @@ function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetI
         <div style={{ height: 8, background: theme.band, flex: 'none' }} />
         {content}
       </div>
-      {/* brand + page number */}
-      <div style={{ position: 'absolute', zIndex: 1, left: 34, bottom: 22, display: 'flex', alignItems: 'center', gap: 7 }}>
-        <div style={{ width: 20, height: 20, borderRadius: 6, background: theme.sw, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ ...kh, color: '#fff', fontSize: 11, paddingTop: 1 }}>S</span>
-        </div>
-        <span style={{ fontFamily: KH, fontSize: 10, fontWeight: 700, letterSpacing: '1px', color: theme.sub }}>Stunity</span>
-      </div>
-      {slide.kind !== 'title' && (
-        <div style={{ position: 'absolute', zIndex: 1, right: 34, bottom: 24, fontFamily: KO, fontSize: 13, fontWeight: 700, color: theme.sub }}>{slide.no} / {toKh(total)}</div>
-      )}
+      {headerNode}
+      {footerNode}
     </div>
   );
 }
 
-function ThumbStrip({ deck, idx, theme, onSelect }: { deck: Slide[]; idx: number; theme: Theme; onSelect: (i: number) => void }) {
+function ThumbStrip({ deck, idx, theme, onSelect, deckSettings }: { deck: Slide[]; idx: number; theme: Theme; onSelect: (i: number) => void; deckSettings?: DeckSettings }) {
   return (
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 900 }}>
       {deck.map((sl, i) => {
         const active = i === idx;
         return (
           <button key={i} onClick={() => onSelect(i)} title={(sl.kind === 'quote' ? sl.label : sl.title).replace(/<[^>]*>/g, '')} style={{ position: 'relative', padding: 0, border: `2px solid ${active ? theme.accent : C.borderSoft}`, borderRadius: 8, cursor: 'pointer', background: 'transparent', lineHeight: 0, overflow: 'hidden' }}>
-            <ScaledSlide slide={sl} theme={theme} total={deck.length} width={132} />
+            <ScaledSlide slide={sl} theme={theme} total={deck.length} width={132} deckSettings={deckSettings} />
             <span style={{ position: 'absolute', top: 4, left: 4, fontSize: 9, fontWeight: 700, color: '#fff', background: 'rgba(0,0,0,.45)', borderRadius: 5, padding: '1px 5px', lineHeight: 1.4 }}>{sl.no}</span>
           </button>
         );

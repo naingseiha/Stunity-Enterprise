@@ -12,6 +12,8 @@ import {
   LENGTH_PICK,
   lineKind,
   removeLine,
+  DEFAULT_DECK_SETTINGS,
+  FOOTER_LAYOUTS,
   renumber,
   resolveTheme,
   SCENES,
@@ -301,5 +303,21 @@ describe('deck editing', () => {
       if (s.kind !== 'list') throw new Error('nope');
       expect(s.bullets.length).toBeLessThanOrEqual(8);
     });
+  });
+});
+
+describe('deck-wide header/footer chrome', () => {
+  it('offers 4 footer layout templates with unique ids', () => {
+    const ids = FOOTER_LAYOUTS.map((l) => l.id);
+    expect(new Set(ids).size).toBe(4);
+    expect(ids).toEqual(['branded', 'minimal', 'centered', 'split']);
+  });
+
+  it('defaults to a sensible branded footer with page numbers on, header off', () => {
+    expect(DEFAULT_DECK_SETTINGS.footerLayout).toBe('branded');
+    expect(DEFAULT_DECK_SETTINGS.pageNumber).toBe(true);
+    expect(DEFAULT_DECK_SETTINGS.footerLogo).toBe(true);
+    expect(DEFAULT_DECK_SETTINGS.headerEnabled).toBe(false);
+    expect(DEFAULT_DECK_SETTINGS.showOnCover).toBe(false);
   });
 });

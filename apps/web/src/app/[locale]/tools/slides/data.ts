@@ -476,3 +476,43 @@ export function removeLine(s: Slide, index: number): Slide {
   if (arr.length <= 1) return s;
   return { ...s, [k]: arr.filter((_, i) => i !== index) } as Slide;
 }
+
+// ─── Deck-wide header / footer chrome ──────────────────────────────
+// Unlike per-slide fields above, these apply to the whole deck (like
+// PowerPoint's "Insert > Header & Footer" dialog) — not undo-tracked,
+// same as theme/accent selection.
+
+/** Arrangement of the logo / footer text / page number along the bottom. */
+export type FooterLayout = 'branded' | 'minimal' | 'centered' | 'split';
+
+export const FOOTER_LAYOUTS: { id: FooterLayout; name: string }[] = [
+  { id: 'branded', name: 'តាមម៉ាក' },
+  { id: 'minimal', name: 'សាមញ្ញ' },
+  { id: 'centered', name: 'កណ្ដាល' },
+  { id: 'split', name: 'ពីរចុង' },
+];
+
+export type DeckSettings = {
+  headerEnabled: boolean;
+  headerText: string;
+  headerAlign: 'left' | 'right';
+  footerLayout: FooterLayout;
+  footerLogo: boolean;
+  footerTextEnabled: boolean;
+  footerText: string;
+  pageNumber: boolean;
+  /** Show header/footer chrome on the title (cover) slide too. */
+  showOnCover: boolean;
+};
+
+export const DEFAULT_DECK_SETTINGS: DeckSettings = {
+  headerEnabled: false,
+  headerText: '',
+  headerAlign: 'right',
+  footerLayout: 'branded',
+  footerLogo: true,
+  footerTextEnabled: true,
+  footerText: 'Stunity',
+  pageNumber: true,
+  showOnCover: false,
+};
