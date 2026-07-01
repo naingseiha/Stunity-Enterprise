@@ -38,6 +38,7 @@ import {
   RefreshCw,
   RemoveFormatting,
   Sparkles,
+  StickyNote,
   Strikethrough,
   Trash2,
   Underline,
@@ -358,6 +359,8 @@ function SlidesBuilder() {
     commitDeck((d) => d.map((s) => ({ ...s, bg })));
     notify('បានដាក់ផ្ទៃខាងក្រោយគ្រប់ស្លាយ');
   };
+  const setNotes = (value: string) =>
+    commitDeck((d) => d.map((s, k) => (k === idx ? { ...s, notes: value } : s)));
 
   // Present-mode keyboard nav.
   useEffect(() => {
@@ -499,6 +502,7 @@ function SlidesBuilder() {
             onRemoveLine={removeLineAt}
             onSetBg={setBg}
             onSetBgAll={setBgAll}
+            onSetNotes={setNotes}
             onUndo={undo}
             onRedo={redo}
             canUndo={canUndo}
@@ -806,12 +810,13 @@ function Result(props: {
   onRemoveLine: (index: number) => void;
   onSetBg: (bg: SlideBg | undefined) => void;
   onSetBgAll: (bg: SlideBg | undefined) => void;
+  onSetNotes: (value: string) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
 }) {
-  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onUndo, onRedo, canUndo, canRedo } = props;
+  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onUndo, onRedo, canUndo, canRedo } = props;
   // Drag-reorder state for the filmstrip.
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -891,10 +896,37 @@ function Result(props: {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 100, background: C.panel, border: `1px solid ${C.borderSoft}`, fontSize: 12.5, fontWeight: 700, color: C.muted2, fontFamily: KO }}>
               {toKh(idx + 1)} / {toKh(deck.length)}
             </div>
+
+            {/* speaker notes for the current slide (key includes value so
+                undo/redo of notes re-syncs the uncontrolled textarea) */}
+            <NotesPanel key={`${idx}|${deck[idx].notes || ''}`} value={deck[idx].notes || ''} onCommit={onSetNotes} />
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+// Speaker-notes editor under the slide stage. Uncontrolled (keyed by slide
+// index so it resets on slide change) — commits to deck state on blur.
+function NotesPanel({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ width: 820, maxWidth: 'calc(100vw - 120px)', marginTop: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7, paddingLeft: 2 }}>
+        <StickyNote size={13} style={{ color: C.accent }} />
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.4px', color: C.muted2 }}>កំណត់ចំណាំវាគ្មិន</span>
+        <span style={{ fontSize: 10.5, color: C.faintLabel }}>· បង្ហាញតែពេលបង្ហាញ (ចុច N)</span>
+      </div>
+      <textarea
+        defaultValue={value}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => { setFocused(false); if (e.target.value !== value) onCommit(e.target.value); }}
+        placeholder="សរសេរចំណាំសម្រាប់ការបង្រៀន — អ្វីដែលអ្នកនឹងនិយាយលើស្លាយនេះ…"
+        rows={3}
+        style={{ width: '100%', resize: 'vertical', minHeight: 66, padding: '12px 14px', borderRadius: 14, border: `1.5px solid ${focused ? C.accent : C.borderSoft}`, boxShadow: focused ? '0 0 0 3px rgba(109,91,240,.14)' : '0 2px 10px -6px rgba(28,27,25,.2)', background: C.panel, color: C.body, fontFamily: KH, fontSize: 14, lineHeight: 1.7, outline: 'none', transition: 'border-color .15s, box-shadow .15s', boxSizing: 'border-box' }}
+      />
+    </div>
   );
 }
 
@@ -996,6 +1028,19 @@ function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPi
 // Present (fullscreen)
 // ════════════════════════════════════════════════════════════════════
 function Present({ deck, idx, theme, onPrev, onNext, onClose }: { deck: Slide[]; idx: number; theme: Theme; onPrev: () => void; onNext: () => void; onClose: () => void }) {
+  const [showNotes, setShowNotes] = useState(false);
+  const notes = (deck[idx].notes || '').trim();
+  // 'N' toggles the presenter-notes overlay.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setShowNotes((s) => !s);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#0b0907', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: 'min(96vw, calc(94vh * 880 / 495))' }}>
@@ -1006,12 +1051,29 @@ function Present({ deck, idx, theme, onPrev, onNext, onClose }: { deck: Slide[];
         <X size={20} />
       </button>
 
+      {/* presenter-notes toggle */}
+      <button onClick={() => setShowNotes((s) => !s)} title="បង្ហាញ/លាក់ចំណាំវាគ្មិន (N)" style={{ position: 'absolute', top: 20, right: 70, width: 40, height: 40, borderRadius: 10, border: 'none', background: showNotes ? 'rgba(232,176,106,.9)' : 'rgba(255,255,255,.12)', color: showNotes ? '#241d18' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Toggle notes">
+        <StickyNote size={18} />
+      </button>
+
       <button onClick={onPrev} disabled={idx <= 0} style={presentArrow('left', idx <= 0)} aria-label="Previous">
         <ChevronLeft size={26} />
       </button>
       <button onClick={onNext} disabled={idx >= deck.length - 1} style={presentArrow('right', idx >= deck.length - 1)} aria-label="Next">
         <ChevronRight size={26} />
       </button>
+
+      {/* presenter-notes overlay (only the presenter reveals it) */}
+      {showNotes && (
+        <div style={{ position: 'absolute', bottom: 64, left: '50%', transform: 'translateX(-50%)', width: 'min(760px, 90vw)', maxHeight: '34vh', overflowY: 'auto', padding: '16px 20px', borderRadius: 16, background: 'rgba(15,12,10,.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,.14)', boxShadow: '0 20px 50px -20px rgba(0,0,0,.7)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8, fontSize: 11, fontWeight: 800, letterSpacing: '.5px', color: '#e8b06a' }}>
+            <StickyNote size={13} /> កំណត់ចំណាំវាគ្មិន · ស្លាយ {toKh(idx + 1)}
+          </div>
+          <div style={{ fontFamily: KH, fontSize: 15, lineHeight: 1.85, color: '#f3ece0', whiteSpace: 'pre-wrap' }}>
+            {notes || 'គ្មានចំណាំសម្រាប់ស្លាយនេះ។'}
+          </div>
+        </div>
+      )}
 
       <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', padding: '7px 16px', borderRadius: 100, background: 'rgba(255,255,255,.12)', color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: KO }}>
         {toKh(idx + 1)} / {toKh(deck.length)}

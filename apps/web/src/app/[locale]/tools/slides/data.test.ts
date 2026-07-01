@@ -134,6 +134,12 @@ describe('slide backgrounds', () => {
     expect(applyEdit(withBg, { field: 'title', value: 'x' }).bg).toEqual({ type: 'abstract', value: 'mesh' });
     expect(convertSlide(withBg, 'example').bg).toEqual({ type: 'abstract', value: 'mesh' });
   });
+
+  it('carries speaker notes through edits and layout conversion', () => {
+    const withNotes: Slide = { ...buildDeck({ ...base, length: 'short' })[1], notes: 'say this aloud' } as Slide;
+    expect(applyEdit(withNotes, { field: 'title', value: 'x' }).notes).toBe('say this aloud');
+    expect(convertSlide(withNotes, 'timeline').notes).toBe('say this aloud');
+  });
 });
 
 describe('deck editing', () => {
