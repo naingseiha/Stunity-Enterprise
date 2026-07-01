@@ -22,6 +22,7 @@ import {
   ChevronRight,
   ChevronUp,
   Copy,
+  GripVertical,
   Download,
   Highlighter,
   Home,
@@ -336,6 +337,17 @@ function SlidesBuilder() {
   };
   const changeLayout = (kind: Slide['kind']) =>
     commitDeck((d) => d.map((s, k) => (k === idx ? convertSlide(s, kind) : s)));
+  // Drag-reorder from the filmstrip — moves slide `from` to position `to`.
+  const reorderSlide = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= deck.length || to >= deck.length) return;
+    commitDeck((d) => {
+      const nd = [...d];
+      const [moved] = nd.splice(from, 1);
+      nd.splice(to, 0, moved);
+      return renumber(nd);
+    });
+    setSlideIndex(to);
+  };
   const addLineAt = (index: number) =>
     commitDeck((d) => d.map((s, k) => (k === idx ? addLine(s, index) : s)));
   const removeLineAt = (index: number) =>
@@ -481,6 +493,7 @@ function SlidesBuilder() {
             onDuplicate={duplicateSlide}
             onDelete={deleteSlide}
             onMove={moveSlide}
+            onReorder={reorderSlide}
             onChangeLayout={changeLayout}
             onAddLine={addLineAt}
             onRemoveLine={removeLineAt}
@@ -787,6 +800,7 @@ function Result(props: {
   onDuplicate: () => void;
   onDelete: () => void;
   onMove: (dir: -1 | 1) => void;
+  onReorder: (from: number, to: number) => void;
   onChangeLayout: (kind: Slide['kind']) => void;
   onAddLine: (index: number) => void;
   onRemoveLine: (index: number) => void;
@@ -797,7 +811,10 @@ function Result(props: {
   canUndo: boolean;
   canRedo: boolean;
 }) {
-  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onUndo, onRedo, canUndo, canRedo } = props;
+  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onUndo, onRedo, canUndo, canRedo } = props;
+  // Drag-reorder state for the filmstrip.
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
   if (!deck.length) return null;
   return (
     <>
@@ -829,17 +846,33 @@ function Result(props: {
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {/* left filmstrip */}
         <aside className="sl-hide-sm" style={{ width: 176, flex: 'none', borderRight: `1px solid ${C.borderSoft}`, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '14px 14px 40px' }}>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '1px', color: C.faintLabel, marginBottom: 12, paddingLeft: 4 }}>ស្លាយ · {toKh(deck.length)}</div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '1px', color: C.faintLabel, marginBottom: 4, paddingLeft: 4 }}>ស្លាយ · {toKh(deck.length)}</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9.5, fontWeight: 700, color: C.faintLabel, marginBottom: 12, paddingLeft: 4 }}>
+            <GripVertical size={11} /> អូសដើម្បីរៀបលំដាប់
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {deck.map((sl, i) => {
               const active = i === idx;
+              const isDragging = dragIdx === i;
+              const isOver = overIdx === i && dragIdx !== null && dragIdx !== i;
               return (
-                <button key={i} onClick={() => onSelect(i)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={(e) => { setDragIdx(i); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch { /* ignore */ } }}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (overIdx !== i) setOverIdx(i); }}
+                  onDrop={(e) => { e.preventDefault(); if (dragIdx !== null) onReorder(dragIdx, i); setDragIdx(null); setOverIdx(null); }}
+                  onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+                  onClick={() => onSelect(i)}
+                  title="អូសដើម្បីផ្លាស់ទីលំដាប់"
+                  style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 9, padding: 0, cursor: 'grab', textAlign: 'left', opacity: isDragging ? 0.4 : 1, transition: 'opacity .15s' }}
+                >
+                  {isOver && <span aria-hidden style={{ position: 'absolute', top: -7, left: 22, right: 0, height: 3, borderRadius: 3, background: C.accent, boxShadow: '0 0 0 3px rgba(109,91,240,.18)' }} />}
                   <span style={{ fontFamily: KO, fontSize: 12, width: 18, flex: 'none', color: active ? C.accent : C.faintLabel }}>{sl.no}</span>
-                  <span style={{ flex: 1, borderRadius: 9, overflow: 'hidden', border: `2px solid ${active ? C.accent : 'transparent'}`, boxShadow: active ? '0 8px 20px -10px rgba(109,91,240,.5)' : '0 2px 8px -4px rgba(28,27,25,.25)', transition: 'all .15s' }}>
+                  <span style={{ flex: 1, borderRadius: 9, overflow: 'hidden', border: `2px solid ${active ? C.accent : isOver ? `${C.accent}66` : 'transparent'}`, boxShadow: active ? '0 8px 20px -10px rgba(109,91,240,.5)' : '0 2px 8px -4px rgba(28,27,25,.25)', transition: 'all .15s', pointerEvents: 'none' }}>
                     <ScaledSlide slide={sl} theme={theme} total={deck.length} width="100%" />
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>
