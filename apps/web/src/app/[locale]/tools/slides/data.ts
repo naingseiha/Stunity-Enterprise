@@ -158,6 +158,7 @@ export type Slide = SlideBase &
     | { kind: 'quote'; quote: string; author: string }
     | { kind: 'timeline'; title: string; steps: string[] }
     | { kind: 'summary'; title: string; sub: string; bullets: string[] }
+    | { kind: 'media'; title: string; caption: string; image?: string }
   );
 
 /** Which slides from the full deck appear for each length preset. */
@@ -213,6 +214,7 @@ export const SLIDE_KINDS: { id: Slide['kind']; name: string }[] = [
   { id: 'data', name: 'ស្ថិតិ' },
   { id: 'quote', name: 'ដកស្រង់' },
   { id: 'summary', name: 'សង្ខេប' },
+  { id: 'media', name: 'រូបភាព' },
 ];
 
 /** Re-apply sequential zero-padded Khmer numbers after any structural change. */
@@ -241,6 +243,8 @@ export function slideLines(s: Slide): string[] {
       return [s.quote];
     case 'title':
       return [s.sub];
+    case 'media':
+      return [s.caption];
   }
 }
 
@@ -263,6 +267,8 @@ export function blankSlide(kind: Slide['kind']): Slide {
       return { kind, no: '', label: 'ដកស្រង់', quote: '«សរសេរសម្រង់នៅទីនេះ»', author: '— អ្នកនិពន្ធ' };
     case 'summary':
       return { kind, no: '', label: 'សង្ខេប', title: 'សង្ខេប', sub: 'សេចក្ដីសង្ខេប', bullets: ['ចំណុច១', 'ចំណុច២', 'ចំណុច៣'] };
+    case 'media':
+      return { kind, no: '', label: 'រូបភាព', title: 'ចំណងជើង', caption: 'សរសេរការពិពណ៌នារូបភាព' };
   }
 }
 
@@ -296,13 +302,15 @@ export function convertSlide(s: Slide, kind: Slide['kind']): Slide {
       return { kind, no, label: 'ដកស្រង់', quote: title, author: '—' };
     case 'summary':
       return { kind, no, label: 'សង្ខេប', title, sub: lines[0] || '', bullets: take(3, ['ចំណុច១']) };
+    case 'media':
+      return { kind, no, label: 'រូបភាព', title, caption: lines[0] || 'សរសេរការពិពណ៌នារូបភាព' };
   }
   })();
   const merged = bg ? { ...out, bg } : out;
   return notes ? { ...merged, notes } : merged;
 }
 
-export type EditField = 'title' | 'sub' | 'kicker' | 'foot' | 'quote' | 'author' | 'bullet' | 'step' | 'statNum' | 'statLabel';
+export type EditField = 'title' | 'sub' | 'kicker' | 'foot' | 'quote' | 'author' | 'bullet' | 'step' | 'statNum' | 'statLabel' | 'caption';
 export type EditPatch = { field: EditField; index?: number; value: string };
 
 /** Apply an inline-text edit, returning a new slide (no mutation). */
@@ -330,6 +338,8 @@ export function applyEdit(s: Slide, patch: EditPatch): Slide {
       return s.kind === 'data' ? { ...s, stats: at(s.stats, (x) => ({ ...x, num: value })) } : s;
     case 'statLabel':
       return s.kind === 'data' ? { ...s, stats: at(s.stats, (x) => ({ ...x, label: value })) } : s;
+    case 'caption':
+      return s.kind === 'media' ? { ...s, caption: value } : s;
     default:
       return s;
   }

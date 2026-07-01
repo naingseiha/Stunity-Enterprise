@@ -155,11 +155,17 @@ describe('deck editing', () => {
 
   describe('blankSlide', () => {
     it('produces a starter slide of every kind with sensible content', () => {
-      for (const kind of ['title', 'list', 'two-col', 'example', 'timeline', 'data', 'quote', 'summary'] as const) {
+      for (const kind of ['title', 'list', 'two-col', 'example', 'timeline', 'data', 'quote', 'summary', 'media'] as const) {
         const s = blankSlide(kind);
         expect(s.kind).toBe(kind);
         expect(slideLines(s).length).toBeGreaterThan(0);
       }
+    });
+
+    it('starts a media slide with no image', () => {
+      const s = blankSlide('media');
+      if (s.kind !== 'media') throw new Error('nope');
+      expect(s.image).toBeUndefined();
     });
   });
 
@@ -182,6 +188,20 @@ describe('deck editing', () => {
       if (asList.kind !== 'list') throw new Error('nope');
       expect(asList.title).toBe(quote.quote);
     });
+
+    it('converts a slide into a media layout using its title as the caption source', () => {
+      const asMedia = convertSlide(listSlide, 'media');
+      if (asMedia.kind !== 'media') throw new Error('nope');
+      expect(asMedia.title).toBe(listSlide.title);
+      expect(asMedia.caption).toBe(listSlide.bullets[0]);
+      expect(asMedia.image).toBeUndefined();
+    });
+
+    it('drops the image when converting a media slide to another layout', () => {
+      const media = { ...blankSlide('media'), image: 'https://x/y.png' } as Slide;
+      const asList = convertSlide(media, 'list');
+      expect(asList).not.toHaveProperty('image');
+    });
   });
 
   describe('applyEdit', () => {
@@ -191,6 +211,14 @@ describe('deck editing', () => {
       expect(edited.bullets[1]).toBe('កែរួច');
       expect(edited.bullets[0]).toBe(listSlide.bullets[0]);
       expect(edited).not.toBe(listSlide); // immutable
+    });
+
+    it('edits a media slide caption but ignores caption edits on other kinds', () => {
+      const media = blankSlide('media');
+      const edited = applyEdit(media, { field: 'caption', value: 'ការពិពណ៌នាថ្មី' });
+      if (edited.kind !== 'media') throw new Error('nope');
+      expect(edited.caption).toBe('ការពិពណ៌នាថ្មី');
+      expect(applyEdit(listSlide, { field: 'caption', value: 'x' })).toBe(listSlide);
     });
 
     it('edits the title and a stat number/label', () => {
