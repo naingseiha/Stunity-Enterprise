@@ -24,12 +24,14 @@ import {
   Copy,
   GripVertical,
   Download,
+  FileText,
   Highlighter,
   Home,
   Image as ImageIcon,
   Italic,
   Layers,
   LayoutTemplate,
+  Loader2,
   Minus,
   Palette,
   Play,
@@ -81,6 +83,7 @@ import {
   type Theme,
 } from './data';
 import { cloudUpsert, getDraft, isAuthed, saveDraft } from '../lib/drafts';
+import { captureSlideImages, downloadPdf, downloadPptx, safeFileName } from './export';
 
 type Screen = 'hub' | 'config' | 'generating' | 'result';
 type Toast = { id: number; message: string; type: 'success' | 'info' | 'error' };
@@ -155,6 +158,10 @@ function SlidesBuilder() {
   const [slideIndex, setSlideIndex] = useState(0);
   const [genStep, setGenStep] = useState(0);
   const [presenting, setPresenting] = useState(false);
+  // Real PDF / PowerPoint export. Set while a hidden off-screen copy of the
+  // deck is mounted + rasterised; cleared once the file downloads.
+  const [exportKind, setExportKind] = useState<'pdf' | 'pptx' | null>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [draftId, setDraftId] = useState<string | undefined>(undefined);
   const [showGate, setShowGate] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -426,7 +433,41 @@ function SlidesBuilder() {
     });
   };
 
-  const handleExport = () => notify('កំពុងនាំចេញស្លាយជា PowerPoint…', 'info');
+  // Runs once the hidden off-screen deck (rendered below) is mounted for the
+  // chosen export kind: waits for images to finish loading, rasterises each
+  // slide, then downloads a real PDF or PPTX matching what's on screen.
+  useEffect(() => {
+    if (!exportKind) return;
+    let cancelled = false;
+    (async () => {
+      const container = exportRef.current;
+      if (!container) return;
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const imgs = Array.from(container.querySelectorAll('img'));
+      await Promise.all(
+        imgs.map((img) => (img.complete ? Promise.resolve() : new Promise((res) => { img.onload = img.onerror = () => res(null); }))),
+      );
+      try {
+        const images = await captureSlideImages(container);
+        const name = safeFileName(lessonTitle);
+        if (exportKind === 'pdf') await downloadPdf(images, `${name}.pdf`, SLIDE_W, SLIDE_H);
+        else await downloadPptx(images, `${name}.pptx`);
+        if (!cancelled) notify(exportKind === 'pdf' ? 'បាននាំចេញជា PDF' : 'បាននាំចេញជា PowerPoint');
+      } catch {
+        if (!cancelled) notify('មានបញ្ហាក្នុងការនាំចេញ សូមព្យាយាមម្តងទៀត', 'error');
+      } finally {
+        if (!cancelled) setExportKind(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [exportKind, lessonTitle]);
+
+  const handleExport = (kind: 'pdf' | 'pptx') => {
+    notify(kind === 'pdf' ? 'កំពុងរៀបចំ PDF…' : 'កំពុងរៀបចំ PowerPoint…', 'info');
+    setExportKind(kind);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: MESH_BG, fontFamily: KH, color: C.body }}>
@@ -442,7 +483,7 @@ function SlidesBuilder() {
             <>
               <ToolBtn onClick={() => go('config')} title="កំណត់ឡើងវិញ"><RefreshCw size={15} /><span className="sl-hide-md">កំណត់</span></ToolBtn>
               <ToolBtn onClick={generate} title="បង្កើតឡើងវិញ"><Wand2 size={15} /><span className="sl-hide-md">ឡើងវិញ</span></ToolBtn>
-              <ToolBtn onClick={handleExport} title="នាំចេញ"><Download size={15} /><span className="sl-hide-md">នាំចេញ</span></ToolBtn>
+              <ExportMenu busy={exportKind} onExport={handleExport} />
               <ToolBtn onClick={handleSave}>រក្សាទុក</ToolBtn>
               <ToolBtn primary onClick={() => setPresenting(true)}><Play size={15} />បង្ហាញ</ToolBtn>
             </>
@@ -526,6 +567,18 @@ function SlidesBuilder() {
         />
       )}
 
+      {/* Off-screen full-size copy of the deck, mounted only while exporting.
+          html2canvas rasterises each [data-export-slide] node from here. */}
+      {exportKind && (
+        <div ref={exportRef} aria-hidden style={{ position: 'fixed', left: -99999, top: 0, pointerEvents: 'none' }}>
+          {deck.map((s, i) => (
+            <div key={i} data-export-slide={i} style={{ width: SLIDE_W, height: SLIDE_H, position: 'relative', overflow: 'hidden' }}>
+              <SlideBoard slide={s} theme={theme} total={deck.length} />
+            </div>
+          ))}
+        </div>
+      )}
+
       <ToastStack toasts={toasts} onDismiss={(id) => setToasts((t) => t.filter((x) => x.id !== id))} />
       {showGate && <SignupGate locale={locale} onClose={() => setShowGate(false)} />}
 
@@ -534,6 +587,8 @@ function SlidesBuilder() {
         .sl-ed:hover { background: rgba(109,91,240,.07); }
         .sl-ed:focus { background: rgba(109,91,240,.05); box-shadow: 0 0 0 2px rgba(109,91,240,.28); }
         .sl-only-sm { display: none; }
+        .sl-spin { animation: sl-spin .8s linear infinite; }
+        @keyframes sl-spin { to { transform: rotate(360deg); } }
         @media (max-width: 900px) { .sl-hide-md { display: none !important; } }
         .sl-ribbon::-webkit-scrollbar { height: 6px; }
         .sl-ribbon::-webkit-scrollbar-thumb { background: rgba(28,27,25,.18); border-radius: 6px; }
@@ -1808,6 +1863,43 @@ function ToolBtn({ children, onClick, primary, title }: { children: React.ReactN
     <button onClick={onClick} title={title} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: KH, fontSize: 12.5, fontWeight: 700, border: primary ? 'none' : `1px solid ${C.border}`, color: primary ? '#fff' : C.muted2, background: primary ? 'linear-gradient(135deg,#7c6cff,#a47bff)' : C.panel, boxShadow: primary ? '0 8px 18px -10px rgba(109,91,240,.6)' : 'none' }}>
       {children}
     </button>
+  );
+}
+
+// "នាំចេញ" (Export) trigger in the top bar — a small dropdown with real PDF
+// and PowerPoint downloads. Shows a spinner + disables while a file is being
+// generated (`busy` = the export kind in progress, or null when idle).
+function ExportMenu({ busy, onExport }: { busy: 'pdf' | 'pptx' | null; onExport: (kind: 'pdf' | 'pptx') => void }) {
+  const [open, setOpen] = useState(false);
+  const pick = (kind: 'pdf' | 'pptx') => {
+    setOpen(false);
+    onExport(kind);
+  };
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="នាំចេញ"
+        disabled={!!busy}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, cursor: busy ? 'default' : 'pointer', fontFamily: KH, fontSize: 12.5, fontWeight: 700, border: `1px solid ${C.border}`, color: C.muted2, background: C.panel, opacity: busy ? 0.7 : 1 }}
+      >
+        {busy ? <Loader2 size={15} className="sl-spin" /> : <Download size={15} />}
+        <span className="sl-hide-md">{busy ? 'កំពុងនាំចេញ…' : 'នាំចេញ'}</span>
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{ position: 'absolute', top: '115%', right: 0, zIndex: 41, minWidth: 190, padding: 5, borderRadius: 12, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 14px 32px -14px rgba(28,27,25,.45)' }}>
+            <button onClick={() => pick('pdf')} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '9px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: KH, fontSize: 13, fontWeight: 700, color: C.body, textAlign: 'left' }}>
+              <FileText size={15} style={{ color: C.accent }} /> នាំចេញជា PDF
+            </button>
+            <button onClick={() => pick('pptx')} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '9px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent', fontFamily: KH, fontSize: 13, fontWeight: 700, color: C.body, textAlign: 'left' }}>
+              <Presentation size={15} style={{ color: C.accent }} /> នាំចេញជា PowerPoint
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
