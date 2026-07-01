@@ -1,12 +1,17 @@
 import {
   ABSTRACTS,
   abstractById,
+  addLine,
   applyEdit,
   blankSlide,
   buildDeck,
   CHAPTERS,
   convertSlide,
+  GRADIENTS,
+  gradientById,
   LENGTH_PICK,
+  lineKind,
+  removeLine,
   renumber,
   resolveTheme,
   SLIDE_ACCENTS,
@@ -110,6 +115,20 @@ describe('slide backgrounds', () => {
     expect(r.scrim).toBeTruthy();
   });
 
+  it('renders a gradient background with its css and a scrim', () => {
+    const g = GRADIENTS[0];
+    const r = slideBackground({ type: 'gradient', value: g.id }, theme);
+    expect(r.layer.backgroundImage).toBe(g.css);
+    expect(r.scrim).toBeTruthy();
+    expect(gradientById(g.id)).toBe(g);
+  });
+
+  it('drops the gradient layer + scrim for an unknown gradient id', () => {
+    const r = slideBackground({ type: 'gradient', value: 'nope' }, theme);
+    expect(r.layer).toEqual({});
+    expect(r.scrim).toBeUndefined();
+  });
+
   it('keeps a slide background through edits and layout conversion', () => {
     const withBg: Slide = { ...buildDeck({ ...base, length: 'short' })[1], bg: { type: 'abstract', value: 'mesh' } } as Slide;
     expect(applyEdit(withBg, { field: 'title', value: 'x' }).bg).toEqual({ type: 'abstract', value: 'mesh' });
@@ -179,6 +198,49 @@ describe('deck editing', () => {
     it('ignores edits whose field does not apply to the slide kind', () => {
       const quote = deck.find((s): s is Extract<Slide, { kind: 'quote' }> => s.kind === 'quote')!;
       expect(applyEdit(quote, { field: 'title', value: 'x' })).toBe(quote);
+    });
+  });
+
+  describe('line add / remove', () => {
+    const dataSlide = deck.find((s): s is Extract<Slide, { kind: 'data' }> => s.kind === 'data')!;
+    const quote = deck.find((s): s is Extract<Slide, { kind: 'quote' }> => s.kind === 'quote')!;
+
+    it('reports the line container kind per slide', () => {
+      expect(lineKind(listSlide)).toBe('bullets');
+      expect(lineKind(dataSlide)).toBe('stats');
+      expect(lineKind(quote)).toBeNull();
+      const example = deck.find((s): s is Extract<Slide, { kind: 'example' }> => s.kind === 'example')!;
+      expect(lineKind(example)).toBe('steps');
+    });
+
+    it('inserts a blank bullet after the given index', () => {
+      const out = addLine(listSlide, 0);
+      if (out.kind !== 'list') throw new Error('nope');
+      expect(out.bullets.length).toBe(listSlide.bullets.length + 1);
+      expect(out.bullets[1]).toBe('ចំណុចថ្មី');
+      expect(out.bullets[0]).toBe(listSlide.bullets[0]);
+      expect(out).not.toBe(listSlide); // immutable
+    });
+
+    it('adds and removes a stat line on a data slide', () => {
+      const added = addLine(dataSlide, 0) as typeof dataSlide;
+      expect(added.stats.length).toBe(dataSlide.stats.length + 1);
+      const removed = removeLine(added, 1) as typeof dataSlide;
+      expect(removed.stats.length).toBe(dataSlide.stats.length);
+    });
+
+    it('keeps at least one line and is a no-op on non-line kinds', () => {
+      const oneLine: Slide = { kind: 'list', no: '០១', label: 'x', title: 't', bullets: ['only'] };
+      expect(removeLine(oneLine, 0)).toBe(oneLine);
+      expect(addLine(quote, 0)).toBe(quote);
+      expect(removeLine(quote, 0)).toBe(quote);
+    });
+
+    it('caps the number of bullet lines', () => {
+      let s: Slide = { kind: 'list', no: '០១', label: 'x', title: 't', bullets: ['a'] };
+      for (let i = 0; i < 20; i += 1) s = addLine(s, 0);
+      if (s.kind !== 'list') throw new Error('nope');
+      expect(s.bullets.length).toBeLessThanOrEqual(8);
     });
   });
 });
