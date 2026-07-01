@@ -709,10 +709,7 @@ function TopBar({ screen, onHome, onConfig, onExit, title, status, actions }: { 
         </>
       ) : (
         <>
-          <div className="sl-hide-sm" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontFamily: KO, fontSize: 16.5, color: C.ink, letterSpacing: '.3px', lineHeight: 1.1 }}>ស្លាយបង្ហាញ</span>
-            <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '2px', color: C.accent, lineHeight: 1.2 }}>STUNITY STUDIO</span>
-          </div>
+          <span className="sl-hide-sm" style={{ fontFamily: KO, fontSize: 17, color: C.ink, letterSpacing: '.3px' }}>ស្លាយបង្ហាញ</span>
           <div style={{ flex: 1 }} />
           <nav style={{ display: 'flex', alignItems: 'center', gap: 3, padding: 4, borderRadius: 100, background: '#f3f4f6', border: `1px solid ${C.borderSoft}` }}>
             <button onClick={onHome} className={screen === 'hub' ? '' : 'sl-navpill-inactive'} style={tab(screen === 'hub')}>
