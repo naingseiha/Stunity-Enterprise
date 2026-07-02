@@ -21,6 +21,8 @@ export interface QuizQuestion {
   correctAnswer: string;
   points: number;
   explanation?: string;
+  /** Curriculum topic tag (see TopicPickerModal); stamped quiz-wide in v1. */
+  topicId?: string | null;
 }
 
 interface QuizQuestionInputProps {
