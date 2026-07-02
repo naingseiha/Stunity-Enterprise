@@ -10,3 +10,5 @@ export { default as CertificateScreen } from './CertificateScreen';
 export { default as CourseQAScreen } from './CourseQAScreen';
 export { default as CreateCourseScreen } from './CreateCourseScreen';
 export { default as InstructorDashboardScreen } from './instructor/InstructorDashboardScreen';
+export { LearnPathScreen } from './path/LearnPathScreen';
+export { PracticeSessionScreen } from './path/PracticeSessionScreen';

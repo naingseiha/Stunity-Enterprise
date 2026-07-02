@@ -72,6 +72,8 @@ import {
   DocumentViewerScreen,
   CreateCourseScreen,
   InstructorDashboardScreen,
+  LearnPathScreen,
+  PracticeSessionScreen,
 } from "@/screens/learn";
 import {
   ProfileScreen,
@@ -330,6 +332,8 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
     <LearnStack.Screen name="DocumentViewer" component={DocumentViewerScreen} />
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
+    <LearnStack.Screen name="LearnPath" component={LearnPathScreen} />
+    <LearnStack.Screen name="PracticeSession" component={PracticeSessionScreen} />
     <LearnStack.Screen
       name="InstructorDashboard"
       component={InstructorDashboardScreen}
