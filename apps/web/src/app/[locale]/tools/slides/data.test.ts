@@ -1,6 +1,7 @@
 import {
   ABSTRACTS,
   abstractById,
+  addElement,
   addLine,
   applyEdit,
   blankSlide,
@@ -11,7 +12,9 @@ import {
   gradientById,
   LENGTH_PICK,
   lineKind,
+  removeElement,
   removeLine,
+  updateElement,
   DEFAULT_DECK_SETTINGS,
   FOOTER_LAYOUTS,
   renumber,
@@ -22,6 +25,7 @@ import {
   slideBackground,
   slideLines,
   THEMES,
+  type FreeformElement,
   type Slide,
 } from './data';
 
@@ -229,6 +233,13 @@ describe('deck editing', () => {
       const asList = convertSlide(media, 'list');
       expect(asList).not.toHaveProperty('image');
     });
+
+    it('carries freeform elements over into the new layout', () => {
+      const el: FreeformElement = { id: 'e1', type: 'text', x: 10, y: 10, w: 100, h: 40, rotation: 0, text: 'hi' };
+      const withEl = { ...listSlide, elements: [el] };
+      const asExample = convertSlide(withEl, 'example');
+      expect(asExample.elements).toEqual([el]);
+    });
   });
 
   describe('applyEdit', () => {
@@ -303,6 +314,45 @@ describe('deck editing', () => {
       if (s.kind !== 'list') throw new Error('nope');
       expect(s.bullets.length).toBeLessThanOrEqual(8);
     });
+  });
+});
+
+describe('freeform elements', () => {
+  const slide: Slide = { kind: 'list', no: '០១', label: 'x', title: 't', bullets: ['a'] };
+  const el: FreeformElement = { id: 'e1', type: 'text', x: 10, y: 20, w: 100, h: 40, rotation: 0, text: 'hello' };
+
+  it('adds an element without mutating the source slide', () => {
+    const added = addElement(slide, el);
+    expect(added.elements).toEqual([el]);
+    expect(slide.elements).toBeUndefined();
+    expect(added).not.toBe(slide);
+  });
+
+  it('appends to an existing elements array', () => {
+    const withOne = addElement(slide, el);
+    const el2: FreeformElement = { ...el, id: 'e2' };
+    const withTwo = addElement(withOne, el2);
+    expect(withTwo.elements).toEqual([el, el2]);
+  });
+
+  it('patches an element by id without touching siblings', () => {
+    const el2: FreeformElement = { ...el, id: 'e2', x: 200 };
+    const withBoth = addElement(addElement(slide, el), el2);
+    const moved = updateElement(withBoth, 'e1', { x: 50, y: 60 });
+    expect(moved.elements?.find((e) => e.id === 'e1')).toEqual({ ...el, x: 50, y: 60 });
+    expect(moved.elements?.find((e) => e.id === 'e2')).toEqual(el2);
+  });
+
+  it('is a no-op patching/removing on a slide with no elements', () => {
+    expect(updateElement(slide, 'e1', { x: 1 })).toBe(slide);
+    expect(removeElement(slide, 'e1')).toBe(slide);
+  });
+
+  it('removes an element by id', () => {
+    const el2: FreeformElement = { ...el, id: 'e2' };
+    const withBoth = addElement(addElement(slide, el), el2);
+    const removed = removeElement(withBoth, 'e1');
+    expect(removed.elements).toEqual([el2]);
   });
 });
 
