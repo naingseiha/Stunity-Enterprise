@@ -692,24 +692,6 @@ export default function LearnScreen() {
 
         {!isThreeColumnTablet && (
           <View style={styles.headerContent}>
-            {activeTab === 'explore' && (
-              <TouchableOpacity
-                style={styles.learnPathCard}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('LearnPath')}
-              >
-                <View style={styles.learnPathIcon}>
-                  <Ionicons name="trail-sign" size={22} color="#0EA5E9" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.learnPathTitle}>{t('learn.path.entryTitle')}</Text>
-                  <Text style={styles.learnPathSubtitle} numberOfLines={2}>
-                    {t('learn.path.entrySubtitle')}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-              </TouchableOpacity>
-            )}
             {activeTab === 'explore' && suggestedCourses.length > 0 && (
               <View style={styles.featuredSection}>
                 <View style={styles.featuredSectionHeader}>
@@ -1300,36 +1282,6 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number, i
   },
   featuredSection: {
     marginBottom: 24,
-  },
-  learnPathCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 12,
-    marginBottom: 20,
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  learnPathIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: isDark ? '#0F2F37' : '#F0F9FF',
-  },
-  learnPathTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  learnPathSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
   },
   featuredHorizontalScroll: {
     paddingHorizontal: 12,

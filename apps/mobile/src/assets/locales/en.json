@@ -1671,7 +1671,12 @@
       "finish": "Finish",
       "sessionDone": "Session complete!",
       "sessionStats": "{{correct}} of {{total}} correct",
-      "backToPath": "Back to path"
+      "backToPath": "Back to path",
+      "start": "START",
+      "completed": "Completed",
+      "unitsDone": "{{done}} of {{total}} units completed",
+      "coursesSection": "Courses",
+      "seeAll": "See all"
     },
     "continue": "Continue",
     "start": "Start",

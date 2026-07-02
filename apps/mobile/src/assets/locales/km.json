@@ -1671,7 +1671,12 @@
       "finish": "បញ្ចប់",
       "sessionDone": "បញ្ចប់វគ្គអនុវត្ត!",
       "sessionStats": "ត្រូវ {{correct}} ក្នុងចំណោម {{total}}",
-      "backToPath": "ត្រឡប់ទៅផ្លូវរៀន"
+      "backToPath": "ត្រឡប់ទៅផ្លូវរៀន",
+      "start": "ចាប់ផ្តើម",
+      "completed": "បញ្ចប់ហើយ",
+      "unitsDone": "បញ្ចប់ {{done}} ក្នុងចំណោម {{total}} មេរៀន",
+      "coursesSection": "វគ្គសិក្សា",
+      "seeAll": "មើលទាំងអស់"
     },
     "continue": "បន្ត",
     "start": "ចាប់ផ្តើម",
