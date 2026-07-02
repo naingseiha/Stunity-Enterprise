@@ -57,11 +57,22 @@ router.get('/recall/mastery', authenticateToken, async (req: AuthRequest, res: R
         reviewCount: true,
         incorrectCount: true,
         nextReviewAt: true,
+        topicId: true,
+        // Canonical taxonomy (when the origin question is tagged) — preferred
+        // over the string heuristics below.
+        topic: {
+          select: {
+            id: true,
+            name: true,
+            nameKh: true,
+            subject: { select: { id: true, name: true, nameEn: true, nameKh: true } },
+          },
+        },
       },
     });
 
     // subject -> { label, topic -> { masterySum, count, due } }
-    type TopicAgg = { label: string; sum: number; count: number; due: number };
+    type TopicAgg = { label: string; topicId: string | null; sum: number; count: number; due: number };
     type SubjectAgg = { label: string; sum: number; count: number; due: number; topics: Map<string, TopicAgg> };
     const subjects = new Map<string, SubjectAgg>();
 
@@ -69,24 +80,42 @@ router.get('/recall/mastery', authenticateToken, async (req: AuthRequest, res: R
       const mastery = cardMasteryPct(c);
       const isDue = c.nextReviewAt <= now;
 
-      // subjectLabel looks like "Biology · Cell Structure" → nice name + topic.
-      const [rawName, ...rest] = (c.subjectLabel || '').split('·').map((p) => p.trim());
-      const subjectLabel = rawName || capitalize(c.subject);
-      const topicLabel = rest.join(' · ') || subjectLabel;
+      let subjectKey: string;
+      let subjectLabel: string;
+      let topicKey: string;
+      let topicLabel: string;
+      let topicId: string | null = null;
 
-      let subj = subjects.get(c.subject);
+      if (c.topic) {
+        // Tagged card → canonical Subject/Topic names. Group key is the
+        // Subject row id so bilingual name variants can't split a subject.
+        subjectKey = `subject:${c.topic.subject.id}`;
+        subjectLabel = c.topic.subject.nameEn || c.topic.subject.name;
+        topicKey = c.topic.id;
+        topicLabel = c.topic.name;
+        topicId = c.topic.id;
+      } else {
+        // Legacy/untagged → parse "Biology · Cell Structure" as before.
+        const [rawName, ...rest] = (c.subjectLabel || '').split('·').map((p) => p.trim());
+        subjectKey = c.subject;
+        subjectLabel = rawName || capitalize(c.subject);
+        topicLabel = rest.join(' · ') || subjectLabel;
+        topicKey = topicLabel;
+      }
+
+      let subj = subjects.get(subjectKey);
       if (!subj) {
         subj = { label: subjectLabel, sum: 0, count: 0, due: 0, topics: new Map() };
-        subjects.set(c.subject, subj);
+        subjects.set(subjectKey, subj);
       }
       subj.sum += mastery;
       subj.count += 1;
       if (isDue) subj.due += 1;
 
-      let topic = subj.topics.get(topicLabel);
+      let topic = subj.topics.get(topicKey);
       if (!topic) {
-        topic = { label: topicLabel, sum: 0, count: 0, due: 0 };
-        subj.topics.set(topicLabel, topic);
+        topic = { label: topicLabel, topicId, sum: 0, count: 0, due: 0 };
+        subj.topics.set(topicKey, topic);
       }
       topic.sum += mastery;
       topic.count += 1;
@@ -103,6 +132,7 @@ router.get('/recall/mastery', authenticateToken, async (req: AuthRequest, res: R
         topics: Array.from(s.topics.values())
           .map((tp) => ({
             label: tp.label,
+            topicId: tp.topicId,
             mastery: tp.count ? Math.round(tp.sum / tp.count) : 0,
             cardCount: tp.count,
             dueCount: tp.due,

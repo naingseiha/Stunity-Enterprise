@@ -72,6 +72,8 @@ import {
   DocumentViewerScreen,
   CreateCourseScreen,
   InstructorDashboardScreen,
+  LearnHomeScreen,
+  PracticeSessionScreen,
 } from "@/screens/learn";
 import {
   ProfileScreen,
@@ -325,11 +327,13 @@ const LearnStackNavigator = () => (
       gestureEnabled: true,
     }}
   >
+    <LearnStack.Screen name="LearnHome" component={LearnHomeScreen} />
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
     <LearnStack.Screen name="DocumentViewer" component={DocumentViewerScreen} />
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
+    <LearnStack.Screen name="PracticeSession" component={PracticeSessionScreen} />
     <LearnStack.Screen
       name="InstructorDashboard"
       component={InstructorDashboardScreen}

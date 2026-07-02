@@ -14,8 +14,33 @@ import { updateUserFeedSignals } from './signals.routes';
 import { createPostSchema, createCommentSchema } from '../validators/post.validator';
 import { POLL_MIN_OPTIONS, POLL_MAX_OPTIONS, POLL_OPTION_MAX_LEN } from '../constants/limits';
 import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
+import {
+  prepareQuizQuestions,
+  type PreparedQuizQuestions,
+} from '../utils/quizQuestionRows';
 
 const router = Router();
+
+/**
+ * Confirm which client-sent question topicIds actually exist, so a stale or
+ * buggy client degrades to "untagged" instead of failing the write on a
+ * Topic FK. One IN query per request, only when any topicId was sent.
+ */
+const resolveValidTopicIds = async (rawQuestions: unknown): Promise<Set<string>> => {
+  const ids = Array.isArray(rawQuestions)
+    ? [...new Set(
+        rawQuestions
+          .map((q: any) => (q && typeof q.topicId === 'string' ? q.topicId.trim() : ''))
+          .filter(Boolean),
+      )]
+    : [];
+  if (ids.length === 0) return new Set();
+  const found = await prismaRead.topic.findMany({
+    where: { id: { in: ids } },
+    select: { id: true },
+  });
+  return new Set(found.map((t) => t.id));
+};
 const EDUCATIONAL_VALUE_DIFFICULTIES = new Set(['too_easy', 'just_right', 'too_hard']);
 const FEED_FEEDBACK_TYPES = new Set(['HIDE', 'NOT_INTERESTED', 'SHOW_LESS']);
 const FEED_FEEDBACK_TOPIC_PENALTY: Record<string, number> = {
@@ -196,6 +221,15 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       ...deadlineFields,
     };
 
+    // Quiz posts write BOTH stores atomically: the authoring Json on Quiz
+    // (grading source of truth) and one quiz_questions row per MC/TF question,
+    // sharing ids so recall cards / reels / mastery key off real rows.
+    let preparedQuiz: PreparedQuizQuestions | null = null;
+    if (postType === 'QUIZ' && quizData) {
+      const validTopicIds = await resolveValidTopicIds(quizData.questions);
+      preparedQuiz = prepareQuizQuestions(quizData.questions, { validTopicIds });
+    }
+
     // Use transaction if deducting bounties, otherwise create directly
     let post;
     const postCreateArgs: Prisma.PostCreateArgs = {
@@ -207,12 +241,12 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
             position: index,
           })),
         } : undefined,
-        quiz: postType === 'QUIZ' && quizData ? {
+        quiz: preparedQuiz ? {
           create: {
-            questions: quizData.questions || [],
+            questions: preparedQuiz.questionsJson,
             timeLimit: quizData.timeLimit ?? 0,
             passingScore: quizData.passingScore ?? 70,
-            totalPoints: quizData.totalPoints ?? 0,
+            totalPoints: preparedQuiz.questionsJson.reduce((sum, q) => sum + q.points, 0),
             resultsVisibility: quizData.resultsVisibility || 'AFTER_SUBMISSION',
             shuffleQuestions: quizData.shuffleQuestions || false,
             shuffleAnswers: quizData.shuffleAnswers || false,
@@ -220,6 +254,18 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
             showReview: quizData.showReview !== undefined ? quizData.showReview : true,
             showExplanations: quizData.showExplanations !== undefined ? quizData.showExplanations : true,
           },
+        } : undefined,
+        quizQuestions: preparedQuiz && preparedQuiz.rows.length > 0 ? {
+          create: preparedQuiz.rows.map((row) => ({
+            id: row.id,
+            question: row.question,
+            options: row.options,
+            correctAnswer: row.correctAnswer,
+            points: row.points,
+            position: row.position,
+            explanation: row.explanation,
+            topicId: row.topicId,
+          })),
         } : undefined,
       },
       select: {
@@ -1543,12 +1589,44 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       }
     }
 
+    let preparedQuizEdit: PreparedQuizQuestions | null = null;
     if (post.postType === 'QUIZ' && quizData) {
+      // Sync quiz_questions rows with the edited Json. Questions whose id
+      // matches an existing row are updated in place (their RecallCards
+      // survive); removed questions drop their rows (cascading their cards);
+      // legacy quizzes edited for the first time adopt their Json ids as row
+      // ids when collision-free, so stored attempt answers keep matching.
+      const validTopicIds = await resolveValidTopicIds(quizData.questions);
+      const existingRows = await prisma.quizQuestion.findMany({
+        where: { postId },
+        select: { id: true },
+      });
+      const existingRowIds = new Set(existingRows.map((r) => r.id));
+      const incomingIds = Array.isArray(quizData.questions)
+        ? [...new Set(
+            quizData.questions
+              .map((q: any) => (q && typeof q.id === 'string' ? q.id : ''))
+              .filter((id: string) => id && !existingRowIds.has(id)),
+          )] as string[]
+        : [];
+      const collisions = incomingIds.length
+        ? await prisma.quizQuestion.findMany({
+            where: { id: { in: incomingIds } },
+            select: { id: true },
+          })
+        : [];
+      preparedQuizEdit = prepareQuizQuestions(quizData.questions, {
+        validTopicIds,
+        existingRowIds,
+        takenRowIds: new Set(collisions.map((r) => r.id)),
+        preserveIncomingIds: true,
+      });
+
       const quizWriteData = {
-        questions: quizData.questions || [],
+        questions: preparedQuizEdit.questionsJson,
         timeLimit: quizData.timeLimit ?? 0,
         passingScore: quizData.passingScore ?? 70,
-        totalPoints: quizData.totalPoints ?? 0,
+        totalPoints: preparedQuizEdit.questionsJson.reduce((sum, q) => sum + q.points, 0),
         resultsVisibility: quizData.resultsVisibility ?? 'AFTER_SUBMISSION',
         shuffleQuestions: quizData.shuffleQuestions ?? false,
         shuffleAnswers: quizData.shuffleAnswers ?? false,
@@ -1565,7 +1643,34 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       };
     }
 
-    const updated = await prisma.post.update({
+    const rowSync = preparedQuizEdit;
+    const updated = await prisma.$transaction(async (tx) => {
+      if (rowSync) {
+        const keepIds = rowSync.rows.map((row) => row.id);
+        // Drop rows for removed questions (cascades their RecallCards — the
+        // question no longer exists, so pending reviews for it are moot).
+        await tx.quizQuestion.deleteMany({
+          where: { postId, ...(keepIds.length ? { id: { notIn: keepIds } } : {}) },
+        });
+        for (const row of rowSync.rows) {
+          const data = {
+            question: row.question,
+            options: row.options,
+            correctAnswer: row.correctAnswer,
+            points: row.points,
+            position: row.position,
+            explanation: row.explanation,
+            topicId: row.topicId,
+          };
+          if (row.action === 'update') {
+            await tx.quizQuestion.update({ where: { id: row.id }, data });
+          } else {
+            await tx.quizQuestion.create({ data: { id: row.id, postId, ...data } });
+          }
+        }
+      }
+
+      return tx.post.update({
       where: { id: postId },
       data: postUpdateData,
       select: {
@@ -1614,6 +1719,7 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         } } : {}),
         ...(post.postType === 'QUIZ' ? { quiz: true } : {}),
       },
+      });
     });
 
     res.json({ success: true, data: updated });
