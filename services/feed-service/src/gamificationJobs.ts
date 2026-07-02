@@ -130,20 +130,26 @@ async function updateUserAcademicProfiles(prisma: PrismaClient) {
             // Get their 20 most recent scores
             const userScores = await prisma.quizAttempt.findMany({
                 where: { userId },
-                select: { score: true, quiz: { select: { totalPoints: true, post: { select: { topicTags: true } } } } },
+                select: { score: true, quiz: { select: { post: { select: { topicTags: true } } } } },
                 take: 20,
                 orderBy: { submittedAt: 'desc' },
             });
 
             if (userScores.length === 0) continue;
 
+            // QuizAttempt.score is already a 0-100 percentage (see
+            // gradeQuizSubmission), so both rollups normalize against 100 —
+            // mixing it with quiz.totalPoints (raw points) skewed every
+            // topic past ~100% or under 1% depending on the quiz size.
             let totalPercentage = 0;
+            let countedAttempts = 0;
             const topicScores: Record<string, { total: number; max: number }> = {};
 
             for (const attempt of userScores) {
-                if (!attempt.quiz || !attempt.quiz.totalPoints || attempt.quiz.totalPoints === 0) continue;
-                const pct = attempt.score / attempt.quiz.totalPoints;
+                if (!attempt.quiz) continue;
+                const pct = Math.max(0, Math.min(1, attempt.score / 100));
                 totalPercentage += pct;
+                countedAttempts += 1;
 
                 // Aggregate by topic
                 const tags = attempt.quiz.post?.topicTags || [];
@@ -151,11 +157,12 @@ async function updateUserAcademicProfiles(prisma: PrismaClient) {
                     const t = tag.toLowerCase();
                     if (!topicScores[t]) topicScores[t] = { total: 0, max: 0 };
                     topicScores[t].total += attempt.score;
-                    topicScores[t].max += attempt.quiz.totalPoints;
+                    topicScores[t].max += 100;
                 }
             }
 
-            const avgPercentage = totalPercentage / userScores.length;
+            if (countedAttempts === 0) continue;
+            const avgPercentage = totalPercentage / countedAttempts;
             // Map 0-100% to 1.0 - 5.0 scale
             const currentLevel = 1.0 + (avgPercentage * 4.0);
 
