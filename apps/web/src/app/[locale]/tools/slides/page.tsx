@@ -42,9 +42,11 @@ import {
   RefreshCw,
   RemoveFormatting,
   Sparkles,
+  Square,
   StickyNote,
   Strikethrough,
   Trash2,
+  Type,
   Underline,
   Undo2,
   Upload,
@@ -54,6 +56,7 @@ import {
 } from 'lucide-react';
 import {
   ABSTRACTS,
+  addElement,
   addLine,
   applyEdit,
   blankSlide,
@@ -64,7 +67,10 @@ import {
   FOOTER_LAYOUTS,
   GRADES,
   GRADIENTS,
+  ICONS,
+  ILLUSTRATIONS,
   lineKind,
+  removeElement,
   removeLine,
   renumber,
   resolveTheme,
@@ -75,15 +81,18 @@ import {
   SLIDE_H,
   SLIDE_KINDS,
   SLIDE_LENGTHS,
+  SLIDE_TRANSITIONS,
   SLIDE_W,
   SUBJECTS,
   THEMES,
   toKh,
+  updateElement,
   type Chapter,
   type DeckSettings,
   type EditField,
   type EditPatch,
   type FooterLayout,
+  type FreeformElement,
   type Slide,
   type SlideBg,
   type Theme,
@@ -186,6 +195,8 @@ function SlidesBuilder() {
   const [deckSettings, setDeckSettings] = useState<DeckSettings>(DEFAULT_DECK_SETTINGS);
   const patchDeckSettings = (patch: Partial<DeckSettings>) => setDeckSettings((d) => ({ ...d, ...patch }));
   const [slideIndex, setSlideIndex] = useState(0);
+  // Currently-selected freeform element on the editable stage (id, or null).
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [genStep, setGenStep] = useState(0);
   const [presenting, setPresenting] = useState(false);
   // Real PDF / PowerPoint export. Set while a hidden off-screen copy of the
@@ -263,6 +274,8 @@ function SlidesBuilder() {
     [subject, grade, chapter, lessonTitle, length],
   );
   const idx = Math.max(0, Math.min(deck.length - 1, slideIndex));
+  // Deselect any freeform element when the current slide changes.
+  useEffect(() => setSelectedElementId(null), [idx]);
 
   const scrollTop = () => {
     if (mainRef.current) mainRef.current.scrollTop = 0;
@@ -402,6 +415,22 @@ function SlidesBuilder() {
   };
   const setNotes = (value: string) =>
     commitDeck((d) => d.map((s, k) => (k === idx ? { ...s, notes: value } : s)));
+  // Freeform elements — additive overlay any slide can carry (see data.ts).
+  const addElementToSlide = (type: 'text' | 'shape') => {
+    const id = `el_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+    const el: FreeformElement =
+      type === 'text'
+        ? { id, type: 'text', x: 300, y: 200, w: 280, h: 60, rotation: 0, text: 'អត្ថបទថ្មី', fontSize: 22, color: theme.ink }
+        : { id, type: 'shape', x: 340, y: 180, w: 160, h: 160, rotation: 0, shapeKind: 'rect', fill: theme.accent };
+    commitDeck((d) => d.map((s, k) => (k === idx ? addElement(s, el) : s)));
+    setSelectedElementId(id);
+  };
+  const updateElementOnSlide = (id: string, patch: Partial<FreeformElement>) =>
+    commitDeck((d) => d.map((s, k) => (k === idx ? updateElement(s, id, patch) : s)));
+  const removeElementFromSlide = (id: string) => {
+    commitDeck((d) => d.map((s, k) => (k === idx ? removeElement(s, id) : s)));
+    setSelectedElementId((cur) => (cur === id ? null : cur));
+  };
   const setMediaImage = (url: string | undefined) =>
     commitDeck((d) => d.map((s, k) => (k === idx && s.kind === 'media' ? { ...s, image: url } : s)));
 
@@ -503,7 +532,7 @@ function SlidesBuilder() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: MESH_BG, fontFamily: KH, color: C.body }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: MESH_BG, fontFamily: KH, color: C.body }}>
       <TopBar
         screen={screen}
         onHome={() => go('hub')}
@@ -524,7 +553,7 @@ function SlidesBuilder() {
         }
       />
 
-      <main ref={mainRef as React.RefObject<HTMLElement>} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)', overflowY: 'auto' }}>
+      <main ref={mainRef as React.RefObject<HTMLElement>} style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)', overflowY: 'auto' }}>
         {screen === 'hub' && <Hub onStart={() => go('config')} />}
 
         {screen === 'config' && (
@@ -582,6 +611,11 @@ function SlidesBuilder() {
             onSetBgAll={setBgAll}
             onSetNotes={setNotes}
             onSetImage={setMediaImage}
+            selectedElementId={selectedElementId}
+            onSelectElement={setSelectedElementId}
+            onAddElement={addElementToSlide}
+            onUpdateElement={updateElementOnSlide}
+            onRemoveElement={removeElementFromSlide}
             onUndo={undo}
             onRedo={redo}
             canUndo={canUndo}
@@ -646,8 +680,14 @@ function SlidesBuilder() {
         .sl-film-item:hover .sl-film-gripicon { display: inline; }
         .sl-stage-in { animation: sl-stage-in .28s cubic-bezier(.16,1,.3,1); }
         @keyframes sl-stage-in { from { opacity: .45; transform: scale(.986); } to { opacity: 1; transform: scale(1); } }
+        .sl-present-fade { animation: sl-present-fade .35s ease; }
+        @keyframes sl-present-fade { from { opacity: 0; } to { opacity: 1; } }
+        .sl-present-slide { animation: sl-present-slide .35s cubic-bezier(.16,1,.3,1); }
+        @keyframes sl-present-slide { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+        .sl-present-zoom { animation: sl-present-zoom .35s cubic-bezier(.16,1,.3,1); }
+        @keyframes sl-present-zoom { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
         @media (prefers-reduced-motion: reduce) {
-          .sl-hero-in, .sl-blob, .sl-cta-pulse, .sl-stage-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+          .sl-hero-in, .sl-blob, .sl-cta-pulse, .sl-stage-in, .sl-present-fade, .sl-present-slide, .sl-present-zoom { animation: none !important; opacity: 1 !important; transform: none !important; }
         }
         @media (max-width: 900px) { .sl-hide-md { display: none !important; } }
         .sl-ribbon::-webkit-scrollbar { height: 6px; }
@@ -662,6 +702,11 @@ function SlidesBuilder() {
         @media (max-width: 980px) {
           .sl-config-grid { grid-template-columns: 1fr !important; }
           .sl-config-grid > aside { border-right: none !important; }
+        }
+        .sl-panel-fallback { display: none; }
+        @media (max-width: 1300px) {
+          .sl-hide-panel { display: none !important; }
+          .sl-panel-fallback { display: inline-flex !important; }
         }
       `}</style>
     </div>
@@ -948,6 +993,11 @@ function Result(props: {
   onSetBgAll: (bg: SlideBg | undefined) => void;
   onSetNotes: (value: string) => void;
   onSetImage: (url: string | undefined) => void;
+  selectedElementId: string | null;
+  onSelectElement: (id: string | null) => void;
+  onAddElement: (type: 'text' | 'shape') => void;
+  onUpdateElement: (id: string, patch: Partial<FreeformElement>) => void;
+  onRemoveElement: (id: string) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -955,7 +1005,7 @@ function Result(props: {
   deckSettings: DeckSettings;
   onPatchDeckSettings: (patch: Partial<DeckSettings>) => void;
 }) {
-  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onSetImage, onUndo, onRedo, canUndo, canRedo, deckSettings, onPatchDeckSettings } = props;
+  const { deck, idx, theme, themeId, setThemeId, accentId, setAccentId, onSelect, onPrev, onNext, onEditSlide, onAddSlide, onDuplicate, onDelete, onMove, onReorder, onChangeLayout, onAddLine, onRemoveLine, onSetBg, onSetBgAll, onSetNotes, onSetImage, selectedElementId, onSelectElement, onAddElement, onUpdateElement, onRemoveElement, onUndo, onRedo, canUndo, canRedo, deckSettings, onPatchDeckSettings } = props;
   // Drag-reorder state for the filmstrip.
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -984,6 +1034,7 @@ function Result(props: {
         bg={deck[idx].bg}
         onSetBg={onSetBg}
         onSetBgAll={onSetBgAll}
+        onAddElement={onAddElement}
         deckSettings={deckSettings}
         onPatchDeckSettings={onPatchDeckSettings}
       />
@@ -991,7 +1042,7 @@ function Result(props: {
       {/* body: filmstrip + canvas */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {/* left filmstrip */}
-        <aside className="sl-hide-sm" style={{ width: 176, flex: 'none', borderRight: `1px solid ${C.borderSoft}`, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '14px 14px 40px' }}>
+        <aside className="sl-hide-sm" style={{ width: 176, flex: 'none', borderRight: `1px solid ${C.borderSoft}`, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(8px)', overflowY: 'auto', overscrollBehaviorY: 'contain', padding: '14px 14px 40px' }}>
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '1px', color: C.faintLabel, marginBottom: 4, paddingLeft: 4 }}>ស្លាយ · {toKh(deck.length)}</div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9.5, fontWeight: 700, color: C.faintLabel, marginBottom: 12, paddingLeft: 4 }}>
             <GripVertical size={11} /> អូសដើម្បីរៀបលំដាប់
@@ -1036,7 +1087,7 @@ function Result(props: {
             <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: '100%' }}>
               <NavArrow onClick={onPrev} disabled={idx <= 0}><ChevronLeft size={22} /></NavArrow>
               <div key={idx} className="sl-stage-in" style={{ maxWidth: '100%' }}>
-                <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} deckSettings={deckSettings} />
+                <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width={820} shadow edit={onEditSlide} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} selectedElementId={selectedElementId} onSelectElement={onSelectElement} onUpdateElement={onUpdateElement} onRemoveElement={onRemoveElement} deckSettings={deckSettings} />
               </div>
               <NavArrow onClick={onNext} disabled={idx >= deck.length - 1}><ChevronRight size={22} /></NavArrow>
             </div>
@@ -1049,6 +1100,9 @@ function Result(props: {
             <NotesPanel key={`${idx}|${deck[idx].notes || ''}`} value={deck[idx].notes || ''} onCommit={onSetNotes} />
           </div>
         </div>
+
+        {/* persistent right-side design panel (background/theme/accent) */}
+        <DesignPanel bg={deck[idx].bg} theme={theme} themeId={themeId} setThemeId={setThemeId} accentId={accentId} setAccentId={setAccentId} onSetBg={onSetBg} onSetBgAll={onSetBgAll} deckSettings={deckSettings} onPatchDeckSettings={onPatchDeckSettings} />
       </div>
     </>
   );
@@ -1125,16 +1179,47 @@ function KindMenu({ label, icon, onPick, currentKind }: { label: string; icon: R
   );
 }
 
-// Background picker — abstract presets gallery + image (upload / URL).
-function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPick: (b: SlideBg | undefined) => void; onAll: (b: SlideBg | undefined) => void }) {
-  const [open, setOpen] = useState(false);
+// Collapsible inspector-style section (Figma/Xcode pattern) — a header row
+// that toggles its own content, optionally capping the content to a fixed
+// height with its own internal scroll so one large section (e.g. the
+// background tile library) never pushes the sections below it out of reach.
+function PanelSection({ title, icon, defaultOpen = true, maxHeight, children }: { title: string; icon: React.ReactNode; defaultOpen?: boolean; maxHeight?: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ borderBottom: `1px solid ${C.borderSoft}`, marginBottom: 4 }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 2px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+      >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 6, background: ACCENT_SOFT, color: C.accent, flex: 'none' }}>{icon}</span>
+          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.4px', color: C.ink }}>{title}</span>
+        </span>
+        <ChevronDown size={14} style={{ color: C.faintLabel, transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s', flex: 'none' }} />
+      </button>
+      {open && (
+        <div style={{ paddingBottom: 14, ...(maxHeight ? { maxHeight, overflowY: 'auto' as const, overscrollBehaviorY: 'contain' as const } : {}) }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Background + theme + accent-color controls — shared content rendered both
+// in the persistent right-side design panel (wide viewports, see
+// DesignPanel) and the ribbon fallback dropdown (narrow viewports, see
+// DesignMenu / .sl-panel-fallback). Organized as independently collapsible
+// / scrollable PanelSections so the (often long) background tile library
+// doesn't force scrolling past it to reach theme/accent controls.
+function DesignControls({ bg, theme, themeId, setThemeId, accentId, setAccentId, onSetBg, onSetBgAll, deckSettings, onPatchDeckSettings, cols = 2, onAfterPick }: { bg?: SlideBg; theme: Theme; themeId: string; setThemeId: (v: string) => void; accentId: string; setAccentId: (v: string) => void; onSetBg: (b: SlideBg | undefined) => void; onSetBgAll: (b: SlideBg | undefined) => void; deckSettings: DeckSettings; onPatchDeckSettings: (patch: Partial<DeckSettings>) => void; cols?: number; onAfterPick?: () => void }) {
   const [all, setAll] = useState(false);
   const [url, setUrl] = useState('');
   const [err, setErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const apply = (b: SlideBg | undefined) => {
-    (all ? onAll : onPick)(b);
-    setOpen(false);
+    (all ? onSetBgAll : onSetBg)(b);
+    onAfterPick?.();
   };
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -1156,44 +1241,111 @@ function BgMenu({ bg, theme, onPick, onAll }: { bg?: SlideBg; theme: Theme; onPi
   );
 
   return (
-    <div style={{ position: 'relative' }}>
-      <RibBtn onClick={() => setOpen((o) => !o)} title="ផ្ទៃខាងក្រោយ"><Wallpaper size={15} /><span className="sl-hide-md">ផ្ទៃ</span><ChevronDown size={12} /></RibBtn>
+    <div>
+      <PanelSection title="ផ្ទៃខាងក្រោយ" icon={<Wallpaper size={12} />} maxHeight={360}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <button onClick={() => setAll((a) => !a)} title="ដាក់គ្រប់ស្លាយ" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 100, cursor: 'pointer', border: `1px solid ${all ? C.accent : C.border}`, background: all ? ACCENT_SOFT : '#fff', color: all ? C.accent : C.muted2, fontSize: 11, fontWeight: 700 }}>
+            {all && <Check size={12} />} ទាំងអស់
+          </button>
+        </div>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, marginBottom: 7 }}>រចនាបថ</div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 7 }}>
+          {tile('none', !bg, { background: theme.bg, position: 'relative' }, () => apply(undefined), 'គ្មាន')}
+          {ABSTRACTS.map((a) => tile(a.id, bg?.type === 'abstract' && bg.value === a.id, a.css(theme), () => apply({ type: 'abstract', value: a.id }), a.name))}
+        </div>
+
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>ពណ៌ Gradient</div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 7 }}>
+          {GRADIENTS.map((g) => tile(g.id, bg?.type === 'gradient' && bg.value === g.id, { backgroundImage: g.css }, () => apply({ type: 'gradient', value: g.id }), g.name))}
+        </div>
+
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>សិល្បៈ</div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 7 }}>
+          {SCENES.map((s) => tile(s.id, bg?.type === 'image' && bg.value === s.dataUrl, { backgroundImage: `url("${s.dataUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }, () => apply({ type: 'image', value: s.dataUrl }), s.name))}
+        </div>
+
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>រូបតំណាង</div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 7 }}>
+          {ICONS.map((s) => tile(s.id, bg?.type === 'image' && bg.value === s.dataUrl, { backgroundImage: `url("${s.dataUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }, () => apply({ type: 'image', value: s.dataUrl }), s.name))}
+        </div>
+
+        <div style={{ height: 1, background: C.borderSoft, margin: '12px 0' }} />
+        <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+        <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', padding: '10px', borderRadius: 10, cursor: 'pointer', border: `1px dashed ${C.border}`, background: '#faf9ff', color: C.accent, fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>
+          <Upload size={15} /> បញ្ចូលរូបភាព
+        </button>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="បិទភ្ជាប់ URL រូបភាព" style={{ ...inputStyle, padding: '8px 10px', fontSize: 12 }} />
+          <button onClick={() => { if (url.trim()) apply({ type: 'image', value: url.trim() }); }} style={{ flex: 'none', padding: '0 14px', borderRadius: 10, border: 'none', cursor: 'pointer', background: ACCENT_GRAD, color: '#fff', fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>ប្រើ</button>
+        </div>
+        {err && <div style={{ marginTop: 8, fontSize: 11.5, color: '#b8472f' }}>{err}</div>}
+      </PanelSection>
+
+      <PanelSection title="ស្បែក" icon={<Palette size={12} />}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {THEMES.map((t) => (
+            <button key={t.id} onClick={() => setThemeId(t.id)} title={t.name} style={{ width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', border: themeId === t.id ? `2px solid ${C.accent}` : '1px solid rgba(28,27,25,.16)', background: t.panel, flex: 'none', boxShadow: themeId === t.id ? '0 0 0 3px rgba(109,91,240,.16)' : 'none' }} />
+          ))}
+        </div>
+      </PanelSection>
+
+      <PanelSection title="ពណ៌សំខាន់" icon={<span style={{ width: 10, height: 10, borderRadius: '50%', background: ACCENT_GRAD }} />}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <Swatch color={(THEMES.find((t) => t.id === themeId) || THEMES[0]).accent} active={accentId === ''} onClick={() => setAccentId('')} title="ដើម" sm />
+          {SLIDE_ACCENTS.map((a) => (
+            <Swatch key={a.id} color={a.c} active={accentId === a.id} onClick={() => setAccentId(a.id)} title={a.name} sm />
+          ))}
+        </div>
+      </PanelSection>
+
+      <PanelSection title="ចលនា" icon={<Play size={11} />}>
+        <div style={{ fontSize: 10.5, color: C.faintLabel, marginBottom: 9 }}>ចលនាប្តូរស្លាយពេលបង្ហាញ (Present)</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {SLIDE_TRANSITIONS.map((t) => {
+            const active = deckSettings.transition === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => onPatchDeckSettings({ transition: t.id })}
+                style={{ padding: '6px 12px', borderRadius: 100, cursor: 'pointer', border: `1px solid ${active ? C.accent : C.border}`, background: active ? ACCENT_SOFT : '#fff', color: active ? C.accent : C.muted2, fontFamily: KH, fontSize: 11.5, fontWeight: 700 }}
+              >
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
+      </PanelSection>
+    </div>
+  );
+}
+
+type DesignControlsPassThrough = { bg?: SlideBg; theme: Theme; themeId: string; setThemeId: (v: string) => void; accentId: string; setAccentId: (v: string) => void; onSetBg: (b: SlideBg | undefined) => void; onSetBgAll: (b: SlideBg | undefined) => void; deckSettings: DeckSettings; onPatchDeckSettings: (patch: Partial<DeckSettings>) => void };
+
+// Persistent right-side design panel — background/theme/accent controls,
+// docked beside the canvas on wide viewports. Hidden below the
+// .sl-hide-panel breakpoint in favor of the DesignMenu ribbon fallback.
+function DesignPanel(props: DesignControlsPassThrough) {
+  return (
+    <aside className="sl-hide-panel" style={{ width: 240, flex: 'none', borderLeft: `1px solid ${C.borderSoft}`, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(8px)', overflowY: 'auto', overscrollBehaviorY: 'contain', padding: '14px 14px 40px' }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '1px', color: C.faintLabel, marginBottom: 12, paddingLeft: 4 }}>ការរចនា</div>
+      <DesignControls {...props} cols={2} />
+    </aside>
+  );
+}
+
+// Ribbon fallback trigger for DesignControls — only visible (via the
+// .sl-panel-fallback CSS rule) when the persistent DesignPanel is hidden on
+// narrower viewports, so background/theme/accent editing stays reachable.
+function DesignMenu(props: DesignControlsPassThrough) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="sl-panel-fallback" style={{ position: 'relative' }}>
+      <RibBtn onClick={() => setOpen((o) => !o)} title="ការរចនា"><Wallpaper size={15} /><span className="sl-hide-md">ការរចនា</span><ChevronDown size={12} /></RibBtn>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
           <div style={{ position: 'absolute', top: '120%', right: 0, zIndex: 41, width: 300, maxHeight: 'min(70vh, 540px)', overflowY: 'auto', padding: 14, borderRadius: 16, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 20px 44px -16px rgba(28,27,25,.5)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontFamily: KO, fontSize: 14, color: C.ink }}>ផ្ទៃខាងក្រោយ</span>
-              <button onClick={() => setAll((a) => !a)} title="ដាក់គ្រប់ស្លាយ" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 100, cursor: 'pointer', border: `1px solid ${all ? C.accent : C.border}`, background: all ? ACCENT_SOFT : '#fff', color: all ? C.accent : C.muted2, fontSize: 11, fontWeight: 700 }}>
-                {all && <Check size={12} />} ទាំងអស់
-              </button>
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, marginBottom: 7 }}>រចនាបថ</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
-              {tile('none', !bg, { background: theme.bg, position: 'relative' }, () => apply(undefined), 'គ្មាន')}
-              {ABSTRACTS.map((a) => tile(a.id, bg?.type === 'abstract' && bg.value === a.id, a.css(theme), () => apply({ type: 'abstract', value: a.id }), a.name))}
-            </div>
-
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>ពណ៌ Gradient</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
-              {GRADIENTS.map((g) => tile(g.id, bg?.type === 'gradient' && bg.value === g.id, { backgroundImage: g.css }, () => apply({ type: 'gradient', value: g.id }), g.name))}
-            </div>
-
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, margin: '14px 0 7px' }}>សិល្បៈ</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
-              {SCENES.map((s) => tile(s.id, bg?.type === 'image' && bg.value === s.dataUrl, { backgroundImage: `url("${s.dataUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }, () => apply({ type: 'image', value: s.dataUrl }), s.name))}
-            </div>
-
-            <div style={{ height: 1, background: C.borderSoft, margin: '12px 0' }} />
-            <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
-            <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', padding: '10px', borderRadius: 10, cursor: 'pointer', border: `1px dashed ${C.border}`, background: '#faf9ff', color: C.accent, fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>
-              <Upload size={15} /> បញ្ចូលរូបភាព
-            </button>
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="បិទភ្ជាប់ URL រូបភាព" style={{ ...inputStyle, padding: '8px 10px', fontSize: 12 }} />
-              <button onClick={() => { if (url.trim()) apply({ type: 'image', value: url.trim() }); }} style={{ flex: 'none', padding: '0 14px', borderRadius: 10, border: 'none', cursor: 'pointer', background: ACCENT_GRAD, color: '#fff', fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>ប្រើ</button>
-            </div>
-            {err && <div style={{ marginTop: 8, fontSize: 11.5, color: '#b8472f' }}>{err}</div>}
+            <DesignControls {...props} cols={3} onAfterPick={() => setOpen(false)} />
           </div>
         </>
       )}
@@ -1345,7 +1497,17 @@ function MediaImageMenu({ image, onSet }: { image?: string; onSet: (url: string 
       {open && (
         <>
           <div onMouseDown={(e) => e.preventDefault()} onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-          <div onMouseDown={(e) => e.preventDefault()} style={{ position: 'absolute', top: '115%', right: 0, zIndex: 41, width: 240, padding: 12, borderRadius: 14, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 16px 34px -14px rgba(28,27,25,.45)' }}>
+          <div onMouseDown={(e) => e.preventDefault()} style={{ position: 'absolute', top: '115%', right: 0, zIndex: 41, width: 264, maxHeight: 'min(70vh, 460px)', overflowY: 'auto', padding: 12, borderRadius: 14, background: C.panel, border: `1px solid ${C.border}`, boxShadow: '0 16px 34px -14px rgba(28,27,25,.45)' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.8px', color: C.faintLabel, marginBottom: 7 }}>រូបភាពគំរូ</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7, marginBottom: 10 }}>
+              {ILLUSTRATIONS.map((i) => (
+                <button key={i.id} onClick={() => { onSet(i.dataUrl); setOpen(false); }} title={i.name} style={{ padding: 0, border: `2px solid ${image === i.dataUrl ? C.accent : 'transparent'}`, borderRadius: 9, cursor: 'pointer', overflow: 'hidden', background: 'transparent', boxShadow: image === i.dataUrl ? '0 0 0 2px rgba(109,91,240,.2)' : 'none' }}>
+                  <span style={{ display: 'block', width: '100%', height: 40, borderRadius: 7, border: `1px solid ${C.borderSoft}`, backgroundImage: `url("${i.dataUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                  <span style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: C.muted2, padding: '3px 0 1px', textAlign: 'center' }}>{i.name}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ height: 1, background: C.borderSoft, margin: '4px 0 10px' }} />
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
             <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', padding: 10, borderRadius: 10, cursor: 'pointer', border: `1px dashed ${C.border}`, background: '#faf9ff', color: C.accent, fontFamily: KH, fontSize: 12.5, fontWeight: 700 }}>
               <Upload size={15} /> បញ្ចូលរូបភាព
@@ -1386,7 +1548,7 @@ function Present({ deck, idx, theme, onPrev, onNext, onClose, deckSettings }: { 
   }, []);
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#0b0907', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 'min(96vw, calc(94vh * 880 / 495))' }}>
+      <div key={idx} className={deckSettings.transition === 'none' ? undefined : `sl-present-${deckSettings.transition}`} style={{ width: 'min(96vw, calc(94vh * 880 / 495))' }}>
         <ScaledSlide slide={deck[idx]} theme={theme} total={deck.length} width="100%" deckSettings={deckSettings} />
       </div>
 
@@ -1448,7 +1610,7 @@ function presentArrow(side: 'left' | 'right', disabled: boolean): React.CSSPrope
 // ════════════════════════════════════════════════════════════════════
 // Slide rendering — native 880×495, scaled by the container
 // ════════════════════════════════════════════════════════════════════
-function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine, onSetImage, deckSettings }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void; deckSettings?: DeckSettings }) {
+function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRemoveLine, onSetImage, selectedElementId, onSelectElement, onUpdateElement, onRemoveElement, deckSettings }: { slide: Slide; theme: Theme; total: number; width: number | string; shadow?: boolean; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void; selectedElementId?: string | null; onSelectElement?: (id: string | null) => void; onUpdateElement?: (id: string, patch: Partial<FreeformElement>) => void; onRemoveElement?: (id: string) => void; deckSettings?: DeckSettings }) {
   // The native 880×495 board is always scaled to the *actual* rendered width via
   // a container query (100cqw / 880). This keeps the scale honest even when
   // maxWidth clamps the wrapper on a narrow viewport, so the board never clips.
@@ -1467,7 +1629,7 @@ function ScaledSlide({ slide, theme, total, width, shadow, edit, onAddLine, onRe
       }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, width: SLIDE_W, height: SLIDE_H, transform: `scale(calc(100cqw / ${SLIDE_W}px))`, transformOrigin: 'top left' }}>
-        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} deckSettings={deckSettings} />
+        <SlideBoard slide={slide} theme={theme} total={total} edit={edit} onAddLine={onAddLine} onRemoveLine={onRemoveLine} onSetImage={onSetImage} selectedElementId={selectedElementId} onSelectElement={onSelectElement} onUpdateElement={onUpdateElement} onRemoveElement={onRemoveElement} deckSettings={deckSettings} />
       </div>
     </div>
   );
@@ -1583,10 +1745,11 @@ function EditorToolbar(props: {
   bg?: SlideBg;
   onSetBg: (b: SlideBg | undefined) => void;
   onSetBgAll: (b: SlideBg | undefined) => void;
+  onAddElement: (type: 'text' | 'shape') => void;
   deckSettings: DeckSettings;
   onPatchDeckSettings: (patch: Partial<DeckSettings>) => void;
 }) {
-  const { kind, idx, total, themeId, setThemeId, accentId, setAccentId, onAddSlide, onChangeLayout, onDuplicate, onMove, onDelete, onUndo, onRedo, canUndo, canRedo, theme, bg, onSetBg, onSetBgAll, deckSettings, onPatchDeckSettings } = props;
+  const { kind, idx, total, themeId, setThemeId, accentId, setAccentId, onAddSlide, onChangeLayout, onDuplicate, onMove, onDelete, onUndo, onRedo, canUndo, canRedo, theme, bg, onSetBg, onSetBgAll, onAddElement, deckSettings, onPatchDeckSettings } = props;
   const [menu, setMenu] = useState<null | 'font' | 'size' | 'color' | 'hilite'>(null);
   const [active, setActive] = useState<Record<string, boolean>>({});
   const [curFont, setCurFont] = useState('Battambang');
@@ -1635,6 +1798,13 @@ function EditorToolbar(props: {
         <RibBtn onClick={onDelete} disabled={total <= 1} danger title="លុបស្លាយ"><Trash2 size={15} /></RibBtn>
       </RibGroup>
 
+      {/* freeform elements — add a free-floating text box or shape onto the
+          current slide (see SlideElementsLayer for drag/resize/select) */}
+      <RibGroup icon={<Square size={13} />}>
+        <RibBtn onClick={() => onAddElement('text')} title="បន្ថែមអត្ថបទ"><Type size={15} /><span className="sl-hide-sm">អត្ថបទ</span></RibBtn>
+        <RibBtn onClick={() => onAddElement('shape')} title="បន្ថែមរាង"><Square size={15} /><span className="sl-hide-sm">រាង</span></RibBtn>
+      </RibGroup>
+
       {/* text format */}
       <RibGroup hold icon={<span style={{ fontFamily: KO, fontSize: 13, paddingTop: 1 }}>Aa</span>}>
         <Popover open={menu === 'font'} onToggle={() => tog('font')} title="ពុម្ពអក្សរ" button={<><span style={{ fontSize: 12.5, fontWeight: 700, maxWidth: 78, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{curFont}</span><ChevronDown size={12} /></>}>
@@ -1672,19 +1842,11 @@ function EditorToolbar(props: {
         <RibBtn hold onClick={() => fmtExec('removeFormat')} title="សម្អាតទ្រង់ទ្រាយ"><RemoveFormatting size={15} /></RibBtn>
       </RibGroup>
 
-      {/* design: background + theme + accent */}
+      {/* design: header/footer chrome + narrow-viewport fallback for the
+          background/theme/accent panel (see DesignMenu / .sl-panel-fallback) */}
       <RibGroup icon={<Palette size={14} />}>
-        <BgMenu bg={bg} theme={theme} onPick={onSetBg} onAll={onSetBgAll} />
         <HeaderFooterMenu settings={deckSettings} onPatch={onPatchDeckSettings} />
-        <Rule />
-        {THEMES.map((t) => (
-          <button key={t.id} onClick={() => setThemeId(t.id)} title={t.name} style={{ width: 24, height: 24, borderRadius: '50%', cursor: 'pointer', border: themeId === t.id ? `2px solid ${C.accent}` : '1px solid rgba(28,27,25,.16)', background: t.panel, flex: 'none', boxShadow: themeId === t.id ? '0 0 0 3px rgba(109,91,240,.16)' : 'none' }} />
-        ))}
-        <Rule />
-        <Swatch color={(THEMES.find((t) => t.id === themeId) || THEMES[0]).accent} active={accentId === ''} onClick={() => setAccentId('')} title="ដើម" sm />
-        {SLIDE_ACCENTS.map((a) => (
-          <Swatch key={a.id} color={a.c} active={accentId === a.id} onClick={() => setAccentId(a.id)} title={a.name} sm />
-        ))}
+        <DesignMenu bg={bg} theme={theme} themeId={themeId} setThemeId={setThemeId} accentId={accentId} setAccentId={setAccentId} onSetBg={onSetBg} onSetBgAll={onSetBgAll} deckSettings={deckSettings} onPatchDeckSettings={onPatchDeckSettings} />
       </RibGroup>
     </div>
   );
@@ -1781,7 +1943,7 @@ function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: string) =>
   );
 }
 
-function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetImage, deckSettings = DEFAULT_DECK_SETTINGS }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void; deckSettings?: DeckSettings }) {
+function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetImage, selectedElementId, onSelectElement, onUpdateElement, onRemoveElement, deckSettings = DEFAULT_DECK_SETTINGS }: { slide: Slide; theme: Theme; total: number; edit?: (patch: EditPatch) => void; onAddLine?: (index: number) => void; onRemoveLine?: (index: number) => void; onSetImage?: (url: string | undefined) => void; selectedElementId?: string | null; onSelectElement?: (id: string | null) => void; onUpdateElement?: (id: string, patch: Partial<FreeformElement>) => void; onRemoveElement?: (id: string) => void; deckSettings?: DeckSettings }) {
   const isDark = theme.bg === '#241d18';
   const subTint = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.028)';
   const kh: React.CSSProperties = { fontFamily: KO, letterSpacing: '.5px' };
@@ -2056,6 +2218,181 @@ function SlideBoard({ slide, theme, total, edit, onAddLine, onRemoveLine, onSetI
       </div>
       {headerNode}
       {footerNode}
+      {/* freeform elements — additive overlay, only interactive when
+          onUpdateElement is supplied (the main editable stage) */}
+      {(slide.elements?.length || onUpdateElement) && (
+        <SlideElementsLayer
+          elements={slide.elements}
+          editable={!!onUpdateElement}
+          selectedId={selectedElementId}
+          onSelect={onSelectElement}
+          onUpdate={onUpdateElement}
+          onRemove={onRemoveElement}
+        />
+      )}
+    </div>
+  );
+}
+
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
+}
+
+// Additive overlay layer for freeform text/shape elements on a slide
+// (page.tsx's Phase-3a "Canva-style" elements). Reads its own rendered width
+// to convert mouse-pixel drag deltas into slide-space (880×495) coordinates,
+// since ScaledSlide may have scaled the whole board via a CSS transform —
+// see the `scale(calc(100cqw / 880px))` comment on ScaledSlide.
+function SlideElementsLayer({ elements, editable, selectedId, onSelect, onUpdate, onRemove }: {
+  elements?: FreeformElement[];
+  editable: boolean;
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
+  onUpdate?: (id: string, patch: Partial<FreeformElement>) => void;
+  onRemove?: (id: string) => void;
+}) {
+  const layerRef = useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [liveDrag, setLiveDrag] = useState<{ id: string; dx: number; dy: number } | null>(null);
+  const [liveResize, setLiveResize] = useState<{ id: string; dw: number; dh: number } | null>(null);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; startElX: number; startElY: number; scale: number } | null>(null);
+  const resizeRef = useRef<{ id: string; startX: number; startY: number; startW: number; startH: number; scale: number } | null>(null);
+
+  const liveScale = () => (layerRef.current?.getBoundingClientRect().width || SLIDE_W) / SLIDE_W;
+
+  const onElPointerDown = (e: React.PointerEvent, el: FreeformElement) => {
+    if (!editable || editingId === el.id) return;
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* capture is best-effort — dragging still works without it as long as
+         the pointer stays over the element */
+    }
+    onSelect?.(el.id);
+    dragRef.current = { id: el.id, startX: e.clientX, startY: e.clientY, startElX: el.x, startElY: el.y, scale: liveScale() };
+  };
+  const onElPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const { id, startX, startY, scale } = dragRef.current;
+    setLiveDrag({ id, dx: (e.clientX - startX) / scale, dy: (e.clientY - startY) / scale });
+  };
+  const onElPointerUp = (e: React.PointerEvent, el: FreeformElement) => {
+    if (!dragRef.current) return;
+    const { startElX, startElY } = dragRef.current;
+    const dx = liveDrag?.dx || 0;
+    const dy = liveDrag?.dy || 0;
+    // Only commit (and add a history entry) if the pointer actually moved —
+    // a plain click-to-select shouldn't push a no-op undo step.
+    if (dx !== 0 || dy !== 0) {
+      const x = clamp(startElX + dx, 0, SLIDE_W - el.w);
+      const y = clamp(startElY + dy, 0, SLIDE_H - el.h);
+      onUpdate?.(el.id, { x, y });
+    }
+    dragRef.current = null;
+    setLiveDrag(null);
+  };
+
+  const onHandlePointerDown = (e: React.PointerEvent, el: FreeformElement) => {
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* best-effort, see onElPointerDown */
+    }
+    resizeRef.current = { id: el.id, startX: e.clientX, startY: e.clientY, startW: el.w, startH: el.h, scale: liveScale() };
+  };
+  const onHandlePointerMove = (e: React.PointerEvent) => {
+    if (!resizeRef.current) return;
+    const { id, startX, startY, scale } = resizeRef.current;
+    setLiveResize({ id, dw: (e.clientX - startX) / scale, dh: (e.clientY - startY) / scale });
+  };
+  const onHandlePointerUp = (e: React.PointerEvent, el: FreeformElement) => {
+    if (!resizeRef.current) return;
+    const { startW, startH } = resizeRef.current;
+    const dw = liveResize?.dw || 0;
+    const dh = liveResize?.dh || 0;
+    if (dw !== 0 || dh !== 0) {
+      const w = clamp(startW + dw, 24, SLIDE_W);
+      const h = clamp(startH + dh, 24, SLIDE_H);
+      onUpdate?.(el.id, { w, h });
+    }
+    resizeRef.current = null;
+    setLiveResize(null);
+  };
+
+  return (
+    <div
+      ref={layerRef}
+      style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: editable ? 'auto' : 'none' }}
+      onPointerDown={() => { if (editable) { onSelect?.(null); setEditingId(null); } }}
+    >
+      {(elements || []).map((el) => {
+        const isSelected = editable && selectedId === el.id;
+        const isEditing = editingId === el.id;
+        const dx = liveDrag?.id === el.id ? liveDrag.dx : 0;
+        const dy = liveDrag?.id === el.id ? liveDrag.dy : 0;
+        const dw = liveResize?.id === el.id ? liveResize.dw : 0;
+        const dh = liveResize?.id === el.id ? liveResize.dh : 0;
+        const w = Math.max(24, el.w + dw);
+        const h = Math.max(24, el.h + dh);
+        return (
+          <div
+            key={el.id}
+            data-freeform-el={el.id}
+            onPointerDown={(e) => onElPointerDown(e, el)}
+            onPointerMove={onElPointerMove}
+            onPointerUp={(e) => onElPointerUp(e, el)}
+            onDoubleClick={(e) => { if (editable && el.type === 'text') { e.stopPropagation(); setEditingId(el.id); } }}
+            style={{
+              position: 'absolute',
+              left: el.x + dx,
+              top: el.y + dy,
+              width: w,
+              height: h,
+              transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
+              cursor: editable && !isEditing ? 'grab' : 'default',
+              outline: isSelected ? `2px solid ${C.accent}` : 'none',
+              outlineOffset: 2,
+              boxSizing: 'border-box',
+            }}
+          >
+            {el.type === 'shape' ? (
+              <div style={{ width: '100%', height: '100%', background: el.fill || C.accent, borderRadius: el.shapeKind === 'circle' ? '50%' : 10 }} />
+            ) : isEditing ? (
+              <Editable
+                value={el.text || ''}
+                onCommit={(v) => onUpdate?.(el.id, { text: v })}
+                style={{ width: '100%', height: '100%', fontFamily: KH, fontSize: el.fontSize || 22, color: el.color || C.ink, padding: 4 }}
+              />
+            ) : (
+              <div
+                style={{ width: '100%', height: '100%', fontFamily: KH, fontSize: el.fontSize || 22, color: el.color || C.ink, padding: 4, overflow: 'hidden', whiteSpace: 'pre-wrap' }}
+                dangerouslySetInnerHTML={{ __html: el.text || '<span style="opacity:.4">អត្ថបទ…</span>' }}
+              />
+            )}
+            {isSelected && !isEditing && (
+              <>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onRemove?.(el.id); }}
+                  title="លុប"
+                  style={{ position: 'absolute', top: -14, right: -14, width: 24, height: 24, borderRadius: '50%', border: 'none', cursor: 'pointer', background: '#b8472f', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px -4px rgba(0,0,0,.4)' }}
+                >
+                  <X size={13} />
+                </button>
+                <div
+                  onPointerDown={(e) => onHandlePointerDown(e, el)}
+                  onPointerMove={onHandlePointerMove}
+                  onPointerUp={(e) => onHandlePointerUp(e, el)}
+                  title="ប្តូរទំហំ"
+                  style={{ position: 'absolute', bottom: -7, right: -7, width: 14, height: 14, borderRadius: '50%', background: C.accent, border: '2px solid #fff', cursor: 'nwse-resize', boxShadow: '0 2px 6px -2px rgba(0,0,0,.4)' }}
+                />
+              </>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
