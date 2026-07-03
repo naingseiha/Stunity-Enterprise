@@ -28,6 +28,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -56,8 +57,22 @@ const GRADES = ['7', '8', '9', '10', '11', '12'];
 /** Horizontal offsets tracing the winding path (Duolingo-style). */
 const SERPENTINE = [0, 52, 82, 52, 0, -52, -82, -52];
 
-/** Bold flat accent colors, cycled along the path / tiles / cards. */
+/** Bold accent colors, cycled along the path / tiles / cards. */
 const ACCENTS = ['#0EA5E9', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', '#F97316'];
+
+/** Vibrant 2-stop gradient per accent — the rich mockup look. */
+const GRADIENTS: Record<string, [string, string]> = {
+  '#0EA5E9': ['#38BDF8', '#6366F1'], // sky → indigo
+  '#8B5CF6': ['#A78BFA', '#EC4899'], // violet → pink
+  '#F59E0B': ['#FBBF24', '#F97316'], // amber → orange
+  '#10B981': ['#34D399', '#06B6D4'], // emerald → cyan
+  '#EC4899': ['#F472B6', '#8B5CF6'], // pink → violet
+  '#F97316': ['#FB923C', '#EF4444'], // orange → red
+};
+const gradientFor = (accent: string): [string, string] =>
+  GRADIENTS[accent] ?? [accent, accent];
+const GRAD_START = { x: 0, y: 0 };
+const GRAD_END = { x: 1, y: 1 };
 
 /** Distinct per-unit glyphs so every path node feels like its own topic. */
 const UNIT_ICONS: Array<keyof typeof Ionicons.glyphMap> = [
@@ -350,19 +365,26 @@ export function LearnHomeScreen() {
   const renderNudge = () => {
     if (!activeUnit || stats?.studiedToday) return null;
     return (
-      <TouchableOpacity style={styles.nudgeCard} activeOpacity={0.85} onPress={() => openUnit(activeUnit)}>
-        <View style={styles.nudgeIcon}>
-          <Ionicons name="flame" size={22} color="#FFFFFF" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.nudgeTitle}>
-            {stats?.currentStreak ? t('learn.path.nudgeKeepStreak') : t('learn.path.nudgeStartToday')}
-          </Text>
-          <Text style={styles.nudgeBody} numberOfLines={2}>
-            {t('learn.path.nudgeBody', { unit: unitName(activeUnit) })}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+      <TouchableOpacity activeOpacity={0.9} onPress={() => openUnit(activeUnit)}>
+        <LinearGradient
+          colors={gradientFor('#F97316')}
+          start={GRAD_START}
+          end={GRAD_END}
+          style={[styles.nudgeCard, styles.nudgeShadow]}
+        >
+          <View style={styles.nudgeIcon}>
+            <Ionicons name="flame" size={22} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.nudgeTitle}>
+              {stats?.currentStreak ? t('learn.path.nudgeKeepStreak') : t('learn.path.nudgeStartToday')}
+            </Text>
+            <Text style={styles.nudgeBody} numberOfLines={2}>
+              {t('learn.path.nudgeBody', { unit: unitName(activeUnit) })}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+        </LinearGradient>
       </TouchableOpacity>
     );
   };
@@ -390,17 +412,25 @@ export function LearnHomeScreen() {
                 activeOpacity={0.8}
                 onPress={() => switchSubject(s.id)}
               >
-                <View
-                  style={[
-                    styles.railAvatar,
-                    {
-                      backgroundColor: active ? accent : isDark ? colors.card : `${accent}1A`,
-                      borderColor: active ? accent : 'transparent',
-                    },
-                  ]}
-                >
-                  <Ionicons name={subjectIcon(s.code)} size={26} color={active ? '#FFFFFF' : accent} />
-                </View>
+                {active ? (
+                  <LinearGradient
+                    colors={gradientFor(accent)}
+                    start={GRAD_START}
+                    end={GRAD_END}
+                    style={[styles.railAvatar, { borderColor: 'transparent' }, styles.railAvatarActiveShadow]}
+                  >
+                    <Ionicons name={subjectIcon(s.code)} size={26} color="#FFFFFF" />
+                  </LinearGradient>
+                ) : (
+                  <View
+                    style={[
+                      styles.railAvatar,
+                      { backgroundColor: isDark ? colors.card : `${accent}1A`, borderColor: 'transparent' },
+                    ]}
+                  >
+                    <Ionicons name={subjectIcon(s.code)} size={26} color={accent} />
+                  </View>
+                )}
                 <Text
                   style={[styles.railLabel, active && { color: colors.text, fontWeight: '800' }]}
                   numberOfLines={1}
@@ -433,14 +463,21 @@ export function LearnHomeScreen() {
     const code = (path.subject as any).code ?? '';
 
     return (
-      <View style={styles.subjectCard}>
-        {/* Decorative flat circles + floating mini icons (illustration-style) */}
-        <View style={[styles.deco, { width: 130, height: 130, top: -46, right: -34 }]} />
-        <View style={[styles.deco, { width: 70, height: 70, bottom: -26, right: 66 }]} />
-        <View style={[styles.floatIcon, { top: 10, right: 96, backgroundColor: '#F59E0B' }]}>
+      <View style={[styles.subjectCardWrap, styles.subjectCardShadow]}>
+      <LinearGradient
+        colors={gradientFor('#0EA5E9')}
+        start={GRAD_START}
+        end={GRAD_END}
+        style={styles.subjectCard}
+      >
+        {/* Decorative circles + floating mini icons (illustration-style) */}
+        <View style={[styles.deco, { width: 150, height: 150, top: -54, right: -40 }]} />
+        <View style={[styles.deco, { width: 80, height: 80, bottom: -30, right: 60 }]} />
+        <View style={[styles.deco, { width: 44, height: 44, top: 20, left: -18, opacity: 0.5 }]} />
+        <View style={[styles.floatIcon, { top: 8, right: 96, backgroundColor: '#F59E0B' }]}>
           <Ionicons name="star" size={12} color="#FFFFFF" />
         </View>
-        <View style={[styles.floatIcon, { bottom: 66, right: 6, backgroundColor: '#10B981', width: 28, height: 28 }]}>
+        <View style={[styles.floatIcon, { bottom: 64, right: 4, backgroundColor: '#10B981', width: 28, height: 28 }]}>
           <Ionicons name="rocket" size={14} color="#FFFFFF" />
         </View>
 
@@ -482,6 +519,7 @@ export function LearnHomeScreen() {
             <Ionicons name="arrow-forward" size={16} color="#0EA5E9" />
           </TouchableOpacity>
         )}
+      </LinearGradient>
       </View>
     );
   };
@@ -501,9 +539,14 @@ export function LearnHomeScreen() {
           <View style={[styles.obHeroCircle, { backgroundColor: '#10B981', top: -12, right: 6, width: 26, height: 26 }]}>
             <Ionicons name="flask" size={13} color="#FFFFFF" />
           </View>
-          <View style={styles.obHeroBadge}>
+          <LinearGradient
+            colors={gradientFor('#0EA5E9')}
+            start={GRAD_START}
+            end={GRAD_END}
+            style={[styles.obHeroBadge, styles.subjectCardShadow]}
+          >
             <Ionicons name="school" size={40} color="#FFFFFF" />
-          </View>
+          </LinearGradient>
         </View>
         <Text style={styles.obTitle}>{t('learn.path.onboardTitle')}</Text>
         <Text style={styles.obSubtitle}>{t('learn.path.onboardSubtitle')}</Text>
@@ -608,17 +651,22 @@ export function LearnHomeScreen() {
       )}
 
       <TouchableOpacity
-        style={[
-          styles.startButton,
-          (!obGrade || obSelected.size === 0 || obSaving) && styles.startButtonDisabled,
-        ]}
+        activeOpacity={0.9}
+        style={(!obGrade || obSelected.size === 0 || obSaving) && styles.startButtonDisabled}
         disabled={!obGrade || obSelected.size === 0 || obSaving}
         onPress={completeOnboarding}
       >
-        <Text style={styles.startButtonText}>
-          {obSaving ? t('learn.path.saving') : t('learn.path.startLearning')}
-        </Text>
-        <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+        <LinearGradient
+          colors={gradientFor('#0EA5E9')}
+          start={GRAD_START}
+          end={GRAD_END}
+          style={[styles.startButton, styles.subjectCardShadow]}
+        >
+          <Text style={styles.startButtonText}>
+            {obSaving ? t('learn.path.saving') : t('learn.path.startLearning')}
+          </Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+        </LinearGradient>
       </TouchableOpacity>
       {editingPath && (
         <TouchableOpacity style={styles.cancelEdit} onPress={() => setEditingPath(false)}>
@@ -748,27 +796,28 @@ export function LearnHomeScreen() {
               />
             </Svg>
           )}
-          <View
-            style={[
-              styles.node,
-              { backgroundColor: completed ? '#10B981' : active ? accent : colors.surfaceVariant },
-              (locked || comingSoon) && styles.nodeLocked,
-              !locked && !comingSoon && {
-                borderBottomWidth: 6,
-                borderBottomColor: 'rgba(0,0,0,0.25)',
-              },
-            ]}
-          >
-            {completed ? (
-              <Ionicons name="checkmark" size={32} color="#FFFFFF" />
-            ) : locked ? (
-              <Ionicons name="lock-closed" size={23} color={colors.textTertiary} />
-            ) : comingSoon ? (
-              <Ionicons name="time-outline" size={23} color={colors.textTertiary} />
-            ) : (
-              <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={30} color="#FFFFFF" />
-            )}
-          </View>
+          {locked || comingSoon ? (
+            <View style={[styles.node, { backgroundColor: colors.surfaceVariant }, styles.nodeLocked]}>
+              <Ionicons
+                name={comingSoon ? 'time-outline' : 'lock-closed'}
+                size={23}
+                color={colors.textTertiary}
+              />
+            </View>
+          ) : (
+            <LinearGradient
+              colors={completed ? gradientFor('#10B981') : gradientFor(accent)}
+              start={GRAD_START}
+              end={GRAD_END}
+              style={[styles.node, styles.nodeElevated, { shadowColor: completed ? '#10B981' : accent }]}
+            >
+              {completed ? (
+                <Ionicons name="checkmark" size={32} color="#FFFFFF" />
+              ) : (
+                <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={30} color="#FFFFFF" />
+              )}
+            </LinearGradient>
+          )}
         </View>
 
         <Text
@@ -795,22 +844,25 @@ export function LearnHomeScreen() {
     const index = path.units.findIndex((u) => u.topicId === activeUnit.topicId);
     const accent = ACCENTS[index % ACCENTS.length];
     return (
-      <TouchableOpacity
-        style={[styles.unitBanner, { backgroundColor: accent }]}
-        activeOpacity={0.85}
-        onPress={() => openUnit(activeUnit)}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={styles.unitBannerKicker}>
-            {t('learn.path.unitBanner', { n: index + 1 })}
-          </Text>
-          <Text style={styles.unitBannerTitle} numberOfLines={2}>
-            {unitName(activeUnit)}
-          </Text>
-        </View>
-        <View style={styles.unitBannerIcon}>
-          <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={24} color="#FFFFFF" />
-        </View>
+      <TouchableOpacity activeOpacity={0.9} onPress={() => openUnit(activeUnit)}>
+        <LinearGradient
+          colors={gradientFor(accent)}
+          start={GRAD_START}
+          end={GRAD_END}
+          style={[styles.unitBanner, styles.softColorShadow, { shadowColor: accent }]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.unitBannerKicker}>
+              {t('learn.path.unitBanner', { n: index + 1 })}
+            </Text>
+            <Text style={styles.unitBannerTitle} numberOfLines={2}>
+              {unitName(activeUnit)}
+            </Text>
+          </View>
+          <View style={styles.unitBannerIcon}>
+            <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={24} color="#FFFFFF" />
+          </View>
+        </LinearGradient>
       </TouchableOpacity>
     );
   };
@@ -944,8 +996,50 @@ export function LearnHomeScreen() {
 
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.background },
+    // Subtle tint in light mode so white/gradient cards visibly float.
+    safe: { flex: 1, backgroundColor: isDark ? colors.background : '#F1F5F9' },
     scrollContent: { paddingBottom: 48 },
+
+    // Shared elevation — cards "float" on the light background (mockup look).
+    softShadow: {
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.35 : 0.08,
+      shadowRadius: 12,
+      elevation: 3,
+    },
+    softColorShadow: {
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.45 : 0.28,
+      shadowRadius: 12,
+      elevation: 5,
+    },
+    subjectCardShadow: {
+      shadowColor: '#0EA5E9',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: isDark ? 0.5 : 0.35,
+      shadowRadius: 20,
+      elevation: 8,
+    },
+    nudgeShadow: {
+      shadowColor: '#F97316',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: isDark ? 0.5 : 0.32,
+      shadowRadius: 16,
+      elevation: 6,
+    },
+    railAvatarActiveShadow: {
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
+      elevation: 5,
+    },
+    nodeElevated: {
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      elevation: 6,
+    },
 
     // Hero
     hero: {
@@ -998,8 +1092,13 @@ const createStyles = (colors: any, isDark: boolean) =>
       padding: 16,
       borderRadius: 20,
       backgroundColor: colors.card,
-      borderWidth: 1,
+      borderWidth: isDark ? 1 : 0,
       borderColor: colors.border,
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.35 : 0.08,
+      shadowRadius: 12,
+      elevation: 3,
     },
     weekCardTop: {
       flexDirection: 'row',
@@ -1061,13 +1160,16 @@ const createStyles = (colors: any, isDark: boolean) =>
     nudgeTitle: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
     nudgeBody: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.9)', marginTop: 2 },
 
-    // Subject card
-    subjectCard: {
+    // Subject card — shadow lives on the wrapper (a gradient with
+    // overflow:hidden can't cast a shadow on iOS).
+    subjectCardWrap: {
       marginHorizontal: 20,
       marginTop: 12,
+      borderRadius: 22,
+    },
+    subjectCard: {
       padding: 18,
       borderRadius: 22,
-      backgroundColor: '#0EA5E9',
       overflow: 'hidden',
     },
     deco: {
@@ -1360,8 +1462,13 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 18,
       gap: 9,
       backgroundColor: colors.card,
-      borderWidth: 1,
+      borderWidth: isDark ? 1 : 0,
       borderColor: colors.border,
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.3 : 0.07,
+      shadowRadius: 10,
+      elevation: 3,
     },
     courseCardIcon: {
       width: 44,
