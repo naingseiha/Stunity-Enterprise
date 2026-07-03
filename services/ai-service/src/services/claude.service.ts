@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 // sequences (isolated diacritics with no base consonant) that render as
 // broken tofu boxes on-device. Costs ~3-6x more per token than Haiku.
 const TUTOR_MODEL = 'claude-sonnet-5';
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = 4096;
 
 class ClaudeService {
     private client: Anthropic;
@@ -73,6 +73,9 @@ class ClaudeService {
             }
             if (message.stop_reason === 'refusal') {
                 throw new Error('Claude declined to answer this question');
+            }
+            if (message.stop_reason === 'max_tokens') {
+                console.warn('⚠️ [Claude] Output was truncated due to reaching max_tokens limit!');
             }
 
             console.log(`✅ [Claude] Generation successful (Response length: ${textBlock.text.length})`);
