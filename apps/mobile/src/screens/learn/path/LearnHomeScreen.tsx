@@ -15,7 +15,7 @@
  * reels pipeline, so finishing a session and returning here moves the path.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   StyleSheet,
+  Animated,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -134,6 +135,18 @@ export function LearnHomeScreen() {
   const [obSelected, setObSelected] = useState<Set<string>>(new Set());
   const [obSaving, setObSaving] = useState(false);
   const [readyGrades, setReadyGrades] = useState<Set<string>>(new Set());
+  const [obStarted, setObStarted] = useState(false);
+
+  // Onboarding animation
+  const obFloatVal = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(obFloatVal, { toValue: 1, duration: 2200, useNativeDriver: true }),
+        Animated.timing(obFloatVal, { toValue: 0, duration: 2200, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
 
   const subjectName = useCallback(
     (s: { name: string; nameEn: string | null; nameKh: string | null }) =>
@@ -524,157 +537,537 @@ export function LearnHomeScreen() {
     );
   };
 
-  // ── Onboarding ────────────────────────────────────────────
-
-  const renderOnboarding = () => (
-    <View style={styles.obContainer}>
-      <View style={styles.obHero}>
-        <View style={styles.obHeroArt}>
-          <View style={[styles.obHeroCircle, { backgroundColor: '#8B5CF6', top: 2, left: -14, width: 34, height: 34 }]}>
-            <Ionicons name="star" size={16} color="#FFFFFF" />
-          </View>
-          <View style={[styles.obHeroCircle, { backgroundColor: '#F59E0B', bottom: -4, right: -16, width: 38, height: 38 }]}>
-            <Ionicons name="calculator" size={17} color="#FFFFFF" />
-          </View>
-          <View style={[styles.obHeroCircle, { backgroundColor: '#10B981', top: -12, right: 6, width: 26, height: 26 }]}>
-            <Ionicons name="flask" size={13} color="#FFFFFF" />
-          </View>
-          <LinearGradient
-            colors={gradientFor('#0EA5E9')}
-            start={GRAD_START}
-            end={GRAD_END}
-            style={[styles.obHeroBadge, styles.subjectCardShadow]}
-          >
-            <Ionicons name="school" size={40} color="#FFFFFF" />
-          </LinearGradient>
-        </View>
-        <Text style={styles.obTitle}>{t('learn.path.onboardTitle')}</Text>
-        <Text style={styles.obSubtitle}>{t('learn.path.onboardSubtitle')}</Text>
-      </View>
-
-      <Text style={styles.obSectionLabel}>{t('learn.path.pickGrade')}</Text>
-      <View style={styles.gradeGrid}>
-        {GRADES.map((g, i) => {
-          const accent = ACCENTS[i % ACCENTS.length];
-          const selected = obGrade === g;
-          const ready = readyGrades.has(g);
-          return (
-            <TouchableOpacity
-              key={g}
-              style={[
-                styles.gradeCell,
-                { backgroundColor: selected ? accent : isDark ? colors.card : `${accent}14` },
-                selected && { borderColor: accent },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setObGrade(g);
-              }}
-            >
-              <Text style={[styles.gradeCellText, { color: selected ? '#FFFFFF' : accent }]}>
-                {t('learn.path.gradeShort', { grade: g })}
-              </Text>
-              {ready && !selected && <View style={[styles.gradeReadyDot, { backgroundColor: accent }]} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {obGrade && (
-        <>
-          <Text style={styles.obSectionLabel}>{t('learn.path.pickSubjects')}</Text>
-          {!obSubjects && (
-            <ActivityIndicator style={{ marginVertical: 16 }} color={colors.textSecondary} />
-          )}
-          {obSubjects && obSubjects.length === 0 && (
-            <View style={styles.obEmptyCard}>
-              <Ionicons name="hourglass-outline" size={26} color={colors.textSecondary} />
-              <Text style={styles.obEmptyText}>{t('learn.path.noSubjectsForGrade')}</Text>
-              {readyGrades.size > 0 && (
-                <View style={styles.readyRow}>
-                  <Text style={styles.readyLabel}>{t('learn.path.readyGrades')}:</Text>
-                  {[...readyGrades].sort().map((g) => (
-                    <TouchableOpacity
-                      key={g}
-                      style={styles.readyChip}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setObGrade(g);
-                      }}
-                    >
-                      <Text style={styles.readyChipText}>{t('learn.path.gradeShort', { grade: g })}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-          <View style={styles.subjectGrid}>
-            {obSubjects?.map((s, i) => {
-              const accent = ACCENTS[i % ACCENTS.length];
-              const selected = obSelected.has(s.id);
-              return (
-                <TouchableOpacity
-                  key={s.id}
-                  style={[
-                    styles.subjectCell,
-                    { backgroundColor: selected ? accent : colors.card },
-                    !selected && { borderColor: colors.border, borderWidth: 1 },
-                  ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    const next = new Set(obSelected);
-                    if (selected) next.delete(s.id);
-                    else next.add(s.id);
-                    setObSelected(next);
-                  }}
-                >
-                  <View style={[styles.subjectCellIcon, { backgroundColor: selected ? 'rgba(255,255,255,0.25)' : `${accent}22` }]}>
-                    <Ionicons name={subjectIcon(s.code)} size={20} color={selected ? '#FFFFFF' : accent} />
-                  </View>
-                  <Text style={[styles.subjectCellName, selected && { color: '#FFFFFF' }]} numberOfLines={1}>
-                    {subjectName(s)}
-                  </Text>
-                  <Text style={[styles.subjectCellMeta, selected && { color: 'rgba(255,255,255,0.85)' }]}>
-                    {t('learn.path.topicsCount', { count: s.topicCount })}
-                  </Text>
-                  {selected && (
-                    <View style={styles.subjectCellCheck}>
-                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </>
-      )}
-
-      <TouchableOpacity
-        activeOpacity={0.9}
-        style={(!obGrade || obSelected.size === 0 || obSaving) && styles.startButtonDisabled}
-        disabled={!obGrade || obSelected.size === 0 || obSaving}
-        onPress={completeOnboarding}
+  // ── Vector Graphics representing subjects ─────────────────
+  const MathPieChartGraphic = () => (
+    <View style={{ width: 70, height: 70, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          overflow: 'hidden',
+          position: 'relative',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
       >
-        <LinearGradient
-          colors={gradientFor('#0EA5E9')}
-          start={GRAD_START}
-          end={GRAD_END}
-          style={[styles.startButton, styles.subjectCardShadow]}
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <View style={{ flex: 1, flexDirection: 'column' }}>
+            <View style={{ flex: 1, backgroundColor: '#FFB74D' }} />
+            <View style={{ flex: 1, backgroundColor: '#29B6F6' }} />
+          </View>
+          <View style={{ flex: 1, flexDirection: 'column' }}>
+            <View style={{ flex: 1, backgroundColor: '#FFCC80' }} />
+            <View style={{ flex: 1, backgroundColor: '#EF5350' }} />
+          </View>
+        </View>
+        {/* White center donut circle */}
+        <View
+          style={{
+            position: 'absolute',
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: '#FFFFFF',
+            top: 15,
+            left: 15,
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 2,
+          }}
         >
-          <Text style={styles.startButtonText}>
-            {obSaving ? t('learn.path.saving') : t('learn.path.startLearning')}
-          </Text>
-          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-        </LinearGradient>
-      </TouchableOpacity>
-      {editingPath && (
-        <TouchableOpacity style={styles.cancelEdit} onPress={() => setEditingPath(false)}>
-          <Text style={styles.cancelEditText}>{t('common.cancel')}</Text>
-        </TouchableOpacity>
-      )}
+          <Text style={{ fontSize: 15, fontWeight: '900', color: '#5C6BC0' }}>%</Text>
+        </View>
+      </View>
     </View>
   );
+
+  const ChemBeakerGraphic = () => (
+    <View style={{ width: 70, height: 70, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+      {/* Diagonal Rod */}
+      <View
+        style={{
+          position: 'absolute',
+          width: 4,
+          height: 48,
+          backgroundColor: '#9FA8DA',
+          borderRadius: 2,
+          left: 44,
+          top: 8,
+          transform: [{ rotate: '15deg' }],
+          zIndex: 3,
+        }}
+      />
+      
+      {/* Beaker Lip */}
+      <View
+        style={{
+          position: 'absolute',
+          width: 32,
+          height: 5,
+          backgroundColor: '#C5CAE9',
+          borderRadius: 2.5,
+          top: 12,
+          zIndex: 2,
+        }}
+      />
+
+      {/* Beaker Body */}
+      <View
+        style={{
+          width: 42,
+          height: 46,
+          borderRadius: 6,
+          borderWidth: 3.5,
+          borderColor: '#C5CAE9',
+          backgroundColor: 'rgba(255, 255, 255, 0.4)',
+          overflow: 'hidden',
+          justifyContent: 'flex-end',
+          position: 'relative',
+          top: 2,
+        }}
+      >
+        {/* Green Liquid */}
+        <View
+          style={{
+            height: 22,
+            width: '100%',
+            backgroundColor: '#66BB6A',
+            borderBottomLeftRadius: 2.5,
+            borderBottomRightRadius: 2.5,
+          }}
+        />
+        {/* Liquid bubble 1 */}
+        <View style={{ position: 'absolute', bottom: 24, left: 10, width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#81C784' }} />
+        {/* Liquid bubble 2 */}
+        <View style={{ position: 'absolute', bottom: 26, left: 24, width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#81C784' }} />
+      </View>
+    </View>
+  );
+
+  const BiologyStructureGraphic = () => (
+    <View style={{ width: 70, height: 70, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+      {/* Center Horizontal connection bar */}
+      <View style={{ position: 'absolute', width: 54, height: 6, backgroundColor: '#B0BEC5', borderRadius: 3, top: 32 }} />
+      
+      {/* Left and Right panels */}
+      <View style={{ position: 'absolute', width: 14, height: 22, backgroundColor: '#0288D1', borderRadius: 3, left: 6, top: 24 }} />
+      <View style={{ position: 'absolute', width: 14, height: 22, backgroundColor: '#0288D1', borderRadius: 3, right: 6, top: 24 }} />
+
+      {/* Center Vertical pillar */}
+      <View
+        style={{
+          width: 12,
+          height: 38,
+          backgroundColor: '#E0E0E0',
+          borderWidth: 2,
+          borderColor: '#B0BEC5',
+          borderRadius: 3,
+          position: 'relative',
+          top: 2,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      />
+
+      {/* Top Dome */}
+      <View
+        style={{
+          position: 'absolute',
+          width: 24,
+          height: 14,
+          backgroundColor: '#29B6F6',
+          borderTopLeftRadius: 12,
+          borderTopRightRadius: 12,
+          top: 8,
+        }}
+      />
+    </View>
+  );
+
+  const LanguageTranslationGraphic = () => (
+    <View style={{ width: 70, height: 70, position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
+      {/* Back blue card (文) */}
+      <View
+        style={{
+          width: 32,
+          height: 42,
+          borderRadius: 8,
+          backgroundColor: '#29B6F6',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          right: 10,
+          top: 10,
+          zIndex: 1,
+          shadowColor: '#000',
+          shadowOffset: { width: 1, height: 2 },
+          shadowOpacity: 0.12,
+          shadowRadius: 3,
+          elevation: 2,
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: '900', color: '#FFFFFF' }}>文</Text>
+      </View>
+
+      {/* Front purple card (A) */}
+      <View
+        style={{
+          width: 32,
+          height: 42,
+          borderRadius: 8,
+          backgroundColor: '#EDE7F6',
+          borderWidth: 2,
+          borderColor: '#D1C4E9',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          left: 10,
+          top: 18,
+          zIndex: 2,
+          shadowColor: '#000',
+          shadowOffset: { width: 1, height: 2 },
+          shadowOpacity: 0.12,
+          shadowRadius: 3,
+          elevation: 3,
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: '900', color: '#29B6F6' }}>A</Text>
+      </View>
+
+      {/* Swap arrow icon on top */}
+      <View style={{ position: 'absolute', top: 2, left: 27, zIndex: 3 }}>
+        <Ionicons name="swap-horizontal" size={16} color="#66BB6A" />
+      </View>
+    </View>
+  );
+
+  const SubjectGraphic = ({ code }: { code: string }) => {
+    const norm = code.toUpperCase();
+    if (norm.startsWith('MATH')) return <MathPieChartGraphic />;
+    if (norm.startsWith('CHEM')) return <ChemBeakerGraphic />;
+    if (norm.startsWith('BIO')) return <BiologyStructureGraphic />;
+    if (norm.startsWith('ENG') || norm.startsWith('KHM') || norm.startsWith('LANG')) return <LanguageTranslationGraphic />;
+    // fallback graphic: beautiful book
+    return (
+      <View style={{ width: 70, height: 70, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#E1BEE7', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="book" size={28} color="#8E24AA" />
+        </View>
+      </View>
+    );
+  };
+
+  // ── Onboarding ────────────────────────────────────────────
+
+  const renderOnboarding = () => {
+    const pillY1 = obFloatVal.interpolate({ inputRange: [0, 1], outputRange: [0, -8] });
+    const pillY2 = obFloatVal.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] });
+    const sphereY = obFloatVal.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] });
+
+    // ── Phase 1: Full-Screen Welcome (before pressing Start Now) ──
+    if (!obStarted) {
+      return (
+        <LinearGradient
+          colors={isDark ? ['#030B18', '#061828', '#020B14'] : ['#EFF7FE', '#E2EEF9', '#F5FAFD']}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={styles.obWelcomeScreen}
+        >
+          {/* Ambient aura blobs */}
+          <View style={[styles.obAuraBlob, { top: -110, right: -90, backgroundColor: isDark ? '#09CFF7' : '#06A8CC' }]} />
+          <View style={[styles.obAuraBlob, { bottom: -80, left: -80, width: 260, height: 260, borderRadius: 130, backgroundColor: isDark ? '#3B82F6' : '#93C5FD' }]} />
+
+          {/* Sphere Hero */}
+          <View style={styles.obHero}>
+            <View style={styles.obRingOuter}>
+              <View style={styles.obRingInner} />
+            </View>
+            <Animated.View style={[styles.obSphere, { transform: [{ translateY: sphereY }] }]}>
+              <LinearGradient
+                colors={['#09CFF7', '#06A8CC', '#0284C7']}
+                start={GRAD_START}
+                end={GRAD_END}
+                style={styles.obSphereBadge}
+              >
+                <Ionicons name="school" size={52} color="#FFFFFF" />
+                <View style={styles.obSphereStarBadge}>
+                  <Ionicons name="star" size={13} color="#FDE047" />
+                </View>
+              </LinearGradient>
+            </Animated.View>
+            <Animated.View style={[styles.obPill, styles.obPillTopLeft, { transform: [{ translateY: pillY1 }] }]}>
+              <View style={[styles.obPillIcon, { backgroundColor: 'rgba(9,207,247,0.2)' }]}>
+                <Ionicons name="compass" size={13} color="#09CFF7" />
+              </View>
+              <Text style={styles.obPillText}>Smart Path</Text>
+            </Animated.View>
+            <Animated.View style={[styles.obPill, styles.obPillTopRight, { transform: [{ translateY: pillY2 }] }]}>
+              <View style={[styles.obPillIcon, { backgroundColor: 'rgba(251,191,36,0.2)' }]}>
+                <Ionicons name="sparkles" size={13} color="#FBBF24" />
+              </View>
+              <Text style={styles.obPillText}>AI Mastery</Text>
+            </Animated.View>
+            <Animated.View style={[styles.obPill, styles.obPillBottom, { transform: [{ translateY: pillY2 }] }]}>
+              <View style={[styles.obPillIcon, { backgroundColor: 'rgba(52,211,153,0.2)' }]}>
+                <Ionicons name="trophy" size={13} color="#34D399" />
+              </View>
+              <Text style={styles.obPillText}>Earn XP</Text>
+            </Animated.View>
+          </View>
+
+          {/* Title & subtitle */}
+          <View style={styles.obWelcomeContent}>
+            <Text style={styles.obTitle}>{t('learn.path.onboardTitle')}</Text>
+            <Text style={styles.obSubtitle}>{t('learn.path.onboardSubtitle')}</Text>
+
+            {/* Start Now CTA */}
+            <TouchableOpacity
+              style={styles.obStartNowButton}
+              activeOpacity={0.88}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setObStarted(true);
+              }}
+            >
+              <LinearGradient
+                colors={['#09CFF7', '#06A8CC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.obStartNowGradient}
+              >
+                <Text style={styles.obStartNowText}>{t('learn.path.startNow', { defaultValue: 'Start Now' })}</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      );
+    }
+
+    // ── Phase 2: Grade & Subject Selection (Find Your Course Discovery Screen) ──
+    return (
+      <View style={[styles.courseDiscoveryFullScreen, { backgroundColor: isDark ? colors.background : '#F8FAFC' }]}>
+        {/* Mockup Top Header Row (Greeting + Search Button) */}
+        <View style={styles.courseDiscoveryHeader}>
+          <View>
+            <Text style={styles.courseDiscoveryGreeting}>
+              Hello {user?.firstName || 'Learner'}
+            </Text>
+            <Text style={styles.courseDiscoveryTitle}>
+              {t('learn.path.findYourCourse', { defaultValue: 'Find your course' })}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.searchIconButtonNeutral} activeOpacity={0.85}>
+            <View style={[styles.searchCircleNeutral, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF', borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#E2E8F0' }]}>
+              <Ionicons name="search" size={20} color={isDark ? '#E2E8F0' : '#1E293B'} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* World-Class Enterprise Hero Banner Card (Quiz Screen Inspired) */}
+        <View style={styles.promoBannerWrap}>
+          <LinearGradient
+            colors={['#09CFF7', '#06A8CC', '#0284C7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.promoBanner}
+          >
+            {/* Subtle background gradient overlay */}
+            <LinearGradient
+              colors={['rgba(15, 23, 42, 0.35)', 'rgba(15, 23, 42, 0.0)']}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {/* Clean Giant Watermark Silhouette Icon on Bottom Right (Exactly like Quiz Screen) */}
+            <View style={styles.promoWatermarkIconWrap}>
+              <Ionicons name="trophy" size={140} color="rgba(255,255,255,0.14)" />
+            </View>
+
+            {/* Spacious, Clean Text & Action Button Content */}
+            <View style={styles.promoContentWrap}>
+              <View style={styles.promoTopRow}>
+                <View style={styles.promoOfferBadge}>
+                  <Ionicons name="flash" size={13} color="#FDE047" style={{ marginRight: 5 }} />
+                  <Text style={styles.promoOfferBadgeText}>LIMITED TIME OFFER</Text>
+                </View>
+              </View>
+
+              <Text style={styles.promoDiscount}>
+                {t('learn.path.promoDiscount', { defaultValue: '60% OFF' })}
+              </Text>
+
+              <View style={styles.promoDateRow}>
+                <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.9)" style={{ marginRight: 6 }} />
+                <Text style={styles.promoDate}>
+                  {t('learn.path.promoDate', { defaultValue: 'Feb 14 - Mar 20' })}
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.promoJoinButtonWhite} activeOpacity={0.85}>
+                <Text style={styles.promoJoinTextWhite}>{t('learn.path.joinNow', { defaultValue: 'Claim Offer' })}</Text>
+                <Ionicons name="arrow-forward" size={15} color="#06A8CC" style={{ marginLeft: 6 }} />
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* Grade Selection */}
+        <Text style={styles.exploreTitle}>{t('learn.path.pickGrade')}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.gradeChipRow}
+        >
+          {GRADES.map((g) => {
+            const selected = obGrade === g;
+            const ready = readyGrades.has(g);
+            return (
+              <TouchableOpacity
+                key={g}
+                style={[
+                  styles.gradeChip,
+                  selected && styles.gradeChipSelected,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setObGrade(g);
+                }}
+              >
+                <Text style={[styles.gradeChipText, selected && styles.gradeChipTextSelected]}>
+                  {t('learn.path.gradeShort', { grade: g })}
+                </Text>
+                {ready && !selected && <View style={styles.gradeReadyIndicator} />}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Pick Your Subjects */}
+        {obGrade && (
+          <>
+            <Text style={styles.exploreTitle}>{t('learn.path.pickSubjects')}</Text>
+            {!obSubjects && (
+              <ActivityIndicator style={{ marginVertical: 16 }} color={colors.textSecondary} />
+            )}
+            {obSubjects && obSubjects.length === 0 && (
+              <View style={styles.obEmptyCard}>
+                <Ionicons name="hourglass-outline" size={26} color={colors.textSecondary} />
+                <Text style={styles.obEmptyText}>{t('learn.path.noSubjectsForGrade')}</Text>
+                {readyGrades.size > 0 && (
+                  <View style={styles.readyRow}>
+                    <Text style={styles.readyLabel}>{t('learn.path.readyGrades')}:</Text>
+                    {[...readyGrades].sort().map((g) => (
+                      <TouchableOpacity
+                        key={g}
+                        style={styles.readyChip}
+                        onPress={() => { Haptics.selectionAsync(); setObGrade(g); }}
+                      >
+                        <Text style={styles.readyChipText}>{t('learn.path.gradeShort', { grade: g })}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+            <View style={styles.subjectGrid}>
+              {obSubjects?.map((s, i) => {
+                const selected = obSelected.has(s.id);
+                const meta = t('learn.path.topicsCount', { count: s.topicCount });
+                // Fake a small progress for visual richness (0% if not started yet)
+                const fakeProgress = 0;
+                return (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={[
+                      styles.exploreGridCard,
+                      selected && styles.exploreGridCardSelected,
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      const next = new Set(obSelected);
+                      if (selected) next.delete(s.id);
+                      else next.add(s.id);
+                      setObSelected(next);
+                    }}
+                  >
+                    {selected && (
+                      <View style={styles.exploreCardCheck}>
+                        <Ionicons name="checkmark-circle" size={24} color="#06A8CC" />
+                      </View>
+                    )}
+                    <View style={styles.exploreCardGraphicContainer}>
+                      <SubjectGraphic code={s.code} />
+                    </View>
+                    <View style={styles.exploreCardFooterCentered}>
+                      <Text style={styles.exploreCardNameBold} numberOfLines={1}>
+                        {subjectName(s)}
+                      </Text>
+                      <Text style={styles.exploreCardMetadata}>{meta}</Text>
+                      {/* Lesson progress bar */}
+                      <View style={styles.subjectProgressBarBg}>
+                        <View
+                          style={[
+                            styles.subjectProgressBarFill,
+                            { width: `${fakeProgress * 100}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        <View style={styles.bottomActionsWrap}>
+          {/* Start Learning Button — full-width cyan gradient */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={[
+              styles.startButtonWrap,
+              (!obGrade || obSelected.size === 0 || obSaving) && styles.startButtonDisabled
+            ]}
+            disabled={!obGrade || obSelected.size === 0 || obSaving}
+            onPress={completeOnboarding}
+          >
+            <LinearGradient
+              colors={['#09CFF7', '#06A8CC']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.obStartNowGradient}
+            >
+              <Text style={styles.obStartNowText}>
+                {obSaving ? t('learn.path.saving') : t('learn.path.startLearning')}
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Cancel / Go Back button */}
+          <TouchableOpacity
+            style={styles.cancelEditButton}
+            activeOpacity={0.75}
+            onPress={() => setObStarted(false)}
+          >
+            <Text style={[styles.cancelEditButtonText, { color: colors.textSecondary }]}>
+              {t('common.cancel')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   // ── Serpentine path with SVG connector ────────────────────
 
@@ -957,39 +1350,45 @@ export function LearnHomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              load();
-            }}
-            tintColor={colors.textSecondary}
-          />
-        }
-      >
-        {renderHero()}
-        {loading && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}
-        {showOnboarding && renderOnboarding()}
-        {!loading && !showOnboarding && (
-          <>
-            {renderSubjectRail()}
-            {renderWeekCard()}
-            {renderNudge()}
-            {renderSubjectCard()}
-            {!!profile && (
-              <TouchableOpacity style={styles.editPathLink} onPress={startEditing}>
-                <Ionicons name="options-outline" size={14} color={colors.textSecondary} />
-                <Text style={styles.editPathLinkText}>{t('learn.path.editPath')}</Text>
-              </TouchableOpacity>
-            )}
-            {renderPath()}
-            {renderCourses()}
-          </>
-        )}
-      </ScrollView>
+      {/* Phase 1 welcome takes over the whole screen */}
+      {showOnboarding && !obStarted && renderOnboarding()}
+
+      {/* Phase 2 (grade/subject) and normal learn screen both live in the ScrollView */}
+      {(!showOnboarding || obStarted) && (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                load();
+              }}
+              tintColor={colors.textSecondary}
+            />
+          }
+        >
+          {renderHero()}
+          {loading && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}
+          {showOnboarding && obStarted && renderOnboarding()}
+          {!loading && !showOnboarding && (
+            <>
+              {renderSubjectRail()}
+              {renderWeekCard()}
+              {renderNudge()}
+              {renderSubjectCard()}
+              {!!profile && (
+                <TouchableOpacity style={styles.editPathLink} onPress={startEditing}>
+                  <Ionicons name="options-outline" size={14} color={colors.textSecondary} />
+                  <Text style={styles.editPathLinkText}>{t('learn.path.editPath')}</Text>
+                </TouchableOpacity>
+              )}
+              {renderPath()}
+              {renderCourses()}
+            </>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -1339,63 +1738,342 @@ const createStyles = (colors: any, isDark: boolean) =>
       transform: [{ rotate: '45deg' }],
     },
 
-    // Onboarding
+    // ── Onboarding (Premium Enterprise Redesign) ──────────────
     obContainer: { padding: 20 },
-    obHero: { alignItems: 'center', marginBottom: 28, gap: 10 },
-    obHeroArt: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
-    obHeroBadge: {
-      width: 84,
-      height: 84,
+
+    // Phase 1: Full-screen welcome styles
+    obWelcomeScreen: {
+      flex: 1,
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'space-evenly',
+      overflow: 'hidden',
+      paddingHorizontal: 28,
+      paddingBottom: 32,
+    },
+    obAuraBlob: {
+      position: 'absolute',
+      width: 320,
+      height: 320,
+      borderRadius: 160,
+      opacity: isDark ? 0.13 : 0.08,
+    },
+    obWelcomeContent: {
+      width: '100%',
+      alignItems: 'center',
+    },
+    obStartNowButton: {
+      width: '100%',
+      marginTop: 28,
       borderRadius: 28,
-      backgroundColor: '#0EA5E9',
+      shadowColor: '#06A8CC',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.38,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    obStartNowGradient: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    obHeroCircle: {
-      position: 'absolute',
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 2,
-    },
-    obTitle: { fontSize: 23, fontWeight: '800', color: colors.text, textAlign: 'center' },
-    obSubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 21 },
-    obSectionLabel: { fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 12, marginTop: 10 },
-    gradeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
-    gradeCell: {
-      width: '30.5%',
-      paddingVertical: 16,
-      borderRadius: 16,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: 'transparent',
-    },
-    gradeCellText: { fontSize: 15, fontWeight: '800' },
-    gradeReadyDot: {
-      position: 'absolute',
-      top: 8,
-      right: 8,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-    },
-    subjectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    subjectCell: {
-      width: '47.5%',
-      padding: 14,
-      borderRadius: 18,
+      paddingVertical: 18,
+      borderRadius: 28,
       gap: 8,
     },
-    subjectCellIcon: {
-      width: 40,
-      height: 40,
+    obStartNowText: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: 0.3,
+    },
+
+    // Phase 2: Find Your Course Screen Styles
+    courseDiscoveryFullScreen: {
+      flex: 1,
+      width: '100%',
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    courseDiscoveryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 20,
+      paddingHorizontal: 4,
+    },
+    courseDiscoveryGreeting: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    courseDiscoveryTitle: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: colors.text,
+      letterSpacing: -0.3,
+    },
+    searchIconButtonNeutral: {
+      borderRadius: 22,
+    },
+    searchCircleNeutral: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    promoBannerWrap: {
+      marginBottom: 24,
+      borderRadius: 26,
+      overflow: 'hidden',
+      shadowColor: '#06A8CC',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.28,
+      shadowRadius: 20,
+      elevation: 8,
+    },
+    promoBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 24,
+      borderRadius: 26,
+      minHeight: 156,
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    promoWatermarkIconWrap: {
+      position: 'absolute',
+      right: -20,
+      bottom: -30,
+      opacity: 0.85,
+    },
+    promoContentWrap: {
+      flex: 1.35,
+      zIndex: 2,
+    },
+    promoTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    promoOfferBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      alignSelf: 'flex-start',
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
       borderRadius: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    promoOfferBadgeText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: 0.5,
+    },
+    promoDiscount: {
+      fontSize: 32,
+      fontWeight: '900',
+      color: '#FFFFFF',
+      marginBottom: 6,
+      letterSpacing: -0.5,
+      textShadowColor: 'rgba(0,0,0,0.15)',
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4,
+    },
+    promoDateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginBottom: 16,
+    },
+    promoDate: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.85)',
+    },
+    promoJoinButtonWhite: {
+      paddingVertical: 10,
+      paddingHorizontal: 22,
+      borderRadius: 20,
+      backgroundColor: '#FFFFFF',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+    },
+    promoJoinTextWhite: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#06A8CC',
+    },
+    exploreTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+      marginBottom: 12,
+      marginTop: 8,
+    },
+    gradeChipRow: {
+      paddingVertical: 4,
+      gap: 12,
+      marginBottom: 20,
+    },
+    gradeChip: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 20,
+      backgroundColor: isDark ? colors.card : '#F1F5F9',
+      borderWidth: 1.5,
+      borderColor: isDark ? colors.border : '#E2E8F0',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    subjectCellName: { fontSize: 14, fontWeight: '800', color: colors.text },
-    subjectCellMeta: { fontSize: 11.5, fontWeight: '600', color: colors.textSecondary },
-    subjectCellCheck: { position: 'absolute', top: 10, right: 10 },
+    gradeChipSelected: {
+      backgroundColor: '#06A8CC',
+      borderColor: '#06A8CC',
+      shadowColor: '#06A8CC',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    gradeChipText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    gradeChipTextSelected: {
+      color: '#FFFFFF',
+      fontWeight: '800',
+    },
+    gradeReadyIndicator: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: '#38BDF8',
+    },
+    subjectGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginBottom: 20,
+    },
+    subjectGridCard: {
+      width: '48.2%',
+      padding: 16,
+      borderRadius: 22,
+      backgroundColor: colors.card,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      gap: 8,
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.25 : 0.05,
+      shadowRadius: 10,
+      elevation: 2,
+    },
+    exploreGridCard: {
+      width: '47%',
+      padding: 20,
+      borderRadius: 28,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 185,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.3 : 0.04,
+      shadowRadius: 10,
+      elevation: 2,
+      position: 'relative',
+    },
+    exploreGridCardSelected: {
+      borderColor: '#06A8CC',
+      backgroundColor: isDark ? 'rgba(6, 168, 204, 0.12)' : '#E0F9FD',
+      shadowColor: '#06A8CC',
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    exploreCardCheck: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      zIndex: 2,
+    },
+    exploreCardGraphicContainer: {
+      marginVertical: 8,
+    },
+    exploreCardFooterCentered: {
+      alignItems: 'center',
+      width: '100%',
+    },
+    exploreCardNameBold: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 2,
+    },
+    exploreCardMetadata: {
+      fontSize: 11,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    subjectProgressBarBg: {
+      width: '85%',
+      height: 4,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+      borderRadius: 2,
+      overflow: 'hidden',
+      marginTop: 8,
+    },
+    subjectProgressBarFill: {
+      height: '100%',
+      backgroundColor: '#06A8CC',
+      borderRadius: 2,
+    },
+    bottomActionsWrap: {
+      width: '100%',
+      gap: 12,
+      marginTop: 18,
+      alignItems: 'center',
+    },
+    cancelEditButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 28,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+    },
+    cancelEditButtonText: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
     obEmptyCard: {
       alignItems: 'center',
       gap: 10,
@@ -1413,25 +2091,144 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 12,
-      backgroundColor: '#0EA5E9',
+      backgroundColor: '#06A8CC',
     },
     readyChipText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
-    startButton: {
-      flexDirection: 'row',
+    subjectCellIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
-      marginTop: 28,
-      paddingVertical: 16,
-      borderRadius: 18,
-      backgroundColor: '#0EA5E9',
-      borderBottomWidth: 4,
-      borderBottomColor: 'rgba(0,0,0,0.25)',
+    },
+    subjectCellName: { fontSize: 14, fontWeight: '800', color: colors.text },
+    subjectCellMeta: { fontSize: 11.5, fontWeight: '600', color: colors.textSecondary },
+    startButtonWrap: {
+      width: '100%',
+      borderRadius: 26,
+      overflow: 'hidden',
+      shadowColor: '#06A8CC',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.38,
+      shadowRadius: 18,
+      elevation: 8,
     },
     startButtonDisabled: { opacity: 0.4 },
-    startButtonText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
-    cancelEdit: { alignItems: 'center', marginTop: 14 },
-    cancelEditText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+
+    // Hero zone: concentric rings + sphere + floating pills
+    obHero: {
+      position: 'relative',
+      width: 280,
+      height: 280,
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 28,
+    },
+    obRingOuter: {
+      position: 'absolute',
+      width: 252,
+      height: 252,
+      borderRadius: 126,
+      borderWidth: 1.5,
+      borderColor: isDark ? 'rgba(9,207,247,0.22)' : 'rgba(6,168,204,0.22)',
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    obRingInner: {
+      width: 196,
+      height: 196,
+      borderRadius: 98,
+      borderWidth: 1.2,
+      borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.10)',
+    },
+    obSphere: {
+      width: 148,
+      height: 148,
+      borderRadius: 74,
+      backgroundColor: isDark ? 'rgba(9,207,247,0.12)' : 'rgba(255,255,255,0.85)',
+      borderWidth: 2,
+      borderColor: isDark ? 'rgba(9,207,247,0.45)' : 'rgba(6,168,204,0.35)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#06A8CC',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: isDark ? 0.45 : 0.22,
+      shadowRadius: 24,
+      elevation: 10,
+    },
+    obSphereBadge: {
+      width: 116,
+      height: 116,
+      borderRadius: 58,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    obSphereStarBadge: {
+      position: 'absolute',
+      top: 14,
+      right: 16,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: 'rgba(0,0,0,0.25)',
+      borderWidth: 1.5,
+      borderColor: 'rgba(255,255,255,0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    obPill: {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(15,23,42,0.88)' : 'rgba(255,255,255,0.97)',
+      borderWidth: 1.2,
+      borderColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.08)',
+      gap: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.28 : 0.08,
+      shadowRadius: 10,
+      elevation: 6,
+    },
+    obPillTopLeft: { top: 14, left: 0 },
+    obPillTopRight: { top: 42, right: 0 },
+    obPillBottom: { bottom: 20, left: 8 },
+    obPillIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    obPillText: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: isDark ? '#FFFFFF' : '#0F172A',
+      letterSpacing: 0.3,
+    },
+
+    obTitle: {
+      fontSize: 26,
+      fontWeight: '900',
+      color: isDark ? '#FFFFFF' : '#0F172A',
+      textAlign: 'center',
+      letterSpacing: -0.5,
+      marginBottom: 8,
+    },
+    obSubtitle: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: isDark ? '#94A3B8' : '#475569',
+      textAlign: 'center',
+      lineHeight: 22,
+      paddingHorizontal: 8,
+      marginBottom: 4,
+    },
 
     // Courses
     coursesSection: {
