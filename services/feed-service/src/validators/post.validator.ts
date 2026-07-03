@@ -12,32 +12,93 @@ import {
   QUIZ_OPTION_MAX_LEN,
   QUIZ_QUESTION_MAX_LEN,
 } from '../constants/limits';
+import { normalizeQuestionType, resolveCorrectIndex } from '../utils/quizQuestionRows';
 
 /**
- * One quiz question. Validated server-side so a malformed/over-cap quiz can't be
- * created via any client. `correctAnswer` is a 0-based index into `options` and
- * is range-checked against the option count via superRefine below.
+ * One quiz question, in the shape clients actually author (QuizForm sends
+ * `text` + string correctAnswer; legacy/AI payloads send `question` and/or a
+ * numeric index; six question types exist). Validated server-side so a
+ * malformed/over-cap quiz can't be created via any client, with type-aware
+ * correctness checks in superRefine below.
  */
 const quizQuestionSchema = z
   .object({
-    question: z.string().min(1, 'Question is required').max(QUIZ_QUESTION_MAX_LEN).trim(),
+    id: z.string().max(100).optional(),
+    question: z.string().max(QUIZ_QUESTION_MAX_LEN).trim().optional(),
+    text: z.string().max(QUIZ_QUESTION_MAX_LEN).trim().optional(),
+    type: z.string().max(32).optional(),
     options: z
-      .array(z.string().min(1, 'Option cannot be empty').max(QUIZ_OPTION_MAX_LEN))
-      .min(QUIZ_MIN_OPTIONS, `At least ${QUIZ_MIN_OPTIONS} options`)
-      .max(QUIZ_MAX_OPTIONS, `At most ${QUIZ_MAX_OPTIONS} options`),
-    correctAnswer: z.number().int().min(0),
+      .array(z.string().max(QUIZ_OPTION_MAX_LEN))
+      .max(QUIZ_MAX_OPTIONS, `At most ${QUIZ_MAX_OPTIONS} options`)
+      .optional(),
+    correctAnswer: z.union([z.number().int().min(0), z.string().max(QUIZ_OPTION_MAX_LEN)]),
     points: z.number().int().min(0).optional(),
     position: z.number().int().min(0).optional(),
     explanation: z.string().max(2000).optional().nullable(),
+    topicId: z.string().max(64).optional().nullable(),
   })
-  .passthrough() // tolerate extra authoring fields (id, etc.) without dropping them
+  .passthrough() // tolerate extra authoring fields without dropping them
   .superRefine((q, ctx) => {
-    if (q.correctAnswer >= q.options.length) {
+    const text = (q.text ?? q.question ?? '').trim();
+    if (!text) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['correctAnswer'],
-        message: 'correctAnswer must index into options',
+        path: ['question'],
+        message: 'Question is required',
       });
+    }
+
+    const type = normalizeQuestionType(q.type);
+    if (type === 'MULTIPLE_CHOICE') {
+      const options = (q.options ?? []).map((o) => o.trim()).filter(Boolean);
+      if (options.length < QUIZ_MIN_OPTIONS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['options'],
+          message: `At least ${QUIZ_MIN_OPTIONS} options`,
+        });
+      } else if (resolveCorrectIndex(q.correctAnswer, options) === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['correctAnswer'],
+          message: 'correctAnswer must index into options',
+        });
+      }
+    } else if (type === 'TRUE_FALSE') {
+      const answer = String(q.correctAnswer).trim().toLowerCase();
+      if (answer !== 'true' && answer !== 'false' && answer !== '0' && answer !== '1') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['correctAnswer'],
+          message: 'correctAnswer must be true or false',
+        });
+      }
+    } else if (type === 'SHORT_ANSWER' || type === 'FILL_IN_BLANK') {
+      if (!String(q.correctAnswer ?? '').trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['correctAnswer'],
+          message: 'An answer is required',
+        });
+      }
+    } else if (type === 'ORDERING') {
+      const options = (q.options ?? []).map((o) => o.trim()).filter(Boolean);
+      if (options.length < QUIZ_MIN_OPTIONS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['options'],
+          message: `At least ${QUIZ_MIN_OPTIONS} items to order`,
+        });
+      }
+    } else if (type === 'MATCHING') {
+      const pairs = (q.options ?? []).filter((o) => o.split(':::').filter((p) => p.trim()).length === 2);
+      if (pairs.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['options'],
+          message: 'At least one left:::right pair',
+        });
+      }
     }
   });
 

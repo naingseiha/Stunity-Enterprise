@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Haptics } from '@/services/haptics';
 
 import { QuizQuestionInput, QuizQuestion, QuestionType } from '../components/QuizQuestionInput';
+import { TopicPickerModal, SelectedTopic } from '../components/TopicPickerModal';
 import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
 import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
@@ -71,6 +72,11 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
   const [shuffleQuestions, setShuffleQuestions] = useState(initialData?.shuffleQuestions ?? false);
   const [maxAttempts, setMaxAttempts] = useState<number | null>(initialData?.maxAttempts ?? null);
   const [showReview, setShowReview] = useState(initialData?.showReview ?? true);
+  // Curriculum topic (v1: quiz-level, stamped on every question).
+  // undefined = untouched (existing per-question tags pass through on edit),
+  // null = explicitly cleared, SelectedTopic = chosen.
+  const [topicSelection, setTopicSelection] = useState<SelectedTopic | null | undefined>(undefined);
+  const [isTopicPickerVisible, setIsTopicPickerVisible] = useState(false);
 
   // UI State
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(
@@ -108,8 +114,12 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
   useEffect(() => {
     const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+    const taggedQuestions =
+      topicSelection === undefined
+        ? questions
+        : questions.map((q) => ({ ...q, topicId: topicSelection?.topicId ?? null }));
     onDataChange({
-      questions,
+      questions: taggedQuestions,
       timeLimit,
       passingScore,
       totalPoints,
@@ -118,7 +128,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
       maxAttempts,
       showReview,
     });
-  }, [questions, timeLimit, passingScore, shuffleQuestions, maxAttempts, showReview]);
+  }, [questions, timeLimit, passingScore, shuffleQuestions, maxAttempts, showReview, topicSelection]);
 
   const addQuestion = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -238,6 +248,37 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
             <View style={styles.divider} />
 
+            {/* Curriculum Topic */}
+            <View style={styles.settingSection}>
+              <Text style={styles.sectionLabel}>{t('feed.createPost.quiz.topic')}</Text>
+              <View style={styles.optionWrap}>
+                <TouchableOpacity
+                  style={[styles.capsule, !!topicSelection && styles.capsuleSelected]}
+                  onPress={() => { Haptics.selectionAsync(); setIsTopicPickerVisible(true); }}
+                >
+                  <Text
+                    style={[styles.capsuleText, !!topicSelection && styles.capsuleTextSelected]}
+                    numberOfLines={1}
+                  >
+                    {topicSelection
+                      ? `${topicSelection.subjectLabel} · ${topicSelection.topicLabel}`
+                      : t('feed.createPost.quiz.topicNone')}
+                  </Text>
+                </TouchableOpacity>
+                {!!topicSelection && (
+                  <TouchableOpacity
+                    style={styles.capsule}
+                    onPress={() => { Haptics.selectionAsync(); setTopicSelection(null); }}
+                  >
+                    <Text style={styles.capsuleText}>{t('feed.createPost.quiz.topicClear')}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.topicHint}>{t('feed.createPost.quiz.topicDesc')}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
             {/* Toggles Grid */}
             <View style={styles.toggleList}>
               <View style={styles.toggleRow}>
@@ -325,6 +366,13 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Topic Picker */}
+      <TopicPickerModal
+        visible={isTopicPickerVisible}
+        onClose={() => setIsTopicPickerVisible(false)}
+        onSelect={(topic) => setTopicSelection(topic)}
+      />
 
       {/* AI Modals */}
       <AIPromptModal
@@ -460,6 +508,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     backgroundColor: colors.border,
     marginHorizontal: -20,
     marginBottom: 20,
+  },
+  topicHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 8,
   },
   // Toggles Grid
   toggleList: {

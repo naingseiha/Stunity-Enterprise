@@ -610,9 +610,16 @@ export default function LearnScreen() {
         >
           <View style={styles.headerSafe}>
             <View style={styles.topBar}>
-              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-                <Ionicons name="menu-outline" size={24} color={colors.text} />
-              </TouchableOpacity>
+              {/* Pushed from LearnHome (the Learn tab root) → back, not drawer */}
+              {navigation.canGoBack() ? (
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconButton}>
+                  <Ionicons name="chevron-back" size={24} color={colors.text} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                  <Ionicons name="menu-outline" size={24} color={colors.text} />
+                </TouchableOpacity>
+              )}
               <View>
                 <StunityLogo width={108} height={30} />
               </View>
@@ -1129,9 +1136,15 @@ export default function LearnScreen() {
             >
               <View style={styles.headerSafe}>
                 <View style={styles.topBar}>
-                  <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-                    <Ionicons name="menu-outline" size={24} color={colors.text} />
-                  </TouchableOpacity>
+                  {navigation.canGoBack() ? (
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconButton}>
+                      <Ionicons name="chevron-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                      <Ionicons name="menu-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                  )}
                   <View>
                     <StunityLogo width={108} height={30} />
                   </View>

@@ -35,6 +35,8 @@ import {
 import postsRouter from './routes/posts.routes';
 import postActionsRouter from './routes/postActions.routes';
 import quizRouter from './routes/quiz.routes';
+import topicsRouter from './routes/topics.routes';
+import learnRouter from './routes/learn.routes';
 import recallRouter from './routes/recall.routes';
 import bountyRouter from './routes/bounty.routes';
 import quizWarRouter from './routes/quizWar.routes';
@@ -392,6 +394,8 @@ app.delete('/posts/:id', writeLimiter);
 app.use('/', postsRouter);
 app.use('/', postActionsRouter);
 app.use('/', quizRouter);
+app.use('/', topicsRouter);
+app.use('/', learnRouter);
 app.use('/', recallRouter);
 app.use('/', bountyRouter);
 app.use('/', quizWarRouter);

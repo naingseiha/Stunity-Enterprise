@@ -114,23 +114,34 @@ export async function createRecallCardsForFailedAnswers(
   const failed = answerResults.filter((r) => !r.correct);
   if (failed.length === 0) return 0;
 
+  // RecallCard.questionId FKs quiz_questions, and only MC/TF questions have
+  // rows (see quizQuestionRows.ts). Resolve the failed ids to real rows first:
+  // pre-unification quizzes (Json-only ids) simply produce no cards instead of
+  // burning an FK error per answer, and tagged rows hand us their topicId.
+  const backingRows = await prisma.quizQuestion.findMany({
+    where: { id: { in: failed.map((r) => r.questionId) } },
+    select: { id: true, topicId: true },
+  });
+  if (backingRows.length === 0) return 0;
+
   const { subject, subjectLabel } = deriveSubjectFromPost(quizPost);
   const tomorrow = new Date(Date.now() + DAY_MS);
 
   let createdOrReset = 0;
 
   await Promise.all(
-    failed.map(async (result) => {
+    backingRows.map(async (row) => {
       try {
         await prisma.recallCard.upsert({
           where: {
-            userId_questionId: { userId, questionId: result.questionId },
+            userId_questionId: { userId, questionId: row.id },
           },
           create: {
             userId,
-            questionId: result.questionId,
+            questionId: row.id,
             subject,
             subjectLabel,
+            topicId: row.topicId,
             xpReward: defaultXpReward,
             // First failure → due tomorrow, weak memory state
             interval: 1,
@@ -139,7 +150,10 @@ export async function createRecallCardsForFailedAnswers(
             incorrectCount: 1,
           },
           update: {
-            // Re-failure → reset SM-2 state (the memory's gone again)
+            // Re-failure → reset SM-2 state (the memory's gone again).
+            // topicId refreshes on touch so newly-tagged questions propagate
+            // to cards created before tagging existed.
+            topicId: row.topicId ?? undefined,
             interval: 1,
             repetitions: 0,
             nextReviewAt: tomorrow,
@@ -152,7 +166,7 @@ export async function createRecallCardsForFailedAnswers(
         // Don't block quiz submission on a single card failure
         console.error('[recall.autoCreate] upsert failed', {
           userId,
-          questionId: result.questionId,
+          questionId: row.id,
           err,
         });
       }
@@ -197,6 +211,7 @@ export async function upsertRecallCardFromReelAnswer(
       select: {
         id: true,
         points: true,
+        topicId: true,
         post: { select: { id: true, title: true, topicTags: true } },
       },
     });
@@ -215,6 +230,7 @@ export async function upsertRecallCardFromReelAnswer(
           questionId,
           subject,
           subjectLabel,
+          topicId: question.topicId,
           xpReward,
           interval: 1,
           nextReviewAt: tomorrow,
@@ -222,6 +238,7 @@ export async function upsertRecallCardFromReelAnswer(
           incorrectCount: 1,
         },
         update: {
+          topicId: question.topicId ?? undefined,
           interval: 1,
           repetitions: 0,
           nextReviewAt: tomorrow,
@@ -246,6 +263,7 @@ export async function upsertRecallCardFromReelAnswer(
         questionId,
         subject,
         subjectLabel,
+        topicId: question.topicId,
         xpReward,
         interval: LEARNED_INTERVAL_DAYS,
         repetitions: 1,
@@ -306,6 +324,7 @@ export async function seedRecallCardsFromQuizPool(
       select: {
         id: true,
         points: true,
+        topicId: true,
         post: { select: { id: true, title: true, topicTags: true } },
       },
     });
@@ -322,6 +341,7 @@ export async function seedRecallCardsFromQuizPool(
             questionId: q.id,
             subject,
             subjectLabel,
+            topicId: q.topicId,
             xpReward: q.points && q.points > 0 ? q.points : DEFAULT_XP_REWARD,
             interval: 0,
             repetitions: 0,
