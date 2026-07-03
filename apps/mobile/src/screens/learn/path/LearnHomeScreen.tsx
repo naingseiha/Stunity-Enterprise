@@ -26,11 +26,10 @@ import {
   RefreshControl,
   StyleSheet,
   Animated,
-  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -55,8 +54,7 @@ type NavigationProp = LearnStackScreenProps<'LearnHome'>['navigation'];
 
 const GRADES = ['7', '8', '9', '10', '11', '12'];
 
-/** Horizontal offsets tracing the winding path (Duolingo-style). */
-const SERPENTINE = [0, 52, 82, 52, 0, -52, -82, -52];
+/** Timeline dot accent colors, cycled per unit. */
 
 /** Bold accent colors, cycled along the path / tiles / cards. */
 const ACCENTS = ['#0EA5E9', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', '#F97316'];
@@ -91,8 +89,6 @@ const UNIT_ICONS: Array<keyof typeof Ionicons.glyphMap> = [
   'compass',
 ];
 
-/** Low-opacity doodles sprinkled beside the path for a lively backdrop. */
-const SPRINKLES: Array<keyof typeof Ionicons.glyphMap> = ['star', 'pencil', 'book', 'bulb', 'rocket'];
 
 /** Subject icon by MoEYS category-ish code prefix. */
 const subjectIcon = (code: string): keyof typeof Ionicons.glyphMap => {
@@ -105,17 +101,14 @@ const subjectIcon = (code: string): keyof typeof Ionicons.glyphMap => {
   return 'book';
 };
 
-const NODE_SIZE = 76;
-const RING_SIZE = 94;
-const SLOT_H = 156;
-const PATH_TOP_PAD = 46; // room for the START bubble above the first node
+/** Icon circle size inside each unit card. */
+const CARD_ICON_SIZE = 52;
 
 export function LearnHomeScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
-  const { width: screenWidth } = useWindowDimensions();
   const isKh = i18n.language?.startsWith('km');
   const { user } = useAuthStore();
   const userId = user?.id;
@@ -309,15 +302,15 @@ export function LearnHomeScreen() {
         </Text>
       </View>
       <View style={styles.heroRight}>
-        <View style={styles.xpPillHero}>
+        <View style={[styles.xpPillHero, styles.softShadow]}>
           <Ionicons name="diamond" size={13} color="#0EA5E9" />
           <Text style={styles.xpPillHeroText}>{stats?.totalPoints ?? 0}</Text>
         </View>
-        <View style={styles.xpPillHero}>
+        <View style={[styles.xpPillHero, styles.softShadow]}>
           <Ionicons name="flash" size={14} color="#F59E0B" />
           <Text style={styles.xpPillHeroText}>{stats?.xp ?? 0}</Text>
         </View>
-        <View>
+        <View style={styles.avatarContainer}>
           {user?.profilePictureUrl ? (
             <Image source={{ uri: user.profilePictureUrl }} style={styles.avatar} />
           ) : (
@@ -1054,11 +1047,17 @@ export function LearnHomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Cancel / Go Back button */}
+           {/* Cancel / Go Back button */}
           <TouchableOpacity
             style={styles.cancelEditButton}
             activeOpacity={0.75}
-            onPress={() => setObStarted(false)}
+            onPress={() => {
+              if (profile && profile.subjects.length > 0) {
+                setEditingPath(false);
+              } else {
+                setObStarted(false);
+              }
+            }}
           >
             <Text style={[styles.cancelEditButtonText, { color: colors.textSecondary }]}>
               {t('common.cancel')}
@@ -1069,234 +1068,232 @@ export function LearnHomeScreen() {
     );
   };
 
-  // ── Serpentine path with SVG connector ────────────────────
+  // ── Active unit rendering (Centered circular progress node) ──────────
+  const renderActiveUnit = (unit: LearnUnit, index: number) => {
+    const accent = ACCENTS[index % ACCENTS.length];
+    const [gradStart, gradEnd] = gradientFor(accent);
+    const pct = unit.target > 0 ? Math.min(1, unit.correct / unit.target) : 0;
+    const size = 96;
+    const circR = (size - 8) / 2;
+    const circ = 2 * Math.PI * circR;
 
-  const nodeCenter = (index: number) => ({
-    x: screenWidth / 2 + SERPENTINE[index % SERPENTINE.length],
-    y: PATH_TOP_PAD + index * SLOT_H + RING_SIZE / 2,
-  });
-  // The celebratory finish node sits centered one slot past the last unit.
-  const trophyCenter = (count: number) => ({
-    x: screenWidth / 2,
-    y: PATH_TOP_PAD + count * SLOT_H + RING_SIZE / 2,
-  });
-
-  const renderConnector = (count: number) => {
-    if (count < 1) return null;
-    // Snake between the unit nodes, then a final segment down to the trophy.
-    const points = [...Array.from({ length: count }, (_, i) => nodeCenter(i)), trophyCenter(count)];
-    let d = '';
-    for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i];
-      const b = points[i + 1];
-      const midY = (a.y + b.y) / 2;
-      d += `M ${a.x} ${a.y} C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y} `;
-    }
     return (
-      <Svg
-        width={screenWidth}
-        height={PATH_TOP_PAD + (count + 1) * SLOT_H}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      >
-        <Path
-          d={d}
-          stroke={isDark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.3)'}
-          strokeWidth={5}
-          strokeLinecap="round"
-          strokeDasharray="1 14"
-          fill="none"
-        />
-      </Svg>
-    );
-  };
-
-  const renderTrophy = (count: number) => {
-    const allDone = !!path && path.units.every((u) => u.state === 'completed' || u.state === 'no_content');
-    const center = trophyCenter(count);
-    return (
-      <View
-        style={[styles.nodeWrap, { position: 'absolute', top: center.y - RING_SIZE / 2, left: center.x - 95 }]}
-        pointerEvents="none"
-      >
-        <View style={styles.ringHolder}>
-          <View
-            style={[
-              styles.node,
-              {
-                backgroundColor: allDone ? '#F59E0B' : colors.surfaceVariant,
-                borderBottomWidth: 6,
-                borderBottomColor: 'rgba(0,0,0,0.22)',
-              },
-            ]}
-          >
-            <Ionicons name="trophy" size={30} color={allDone ? '#FFFFFF' : colors.textTertiary} />
+      <View key={unit.topicId} style={styles.activeUnitContainer}>
+        {/* START speech bubble */}
+        <View style={styles.activeStartBubble}>
+          <View style={[styles.activeStartBubbleInner, { borderColor: accent }]}>
+            <Text style={[styles.activeStartBubbleText, { color: accent }]}>START</Text>
           </View>
+          <View style={[styles.activeStartBubbleArrow, { borderTopColor: accent }]} />
         </View>
-        <Text style={styles.nodeLabel}>{t('learn.path.finishTrophy')}</Text>
+
+        {/* Large Circle Node */}
+        <TouchableOpacity
+          onPress={() => openUnit(unit)}
+          activeOpacity={0.85}
+          style={styles.activeCircleWrapper}
+        >
+          {/* Progress Ring */}
+          <Svg width={size + 12} height={size + 12} style={StyleSheet.absoluteFill}>
+            <Circle
+              cx={(size + 12) / 2}
+              cy={(size + 12) / 2}
+              r={circR + 3}
+              stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}
+              strokeWidth={5}
+              fill="none"
+            />
+            <Circle
+              cx={(size + 12) / 2}
+              cy={(size + 12) / 2}
+              r={circR + 3}
+              stroke={accent}
+              strokeWidth={5}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${circ * pct} ${circ}`}
+              transform={`rotate(-90 ${(size + 12) / 2} ${(size + 12) / 2})`}
+            />
+          </Svg>
+
+          {/* Inner Circle Gradient */}
+          <LinearGradient
+            colors={[gradStart, gradEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.activeCircleInner}
+          >
+            <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={36} color="#FFFFFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Title and Progress */}
+        <Text style={styles.activeUnitTitle}>{unitName(unit)}</Text>
+        <Text style={styles.activeUnitProgress}>
+          {unit.target > 0
+            ? `${unit.correct} / ${unit.target} correct`
+            : t('learn.path.inProgress', { defaultValue: 'In Progress' })}
+        </Text>
       </View>
     );
   };
 
-  const renderNode = (unit: LearnUnit, index: number, activeIndex: number) => {
+  // ── Standard unit row (Horizontal colored card on the timeline) ──────────
+  const renderUnitCardRow = (unit: LearnUnit, index: number, isLast: boolean) => {
     const accent = ACCENTS[index % ACCENTS.length];
-    const center = nodeCenter(index);
+    const [gradStart, gradEnd] = gradientFor(accent);
     const completed = unit.state === 'completed';
-    const active = index === activeIndex && unit.state === 'unlocked';
     const locked = unit.state === 'locked';
     const comingSoon = unit.state === 'no_content';
-    const pct = unit.target > 0 ? Math.min(1, unit.correct / unit.target) : 0;
-    const circumference = 2 * Math.PI * ((RING_SIZE - 6) / 2);
 
     return (
-      <TouchableOpacity
-        key={unit.topicId}
-        style={[
-          styles.nodeWrap,
-          { position: 'absolute', top: center.y - RING_SIZE / 2 - (active ? 38 : 0), left: center.x - 95 },
-        ]}
-        onPress={() => openUnit(unit)}
-        activeOpacity={locked || comingSoon ? 1 : 0.8}
-      >
-        {active && (
-          <View style={[styles.startBubble, { borderColor: accent }]}>
-            <Text style={[styles.startBubbleText, { color: accent }]}>{t('learn.path.start')}</Text>
-            <View style={[styles.startBubbleArrow, { borderColor: accent }]} />
-          </View>
-        )}
+      <View key={unit.topicId} style={styles.unitRow}>
+        {/* ── Left timeline track ── */}
+        <View style={styles.timelineTrack}>
+          {/* Continuous vertical connector line */}
+          <View style={styles.timelineLine} />
 
-        <View style={styles.ringHolder}>
-          {active && (
-            <Svg width={RING_SIZE} height={RING_SIZE} style={StyleSheet.absoluteFill}>
-              <Circle
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={(RING_SIZE - 6) / 2}
-                stroke={isDark ? colors.border : '#E5E7EB'}
-                strokeWidth={5}
-                fill="none"
-              />
-              <Circle
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={(RING_SIZE - 6) / 2}
-                stroke={accent}
-                strokeWidth={5}
-                strokeLinecap="round"
-                fill="none"
-                strokeDasharray={`${circumference * pct} ${circumference}`}
-                transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
-              />
-            </Svg>
-          )}
-          {locked || comingSoon ? (
-            <View style={[styles.node, { backgroundColor: colors.surfaceVariant }, styles.nodeLocked]}>
-              <Ionicons
-                name={comingSoon ? 'time-outline' : 'lock-closed'}
-                size={23}
-                color={colors.textTertiary}
-              />
-            </View>
-          ) : (
-            <LinearGradient
-              colors={completed ? gradientFor('#10B981') : gradientFor(accent)}
-              start={GRAD_START}
-              end={GRAD_END}
-              style={[styles.node, styles.nodeElevated, { shadowColor: completed ? '#10B981' : accent }]}
-            >
-              {completed ? (
-                <Ionicons name="checkmark" size={32} color="#FFFFFF" />
-              ) : (
-                <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={30} color="#FFFFFF" />
-              )}
-            </LinearGradient>
-          )}
+          {/* Dot: Colored ring with transparent center */}
+          <View
+            style={[
+              styles.timelineDotRing,
+              { borderColor: accent },
+            ]}
+          />
         </View>
 
-        <Text
-          style={[styles.nodeLabel, (locked || comingSoon) && { color: colors.textTertiary }]}
-          numberOfLines={2}
-        >
-          {unitName(unit)}
-        </Text>
-        {!locked && !comingSoon && unit.target > 0 && (
-          <Text style={[styles.nodeMeta, completed && { color: '#10B981' }]}>
-            {completed
-              ? t('learn.path.completed')
-              : t('learn.path.unitProgress', { correct: unit.correct, target: unit.target })}
-          </Text>
-        )}
-        {comingSoon && <Text style={styles.nodeMeta}>{t('learn.path.comingSoon')}</Text>}
-      </TouchableOpacity>
+        {/* ── Card content ── */}
+        <View style={styles.unitCardOuter}>
+          <TouchableOpacity
+            onPress={() => openUnit(unit)}
+            activeOpacity={locked || comingSoon ? 0.95 : 0.82}
+            style={[
+              styles.unitCard,
+              styles.softShadow,
+              { shadowColor: accent },
+            ]}
+          >
+            {/* Gradient background for the card */}
+            <LinearGradient
+              colors={[gradStart, gradEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {/* Left inside: White circle with colored icon */}
+            <View style={styles.unitCardIconCircleWhite}>
+              {completed ? (
+                <Ionicons name="checkmark" size={20} color={accent} />
+              ) : (
+                <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={20} color={accent} />
+              )}
+            </View>
+
+            {/* Title + subtitle */}
+            <View style={styles.unitCardText}>
+              <Text style={styles.unitCardTitleTextWhite} numberOfLines={1}>
+                {unitName(unit)}
+              </Text>
+              <Text style={styles.unitCardSubTextWhite} numberOfLines={1}>
+                {t('learn.path.unitLabel', { n: index + 1, defaultValue: `Unit ${index + 1}` })} ·{' '}
+                {completed
+                  ? t('learn.path.completed')
+                  : comingSoon
+                  ? t('learn.path.comingSoon')
+                  : locked
+                  ? t('learn.path.locked', { defaultValue: 'Locked' })
+                  : t('learn.path.inProgress', { defaultValue: 'In Progress' })}
+              </Text>
+            </View>
+
+            {/* Right: Lock icon or chevron/checkmark */}
+            <View style={styles.unitCardRight}>
+              {locked || comingSoon ? (
+                <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+              ) : completed ? (
+                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
-  // Current-unit section banner (the Duolingo unit header) anchoring the path.
-  const renderUnitBanner = () => {
-    if (!path || !activeUnit) return null;
-    const index = path.units.findIndex((u) => u.topicId === activeUnit.topicId);
-    const accent = ACCENTS[index % ACCENTS.length];
-    return (
-      <TouchableOpacity activeOpacity={0.9} onPress={() => openUnit(activeUnit)}>
-        <LinearGradient
-          colors={gradientFor(accent)}
-          start={GRAD_START}
-          end={GRAD_END}
-          style={[styles.unitBanner, styles.softColorShadow, { shadowColor: accent }]}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.unitBannerKicker}>
-              {t('learn.path.unitBanner', { n: index + 1 })}
-            </Text>
-            <Text style={styles.unitBannerTitle} numberOfLines={2}>
-              {unitName(activeUnit)}
-            </Text>
-          </View>
-          <View style={styles.unitBannerIcon}>
-            <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={24} color="#FFFFFF" />
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  };
+  const renderTrophyRow = (allDone: boolean) => (
+    <View style={styles.unitRow}>
+      <View style={styles.timelineTrack}>
+        {/* Continuous vertical connector line ending at dot ring center */}
+        <View style={[styles.timelineLine, styles.timelineLineLast]} />
 
-  // Faint doodles alternating beside the path so the backdrop isn't empty.
-  const renderSprinkles = (count: number) =>
-    Array.from({ length: count }, (_, i) => {
-      if (i % 2 === 0) return null;
-      const center = nodeCenter(i);
-      const left = SERPENTINE[i % SERPENTINE.length] >= 0 ? 26 : screenWidth - 60;
-      return (
-        <Ionicons
-          key={`sprinkle-${i}`}
-          name={SPRINKLES[i % SPRINKLES.length]}
-          size={26}
-          color={isDark ? 'rgba(148,163,184,0.18)' : 'rgba(100,116,139,0.16)'}
-          style={{
-            position: 'absolute',
-            top: center.y - 40,
-            left,
-            transform: [{ rotate: i % 4 === 1 ? '-14deg' : '12deg' }],
-          }}
+        <View
+          style={[
+            styles.timelineDotRing,
+            { borderColor: '#F59E0B' },
+          ]}
         />
-      );
-    });
+      </View>
+      <View style={[styles.unitCardOuter, { paddingBottom: 8 }]}>
+        <TouchableOpacity
+          activeOpacity={allDone ? 0.82 : 0.95}
+          style={[
+            styles.trophyRow,
+            styles.softShadow,
+            allDone ? { shadowColor: '#F59E0B', borderWidth: 0 } : { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          {allDone && (
+            <LinearGradient
+              colors={['#FBBF24', '#F59E0B']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+
+          <View style={styles.trophyIconCircleWhite}>
+            <Ionicons name="trophy" size={20} color={allDone ? '#F59E0B' : colors.textTertiary} />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.trophyLabel,
+                allDone ? { color: '#FFFFFF' } : { color: colors.textSecondary },
+              ]}
+            >
+              {t('learn.path.finishTrophy')}
+            </Text>
+          </View>
+
+          {allDone && (
+            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   const renderPath = () => {
     if (!path) return <ActivityIndicator style={{ marginTop: 40 }} color={colors.textSecondary} />;
     const activeIndex = path.units.findIndex((u) => u.state === 'unlocked');
+    const allDone = path.units.every((u) => u.state === 'completed' || u.state === 'no_content');
 
     return (
-      <>
-        {renderUnitBanner()}
-
-        <View style={[styles.pathArea, { height: PATH_TOP_PAD + (path.units.length + 1) * SLOT_H }]}>
-          {renderConnector(path.units.length)}
-          {renderSprinkles(path.units.length)}
-          {path.units.map((u, i) => renderNode(u, i, activeIndex))}
-          {renderTrophy(path.units.length)}
-        </View>
-      </>
+      <View style={styles.pathList}>
+        {path.units.map((u, i) => {
+          const isLast = i === path.units.length - 1;
+          if (u.state === 'unlocked') {
+            return renderActiveUnit(u, i);
+          } else {
+            return renderUnitCardRow(u, i, isLast);
+          }
+        })}
+        {renderTrophyRow(allDone)}
+      </View>
     );
   };
 
@@ -1445,44 +1442,47 @@ const createStyles = (colors: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingTop: 10,
-      paddingBottom: 6,
+      paddingTop: 16,
+      paddingBottom: 12,
       gap: 12,
     },
     heroKickerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    heroKicker: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
-    heroName: { fontSize: 26, fontWeight: '800', color: colors.text, letterSpacing: -0.5, marginTop: 2 },
-    heroRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    heroKicker: { fontSize: 13.5, fontWeight: '600', color: colors.textSecondary },
+    heroName: { fontSize: 23, fontWeight: '800', color: colors.text, letterSpacing: -0.5, marginTop: 1 },
+    heroRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     xpPillHero: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 11,
-      paddingVertical: 7,
-      borderRadius: 14,
+      gap: 6,
+      paddingHorizontal: 12,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: isDark ? colors.border : '#E2E8F0',
     },
-    xpPillHeroText: { fontSize: 14, fontWeight: '800', color: colors.text },
-    avatar: { width: 46, height: 46, borderRadius: 23 },
+    xpPillHeroText: { fontSize: 13.5, fontWeight: '800', color: colors.text },
+    avatarContainer: {
+      position: 'relative',
+    },
+    avatar: { width: 44, height: 44, borderRadius: 22 },
     avatarFallback: { backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center' },
-    avatarInitial: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+    avatarInitial: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
     levelBadge: {
       position: 'absolute',
-      bottom: -4,
-      right: -4,
-      minWidth: 20,
-      height: 20,
-      borderRadius: 10,
-      paddingHorizontal: 4,
+      bottom: -3,
+      right: -3,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      paddingHorizontal: 3,
       backgroundColor: '#F59E0B',
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 2,
-      borderColor: colors.background,
+      borderColor: isDark ? colors.background : '#F1F5F9', // Matches screen background perfectly!
     },
-    levelBadgeText: { fontSize: 10, fontWeight: '900', color: '#FFFFFF' },
+    levelBadgeText: { fontSize: 9, fontWeight: '900', color: '#FFFFFF', lineHeight: 11 },
 
     // Week streak card
     weekCard: {
@@ -1585,33 +1585,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'center',
       zIndex: 2,
     },
-    unitBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      marginHorizontal: 20,
-      marginTop: 14,
-      padding: 16,
-      borderRadius: 18,
-      borderBottomWidth: 4,
-      borderBottomColor: 'rgba(0,0,0,0.22)',
-    },
-    unitBannerKicker: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: 'rgba(255,255,255,0.85)',
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
-    },
-    unitBannerTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF', marginTop: 3 },
-    unitBannerIcon: {
-      width: 46,
-      height: 46,
-      borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.25)',
-    },
     subjectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     subjectKickerPill: {
       flexDirection: 'row',
@@ -1691,51 +1664,176 @@ const createStyles = (colors: any, isDark: boolean) =>
       textAlign: 'center',
     },
 
-    // Path
-    pathArea: { marginTop: 8 },
-    nodeWrap: { alignItems: 'center', width: 190 },
-    ringHolder: {
-      width: RING_SIZE,
-      height: RING_SIZE,
+    // ── Vertical timeline path ──────────────────────────────────────
+    pathList: {
+      marginTop: 8,
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+    },
+    activeUnitContainer: {
+      alignItems: 'center',
+      marginVertical: 20,
+      width: '100%',
+    },
+    activeStartBubble: {
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    activeStartBubbleInner: {
+      paddingHorizontal: 18,
+      paddingVertical: 6,
+      borderRadius: 15,
+      borderWidth: 2.2,
+      backgroundColor: '#FFFFFF',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      elevation: 3,
+    },
+    activeStartBubbleText: {
+      fontSize: 13,
+      fontWeight: '900',
+      letterSpacing: 1.2,
+    },
+    activeStartBubbleArrow: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 6,
+      borderRightWidth: 6,
+      borderTopWidth: 6,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      marginTop: -1.5,
+    },
+    activeCircleWrapper: {
+      width: 108,
+      height: 108,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    node: {
-      width: NODE_SIZE,
-      height: NODE_SIZE,
-      borderRadius: NODE_SIZE / 2,
+    activeCircleInner: {
+      width: 88,
+      height: 88,
+      borderRadius: 44,
       alignItems: 'center',
       justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 4,
     },
-    nodeLocked: { borderWidth: 1, borderColor: colors.border },
-    nodeLabel: {
-      marginTop: 6,
-      fontSize: 13.5,
-      fontWeight: '700',
+    activeUnitTitle: {
+      fontSize: 18,
+      fontWeight: '800',
       color: colors.text,
       textAlign: 'center',
-      lineHeight: 18,
+      marginTop: 12,
     },
-    nodeMeta: { marginTop: 2, fontSize: 11.5, fontWeight: '600', color: colors.textSecondary },
-    startBubble: {
-      marginBottom: 8,
-      paddingHorizontal: 14,
-      paddingVertical: 7,
-      borderRadius: 12,
-      backgroundColor: colors.card,
-      borderWidth: 1.5,
+    activeUnitProgress: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 16,
+    },
+    unitRow: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      marginBottom: 0,
+    },
+    timelineTrack: {
+      width: 28,
       alignItems: 'center',
     },
-    startBubbleText: { fontSize: 12, fontWeight: '900', letterSpacing: 1 },
-    startBubbleArrow: {
+    timelineDotRing: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      borderWidth: 3.5,
+      backgroundColor: '#FFFFFF',
+      zIndex: 2,
+      marginTop: 24,
+    },
+    timelineLine: {
       position: 'absolute',
-      bottom: -6,
-      width: 10,
-      height: 10,
-      backgroundColor: colors.card,
-      borderRightWidth: 1.5,
-      borderBottomWidth: 1.5,
-      transform: [{ rotate: '45deg' }],
+      top: 0,
+      bottom: 0,
+      width: 2.5,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
+      zIndex: 1,
+    },
+    timelineLineLast: {
+      bottom: undefined,
+      height: 32,
+    },
+    unitCardOuter: {
+      flex: 1,
+      paddingBottom: 12,
+      paddingLeft: 8,
+    },
+    unitCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 32,
+      height: 64,
+      paddingHorizontal: 14,
+      overflow: 'hidden',
+      gap: 12,
+      borderWidth: 0,
+    },
+    unitCardIconCircleWhite: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unitCardText: {
+      flex: 1,
+    },
+    unitCardTitleTextWhite: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      lineHeight: 20,
+    },
+    unitCardSubTextWhite: {
+      fontSize: 11.5,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.75)',
+      marginTop: 1,
+    },
+    unitCardRight: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingLeft: 4,
+    },
+    trophyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 32,
+      height: 64,
+      paddingHorizontal: 14,
+      overflow: 'hidden',
+      gap: 12,
+      borderWidth: 1,
+      flex: 1,
+    },
+    trophyIconCircleWhite: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    trophyLabel: {
+      fontSize: 15,
+      fontWeight: '800',
     },
 
     // ── Onboarding (Premium Enterprise Redesign) ──────────────
