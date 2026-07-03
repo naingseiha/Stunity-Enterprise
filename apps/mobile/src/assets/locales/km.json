@@ -1676,7 +1676,11 @@
       "completed": "បញ្ចប់ហើយ",
       "unitsDone": "បញ្ចប់ {{done}} ក្នុងចំណោម {{total}} មេរៀន",
       "coursesSection": "វគ្គសិក្សា",
-      "seeAll": "មើលទាំងអស់"
+      "seeAll": "មើលទាំងអស់",
+      "miniLesson": "មេរៀនសង្ខេប",
+      "formulaSheet": "តារាងរូបមន្ត",
+      "startPractice": "ចាប់ផ្តើមអនុវត្ត",
+      "lessonEmpty": "មិនទាន់មានខ្លឹមសារមេរៀននៅឡើយទេ។"
     },
     "continue": "បន្ត",
     "start": "ចាប់ផ្តើម",

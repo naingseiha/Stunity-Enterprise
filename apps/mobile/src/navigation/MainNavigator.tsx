@@ -73,6 +73,7 @@ import {
   CreateCourseScreen,
   InstructorDashboardScreen,
   LearnHomeScreen,
+  UnitLessonScreen,
   PracticeSessionScreen,
 } from "@/screens/learn";
 import {
@@ -333,6 +334,7 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
     <LearnStack.Screen name="DocumentViewer" component={DocumentViewerScreen} />
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
+    <LearnStack.Screen name="UnitLesson" component={UnitLessonScreen} />
     <LearnStack.Screen name="PracticeSession" component={PracticeSessionScreen} />
     <LearnStack.Screen
       name="InstructorDashboard"

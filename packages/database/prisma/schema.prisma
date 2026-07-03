@@ -551,6 +551,16 @@ model Topic {
   nameKh    String?
   order     Int      @default(0)
   isActive  Boolean  @default(true)
+
+  // ── Unit lesson content (top-level topics only) ──
+  // Shown by the Learn path's UnitLessonScreen before practice. Plain text
+  // with \n\n paragraph breaks; formulaSheet is a Json array of
+  // { expr, note?, noteKh? } rendered as formula cards (unicode math,
+  // no LaTeX pipeline yet).
+  miniLesson   String? @db.Text
+  miniLessonKh String? @db.Text
+  formulaSheet Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

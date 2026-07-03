@@ -182,7 +182,11 @@ export function LearnHomeScreen() {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('PracticeSession', { topicId: unit.topicId, title: unitName(unit) });
+    const params = { topicId: unit.topicId, title: unitName(unit) };
+    // Lesson-first flow: units with an authored mini-lesson open it before
+    // practice (the lesson screen replaces itself with the session).
+    if (unit.hasLesson) navigation.navigate('UnitLesson', params);
+    else navigation.navigate('PracticeSession', params);
   };
 
   const topCourses = useMemo(() => {

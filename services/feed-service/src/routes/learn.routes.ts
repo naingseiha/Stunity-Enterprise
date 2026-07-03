@@ -97,15 +97,28 @@ router.get('/learn/path', authenticateToken, async (req: AuthRequest, res: Respo
       }),
       prismaRead.topic.findMany({
         where: { subjectId, isActive: true },
-        select: { id: true, parentId: true, name: true, nameKh: true, order: true },
+        select: {
+          id: true,
+          parentId: true,
+          name: true,
+          nameKh: true,
+          order: true,
+          miniLesson: true,
+          miniLessonKh: true,
+        },
         orderBy: [{ order: 'asc' }, { name: 'asc' }],
       }),
     ]);
     if (!subject) return res.status(404).json({ success: false, error: 'Subject not found' });
 
+    const topicRows = topics.map(({ miniLesson, miniLessonKh, ...t }) => ({
+      ...t,
+      hasLesson: !!(miniLesson || miniLessonKh),
+    }));
+
     // Tagged questions across all of the subject's topics, then the user's
     // distinct correct answers over them (one query each — pilot scale).
-    const topicIds = topics.map((t) => t.id);
+    const topicIds = topicRows.map((t) => t.id);
     const questions = topicIds.length
       ? await prismaRead.quizQuestion.findMany({
           where: { topicId: { in: topicIds } },
@@ -120,12 +133,39 @@ router.get('/learn/path', authenticateToken, async (req: AuthRequest, res: Respo
         })
       : [];
 
-    const units = deriveUnitStates(topics, questions, new Set(correctResponses.map((r) => r.itemId)));
+    const units = deriveUnitStates(topicRows, questions, new Set(correctResponses.map((r) => r.itemId)));
 
     res.json({ success: true, data: { subject, targetPerUnit: UNIT_TARGET_CORRECT, units } });
   } catch (error: any) {
     console.error('Get learn path error:', error);
     res.status(500).json({ success: false, error: 'Failed to load learn path' });
+  }
+});
+
+// GET /learn/lesson?topicId=… — a unit's mini-lesson + formula sheet,
+// shown before practice (UnitLessonScreen).
+router.get('/learn/lesson', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const topicId = typeof req.query.topicId === 'string' ? req.query.topicId.trim() : '';
+    if (!topicId) return res.status(400).json({ success: false, error: 'topicId is required' });
+
+    const topic = await prismaRead.topic.findUnique({
+      where: { id: topicId },
+      select: {
+        id: true,
+        name: true,
+        nameKh: true,
+        miniLesson: true,
+        miniLessonKh: true,
+        formulaSheet: true,
+      },
+    });
+    if (!topic) return res.status(404).json({ success: false, error: 'Topic not found' });
+
+    res.json({ success: true, data: topic });
+  } catch (error: any) {
+    console.error('Get learn lesson error:', error);
+    res.status(500).json({ success: false, error: 'Failed to load lesson' });
   }
 });
 

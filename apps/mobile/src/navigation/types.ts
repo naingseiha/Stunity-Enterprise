@@ -172,6 +172,7 @@ export type LearnStackParamList = {
   EditCourse: { courseId: string };
   LearningPath: { pathId: string };
   LearnHome: undefined;
+  UnitLesson: { topicId: string; title: string };
   PracticeSession: { topicId: string; title: string };
   MyCourses: undefined;
   MyCreatedCourses: undefined;

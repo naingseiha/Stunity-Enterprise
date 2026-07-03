@@ -33,6 +33,16 @@ export interface LearnUnit {
   correct: number;
   target: number;
   state: UnitState;
+  hasLesson: boolean;
+}
+
+export interface UnitLesson {
+  id: string;
+  name: string;
+  nameKh: string | null;
+  miniLesson: string | null;
+  miniLessonKh: string | null;
+  formulaSheet: Array<{ expr: string; noteKh?: string }> | null;
 }
 
 export interface LearnPath {
@@ -73,6 +83,11 @@ export const learnPathService = {
 
   async getPath(subjectId: string): Promise<LearnPath | null> {
     const response = await quizApi.get('/learn/path', { params: { subjectId } });
+    return response.data?.data ?? null;
+  },
+
+  async getLesson(topicId: string): Promise<UnitLesson | null> {
+    const response = await quizApi.get('/learn/lesson', { params: { topicId } });
     return response.data?.data ?? null;
   },
 

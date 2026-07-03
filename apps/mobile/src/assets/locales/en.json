@@ -1676,7 +1676,11 @@
       "completed": "Completed",
       "unitsDone": "{{done}} of {{total}} units completed",
       "coursesSection": "Courses",
-      "seeAll": "See all"
+      "seeAll": "See all",
+      "miniLesson": "Mini lesson",
+      "formulaSheet": "Formula sheet",
+      "startPractice": "Start practice",
+      "lessonEmpty": "No lesson content yet."
     },
     "continue": "Continue",
     "start": "Start",

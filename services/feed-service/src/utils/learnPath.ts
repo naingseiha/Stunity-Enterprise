@@ -17,6 +17,8 @@ export type TopicRow = {
   name: string;
   nameKh: string | null;
   order: number;
+  /** Unit has authored mini-lesson content (see Topic.miniLesson[Kh]). */
+  hasLesson?: boolean;
 };
 
 export type QuestionRow = { id: string; topicId: string | null };
@@ -33,6 +35,7 @@ export type UnitProgress = {
   correct: number;
   target: number;
   state: UnitState;
+  hasLesson: boolean;
 };
 
 export function deriveUnitStates(
@@ -103,6 +106,7 @@ export function deriveUnitStates(
       correct,
       target,
       state,
+      hasLesson: !!unit.hasLesson,
     };
   });
 }
