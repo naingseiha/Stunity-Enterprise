@@ -13,15 +13,72 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
 import { learnPathService, PracticeQuestion } from '@/services/learnPath.service';
 import { LearnStackScreenProps } from '@/navigation/types';
+
+type OptionButtonProps = {
+  children: React.ReactNode;
+  onPress: () => void;
+  style: any;
+  disabled: boolean;
+  activeOpacity: number;
+};
+
+function OptionButton({
+  children,
+  onPress,
+  style,
+  disabled,
+  activeOpacity,
+}: OptionButtonProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const handlePressIn = () => {
+    if (disabled) return;
+    scale.value = withTiming(0.95, { duration: 100 });
+  };
+
+  const handlePressOut = () => {
+    if (disabled) return;
+    scale.value = withSpring(1, { damping: 10, stiffness: 200 });
+  };
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={style}
+        disabled={disabled}
+        activeOpacity={activeOpacity}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 type Props = LearnStackScreenProps<'PracticeSession'>;
 
@@ -32,6 +89,7 @@ export function PracticeSessionScreen() {
   const navigation = useNavigation<Props['navigation']>();
   const route = useRoute<Props['route']>();
   const { topicId, title } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [questions, setQuestions] = useState<PracticeQuestion[] | null>(null);
   const [index, setIndex] = useState(0);
@@ -41,6 +99,8 @@ export function PracticeSessionScreen() {
   const [xpTotal, setXpTotal] = useState(0);
   const [finished, setFinished] = useState(false);
 
+  const translateY = useSharedValue(500);
+
   useEffect(() => {
     learnPathService
       .getPractice(topicId)
@@ -49,6 +109,14 @@ export function PracticeSessionScreen() {
   }, [topicId]);
 
   const question = questions?.[index] ?? null;
+
+  useEffect(() => {
+    if (revealed) {
+      translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+    } else {
+      translateY.value = 500;
+    }
+  }, [revealed, translateY]);
 
   const choose = useCallback(
     (optionIndex: number) => {
@@ -75,9 +143,11 @@ export function PracticeSessionScreen() {
     [question, revealed],
   );
 
-  const next = useCallback(() => {
+  // Runs on the JS thread — must be a named JS-scope function so runOnJS can
+  // reference it (an arrow created inside the worklet has no JS reference and
+  // would throw / silently fail to advance).
+  const advance = useCallback(() => {
     if (!questions) return;
-    Haptics.selectionAsync();
     if (index + 1 >= questions.length) {
       setFinished(true);
     } else {
@@ -87,7 +157,23 @@ export function PracticeSessionScreen() {
     }
   }, [questions, index]);
 
+  const next = useCallback(() => {
+    if (!questions) return;
+    Haptics.selectionAsync();
+
+    // Slide the feedback sheet down, then advance on the JS thread.
+    translateY.value = withTiming(500, { duration: 250 }, (done) => {
+      if (done) runOnJS(advance)();
+    });
+  }, [questions, translateY, advance]);
+
   const progressPct = questions && questions.length > 0 ? ((index + (revealed ? 1 : 0)) / questions.length) * 100 : 0;
+
+  const animatedSheetStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    };
+  });
 
   // ── Option style per state ────────────────────────────────
   const optionStyle = (i: number) => {
@@ -145,60 +231,99 @@ export function PracticeSessionScreen() {
       )}
 
       {!finished && question && (
-        <ScrollView contentContainerStyle={styles.body}>
-          <Text style={styles.unitLabel} numberOfLines={1}>
-            {title}
-          </Text>
-          <Text style={styles.questionText}>{question.text}</Text>
+        <>
+          <ScrollView
+            contentContainerStyle={[
+              styles.body,
+              { paddingBottom: revealed ? 240 + insets.bottom : 48 }
+            ]}
+          >
+            <Text style={styles.unitLabel} numberOfLines={1}>
+              {title}
+            </Text>
+            <Text style={styles.questionText}>{question.text}</Text>
 
-          <View style={styles.optionsList}>
-            {question.options.map((opt, i) => (
-              <TouchableOpacity
-                key={`${question.id}-${i}`}
-                style={optionStyle(i)}
-                onPress={() => choose(i)}
-                disabled={revealed}
-                activeOpacity={0.8}
-              >
-                <Text style={optionTextStyle(i)}>{opt}</Text>
-                {revealed && i === question.correctIndex && (
-                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                )}
-                {revealed && i === chosen && i !== question.correctIndex && (
-                  <Ionicons name="close-circle" size={20} color="#FFFFFF" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+            <View style={styles.optionsList}>
+              {question.options.map((opt, i) => (
+                <OptionButton
+                  key={`${question.id}-${i}`}
+                  style={optionStyle(i)}
+                  onPress={() => choose(i)}
+                  disabled={revealed}
+                  activeOpacity={0.8}
+                >
+                  <Text style={optionTextStyle(i)}>{opt}</Text>
+                  {revealed && i === question.correctIndex && (
+                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  )}
+                  {revealed && i === chosen && i !== question.correctIndex && (
+                    <Ionicons name="close-circle" size={20} color="#FFFFFF" />
+                  )}
+                </OptionButton>
+              ))}
+            </View>
+          </ScrollView>
 
           {revealed && (
-            <View
+            <Animated.View
               style={[
-                styles.feedbackBox,
-                chosen === question.correctIndex ? styles.feedbackCorrect : styles.feedbackWrong,
+                styles.bottomSheet,
+                chosen === question.correctIndex ? styles.sheetCorrect : styles.sheetWrong,
+                animatedSheetStyle,
               ]}
             >
-              <Text style={styles.feedbackTitle}>
-                {chosen === question.correctIndex
-                  ? t('learn.path.correct')
-                  : t('learn.path.incorrect')}
-              </Text>
-              {!!question.explanation && (
-                <Text style={styles.feedbackText}>{question.explanation}</Text>
-              )}
-            </View>
-          )}
+              <View style={styles.sheetHeader}>
+                <Ionicons
+                  name={chosen === question.correctIndex ? 'checkmark-circle' : 'close-circle'}
+                  size={28}
+                  color={chosen === question.correctIndex ? '#10B981' : '#EF4444'}
+                />
+                <Text
+                  style={[
+                    styles.sheetTitle,
+                    { color: chosen === question.correctIndex ? (isDark ? '#34D399' : '#065F46') : (isDark ? '#FCA5A5' : '#991B1B') }
+                  ]}
+                >
+                  {chosen === question.correctIndex
+                    ? t('learn.path.correct')
+                    : t('learn.path.incorrect')}
+                </Text>
+              </View>
 
-          {revealed && (
-            <TouchableOpacity style={styles.primaryButton} onPress={next}>
-              <Text style={styles.primaryButtonText}>
-                {index + 1 >= (questions?.length ?? 0)
-                  ? t('learn.path.finish')
-                  : t('learn.path.continue')}
-              </Text>
-            </TouchableOpacity>
+              {!!question.explanation && (
+                <ScrollView
+                  style={styles.sheetScroll}
+                  contentContainerStyle={styles.sheetScrollContent}
+                  showsVerticalScrollIndicator={true}
+                >
+                  <Text
+                    style={[
+                      styles.sheetExplanation,
+                      { color: chosen === question.correctIndex ? (isDark ? '#A7F3D0' : '#047857') : (isDark ? '#FECACA' : '#B91C1C') }
+                    ]}
+                  >
+                    {question.explanation}
+                  </Text>
+                </ScrollView>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.sheetButton,
+                  chosen === question.correctIndex ? styles.sheetButtonCorrect : styles.sheetButtonWrong
+                ]}
+                onPress={next}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.sheetButtonText}>
+                  {index + 1 >= (questions?.length ?? 0)
+                    ? t('learn.path.finish')
+                    : t('learn.path.continue')}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           )}
-        </ScrollView>
+        </>
       )}
     </SafeAreaView>
   );
@@ -271,4 +396,75 @@ const createStyles = (colors: any, isDark: boolean) =>
     doneTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 8 },
     doneStats: { fontSize: 15, color: colors.textSecondary },
     doneXp: { fontSize: 17, fontWeight: '800', color: '#F59E0B' },
+
+    // Bottom Sheet Styles
+    bottomSheet: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      borderTopWidth: 2,
+      paddingHorizontal: 24,
+      paddingTop: 20,
+      paddingBottom: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: isDark ? 0.3 : 0.08,
+      shadowRadius: 12,
+      elevation: 24,
+    },
+    sheetCorrect: {
+      backgroundColor: isDark ? '#064E3B' : '#ECFDF5',
+      borderColor: isDark ? '#059669' : '#A7F3D0',
+    },
+    sheetWrong: {
+      backgroundColor: isDark ? '#7F1D1D' : '#FEF2F2',
+      borderColor: isDark ? '#DC2626' : '#FCA5A5',
+    },
+    sheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+    },
+    sheetTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    sheetScroll: {
+      maxHeight: 90,
+      marginBottom: 14,
+    },
+    sheetScrollContent: {
+      paddingRight: 8,
+    },
+    sheetExplanation: {
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: '500',
+    },
+    sheetButton: {
+      paddingVertical: 14,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    sheetButtonCorrect: {
+      backgroundColor: '#10B981',
+    },
+    sheetButtonWrong: {
+      backgroundColor: '#EF4444',
+    },
+    sheetButtonText: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
   });
