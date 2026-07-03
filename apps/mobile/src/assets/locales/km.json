@@ -1692,7 +1692,10 @@
       "nudgeBody": "អនុវត្ត {{unit}} បន្តិច ដើម្បីរក្សាដំណើររបស់អ្នក។",
       "readyGrades": "រួចរាល់ឥឡូវនេះ",
       "topicsCount": "{{count}} មេរៀន",
-      "unitBanner": "មេរៀនទី {{n}}"
+      "unitBanner": "មេរៀនទី {{n}}",
+      "mySubjects": "មុខវិជ្ជារបស់ខ្ញុំ",
+      "addSubject": "បន្ថែម",
+      "finishTrophy": "បញ្ចប់"
     },
     "continue": "បន្ត",
     "start": "ចាប់ផ្តើម",

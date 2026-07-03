@@ -1692,7 +1692,10 @@
       "nudgeBody": "A quick practice of {{unit}} keeps you on track.",
       "readyGrades": "Ready now",
       "topicsCount": "{{count}} units",
-      "unitBanner": "Unit {{n}}"
+      "unitBanner": "Unit {{n}}",
+      "mySubjects": "My subjects",
+      "addSubject": "Add",
+      "finishTrophy": "Finish"
     },
     "continue": "Continue",
     "start": "Start",

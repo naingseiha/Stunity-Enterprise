@@ -369,6 +369,60 @@ export function LearnHomeScreen() {
 
   // ── Subject card with completion ring + Continue ──────────
 
+  // ── Subject rail: switch between enrolled subjects + add more ──
+  const renderSubjectRail = () => {
+    if (!profile || profile.subjects.length === 0) return null;
+    return (
+      <View style={styles.railWrap}>
+        <Text style={styles.railTitle}>{t('learn.path.mySubjects')}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.railRow}
+        >
+          {profile.subjects.map((s, i) => {
+            const accent = ACCENTS[i % ACCENTS.length];
+            const active = activeSubjectId === s.id;
+            return (
+              <TouchableOpacity
+                key={s.id}
+                style={styles.railItem}
+                activeOpacity={0.8}
+                onPress={() => switchSubject(s.id)}
+              >
+                <View
+                  style={[
+                    styles.railAvatar,
+                    {
+                      backgroundColor: active ? accent : isDark ? colors.card : `${accent}1A`,
+                      borderColor: active ? accent : 'transparent',
+                    },
+                  ]}
+                >
+                  <Ionicons name={subjectIcon(s.code)} size={26} color={active ? '#FFFFFF' : accent} />
+                </View>
+                <Text
+                  style={[styles.railLabel, active && { color: colors.text, fontWeight: '800' }]}
+                  numberOfLines={1}
+                >
+                  {subjectName(s)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity style={styles.railItem} activeOpacity={0.8} onPress={startEditing}>
+            <View style={styles.railAddAvatar}>
+              <Ionicons name="add" size={28} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.railLabel} numberOfLines={1}>
+              {t('learn.path.addSubject')}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderSubjectCard = () => {
     if (!path) return null;
     const total = path.units.length;
@@ -580,20 +634,27 @@ export function LearnHomeScreen() {
     x: screenWidth / 2 + SERPENTINE[index % SERPENTINE.length],
     y: PATH_TOP_PAD + index * SLOT_H + RING_SIZE / 2,
   });
+  // The celebratory finish node sits centered one slot past the last unit.
+  const trophyCenter = (count: number) => ({
+    x: screenWidth / 2,
+    y: PATH_TOP_PAD + count * SLOT_H + RING_SIZE / 2,
+  });
 
   const renderConnector = (count: number) => {
-    if (count < 2) return null;
+    if (count < 1) return null;
+    // Snake between the unit nodes, then a final segment down to the trophy.
+    const points = [...Array.from({ length: count }, (_, i) => nodeCenter(i)), trophyCenter(count)];
     let d = '';
-    for (let i = 0; i < count - 1; i++) {
-      const a = nodeCenter(i);
-      const b = nodeCenter(i + 1);
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i];
+      const b = points[i + 1];
       const midY = (a.y + b.y) / 2;
       d += `M ${a.x} ${a.y} C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y} `;
     }
     return (
       <Svg
         width={screenWidth}
-        height={PATH_TOP_PAD + count * SLOT_H}
+        height={PATH_TOP_PAD + (count + 1) * SLOT_H}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       >
@@ -606,6 +667,33 @@ export function LearnHomeScreen() {
           fill="none"
         />
       </Svg>
+    );
+  };
+
+  const renderTrophy = (count: number) => {
+    const allDone = !!path && path.units.every((u) => u.state === 'completed' || u.state === 'no_content');
+    const center = trophyCenter(count);
+    return (
+      <View
+        style={[styles.nodeWrap, { position: 'absolute', top: center.y - RING_SIZE / 2, left: center.x - 95 }]}
+        pointerEvents="none"
+      >
+        <View style={styles.ringHolder}>
+          <View
+            style={[
+              styles.node,
+              {
+                backgroundColor: allDone ? '#F59E0B' : colors.surfaceVariant,
+                borderBottomWidth: 6,
+                borderBottomColor: 'rgba(0,0,0,0.22)',
+              },
+            ]}
+          >
+            <Ionicons name="trophy" size={30} color={allDone ? '#FFFFFF' : colors.textTertiary} />
+          </View>
+        </View>
+        <Text style={styles.nodeLabel}>{t('learn.path.finishTrophy')}</Text>
+      </View>
     );
   };
 
@@ -755,37 +843,13 @@ export function LearnHomeScreen() {
 
     return (
       <>
-        {profile && profile.subjects.length > 1 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.switcherRow}
-          >
-            {profile.subjects.map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.switcherChip, activeSubjectId === s.id && styles.switcherChipActive]}
-                onPress={() => switchSubject(s.id)}
-              >
-                <Text
-                  style={[
-                    styles.switcherChipText,
-                    activeSubjectId === s.id && styles.switcherChipTextActive,
-                  ]}
-                >
-                  {subjectName(s)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
         {renderUnitBanner()}
 
-        <View style={[styles.pathArea, { height: PATH_TOP_PAD + path.units.length * SLOT_H }]}>
+        <View style={[styles.pathArea, { height: PATH_TOP_PAD + (path.units.length + 1) * SLOT_H }]}>
           {renderConnector(path.units.length)}
           {renderSprinkles(path.units.length)}
           {path.units.map((u, i) => renderNode(u, i, activeIndex))}
+          {renderTrophy(path.units.length)}
         </View>
       </>
     );
@@ -859,6 +923,7 @@ export function LearnHomeScreen() {
         {showOnboarding && renderOnboarding()}
         {!loading && !showOnboarding && (
           <>
+            {renderSubjectRail()}
             {renderWeekCard()}
             {renderNudge()}
             {renderSubjectCard()}
@@ -1087,19 +1152,43 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     editPathLinkText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
 
-    // Switcher
-    switcherRow: { paddingHorizontal: 20, gap: 8, paddingVertical: 10 },
-    switcherChip: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 16,
-      borderWidth: 1,
+    // Subject rail
+    railWrap: { marginTop: 6 },
+    railTitle: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: colors.text,
+      paddingHorizontal: 20,
+      marginBottom: 12,
+    },
+    railRow: { paddingHorizontal: 20, gap: 16 },
+    railItem: { alignItems: 'center', width: 68 },
+    railAvatar: {
+      width: 60,
+      height: 60,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2.5,
+    },
+    railAddAvatar: {
+      width: 60,
+      height: 60,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
       borderColor: colors.border,
+      borderStyle: 'dashed',
       backgroundColor: colors.card,
     },
-    switcherChipActive: { backgroundColor: '#0EA5E9', borderColor: '#0EA5E9' },
-    switcherChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-    switcherChipTextActive: { color: '#FFFFFF' },
+    railLabel: {
+      marginTop: 7,
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
 
     // Path
     pathArea: { marginTop: 8 },
