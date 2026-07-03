@@ -252,7 +252,13 @@ export function LearnHomeScreen() {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const params = { topicId: unit.topicId, title: unitName(unit) };
+    const params = {
+      topicId: unit.topicId,
+      title: unitName(unit),
+      grade: path?.subject?.grade,
+      subjectName: path?.subject?.nameEn || path?.subject?.name,
+      subjectNameKh: path?.subject?.nameKh,
+    };
     if (unit.hasLesson) navigation.navigate('UnitLesson', params);
     else navigation.navigate('PracticeSession', params);
   };

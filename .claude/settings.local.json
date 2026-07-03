@@ -270,7 +270,26 @@
       "Bash(echo \"feed tsc EXIT:$?\")",
       "Bash(awk '/model PollOption /{f=1} f{print} f&&/^}/{exit}' packages/database/prisma/schema.prisma)",
       "Bash(awk '/model QuizQuestion/,/^}/' packages/database/prisma/schema.prisma)",
-      "Bash(awk '/model Quiz {/,/^}/' packages/database/prisma/schema.prisma)"
+      "Bash(awk '/model Quiz {/,/^}/' packages/database/prisma/schema.prisma)",
+      "Bash(git rebase *)",
+      "Bash(git stash *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(echo \"---diff-check-exit:$?\")",
+      "Bash(git --version)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web && grep -E \"\\\\\"\\(pptxgenjs|jspdf|html2canvas|html-to-image|dom-to-image\\)\\\\\"\" package.json; echo \"---node_modules check---\"; ls node_modules 2>/dev/null | grep -iE \"pptxgenjs|jspdf|html2canvas|html-to-image\" ; echo \"---root check---\"; cd ../.. && ls node_modules 2>/dev/null | grep -iE \"pptxgenjs|jspdf|html2canvas|html-to-image\")",
+      "Bash(npm install *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('browser',{}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"console.log\\(require.resolve\\('pptxgenjs'\\)\\)\")",
+      "Bash(timeout 300 npx next build)",
+      "Bash(npx next *)",
+      "Bash(node -e \"const i=require\\('lucide-react'\\); console.log\\(['PanelBottom','PanelTop','Rows3','Hash','IdCard'].filter\\(n=>i[n]\\).join\\(','\\)\\)\")",
+      "Bash(grep -n \"gap\\\\|Gap\\\\|ខ្វះ\\\\|missing\\\\|Missing\\\\|spaced\\\\|Spaced\\\\|adaptive\\\\|Adaptive\" /Users/naingseiha/Downloads/Stunity-LearnScreen-Practice-Quiz-Spec.md | head -30)",
+      "Bash(npx tsx -e ' *)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('apps/mobile/src/assets/locales/en.json'\\)\\); json.load\\(open\\('apps/mobile/src/assets/locales/km.json'\\)\\); print\\('both valid'\\)\")",
+      "Bash(python3 -c \"import json; json.load\\(open\\('apps/mobile/src/assets/locales/en.json'\\)\\); json.load\\(open\\('apps/mobile/src/assets/locales/km.json'\\)\\); print\\('locales valid'\\)\")",
+      "Bash(git pull *)"
     ]
   }
 }

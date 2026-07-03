@@ -62,6 +62,20 @@ export const aiApi = {
         const response = await aiClient.post<ApiResponse<{ tags: string[] }>>('/ai/suggest/tags', params);
         return response.data;
     },
+
+    // AI Tutor (Learn path)
+    askTutor: async (params: {
+        question: string;
+        locale: 'km' | 'en';
+        grade?: string;
+        subjectName?: string;
+        topicName: string;
+        miniLesson?: string | null;
+        formulaSheet?: Array<{ expr: string; noteKh?: string }> | null;
+    }) => {
+        const response = await aiClient.post<ApiResponse<{ explanation: string }>>('/ai/tutor/ask', params);
+        return response.data;
+    },
 };
 
 export default aiApi;

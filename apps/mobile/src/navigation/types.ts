@@ -172,8 +172,9 @@ export type LearnStackParamList = {
   EditCourse: { courseId: string };
   LearningPath: { pathId: string };
   LearnHome: undefined;
-  UnitLesson: { topicId: string; title: string };
-  PracticeSession: { topicId: string; title: string };
+  UnitLesson: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
+  PracticeSession: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
+  TutorChat: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
   MyCourses: undefined;
   MyCreatedCourses: undefined;
   InstructorDashboard: undefined;

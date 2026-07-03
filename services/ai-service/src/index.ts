@@ -1,9 +1,4 @@
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables — root .env in local dev, Cloud Run env vars in production
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-dotenv.config(); // fallback: also check service-local .env
+import './loadEnv'; // must be the first import — see loadEnv.ts for why
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -11,7 +6,9 @@ import helmet from 'helmet';
 import hpp from 'hpp';
 import compression from 'compression';
 import { geminiService } from './services/gemini.service';
+import { claudeService } from './services/claude.service';
 import generateRoutes from './routes/generate.routes';
+import tutorRoutes from './routes/tutor.routes';
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
@@ -61,12 +58,14 @@ app.get('/health', async (_req: Request, res: Response) => {
         status: 'healthy',
         service: 'ai-service',
         gemini: geminiService.isReady() ? 'connected' : 'unconfigured (missing API key)',
+        claude: claudeService.isReady() ? 'connected' : 'unconfigured (missing API key)',
         uptime: Math.floor(process.uptime()),
     });
 });
 
 // ─── Routes ────────────────────────────────────────────────────────
 app.use('/ai', generateRoutes);
+app.use('/ai', tutorRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────
 app.use((err: any, req: Request, res: Response, next: any) => {
@@ -107,6 +106,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('   POST /ai/generate/milestones');
     console.log('   POST /ai/enhance/content');
     console.log('   POST /ai/suggest/tags');
+    console.log('   POST /ai/tutor/ask');
     console.log('');
 });
 
