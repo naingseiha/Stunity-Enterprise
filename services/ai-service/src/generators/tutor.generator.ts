@@ -15,6 +15,8 @@ export interface AskTutorParams {
     topicName: string;
     miniLesson?: string | null;
     formulaSheet?: Array<{ expr: string; noteKh?: string }> | null;
+    image?: string | null;
+    mimeType?: string | null;
 }
 
 export interface TutorAnswer {
@@ -63,6 +65,11 @@ RULES (follow strictly):
 }
 
 export async function askTutor(params: AskTutorParams): Promise<TutorAnswer> {
-    const explanation = await claudeService.generate(buildSystemPrompt(params), params.question);
+    const explanation = await claudeService.generate(
+        buildSystemPrompt(params), 
+        params.question,
+        params.image,
+        params.mimeType
+    );
     return { explanation };
 }

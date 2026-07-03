@@ -16,10 +16,13 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import * as ImagePicker from 'expo-image-picker';
 import MarkdownIt from 'markdown-it';
 // @ts-ignore — no published types for this plugin
 import texmath from 'markdown-it-texmath';
@@ -49,6 +52,15 @@ const tutorMarkdownIt = MarkdownIt({ typographer: true }).use(texmath, {
 const KATEX_CSS_CDN = 'https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.css';
 
 function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string {
+  const accentColor = '#0EA5E9';
+  const headingColor = isDark ? '#38BDF8' : '#0369A1';
+  const blockquoteBg = isDark 
+    ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(14, 165, 233, 0.04))' 
+    : 'linear-gradient(135deg, #F0F9FF, #E0F2FE)';
+  const blockquoteBorder = isDark ? 'rgba(14, 165, 233, 0.3)' : '#BEE3F8';
+  const formulaBg = isDark ? 'rgba(14, 165, 233, 0.06)' : '#F0F9FF';
+  const formulaBorder = isDark ? 'rgba(14, 165, 233, 0.25)' : '#BEE3F8';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -56,7 +68,7 @@ function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:wght@400;700&family=Koulen&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${KATEX_CSS_CDN}">
 <style>
   * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
@@ -64,46 +76,75 @@ function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string
     margin: 0; padding: 0;
     background: transparent;
     color: ${colors.text};
-    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Noto Sans Khmer', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Noto Sans Khmer', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     font-size: 15px;
-    line-height: 1.55;
+    line-height: 1.65;
     -webkit-text-size-adjust: 100%;
   }
   body { padding: 1px 2px; overflow-x: hidden; }
-  h1, h2, h3 { font-weight: 800; margin: 14px 0 8px; line-height: 1.3; }
-  h1 { font-size: 19px; } h2 { font-size: 17px; } h3 { font-size: 16px; }
-  strong { font-weight: 700; }
-  ul, ol { padding-left: 22px; margin: 6px 0; }
-  li { margin-bottom: 4px; }
-  p { margin: 0 0 10px; }
-  p:last-child { margin-bottom: 0; }
-  a { color: #0EA5E9; }
-  blockquote {
-    background: ${isDark ? 'rgba(14,165,233,0.12)' : '#EFF8FF'};
-    border-left: 4px solid #0EA5E9;
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin: 8px 0;
+  h1, h2, h3 { 
+    font-family: 'Koulen', 'Khmer MN', sans-serif;
+    color: ${headingColor};
+    font-weight: 400; 
+    margin: 22px 0 12px; 
+    line-height: 1.45;
+    letter-spacing: 0.5px;
   }
-  blockquote p { margin: 0; }
+  h1 { font-size: 19px; border-bottom: 2px solid ${isDark ? 'rgba(56, 189, 248, 0.2)' : '#E0F2FE'}; padding-bottom: 6px; } 
+  h2 { font-size: 17px; } 
+  h3 { font-size: 16px; }
+  strong { 
+    font-weight: 700; 
+    color: ${isDark ? '#F1F5F9' : '#0F172A'}; 
+  }
+  ul, ol { padding-left: 20px; margin: 8px 0; }
+  li { margin-bottom: 6px; }
+  p { margin: 0 0 12px; }
+  p:last-child { margin-bottom: 0; }
+  a { color: ${accentColor}; text-decoration: none; font-weight: 600; }
+  blockquote {
+    background: ${blockquoteBg};
+    border-left: 4px solid ${accentColor};
+    border-top: 1px solid ${blockquoteBorder};
+    border-right: 1px solid ${blockquoteBorder};
+    border-bottom: 1px solid ${blockquoteBorder};
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 14px 0;
+  }
+  blockquote p { 
+    margin: 0; 
+    font-weight: 500;
+    color: ${isDark ? '#E2E8F0' : '#1E293B'};
+  }
   code {
     background: ${colors.surfaceVariant};
-    color: #0EA5E9;
-    border-radius: 4px;
-    padding: 1px 4px;
-    font-size: 14px;
+    color: ${accentColor};
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 13.5px;
+    font-family: Menlo, Monaco, Consolas, monospace;
   }
   pre {
     background: ${colors.surfaceVariant};
-    border-radius: 8px;
-    padding: 10px;
+    border-radius: 10px;
+    padding: 12px;
     overflow-x: auto;
+    border: 1px solid ${colors.border};
   }
-  hr { border: none; border-top: 1px solid ${colors.border}; margin: 10px 0; }
+  hr { border: none; border-top: 1px solid ${colors.border}; margin: 14px 0; }
   .katex { font-size: 1.05em; }
-  .katex-display { margin: 10px 0; overflow-x: auto; overflow-y: hidden; }
+  .katex-display { 
+    margin: 16px 0; 
+    padding: 16px;
+    background: ${formulaBg};
+    border: 1.5px solid ${formulaBorder};
+    border-radius: 12px;
+    overflow-x: auto; 
+    overflow-y: hidden; 
+  }
   .katex .text, .katex .mord.text {
-    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', sans-serif !important;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', sans-serif !important;
   }
 </style>
 </head>
@@ -149,6 +190,7 @@ interface TutorMessage {
   id: string;
   role: 'user' | 'tutor';
   text: string;
+  imageUri?: string;
   pending?: boolean;
   error?: boolean;
 }
@@ -168,6 +210,60 @@ export function TutorChatScreen() {
   const [messages, setMessages] = useState<TutorMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
+
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageMime, setSelectedImageMime] = useState<string | null>(null);
+  const [selectedImageBase64, setSelectedImageBase64] = useState<string | null>(null);
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Denied', 'Please grant library permissions to upload images.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+      setSelectedImageBase64(result.assets[0].base64 || null);
+      const mimeType = result.assets[0].mimeType || 'image/jpeg';
+      setSelectedImageMime(mimeType);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Denied', 'Please grant camera permissions to capture photos.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+      setSelectedImageBase64(result.assets[0].base64 || null);
+      const mimeType = result.assets[0].mimeType || 'image/jpeg';
+      setSelectedImageMime(mimeType);
+    }
+  };
+
+  const showImageOptions = () => {
+    Alert.alert(
+      'Upload Exercise',
+      'Choose an option to share your exercise image with the tutor:',
+      [
+        { text: 'Take Photo', onPress: handleTakePhoto },
+        { text: 'Choose from Gallery', onPress: handlePickImage },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   useEffect(() => {
     learnPathService
@@ -190,8 +286,20 @@ export function TutorChatScreen() {
     setInputText('');
     inputRef.current?.blur();
 
-    const userMsg: TutorMessage = { id: `u-${Date.now()}`, role: 'user', text: question };
+    const userMsg: TutorMessage = { 
+      id: `u-${Date.now()}`, 
+      role: 'user', 
+      text: question,
+      imageUri: selectedImage || undefined,
+    };
     const pendingMsg: TutorMessage = { id: `t-${Date.now()}`, role: 'tutor', text: '', pending: true };
+
+    const imgBase64 = selectedImageBase64;
+    const imgMime = selectedImageMime;
+    setSelectedImage(null);
+    setSelectedImageBase64(null);
+    setSelectedImageMime(null);
+
     setMessages((prev) => [...prev, userMsg, pendingMsg]);
     setSending(true);
 
@@ -205,6 +313,8 @@ export function TutorChatScreen() {
         topicName: title,
         miniLesson: isQuestionKh ? lesson?.miniLessonKh || lesson?.miniLesson : lesson?.miniLesson || lesson?.miniLessonKh,
         formulaSheet: lesson?.formulaSheet,
+        image: imgBase64,
+        mimeType: imgMime,
       });
 
       const explanation = response?.data?.explanation;
@@ -233,7 +343,12 @@ export function TutorChatScreen() {
       return (
         <View style={[styles.messageRow, styles.myMessageRow]}>
           <View style={[styles.messageBubble, styles.myBubble]}>
-            <Text style={[styles.messageText, styles.myMessageText]}>{item.text}</Text>
+            {item.imageUri && (
+              <Image source={{ uri: item.imageUri }} style={styles.userSentImage} />
+            )}
+            {!!item.text && (
+              <Text style={[styles.messageText, styles.myMessageText]}>{item.text}</Text>
+            )}
           </View>
         </View>
       );
@@ -243,9 +358,6 @@ export function TutorChatScreen() {
     // no chat-bubble chrome — only the student's own messages get a bubble.
     return (
       <View style={styles.tutorRow}>
-        <View style={styles.tutorAvatar}>
-          <Ionicons name="sparkles" size={13} color="#FFFFFF" />
-        </View>
         <View style={[styles.tutorContent, item.error && styles.tutorErrorContent]}>
           {item.pending ? (
             <View style={styles.thinkingRow}>
@@ -277,7 +389,7 @@ export function TutorChatScreen() {
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {messages.length === 0 ? (
           <View style={styles.emptyState}>
@@ -300,7 +412,26 @@ export function TutorChatScreen() {
           />
         )}
 
+        {selectedImage && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            <TouchableOpacity 
+              onPress={() => {
+                setSelectedImage(null);
+                setSelectedImageBase64(null);
+                setSelectedImageMime(null);
+              }}
+              style={styles.closePreviewButton}
+            >
+              <Ionicons name="close-circle" size={22} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
+          <TouchableOpacity onPress={showImageOptions} style={styles.attachButton}>
+            <Ionicons name="camera-outline" size={24} color="#0EA5E9" />
+          </TouchableOpacity>
           <View style={styles.inputWrapper}>
             <TextInput
               ref={inputRef}
@@ -316,10 +447,13 @@ export function TutorChatScreen() {
           </View>
           <TouchableOpacity
             onPress={handleSend}
-            style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
-            disabled={!inputText.trim() || sending}
+            style={[
+              styles.sendButton, 
+              ((!inputText.trim() && !selectedImage) || sending) && styles.sendButtonDisabled
+            ]}
+            disabled={(!inputText.trim() && !selectedImage) || sending}
           >
-            <Ionicons name="send" size={20} color="#FFFFFF" />
+            <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -380,21 +514,14 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderBottomRightRadius: 4,
     },
     tutorRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 10,
-      marginBottom: 22,
+      marginBottom: 24,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+      paddingBottom: 20,
     },
-    tutorAvatar: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: '#0EA5E9',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 3,
+    tutorContent: { 
+      width: '100%',
     },
-    tutorContent: { flex: 1 },
     tutorErrorContent: {
       backgroundColor: isDark ? '#3F1D1D' : '#FEF2F2',
       borderRadius: 12,
@@ -451,5 +578,45 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     sendButtonDisabled: {
       opacity: 0.4,
+    },
+    userSentImage: {
+      width: 200,
+      height: 150,
+      borderRadius: 12,
+      marginBottom: 8,
+      resizeMode: 'cover',
+    },
+    imagePreviewContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      alignItems: 'center',
+    },
+    imagePreview: {
+      width: 56,
+      height: 56,
+      borderRadius: 8,
+    },
+    closePreviewButton: {
+      position: 'absolute',
+      top: 2,
+      left: 60,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 11,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1,
+      elevation: 2,
+    },
+    attachButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 20,
     },
   });

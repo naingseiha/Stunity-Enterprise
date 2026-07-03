@@ -30,7 +30,7 @@ router.use((_req: Request, res: Response, next: any) => {
 // ─── Tutor Ask ─────────────────────────────────────────────────────
 router.post('/tutor/ask', async (req: Request, res: Response) => {
     try {
-        const { question, locale, grade, subjectName, topicName, miniLesson, formulaSheet } = req.body;
+        const { question, locale, grade, subjectName, topicName, miniLesson, formulaSheet, image, mimeType } = req.body;
 
         if (!question || typeof question !== 'string' || !question.trim()) {
             return res.status(400).json({ success: false, error: 'question is required' });
@@ -56,6 +56,8 @@ router.post('/tutor/ask', async (req: Request, res: Response) => {
                 topicName,
                 miniLesson,
                 formulaSheet,
+                image,
+                mimeType,
             }),
             timeoutPromise,
         ]);

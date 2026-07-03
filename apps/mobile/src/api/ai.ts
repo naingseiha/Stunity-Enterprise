@@ -72,6 +72,8 @@ export const aiApi = {
         topicName: string;
         miniLesson?: string | null;
         formulaSheet?: Array<{ expr: string; noteKh?: string }> | null;
+        image?: string | null;
+        mimeType?: string | null;
     }) => {
         const response = await aiClient.post<ApiResponse<{ explanation: string }>>('/ai/tutor/ask', params);
         return response.data;

@@ -35,18 +35,36 @@ class ClaudeService {
      * Generate text with a system prompt and user prompt.
      * Returns raw text response (non-streaming — tutor answers are short).
      */
-    async generate(systemPrompt: string, userPrompt: string): Promise<string> {
+    async generate(
+        systemPrompt: string, 
+        userPrompt: string, 
+        image?: string | null, 
+        mimeType?: string | null
+    ): Promise<string> {
         if (!this.isInitialized) {
             throw new Error('Anthropic API key not configured. Please set ANTHROPIC_API_KEY.');
         }
 
         return this.withRetry(async () => {
-            console.log(`🤖 [Claude] Generating content... (Prompt length: ${userPrompt.length})`);
+            console.log(`🤖 [Claude] Generating content... (Prompt length: ${userPrompt.length}, hasImage: ${!!image})`);
+            
+            const content: any[] = [{ type: 'text', text: userPrompt }];
+            if (image && mimeType) {
+                content.push({
+                    type: 'image',
+                    source: {
+                        type: 'base64',
+                        media_type: mimeType as any,
+                        data: image,
+                    },
+                });
+            }
+
             const message = await this.client.messages.create({
                 model: TUTOR_MODEL,
                 max_tokens: MAX_TOKENS,
                 system: systemPrompt,
-                messages: [{ role: 'user', content: userPrompt }],
+                messages: [{ role: 'user', content }],
             });
 
             const textBlock = message.content.find((block) => block.type === 'text');
