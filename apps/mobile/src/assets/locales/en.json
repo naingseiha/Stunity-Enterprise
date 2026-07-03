@@ -1691,7 +1691,8 @@
       "nudgeStartToday": "Start learning today!",
       "nudgeBody": "A quick practice of {{unit}} keeps you on track.",
       "readyGrades": "Ready now",
-      "topicsCount": "{{count}} units"
+      "topicsCount": "{{count}} units",
+      "unitBanner": "Unit {{n}}"
     },
     "continue": "Continue",
     "start": "Start",

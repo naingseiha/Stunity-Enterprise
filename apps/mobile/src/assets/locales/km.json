@@ -1691,7 +1691,8 @@
       "nudgeStartToday": "ចាប់ផ្តើមរៀនថ្ងៃនេះ!",
       "nudgeBody": "អនុវត្ត {{unit}} បន្តិច ដើម្បីរក្សាដំណើររបស់អ្នក។",
       "readyGrades": "រួចរាល់ឥឡូវនេះ",
-      "topicsCount": "{{count}} មេរៀន"
+      "topicsCount": "{{count}} មេរៀន",
+      "unitBanner": "មេរៀនទី {{n}}"
     },
     "continue": "បន្ត",
     "start": "ចាប់ផ្តើម",

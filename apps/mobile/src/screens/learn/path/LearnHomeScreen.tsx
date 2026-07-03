@@ -59,6 +59,25 @@ const SERPENTINE = [0, 52, 82, 52, 0, -52, -82, -52];
 /** Bold flat accent colors, cycled along the path / tiles / cards. */
 const ACCENTS = ['#0EA5E9', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', '#F97316'];
 
+/** Distinct per-unit glyphs so every path node feels like its own topic. */
+const UNIT_ICONS: Array<keyof typeof Ionicons.glyphMap> = [
+  'calculator',
+  'extension-puzzle',
+  'scale',
+  'swap-horizontal',
+  'git-compare',
+  'trending-up',
+  'stats-chart',
+  'triangle',
+  'analytics',
+  'ellipse-outline',
+  'cube',
+  'compass',
+];
+
+/** Low-opacity doodles sprinkled beside the path for a lively backdrop. */
+const SPRINKLES: Array<keyof typeof Ionicons.glyphMap> = ['star', 'pencil', 'book', 'bulb', 'rocket'];
+
 /** Subject icon by MoEYS category-ish code prefix. */
 const subjectIcon = (code: string): keyof typeof Ionicons.glyphMap => {
   if (code.startsWith('MATH')) return 'calculator';
@@ -249,12 +268,23 @@ export function LearnHomeScreen() {
   const renderHero = () => (
     <View style={styles.hero}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.heroKicker}>{t(greetingKey)} 👋</Text>
+        <View style={styles.heroKickerRow}>
+          <Ionicons
+            name={greetingKey.endsWith('Evening') ? 'moon' : 'sunny'}
+            size={14}
+            color="#F59E0B"
+          />
+          <Text style={styles.heroKicker}>{t(greetingKey)}</Text>
+        </View>
         <Text style={styles.heroName} numberOfLines={1}>
           {user?.firstName || t('learn.path.title')}
         </Text>
       </View>
       <View style={styles.heroRight}>
+        <View style={styles.xpPillHero}>
+          <Ionicons name="diamond" size={13} color="#0EA5E9" />
+          <Text style={styles.xpPillHeroText}>{stats?.totalPoints ?? 0}</Text>
+        </View>
         <View style={styles.xpPillHero}>
           <Ionicons name="flash" size={14} color="#F59E0B" />
           <Text style={styles.xpPillHeroText}>{stats?.xp ?? 0}</Text>
@@ -350,9 +380,15 @@ export function LearnHomeScreen() {
 
     return (
       <View style={styles.subjectCard}>
-        {/* Decorative flat circles */}
+        {/* Decorative flat circles + floating mini icons (illustration-style) */}
         <View style={[styles.deco, { width: 130, height: 130, top: -46, right: -34 }]} />
         <View style={[styles.deco, { width: 70, height: 70, bottom: -26, right: 66 }]} />
+        <View style={[styles.floatIcon, { top: 10, right: 96, backgroundColor: '#F59E0B' }]}>
+          <Ionicons name="star" size={12} color="#FFFFFF" />
+        </View>
+        <View style={[styles.floatIcon, { bottom: 66, right: 6, backgroundColor: '#10B981', width: 28, height: 28 }]}>
+          <Ionicons name="rocket" size={14} color="#FFFFFF" />
+        </View>
 
         <View style={styles.subjectCardRow}>
           <View style={{ flex: 1 }}>
@@ -642,7 +678,7 @@ export function LearnHomeScreen() {
             ) : comingSoon ? (
               <Ionicons name="time-outline" size={23} color={colors.textTertiary} />
             ) : (
-              <Ionicons name="star" size={30} color="#FFFFFF" />
+              <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={30} color="#FFFFFF" />
             )}
           </View>
         </View>
@@ -664,6 +700,54 @@ export function LearnHomeScreen() {
       </TouchableOpacity>
     );
   };
+
+  // Current-unit section banner (the Duolingo unit header) anchoring the path.
+  const renderUnitBanner = () => {
+    if (!path || !activeUnit) return null;
+    const index = path.units.findIndex((u) => u.topicId === activeUnit.topicId);
+    const accent = ACCENTS[index % ACCENTS.length];
+    return (
+      <TouchableOpacity
+        style={[styles.unitBanner, { backgroundColor: accent }]}
+        activeOpacity={0.85}
+        onPress={() => openUnit(activeUnit)}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.unitBannerKicker}>
+            {t('learn.path.unitBanner', { n: index + 1 })}
+          </Text>
+          <Text style={styles.unitBannerTitle} numberOfLines={2}>
+            {unitName(activeUnit)}
+          </Text>
+        </View>
+        <View style={styles.unitBannerIcon}>
+          <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={24} color="#FFFFFF" />
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Faint doodles alternating beside the path so the backdrop isn't empty.
+  const renderSprinkles = (count: number) =>
+    Array.from({ length: count }, (_, i) => {
+      if (i % 2 === 0) return null;
+      const center = nodeCenter(i);
+      const left = SERPENTINE[i % SERPENTINE.length] >= 0 ? 26 : screenWidth - 60;
+      return (
+        <Ionicons
+          key={`sprinkle-${i}`}
+          name={SPRINKLES[i % SPRINKLES.length]}
+          size={26}
+          color={isDark ? 'rgba(148,163,184,0.18)' : 'rgba(100,116,139,0.16)'}
+          style={{
+            position: 'absolute',
+            top: center.y - 40,
+            left,
+            transform: [{ rotate: i % 4 === 1 ? '-14deg' : '12deg' }],
+          }}
+        />
+      );
+    });
 
   const renderPath = () => {
     if (!path) return <ActivityIndicator style={{ marginTop: 40 }} color={colors.textSecondary} />;
@@ -696,8 +780,11 @@ export function LearnHomeScreen() {
           </ScrollView>
         )}
 
+        {renderUnitBanner()}
+
         <View style={[styles.pathArea, { height: PATH_TOP_PAD + path.units.length * SLOT_H }]}>
           {renderConnector(path.units.length)}
+          {renderSprinkles(path.units.length)}
           {path.units.map((u, i) => renderNode(u, i, activeIndex))}
         </View>
       </>
@@ -720,22 +807,18 @@ export function LearnHomeScreen() {
             <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
           </TouchableOpacity>
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.coursesRow}
-        >
+        <View style={styles.coursesGrid}>
           {topCourses.map((course, i) => {
             const accent = ACCENTS[i % ACCENTS.length];
             return (
               <TouchableOpacity
                 key={course.id ?? i}
-                style={[styles.courseCard, { backgroundColor: isDark ? colors.card : `${accent}14` }]}
+                style={styles.courseCard}
                 activeOpacity={0.85}
                 onPress={() => navigation.navigate('CourseDetail', { courseId: course.id })}
               >
-                <View style={[styles.courseCardIcon, { backgroundColor: accent }]}>
-                  <Ionicons name="book" size={18} color="#FFFFFF" />
+                <View style={[styles.courseCardIcon, { backgroundColor: `${accent}22` }]}>
+                  <Ionicons name="book" size={22} color={accent} />
                 </View>
                 <Text style={styles.courseCardTitle} numberOfLines={2}>
                   {course.title}
@@ -743,13 +826,15 @@ export function LearnHomeScreen() {
                 <View style={styles.courseCardMeta}>
                   <Ionicons name="star" size={12} color="#F59E0B" />
                   <Text style={styles.courseCardMetaText}>
-                    {(course.rating ?? 0).toFixed(1)} · {course.enrolledCount ?? 0}
+                    {(course.rating ?? 0).toFixed(1)}
                   </Text>
+                  <Ionicons name="people" size={12} color={colors.textTertiary} style={{ marginLeft: 6 }} />
+                  <Text style={styles.courseCardMetaText}>{course.enrolledCount ?? 0}</Text>
                 </View>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
       </View>
     );
   };
@@ -806,6 +891,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingBottom: 6,
       gap: 12,
     },
+    heroKickerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     heroKicker: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
     heroName: { fontSize: 26, fontWeight: '800', color: colors.text, letterSpacing: -0.5, marginTop: 2 },
     heroRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -923,6 +1009,42 @@ const createStyles = (colors: any, isDark: boolean) =>
       position: 'absolute',
       borderRadius: 999,
       backgroundColor: 'rgba(255,255,255,0.12)',
+    },
+    floatIcon: {
+      position: 'absolute',
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 2,
+    },
+    unitBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginHorizontal: 20,
+      marginTop: 14,
+      padding: 16,
+      borderRadius: 18,
+      borderBottomWidth: 4,
+      borderBottomColor: 'rgba(0,0,0,0.22)',
+    },
+    unitBannerKicker: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: 'rgba(255,255,255,0.85)',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    unitBannerTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF', marginTop: 3 },
+    unitBannerIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.25)',
     },
     subjectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     subjectKickerPill: {
@@ -1137,19 +1259,25 @@ const createStyles = (colors: any, isDark: boolean) =>
     coursesTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
     seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     seeAllText: { fontSize: 13, fontWeight: '700', color: '#0EA5E9' },
-    coursesRow: { paddingHorizontal: 20, gap: 12 },
+    coursesGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      paddingHorizontal: 20,
+    },
     courseCard: {
-      width: 156,
+      width: '47.5%',
       padding: 14,
       borderRadius: 18,
-      gap: 8,
-      borderWidth: isDark ? 1 : 0,
+      gap: 9,
+      backgroundColor: colors.card,
+      borderWidth: 1,
       borderColor: colors.border,
     },
     courseCardIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
+      width: 44,
+      height: 44,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
     },
