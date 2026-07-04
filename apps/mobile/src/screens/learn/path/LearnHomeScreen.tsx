@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -140,6 +140,7 @@ export function LearnHomeScreen() {
   const [stats, setStats] = useState<PerformanceStatsSummary | null>(null);
   const [hubCourses, setHubCourses] = useState<any[]>([]);
   const [editingPath, setEditingPath] = useState(false);
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
 
   // Onboarding state
   const [obGrade, setObGrade] = useState<string | null>(null);
@@ -211,6 +212,12 @@ export function LearnHomeScreen() {
       setPathError(false);
       const data = await learnPathService.getPath(subjectId);
       setPath(data);
+      if (data && data.units) {
+        const active = data.units.find((u) => u.state === 'unlocked');
+        if (active) {
+          setExpandedUnitId(active.topicId);
+        }
+      }
     } catch (err) {
       console.warn('[LearnHome] loadPath failed', err);
       setPath(null);
@@ -1237,89 +1244,295 @@ export function LearnHomeScreen() {
     );
   };
 
-  // ── Active unit rendering (Centered circular progress node) ──────────
-  const renderActiveUnit = (unit: LearnUnit, index: number) => {
-    const { accent, gradStart, gradEnd } = accentAndGradientFor(index);
-    const pct = unit.target > 0 ? Math.min(1, unit.correct / unit.target) : 0;
-    const size = 96;
-    const circR = (size - 8) / 2;
-    const circ = 2 * Math.PI * circR;
+  const renderSubTimeline = (unit: LearnUnit, index: number) => {
+    const { accent } = accentAndGradientFor(index);
+
+    const subSteps: Array<{
+      id: string;
+      type: 'LESSON' | 'PRACTICE';
+      titleKh: string;
+      titleEn: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      state: 'locked' | 'unlocked' | 'completed';
+      targetVal?: number;
+    }> = [];
+
+    // 1. Add Lesson step if present
+    if (unit.hasLesson) {
+      subSteps.push({
+        id: 'lesson',
+        type: 'LESSON',
+        titleKh: 'អានមេរៀនសង្ខេប',
+        titleEn: 'Read Lesson Summary',
+        icon: 'book',
+        state: unit.correct > 0 ? 'completed' : 'unlocked',
+      });
+    }
+
+    // 2. Add Practice Quiz steps
+    const rawSteps = [
+      { id: 'p1', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ១', titleEn: 'Practice Quiz 1', icon: 'extension-puzzle' as const },
+      { id: 'p2', ratio: 0.8, titleKh: 'លំហាត់អនុវត្តន៍ ២', titleEn: 'Practice Quiz 2', icon: 'flash' as const },
+      { id: 'p3', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ', titleEn: 'Final Challenge', icon: 'trophy' as const },
+    ];
+
+    const practiceSteps: Array<{
+      id: string;
+      type: 'PRACTICE';
+      targetVal: number;
+      titleKh: string;
+      titleEn: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      state: 'locked' | 'unlocked' | 'completed';
+    }> = [];
+
+    for (const raw of rawSteps) {
+      const targetVal = Math.max(1, Math.min(unit.target, Math.round(unit.target * raw.ratio)));
+      practiceSteps.push({
+        id: raw.id,
+        type: 'PRACTICE',
+        targetVal,
+        titleKh: raw.titleKh,
+        titleEn: raw.titleEn,
+        icon: raw.icon,
+        state: 'locked'
+      });
+    }
+
+    // Map correct step state based on progress
+    practiceSteps.forEach((step, idx) => {
+      if (unit.correct >= step.targetVal) {
+        step.state = 'completed';
+      } else {
+        const prevStep = practiceSteps[idx - 1];
+        const isPrevCompleted = prevStep 
+          ? prevStep.state === 'completed' 
+          : (unit.hasLesson ? unit.correct > 0 : true);
+
+        if (isPrevCompleted) {
+          step.state = 'unlocked';
+        }
+      }
+      subSteps.push(step);
+    });
+
+    // Find active step (first unlocked step)
+    const activeStepIdx = subSteps.findIndex((s) => s.state === 'unlocked');
+
+    // Winding path layout constants
+    const H = 155; // vertical step height (increased for plenty of label space)
+    const containerWidth = 240; // compact width for nice left/right margins
+    const centerX = containerWidth / 2; // 120
+    const circleRadius = 32; // diameter 64
+
+    // Screen background color to mask out background lines behind elements
+    const screenBg = isDark ? colors.background : '#F1F5F9';
+
+    // Generate step positions
+    const positions = subSteps.map((_, sIdx) => {
+      // Stagger: e.g. -32, 32, -32, 32...
+      const offset = sIdx % 2 === 0 ? -32 : 32;
+      return {
+        cx: centerX + offset,
+        cy: 58 + sIdx * H + circleRadius,
+      };
+    });
 
     return (
-      <View key={unit.topicId} style={styles.activeUnitContainer}>
-        {/* START speech bubble */}
-        <View style={styles.activeStartBubble}>
-          <View style={[styles.activeStartBubbleInner, { borderColor: accent }]}>
-            <Text style={[styles.activeStartBubbleText, { color: accent }]}>{t('learn.path.start')}</Text>
-          </View>
-          <View style={[styles.activeStartBubbleArrow, { borderTopColor: accent }]} />
-        </View>
-
-        {/* Large Circle Node */}
-        <TouchableOpacity
-          onPress={() => openUnit(unit)}
-          activeOpacity={0.85}
-          style={styles.activeCircleWrapper}
-        >
-          {/* Progress Ring */}
-          <Svg width={size + 12} height={size + 12} style={StyleSheet.absoluteFill}>
-            <Circle
-              cx={(size + 12) / 2}
-              cy={(size + 12) / 2}
-              r={circR + 3}
-              stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}
-              strokeWidth={5}
-              fill="none"
-            />
-            <Circle
-              cx={(size + 12) / 2}
-              cy={(size + 12) / 2}
-              r={circR + 3}
-              stroke={accent}
-              strokeWidth={5}
-              strokeLinecap="round"
-              fill="none"
-              strokeDasharray={`${circ * pct} ${circ}`}
-              transform={`rotate(-90 ${(size + 12) / 2} ${(size + 12) / 2})`}
-            />
+      <View
+        style={[
+          styles.subTimelineContainer,
+          {
+            width: containerWidth,
+            alignSelf: 'center',
+            paddingTop: 32, // Gives 90px total distance to circle center (58px to top edge), preventing bubble overlay
+            marginLeft: -18, // Shift left by 18px to center perfectly on the screen
+          },
+        ]}
+      >
+        {/* SVG Winding Path with individual colored segments */}
+        {positions.length > 1 && (
+          <Svg style={StyleSheet.absoluteFill} width={containerWidth} height={subSteps.length * H + 80}>
+            {positions.slice(0, -1).map((p1, idx) => {
+              const p2 = positions[idx + 1];
+              const segPath = `M ${p1.cx} ${p1.cy} C ${p1.cx} ${p1.cy + H/2}, ${p2.cx} ${p2.cy - H/2}, ${p2.cx} ${p2.cy}`;
+              const isSegActive = subSteps[idx].state === 'completed' || subSteps[idx].state === 'unlocked';
+              return (
+                <Path
+                  key={`seg-${idx}`}
+                  d={segPath}
+                  fill="none"
+                  stroke={isSegActive ? accent : (isDark ? 'rgba(255,255,255,0.15)' : '#E2E8F0')}
+                  strokeWidth={8}
+                  strokeLinecap="round"
+                  strokeDasharray="6,12"
+                  opacity={isSegActive ? 0.7 : 1}
+                />
+              );
+            })}
           </Svg>
+        )}
 
-          {/* Inner Circle Gradient */}
-          <LinearGradient
-            colors={[gradStart, gradEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.activeCircleInner}
-          >
-            <Ionicons name={UNIT_ICONS[index % UNIT_ICONS.length]} size={36} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
+        {subSteps.map((step, sIdx) => {
+          const isCompleted = step.state === 'completed';
+          const isLocked = step.state === 'locked';
+          const isLesson = step.type === 'LESSON';
+          const pos = positions[sIdx];
+          const stepTitle = isKh ? step.titleKh : step.titleEn;
 
-        {/* Title and Progress */}
-        <Text style={styles.activeUnitTitle}>{unitName(unit)}</Text>
-        <Text style={styles.activeUnitProgress}>
-          {unitNumberLabel(index)} ·{' '}
-          {unit.target > 0
-            ? `${unit.correct} / ${unit.target} correct`
-            : t('learn.path.inProgress', { defaultValue: 'In Progress' })}
-        </Text>
+          return (
+            <View
+              key={step.id}
+              style={{
+                position: 'absolute',
+                left: pos.cx - 100, // width 200 centered at pos.cx
+                top: pos.cy - circleRadius, // Centered exactly at pos.cy (removed -10px bug)
+                width: 200,
+                alignItems: 'center',
+                zIndex: 5,
+              }}
+            >
+              {/* Progress Ring wrapping the Touchable Inner Circle */}
+              <View style={{ width: 64, height: 64, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                
+                {/* Solid background mask to hide the winding path line directly behind the circle */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    backgroundColor: screenBg,
+                    zIndex: 0,
+                  }}
+                />
+
+                {/* Speech Bubble sits perfectly relative to the circle (140px width prevents vertical letter wrapping!) */}
+                {sIdx === activeStepIdx && (
+                  <View style={[styles.subStepBubble, { width: 140, left: -38, bottom: 68, zIndex: 20 }]}>
+                    <View style={[styles.subStepBubbleInner, { backgroundColor: '#FFFFFF', borderColor: accent, borderWidth: 2.5 }]}>
+                      <Text style={[styles.subStepBubbleText, { color: accent }]}>
+                        {isLesson ? (isKh ? 'អាន' : 'READ') : (isKh ? 'ចាប់ផ្ដើម' : 'START')}
+                      </Text>
+                    </View>
+                    <View style={[styles.subStepBubbleArrow, { borderTopColor: accent }]} />
+                  </View>
+                )}
+
+                <Svg style={[StyleSheet.absoluteFill, { zIndex: 1 }]} width={64} height={64}>
+                  <Circle
+                    cx={32}
+                    cy={32}
+                    r={30}
+                    stroke={isLocked ? (isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0') : isCompleted ? '#10B981' : '#E2E8F0'}
+                    strokeWidth={3}
+                    fill="none"
+                  />
+                  {!isLocked && !isCompleted && (
+                    <Circle
+                      cx={32}
+                      cy={32}
+                      r={30}
+                      stroke={accent}
+                      strokeWidth={4}
+                      strokeLinecap="round"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 30 * 0.45} ${2 * Math.PI * 30}`}
+                      transform="rotate(-90 32 32)"
+                    />
+                  )}
+                </Svg>
+
+                <TouchableOpacity
+                  activeOpacity={isLocked ? 0.95 : 0.8}
+                  disabled={isLocked}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    const params = {
+                      topicId: unit.topicId,
+                      title: unitName(unit),
+                      grade: path?.subject?.grade,
+                      subjectName: path?.subject?.nameEn || path?.subject?.name,
+                      subjectNameKh: path?.subject?.nameKh,
+                    };
+                    if (isLesson) {
+                      navigation.navigate('UnitLesson', params);
+                    } else {
+                      navigation.navigate('PracticeSession', params);
+                    }
+                  }}
+                  style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 27,
+                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: isLocked ? 0 : 0.12,
+                    shadowRadius: 5,
+                    elevation: isLocked ? 0 : 3,
+                    zIndex: 2,
+                  }}
+                >
+                  <LinearGradient
+                    colors={isLocked ? (isDark ? ['#334155', '#1E293B'] : ['#E2E8F0', '#CBD5E1']) : ['#A855F7', '#EC4899']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  {isLocked ? (
+                    <Ionicons name="lock-closed" size={18} color={isDark ? '#64748B' : '#94A3B8'} />
+                  ) : (
+                    <Ionicons name={step.icon} size={22} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Label directly below Circle, masked to hide the winding path line behind it */}
+              <Text
+                numberOfLines={2}
+                style={[
+                  styles.subStepLabel,
+                  {
+                    marginTop: 12,
+                    textAlign: 'center',
+                    color: isLocked ? colors.textTertiary : colors.text,
+                    fontWeight: isCompleted || step.state === 'unlocked' ? '700' : '500',
+                    maxWidth: 140,
+                    backgroundColor: screenBg, // MASK the line passing behind text!
+                    paddingHorizontal: 8,
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                  },
+                ]}
+              >
+                {stepTitle}
+              </Text>
+            </View>
+          );
+        })}
+
+        {/* Dynamic spacer to push layout height to fit absolute children cleanly without huge gaps */}
+        <View style={{ height: subSteps.length * H - 4 }} />
       </View>
     );
   };
 
-  // ── Standard unit row (Horizontal colored card on the timeline) ──────────
-  const renderUnitCardRow = (unit: LearnUnit, index: number, isLast: boolean) => {
+  const renderUnitCard = (unit: LearnUnit, index: number, isLast: boolean) => {
     const { accent, gradStart, gradEnd } = accentAndGradientFor(index);
     const completed = unit.state === 'completed';
     const locked = unit.state === 'locked';
     const comingSoon = unit.state === 'no_content';
+    const isExpanded = expandedUnitId === unit.topicId;
 
     return (
       <View key={unit.topicId} style={styles.unitRow}>
         {/* ── Left timeline track ── */}
         <View style={styles.timelineTrack}>
           {/* Continuous vertical connector line */}
-          <View style={styles.timelineLine} />
+          <View style={[styles.timelineLine, isLast && styles.timelineLineLast]} />
 
           {/* Dot: Colored ring with transparent center */}
           <View
@@ -1333,7 +1546,14 @@ export function LearnHomeScreen() {
         {/* ── Card content ── */}
         <View style={styles.unitCardOuter}>
           <TouchableOpacity
-            onPress={() => openUnit(unit)}
+            onPress={() => {
+              if (locked || comingSoon) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                return;
+              }
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setExpandedUnitId(isExpanded ? null : unit.topicId);
+            }}
             activeOpacity={locked || comingSoon ? 0.95 : 0.82}
             style={[
               styles.unitCard,
@@ -1375,17 +1595,17 @@ export function LearnHomeScreen() {
               </Text>
             </View>
 
-            {/* Right: Lock icon or chevron/checkmark */}
+            {/* Right: Chevron or Lock */}
             <View style={styles.unitCardRight}>
               {locked || comingSoon ? (
                 <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
-              ) : completed ? (
-                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
               ) : (
-                <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+                <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#FFFFFF" />
               )}
             </View>
           </TouchableOpacity>
+
+          {isExpanded && renderSubTimeline(unit, index)}
         </View>
       </View>
     );
@@ -1460,18 +1680,13 @@ export function LearnHomeScreen() {
       return renderLoadError(() => activeSubjectId && loadPath(activeSubjectId), true);
     }
     if (!path) return <ActivityIndicator style={{ marginTop: 40 }} color={colors.textSecondary} />;
-    const activeIndex = path.units.findIndex((u) => u.state === 'unlocked');
     const allDone = path.units.every((u) => u.state === 'completed' || u.state === 'no_content');
 
     return (
       <View style={styles.pathList}>
         {path.units.map((u, i) => {
           const isLast = i === path.units.length - 1;
-          if (u.state === 'unlocked') {
-            return renderActiveUnit(u, i);
-          } else {
-            return renderUnitCardRow(u, i, isLast);
-          }
+          return renderUnitCard(u, i, isLast);
         })}
         {renderTrophyRow(allDone)}
       </View>
@@ -2693,4 +2908,47 @@ const createStyles = (colors: any, isDark: boolean) =>
     courseCardTitle: { fontSize: 13, fontWeight: '700', color: colors.text, lineHeight: 18 },
     courseCardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     courseCardMetaText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+
+    // Sub-timeline styles
+    subTimelineContainer: {
+      position: 'relative',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    subStepLabel: {
+      fontSize: 12,
+      lineHeight: 16,
+      textAlign: 'center',
+    },
+    subStepBubble: {
+      position: 'absolute',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    subStepBubbleInner: {
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: 18,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 5,
+      elevation: 4,
+    },
+    subStepBubbleText: {
+      fontSize: 13,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+      textAlign: 'center',
+    },
+    subStepBubbleArrow: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 6,
+      borderRightWidth: 6,
+      borderTopWidth: 6,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      marginTop: -1,
+    },
   });

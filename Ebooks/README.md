@@ -38,9 +38,9 @@ directory level.
 
 | Grade | Subject | File | Pages | Notes |
 |---|---|---|---|---|
-| 9 | Math | `Grade9/Math/Math Grade 9.pdf` | 229 | 2013 MoEYS edition. Scanned (image-based, no text layer) — read via page rendering, not text extraction. Real TOC has **18 official lesson units** (មេរៀន ១–១៨) — our current DRAFT seed (`seed-topics-math-g9.ts`) has 12 units and needs reconciling against this. |
-| 12 | Math | `Grade12/Math/Math Grade 12 Basic.pdf` | 257 | Scanned. **Track mapping to `Subject.code` unconfirmed** — production codes are `MATH-G12-SCIENCE` / `MATH-G12-SOCIAL` (per `svaythom-timetable-2025-2026.prepared.json`), not "Basic/Advanced." Needs confirming which file maps to which track before using for content authoring. |
-| 12 | Math | `Grade12/Math/Math Grade 12 Advanced.pdf` | 257 | Same track-mapping caveat as above. |
+| 9 | Math | `Grade9/Math/Math Grade 9.pdf` | 229 | 2013 MoEYS edition. Scanned (image-based, no text layer) — read via page rendering, not text extraction. Real TOC has **18 official lesson units** (មេរៀន ១–១៨) — reconciled in `seed-topics-math-g9.ts`. |
+| 12 | Math | `Grade12/Math/Math Grade 12 Basic.pdf` | 257 | Scanned. **Track mapping to `Subject.code` verified**: maps to `MATH-G12-SOCIAL` (Social Science track / ថ្នាក់វិទ្យាសាស្ត្រសង្គម) based on MoEYS upper secondary curriculum. |
+| 12 | Math | `Grade12/Math/Math Grade 12 Advanced.pdf` | 257 | Scanned. **Track mapping to `Subject.code` verified**: maps to `MATH-G12-SCIENCE` (Science track / ថ្នាក់វិទ្យាសាស្ត្រ) based on MoEYS upper secondary curriculum. |
 
 Update this table whenever files are added/removed.
 
