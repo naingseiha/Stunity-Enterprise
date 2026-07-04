@@ -76,7 +76,7 @@ function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string
     margin: 0; padding: 0;
     background: transparent;
     color: ${colors.text};
-    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Noto Sans Khmer', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Noto Sans Khmer', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     font-size: 15px;
     line-height: 1.65;
     -webkit-text-size-adjust: 100%;
@@ -144,7 +144,7 @@ function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string
     overflow-y: hidden; 
   }
   .katex .text, .katex .mord.text {
-    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', sans-serif !important;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', sans-serif !important;
   }
 </style>
 </head>

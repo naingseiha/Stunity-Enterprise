@@ -197,7 +197,11 @@ const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
     quizUrl: `http://${host}:3010`,
     analyticsUrl: `http://${host}:3014`,
     learnUrl: `http://${host}:3018`,
-    aiUrl: 'https://stunity-ai-service-mc7wnjp2kq-uc.a.run.app', // Failover to production for stable testing
+    // Defaults to the prod failover for stable testing (ai-service local dev
+    // is unreliable — Gemini billing has been suspended there before) but can
+    // be overridden to a local ai-service, e.g. for AI Tutor development:
+    //   EXPO_PUBLIC_AI_URL=http://<host>:3020 npx expo start
+    aiUrl: process.env.EXPO_PUBLIC_AI_URL || 'https://stunity-ai-service-mc7wnjp2kq-uc.a.run.app',
     wsUrl: `ws://${host}:3011`,
     messagingUrl: `http://${host}:3011`,
     studentUrl: `http://${host}:3003`,
