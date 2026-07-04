@@ -76,14 +76,14 @@ function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string
     margin: 0; padding: 0;
     background: transparent;
     color: ${colors.text};
-    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Noto Sans Khmer', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Noto Sans Khmer', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', STIXGeneral, 'Cambria Math', 'Times New Roman', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     font-size: 15px;
     line-height: 1.65;
     -webkit-text-size-adjust: 100%;
   }
   body { padding: 1px 2px; overflow-x: hidden; }
   h1, h2, h3 { 
-    font-family: 'Koulen', 'Khmer MN', sans-serif;
+    font-family: 'Koulen', 'Khmer MN', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', STIXGeneral, 'Cambria Math', 'Times New Roman', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     color: ${headingColor};
     font-weight: 400; 
     margin: 22px 0 12px; 
@@ -144,7 +144,7 @@ function buildAnswerHtml(bodyHtml: string, colors: any, isDark: boolean): string
     overflow-y: hidden; 
   }
   .katex .text, .katex .mord.text {
-    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', STIXGeneral, 'Cambria Math', Symbol, 'Segoe UI Symbol', sans-serif !important;
+    font-family: 'Kantumruy Pro', 'Battambang', 'Khmer MN', 'Khmer Sangam MN', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', STIXGeneral, 'Cambria Math', 'Times New Roman', -apple-system, BlinkMacSystemFont, Roboto, sans-serif !important;
   }
 </style>
 </head>
