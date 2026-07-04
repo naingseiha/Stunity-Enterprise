@@ -5,14 +5,24 @@
  * so the same script works on dev/staging/prod. Top-level topics are
  * curriculum units; children are skills inside a unit.
  *
- * ⚠️ Content status: DRAFT unit list following the MoEYS grade-9 syllabus
- * shape. Educators can rename/reorder/deactivate rows freely — the seeder
- * matches existing rows by name and never deletes, so manual edits survive
- * re-runs (a renamed row simply stops matching and a new one is reported;
- * review the dry-run before applying on a curated environment).
+ * ⚠️ Content status: VERIFIED unit list — reconciled 2026-07-04 against the
+ * real official MoEYS Grade 9 Math textbook (Ebooks/Grade9/Math, 2013
+ * edition, 18 official lesson units/មេរៀន). The original DRAFT here only had
+ * 12 units and one fabricated unit ("Trigonometry Basics" — that content
+ * actually belongs to Grade 10, ជំពូក៦ "ផលធៀបត្រីកោណមាត្រ", per
+ * Ebooks/Grade10/Math). Sub-skill children from the old draft were removed
+ * (unverified guesses) — re-add them per-unit once each chapter's real
+ * content has been read in a content-authoring pass (Phase B).
+ *
+ * RENAME_MAP handles renamed/rescoped units so existing rows (and any
+ * QuizQuestion/RecallCard already tagged to their topicId) survive the
+ * reconciliation instead of being orphaned as new duplicate rows.
  *
  * Safety: DRY-RUN by default, pass --apply to write. Idempotent by
- * (subject, parent, name) natural key.
+ * (subject, parent, name) natural key. Never deletes — renamed-away rows
+ * simply stop matching; deactivated rows are soft-removed (isActive=false),
+ * not deleted, so any tagged QuizQuestion/RecallCard content is preserved
+ * for later reuse (e.g. Trigonometry Basics once Grade 10 is seeded).
  *
  * Usage (from services/feed-service):
  *   node ../../node_modules/.bin/tsx scripts/seed-topics-math-g9.ts          # dry run
@@ -38,63 +48,51 @@ type TopicSeed = {
   children?: TopicSeed[];
 };
 
+// Old draft name -> new verified name. Lets upsertTopic find the existing
+// row by its old name and rename it in place (preserving id + tagged
+// content) instead of creating an orphaned duplicate.
+const RENAME_MAP: Record<string, string> = {
+  'Irrational Numbers': 'Real Numbers',
+  'Statistical Averages': 'Statistics',
+  'Circle and Line': 'Circles',
+  'Equation of a Line': 'Functions & Graphs',
+};
+
+// Draft units with no real counterpart in the official Grade 9 TOC.
+// Soft-removed (isActive=false) rather than deleted — their tagged
+// QuizQuestion/RecallCard rows are preserved via onDelete:SetNull semantics
+// and can be re-pointed at a real unit later (Trigonometry Basics belongs to
+// Grade 10, not Grade 9 — see file header).
+const DEACTIVATE: string[] = ['Trigonometry Basics'];
+
+// Verified against Ebooks/Grade9/Math/Math Grade 9.pdf (2013 MoEYS edition)
+// page 3 (TOC) + spot-checked chapter-opening pages. Order matches the
+// book's មេរៀន ១-១៨ sequence exactly.
 const UNITS: TopicSeed[] = [
-  {
-    name: 'Real Numbers',
-    nameKh: 'ចំនួនពិត',
-    children: [
-      { name: 'Square & Cube Roots', nameKh: 'ឫសការេ និងឫសគូប' },
-      { name: 'Exponents', nameKh: 'និទស្សន្ត' },
-      { name: 'Scientific Notation', nameKh: 'កំណត់សម្គាល់វិទ្យាសាស្ត្រ' },
-    ],
-  },
-  {
-    name: 'Polynomials & Algebraic Expressions',
-    nameKh: 'ពហុធា និងកន្សោមពីជគណិត',
-    children: [
-      { name: 'Factoring', nameKh: 'ការបំបែកជាផលគុណកត្តា' },
-      { name: 'Algebraic Fractions', nameKh: 'ប្រភាគពីជគណិត' },
-    ],
-  },
-  {
-    name: 'Linear Equations',
-    nameKh: 'សមីការដឺក្រេទី១',
-    children: [
-      { name: 'Solving One-Variable Equations', nameKh: 'ដោះស្រាយសមីការមួយអញ្ញាត' },
-      { name: 'Word Problems', nameKh: 'ចំណោទជាអក្សរ' },
-    ],
-  },
-  {
-    name: 'Linear Inequalities',
-    nameKh: 'វិសមីការដឺក្រេទី១',
-  },
-  {
-    name: 'Systems of Linear Equations',
-    nameKh: 'ប្រព័ន្ធសមីការដឺក្រេទី១ ពីរអញ្ញាត',
-    children: [
-      { name: 'Substitution & Elimination', nameKh: 'វិធីជំនួស និងវិធីលុប' },
-      { name: 'Graphical Solutions', nameKh: 'ដោះស្រាយដោយក្រាហ្វ' },
-    ],
-  },
-  {
-    name: 'Functions & Graphs',
-    nameKh: 'អនុគមន៍ និងក្រាហ្វ',
-    children: [
-      { name: 'Linear Functions', nameKh: 'អនុគមន៍លីនេអ៊ែរ' },
-      { name: 'Reading Graphs', nameKh: 'អានក្រាហ្វ' },
-    ],
-  },
-  { name: 'Statistics', nameKh: 'ស្ថិតិ' },
-  { name: 'Similar Triangles', nameKh: 'ត្រីកោណដូចគ្នា' },
-  { name: 'Pythagorean Theorem', nameKh: 'ទ្រឹស្តីបទពីតាករ' },
-  { name: 'Circles', nameKh: 'រង្វង់' },
-  { name: 'Solid Geometry & Volume', nameKh: 'ធរណីមាត្រសូលីត និងមាឌ' },
-  { name: 'Trigonometry Basics', nameKh: 'ត្រីកោណមាត្រមូលដ្ឋាន' },
+  { name: 'Real Numbers', nameKh: 'ចំនួនអសនិទាន' }, // ម.១, p1
+  { name: 'Proportion', nameKh: 'សមាមាត្រ' }, // ម.២, p17
+  { name: 'Polynomials & Algebraic Expressions', nameKh: 'កន្សោមពីជគណិត' }, // ម.៣, p27
+  { name: 'Linear Equations', nameKh: 'សមីការដឺក្រេទី១ មានមួយអញ្ញាត' }, // ម.៤, p41
+  { name: 'Linear Inequalities', nameKh: 'វិសមីការដឺក្រេទី១ មានមួយអញ្ញាត' }, // ម.៥, p51
+  { name: 'Frequency Distribution', nameKh: 'បំណែងចែកប្រេកង់' }, // ម.៦, p61 — NEW
+  { name: 'Statistics', nameKh: 'មធ្យមស្ថិតិ' }, // ម.៧, p75
+  { name: 'Probability', nameKh: 'ប្រូបាប' }, // ម.៨, p85 — NEW
+  { name: 'Distance Between Two Points', nameKh: 'ចម្ងាយវាងពីរចំណុច' }, // ម.៩, p97 — NEW
+  { name: 'Functions & Graphs', nameKh: 'សមីការនៃបន្ទាត់' }, // ម.១០, p105
+  { name: 'Systems of Linear Equations', nameKh: 'ប្រព័ន្ធសមីការដឺក្រេទី១ ពីរអញ្ញាត' }, // ម.១១, p121
+  { name: 'Pythagorean Theorem', nameKh: 'ទ្រឹស្តីបទពីតាករ' }, // ម.១២, p135
+  { name: 'Circles', nameKh: 'រង្វង់និងបន្ទាត់' }, // ម.១៣, p143
+  { name: 'Angle Properties of a Circle', nameKh: 'លក្ខណៈមុំនៃរង្វង់' }, // ម.១៤, p159 — NEW
+  { name: "Thales' Theorem", nameKh: 'ទ្រឹស្តីបទតាលេស' }, // ម.១៥, p181 — NEW
+  { name: 'Similar Triangles', nameKh: 'ត្រីកោណដូចគ្នា' }, // ម.១៦, p191
+  { name: 'Polygons', nameKh: 'ពហុកោណ' }, // ម.១៧, p213 — NEW
+  { name: 'Solid Geometry & Volume', nameKh: 'សូលីត' }, // ម.១៨, p223
 ];
 
 let created = 0;
 let updated = 0;
 let unchanged = 0;
+let deactivated = 0;
 
 async function upsertTopic(
   subjectId: string,
@@ -102,18 +100,31 @@ async function upsertTopic(
   seed: TopicSeed,
   order: number,
 ): Promise<string | null> {
-  const existing = await prisma.topic.findFirst({
+  let existing = await prisma.topic.findFirst({
     where: { subjectId, parentId, name: seed.name },
-    select: { id: true, nameKh: true, order: true },
+    select: { id: true, nameKh: true, order: true, name: true },
   });
 
+  // Not found under the new name — check if this is a renamed unit whose
+  // row still exists under its old name.
+  if (!existing) {
+    const oldName = Object.entries(RENAME_MAP).find(([, newName]) => newName === seed.name)?.[0];
+    if (oldName) {
+      existing = await prisma.topic.findFirst({
+        where: { subjectId, parentId, name: oldName },
+        select: { id: true, nameKh: true, order: true, name: true },
+      });
+    }
+  }
+
   if (existing) {
-    if (existing.nameKh !== seed.nameKh || existing.order !== order) {
-      console.log(`  ✏️  update ${parentId ? '  └ ' : ''}${seed.name}`);
+    const needsUpdate = existing.name !== seed.name || existing.nameKh !== seed.nameKh || existing.order !== order;
+    if (needsUpdate) {
+      console.log(`  ✏️  update ${parentId ? '  └ ' : ''}${existing.name} -> ${seed.name} (${seed.nameKh})`);
       if (APPLY) {
         await prisma.topic.update({
           where: { id: existing.id },
-          data: { nameKh: seed.nameKh, order },
+          data: { name: seed.name, nameKh: seed.nameKh, order },
         });
       }
       updated += 1;
@@ -131,6 +142,25 @@ async function upsertTopic(
     select: { id: true },
   });
   return row.id;
+}
+
+async function deactivateRemoved(subjectId: string) {
+  for (const name of DEACTIVATE) {
+    const row = await prisma.topic.findFirst({
+      where: { subjectId, parentId: null, name },
+      select: { id: true, isActive: true },
+    });
+    if (!row) continue;
+    if (!row.isActive) {
+      unchanged += 1;
+      continue;
+    }
+    console.log(`  🚫 deactivate ${name} (not part of the official Grade 9 syllabus)`);
+    deactivated += 1;
+    if (APPLY) {
+      await prisma.topic.update({ where: { id: row.id }, data: { isActive: false } });
+    }
+  }
 }
 
 async function seed() {
@@ -161,8 +191,10 @@ async function seed() {
     }
   }
 
+  await deactivateRemoved(subject.id);
+
   console.log(
-    `\n✅ Done (${APPLY ? 'applied' : 'dry run'}): ${created} created, ${updated} updated, ${unchanged} unchanged.`,
+    `\n✅ Done (${APPLY ? 'applied' : 'dry run'}): ${created} created, ${updated} updated, ${deactivated} deactivated, ${unchanged} unchanged.`,
   );
 }
 
