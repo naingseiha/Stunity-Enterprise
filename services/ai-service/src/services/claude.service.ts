@@ -8,10 +8,13 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
-// Sonnet, not Haiku: Khmer (a complex combining-mark script) needs the
-// stronger model — Haiku occasionally produced malformed Khmer glyph
-// sequences (isolated diacritics with no base consonant) that render as
-// broken tofu boxes on-device. Costs ~3-6x more per token than Haiku.
+// Sonnet, not Haiku: re-tested Haiku after fixing the WebView Khmer-font
+// bug (2026-07-04) with matched prompts — Haiku still produced Cyrillic
+// script mixed into Khmer words, broke its own "no Khmer inside $ math
+// delimiters" rule (reintroducing the tofu-box risk), and used incorrect
+// Khmer math terminology, none of which were present in equivalent Sonnet
+// responses. Costs ~3-6x more per token than Haiku, but Khmer generation
+// reliability is worth it for an education product.
 const TUTOR_MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 4096;
 

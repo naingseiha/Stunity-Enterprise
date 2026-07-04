@@ -1,4 +1,9 @@
-import { buildSystemPrompt, AskTutorParams } from './tutor.generator';
+import { buildSystemPrompt, askTutor, AskTutorParams } from './tutor.generator';
+import { claudeService } from '../services/claude.service';
+
+jest.mock('../services/claude.service', () => ({
+    claudeService: { generate: jest.fn().mockResolvedValue('mock explanation') },
+}));
 
 const baseParams: AskTutorParams = {
     question: 'How do I solve 2x + 4 = 10?',
@@ -76,5 +81,36 @@ describe('buildSystemPrompt', () => {
     it('instructs sparing use of blockquote for the key takeaway', () => {
         const prompt = buildSystemPrompt(baseParams);
         expect(prompt).toContain('blockquote');
+    });
+
+    it('adds the read-the-photo instruction only when an image is attached', () => {
+        const withImage = buildSystemPrompt({ ...baseParams, image: 'base64data' });
+        const withoutImage = buildSystemPrompt(baseParams);
+        expect(withImage).toContain('attached a photo');
+        expect(withoutImage).not.toContain('attached a photo');
+    });
+});
+
+describe('askTutor', () => {
+    beforeEach(() => {
+        (claudeService.generate as jest.Mock).mockClear();
+    });
+
+    it('falls back to a default prompt (matching locale) when the question is empty but an image is attached', async () => {
+        await askTutor({ ...baseParams, question: '  ', locale: 'km', image: 'base64data', mimeType: 'image/jpeg' });
+        const [, userPrompt] = (claudeService.generate as jest.Mock).mock.calls[0];
+        expect(userPrompt).toContain('សូមជួយពន្យល់');
+    });
+
+    it('uses the English default prompt fallback for locale=en with no typed question', async () => {
+        await askTutor({ ...baseParams, question: '', locale: 'en', image: 'base64data', mimeType: 'image/jpeg' });
+        const [, userPrompt] = (claudeService.generate as jest.Mock).mock.calls[0];
+        expect(userPrompt).toBe('Please help me solve the exercise in this photo, step by step.');
+    });
+
+    it('uses the typed question verbatim when provided', async () => {
+        await askTutor({ ...baseParams, question: 'What is 2+2?' });
+        const [, userPrompt] = (claudeService.generate as jest.Mock).mock.calls[0];
+        expect(userPrompt).toBe('What is 2+2?');
     });
 });

@@ -24,7 +24,7 @@ export interface TutorAnswer {
 }
 
 export function buildSystemPrompt(params: AskTutorParams): string {
-    const { locale, grade, subjectName, topicName, miniLesson, formulaSheet } = params;
+    const { locale, grade, subjectName, topicName, miniLesson, formulaSheet, image } = params;
 
     const isKhmerQuery = locale === 'km' || /[\u1780-\u17FF]/.test(params.question);
     const langInstruction = isKhmerQuery
@@ -61,13 +61,25 @@ RULES (follow strictly):
 10. Use LaTeX ONLY for actual mathematical notation — numbers, variables, operators, fractions, exponents, roots (e.g. $x$, $$\\frac{p}{q}$$, $$x^2 + 1$$). $...$ for inline math, $$...$$ for a standalone formula on its own line; prefer standalone $$...$$ when the expression has fractions, exponents, or roots.
 11. NEVER put Khmer text, English prose, word labels, or diagrams inside $...$ or $$...$$ — the math renderer's font has no Khmer glyphs and words rendered as "math" will show as broken boxes. Words and labels always stay as plain text outside the $ delimiters, even right next to a formula (e.g. "ចម្លើយគឺ $x = 3$" is correct; "$ចម្លើយ$" is wrong).
 12. For classifications, hierarchies, or category breakdowns (e.g. types of numbers, branches of a tree), use a plain markdown nested bullet list — never LaTeX, ASCII art, or box-drawing characters for this.
-13. Use a markdown blockquote (> ) to highlight the single most important formula, definition, or final result so the student can spot it at a glance — use this sparingly, for one key takeaway per answer, not every line.`;
+13. Use a markdown blockquote (> ) to highlight the single most important formula, definition, or final result so the student can spot it at a glance — use this sparingly, for one key takeaway per answer, not every line.${
+        image
+            ? '\n14. The student has attached a photo of a handwritten or textbook exercise. Read the problem directly from the image (do not ask them to retype it) and solve it step by step following all the rules above.'
+            : ''
+    }`;
 }
 
+const DEFAULT_IMAGE_QUESTION: Record<'km' | 'en', string> = {
+    km: 'សូមជួយពន្យល់ពីរបៀបដោះស្រាយលំហាត់នៅក្នុងរូបភាពនេះ ជាជំហាន ៗ។',
+    en: 'Please help me solve the exercise in this photo, step by step.',
+};
+
 export async function askTutor(params: AskTutorParams): Promise<TutorAnswer> {
+    // A photo-only message (no typed question) still needs a user-turn prompt
+    // for Claude to act on alongside the image content block.
+    const userPrompt = params.question.trim() || DEFAULT_IMAGE_QUESTION[params.locale];
     const explanation = await claudeService.generate(
-        buildSystemPrompt(params), 
-        params.question,
+        buildSystemPrompt(params),
+        userPrompt,
         params.image,
         params.mimeType
     );

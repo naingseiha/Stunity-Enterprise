@@ -32,10 +32,12 @@ router.post('/tutor/ask', async (req: Request, res: Response) => {
     try {
         const { question, locale, grade, subjectName, topicName, miniLesson, formulaSheet, image, mimeType } = req.body;
 
-        if (!question || typeof question !== 'string' || !question.trim()) {
-            return res.status(400).json({ success: false, error: 'question is required' });
+        const hasQuestion = typeof question === 'string' && question.trim().length > 0;
+        const hasImage = typeof image === 'string' && image.length > 0;
+        if (!hasQuestion && !hasImage) {
+            return res.status(400).json({ success: false, error: 'question or image is required' });
         }
-        if (question.length > 1000) {
+        if (hasQuestion && question.length > 1000) {
             return res.status(400).json({ success: false, error: 'Question is too long (max 1000 characters)' });
         }
         if (!topicName) {
@@ -49,7 +51,7 @@ router.post('/tutor/ask', async (req: Request, res: Response) => {
 
         const answer = await Promise.race([
             askTutor({
-                question: question.trim(),
+                question: hasQuestion ? question.trim() : '',
                 locale: locale === 'km' ? 'km' : 'en',
                 grade,
                 subjectName,
