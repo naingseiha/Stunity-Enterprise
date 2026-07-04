@@ -167,11 +167,49 @@ ${bodyHtml}
 </html>`;
 }
 
+// ─── Unicode Math Symbol → LaTeX Pre-processor ────────────────────────
+// Kantumruy Pro's cmap table claims to cover certain Unicode math code
+// points but ships empty outlines for them, so the browser never falls
+// through to a system font — it renders a .notdef [?] box instead.
+// We fix this by converting raw Unicode math operators in plain text
+// (i.e. NOT already inside $…$ or $$…$$) into inline LaTeX before
+// markdown-it processes the string.
+const MATH_SYMBOL_MAP: Record<string, string> = {
+  '→': '\\rightarrow', '←': '\\leftarrow', '↔': '\\leftrightarrow',
+  '⇒': '\\Rightarrow', '⇐': '\\Leftarrow', '⇔': '\\Leftrightarrow',
+  '∪': '\\cup', '∩': '\\cap', '∈': '\\in', '∉': '\\notin',
+  '⊂': '\\subset', '⊃': '\\supset', '⊆': '\\subseteq', '⊇': '\\supseteq',
+  '≤': '\\le', '≥': '\\ge', '≠': '\\ne', '≈': '\\approx',
+  '×': '\\times', '÷': '\\div', '±': '\\pm', '∓': '\\mp',
+  '∞': '\\infty', '√': '\\surd', '∴': '\\therefore', '∵': '\\because',
+  '∀': '\\forall', '∃': '\\exists', '∅': '\\emptyset',
+  '⊕': '\\oplus', '⊗': '\\otimes',
+  '∑': '\\sum', '∏': '\\prod', '∫': '\\int',
+};
+const MATH_SYMBOL_REGEX = new RegExp(
+  `[${Object.keys(MATH_SYMBOL_MAP).join('')}]`,
+  'g',
+);
+function sanitizeMathSymbols(md: string): string {
+  // Split the text around existing LaTeX delimiters ($…$ and $$…$$)
+  // so we only touch plain-text segments and leave real LaTeX alone.
+  const parts = md.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$)/g);
+  for (let i = 0; i < parts.length; i++) {
+    // Odd indices are the captured LaTeX groups — skip them.
+    if (i % 2 === 1) continue;
+    parts[i] = parts[i].replace(MATH_SYMBOL_REGEX, (ch) => {
+      const cmd = MATH_SYMBOL_MAP[ch];
+      return cmd ? `$${cmd}$` : ch;
+    });
+  }
+  return parts.join('');
+}
+
 // WebViews don't auto-size to their content, so each answer is measured via
 // a postMessage from the page once it (and any web fonts) finish loading.
 function TutorAnswerView({ text, colors, isDark }: { text: string; colors: any; isDark: boolean }) {
   const [height, setHeight] = useState(60);
-  const html = useMemo(() => buildAnswerHtml(tutorMarkdownIt.render(text), colors, isDark), [text, colors, isDark]);
+  const html = useMemo(() => buildAnswerHtml(tutorMarkdownIt.render(sanitizeMathSymbols(text)), colors, isDark), [text, colors, isDark]);
   return (
     <WebView
       originWhitelist={['*']}
