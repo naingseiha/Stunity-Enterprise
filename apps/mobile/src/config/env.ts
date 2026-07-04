@@ -197,7 +197,7 @@ const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
     quizUrl: `http://${host}:3010`,
     analyticsUrl: `http://${host}:3014`,
     learnUrl: `http://${host}:3018`,
-    aiUrl: `http://${host}:3020`, // TEMP: local ai-service for AI Tutor dev testing — revert to prod failover URL before merge
+    aiUrl: 'https://stunity-ai-service-mc7wnjp2kq-uc.a.run.app', // Failover to production for stable testing
     wsUrl: `ws://${host}:3011`,
     messagingUrl: `http://${host}:3011`,
     studentUrl: `http://${host}:3003`,

@@ -15,8 +15,13 @@ describe('buildSystemPrompt', () => {
 
     it('includes the Khmer language instruction for locale=km', () => {
         const prompt = buildSystemPrompt({ ...baseParams, locale: 'km' });
-        expect(prompt).toContain('Respond in Khmer');
+        expect(prompt).toContain('respond ENTIRELY 100% in natural, fluent Khmer');
         expect(prompt).not.toContain('Respond in English');
+    });
+
+    it('detects Khmer script in the question even when locale is not km', () => {
+        const prompt = buildSystemPrompt({ ...baseParams, locale: 'en', question: 'តើដោះស្រាយ 2x + 4 = 10 ដោយរបៀបណា?' });
+        expect(prompt).toContain('respond ENTIRELY 100% in natural, fluent Khmer');
     });
 
     it('interpolates miniLesson and formulaSheet when provided', () => {
