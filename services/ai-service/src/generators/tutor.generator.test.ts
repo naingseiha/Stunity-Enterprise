@@ -67,9 +67,15 @@ describe('buildSystemPrompt', () => {
 
     it('instructs LaTeX math notation with $ / $$ delimiters', () => {
         const prompt = buildSystemPrompt(baseParams);
-        expect(prompt).toContain('Use LaTeX ONLY for actual mathematical notation');
+        expect(prompt).toContain('CRITICAL LATEX DELIMITER RULE');
         expect(prompt).toContain('$...$');
         expect(prompt).toContain('$$...$$');
+    });
+
+    it('enforces a formal textbook tone with no emojis or ASCII art', () => {
+        const prompt = buildSystemPrompt(baseParams);
+        expect(prompt).toContain('FORMAL TEXTBOOK TONE');
+        expect(prompt).toContain('Never use ASCII art');
     });
 
     it('forbids Khmer/prose text or diagrams inside math delimiters', () => {
