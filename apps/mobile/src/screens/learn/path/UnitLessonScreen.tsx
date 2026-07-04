@@ -32,7 +32,7 @@ export function UnitLessonScreen() {
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<Props['navigation']>();
   const route = useRoute<Props['route']>();
-  const { topicId, title } = route.params;
+  const { topicId, title, grade, subjectName, subjectNameKh } = route.params;
   const isKh = i18n.language?.startsWith('km');
 
   const [lesson, setLesson] = useState<UnitLesson | null | undefined>(undefined);
@@ -46,7 +46,12 @@ export function UnitLessonScreen() {
 
   const startPractice = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.replace('PracticeSession', { topicId, title });
+    navigation.replace('PracticeSession', { topicId, title, grade, subjectName, subjectNameKh });
+  };
+
+  const openTutor = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('TutorChat', { topicId, title, grade, subjectName, subjectNameKh });
   };
 
   const lessonText = lesson
@@ -64,7 +69,9 @@ export function UnitLessonScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {title}
         </Text>
-        <View style={styles.headerButton} />
+        <TouchableOpacity onPress={openTutor} style={styles.headerButton}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color="#0EA5E9" />
+        </TouchableOpacity>
       </View>
 
       {lesson === undefined && (

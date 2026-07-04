@@ -1697,6 +1697,18 @@
       "addSubject": "Add",
       "finishTrophy": "Finish"
     },
+    "tutor": {
+      "title": "AI Tutor",
+      "emptyPrompt": "Ask me anything about {{topic}} — I'll walk you through it step by step.",
+      "emptyPromptGeneral": "Ask me anything, or snap a photo of any exercise or exam question — I'll walk you through it step by step.",
+      "inputPlaceholder": "Type your question...",
+      "send": "Send",
+      "thinking": "Thinking…",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "errorRateLimited": "You've reached today's question limit. Try again tomorrow.",
+      "entryButton": "Ask tutor",
+      "stuckPrompt": "Stuck? Ask the tutor"
+    },
     "continue": "Continue",
     "start": "Start",
     "exploreCategories": "Explore categories",

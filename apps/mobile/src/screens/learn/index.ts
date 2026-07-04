@@ -13,3 +13,4 @@ export { default as InstructorDashboardScreen } from './instructor/InstructorDas
 export { LearnHomeScreen } from './path/LearnHomeScreen';
 export { UnitLessonScreen } from './path/UnitLessonScreen';
 export { PracticeSessionScreen } from './path/PracticeSessionScreen';
+export { TutorChatScreen } from './path/TutorChatScreen';

@@ -88,7 +88,7 @@ export function PracticeSessionScreen() {
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<Props['navigation']>();
   const route = useRoute<Props['route']>();
-  const { topicId, title } = route.params;
+  const { topicId, title, grade, subjectName, subjectNameKh } = route.params;
   const insets = useSafeAreaInsets();
 
   const [questions, setQuestions] = useState<PracticeQuestion[] | null>(null);
@@ -202,6 +202,15 @@ export function PracticeSessionScreen() {
           <Ionicons name="flash" size={13} color="#F59E0B" />
           <Text style={styles.xpPillText}>{xpTotal}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => {
+            Haptics.selectionAsync();
+            navigation.navigate('TutorChat', { topicId, title, grade, subjectName, subjectNameKh });
+          }}
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={20} color="#0EA5E9" />
+        </TouchableOpacity>
       </View>
 
       {!questions && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}

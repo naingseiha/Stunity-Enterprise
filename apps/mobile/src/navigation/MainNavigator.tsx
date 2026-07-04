@@ -75,6 +75,7 @@ import {
   LearnHomeScreen,
   UnitLessonScreen,
   PracticeSessionScreen,
+  TutorChatScreen,
 } from "@/screens/learn";
 import {
   ProfileScreen,
@@ -336,6 +337,7 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
     <LearnStack.Screen name="UnitLesson" component={UnitLessonScreen} />
     <LearnStack.Screen name="PracticeSession" component={PracticeSessionScreen} />
+    <LearnStack.Screen name="TutorChat" component={TutorChatScreen} />
     <LearnStack.Screen
       name="InstructorDashboard"
       component={InstructorDashboardScreen}
@@ -731,6 +733,7 @@ const MainNavigatorContent = () => {
                 "CreateCourse",
                 "EditCourse",
                 "InstructorDashboard",
+                "TutorChat",
               ].includes(routeName)
             ) {
               return { tabBarStyle: { display: "none" } };
