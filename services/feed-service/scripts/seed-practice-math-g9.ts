@@ -157,13 +157,13 @@ const PRACTICE: Record<string, SeedQuestion[]> = {
     { text: 'ក្នុង △PQR មាន ST // QR។ បើ PS/PQ = 1/3 ហើយ PT = 4 តើ PR ស្មើប៉ុន្មាន?', options: ['8', '10', '12', '16'], correct: 2, explanation: 'PT/PR = PS/PQ = 1/3 ⇒ 4/PR = 1/3 ⇒ PR = 12' },
     { text: 'តើទ្រឹស្ដីបទថាឡែសច្រាសប្រើសម្រាប់បញ្ជាក់អ្វី?', options: ['ការេនៃជ្រុង', 'មុំកែង', 'ភាពស្របគ្នានៃបន្ទាត់', 'ក្រឡាផ្ទៃ'], correct: 2, explanation: 'បើសមាមាត្រស្មើគ្នា នោះបន្ទាត់ទាំងពីរស្របគ្នា' },
   ],
-  'ត្រីកោណប៉ុនគ្នា': [
-    { text: 'តើករណីណាខាងក្រោមដែលមិនមែនជាលក្ខខណ្ឌនៃត្រីកោណទូទៅប៉ុនគ្នា?', options: ['ជ.ម.ជ (SAS)', 'ម.ជ.ម (ASA)', 'ជ.ជ.ជ (SSS)', 'ម.ម.ម (AAA)'], correct: 3, explanation: 'ម.ម.ម (AAA) បញ្ជាក់ត្រឹមតែត្រីកោណដូចគ្នា មិនអាចបញ្ជាក់ថាប៉ុនគ្នាឡើយ' },
-    { text: 'ក្នុងត្រីកោណកែងពីរ បើមានអ៊ីប៉ូតេនុស និងមុំស្រួចមួយស្មើគ្នារៀងគ្នា តើវាប៉ុនគ្នាតាមករណីណា?', options: ['អ.ម', 'អ.ជ', 'ជ.ម.ជ', 'ម.ជ.ម'], correct: 0, explanation: 'ករណី អ៊ីប៉ូតេនុស-មុំស្រួច (អ.ម)' },
-    { text: 'បើ △ABC ≅ △A′B′C′ តើជ្រុងណាស្មើនឹង BC?', options: ['A′B′', 'B′C′', 'A′C′', 'AB'], correct: 1, explanation: 'ធាតុរៀងគ្នាស្មើគ្នា៖ BC = B′C′' },
-    { text: 'តើត្រីកោណពីរដែលមានជ្រុងទាំងបីស្មើគ្នារៀងគ្នា ជាត្រីកោណប៉ុនគ្នាតាមករណីណា?', options: ['ជ.ម.ជ', 'ម.ជ.ម', 'ជ.ជ.ជ', 'អ.ជ'], correct: 2, explanation: 'ករណី ជ្រុង-ជ្រុង-ជ្រុង (ជ.ជ.ជ)' },
-    { text: 'បើ △ABC ≅ △DEF ហើយ AB = 5cm, BC = 7cm, AC = 6cm តើ EF មានប្រវែងប៉ុន្មាន?', options: ['5 cm', '6 cm', '7 cm', '18 cm'], correct: 2, explanation: 'EF ត្រូវគ្នានឹង BC ដូច្នេះ EF = BC = 7 cm' },
-    { text: 'ក្នុងត្រីកោណកែងពីរ បើមានអ៊ីប៉ូតេនុស និងជ្រុងកែងមួយស្មើគ្នារៀងគ្នា តើវាប៉ុនគ្នាតាមករណីណា?', options: ['អ.ជ', 'អ.ម', 'ជ.ជ.ជ', 'ម.ជ.ម'], correct: 0, explanation: 'ករណី អ៊ីប៉ូតេនុស-ជ្រុងកែង (អ.ជ)' },
+  'ត្រីកោណដូចគ្នា': [
+    { text: 'ត្រីកោណពីរដូចគ្នា កាលណាមុំរៀងគ្នាស្មើគ្នា ហើយជ្រុងរៀងគ្នា?', options: ['ស្មើគ្នាទាំងអស់', 'មានសមាមាត្រដូចគ្នា', 'កែងគ្នា', 'ស្របគ្នា'], correct: 1, explanation: 'ត្រីកោណដូចគ្នាមិនតម្រូវឲ្យទំហំដូចគ្នា គ្រាន់តែជ្រុងរៀងគ្នាមានសមាមាត្រដូចគ្នា' },
+    { text: 'បើ △ABC ~ △A′B′C′ ដោយផលធៀបជ្រុង AB/A′B′ = 2 ហើយ A′B′ = 5cm តើ AB ស្មើប៉ុន្មាន?', options: ['5cm', '7cm', '10cm', '2cm'], correct: 2, explanation: 'AB = 2 × A′B′ = 2 × 5 = 10cm' },
+    { text: 'ត្រីកោណពីរដូចគ្នាមានផលធៀបជ្រុង k = 3។ តើផលធៀបក្រឡាផ្ទៃរបស់ត្រីកោណទាំងពីរស្មើប៉ុន្មាន?', options: ['3', '6', '9', '27'], correct: 2, explanation: 'ផលធៀបក្រឡាផ្ទៃ = k² = 3² = 9' },
+    { text: 'ដើមឈើមួយបោះស្រមោលវែង 12m ក្នុងពេលដែលបង្គោលខ្ពស់ 2m បោះស្រមោលវែង 3m។ តើដើមឈើខ្ពស់ប៉ុន្មាន?', options: ['6m', '8m', '18m', '4m'], correct: 1, explanation: 'ត្រីកោណដូចគ្នា៖ ខ្ពស់ដើមឈើ/12 = 2/3 ⇒ ខ្ពស់ = 8m' },
+    { text: 'ក្នុងត្រីកោណកែងត្រង់ A មានកម្ពស់ AH ចេញពី A កាត់ BC ត្រង់ H។ តើទំនាក់ទំនងណាត្រឹមត្រូវ?', options: ['AH² = BH × CH', 'AH² = BH + CH', 'AH = BH × CH', 'AH² = BC²'], correct: 0, explanation: 'តាមទំនាក់ទំនងម៉ែត្រិកក្នុងត្រីកោណកែង៖ AH² = BH × CH' },
+    { text: 'ក្នុង △ABC បើ D, E ជាចំណុចកណ្តាលនៃ AB, AC តើ △ADE ទាក់ទងនឹង △ABC ដូចម្តេច?', options: ['ដូចគ្នា ជាមួយ k = 1/2', 'ប៉ុនគ្នា', 'ដូចគ្នា ជាមួយ k = 2', 'គ្មានទំនាក់ទំនង'], correct: 0, explanation: 'DE ស្របនឹង BC ហើយស្មើពាក់កណ្តាល ដូច្នេះ △ADE ~ △ABC ជាមួយ k = 1/2' },
   ],
   'ពហុកោណ': [
     { text: 'តើផលបូកមុំក្នុងនៃត្រីកោណ (៣ ជ្រុង) ស្មើប៉ុន្មានដឺក្រេ?', options: ['90°', '180°', '270°', '360°'], correct: 1, explanation: '(3 − 2) × 180° = 180°' },
@@ -199,7 +199,7 @@ const OLD_NAMES: Record<string, string[]> = {
   'រង្វង់និងបន្ទាត់': ['Circles'],
   'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់': ['Angle Properties of a Circle'],
   'ទ្រឹស្ដីបទថាឡែស': ["Thales' Theorem"],
-  'ត្រីកោណប៉ុនគ្នា': ['Similar Triangles'],
+  'ត្រីកោណដូចគ្នា': ['Similar Triangles', 'ត្រីកោណប៉ុនគ្នា'],
   'ពហុកោណ': ['Polygons'],
   'សូលីត': ['Solid Geometry & Volume'],
 };
@@ -244,7 +244,7 @@ async function seed() {
       select: { id: true, title: true },
     });
     if (existing) {
-      if (existing.title !== title || unitName === 'ត្រីកោណប៉ុនគ្នា') {
+      if (existing.title !== title || unitName === 'ត្រីកោណដូចគ្នា') {
         console.log(`  ✏️  updating "${existing.title}" -> "${title}" (${existing.id})`);
         if (APPLY) {
           const prepared = prepareQuizQuestions(
@@ -268,7 +268,7 @@ async function seed() {
               },
             });
             const quiz = await tx.quiz.findFirst({ where: { postId: existing.id }, select: { id: true } });
-            if (quiz && unitName === 'ត្រីកោណប៉ុនគ្នា') {
+            if (quiz && unitName === 'ត្រីកោណដូចគ្នា') {
               await tx.quiz.update({
                 where: { id: quiz.id },
                 data: {

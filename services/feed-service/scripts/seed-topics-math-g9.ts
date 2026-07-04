@@ -72,8 +72,8 @@ const RENAME_MAP: Record<string, string> = {
   'Circles': 'រង្វង់និងបន្ទាត់',
   'Angle Properties of a Circle': 'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់',
   "Thales' Theorem": 'ទ្រឹស្ដីបទថាឡែស',
-  'Similar Triangles': 'ត្រីកោណប៉ុនគ្នា',
-  'Congruent Triangles': 'ត្រីកោណប៉ុនគ្នា',
+  'Similar Triangles': 'ត្រីកោណដូចគ្នា',
+  'ត្រីកោណប៉ុនគ្នា': 'ត្រីកោណដូចគ្នា',
   'Polygons': 'ពហុកោណ',
   'Solid Geometry & Volume': 'សូលីត',
   'Solids': 'សូលីត',
@@ -105,7 +105,7 @@ const UNITS: TopicSeed[] = [
   { name: 'រង្វង់និងបន្ទាត់', nameKh: 'រង្វង់និងបន្ទាត់' }, // ម.១៣, p143
   { name: 'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់', nameKh: 'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់' }, // ម.១៤, p159
   { name: 'ទ្រឹស្ដីបទថាឡែស', nameKh: 'ទ្រឹស្ដីបទថាឡែស' }, // ម.១៥, p181
-  { name: 'ត្រីកោណប៉ុនគ្នា', nameKh: 'ត្រីកោណប៉ុនគ្នា' }, // ម.១៦, p191
+  { name: 'ត្រីកោណដូចគ្នា', nameKh: 'ត្រីកោណដូចគ្នា' }, // ម.១៦, p191 — verified 2026-07-04: p198-200 explicitly compares/contrasts "ត្រីកោណប៉ុនគ្នា" (congruence, prior-grade context) vs. "ត្រីកោណដូចគ្នា" (similarity, this chapter's own boxed definition + ratio k content)
   { name: 'ពហុកោណ', nameKh: 'ពហុកោណ' }, // ម.១៧, p213
   { name: 'សូលីត', nameKh: 'សូលីត' }, // ម.១៨, p223
 ];
