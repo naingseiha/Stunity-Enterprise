@@ -95,6 +95,29 @@ describe('buildSystemPrompt', () => {
         expect(withImage).toContain('attached a photo');
         expect(withoutImage).not.toContain('attached a photo');
     });
+
+    it('uses the unscoped "any subject" rule when topicName is omitted', () => {
+        const { topicName, ...noTopic } = baseParams;
+        const prompt = buildSystemPrompt(noTopic);
+        expect(prompt).toContain('not tied to a single unit or subject');
+        expect(prompt).not.toContain('Stay scoped to');
+        expect(prompt).not.toContain('Current topic:');
+    });
+
+    it('stays scoped to the topic when topicName is provided', () => {
+        const prompt = buildSystemPrompt(baseParams);
+        expect(prompt).toContain(`Stay scoped to "${baseParams.topicName}"`);
+    });
+
+    it('includes the Khmer glossary and few-shot example only for Khmer replies', () => {
+        const kmPrompt = buildSystemPrompt({ ...baseParams, locale: 'km' });
+        const enPrompt = buildSystemPrompt({ ...baseParams, locale: 'en' });
+        expect(kmPrompt).toContain('KHMER TERMINOLOGY GLOSSARY');
+        expect(kmPrompt).toContain('ចំនួនអសនិទាន');
+        expect(kmPrompt).toContain('EXAMPLE OF CORRECT KHMER TUTORING STYLE');
+        expect(enPrompt).not.toContain('KHMER TERMINOLOGY GLOSSARY');
+        expect(enPrompt).not.toContain('EXAMPLE OF CORRECT KHMER TUTORING STYLE');
+    });
 });
 
 describe('askTutor', () => {
@@ -118,5 +141,28 @@ describe('askTutor', () => {
         await askTutor({ ...baseParams, question: 'What is 2+2?' });
         const [, userPrompt] = (claudeService.generate as jest.Mock).mock.calls[0];
         expect(userPrompt).toBe('What is 2+2?');
+    });
+
+    it('retries once with a stricter prompt when the Khmer response is malformed', async () => {
+        (claudeService.generate as jest.Mock)
+            .mockResolvedValueOnce('hello ាworld — broken')
+            .mockResolvedValueOnce('ចម្លើយត្រឹមត្រូវ');
+        const result = await askTutor({ ...baseParams, locale: 'km', question: 'តើ 2+2 ស្មើនឹងប៉ុន្មាន?' });
+        expect(claudeService.generate).toHaveBeenCalledTimes(2);
+        const [retrySystemPrompt] = (claudeService.generate as jest.Mock).mock.calls[1];
+        expect(retrySystemPrompt).toContain('CRITICAL RETRY NOTICE');
+        expect(result.explanation).toBe('ចម្លើយត្រឹមត្រូវ');
+    });
+
+    it('does not retry for a well-formed Khmer response', async () => {
+        (claudeService.generate as jest.Mock).mockResolvedValueOnce('ចម្លើយត្រឹមត្រូវ');
+        await askTutor({ ...baseParams, locale: 'km', question: 'តើ 2+2 ស្មើនឹងប៉ុន្មាន?' });
+        expect(claudeService.generate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not run the Khmer validator for English replies', async () => {
+        (claudeService.generate as jest.Mock).mockResolvedValueOnce('hello ាworld — this would flag as Khmer-malformed');
+        await askTutor({ ...baseParams, locale: 'en', question: 'What is 2+2?' });
+        expect(claudeService.generate).toHaveBeenCalledTimes(1);
     });
 });

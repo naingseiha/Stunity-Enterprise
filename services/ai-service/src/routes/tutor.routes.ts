@@ -40,9 +40,6 @@ router.post('/tutor/ask', async (req: Request, res: Response) => {
         if (hasQuestion && question.length > 1000) {
             return res.status(400).json({ success: false, error: 'Question is too long (max 1000 characters)' });
         }
-        if (!topicName) {
-            return res.status(400).json({ success: false, error: 'topicName is required' });
-        }
 
         const timeoutMs = 100_000; // 100s — leave room before client's 120s timeout
         const timeoutPromise = new Promise<never>((_, reject) =>
