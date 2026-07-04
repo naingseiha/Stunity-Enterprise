@@ -142,9 +142,16 @@ export function LearnHomeScreen() {
   }, []);
 
   const subjectName = useCallback(
-    (s: { name: string; nameEn: string | null; nameKh: string | null }) =>
-      isKh ? s.nameKh || s.name : s.nameEn || s.name,
-    [isKh],
+    (s: { name: string; nameEn: string | null; nameKh: string | null }) => {
+      const norm = (s.nameKh || s.nameEn || s.name || '').toLowerCase();
+      if (norm.startsWith('math') || norm.includes('គណិត')) return 'គណិតវិទ្យា';
+      if (norm.startsWith('chem') || norm.includes('គីមី')) return 'គីមីវិទ្យា';
+      if (norm.startsWith('phys') || norm.includes('រូប')) return 'រូបវិទ្យា';
+      if (norm.startsWith('bio') || norm.includes('ជីវ')) return 'ជីវវិទ្យា';
+      if (norm.startsWith('eng') || norm.includes('អង់គ្លេស')) return 'អង់គ្លេស';
+      return s.nameKh || s.nameEn || s.name;
+    },
+    [],
   );
   const unitName = useCallback((u: LearnUnit) => (isKh ? u.nameKh || u.name : u.name), [isKh]);
 
@@ -294,53 +301,30 @@ export function LearnHomeScreen() {
 
   const renderHero = () => (
     <View style={styles.hero}>
-      <View style={{ flex: 1 }}>
-        <View style={styles.heroKickerRow}>
-          <Ionicons
-            name={greetingKey.endsWith('Evening') ? 'moon' : 'sunny'}
-            size={14}
-            color="#F59E0B"
-          />
-          <Text style={styles.heroKicker}>{t(greetingKey)}</Text>
-        </View>
-        <Text style={styles.heroName} numberOfLines={1}>
-          {user?.firstName || t('learn.path.title')}
-        </Text>
+      <View style={styles.avatarContainer}>
+        {user?.profilePictureUrl ? (
+          <Image source={{ uri: user.profilePictureUrl }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <Text style={styles.avatarInitial}>{(user?.firstName || 'S')[0]}</Text>
+          </View>
+        )}
+        {!!stats?.level && (
+          <View style={styles.levelBadge}>
+            <Text style={styles.levelBadgeText}>{stats.level}</Text>
+          </View>
+        )}
       </View>
-      <View style={styles.heroRight}>
-        <View style={[styles.xpPillHero, styles.softShadow]}>
-          <Ionicons name="diamond" size={13} color="#0EA5E9" />
-          <Text style={styles.xpPillHeroText}>{stats?.totalPoints ?? 0}</Text>
-        </View>
-        <View style={[styles.xpPillHero, styles.softShadow]}>
-          <Ionicons name="flash" size={14} color="#F59E0B" />
-          <Text style={styles.xpPillHeroText}>{stats?.xp ?? 0}</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.tutorFabHero, styles.softShadow]}
-          activeOpacity={0.85}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('TutorChat', { grade: path?.subject?.grade });
-          }}
-        >
-          <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
-        </TouchableOpacity>
-        <View style={styles.avatarContainer}>
-          {user?.profilePictureUrl ? (
-            <Image source={{ uri: user.profilePictureUrl }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarInitial}>{(user?.firstName || 'S')[0]}</Text>
-            </View>
-          )}
-          {!!stats?.level && (
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>{stats.level}</Text>
-            </View>
-          )}
-        </View>
-      </View>
+      <TouchableOpacity
+        style={styles.tutorFabHero}
+        activeOpacity={0.85}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          navigation.navigate('TutorChat', { grade: path?.subject?.grade });
+        }}
+      >
+        <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -351,7 +335,7 @@ export function LearnHomeScreen() {
       <View style={styles.weekCardTop}>
         <Text style={styles.weekCardTitle}>{t('learn.path.thisWeek')}</Text>
         <View style={styles.streakBadge}>
-          <Ionicons name="flame" size={16} color="#F97316" />
+          <Ionicons name="flame" size={15} color="#F97316" />
           <Text style={styles.streakBadgeText}>{stats?.currentStreak ?? 0}</Text>
         </View>
       </View>
@@ -360,7 +344,23 @@ export function LearnHomeScreen() {
           const active = !!stats?.weekActivity?.[i];
           const isToday = i === todayIndex;
           return (
-            <View key={`${d}-${i}`} style={styles.weekDay}>
+            <View
+              key={`${d}-${i}`}
+              style={[
+                styles.weekDayCapsule,
+                isToday && styles.weekDayCapsuleToday,
+                active && styles.weekDayCapsuleActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.weekDayLabel,
+                  isToday && styles.weekDayLabelToday,
+                  active && styles.weekDayLabelActive,
+                ]}
+              >
+                {d}
+              </Text>
               <View
                 style={[
                   styles.weekDot,
@@ -369,12 +369,11 @@ export function LearnHomeScreen() {
                 ]}
               >
                 {active ? (
-                  <Ionicons name="flame" size={15} color="#FFFFFF" />
+                  <Ionicons name="flame" size={12} color="#FFFFFF" />
                 ) : (
-                  <View style={styles.weekDotEmpty} />
+                  <View style={[styles.weekDotEmpty, isToday && styles.weekDotEmptyToday]} />
                 )}
               </View>
-              <Text style={[styles.weekDayLabel, isToday && styles.weekDayLabelToday]}>{d}</Text>
             </View>
           );
         })}
@@ -430,31 +429,27 @@ export function LearnHomeScreen() {
             return (
               <TouchableOpacity
                 key={s.id}
-                style={styles.railItem}
+                style={[
+                  styles.subjectSquircleCard,
+                  active
+                    ? { backgroundColor: isDark ? `${accent}2A` : `${accent}15` }
+                    : { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : `${accent}06` },
+                ]}
                 activeOpacity={0.8}
                 onPress={() => switchSubject(s.id)}
               >
-                {active ? (
-                  <LinearGradient
-                    colors={gradientFor(accent)}
-                    start={GRAD_START}
-                    end={GRAD_END}
-                    style={[styles.railAvatar, { borderColor: 'transparent' }, styles.railAvatarActiveShadow]}
-                  >
-                    <Ionicons name={subjectIcon(s.code)} size={26} color="#FFFFFF" />
-                  </LinearGradient>
-                ) : (
-                  <View
-                    style={[
-                      styles.railAvatar,
-                      { backgroundColor: isDark ? colors.card : `${accent}1A`, borderColor: 'transparent' },
-                    ]}
-                  >
-                    <Ionicons name={subjectIcon(s.code)} size={26} color={accent} />
+                <View style={styles.graphicWrapper}>
+                  <View style={styles.graphicScale}>
+                    <SubjectGraphic code={s.code} />
                   </View>
-                )}
+                </View>
                 <Text
-                  style={[styles.railLabel, active && { color: colors.text, fontWeight: '800' }]}
+                  style={[
+                    styles.subjectSquircleCardLabel,
+                    active
+                      ? [styles.subjectSquircleCardLabelActive, { color: accent }]
+                      : { color: isDark ? colors.textSecondary : '#475569' },
+                  ]}
                   numberOfLines={1}
                 >
                   {subjectName(s)}
@@ -462,11 +457,13 @@ export function LearnHomeScreen() {
               </TouchableOpacity>
             );
           })}
-          <TouchableOpacity style={styles.railItem} activeOpacity={0.8} onPress={startEditing}>
-            <View style={styles.railAddAvatar}>
-              <Ionicons name="add" size={28} color={colors.textSecondary} />
-            </View>
-            <Text style={styles.railLabel} numberOfLines={1}>
+          <TouchableOpacity
+            style={styles.subjectSquircleCardAdd}
+            activeOpacity={0.8}
+            onPress={startEditing}
+          >
+            <Ionicons name="add" size={24} color={colors.textSecondary} style={{ marginTop: 6 }} />
+            <Text style={styles.subjectSquircleCardLabel} numberOfLines={1}>
               {t('learn.path.addSubject')}
             </Text>
           </TouchableOpacity>
@@ -487,7 +484,7 @@ export function LearnHomeScreen() {
     return (
       <View style={[styles.subjectCardWrap, styles.subjectCardShadow]}>
       <LinearGradient
-        colors={gradientFor('#0EA5E9')}
+        colors={['#0EA5E9', '#4F46E5']}
         start={GRAD_START}
         end={GRAD_END}
         style={styles.subjectCard}
@@ -538,7 +535,7 @@ export function LearnHomeScreen() {
         {activeUnit && (
           <TouchableOpacity style={styles.continueButton} onPress={() => openUnit(activeUnit)}>
             <Text style={styles.continueButtonText}>{t('learn.path.continueLearning')}</Text>
-            <Ionicons name="arrow-forward" size={16} color="#0EA5E9" />
+            <Ionicons name="arrow-forward" size={16} color="#4F46E5" />
           </TouchableOpacity>
         )}
       </LinearGradient>
@@ -1387,10 +1384,10 @@ export function LearnHomeScreen() {
           {showOnboarding && obStarted && renderOnboarding()}
           {!loading && !showOnboarding && (
             <>
+              {renderSubjectCard()}
               {renderSubjectRail()}
               {renderWeekCard()}
               {renderNudge()}
-              {renderSubjectCard()}
               {!!profile && (
                 <TouchableOpacity style={styles.editPathLink} onPress={startEditing}>
                   <Ionicons name="options-outline" size={14} color={colors.textSecondary} />
@@ -1428,18 +1425,12 @@ const createStyles = (colors: any, isDark: boolean) =>
       elevation: 5,
     },
     subjectCardShadow: {
-      shadowColor: '#0EA5E9',
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: isDark ? 0.5 : 0.35,
-      shadowRadius: 20,
-      elevation: 8,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E2E8F0',
     },
     nudgeShadow: {
-      shadowColor: '#F97316',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: isDark ? 0.5 : 0.32,
-      shadowRadius: 16,
-      elevation: 6,
+      borderWidth: 1,
+      borderColor: isDark ? '#C2410C' : '#FFEDD5',
     },
     railAvatarActiveShadow: {
       shadowOffset: { width: 0, height: 6 },
@@ -1458,31 +1449,15 @@ const createStyles = (colors: any, isDark: boolean) =>
     hero: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingTop: 16,
-      paddingBottom: 12,
-      gap: 12,
+      paddingBottom: 8,
     },
-    heroKickerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    heroKicker: { fontSize: 13.5, fontWeight: '600', color: colors.textSecondary },
-    heroName: { fontSize: 23, fontWeight: '800', color: colors.text, letterSpacing: -0.5, marginTop: 1 },
-    heroRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    xpPillHero: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 12,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: isDark ? colors.border : '#E2E8F0',
-    },
-    xpPillHeroText: { fontSize: 13.5, fontWeight: '800', color: colors.text },
     tutorFabHero: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.card,
@@ -1492,77 +1467,96 @@ const createStyles = (colors: any, isDark: boolean) =>
     avatarContainer: {
       position: 'relative',
     },
-    avatar: { width: 44, height: 44, borderRadius: 22 },
+    avatar: { width: 38, height: 38, borderRadius: 19 },
     avatarFallback: { backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center' },
-    avatarInitial: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+    avatarInitial: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
     levelBadge: {
       position: 'absolute',
-      bottom: -3,
-      right: -3,
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
-      paddingHorizontal: 3,
+      bottom: -2,
+      right: -2,
+      minWidth: 15,
+      height: 15,
+      borderRadius: 7.5,
+      paddingHorizontal: 2,
       backgroundColor: '#F59E0B',
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 2,
+      borderWidth: 1.5,
       borderColor: isDark ? colors.background : '#F1F5F9', // Matches screen background perfectly!
     },
-    levelBadgeText: { fontSize: 9, fontWeight: '900', color: '#FFFFFF', lineHeight: 11 },
+    levelBadgeText: { fontSize: 8, fontWeight: '900', color: '#FFFFFF', lineHeight: 10 },
 
     // Week streak card
     weekCard: {
       marginHorizontal: 20,
-      marginTop: 10,
+      marginTop: 16,
       padding: 16,
       borderRadius: 20,
       backgroundColor: colors.card,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.35 : 0.08,
-      shadowRadius: 12,
-      elevation: 3,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E2E8F0',
     },
     weekCardTop: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 14,
+      marginBottom: 16,
     },
-    weekCardTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+    weekCardTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
     streakBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
       borderRadius: 12,
       backgroundColor: isDark ? '#431407' : '#FFF7ED',
+      borderWidth: 1,
+      borderColor: isDark ? '#F97316' : '#FFEDD5',
     },
-    streakBadgeText: { fontSize: 15, fontWeight: '900', color: '#F97316' },
+    streakBadgeText: { fontSize: 14, fontWeight: '900', color: '#F97316' },
     weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    weekDay: { alignItems: 'center', gap: 6 },
-    weekDot: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+    weekDayCapsule: {
+      width: 40,
+      paddingVertical: 8,
+      borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.surfaceVariant,
+      gap: 6,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+      borderWidth: 1,
+      borderColor: 'transparent',
     },
-    weekDotActive: { backgroundColor: '#F97316' },
-    weekDotToday: { borderWidth: 2, borderColor: '#F97316' },
-    weekDotEmpty: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.border,
+    weekDayCapsuleActive: {
+      backgroundColor: isDark ? '#431407' : '#FFF7ED',
+      borderColor: isDark ? '#F97316' : '#FFEDD5',
+    },
+    weekDayCapsuleToday: {
+      borderColor: '#F97316',
+      backgroundColor: isDark ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.05)',
     },
     weekDayLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+    weekDayLabelActive: { color: '#F97316', fontWeight: '800' },
     weekDayLabelToday: { color: '#F97316', fontWeight: '800' },
+    weekDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#E2E8F0',
+    },
+    weekDotActive: { backgroundColor: '#F97316' },
+    weekDotToday: { borderWidth: 1.5, borderColor: '#F97316' },
+    weekDotEmpty: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+    },
+    weekDotEmptyToday: {
+      backgroundColor: '#F97316',
+    },
 
     // Nudge
     nudgeCard: {
@@ -1624,7 +1618,14 @@ const createStyles = (colors: any, isDark: boolean) =>
       backgroundColor: 'rgba(255,255,255,0.22)',
     },
     subjectKickerText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.4 },
-    subjectTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 8, lineHeight: 32 },
+    subjectTitle: {
+      fontFamily: 'Koulen-Regular',
+      fontSize: 24,
+      color: '#FFFFFF',
+      marginTop: 8,
+      paddingTop: 6,
+      lineHeight: 38,
+    },
     subjectMeta: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
     subjectRing: { alignItems: 'center', justifyContent: 'center' },
     subjectRingText: {
@@ -1640,10 +1641,10 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 8,
       marginTop: 16,
       paddingVertical: 12,
-      borderRadius: 14,
+      borderRadius: 18,
       backgroundColor: '#FFFFFF',
     },
-    continueButtonText: { fontSize: 15, fontWeight: '800', color: '#0EA5E9' },
+    continueButtonText: { fontSize: 15, fontWeight: '800', color: '#4F46E5' },
     editPathLink: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1662,39 +1663,60 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingHorizontal: 20,
       marginBottom: 12,
     },
-    railRow: { paddingHorizontal: 20, gap: 16 },
-    railItem: { alignItems: 'center', width: 68 },
-    railAvatar: {
-      width: 60,
-      height: 60,
-      borderRadius: 20,
+    railRow: { paddingHorizontal: 20, gap: 12 },
+    subjectSquircleCard: {
+      width: 84,
+      height: 88,
+      borderRadius: 22,
       alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2.5,
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      paddingHorizontal: 4,
+      borderWidth: 0,
     },
-    railAddAvatar: {
-      width: 60,
-      height: 60,
-      borderRadius: 20,
+    subjectSquircleCardAdd: {
+      width: 84,
+      height: 88,
+      borderRadius: 22,
       alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2,
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      paddingHorizontal: 4,
+      borderWidth: 1.5,
       borderColor: colors.border,
       borderStyle: 'dashed',
       backgroundColor: colors.card,
     },
-    railLabel: {
-      marginTop: 7,
-      fontSize: 12,
+    graphicWrapper: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    graphicScale: {
+      width: 70,
+      height: 70,
+      alignItems: 'center',
+      justifyContent: 'center',
+      transform: [{ scale: 0.58 }],
+    },
+    subjectSquircleCardLabel: {
+      fontSize: 11,
+      lineHeight: 16,
       fontWeight: '600',
-      color: colors.textSecondary,
       textAlign: 'center',
+      width: '100%',
+      marginBottom: 2,
+    },
+    subjectSquircleCardLabelActive: {
+      fontWeight: '800',
     },
 
     // ── Vertical timeline path ──────────────────────────────────────
     pathList: {
       marginTop: 8,
-      paddingHorizontal: 16,
+      paddingLeft: 16,
+      paddingRight: 20,
       paddingBottom: 8,
     },
     activeUnitContainer: {
@@ -1752,12 +1774,13 @@ const createStyles = (colors: any, isDark: boolean) =>
       elevation: 4,
     },
     activeUnitTitle: {
-      fontSize: 18,
-      fontWeight: '800',
+      fontFamily: 'Koulen-Regular',
+      fontSize: 20,
       color: colors.text,
       textAlign: 'center',
       marginTop: 12,
-      lineHeight: 28,
+      paddingTop: 4,
+      lineHeight: 32,
     },
     activeUnitProgress: {
       fontSize: 14,
@@ -1825,10 +1848,11 @@ const createStyles = (colors: any, isDark: boolean) =>
       flex: 1,
     },
     unitCardTitleTextWhite: {
-      fontSize: 15,
-      fontWeight: '800',
+      fontFamily: 'Koulen-Regular',
+      fontSize: 17,
       color: '#FFFFFF',
-      lineHeight: 25,
+      paddingTop: 4,
+      lineHeight: 28,
     },
     unitCardSubTextWhite: {
       fontSize: 11.5,
@@ -2387,13 +2411,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 18,
       gap: 9,
       backgroundColor: colors.card,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.3 : 0.07,
-      shadowRadius: 10,
-      elevation: 3,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E2E8F0',
     },
     courseCardIcon: {
       width: 44,
