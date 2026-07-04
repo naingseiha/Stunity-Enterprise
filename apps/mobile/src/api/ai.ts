@@ -69,7 +69,7 @@ export const aiApi = {
         locale: 'km' | 'en';
         grade?: string;
         subjectName?: string;
-        topicName: string;
+        topicName?: string;
         miniLesson?: string | null;
         formulaSheet?: Array<{ expr: string; noteKh?: string }> | null;
         image?: string | null;

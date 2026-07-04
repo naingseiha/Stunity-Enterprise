@@ -174,7 +174,7 @@ export type LearnStackParamList = {
   LearnHome: undefined;
   UnitLesson: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
   PracticeSession: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
-  TutorChat: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
+  TutorChat: { topicId?: string; title?: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
   MyCourses: undefined;
   MyCreatedCourses: undefined;
   InstructorDashboard: undefined;

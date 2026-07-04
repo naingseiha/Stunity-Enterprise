@@ -1700,6 +1700,7 @@
     "tutor": {
       "title": "AI Tutor",
       "emptyPrompt": "Ask me anything about {{topic}} — I'll walk you through it step by step.",
+      "emptyPromptGeneral": "Ask me anything, or snap a photo of any exercise or exam question — I'll walk you through it step by step.",
       "inputPlaceholder": "Type your question...",
       "send": "Send",
       "thinking": "Thinking…",

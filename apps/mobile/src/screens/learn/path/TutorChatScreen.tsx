@@ -304,6 +304,10 @@ export function TutorChatScreen() {
   };
 
   useEffect(() => {
+    if (!topicId) {
+      setLesson(null);
+      return;
+    }
     learnPathService
       .getLesson(topicId)
       .then(setLesson)
@@ -348,7 +352,7 @@ export function TutorChatScreen() {
         locale: isQuestionKh ? 'km' : 'en',
         grade,
         subjectName: isQuestionKh ? subjectNameKh || subjectName : subjectName,
-        topicName: title,
+        topicName: title || undefined,
         miniLesson: isQuestionKh ? lesson?.miniLessonKh || lesson?.miniLesson : lesson?.miniLesson || lesson?.miniLessonKh,
         formulaSheet: lesson?.formulaSheet,
         image: imgBase64,
@@ -435,7 +439,7 @@ export function TutorChatScreen() {
               <Ionicons name="chatbubble-ellipses" size={28} color="#0EA5E9" />
             </View>
             <Text style={styles.emptyText}>
-              {t('learn.tutor.emptyPrompt', { topic: title })}
+              {title ? t('learn.tutor.emptyPrompt', { topic: title }) : t('learn.tutor.emptyPromptGeneral')}
             </Text>
           </View>
         ) : (

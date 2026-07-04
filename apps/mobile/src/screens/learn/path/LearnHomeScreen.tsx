@@ -316,6 +316,16 @@ export function LearnHomeScreen() {
           <Ionicons name="flash" size={14} color="#F59E0B" />
           <Text style={styles.xpPillHeroText}>{stats?.xp ?? 0}</Text>
         </View>
+        <TouchableOpacity
+          style={[styles.tutorFabHero, styles.softShadow]}
+          activeOpacity={0.85}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('TutorChat', { grade: path?.subject?.grade });
+          }}
+        >
+          <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
+        </TouchableOpacity>
         <View style={styles.avatarContainer}>
           {user?.profilePictureUrl ? (
             <Image source={{ uri: user.profilePictureUrl }} style={styles.avatar} />
@@ -1468,6 +1478,16 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderColor: isDark ? colors.border : '#E2E8F0',
     },
     xpPillHeroText: { fontSize: 13.5, fontWeight: '800', color: colors.text },
+    tutorFabHero: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E2E8F0',
+    },
     avatarContainer: {
       position: 'relative',
     },
