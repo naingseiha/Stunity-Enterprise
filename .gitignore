@@ -68,3 +68,10 @@ services/feed-service/uploads/
 scripts/migrate-v1-to-v2/data/export-*/
 scripts/admin/data/subject-reconcile-*.json
 cloudbuild.tmp.yaml
+
+# MoEYS curriculum reference textbooks — large local-only reference PDFs used
+# for content/curriculum review, never shipped in any app bundle. Only the
+# folder convention (Ebooks/README.md) is tracked, not the books themselves.
+Ebooks/**/*.pdf
+Ebooks/**/*.epub
+Ebooks/**/.DS_Store
