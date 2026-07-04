@@ -73,6 +73,13 @@ const gradientFor = (accent: string): [string, string] =>
 const GRAD_START = { x: 0, y: 0 };
 const GRAD_END = { x: 1, y: 1 };
 
+/** Cycling accent + its 2-stop gradient for the Nth unit/subject card. */
+const accentAndGradientFor = (index: number) => {
+  const accent = ACCENTS[index % ACCENTS.length];
+  const [gradStart, gradEnd] = gradientFor(accent);
+  return { accent, gradStart, gradEnd };
+};
+
 /** Distinct per-unit glyphs so every path node feels like its own topic. */
 const UNIT_ICONS: Array<keyof typeof Ionicons.glyphMap> = [
   'calculator',
@@ -190,6 +197,10 @@ export function LearnHomeScreen() {
     [],
   );
   const unitName = useCallback((u: LearnUnit) => (isKh ? u.nameKh || u.name : u.name), [isKh]);
+  const unitNumberLabel = useCallback(
+    (index: number) => (isKh ? `មេរៀនទី ${index + 1}` : `Unit ${index + 1}`),
+    [isKh],
+  );
 
   // Catches its own errors (rather than throwing) so a path-specific failure
   // — e.g. switching subjects — never gets confused with a full profile-load
@@ -706,21 +717,21 @@ export function LearnHomeScreen() {
             <View style={{ flex: 1, backgroundColor: '#EF5350' }} />
           </View>
         </View>
-        {/* White center donut circle */}
+        {/* Center donut circle */}
         <View
           style={{
             position: 'absolute',
             width: 34,
             height: 34,
             borderRadius: 17,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: isDark ? colors.card : '#FFFFFF',
             top: 15,
             left: 15,
             alignItems: 'center',
             justifyContent: 'center',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
+            shadowOpacity: isDark ? 0.3 : 0.1,
             shadowRadius: 3,
             elevation: 2,
           }}
@@ -768,8 +779,8 @@ export function LearnHomeScreen() {
           height: 46,
           borderRadius: 6,
           borderWidth: 3.5,
-          borderColor: '#C5CAE9',
-          backgroundColor: 'rgba(255, 255, 255, 0.4)',
+          borderColor: isDark ? 'rgba(197, 202, 233, 0.4)' : '#C5CAE9',
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
           overflow: 'hidden',
           justifyContent: 'flex-end',
           position: 'relative',
@@ -865,9 +876,9 @@ export function LearnHomeScreen() {
           width: 32,
           height: 42,
           borderRadius: 8,
-          backgroundColor: '#EDE7F6',
+          backgroundColor: isDark ? 'rgba(209, 196, 233, 0.16)' : '#EDE7F6',
           borderWidth: 2,
-          borderColor: '#D1C4E9',
+          borderColor: isDark ? 'rgba(209, 196, 233, 0.4)' : '#D1C4E9',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'absolute',
@@ -1104,7 +1115,7 @@ export function LearnHomeScreen() {
               <View style={styles.obEmptyCard}>
                 <Ionicons name="cloud-offline-outline" size={26} color={colors.textSecondary} />
                 <Text style={styles.obEmptyText}>{t('learn.path.loadError')}</Text>
-                <TouchableOpacity style={styles.loadErrorRetryButton} onPress={loadObSubjects}>
+                <TouchableOpacity style={styles.obRetryButton} onPress={loadObSubjects}>
                   <Text style={styles.loadErrorRetryText}>{t('learn.path.retry')}</Text>
                 </TouchableOpacity>
               </View>
@@ -1228,8 +1239,7 @@ export function LearnHomeScreen() {
 
   // ── Active unit rendering (Centered circular progress node) ──────────
   const renderActiveUnit = (unit: LearnUnit, index: number) => {
-    const accent = ACCENTS[index % ACCENTS.length];
-    const [gradStart, gradEnd] = gradientFor(accent);
+    const { accent, gradStart, gradEnd } = accentAndGradientFor(index);
     const pct = unit.target > 0 ? Math.min(1, unit.correct / unit.target) : 0;
     const size = 96;
     const circR = (size - 8) / 2;
@@ -1288,7 +1298,7 @@ export function LearnHomeScreen() {
         {/* Title and Progress */}
         <Text style={styles.activeUnitTitle}>{unitName(unit)}</Text>
         <Text style={styles.activeUnitProgress}>
-          {isKh ? `មេរៀនទី ${index + 1}` : `Unit ${index + 1}`} ·{' '}
+          {unitNumberLabel(index)} ·{' '}
           {unit.target > 0
             ? `${unit.correct} / ${unit.target} correct`
             : t('learn.path.inProgress', { defaultValue: 'In Progress' })}
@@ -1299,8 +1309,7 @@ export function LearnHomeScreen() {
 
   // ── Standard unit row (Horizontal colored card on the timeline) ──────────
   const renderUnitCardRow = (unit: LearnUnit, index: number, isLast: boolean) => {
-    const accent = ACCENTS[index % ACCENTS.length];
-    const [gradStart, gradEnd] = gradientFor(accent);
+    const { accent, gradStart, gradEnd } = accentAndGradientFor(index);
     const completed = unit.state === 'completed';
     const locked = unit.state === 'locked';
     const comingSoon = unit.state === 'no_content';
@@ -1355,7 +1364,7 @@ export function LearnHomeScreen() {
                 {unitName(unit)}
               </Text>
               <Text style={styles.unitCardSubTextWhite} numberOfLines={1}>
-                {isKh ? `មេរៀនទី ${index + 1}` : `Unit ${index + 1}`} ·{' '}
+                {unitNumberLabel(index)} ·{' '}
                 {completed
                   ? t('learn.path.completed')
                   : comingSoon
@@ -2505,6 +2514,16 @@ const createStyles = (colors: any, isDark: boolean) =>
       backgroundColor: '#06A8CC',
     },
     readyChipText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+    // Matches the onboarding flow's own cyan identity (#06A8CC/#09CFF7),
+    // not the main app's ACCENTS[0] sky blue used by the shared
+    // loadErrorRetryButton style — this card only ever appears mid-onboarding.
+    obRetryButton: {
+      marginTop: 4,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: '#06A8CC',
+    },
     startButtonWrap: {
       width: '100%',
       borderRadius: 26,

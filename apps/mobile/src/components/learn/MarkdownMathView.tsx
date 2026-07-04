@@ -121,6 +121,19 @@ export function buildMarkdownMathHtml(bodyHtml: string, colors: any, isDark: boo
   .katex .text, .katex .mord.text {
     font-family: 'Kantumruy Pro', 'Battambang', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'Times New Roman', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
   }
+  /* Formula-sheet cards (used by FormulaListView) — mirrors the native
+     formulaCard style in UnitLessonScreen so both rendering paths match. */
+  .formula-card {
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid ${colors.border};
+    background: ${colors.card};
+    border-left: 4px solid #8B5CF6;
+    margin-bottom: 10px;
+  }
+  .formula-card:last-child { margin-bottom: 0; }
+  .formula-card .katex-display { margin: 0; padding: 0; background: none; border: none; }
+  .formula-note { font-size: 12px; color: ${colors.textSecondary}; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -180,21 +193,35 @@ export function sanitizeMathSymbols(md: string): string {
   return parts.join('');
 }
 
-interface MarkdownMathViewProps {
-  text: string;
-  colors: any;
-  isDark: boolean;
-  minHeight?: number;
+// Escapes plain text (e.g. a formula's Khmer note) before it's embedded in
+// the HTML body — the text isn't markdown, so it skips markdown-it/KaTeX
+// entirely and just needs standard HTML-entity escaping.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildFormulaListHtml(formulas: Array<{ expr: string; noteKh?: string | null }>): string {
+  return formulas
+    .map(({ expr, noteKh }) => {
+      const katexHtml = katex.renderToString(expr, { throwOnError: false, displayMode: true });
+      return `<div class="formula-card">
+  <div class="formula-katex">${katexHtml}</div>
+  ${noteKh ? `<div class="formula-note">${escapeHtml(noteKh)}</div>` : ''}
+</div>`;
+    })
+    .join('\n');
 }
 
 // WebViews don't auto-size to their content, so each block is measured via
 // a postMessage from the page once it (and any web fonts) finish loading.
-export function MarkdownMathView({ text, colors, isDark, minHeight = 60 }: MarkdownMathViewProps) {
+// Shared by both MarkdownMathView and FormulaListView so there's exactly
+// one height-measurement WebView per screen section instead of one per item.
+function AutoHeightWebView({ html, minHeight }: { html: string; minHeight: number }) {
   const [height, setHeight] = useState(minHeight);
-  const html = useMemo(
-    () => buildMarkdownMathHtml(markdownMathIt.render(sanitizeMathSymbols(text)), colors, isDark),
-    [text, colors, isDark],
-  );
   return (
     <WebView
       originWhitelist={['*']}
@@ -207,4 +234,40 @@ export function MarkdownMathView({ text, colors, isDark, minHeight = 60 }: Markd
       }}
     />
   );
+}
+
+interface MarkdownMathViewProps {
+  text: string;
+  colors: any;
+  isDark: boolean;
+  minHeight?: number;
+}
+
+export function MarkdownMathView({ text, colors, isDark, minHeight = 60 }: MarkdownMathViewProps) {
+  const html = useMemo(
+    () => buildMarkdownMathHtml(markdownMathIt.render(sanitizeMathSymbols(text)), colors, isDark),
+    [text, colors, isDark],
+  );
+  return <AutoHeightWebView html={html} minHeight={minHeight} />;
+}
+
+interface FormulaListViewProps {
+  formulas: Array<{ expr: string; noteKh?: string | null }>;
+  colors: any;
+  isDark: boolean;
+  minHeight?: number;
+}
+
+// Renders an entire formula sheet (all cards) as ONE WebView instead of one
+// per formula — UnitLessonScreen used to mount N separate WebView instances
+// per lesson (one per formula card), each pulling the same KaTeX CSS/fonts
+// from the CDN independently. A single instance is materially lighter on
+// memory/CPU, which matters most on the budget Android devices this app's
+// students actually use.
+export function FormulaListView({ formulas, colors, isDark, minHeight = 60 }: FormulaListViewProps) {
+  const html = useMemo(
+    () => buildMarkdownMathHtml(buildFormulaListHtml(formulas), colors, isDark),
+    [formulas, colors, isDark],
+  );
+  return <AutoHeightWebView html={html} minHeight={minHeight} />;
 }

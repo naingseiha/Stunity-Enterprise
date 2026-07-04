@@ -23,7 +23,7 @@ import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
 import { learnPathService, UnitLesson } from '@/services/learnPath.service';
 import { LearnStackScreenProps } from '@/navigation/types';
-import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
+import { MarkdownMathView, FormulaListView } from '@/components/learn/MarkdownMathView';
 
 type Props = LearnStackScreenProps<'UnitLesson'>;
 
@@ -122,17 +122,12 @@ export function UnitLessonScreen() {
                   </Text>
                 </View>
                 <View style={styles.formulaList}>
-                  {formulas.map((f, i) => (
-                    <View key={i} style={styles.formulaCard}>
-                      <MarkdownMathView
-                        text={`$$${f.expr}$$`}
-                        colors={colors}
-                        isDark={isDark}
-                        minHeight={40}
-                      />
-                      {!!f.noteKh && <Text style={styles.formulaNote}>{f.noteKh}</Text>}
-                    </View>
-                  ))}
+                  <FormulaListView
+                    formulas={formulas}
+                    colors={colors}
+                    isDark={isDark}
+                    minHeight={40 * formulas.length}
+                  />
                 </View>
               </>
             )}
@@ -193,16 +188,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginBottom: 14,
     },
     formulaList: { gap: 10 },
-    formulaCard: {
-      padding: 14,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      borderLeftWidth: 4,
-      borderLeftColor: '#8B5CF6',
-    },
-    formulaNote: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
     footer: {
       padding: 16,
       borderTopWidth: 1,
