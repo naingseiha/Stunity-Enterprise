@@ -1146,6 +1146,7 @@ export function LearnHomeScreen() {
         {/* Title and Progress */}
         <Text style={styles.activeUnitTitle}>{unitName(unit)}</Text>
         <Text style={styles.activeUnitProgress}>
+          {isKh ? `មេរៀនទី ${index + 1}` : `Unit ${index + 1}`} ·{' '}
           {unit.target > 0
             ? `${unit.correct} / ${unit.target} correct`
             : t('learn.path.inProgress', { defaultValue: 'In Progress' })}
@@ -1212,7 +1213,7 @@ export function LearnHomeScreen() {
                 {unitName(unit)}
               </Text>
               <Text style={styles.unitCardSubTextWhite} numberOfLines={1}>
-                {t('learn.path.unitLabel', { n: index + 1, defaultValue: `Unit ${index + 1}` })} ·{' '}
+                {isKh ? `មេរៀនទី ${index + 1}` : `Unit ${index + 1}`} ·{' '}
                 {completed
                   ? t('learn.path.completed')
                   : comingSoon
@@ -1582,8 +1583,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'center',
       backgroundColor: 'rgba(255,255,255,0.25)',
     },
-    nudgeTitle: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
-    nudgeBody: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.9)', marginTop: 2 },
+    nudgeTitle: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', lineHeight: 22 },
+    nudgeBody: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.9)', marginTop: 2, lineHeight: 18 },
 
     // Subject card — shadow lives on the wrapper (a gradient with
     // overflow:hidden can't cast a shadow on iOS).
@@ -1623,8 +1624,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       backgroundColor: 'rgba(255,255,255,0.22)',
     },
     subjectKickerText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.4 },
-    subjectTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 8 },
-    subjectMeta: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: 4 },
+    subjectTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 8, lineHeight: 32 },
+    subjectMeta: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
     subjectRing: { alignItems: 'center', justifyContent: 'center' },
     subjectRingText: {
       position: 'absolute',
@@ -1756,6 +1757,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       color: colors.text,
       textAlign: 'center',
       marginTop: 12,
+      lineHeight: 28,
     },
     activeUnitProgress: {
       fontSize: 14,
@@ -1764,6 +1766,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       textAlign: 'center',
       marginTop: 4,
       marginBottom: 16,
+      lineHeight: 22,
     },
     unitRow: {
       flexDirection: 'row',
@@ -1825,13 +1828,14 @@ const createStyles = (colors: any, isDark: boolean) =>
       fontSize: 15,
       fontWeight: '800',
       color: '#FFFFFF',
-      lineHeight: 20,
+      lineHeight: 25,
     },
     unitCardSubTextWhite: {
       fontSize: 11.5,
       fontWeight: '600',
       color: 'rgba(255,255,255,0.75)',
       marginTop: 1,
+      lineHeight: 18,
     },
     unitCardRight: {
       alignItems: 'center',
