@@ -48,14 +48,35 @@ type TopicSeed = {
   children?: TopicSeed[];
 };
 
-// Old draft name -> new verified name. Lets upsertTopic find the existing
-// row by its old name and rename it in place (preserving id + tagged
-// content) instead of creating an orphaned duplicate.
+// Old draft / English name -> new verified official MoEYS Khmer name.
+// Lets upsertTopic find the existing row by its old name and rename it in place
+// (preserving id + tagged content) instead of creating an orphaned duplicate.
 const RENAME_MAP: Record<string, string> = {
-  'Irrational Numbers': 'Real Numbers',
-  'Statistical Averages': 'Statistics',
-  'Circle and Line': 'Circles',
-  'Equation of a Line': 'Functions & Graphs',
+  'Irrational Numbers': 'ចំនួនអសនិទាន',
+  'Real Numbers': 'ចំនួនអសនិទាន',
+  'Proportion': 'សមាមាត្រ',
+  'Polynomials & Algebraic Expressions': 'កន្សោមពីជគណិត',
+  'Algebraic Expressions': 'កន្សោមពីជគណិត',
+  'Linear Equations': 'សមីការដឺក្រេទី១មានមួយអញ្ញាត',
+  'Linear Inequalities': 'វិសមីការដឺក្រេទី១មានមួយអញ្ញាត',
+  'Frequency Distribution': 'បំណែងចែកប្រេកង់',
+  'Statistical Averages': 'ស្ថិតិ',
+  'Statistics': 'ស្ថិតិ',
+  'Probability': 'ប្រូបាប',
+  'Distance Between Two Points': 'ចម្ងាយរវាងពីរចំណុច',
+  'Equation of a Line': 'សមីការនៃបន្ទាត់',
+  'Functions & Graphs': 'សមីការនៃបន្ទាត់',
+  'Systems of Linear Equations': 'ប្រព័ន្ធសមីការដឺក្រេទី១មានពីរអញ្ញាត',
+  'Pythagorean Theorem': 'ទ្រឹស្ដីបទពីតាករ',
+  'Circle and Line': 'រង្វង់និងបន្ទាត់',
+  'Circles': 'រង្វង់និងបន្ទាត់',
+  'Angle Properties of a Circle': 'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់',
+  "Thales' Theorem": 'ទ្រឹស្ដីបទថាឡែស',
+  'Similar Triangles': 'ត្រីកោណប៉ុនគ្នា',
+  'Congruent Triangles': 'ត្រីកោណប៉ុនគ្នា',
+  'Polygons': 'ពហុកោណ',
+  'Solid Geometry & Volume': 'សូលីត',
+  'Solids': 'សូលីត',
 };
 
 // Draft units with no real counterpart in the official Grade 9 TOC.
@@ -69,24 +90,24 @@ const DEACTIVATE: string[] = ['Trigonometry Basics'];
 // page 3 (TOC) + spot-checked chapter-opening pages. Order matches the
 // book's មេរៀន ១-១៨ sequence exactly.
 const UNITS: TopicSeed[] = [
-  { name: 'Real Numbers', nameKh: 'ចំនួនអសនិទាន' }, // ម.១, p1
-  { name: 'Proportion', nameKh: 'សមាមាត្រ' }, // ម.២, p17
-  { name: 'Polynomials & Algebraic Expressions', nameKh: 'កន្សោមពីជគណិត' }, // ម.៣, p27
-  { name: 'Linear Equations', nameKh: 'សមីការដឺក្រេទី១ មានមួយអញ្ញាត' }, // ម.៤, p41
-  { name: 'Linear Inequalities', nameKh: 'វិសមីការដឺក្រេទី១ មានមួយអញ្ញាត' }, // ម.៥, p51
-  { name: 'Frequency Distribution', nameKh: 'បំណែងចែកប្រេកង់' }, // ម.៦, p61 — NEW
-  { name: 'Statistics', nameKh: 'មធ្យមស្ថិតិ' }, // ម.៧, p75
-  { name: 'Probability', nameKh: 'ប្រូបាប' }, // ម.៨, p85 — NEW
-  { name: 'Distance Between Two Points', nameKh: 'ចម្ងាយវាងពីរចំណុច' }, // ម.៩, p97 — NEW
-  { name: 'Functions & Graphs', nameKh: 'សមីការនៃបន្ទាត់' }, // ម.១០, p105
-  { name: 'Systems of Linear Equations', nameKh: 'ប្រព័ន្ធសមីការដឺក្រេទី១ ពីរអញ្ញាត' }, // ម.១១, p121
-  { name: 'Pythagorean Theorem', nameKh: 'ទ្រឹស្តីបទពីតាករ' }, // ម.១២, p135
-  { name: 'Circles', nameKh: 'រង្វង់និងបន្ទាត់' }, // ម.១៣, p143
-  { name: 'Angle Properties of a Circle', nameKh: 'លក្ខណៈមុំនៃរង្វង់' }, // ម.១៤, p159 — NEW
-  { name: "Thales' Theorem", nameKh: 'ទ្រឹស្តីបទតាលេស' }, // ម.១៥, p181 — NEW
-  { name: 'Similar Triangles', nameKh: 'ត្រីកោណដូចគ្នា' }, // ម.១៦, p191
-  { name: 'Polygons', nameKh: 'ពហុកោណ' }, // ម.១៧, p213 — NEW
-  { name: 'Solid Geometry & Volume', nameKh: 'សូលីត' }, // ម.១៨, p223
+  { name: 'ចំនួនអសនិទាន', nameKh: 'ចំនួនអសនិទាន' }, // ម.១, p1
+  { name: 'សមាមាត្រ', nameKh: 'សមាមាត្រ' }, // ម.២, p17
+  { name: 'កន្សោមពីជគណិត', nameKh: 'កន្សោមពីជគណិត' }, // ម.៣, p27
+  { name: 'សមីការដឺក្រេទី១មានមួយអញ្ញាត', nameKh: 'សមីការដឺក្រេទី១មានមួយអញ្ញាត' }, // ម.៤, p41
+  { name: 'វិសមីការដឺក្រេទី១មានមួយអញ្ញាត', nameKh: 'វិសមីការដឺក្រេទី១មានមួយអញ្ញាត' }, // ម.៥, p51
+  { name: 'បំណែងចែកប្រេកង់', nameKh: 'បំណែងចែកប្រេកង់' }, // ម.៦, p61
+  { name: 'ស្ថិតិ', nameKh: 'ស្ថិតិ' }, // ម.៧, p75
+  { name: 'ប្រូបាប', nameKh: 'ប្រូបាប' }, // ម.៨, p85
+  { name: 'ចម្ងាយរវាងពីរចំណុច', nameKh: 'ចម្ងាយរវាងពីរចំណុច' }, // ម.៩, p97
+  { name: 'សមីការនៃបន្ទាត់', nameKh: 'សមីការនៃបន្ទាត់' }, // ម.១០, p105
+  { name: 'ប្រព័ន្ធសមីការដឺក្រេទី១មានពីរអញ្ញាត', nameKh: 'ប្រព័ន្ធសមីការដឺក្រេទី១មានពីរអញ្ញាត' }, // ម.១១, p121
+  { name: 'ទ្រឹស្ដីបទពីតាករ', nameKh: 'ទ្រឹស្ដីបទពីតាករ' }, // ម.១២, p135
+  { name: 'រង្វង់និងបន្ទាត់', nameKh: 'រង្វង់និងបន្ទាត់' }, // ម.១៣, p143
+  { name: 'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់', nameKh: 'មុំកណ្តាលនិងមុំចារឹកក្នុងរង្វង់' }, // ម.១៤, p159
+  { name: 'ទ្រឹស្ដីបទថាឡែស', nameKh: 'ទ្រឹស្ដីបទថាឡែស' }, // ម.១៥, p181
+  { name: 'ត្រីកោណប៉ុនគ្នា', nameKh: 'ត្រីកោណប៉ុនគ្នា' }, // ម.១៦, p191
+  { name: 'ពហុកោណ', nameKh: 'ពហុកោណ' }, // ម.១៧, p213
+  { name: 'សូលីត', nameKh: 'សូលីត' }, // ម.១៨, p223
 ];
 
 let created = 0;
@@ -106,12 +127,14 @@ async function upsertTopic(
   });
 
   // Not found under the new name — check if this is a renamed unit whose
-  // row still exists under its old name.
+  // row still exists under one of its old names.
   if (!existing) {
-    const oldName = Object.entries(RENAME_MAP).find(([, newName]) => newName === seed.name)?.[0];
-    if (oldName) {
+    const oldNames = Object.entries(RENAME_MAP)
+      .filter(([, newName]) => newName === seed.name)
+      .map(([oldName]) => oldName);
+    if (oldNames.length > 0) {
       existing = await prisma.topic.findFirst({
-        where: { subjectId, parentId, name: oldName },
+        where: { subjectId, parentId, name: { in: oldNames } },
         select: { id: true, nameKh: true, order: true, name: true },
       });
     }
