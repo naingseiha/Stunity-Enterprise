@@ -553,10 +553,11 @@ model Topic {
   isActive  Boolean  @default(true)
 
   // ── Unit lesson content (top-level topics only) ──
-  // Shown by the Learn path's UnitLessonScreen before practice. Plain text
-  // with \n\n paragraph breaks; formulaSheet is a Json array of
-  // { expr, note?, noteKh? } rendered as formula cards (unicode math,
-  // no LaTeX pipeline yet).
+  // Shown by the Learn path's UnitLessonScreen before practice. Markdown
+  // (## headings, **bold**, > blockquote for key highlights, $...$/$$...$$
+  // for LaTeX math), rendered via the same MarkdownMathView/KaTeX pipeline
+  // as the AI tutor. formulaSheet is a Json array of { expr, note?, noteKh? }
+  // — expr is a LaTeX expression, rendered as a formula card.
   miniLesson   String? @db.Text
   miniLessonKh String? @db.Text
   formulaSheet Json?

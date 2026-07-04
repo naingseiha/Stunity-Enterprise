@@ -23,6 +23,7 @@ import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
 import { learnPathService, UnitLesson } from '@/services/learnPath.service';
 import { LearnStackScreenProps } from '@/navigation/types';
+import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
 
 type Props = LearnStackScreenProps<'UnitLesson'>;
 
@@ -57,7 +58,6 @@ export function UnitLessonScreen() {
   const lessonText = lesson
     ? (isKh ? lesson.miniLessonKh || lesson.miniLesson : lesson.miniLesson || lesson.miniLessonKh) ?? ''
     : '';
-  const paragraphs = lessonText.split('\n\n').filter(Boolean);
   const formulas = Array.isArray(lesson?.formulaSheet) ? lesson!.formulaSheet : [];
 
   return (
@@ -86,14 +86,12 @@ export function UnitLessonScreen() {
               <Text style={styles.lessonBadgeText}>{t('learn.path.miniLesson')}</Text>
             </View>
 
-            {paragraphs.length === 0 && (
+            {lessonText.length === 0 && (
               <Text style={styles.paragraph}>{t('learn.path.lessonEmpty')}</Text>
             )}
-            {paragraphs.map((p, i) => (
-              <Text key={i} style={styles.paragraph}>
-                {p}
-              </Text>
-            ))}
+            {lessonText.length > 0 && (
+              <MarkdownMathView text={lessonText} colors={colors} isDark={isDark} />
+            )}
 
             {formulas.length > 0 && (
               <>
@@ -106,7 +104,12 @@ export function UnitLessonScreen() {
                 <View style={styles.formulaList}>
                   {formulas.map((f, i) => (
                     <View key={i} style={styles.formulaCard}>
-                      <Text style={styles.formulaExpr}>{f.expr}</Text>
+                      <MarkdownMathView
+                        text={`$$${f.expr}$$`}
+                        colors={colors}
+                        isDark={isDark}
+                        minHeight={40}
+                      />
                       {!!f.noteKh && <Text style={styles.formulaNote}>{f.noteKh}</Text>}
                     </View>
                   ))}
@@ -169,7 +172,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderLeftWidth: 4,
       borderLeftColor: '#8B5CF6',
     },
-    formulaExpr: { fontSize: 16, fontWeight: '700', color: colors.text, lineHeight: 24 },
     formulaNote: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
     footer: {
       padding: 16,
