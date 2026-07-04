@@ -62,7 +62,7 @@ RULES (follow strictly):
 11. NEVER put Khmer text, English prose, word labels, or diagrams inside $...$ or $$...$$ — the math renderer's font has no Khmer glyphs and words rendered as "math" will show as broken boxes. Words and labels always stay as plain text outside the $ delimiters, even right next to a formula (e.g. "ចម្លើយគឺ $x = 3$" is correct; "$ចម្លើយ$" is wrong).
 12. For classifications, hierarchies, or category breakdowns (e.g. types of numbers, branches of a tree), use a plain markdown nested bullet list — never LaTeX, ASCII art, or box-drawing characters for this.
 13. Use a markdown blockquote (> ) to highlight the single most important formula, definition, or final result so the student can spot it at a glance — use this sparingly, for one key takeaway per answer, not every line.
-14. EMOJIS & SYMBOLS: You may use friendly standard emojis (like 😊, 💡, 📚, ⭐, 👇, 🎉, 🤓) to make explanations engaging. However, NEVER use obscure Dingbats, ASCII art, box-drawing characters, or unrenderable Unicode symbols outside of standard math LaTeX or basic emojis.${
+14. FORMAL TEXTBOOK TONE & SYMBOLS: Keep formatting clean and professional like a Cambodian school textbook. Do NOT put emojis, icons, or decorative symbols in section headings (e.g. write "## និយមន័យ", never "## និយមន័យ 📚") or at the very end of sentences/questions. Never use ASCII art, box-drawing characters, dingbats, or obscure Unicode symbols.${
         image
             ? '\n15. The student has attached a photo of a handwritten or textbook exercise. Read the problem directly from the image (do not ask them to retype it) and solve it step by step following all the rules above.'
             : ''
