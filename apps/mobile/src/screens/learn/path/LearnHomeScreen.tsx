@@ -114,9 +114,6 @@ const getCourseCategoryIcon = (category?: string): keyof typeof Ionicons.glyphMa
   return 'book-outline';
 };
 
-/** Icon circle size inside each unit card. */
-const CARD_ICON_SIZE = 52;
-
 export function LearnHomeScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
@@ -952,19 +949,19 @@ export function LearnHomeScreen() {
               <View style={[styles.obPillIcon, { backgroundColor: 'rgba(9,207,247,0.2)' }]}>
                 <Ionicons name="compass" size={13} color="#09CFF7" />
               </View>
-              <Text style={styles.obPillText}>Smart Path</Text>
+              <Text style={styles.obPillText}>{t('learn.path.onboardPillSmartPath')}</Text>
             </Animated.View>
             <Animated.View style={[styles.obPill, styles.obPillTopRight, { transform: [{ translateY: pillY2 }] }]}>
               <View style={[styles.obPillIcon, { backgroundColor: 'rgba(251,191,36,0.2)' }]}>
                 <Ionicons name="sparkles" size={13} color="#FBBF24" />
               </View>
-              <Text style={styles.obPillText}>AI Mastery</Text>
+              <Text style={styles.obPillText}>{t('learn.path.onboardPillAiMastery')}</Text>
             </Animated.View>
             <Animated.View style={[styles.obPill, styles.obPillBottom, { transform: [{ translateY: pillY2 }] }]}>
               <View style={[styles.obPillIcon, { backgroundColor: 'rgba(52,211,153,0.2)' }]}>
                 <Ionicons name="trophy" size={13} color="#34D399" />
               </View>
-              <Text style={styles.obPillText}>Earn XP</Text>
+              <Text style={styles.obPillText}>{t('learn.path.onboardPillEarnXp')}</Text>
             </Animated.View>
           </View>
 
@@ -1004,7 +1001,7 @@ export function LearnHomeScreen() {
         <View style={styles.courseDiscoveryHeader}>
           <View>
             <Text style={styles.courseDiscoveryGreeting}>
-              Hello {user?.firstName || 'Learner'}
+              {t('learn.path.helloGreeting', { name: user?.firstName || t('learn.path.learnerFallback') })}
             </Text>
             <Text style={styles.courseDiscoveryTitle}>
               {t('learn.path.findYourCourse', { defaultValue: 'Find your course' })}
@@ -1041,7 +1038,7 @@ export function LearnHomeScreen() {
               <View style={styles.promoTopRow}>
                 <View style={styles.promoOfferBadge}>
                   <Ionicons name="flash" size={13} color="#FDE047" style={{ marginRight: 5 }} />
-                  <Text style={styles.promoOfferBadgeText}>LIMITED TIME OFFER</Text>
+                  <Text style={styles.promoOfferBadgeText}>{t('learn.path.limitedTimeOffer')}</Text>
                 </View>
               </View>
 
@@ -1243,7 +1240,7 @@ export function LearnHomeScreen() {
         {/* START speech bubble */}
         <View style={styles.activeStartBubble}>
           <View style={[styles.activeStartBubbleInner, { borderColor: accent }]}>
-            <Text style={[styles.activeStartBubbleText, { color: accent }]}>START</Text>
+            <Text style={[styles.activeStartBubbleText, { color: accent }]}>{t('learn.path.start')}</Text>
           </View>
           <View style={[styles.activeStartBubbleArrow, { borderTopColor: accent }]} />
         </View>
@@ -1584,12 +1581,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       shadowRadius: 12,
       elevation: 3,
     },
-    softColorShadow: {
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: isDark ? 0.45 : 0.28,
-      shadowRadius: 12,
-      elevation: 5,
-    },
     subjectCardShadow: {
       borderWidth: 1,
       borderColor: isDark ? colors.border : '#E2E8F0',
@@ -1597,18 +1588,6 @@ const createStyles = (colors: any, isDark: boolean) =>
     nudgeShadow: {
       borderWidth: 1,
       borderColor: isDark ? '#C2410C' : '#FFEDD5',
-    },
-    railAvatarActiveShadow: {
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.35,
-      shadowRadius: 10,
-      elevation: 5,
-    },
-    nodeElevated: {
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.4,
-      shadowRadius: 10,
-      elevation: 6,
     },
 
     // Hero
@@ -2186,7 +2165,6 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
 
     // ── Onboarding (Premium Enterprise Redesign) ──────────────
-    obContainer: { padding: 20 },
 
     // Phase 1: Full-screen welcome styles
     obWelcomeScreen: {
@@ -2423,20 +2401,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 12,
       marginBottom: 20,
     },
-    subjectGridCard: {
-      width: '48.2%',
-      padding: 16,
-      borderRadius: 22,
-      backgroundColor: colors.card,
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      gap: 8,
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.25 : 0.05,
-      shadowRadius: 10,
-      elevation: 2,
-    },
     exploreGridCard: {
       width: '47%',
       padding: 20,
@@ -2541,15 +2505,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       backgroundColor: '#06A8CC',
     },
     readyChipText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
-    subjectCellIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    subjectCellName: { fontSize: 14, fontWeight: '800', color: colors.text },
-    subjectCellMeta: { fontSize: 11.5, fontWeight: '600', color: colors.textSecondary },
     startButtonWrap: {
       width: '100%',
       borderRadius: 26,
