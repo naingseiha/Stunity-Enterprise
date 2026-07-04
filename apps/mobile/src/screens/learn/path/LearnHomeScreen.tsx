@@ -101,6 +101,19 @@ const subjectIcon = (code: string): keyof typeof Ionicons.glyphMap => {
   return 'book';
 };
 
+/** Course category icon map helper for top courses grid */
+const getCourseCategoryIcon = (category?: string): keyof typeof Ionicons.glyphMap => {
+  const cat = (category || '').toLowerCase().trim();
+  if (cat.includes('math') || cat.includes('គណិត')) return 'calculator-outline';
+  if (cat.includes('science') || cat.includes('chem') || cat.includes('flask') || cat.includes('គីមី') || cat.includes('រូប')) return 'flask-outline';
+  if (cat.includes('prog') || cat.includes('code') || cat.includes('dev') || cat.includes('web') || cat.includes('tech')) return 'code-slash-outline';
+  if (cat.includes('design') || cat.includes('art') || cat.includes('សិល្បៈ')) return 'color-palette-outline';
+  if (cat.includes('lang') || cat.includes('english') || cat.includes('khmer') || cat.includes('ភាសា')) return 'language-outline';
+  if (cat.includes('data') || cat.includes('analyt')) return 'analytics-outline';
+  if (cat.includes('business') || cat.includes('finance') || cat.includes('សេដ្ឋ')) return 'briefcase-outline';
+  return 'book-outline';
+};
+
 /** Icon circle size inside each unit card. */
 const CARD_ICON_SIZE = 52;
 
@@ -140,6 +153,29 @@ export function LearnHomeScreen() {
       ])
     ).start();
   }, []);
+
+  // Streak flame pulse animation — loops scale 1→1.25→1 + opacity 1→0.7→1
+  const streakPulseAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(streakPulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(streakPulseAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [streakPulseAnim]);
+
+  // XP bar fill animation — runs once when stats load
+  const xpBarAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!stats) return;
+    const targetPct = Math.min(1, stats.xpProgress ?? 0);
+    Animated.timing(xpBarAnim, {
+      toValue: targetPct,
+      duration: 900,
+      useNativeDriver: false,
+    }).start();
+  }, [stats, xpBarAnim]);
 
   const subjectName = useCallback(
     (s: { name: string; nameEn: string | null; nameKh: string | null }) => {
@@ -299,34 +335,69 @@ export function LearnHomeScreen() {
 
   // ── Hero: greeting + avatar ───────────────────────────────
 
-  const renderHero = () => (
-    <View style={styles.hero}>
-      <View style={styles.avatarContainer}>
-        {user?.profilePictureUrl ? (
-          <Image source={{ uri: user.profilePictureUrl }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback]}>
-            <Text style={styles.avatarInitial}>{(user?.firstName || 'S')[0]}</Text>
-          </View>
-        )}
-        {!!stats?.level && (
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>{stats.level}</Text>
-          </View>
-        )}
+  const renderHero = () => {
+    const streakScale = streakPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] });
+    const streakOpacity = streakPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.72] });
+    const hasStreak = (stats?.currentStreak ?? 0) > 0;
+    const xp = stats?.xp ?? 0;
+
+    return (
+      <View style={styles.hero}>
+        {/* Left: Avatar + level badge */}
+        <View style={styles.avatarContainer}>
+          {user?.profilePictureUrl ? (
+            <Image source={{ uri: user.profilePictureUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarInitial}>{(user?.firstName || 'S')[0]}</Text>
+            </View>
+          )}
+          {!!stats?.level && (
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{stats.level}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Right: Streak pill + XP badge + tutor */}
+        <View style={styles.heroActions}>
+          {/* Animated streak fire pill */}
+          <Animated.View
+            style={[
+              styles.heroStreakPill,
+              hasStreak && { transform: [{ scale: streakScale }], opacity: streakOpacity },
+            ]}
+          >
+            <Ionicons name="flame" size={15} color={hasStreak ? '#F97316' : colors.textTertiary} />
+            <Text style={[styles.heroStreakText, hasStreak && styles.heroStreakTextActive]}>
+              {stats?.currentStreak ?? 0}
+            </Text>
+          </Animated.View>
+
+          {/* XP star badge */}
+          {xp > 0 && (
+            <View style={styles.heroXpBadge}>
+              <Ionicons name="star" size={11} color="#F59E0B" />
+              <Text style={styles.heroXpText}>{xp >= 1000 ? `${(xp / 1000).toFixed(1)}k` : xp} XP</Text>
+            </View>
+          )}
+
+          {/* Tutor chat FAB */}
+          <TouchableOpacity
+            style={styles.tutorFabHero}
+            activeOpacity={0.85}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('TutorChat', { grade: path?.subject?.grade });
+            }}
+          >
+            <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
+          </TouchableOpacity>
+        </View>
       </View>
-      <TouchableOpacity
-        style={styles.tutorFabHero}
-        activeOpacity={0.85}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          navigation.navigate('TutorChat', { grade: path?.subject?.grade });
-        }}
-      >
-        <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
+
 
   // ── Week-streak calendar card ─────────────────────────────
 
@@ -543,7 +614,51 @@ export function LearnHomeScreen() {
     );
   };
 
+  // ── XP Level Progress Bar ─────────────────────────────────
+  const renderXpBar = () => {
+    if (!stats) return null;
+    const level = stats.level ?? 1;
+    const xpProgress = stats.xpProgress ?? 0;   // 0..1 fraction within current level
+    const xpToNext  = stats.xpToNextLevel ?? 100;
+    const xpEarned  = Math.round(xpProgress * xpToNext);
+
+    const barWidth = xpBarAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0%', '100%'],
+    });
+
+    return (
+      <View style={styles.xpBarWrap}>
+        {/* Level label row */}
+        <View style={styles.xpBarLabelRow}>
+          <View style={styles.xpLevelPill}>
+            <Ionicons name="star" size={10} color="#F59E0B" />
+            <Text style={styles.xpLevelPillText}>Lv. {level}</Text>
+          </View>
+          <Text style={styles.xpBarCaption}>{xpEarned} / {xpToNext} XP</Text>
+          <View style={[styles.xpLevelPill, { backgroundColor: isDark ? 'rgba(245,158,11,0.14)' : '#FEF3C7' }]}>
+            <Text style={styles.xpLevelPillText}>Lv. {level + 1}</Text>
+          </View>
+        </View>
+        {/* Animated bar */}
+        <View style={styles.xpBarTrack}>
+          <Animated.View style={[styles.xpBarFill, { width: barWidth }]}>
+            <LinearGradient
+              colors={['#FBBF24', '#F97316']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.xpBarGradient}
+            />
+            {/* Shimmer dot on tip */}
+            <View style={styles.xpBarTipDot} />
+          </Animated.View>
+        </View>
+      </View>
+    );
+  };
+
   // ── Vector Graphics representing subjects ─────────────────
+
   const MathPieChartGraphic = () => (
     <View style={{ width: 70, height: 70, alignItems: 'center', justifyContent: 'center' }}>
       <View
@@ -1338,7 +1453,7 @@ export function LearnHomeScreen() {
                 onPress={() => navigation.navigate('CourseDetail', { courseId: course.id })}
               >
                 <View style={[styles.courseCardIcon, { backgroundColor: `${accent}22` }]}>
-                  <Ionicons name="book" size={22} color={accent} />
+                  <Ionicons name={getCourseCategoryIcon(course.category)} size={22} color={accent} />
                 </View>
                 <Text style={styles.courseCardTitle} numberOfLines={2}>
                   {course.title}
@@ -1385,6 +1500,7 @@ export function LearnHomeScreen() {
           {!loading && !showOnboarding && (
             <>
               {renderSubjectCard()}
+              {renderXpBar()}
               {renderSubjectRail()}
               {renderWeekCard()}
               {renderNudge()}
@@ -1454,6 +1570,46 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingTop: 16,
       paddingBottom: 8,
     },
+    heroActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    heroStreakPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(249,115,22,0.15)' : '#FFF7ED',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(249,115,22,0.3)' : '#FFEDD5',
+    },
+    heroStreakText: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: colors.textTertiary,
+    },
+    heroStreakTextActive: {
+      color: '#F97316',
+    },
+    heroXpBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FFFBEB',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A',
+    },
+    heroXpText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#D97706',
+    },
     tutorFabHero: {
       width: 38,
       height: 38,
@@ -1486,8 +1642,67 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     levelBadgeText: { fontSize: 8, fontWeight: '900', color: '#FFFFFF', lineHeight: 10 },
 
+    // XP Level Progress Bar
+    xpBarWrap: {
+      marginHorizontal: 20,
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    xpBarLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    xpLevelPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      backgroundColor: isDark ? 'rgba(245,158,11,0.14)' : '#FEF3C7',
+    },
+    xpLevelPillText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#D97706',
+    },
+    xpBarCaption: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    xpBarTrack: {
+      height: 10,
+      borderRadius: 6,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
+      overflow: 'hidden',
+    },
+    xpBarFill: {
+      height: '100%',
+      borderRadius: 6,
+      overflow: 'hidden',
+      position: 'relative',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+    xpBarGradient: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 6,
+    },
+    xpBarTipDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: '#FFFFFF',
+      marginRight: 2,
+      opacity: 0.9,
+    },
+
     // Week streak card
     weekCard: {
+
       marginHorizontal: 20,
       marginTop: 16,
       padding: 16,

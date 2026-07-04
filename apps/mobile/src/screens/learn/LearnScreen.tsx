@@ -89,10 +89,10 @@ const UNIFIED_PALETTE: TabColorPalette = {
 };
 
 const TAB_COLOR_PALETTES: Record<TabType, TabColorPalette> = {
-  explore: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
-  enrolled: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
-  created: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
-  paths: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
+  explore:  { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
+  enrolled: { ...UNIFIED_PALETTE, activeBackground: '#2563EB', activeBorder: '#2563EB' },
+  created:  { ...UNIFIED_PALETTE, activeBackground: '#7C3AED', activeBorder: '#7C3AED' },
+  paths:    { ...UNIFIED_PALETTE, activeBackground: '#F59E0B', activeBorder: '#F59E0B' },
 };
 
 const FEATURED_CARD_GAP = 16;
@@ -591,12 +591,12 @@ export default function LearnScreen() {
 
   // ── Header component (stats + category grid) ──────────────────────────────
   const renderHeader = useCallback(() => {
-    // Stat cards
+    // Stat cards with contextual badges
     const statCards = stats ? [
-      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: t('learn.stats.enrolled'),   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: isDark ? '#2563EB22' : '#EFF6FF', cardBackground: colors.card, borderColor: colors.border },
-      { key: 'completed', value: `${stats.completedCourses}`, label: t('learn.stats.completed'),  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: isDark ? '#05966922' : '#ECFDF5', cardBackground: colors.card, borderColor: colors.border },
-      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: t('learn.stats.hours'),      icon: 'time' as const,             iconColor: '#D97706', iconBackground: isDark ? '#D9770622' : '#FFFBEB', cardBackground: colors.card, borderColor: colors.border },
-      { key: 'streak',    value: `${stats.currentStreak}`,    label: t('learn.stats.streak'),     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: isDark ? '#EA580C22' : '#FFF7ED', cardBackground: colors.card, borderColor: colors.border },
+      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: t('learn.stats.enrolled'),   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: isDark ? '#2563EB22' : '#EFF6FF', cardBackground: colors.card, borderColor: colors.border, badge: stats.enrolledCourses > 0 ? '📚' : null,       badgeText: stats.enrolledCourses > 0 ? 'Enrolled' : null },
+      { key: 'completed', value: `${stats.completedCourses}`, label: t('learn.stats.completed'),  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: isDark ? '#05966922' : '#ECFDF5', cardBackground: colors.card, borderColor: colors.border, badge: stats.completedCourses > 0 ? '✓' : null,         badgeText: stats.completedCourses > 0 ? 'Done' : null },
+      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: t('learn.stats.hours'),      icon: 'time' as const,             iconColor: '#D97706', iconBackground: isDark ? '#D9770622' : '#FFFBEB', cardBackground: colors.card, borderColor: colors.border, badge: stats.hoursLearned > 0 ? '↑' : null,             badgeText: stats.hoursLearned > 0 ? 'Learning' : null },
+      { key: 'streak',    value: `${stats.currentStreak}`,    label: t('learn.stats.streak'),     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: isDark ? '#EA580C22' : '#FFF7ED', cardBackground: colors.card, borderColor: colors.border, badge: stats.currentStreak > 0 ? '🔥' : null,           badgeText: stats.currentStreak > 0 ? 'Active' : null },
     ] : [];
 
     return (
@@ -726,13 +726,13 @@ export default function LearnScreen() {
                         <View style={[styles.featuredCard, { borderColor: theme.accentSoftColor }]}>
                           <View style={styles.featuredAbstractBg}>
                             <LinearGradient
-                              colors={isDark ? ['rgba(45, 212, 191, 0.12)', 'rgba(29, 155, 240, 0.10)'] : ['rgba(34, 211, 238, 0.08)', 'rgba(8, 145, 178, 0.15)']}
+                              colors={isDark ? [`${theme.iconColor}22`, `${theme.buttonColor}15`] : [`${theme.iconColor}14`, `${theme.buttonColor}0D`]}
                               style={styles.featuredAbstractShape1}
                               start={{ x: 0, y: 0 }}
                               end={{ x: 1, y: 1 }}
                             />
                             <LinearGradient
-                              colors={isDark ? ['rgba(45, 212, 191, 0.18)', 'rgba(29, 155, 240, 0.14)'] : ['rgba(34, 211, 238, 0.2)', 'rgba(8, 145, 178, 0.25)']}
+                              colors={isDark ? [`${theme.iconColor}2C`, `${theme.buttonColor}1F`] : [`${theme.iconColor}1F`, `${theme.buttonColor}18`]}
                               style={styles.featuredAbstractShape2}
                               start={{ x: 0, y: 0 }}
                               end={{ x: 1, y: 1 }}
@@ -856,7 +856,6 @@ export default function LearnScreen() {
               </View>
             </View>}
 
-            {/* Stat cards */}
             {stats && !isLearnRailTablet && (
               <View style={styles.statsSection}>
                 <View style={styles.statsSectionHeader}>
@@ -872,6 +871,14 @@ export default function LearnScreen() {
                         <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
                       </View>
                       <Text style={styles.statLabel}>{item.label}</Text>
+                      {/* Contextual badge */}
+                      {item.badgeText && (
+                        <View style={[styles.statContextBadge, { borderColor: `${item.iconColor}33`, backgroundColor: isDark ? `${item.iconColor}18` : `${item.iconColor}0F` }]}>
+                          <Text style={[styles.statContextBadgeText, { color: item.iconColor }]}>
+                            {item.badge} {item.badgeText}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -1072,18 +1079,38 @@ export default function LearnScreen() {
       }
 
       if (item.type === 'EMPTY') {
+        // Per-tab accent colors matching TAB_COLOR_PALETTES
+        const emptyAccent =
+          activeTab === 'enrolled' ? '#2563EB' :
+          activeTab === 'created'  ? '#7C3AED' :
+          activeTab === 'paths'    ? '#F59E0B' : '#14B8A6';
         return (
           <View style={styles.emptyState}>
-            <Ionicons name={item.icon} size={40} color="#9CA3AF" />
+            {/* Colored icon circle */}
+            <View style={[
+              styles.emptyIconCircle,
+              { backgroundColor: isDark ? `${emptyAccent}22` : `${emptyAccent}18`, borderColor: `${emptyAccent}33` }
+            ]}>
+              <Ionicons name={item.icon} size={36} color={emptyAccent} />
+            </View>
             <Text style={styles.emptyTitle}>{item.title}</Text>
             <Text style={styles.emptySubtitle}>{item.subtitle}</Text>
+            {/* Action hint pill */}
+            <View style={[styles.emptyActionPill, { borderColor: `${emptyAccent}44`, backgroundColor: isDark ? `${emptyAccent}15` : `${emptyAccent}0D` }]}>
+              <Ionicons name="arrow-up-circle-outline" size={13} color={emptyAccent} />
+              <Text style={[styles.emptyActionPillText, { color: emptyAccent }]}>
+                {activeTab === 'enrolled' ? 'Explore courses above' :
+                 activeTab === 'created'  ? 'Tap + to create a course' :
+                 activeTab === 'paths'    ? 'Learning paths coming soon' : 'Try a different category'}
+              </Text>
+            </View>
           </View>
         );
       }
 
       return null;
     },
-    [enrolledCourseIds, busyCourseId, busyPathId, t]
+    [enrolledCourseIds, busyCourseId, busyPathId, t, activeTab, isDark]
   );
 
   // ── getItemType — prevents tall 'HEADER' cell from recycling into short 'COURSE' cells
@@ -2126,20 +2153,61 @@ const createStyles = (colors: any, isDark: boolean, featuredCardWidth: number, i
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 30,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 36,
+    gap: 6,
+  },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   emptyTitle: {
-    marginTop: 10,
-    fontSize: 16,
-    fontWeight: '700',
+    marginTop: 6,
+    fontSize: 17,
+    fontWeight: '800',
     color: colors.text,
+    textAlign: 'center',
   },
   emptySubtitle: {
     marginTop: 4,
     fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyActionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  emptyActionPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  // Stat card contextual badge
+  statContextBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  statContextBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });
+
