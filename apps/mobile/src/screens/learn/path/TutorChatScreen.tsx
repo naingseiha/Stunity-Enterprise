@@ -65,7 +65,7 @@ export function TutorChatScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission Denied', 'Please grant library permissions to upload images.');
+      Alert.alert(t('learn.tutor.permissionDeniedTitle'), t('learn.tutor.libraryPermissionMsg'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -84,7 +84,7 @@ export function TutorChatScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission Denied', 'Please grant camera permissions to capture photos.');
+      Alert.alert(t('learn.tutor.permissionDeniedTitle'), t('learn.tutor.cameraPermissionMsg'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -102,12 +102,12 @@ export function TutorChatScreen() {
 
   const showImageOptions = () => {
     Alert.alert(
-      'Upload Exercise',
-      'Choose an option to share your exercise image with the tutor:',
+      t('learn.tutor.uploadExerciseTitle'),
+      t('learn.tutor.uploadExerciseMsg'),
       [
-        { text: 'Take Photo', onPress: handleTakePhoto },
-        { text: 'Choose from Gallery', onPress: handlePickImage },
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('learn.tutor.takePhoto'), onPress: handleTakePhoto },
+        { text: t('learn.tutor.chooseFromGallery'), onPress: handlePickImage },
+        { text: t('common.cancel'), style: 'cancel' },
       ]
     );
   };

@@ -128,6 +128,8 @@ export function LearnHomeScreen() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [pathError, setPathError] = useState(false);
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
   const [path, setPath] = useState<LearnPath | null>(null);
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
@@ -138,6 +140,7 @@ export function LearnHomeScreen() {
   // Onboarding state
   const [obGrade, setObGrade] = useState<string | null>(null);
   const [obSubjects, setObSubjects] = useState<TopicSubject[] | null>(null);
+  const [obSubjectsError, setObSubjectsError] = useState(false);
   const [obSelected, setObSelected] = useState<Set<string>>(new Set());
   const [obSaving, setObSaving] = useState(false);
   const [readyGrades, setReadyGrades] = useState<Set<string>>(new Set());
@@ -191,13 +194,25 @@ export function LearnHomeScreen() {
   );
   const unitName = useCallback((u: LearnUnit) => (isKh ? u.nameKh || u.name : u.name), [isKh]);
 
+  // Catches its own errors (rather than throwing) so a path-specific failure
+  // — e.g. switching subjects — never gets confused with a full profile-load
+  // failure by callers; each has its own error UI (renderPath's inline retry
+  // vs. the full-screen retry in the main render).
   const loadPath = useCallback(async (subjectId: string) => {
-    const data = await learnPathService.getPath(subjectId);
-    setPath(data);
+    try {
+      setPathError(false);
+      const data = await learnPathService.getPath(subjectId);
+      setPath(data);
+    } catch (err) {
+      console.warn('[LearnHome] loadPath failed', err);
+      setPath(null);
+      setPathError(true);
+    }
   }, []);
 
   const load = useCallback(async () => {
     try {
+      setLoadError(false);
       const [p] = await Promise.all([
         learnPathService.getProfile(),
         // Secondary data — each guarded, never blocks the path render.
@@ -222,6 +237,7 @@ export function LearnHomeScreen() {
       }
     } catch (err) {
       console.warn('[LearnHome] load failed', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -236,7 +252,7 @@ export function LearnHomeScreen() {
   );
 
   // Onboarding: which grades have ready taxonomies (hint dots + quick-jump).
-  const showOnboarding = !loading && (editingPath || !profile || profile.subjects.length === 0);
+  const showOnboarding = !loading && !loadError && (editingPath || !profile || profile.subjects.length === 0);
   useEffect(() => {
     if (!showOnboarding || readyGrades.size > 0) return;
     topicsService
@@ -246,17 +262,25 @@ export function LearnHomeScreen() {
   }, [showOnboarding, readyGrades.size]);
 
   // Onboarding: load pickable subjects when a grade is chosen.
-  useEffect(() => {
+  const loadObSubjects = useCallback(() => {
     if (!obGrade) return;
     setObSubjects(null);
+    setObSubjectsError(false);
     topicsService
       .getSubjects(obGrade)
       .then((subjects) => {
         setObSubjects(subjects);
         setObSelected((prev) => new Set([...prev].filter((id) => subjects.some((s) => s.id === id))));
       })
-      .catch(() => setObSubjects([]));
+      .catch(() => {
+        setObSubjects([]);
+        setObSubjectsError(true);
+      });
   }, [obGrade]);
+
+  useEffect(() => {
+    loadObSubjects();
+  }, [loadObSubjects]);
 
   const startEditing = () => {
     Haptics.selectionAsync();
@@ -1079,7 +1103,16 @@ export function LearnHomeScreen() {
             {!obSubjects && (
               <ActivityIndicator style={{ marginVertical: 16 }} color={colors.textSecondary} />
             )}
-            {obSubjects && obSubjects.length === 0 && (
+            {obSubjectsError && (
+              <View style={styles.obEmptyCard}>
+                <Ionicons name="cloud-offline-outline" size={26} color={colors.textSecondary} />
+                <Text style={styles.obEmptyText}>{t('learn.path.loadError')}</Text>
+                <TouchableOpacity style={styles.loadErrorRetryButton} onPress={loadObSubjects}>
+                  <Text style={styles.loadErrorRetryText}>{t('learn.path.retry')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {obSubjects && obSubjects.length === 0 && !obSubjectsError && (
               <View style={styles.obEmptyCard}>
                 <Ionicons name="hourglass-outline" size={26} color={colors.textSecondary} />
                 <Text style={styles.obEmptyText}>{t('learn.path.noSubjectsForGrade')}</Text>
@@ -1406,7 +1439,20 @@ export function LearnHomeScreen() {
     </View>
   );
 
+  const renderLoadError = (onRetry: () => void, compact?: boolean) => (
+    <View style={compact ? styles.pathErrorBox : styles.fullLoadErrorBox}>
+      <Ionicons name="cloud-offline-outline" size={compact ? 36 : 48} color={colors.textTertiary} />
+      <Text style={styles.loadErrorText}>{t('learn.path.loadError')}</Text>
+      <TouchableOpacity style={styles.loadErrorRetryButton} onPress={onRetry}>
+        <Text style={styles.loadErrorRetryText}>{t('learn.path.retry')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderPath = () => {
+    if (pathError) {
+      return renderLoadError(() => activeSubjectId && loadPath(activeSubjectId), true);
+    }
     if (!path) return <ActivityIndicator style={{ marginTop: 40 }} color={colors.textSecondary} />;
     const activeIndex = path.units.findIndex((u) => u.state === 'unlocked');
     const allDone = path.units.every((u) => u.state === 'completed' || u.state === 'no_content');
@@ -1497,7 +1543,11 @@ export function LearnHomeScreen() {
           {renderHero()}
           {loading && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}
           {showOnboarding && obStarted && renderOnboarding()}
-          {!loading && !showOnboarding && (
+          {!loading && loadError && renderLoadError(() => {
+            setLoading(true);
+            load();
+          })}
+          {!loading && !loadError && !showOnboarding && (
             <>
               {renderSubjectCard()}
               {renderXpBar()}
@@ -1868,6 +1918,36 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginTop: 10,
     },
     editPathLinkText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+
+    // Load-error + retry (full-screen and inline-within-path variants)
+    fullLoadErrorBox: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+      paddingHorizontal: 32,
+      gap: 12,
+    },
+    pathErrorBox: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 32,
+      paddingHorizontal: 24,
+      gap: 10,
+    },
+    loadErrorText: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    loadErrorRetryButton: {
+      marginTop: 4,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: '#0EA5E9',
+    },
+    loadErrorRetryText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 
     // Subject rail
     railWrap: { marginTop: 6 },

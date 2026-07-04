@@ -6,7 +6,7 @@
  * from practice returns to the path, not the lesson.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -37,13 +37,23 @@ export function UnitLessonScreen() {
   const isKh = i18n.language?.startsWith('km');
 
   const [lesson, setLesson] = useState<UnitLesson | null | undefined>(undefined);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
+  const loadLesson = useCallback(() => {
+    setLoadError(false);
+    setLesson(undefined);
     learnPathService
       .getLesson(topicId)
       .then(setLesson)
-      .catch(() => setLesson(null));
+      .catch(() => {
+        setLesson(null);
+        setLoadError(true);
+      });
   }, [topicId]);
+
+  useEffect(() => {
+    loadLesson();
+  }, [loadLesson]);
 
   const startPractice = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -74,11 +84,21 @@ export function UnitLessonScreen() {
         </TouchableOpacity>
       </View>
 
-      {lesson === undefined && (
+      {lesson === undefined && !loadError && (
         <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />
       )}
 
-      {lesson !== undefined && (
+      {loadError && (
+        <View style={styles.centerBox}>
+          <Ionicons name="cloud-offline-outline" size={40} color={colors.textTertiary} />
+          <Text style={styles.errorText}>{t('learn.path.loadError')}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadLesson}>
+            <Text style={styles.retryButtonText}>{t('learn.path.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {lesson !== undefined && !loadError && (
         <>
           <ScrollView contentContainerStyle={styles.body}>
             <View style={styles.lessonBadge}>
@@ -156,6 +176,16 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginBottom: 14,
     },
     lessonBadgeText: { fontSize: 13, fontWeight: '800', color: '#0EA5E9' },
+    centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
+    errorText: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+    retryButton: {
+      marginTop: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: '#0EA5E9',
+    },
+    retryButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
     paragraph: {
       fontSize: 15,
       lineHeight: 24,

@@ -92,6 +92,7 @@ export function PracticeSessionScreen() {
   const insets = useSafeAreaInsets();
 
   const [questions, setQuestions] = useState<PracticeQuestion[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [index, setIndex] = useState(0);
   const [chosen, setChosen] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -101,12 +102,21 @@ export function PracticeSessionScreen() {
 
   const translateY = useSharedValue(500);
 
-  useEffect(() => {
+  const loadQuestions = useCallback(() => {
+    setLoadError(false);
+    setQuestions(null);
     learnPathService
       .getPractice(topicId)
       .then(setQuestions)
-      .catch(() => setQuestions([]));
+      .catch(() => {
+        setQuestions(null);
+        setLoadError(true);
+      });
   }, [topicId]);
+
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions]);
 
   const question = questions?.[index] ?? null;
 
@@ -213,7 +223,17 @@ export function PracticeSessionScreen() {
         </TouchableOpacity>
       </View>
 
-      {!questions && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}
+      {!questions && !loadError && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}
+
+      {loadError && (
+        <View style={styles.centerBox}>
+          <Ionicons name="cloud-offline-outline" size={40} color={colors.textTertiary} />
+          <Text style={styles.emptyText}>{t('learn.path.loadError')}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadQuestions}>
+            <Text style={styles.retryButtonText}>{t('learn.path.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {questions && questions.length === 0 && (
         <View style={styles.centerBox}>
@@ -387,11 +407,14 @@ const createStyles = (colors: any, isDark: boolean) =>
     optionFaded: { opacity: 0.5 },
     optionText: { fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 },
     optionTextOn: { color: '#FFFFFF' },
-    feedbackBox: { marginTop: 20, borderRadius: 14, padding: 14 },
-    feedbackCorrect: { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' },
-    feedbackWrong: { backgroundColor: isDark ? '#7F1D1D' : '#FEF2F2' },
-    feedbackTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
-    feedbackText: { fontSize: 14, color: colors.textSecondary, marginTop: 6, lineHeight: 20 },
+    retryButton: {
+      marginTop: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: '#0EA5E9',
+    },
+    retryButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
     primaryButton: {
       marginTop: 20,
       paddingVertical: 15,
