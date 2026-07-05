@@ -22,6 +22,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { CelebrationConfetti } from '@/components/common';
 import { normalizeQuiz, type NormalizedQuizQuestion } from '@/utils/quiz';
+import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
+import { useThemeContext } from '@/contexts';
 
 // Brand Colors
 const TEAL = '#09CFF7';
@@ -117,6 +119,7 @@ const areAnswersEquivalent = (question: QuizQuestion, userAnswer: unknown, corre
 export function QuizResultsScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const {
@@ -215,6 +218,18 @@ export function QuizResultsScreen() {
   const incorrectCount = Math.max(questions.length - correctCount, 0);
   const totalPoints =
     viewMode && typeof pointsEarned === 'number' ? pointsEarned : derivedPointsEarned;
+
+  const bacIIGrade = React.useMemo(() => {
+    if (!quiz.title.toLowerCase().includes('bac ii') && !quiz.title.includes('បាក់ឌុប') && passingScore !== 63 && passingScore !== 50) {
+      return null;
+    }
+    if (scorePercentage >= 90) return { grade: 'A', label: 'និទ្ទេស A (Good / ល្អប្រសើរ)', color: '#10B981' };
+    if (scorePercentage >= 80) return { grade: 'B', label: 'និទ្ទេស B (Very Good / ល្អណាស់)', color: '#3B82F6' };
+    if (scorePercentage >= 70) return { grade: 'C', label: 'និទ្ទេស C (Good / ល្អ)', color: '#0EA5E9' };
+    if (scorePercentage >= 60) return { grade: 'D', label: 'និទ្ទេស D (Satisfactory / ល្មម)', color: '#F59E0B' };
+    if (scorePercentage >= 50 || isPassed) return { grade: 'E', label: 'និទ្ទេស E (Passed / ជាប់)', color: '#8B5CF6' };
+    return { grade: 'F', label: 'ធ្លាក់ (Failed)', color: '#EF4444' };
+  }, [quiz.title, passingScore, scorePercentage, isPassed]);
 
   const formatAnswer = (type: string, answer: any, options?: string[]) => {
     if (answer === undefined || answer === null || answer === '') return t('quiz.results.skipped');
@@ -317,6 +332,27 @@ export function QuizResultsScreen() {
               </Animated.View>
               <View style={styles.scoreGlow} />
             </View>
+
+            {/* Bac II Grade Prediction Badge if applicable */}
+            {bacIIGrade && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: bacIIGrade.color,
+                marginBottom: 12,
+                gap: 8,
+              }}>
+                <Ionicons name="ribbon" size={20} color={bacIIGrade.color} />
+                <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>
+                  ការព្យាករណ៍និទ្ទេសបាក់ឌុប៖ <Text style={{ color: bacIIGrade.color, fontWeight: '800' }}>{bacIIGrade.label}</Text>
+                </Text>
+              </View>
+            )}
 
             {/* Message */}
             <Text style={styles.messageText}>
@@ -459,25 +495,39 @@ export function QuizResultsScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.questionText}>{result.question.text}</Text>
+                    <View style={{ marginBottom: 12 }}>
+                      <MarkdownMathView text={result.question.text} colors={colors} isDark={isDark} minHeight={40} />
+                    </View>
                     
                     <View style={styles.answersBox}>
                       <View style={styles.answerRow}>
                         <Text style={styles.answerLabel}>{t('quiz.results.yourAnswer')}</Text>
-                        <Text style={[
-                          styles.answerValue,
-                          { color: result.isCorrect ? '#10B981' : '#EF4444' }
-                        ]}>
-                          {formatAnswer(result.question.type, result.userAnswer, result.question.options)}
-                        </Text>
+                        {/(\$|\\|\^|_)/.test(formatAnswer(result.question.type, result.userAnswer, result.question.options)) ? (
+                          <View style={{ flex: 1, pointerEvents: 'none' }}>
+                            <MarkdownMathView text={formatAnswer(result.question.type, result.userAnswer, result.question.options)} colors={colors} isDark={isDark} minHeight={30} />
+                          </View>
+                        ) : (
+                          <Text style={[
+                            styles.answerValue,
+                            { color: result.isCorrect ? '#10B981' : '#EF4444' }
+                          ]}>
+                            {formatAnswer(result.question.type, result.userAnswer, result.question.options)}
+                          </Text>
+                        )}
                       </View>
                       
                       {!result.isCorrect && (
                         <View style={styles.answerRow}>
                           <Text style={styles.answerLabel}>{t('quiz.results.correctAnswer')}</Text>
-                          <Text style={[styles.answerValue, { color: '#10B981' }]}>
-                            {formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)}
-                          </Text>
+                          {/(\$|\\|\^|_)/.test(formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)) ? (
+                            <View style={{ flex: 1, pointerEvents: 'none' }}>
+                              <MarkdownMathView text={formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)} colors={colors} isDark={isDark} minHeight={30} />
+                            </View>
+                          ) : (
+                            <Text style={[styles.answerValue, { color: '#10B981' }]}>
+                              {formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)}
+                            </Text>
+                          )}
                         </View>
                       )}
                     </View>
@@ -485,11 +535,9 @@ export function QuizResultsScreen() {
                     {result.question.explanation && (
                       <View style={styles.explanationBox}>
                         <Ionicons name="information-circle" size={16} color={TEAL} style={{ marginTop: 2, marginRight: 8 }} />
-                        <View style={{ flex: 1 }}>
+                        <View style={{ flex: 1, pointerEvents: 'none' }}>
                           <Text style={styles.explanationTitle}>{t('quiz.results.explanation')}</Text>
-                          <Text style={styles.explanationText}>
-                            {result.question.explanation}
-                          </Text>
+                          <MarkdownMathView text={result.question.explanation} colors={colors} isDark={isDark} minHeight={40} />
                         </View>
                       </View>
                     )}

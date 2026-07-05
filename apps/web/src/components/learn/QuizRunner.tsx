@@ -2,6 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useCallback, useEffect } from 'react';
+import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
 import {
   CheckCircle2,
   XCircle,
@@ -300,7 +301,9 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
                 <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_21bd1e2c" /> {currentIndex + 1}
               </span>
             </div>
-            <p className="text-xl font-bold text-gray-900 leading-relaxed">{currentQuestion.question}</p>
+            <div className="text-xl font-bold text-gray-900 leading-relaxed">
+              <MarkdownMathView text={currentQuestion.question} />
+            </div>
           </div>
 
           {/* Options */}
@@ -336,7 +339,9 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
                   }`}>
                     {state === 'correct' ? '✓' : state === 'incorrect' ? '✗' : optionLetter}
                   </span>
-                  <span className="flex-1">{option.text}</span>
+                  <div className="flex-1">
+                    <MarkdownMathView text={option.text} />
+                  </div>
                   {state === 'correct' && <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />}
                   {state === 'incorrect' && <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />}
                 </button>
@@ -348,7 +353,9 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
           {revealed[currentQuestion.id] && currentQuestion.explanation && (
             <div className="mx-6 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
               <p className="text-xs font-extrabold text-blue-800 uppercase mb-1"><AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_dd19455d" /></p>
-              <p className="text-sm text-blue-700 leading-relaxed">{currentQuestion.explanation}</p>
+              <div className="text-sm text-blue-700 leading-relaxed">
+                <MarkdownMathView text={currentQuestion.explanation} />
+              </div>
             </div>
           )}
 

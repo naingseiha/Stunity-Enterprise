@@ -186,14 +186,23 @@ export function LearnHomeScreen() {
   }, [stats, xpBarAnim]);
 
   const subjectName = useCallback(
-    (s: { name: string; nameEn: string | null; nameKh: string | null }) => {
+    (s: { name: string; nameEn: string | null; nameKh: string | null; grade?: string; code?: string }) => {
       const norm = (s.nameKh || s.nameEn || s.name || '').toLowerCase();
-      if (norm.startsWith('math') || norm.includes('គណិត')) return 'គណិតវិទ្យា';
-      if (norm.startsWith('chem') || norm.includes('គីមី')) return 'គីមីវិទ្យា';
-      if (norm.startsWith('phys') || norm.includes('រូប')) return 'រូបវិទ្យា';
-      if (norm.startsWith('bio') || norm.includes('ជីវ')) return 'ជីវវិទ្យា';
-      if (norm.startsWith('eng') || norm.includes('អង់គ្លេស')) return 'អង់គ្លេស';
-      return s.nameKh || s.nameEn || s.name;
+      let base = s.nameKh || s.nameEn || s.name;
+      if (norm.startsWith('math') || norm.includes('គណិត')) base = 'គណិតវិទ្យា';
+      else if (norm.startsWith('chem') || norm.includes('គីមី')) base = 'គីមីវិទ្យា';
+      else if (norm.startsWith('phys') || norm.includes('រូប')) base = 'រូបវិទ្យា';
+      else if (norm.startsWith('bio') || norm.includes('ជីវ')) base = 'ជីវវិទ្យា';
+      else if (norm.startsWith('eng') || norm.includes('អង់គ្លេស')) base = 'អង់គ្លេស';
+
+      const grade = (s as any).grade;
+      const code = (s as any).code || '';
+      if (!grade) return base;
+      const khGrade = grade === '12' ? '១២' : grade === '11' ? '១១' : grade === '10' ? '១០' : grade === '9' ? '៩' : grade === '8' ? '៨' : grade === '7' ? '៧' : grade;
+      let trackStr = '';
+      if (code.includes('SCIENCE') || (s.nameKh && s.nameKh.includes('វិទ្យាសាស្ត្រ'))) trackStr = ' (វិទ្យា.)';
+      else if (code.includes('SOCIAL') || (s.nameKh && s.nameKh.includes('សង្គម'))) trackStr = ' (សង្គម)';
+      return `${base} ថ្នាក់ទី${khGrade}${trackStr}`;
     },
     [],
   );
@@ -285,7 +294,8 @@ export function LearnHomeScreen() {
       .getSubjects(obGrade)
       .then((subjects) => {
         setObSubjects(subjects);
-        setObSelected((prev) => new Set([...prev].filter((id) => subjects.some((s) => s.id === id))));
+        // Retain selected subjects across multiple grades when switching tabs
+        setObSelected((prev) => prev);
       })
       .catch(() => {
         setObSubjects([]);
@@ -1269,8 +1279,15 @@ export function LearnHomeScreen() {
       });
     }
 
-    // 2. Add Practice Quiz steps
-    const rawSteps = [
+    // 2. Add Practice Quiz steps dynamically based on grade and question bank size
+    const isGrade12OrLarge = (unit.totalQuestions > 12) || (path?.subject?.grade === '12');
+    const rawSteps = isGrade12OrLarge ? [
+      { id: 'p1', ratio: 0.2, titleKh: 'លំហាត់អនុវត្តន៍ ១ (កម្រិតមូលដ្ឋាន)', titleEn: 'Practice Quiz 1 (Basic)', icon: 'extension-puzzle' as const },
+      { id: 'p2', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ២ (កម្រិតមធ្យម)', titleEn: 'Practice Quiz 2 (Medium)', icon: 'flash' as const },
+      { id: 'p3', ratio: 0.65, titleKh: 'លំហាត់អនុវត្តន៍ ៣ (កម្រិតខ្ពស់)', titleEn: 'Practice Quiz 3 (Advanced)', icon: 'flame' as const },
+      { id: 'p4', ratio: 0.85, titleKh: 'លំហាត់អនុវត្តន៍ ៤ (ត្រៀមប្រឡង)', titleEn: 'Practice Quiz 4 (Exam Prep)', icon: 'rocket' as const },
+      { id: 'p5', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ (បាក់ឌុប)', titleEn: 'Final Challenge (Bac II)', icon: 'trophy' as const },
+    ] : [
       { id: 'p1', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ១', titleEn: 'Practice Quiz 1', icon: 'extension-puzzle' as const },
       { id: 'p2', ratio: 0.8, titleKh: 'លំហាត់អនុវត្តន៍ ២', titleEn: 'Practice Quiz 2', icon: 'flash' as const },
       { id: 'p3', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ', titleEn: 'Final Challenge', icon: 'trophy' as const },

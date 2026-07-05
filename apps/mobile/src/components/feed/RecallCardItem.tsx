@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
+import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
 import type { RecallCard, RecallCardSubject } from '@/types';
 
 type Grade = 'again' | 'good' | 'easy';
@@ -349,8 +350,10 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer, nudgeR
         </View>
       ) : (
         <>
-          {/* Question text — like a post body */}
-          <Text style={styles.question}>{card.questionText}</Text>
+          {/* Question text — rendered with MarkdownMathView */}
+          <View style={{ marginBottom: 12 }}>
+            <MarkdownMathView text={card.questionText} colors={colors} isDark={isDark} minHeight={40} />
+          </View>
 
           {stage === 'resting' && card.hint ? (
             <View style={styles.hintRow}>
@@ -374,9 +377,9 @@ export const RecallCardItem: React.FC<Props> = ({ card, onGrade, onDefer, nudgeR
                 </Text>
                 <View style={[styles.answerDividerLine, { backgroundColor: subject.accent + '40' }]} />
               </View>
-              <Text style={[styles.answer, { color: subject.accentDeep }]}>
-                {card.answerText}
-              </Text>
+              <View style={{ pointerEvents: 'none' }}>
+                <MarkdownMathView text={card.answerText} colors={colors} isDark={isDark} minHeight={40} />
+              </View>
             </AnimatedView>
           ) : null}
 

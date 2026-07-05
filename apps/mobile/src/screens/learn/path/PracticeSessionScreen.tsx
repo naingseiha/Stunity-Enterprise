@@ -30,6 +30,7 @@ import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
 import { learnPathService, PracticeQuestion } from '@/services/learnPath.service';
 import { LearnStackScreenProps } from '@/navigation/types';
+import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
 
 type OptionButtonProps = {
   children: React.ReactNode;
@@ -270,26 +271,38 @@ export function PracticeSessionScreen() {
             <Text style={styles.unitLabel} numberOfLines={1}>
               {title}
             </Text>
-            <Text style={styles.questionText}>{question.text}</Text>
+            <View style={{ marginBottom: 20 }}>
+              <MarkdownMathView text={question.text} colors={colors} isDark={isDark} minHeight={50} />
+            </View>
 
             <View style={styles.optionsList}>
-              {question.options.map((opt, i) => (
-                <OptionButton
-                  key={`${question.id}-${i}`}
-                  style={optionStyle(i)}
-                  onPress={() => choose(i)}
-                  disabled={revealed}
-                  activeOpacity={0.8}
-                >
-                  <Text style={optionTextStyle(i)}>{opt}</Text>
-                  {revealed && i === question.correctIndex && (
-                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                  )}
-                  {revealed && i === chosen && i !== question.correctIndex && (
-                    <Ionicons name="close-circle" size={20} color="#FFFFFF" />
-                  )}
-                </OptionButton>
-              ))}
+              {question.options.map((opt, i) => {
+                const isMath = /(\$|\\|\^|_)/.test(opt);
+                const displayOpt = opt === 'TRUE' ? t('quiz.takeQuiz.true', 'True / ពិត') : opt === 'FALSE' ? t('quiz.takeQuiz.false', 'False / មិនពិត') : opt;
+                return (
+                  <OptionButton
+                    key={`${question.id}-${i}`}
+                    style={optionStyle(i)}
+                    onPress={() => choose(i)}
+                    disabled={revealed}
+                    activeOpacity={0.8}
+                  >
+                    {isMath ? (
+                      <View style={{ flex: 1, pointerEvents: 'none' }}>
+                        <MarkdownMathView text={opt} colors={colors} isDark={isDark} minHeight={35} />
+                      </View>
+                    ) : (
+                      <Text style={optionTextStyle(i)}>{displayOpt}</Text>
+                    )}
+                    {revealed && i === question.correctIndex && (
+                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    )}
+                    {revealed && i === chosen && i !== question.correctIndex && (
+                      <Ionicons name="close-circle" size={20} color="#FFFFFF" />
+                    )}
+                  </OptionButton>
+                );
+              })}
             </View>
           </ScrollView>
 
@@ -325,14 +338,9 @@ export function PracticeSessionScreen() {
                   contentContainerStyle={styles.sheetScrollContent}
                   showsVerticalScrollIndicator={true}
                 >
-                  <Text
-                    style={[
-                      styles.sheetExplanation,
-                      { color: chosen === question.correctIndex ? (isDark ? '#A7F3D0' : '#047857') : (isDark ? '#FECACA' : '#B91C1C') }
-                    ]}
-                  >
-                    {question.explanation}
-                  </Text>
+                  <View style={{ pointerEvents: 'none' }}>
+                    <MarkdownMathView text={question.explanation} colors={colors} isDark={isDark} minHeight={45} />
+                  </View>
                 </ScrollView>
               )}
 
