@@ -552,8 +552,24 @@ export function LearnHomeScreen() {
                 style={[
                   styles.subjectSquircleCard,
                   active
-                    ? { backgroundColor: isDark ? `${accent}2A` : `${accent}15` }
-                    : { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : `${accent}06` },
+                    ? {
+                        backgroundColor: isDark ? `${accent}22` : `${accent}12`,
+                        borderColor: accent,
+                        shadowColor: accent,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.22,
+                        shadowRadius: 10,
+                        elevation: 4,
+                      }
+                    : {
+                        backgroundColor: isDark ? colors.card : '#FFFFFF',
+                        borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
+                        shadowColor: '#0F172A',
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: isDark ? 0.2 : 0.04,
+                        shadowRadius: 8,
+                        elevation: 2,
+                      },
                 ]}
                 activeOpacity={0.8}
                 onPress={() => switchSubject(s.id)}
@@ -568,24 +584,97 @@ export function LearnHomeScreen() {
                     styles.subjectSquircleCardLabel,
                     active
                       ? [styles.subjectSquircleCardLabelActive, { color: accent }]
-                      : { color: isDark ? colors.textSecondary : '#475569' },
+                      : { color: isDark ? colors.text : '#1E293B' },
                   ]}
-                  numberOfLines={1}
                 >
                   {subjectName(s)}
                 </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginTop: 6,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 10,
+                    backgroundColor: active ? `${accent}20` : (isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9'),
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: active ? accent : (isDark ? colors.textSecondary : '#94A3B8'),
+                      marginRight: 5,
+                    }}
+                  />
+                  <Text
+                    style={[
+                      styles.subjectCardSubLabel,
+                      { color: active ? accent : (isDark ? colors.textSecondary : '#64748B') },
+                    ]}
+                  >
+                    {active ? t('learn.path.activeSubject', { defaultValue: 'កំពុងសិក្សា' }) : t('learn.path.tapToStudy', { defaultValue: 'ចុចដើម្បីរៀន' })}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
           <TouchableOpacity
-            style={styles.subjectSquircleCardAdd}
+            style={[
+              styles.subjectSquircleCardAdd,
+              {
+                borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#CBD5E1',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(248,250,252,0.6)',
+              },
+            ]}
             activeOpacity={0.8}
             onPress={startEditing}
           >
-            <Ionicons name="add" size={24} color={colors.textSecondary} style={{ marginTop: 6 }} />
-            <Text style={styles.subjectSquircleCardLabel} numberOfLines={1}>
+            <View style={styles.graphicWrapper}>
+              <View
+                style={{
+                  width: 62,
+                  height: 62,
+                  borderRadius: 31,
+                  backgroundColor: isDark ? 'rgba(56,189,248,0.12)' : 'rgba(14,165,233,0.1)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1.5,
+                  borderColor: isDark ? '#38BDF8' : '#0EA5E9',
+                }}
+              >
+                <Ionicons name="add" size={36} color={isDark ? '#38BDF8' : '#0EA5E9'} />
+              </View>
+            </View>
+            <Text
+              style={[
+                styles.subjectSquircleCardLabel,
+                { color: isDark ? colors.text : '#334155', marginTop: 2 },
+              ]}
+            >
               {t('learn.path.addSubject')}
             </Text>
+            <View
+              style={{
+                marginTop: 6,
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                borderRadius: 10,
+                backgroundColor: 'transparent',
+              }}
+            >
+              <Text
+                style={[
+                  styles.subjectCardSubLabel,
+                  { color: isDark ? colors.textSecondary : '#94A3B8', fontSize: 10 },
+                ]}
+              >
+                + ជ្រើសរើសបន្ថែម
+              </Text>
+            </View>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -1188,7 +1277,7 @@ export function LearnHomeScreen() {
                       <SubjectGraphic code={s.code} />
                     </View>
                     <View style={styles.exploreCardFooterCentered}>
-                      <Text style={styles.exploreCardNameBold} numberOfLines={1}>
+                      <Text style={styles.exploreCardNameBold}>
                         {subjectName(s)}
                       </Text>
                       <Text style={styles.exploreCardMetadata}>{meta}</Text>
@@ -1814,13 +1903,9 @@ const createStyles = (colors: any, isDark: boolean) =>
     safe: { flex: 1, backgroundColor: isDark ? colors.background : '#F1F5F9' },
     scrollContent: { paddingBottom: 48 },
 
-    // Shared elevation — cards "float" on the light background (mockup look).
+    // Flat design style without box shadow
     softShadow: {
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.35 : 0.08,
-      shadowRadius: 12,
-      elevation: 3,
+      elevation: 0,
     },
     subjectCardShadow: {
       borderWidth: 1,
@@ -2180,51 +2265,60 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     railRow: { paddingHorizontal: 20, gap: 12 },
     subjectSquircleCard: {
-      width: 84,
-      height: 88,
-      borderRadius: 22,
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 10,
-      paddingHorizontal: 4,
-      borderWidth: 0,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      borderRadius: 26,
+      borderWidth: 1.5,
+      minWidth: 155,
+      height: 174,
     },
     subjectSquircleCardAdd: {
-      width: 84,
-      height: 88,
-      borderRadius: 22,
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 10,
-      paddingHorizontal: 4,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      borderRadius: 26,
       borderWidth: 1.5,
       borderColor: colors.border,
       borderStyle: 'dashed',
       backgroundColor: colors.card,
+      minWidth: 145,
+      height: 174,
     },
     graphicWrapper: {
-      width: 40,
-      height: 40,
+      height: 70,
       alignItems: 'center',
       justifyContent: 'center',
+      marginVertical: 2,
     },
     graphicScale: {
       width: 70,
       height: 70,
       alignItems: 'center',
       justifyContent: 'center',
-      transform: [{ scale: 0.58 }],
+      transform: [{ scale: 0.86 }],
     },
     subjectSquircleCardLabel: {
-      fontSize: 11,
-      lineHeight: 16,
-      fontWeight: '600',
+      fontSize: 14,
+      lineHeight: 24,
+      fontWeight: '800',
       textAlign: 'center',
-      width: '100%',
-      marginBottom: 2,
+      letterSpacing: 0.2,
+      paddingVertical: 4,
     },
     subjectSquircleCardLabelActive: {
       fontWeight: '800',
+    },
+    subjectCardSubLabel: {
+      fontSize: 11,
+      lineHeight: 18,
+      fontWeight: '600',
+      textAlign: 'center',
+      paddingTop: 2,
     },
 
     // ── Vertical timeline path ──────────────────────────────────────
@@ -2249,11 +2343,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 15,
       borderWidth: 2.2,
       backgroundColor: '#FFFFFF',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 5,
-      elevation: 3,
     },
     activeStartBubbleText: {
       fontSize: 13,
@@ -2282,11 +2371,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 44,
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      elevation: 4,
     },
     activeUnitTitle: {
       fontFamily: 'Koulen-Regular',
@@ -2643,7 +2727,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginBottom: 20,
     },
     exploreGridCard: {
-      width: '47%',
+      minWidth: '47%',
+      flexGrow: 1,
+      width: 'auto',
       padding: 20,
       borderRadius: 28,
       backgroundColor: colors.card,
@@ -2651,21 +2737,12 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'space-between',
       minHeight: 185,
       borderWidth: 1.5,
-      borderColor: 'transparent',
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.3 : 0.04,
-      shadowRadius: 10,
-      elevation: 2,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
       position: 'relative',
     },
     exploreGridCardSelected: {
       borderColor: '#06A8CC',
       backgroundColor: isDark ? 'rgba(6, 168, 204, 0.12)' : '#E0F9FD',
-      shadowColor: '#06A8CC',
-      shadowOpacity: 0.12,
-      shadowRadius: 12,
-      elevation: 4,
     },
     exploreCardCheck: {
       position: 'absolute',
@@ -2682,10 +2759,12 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     exploreCardNameBold: {
       fontSize: 14,
+      lineHeight: 24,
       fontWeight: '800',
       color: colors.text,
       textAlign: 'center',
-      marginBottom: 2,
+      marginBottom: 4,
+      paddingVertical: 2,
     },
     exploreCardMetadata: {
       fontSize: 11,

@@ -734,6 +734,8 @@ const MainNavigatorContent = () => {
                 "EditCourse",
                 "InstructorDashboard",
                 "TutorChat",
+                "PracticeSession",
+                "UnitLesson",
               ].includes(routeName)
             ) {
               return { tabBarStyle: { display: "none" } };
