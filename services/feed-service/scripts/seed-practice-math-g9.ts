@@ -33,6 +33,8 @@ type SeedQuestion = {
   options?: string[];
   correctAnswer: any;
   explanation?: string;
+  /** 1 (easiest) .. 5 (hardest) — optional, only for newly-authored questions. */
+  difficulty?: number;
 };
 
 /** 18 Units verified against MoEYS Grade 9 Math Textbook */
@@ -808,270 +810,13 @@ const PRACTICE: Record<string, SeedQuestion[]> = {
       correctAnswer: 1,
       explanation: '$a = \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{6 - 0}{3 - 0} = 2$។',
     },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'តើស�  'ត្រីកោណដូចគ្នា': [
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'ត្រីកោណពីរដូចគ្នា កាលណាមុំរៀងគ្នាស្មើគ្នា ហើយជ្រុងត្រូវគ្នា៖',
-      options: ['ស្មើគ្នាទាំងអស់', 'មានសមាមាត្រដូចគ្នា', 'ស្របគ្នា', 'កែងគ្នា'],
-      correctAnswer: 1,
-      explanation: 'ត្រីកោណដូចគ្នាមានជ្រុងត្រូវគ្នាជាជ្រុងសមាមាត្រ។',
-    },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'បើត្រីកោណពីរដូចគ្នាមានផលធៀបដូចគ្នា $k = 4$ តើផលធៀបក្រឡាផ្ទៃរបស់វាស្មើនឹងប៉ុន្មាន?',
-      options: ['4', '8', '16', '64'],
-      correctAnswer: 2,
-      explanation: 'ផលធៀបក្រឡាផ្ទៃស្មើនឹងការេនៃផលធៀបដូចគ្នា៖ $k^2 = 4^2 = 16$ ។',
-    },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'បើត្រីកោណពីរដូចគ្នាមានផលធៀបដូចគ្នា $k = 3$ តើផលធៀបបរិមាត្ររបស់វាស្មើនឹងប៉ុន្មាន?',
-      options: ['3', '6', '9', '27'],
-      correctAnswer: 0,
-      explanation: 'ផលធៀបបរិមាត្រស្មើនឹងផលធៀបដូចគ្នា $k = 3$ ។',
-    },
-    {
-      type: 'TRUE_FALSE',
-      text: 'បើត្រីកោណពីរដូចគ្នាមានផលធៀបដូចគ្នា $k = 3$ នោះផលធៀបក្រឡាផ្ទៃរបស់វាស្មើនឹង $9$។',
-      options: ['True', 'False'],
-      correctAnswer: 'true',
-      explanation: 'ផលធៀបក្រឡាផ្ទៃនៃត្រីកោណដូចគ្នាគឺស្មើ $k^2$ ដូចនេះ $3^2 = 9$ ពិតប្រាកដមែន។',
-    },
-    {
-      type: 'TRUE_FALSE',
-      text: 'គ្រប់ត្រីកោណសម័ង្សទាំងអស់ គឺជាត្រីកោណដូចគ្នាជានិច្ច។',
-      options: ['True', 'False'],
-      correctAnswer: 'true',
-      explanation: 'ព្រោះត្រីកោណសម័ង្សទាំងអស់មានមុំក្នុងទាំងបីស្មើនឹង $60^\\circ$ ដូចគ្នា (ករណី ម.ម.ម)។',
-    },
-    {
-      type: 'SHORT_ANSWER',
-      text: 'ដើមឈើមួយបោះស្រមោលប្រវែង ១២ ម៉ែត្រ ក្នុងពេលដែលបង្គោលកម្ពស់ ២ ម៉ែត្រ បោះស្រមោលប្រវែង ៣ ម៉ែត្រ។ រកកម្ពស់ដើមឈើគិតជាម៉ែត្រ។',
-      correctAnswer: '8',
-      explanation: 'តាមលក្ខណៈត្រីកោណដូចគ្នា៖ $\\frac{\\text{height}}{12} = \\frac{2}{3} \\implies \\text{height} = \\frac{12 \\times 2}{3} = 8$ ម៉ែត្រ។',
-    },
-    {
-      type: 'SHORT_ANSWER',
-      text: 'ក្នុងត្រីកោណដូចគ្នា $\\triangle ABC \\sim \\triangle DEF$ ប្រសិនបើជ្រុងត្រូវគ្នា $AB = 6$ និង $DE = 9$ រកផលធៀបដូចគ្នា $k = DE/AB$ ជាទសភាគ (ឧ. 2.5)។',
-      correctAnswer: '1.5',
-      explanation: '$k = \\frac{9}{6} = 1.5$ ។',
-    },
-    {
-      type: 'FILL_IN_BLANK',
-      text: 'ក្នុងត្រីកោណកែង $ABC$ (កែងត្រង់ $A$) មានកម្ពស់ $AH$។ ទំនាក់ទំនងម៉ែត្រិកគឺ $AH^2 = BH \\times $_______។',
-      correctAnswer: 'CH',
-      explanation: 'ការេនៃកម្ពស់ស្មើនឹងផលគុណនៃអង្កត់ស្រមោលទាំងពីរលើអ៊ីប៉ូតេនុស។',
-    },
-    {
-      type: 'ORDERING',
-      text: 'ចូររៀបចំផលធៀបក្រឡាផ្ទៃ $S/S\'$ ពីតូចទៅធំ ផ្អែកលើផលធៀបដូចគ្នា $k$ ៖',
-      options: [
-        'k = 1 (S/S\' = 1)',
-        'k = 2 (S/S\' = 4)',
-        'k = 3 (S/S\' = 9)',
-        'k = 4 (S/S\' = 16)'
-      ],
-      correctAnswer: '',
-      explanation: 'ផលធៀបក្រឡាផ្ទៃគឺ $k^2$ នាំឱ្យតម្លៃរៀងគ្នាគឺ 1, 4, 9, 16។',
-    },
-    {
-      type: 'MATCHING',
-      text: 'ចូរផ្គូផ្គងផលធៀបដូចគ្នា $k$ ខាងឆ្វេង ទៅនឹងផលធៀបក្រឡាផ្ទៃត្រូវគ្នាខាងស្តាំ៖',
-      options: [
-        'k = 2:::4',
-        'k = 3:::9',
-        'k = 4:::16',
-        'k = 5:::25',
-      ],
-      correctAnswer: JSON.stringify({
-        'k = 2': '4',
-        'k = 3': '9',
-        'k = 4': '16',
-        'k = 5': '25',
-      }),
-      explanation: 'ផលធៀបក្រឡាផ្ទៃស្មើការេនៃផលធៀបដូចគ្នា ($k^2$)។',
-    },
   ],
-  'ពហុកោណ': [
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'រកផលបូកមុំក្នុងនៃបញ្ចកោណ (៥ ជ្រុង)។',
-      options: ['180^\\circ', '360^\\circ', '540^\\circ', '720^\\circ'],
-      correctAnswer: 2,
-      explanation: 'ផលបូកមុំក្នុងពហុកោណ $n$ ជ្រុងគឺ $(n-2) \\times 180^\\circ$។ សម្រាប់ $n=5$៖ $(5-2) \\times 180^\\circ = 540^\\circ$។',
-    },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'តើផលបូកមុំក្នុងនៃឆកោណ (៦ ជ្រុង) ស្មើនឹងប៉ុន្មានដឺក្រេ?',
-      options: ['540^\\circ', '720^\\circ', '900^\\circ', '1080^\\circ'],
-      correctAnswer: 1,
-      explanation: '$(6-2) \\times 180^\\circ = 4 \\times 180^\\circ = 720^\\circ$ ។',
-    },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'តើរូបមន្តគណនាចំនួនអង្កត់ទ្រូងនៃពហុកោណមាន $n$ ជ្រុងគឺជានរណា?',
-      options: [
-        'n(n-1)/2',
-        'n(n-2)/2',
-        'n(n-3)/2',
-        'n(n-3)'
-      ],
-      correctAnswer: 2,
-      explanation: 'ចំនួនអង្កត់ទ្រូងពហុកោណគឺ $\\frac{n(n-3)}{2}$ ។',
-    },
+  'ប្រព័ន្ធសមីការដឺក្រេទី១មានពីរអញ្ញាត': [
     {
       type: 'TRUE_FALSE',
-      text: 'ផលបូកមុំក្រៅនៃពហុកោណប៉ោងណាមួយ គឺស្មើនឹង $360^\\circ$ ជានិច្ច មិនថាពហុកោណនោះមានប៉ុន្មានជ្រុងឡើយ។',
-      options: ['True', 'False'],
-      correctAnswer: 'true',
-      explanation: 'នេះជាលក្ខណៈទូទៅនៃមុំក្រៅរបស់ពហុកោណប៉ោង។',
-    },
-    {
-      type: 'TRUE_FALSE',
-      text: 'ពហុកោណនិយ័ត (Regular Polygon) គឺជាពហុកោណដែលមានជ្រុងទាំងអស់ស្មើគ្នា និងមុំក្នុងទាំងអស់ស្មើគ្នា។',
-      options: ['True', 'False'],
-      correctAnswer: 'true',
-      explanation: 'នេះជានិយមន័យពិតប្រាកដនៃពហុកោណនិយ័ត។',
-    },
-    {
-      type: 'SHORT_ANSWER',
-      text: 'រកចំនួនអង្កត់ទ្រូងនៃបញ្ចកោណ (៥ ជ្រុង)។',
-      correctAnswer: '5',
-      explanation: 'ចំនួនអង្កត់ទ្រូងគណនាតាមរូបមន្ត៖ $\\frac{n(n-3)}{2}$។ សម្រាប់ $n=5$៖ $\\frac{5(5-3)}{2} = \\frac{10}{2} = 5$។',
-    },
-    {
-      type: 'SHORT_ANSWER',
-      text: 'គណនារង្វាស់មុំក្នុងនីមួយៗនៃឆកោណនិយ័ត (៦ ជ្រុង)។ (សរសេរតែតួលេខដឺក្រេ ឧ. 100)',
-      correctAnswer: '120',
-      explanation: '$\\frac{720^\\circ}{6} = 120^\\circ$ ។',
-    },
-    {
-      type: 'FILL_IN_BLANK',
-      text: 'មុំក្រៅនីមួយៗនៃឆកោណនិយ័ត (៦ ជ្រុង) មានរង្វាស់ស្មើនឹង_______ដឺក្រេ។ (សរសេរតែតួលេខ)',
-      correctAnswer: '60',
-      explanation: 'មុំក្រៅនីមួយៗនៃពហុកោណនិយ័តគឺ $360^\\circ / n$។ សម្រាប់ $n=6$៖ $360^\\circ / 6 = 60^\\circ$។',
-    },
-    {
-      type: 'ORDERING',
-      text: 'ចូររៀបចំពហុកោណខាងក្រោមតាមផលបូកមុំក្នុងរបស់វាពីតូចទៅធំ៖',
-      options: [
-        'ត្រីកោណ (180°)',
-        'ចតុកោណ (360°)',
-        'បញ្ចកោណ (540°)',
-        'ឆកោណ (720°)'
-      ],
-      correctAnswer: '',
-      explanation: 'ផលបូកមុំក្នុងកើនឡើងតាមចំនួនជ្រុង។',
-    },
-    {
-      type: 'MATCHING',
-      text: 'ចូរផ្គូផ្គងចំនួនជ្រុងពហុកោណខាងឆ្វេង ទៅនឹងផលបូកមុំក្នុងរបស់វាខាងស្តាំ៖',
-      options: [
-        '3:::180^\\circ',
-        '4:::360^\\circ',
-        '5:::540^\\circ',
-        '6:::720^\\circ',
-      ],
-      correctAnswer: JSON.stringify({
-        '3': '180^\\circ',
-        '4': '360^\\circ',
-        '5': '540^\\circ',
-        '6': '720^\\circ',
-      }),
-      explanation: 'គណនាតាមរូបមន្ត $(n-2) \\times 180^\\circ$។',
-    },
-  ],
-  'សូលីត': [
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'គណនាមាឌរបស់គូបដែលមានប្រវែងជ្រុង $a = 3$ ។',
-      options: ['9', '18', '27', '81'],
-      correctAnswer: 2,
-      explanation: '$V = a^3 = 3^3 = 27$។',
-    },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'តើរូបមន្តមាឌបាល់ (ស្វែរ) ដែលមានកាំ $r$ គឺជានរណា?',
-      options: [
-        'V = 4\\pi r^2',
-        'V = \\frac{4}{3}\\pi r^3',
-        'V = \\frac{1}{3}\\pi r^2 h',
-        'V = \\pi r^2 h'
-      ],
-      correctAnswer: 1,
-      explanation: 'មាឌស្វែរគណនាតាមរូបមន្ត $V = \\frac{4}{3}\\pi r^3$ ។',
-    },
-    {
-      type: 'MULTIPLE_CHOICE',
-      text: 'រកមាឌប្រអប់ (ប្រលេពីប៉ែតកែង) ដែលមានវិមាត្រប្រវែង ២, ៣, និង ៤។',
-      options: ['12', '20', '24', '36'],
-      correctAnswer: 2,
-      explanation: '$V = l \\times w \\times h = 2 \\times 3 \\times 4 = 24$។',
-    },
-    {
-      type: 'TRUE_FALSE',
-      text: 'មាឌរបស់ស៊ីឡាំងដែលមានកាំបាត $r$ និងកម្ពស់ $h$ គឺ $V = \\pi r^2 h$។',
-      options: ['True', 'False'],
-      correctAnswer: 'true',
-      explanation: 'រូបមន្តមាឌស៊ីឡាំងគឺ ផ្ទៃបាត $\\times$ កម្ពស់ = $\\pi r^2 h$។',
-    },
-    {
-      type: 'TRUE_FALSE',
-      text: 'មាឌកោណស្មើនឹងមួយភាគបីនៃមាឌស៊ីឡាំងដែលមានកាំបាត និងកម្ពស់ដូចគ្នា។',
-      options: ['True', 'False'],
-      correctAnswer: 'true',
-      explanation: 'ព្រោះ $V_{\\text{cone}} = \\frac{1}{3}\\pi r^2 h$ ពិតមែន។',
-    },
-    {
-      type: 'SHORT_ANSWER',
-      text: 'ប្រអប់មួយមានបណ្តោយ ៤ ទទឹង ៣ និងកម្ពស់ ២។ គណនាមាឌប្រអប់នោះ។',
-      correctAnswer: '24',
-      explanation: '$V = 4 \\times 3 \\times 2 = 24$ ។',
-    },
-    {
-      type: 'SHORT_ANSWER',
-      text: 'ស៊ីឡាំងមួយមានកាំបាត $r=3$ និងកម្ពស់ $h=5$។ គណនាមាឌស៊ីឡាំងនោះ (សរសេរតែមេគុណនៃ $\\pi$ ឧទាហរណ៍៖ 45)។',
-      correctAnswer: '45',
-      explanation: '$V = \\pi r^2 h = \\pi(3^2)(5) = 45\\pi$ ។',
-    },
-    {
-      type: 'FILL_IN_BLANK',
-      text: 'កោណមានកាំបាត $r=3$ និងកម្ពស់ $h=4$ មានមាឌស្មើនឹង_______$\\pi$។ (សរសេរតែតួលេខ)',
-      correctAnswer: '12',
-      explanation: '$V = \\frac{1}{3} \\pi r^2 h = \\frac{1}{3} \\pi (3^2) (4) = 12\\pi$។',
-    },
-    {
-      type: 'ORDERING',
-      text: 'ចូររៀបចំមាឌរបស់គូបពីតូចទៅធំ ផ្អែកលើប្រវែងជ្រុងរបស់វា៖',
-      options: [
-        'ជ្រុង a = 1 (V = 1)',
-        'ជ្រុង a = 2 (V = 8)',
-        'ជ្រុង a = 3 (V = 27)',
-        'ជ្រុង a = 4 (V = 64)'
-      ],
-      correctAnswer: '',
-      explanation: 'មាឌគូបរៀងគ្នាគឺ ១, ៨, ២៧, ៦៤។',
-    },
-    {
-      type: 'MATCHING',
-      text: 'ចូរផ្គូផ្គងរូបរាងសូលីតខាងឆ្វេង ទៅនឹងរូបមន្តមាឌរបស់វាត្រូវគ្នាខាងស្តាំ៖',
-      options: [
-        'គូប:::V = a^3',
-        'ប្រអប់:::V = lwh',
-        'ស៊ីឡាំង:::V = \\pi r^2 h',
-        'កោណ:::V = (1/3)\\pi r^2 h',
-      ],
-      correctAnswer: JSON.stringify({
-        'គូប': 'V = a^3',
-        'ប្រអប់': 'V = lwh',
-        'ស៊ីឡាំង': 'V = \\pi r^2 h',
-        'កោណ': 'V = (1/3)\\pi r^2 h',
-      }),
-      explanation: 'រូបមន្តមាឌមូលដ្ឋានរបស់សូលីតនីមួយៗ។',
-    },
-  ],បើបន្ទាត់ពីរត្រួតស៊ីគ្នាទាំងស្រុង នោះប្រព័ន្ធសមីការមានចម្លើយរាប់មិនអស់។',
+      // NOTE: original question text was corrupted in a prior edit; the lead-in clause below
+      // was reconstructed to make this a complete sentence — please double-check wording.
+      text: 'ប្រសិនបើប្រព័ន្ធសមីការមានក្រាហ្វជាបន្ទាត់ពីរដែលត្រួតស៊ីគ្នាទាំងស្រុង នោះប្រព័ន្ធសមីការមានចម្លើយរាប់មិនអស់។',
       options: ['True', 'False'],
       correctAnswer: 'true',
       explanation: 'បន្ទាត់ត្រួតស៊ីគ្នានឹងមានចំណុចប្រសព្វរាប់មិនអស់ នាំឱ្យប្រព័ន្ធមានចម្លើយរាប់មិនអស់។',
@@ -1515,6 +1260,33 @@ const PRACTICE: Record<string, SeedQuestion[]> = {
       }),
       explanation: 'ផលធៀបក្រឡាផ្ទៃស្មើការេនៃផលធៀបដូចគ្នា ($k^2$)។',
     },
+    {
+      type: 'MULTIPLE_CHOICE',
+      text: 'បើត្រីកោណពីរដូចគ្នាមានផលធៀបដូចគ្នា $k = 4$ តើផលធៀបក្រឡាផ្ទៃរបស់វាស្មើនឹងប៉ុន្មាន?',
+      options: ['4', '8', '16', '64'],
+      correctAnswer: 2,
+      explanation: 'ផលធៀបក្រឡាផ្ទៃស្មើនឹងការេនៃផលធៀបដូចគ្នា៖ $k^2 = 4^2 = 16$ ។',
+    },
+    {
+      type: 'MULTIPLE_CHOICE',
+      text: 'បើត្រីកោណពីរដូចគ្នាមានផលធៀបដូចគ្នា $k = 3$ តើផលធៀបបរិមាត្ររបស់វាស្មើនឹងប៉ុន្មាន?',
+      options: ['3', '6', '9', '27'],
+      correctAnswer: 0,
+      explanation: 'ផលធៀបបរិមាត្រស្មើនឹងផលធៀបដូចគ្នា $k = 3$ ។',
+    },
+    {
+      type: 'TRUE_FALSE',
+      text: 'គ្រប់ត្រីកោណសម័ង្សទាំងអស់ គឺជាត្រីកោណដូចគ្នាជានិច្ច។',
+      options: ['True', 'False'],
+      correctAnswer: 'true',
+      explanation: 'ព្រោះត្រីកោណសម័ង្សទាំងអស់មានមុំក្នុងទាំងបីស្មើនឹង $60^\\circ$ ដូចគ្នា (ករណី ម.ម.ម)។',
+    },
+    {
+      type: 'SHORT_ANSWER',
+      text: 'ក្នុងត្រីកោណដូចគ្នា $\\triangle ABC \\sim \\triangle DEF$ ប្រសិនបើជ្រុងត្រូវគ្នា $AB = 6$ និង $DE = 9$ រកផលធៀបដូចគ្នា $k = DE/AB$ ជាទសភាគ (ឧ. 2.5)។',
+      correctAnswer: '1.5',
+      explanation: '$k = \\frac{9}{6} = 1.5$ ។',
+    },
   ],
   'ពហុកោណ': [
     {
@@ -1572,6 +1344,38 @@ const PRACTICE: Record<string, SeedQuestion[]> = {
       }),
       explanation: 'គណនាតាមរូបមន្ត $(n-2) \\times 180^\\circ$។',
     },
+    {
+      type: 'MULTIPLE_CHOICE',
+      text: 'តើផលបូកមុំក្នុងនៃឆកោណ (៦ ជ្រុង) ស្មើនឹងប៉ុន្មានដឺក្រេ?',
+      options: ['540^\\circ', '720^\\circ', '900^\\circ', '1080^\\circ'],
+      correctAnswer: 1,
+      explanation: '$(6-2) \\times 180^\\circ = 4 \\times 180^\\circ = 720^\\circ$ ។',
+    },
+    {
+      type: 'MULTIPLE_CHOICE',
+      text: 'តើរូបមន្តគណនាចំនួនអង្កត់ទ្រូងនៃពហុកោណមាន $n$ ជ្រុងគឺជានរណា?',
+      options: [
+        'n(n-1)/2',
+        'n(n-2)/2',
+        'n(n-3)/2',
+        'n(n-3)'
+      ],
+      correctAnswer: 2,
+      explanation: 'ចំនួនអង្កត់ទ្រូងពហុកោណគឺ $\\frac{n(n-3)}{2}$ ។',
+    },
+    {
+      type: 'TRUE_FALSE',
+      text: 'ពហុកោណនិយ័ត (Regular Polygon) គឺជាពហុកោណដែលមានជ្រុងទាំងអស់ស្មើគ្នា និងមុំក្នុងទាំងអស់ស្មើគ្នា។',
+      options: ['True', 'False'],
+      correctAnswer: 'true',
+      explanation: 'នេះជានិយមន័យពិតប្រាកដនៃពហុកោណនិយ័ត។',
+    },
+    {
+      type: 'SHORT_ANSWER',
+      text: 'គណនារង្វាស់មុំក្នុងនីមួយៗនៃឆកោណនិយ័ត (៦ ជ្រុង)។ (សរសេរតែតួលេខដឺក្រេ ឧ. 100)',
+      correctAnswer: '120',
+      explanation: '$\\frac{720^\\circ}{6} = 120^\\circ$ ។',
+    },
   ],
   'សូលីត': [
     {
@@ -1628,6 +1432,37 @@ const PRACTICE: Record<string, SeedQuestion[]> = {
         'កោណ': 'V = (1/3)\\pi r^2 h',
       }),
       explanation: 'រូបមន្តមាឌមូលដ្ឋានរបស់សូលីតនីមួយៗ។',
+    },
+    {
+      type: 'MULTIPLE_CHOICE',
+      text: 'តើរូបមន្តមាឌបាល់ (ស្វែរ) ដែលមានកាំ $r$ គឺជានរណា?',
+      options: [
+        'V = 4\\pi r^2',
+        'V = \\frac{4}{3}\\pi r^3',
+        'V = \\frac{1}{3}\\pi r^2 h',
+        'V = \\pi r^2 h'
+      ],
+      correctAnswer: 1,
+      explanation: 'មាឌស្វែរគណនាតាមរូបមន្ត $V = \\frac{4}{3}\\pi r^3$ ។',
+    },
+    {
+      type: 'TRUE_FALSE',
+      text: 'មាឌកោណស្មើនឹងមួយភាគបីនៃមាឌស៊ីឡាំងដែលមានកាំបាត និងកម្ពស់ដូចគ្នា។',
+      options: ['True', 'False'],
+      correctAnswer: 'true',
+      explanation: 'ព្រោះ $V_{\\text{cone}} = \\frac{1}{3}\\pi r^2 h$ ពិតមែន។',
+    },
+    {
+      type: 'SHORT_ANSWER',
+      text: 'ប្រអប់មួយមានបណ្តោយ ៤ ទទឹង ៣ និងកម្ពស់ ២។ គណនាមាឌប្រអប់នោះ។',
+      correctAnswer: '24',
+      explanation: '$V = 4 \\times 3 \\times 2 = 24$ ។',
+    },
+    {
+      type: 'SHORT_ANSWER',
+      text: 'ស៊ីឡាំងមួយមានកាំបាត $r=3$ និងកម្ពស់ $h=5$។ គណនាមាឌស៊ីឡាំងនោះ (សរសេរតែមេគុណនៃ $\\pi$ ឧទាហរណ៍៖ 45)។',
+      correctAnswer: '45',
+      explanation: '$V = \\pi r^2 h = \\pi(3^2)(5) = 45\\pi$ ។',
     },
   ],
 };
@@ -1737,6 +1572,7 @@ async function seed() {
                 position: row.position,
                 explanation: row.explanation,
                 topicId: row.topicId,
+                difficulty: row.difficulty,
               })),
             });
           }
@@ -1755,6 +1591,7 @@ async function seed() {
         points: 1,
         explanation: q.explanation,
         topicId: topic.id,
+        difficulty: q.difficulty,
       })),
       { validTopicIds: new Set([topic.id]) },
     );
