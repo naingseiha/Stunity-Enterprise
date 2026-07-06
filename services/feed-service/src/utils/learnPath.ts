@@ -21,7 +21,7 @@ export type TopicRow = {
   hasLesson?: boolean;
 };
 
-export type QuestionRow = { id: string; topicId: string | null };
+export type QuestionRow = { id: string; topicId: string | null; difficulty?: number | null };
 
 export type UnitState = 'locked' | 'unlocked' | 'completed' | 'no_content';
 
@@ -36,6 +36,9 @@ export type UnitProgress = {
   target: number;
   state: UnitState;
   hasLesson: boolean;
+  /** Count of authored/backfilled questions per difficulty band (1-5). Bands with
+   * no tagged content are omitted rather than reported as zero. */
+  difficultyCounts: Partial<Record<1 | 2 | 3 | 4 | 5, number>>;
 };
 
 export function deriveUnitStates(
@@ -63,12 +66,19 @@ export function deriveUnitStates(
 
   const totals = new Map<string, number>();
   const corrects = new Map<string, number>();
+  const difficultyCounts = new Map<string, Partial<Record<1 | 2 | 3 | 4 | 5, number>>>();
   for (const q of questions) {
     const unitId = q.topicId ? unitOf.get(q.topicId) : undefined;
     if (!unitId) continue;
     totals.set(unitId, (totals.get(unitId) ?? 0) + 1);
     if (correctQuestionIds.has(q.id)) {
       corrects.set(unitId, (corrects.get(unitId) ?? 0) + 1);
+    }
+    if (q.difficulty && q.difficulty >= 1 && q.difficulty <= 5) {
+      const band = q.difficulty as 1 | 2 | 3 | 4 | 5;
+      const counts = difficultyCounts.get(unitId) ?? {};
+      counts[band] = (counts[band] ?? 0) + 1;
+      difficultyCounts.set(unitId, counts);
     }
   }
 
@@ -107,6 +117,7 @@ export function deriveUnitStates(
       target,
       state,
       hasLesson: !!unit.hasLesson,
+      difficultyCounts: difficultyCounts.get(unit.id) ?? {},
     };
   });
 }

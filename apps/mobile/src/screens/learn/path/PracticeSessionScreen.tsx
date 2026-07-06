@@ -15,6 +15,7 @@ import {
   StyleSheet,
   Platform,
   Image,
+  Share,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -90,7 +91,7 @@ export function PracticeSessionScreen() {
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<Props['navigation']>();
   const route = useRoute<Props['route']>();
-  const { topicId, title, grade, subjectName, subjectNameKh } = route.params;
+  const { topicId, subjectId, title, grade, subjectName, subjectNameKh, minDifficulty, maxDifficulty } = route.params;
   const insets = useSafeAreaInsets();
 
   const [questions, setQuestions] = useState<PracticeQuestion[] | null>(null);
@@ -102,19 +103,35 @@ export function PracticeSessionScreen() {
   const [xpTotal, setXpTotal] = useState(0);
   const [finished, setFinished] = useState(false);
 
+  // Mistake-review round: missed questions are replayed once before the
+  // session ends. sessionTotal/everMissed are captured separately from
+  // `questions` so the results screen's "X/Y" and "perfect" state still
+  // reflect the original session length once `questions` gets swapped to
+  // the (shorter) review round.
+  const [wrongQuestions, setWrongQuestions] = useState<PracticeQuestion[]>([]);
+  const [reviewMode, setReviewMode] = useState(false);
+  const [everMissed, setEverMissed] = useState(false);
+  const [sessionTotal, setSessionTotal] = useState(0);
+
   const translateY = useSharedValue(500);
 
   const loadQuestions = useCallback(() => {
     setLoadError(false);
     setQuestions(null);
+    setWrongQuestions([]);
+    setReviewMode(false);
+    setEverMissed(false);
     learnPathService
-      .getPractice(topicId)
-      .then(setQuestions)
+      .getPractice({ topicId, subjectId }, 10, { minDifficulty, maxDifficulty })
+      .then((qs) => {
+        setQuestions(qs);
+        setSessionTotal(qs.length);
+      })
       .catch(() => {
         setQuestions(null);
         setLoadError(true);
       });
-  }, [topicId]);
+  }, [topicId, subjectId, minDifficulty, maxDifficulty]);
 
   useEffect(() => {
     loadQuestions();
@@ -141,7 +158,14 @@ export function PracticeSessionScreen() {
           ? Haptics.NotificationFeedbackType.Success
           : Haptics.NotificationFeedbackType.Error,
       );
-      if (correct) setCorrectCount((c) => c + 1);
+      if (correct) {
+        setCorrectCount((c) => c + 1);
+      } else {
+        setEverMissed(true);
+        // Only queue for review the first time it's missed — during the
+        // review round itself, a repeat miss just stays missed for this pass.
+        if (!reviewMode) setWrongQuestions((w) => [...w, question]);
+      }
 
       // Fire-and-forget: reward/persistence must never block the UI.
       learnPathService
@@ -152,7 +176,7 @@ export function PracticeSessionScreen() {
         })
         .catch((err) => console.warn('[Practice] submit failed', err));
     },
-    [question, revealed],
+    [question, revealed, reviewMode],
   );
 
   // Runs on the JS thread — must be a named JS-scope function so runOnJS can
@@ -161,13 +185,24 @@ export function PracticeSessionScreen() {
   const advance = useCallback(() => {
     if (!questions) return;
     if (index + 1 >= questions.length) {
-      setFinished(true);
+      if (!reviewMode && wrongQuestions.length > 0) {
+        // One review pass through everything missed this round, then finish.
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setReviewMode(true);
+        setQuestions(wrongQuestions);
+        setWrongQuestions([]);
+        setIndex(0);
+        setChosen(null);
+        setRevealed(false);
+      } else {
+        setFinished(true);
+      }
     } else {
       setIndex(index + 1);
       setChosen(null);
       setRevealed(false);
     }
-  }, [questions, index]);
+  }, [questions, index, reviewMode, wrongQuestions]);
 
   const next = useCallback(() => {
     if (!questions) return;
@@ -178,6 +213,32 @@ export function PracticeSessionScreen() {
       if (done) runOnJS(advance)();
     });
   }, [questions, translateY, advance]);
+
+  const shareResults = useCallback(async () => {
+    try {
+      await Share.share({
+        message: t('quiz.result.shareMessage', {
+          defaultValue: 'I scored {{score}}/{{total}} on "{{title}}" and earned {{xp}} XP on Stunity!',
+          score: correctCount,
+          total: sessionTotal,
+          title,
+          xp: xpTotal,
+        }),
+      });
+    } catch (err) {
+      console.warn('[Practice] share failed', err);
+    }
+  }, [sessionTotal, correctCount, xpTotal, title, t]);
+
+  const retakeQuiz = useCallback(() => {
+    setIndex(0);
+    setChosen(null);
+    setRevealed(false);
+    setCorrectCount(0);
+    setXpTotal(0);
+    setFinished(false);
+    loadQuestions();
+  }, [loadQuestions]);
 
   const progressPct = questions && questions.length > 0 ? ((index + (revealed ? 1 : 0)) / questions.length) * 100 : 0;
 
@@ -210,7 +271,11 @@ export function PracticeSessionScreen() {
               <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerSubjectTitle}>{subjectNameKh || subjectName || t('quiz.takeQuiz.practice', 'Practice')}</Text>
+              <Text style={styles.headerSubjectTitle}>
+                {reviewMode
+                  ? t('learn.path.reviewingMistakes', 'Reviewing Mistakes')
+                  : (subjectNameKh || subjectName || t('quiz.takeQuiz.practice', 'Practice'))}
+              </Text>
               {questions && questions.length > 0 && (
                 <Text style={styles.questionCounterText}>
                   {t('quiz.takeQuiz.question', 'Question')}{' '}
@@ -309,12 +374,12 @@ export function PracticeSessionScreen() {
 
           <View style={styles.resultMiddleSectionDark}>
             <Text style={styles.resultMainTitleDark}>
-              {correctCount === questions!.length
+              {!everMissed
                 ? t('quiz.result.perfectTitle', { defaultValue: 'Congratulations!' })
                 : t('quiz.result.doneTitle', { defaultValue: 'Milestone Unlocked!' })}
             </Text>
             <Text style={styles.resultDescTextDark}>
-              {correctCount === questions!.length
+              {!everMissed
                 ? t('quiz.result.perfectDesc', { defaultValue: "You've successfully reached your learning goal. Every little step added up to something great!" })
                 : t('quiz.result.doneDesc', { defaultValue: "You've successfully completed this practice session. Every little step added up to something great!" })}
             </Text>
@@ -324,7 +389,7 @@ export function PracticeSessionScreen() {
             <Text style={styles.scoreLabelDark}>{t('quiz.result.yourScore', 'YOUR SCORE')}</Text>
             <View style={styles.scoreValueRowDark}>
               <Text style={styles.scoreValueHighlightDark}>{correctCount}</Text>
-              <Text style={styles.scoreValueBaseDark}> / {questions!.length}</Text>
+              <Text style={styles.scoreValueBaseDark}> / {sessionTotal}</Text>
             </View>
 
             <Text style={[styles.scoreLabelDark, { marginTop: 32 }]}>{t('quiz.result.earnedCoins', 'EARNED COINS')}</Text>
@@ -339,7 +404,7 @@ export function PracticeSessionScreen() {
               style={styles.btnShareDark}
               onPress={() => {
                 Haptics.selectionAsync();
-                navigation.goBack();
+                shareResults();
               }}
               activeOpacity={0.85}
             >
@@ -353,12 +418,7 @@ export function PracticeSessionScreen() {
               style={styles.btnTakeNewDark}
               onPress={() => {
                 Haptics.selectionAsync();
-                setIndex(0);
-                setChosen(null);
-                setRevealed(false);
-                setCorrectCount(0);
-                setXpTotal(0);
-                setFinished(false);
+                retakeQuiz();
               }}
               activeOpacity={0.85}
             >

@@ -1055,6 +1055,8 @@ model QuizQuestion {
   explanation   String?
   // Curriculum tag — nullable so legacy/untagged content keeps working.
   topicId       String?
+  // 1 (easiest) .. 5 (hardest) — nullable until backfilled/authored.
+  difficulty    Int?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   post          Post         @relation(fields: [postId], references: [id], onDelete: Cascade)

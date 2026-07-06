@@ -39,6 +39,8 @@ type ExamQuestionSeed = {
   correctAnswer: any;
   points: number;
   explanation: string;
+  /** 1 (easiest) .. 5 (hardest) — optional, only for newly-authored questions. */
+  difficulty?: number;
 };
 
 type ExamPaperSeed = {
@@ -454,6 +456,7 @@ async function seedTrackExams(subjectCode: string, trackKh: string, examPapers: 
                 position: row.position,
                 explanation: row.explanation,
                 topicId: row.topicId,
+                difficulty: row.difficulty,
               })),
             });
           }
@@ -485,6 +488,7 @@ async function seedTrackExams(subjectCode: string, trackKh: string, examPapers: 
                 position: row.position,
                 explanation: row.explanation,
                 topicId: row.topicId,
+                difficulty: row.difficulty,
               })),
             },
             quiz: {

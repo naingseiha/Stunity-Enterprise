@@ -35,6 +35,8 @@ type QuestionSeed = {
   correctAnswer: any;
   points?: number;
   explanation: string;
+  /** 1 (easiest) .. 5 (hardest) — optional, only for newly-authored questions. */
+  difficulty?: number;
 };
 
 // =========================================================================
@@ -833,6 +835,7 @@ async function seedTrackPractice(
                 position: row.position,
                 explanation: row.explanation,
                 topicId: row.topicId,
+                difficulty: row.difficulty,
               })),
             });
           }
@@ -859,6 +862,7 @@ async function seedTrackPractice(
                 position: row.position,
                 explanation: row.explanation,
                 topicId: row.topicId,
+                difficulty: row.difficulty,
               })),
             },
             quiz: {

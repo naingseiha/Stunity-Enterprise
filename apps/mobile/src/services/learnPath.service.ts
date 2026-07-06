@@ -34,6 +34,8 @@ export interface LearnUnit {
   target: number;
   state: UnitState;
   hasLesson: boolean;
+  /** Count of difficulty-tagged questions per band (1-5). Missing bands have no content yet. */
+  difficultyCounts: Partial<Record<1 | 2 | 3 | 4 | 5, number>>;
 }
 
 export interface UnitLesson {
@@ -91,8 +93,21 @@ export const learnPathService = {
     return response.data?.data ?? null;
   },
 
-  async getPractice(topicId: string, limit = 10): Promise<PracticeQuestion[]> {
-    const response = await quizApi.get('/learn/practice', { params: { topicId, limit } });
+  /** Exactly one of topicId/subjectId is expected. subjectId = cross-unit "Mixed Review". */
+  async getPractice(
+    scope: { topicId?: string; subjectId?: string },
+    limit = 10,
+    difficultyBand?: { minDifficulty?: number; maxDifficulty?: number },
+  ): Promise<PracticeQuestion[]> {
+    const response = await quizApi.get('/learn/practice', {
+      params: {
+        topicId: scope.topicId,
+        subjectId: scope.subjectId,
+        limit,
+        minDifficulty: difficultyBand?.minDifficulty,
+        maxDifficulty: difficultyBand?.maxDifficulty,
+      },
+    });
     return response.data?.data?.questions ?? [];
   },
 

@@ -54,6 +54,8 @@ export type CanonicalQuizQuestion = {
   points: number;
   explanation: string | null;
   topicId: string | null;
+  /** 1 (easiest) .. 5 (hardest) — null until backfilled/authored. */
+  difficulty: number | null;
 };
 
 export type QuizQuestionRowPlan = {
@@ -68,6 +70,7 @@ export type QuizQuestionRowPlan = {
   position: number;
   explanation: string | null;
   topicId: string | null;
+  difficulty: number | null;
 };
 
 export type PreparedQuizQuestions = {
@@ -118,6 +121,12 @@ const cleanOptions = (raw: unknown): string[] =>
 const isSafeRowId = (id: unknown): id is string =>
   typeof id === 'string' && id.length > 0 && id.length <= 64 && /^[A-Za-z0-9_-]+$/.test(id);
 
+/** Out-of-range or non-integer values fall back to null rather than failing the whole post. */
+const cleanDifficulty = (raw: unknown): number | null => {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null;
+};
+
 export type PrepareOptions = {
   /**
    * Topic ids confirmed to exist — unknown ids are dropped to null so a stale
@@ -165,6 +174,7 @@ export function prepareQuizQuestions(
     const rawTopicId = typeof q.topicId === 'string' && q.topicId.trim() ? q.topicId.trim() : null;
     const topicId =
       rawTopicId && (!opts.validTopicIds || opts.validTopicIds.has(rawTopicId)) ? rawTopicId : null;
+    const difficulty = cleanDifficulty(q.difficulty);
 
     // Row-able shapes: what quiz_questions (Int correctAnswer + String[] options)
     // and the reels/recall surfaces can represent.
@@ -216,6 +226,7 @@ export function prepareQuizQuestions(
       points,
       explanation,
       topicId,
+      difficulty,
     });
 
     if (rowShape) {
@@ -229,6 +240,7 @@ export function prepareQuizQuestions(
         position: index,
         explanation,
         topicId,
+        difficulty,
       });
     }
   });

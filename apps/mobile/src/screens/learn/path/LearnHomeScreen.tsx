@@ -1354,6 +1354,8 @@ export function LearnHomeScreen() {
       icon: keyof typeof Ionicons.glyphMap;
       state: 'locked' | 'unlocked' | 'completed';
       targetVal?: number;
+      minDifficulty?: number;
+      maxDifficulty?: number;
     }> = [];
 
     // 1. Add Lesson step if present
@@ -1368,18 +1370,38 @@ export function LearnHomeScreen() {
       });
     }
 
-    // 2. Add Practice Quiz steps dynamically based on grade and question bank size
-    const isGrade12OrLarge = (unit.totalQuestions > 12) || (path?.subject?.grade === '12');
-    const rawSteps = isGrade12OrLarge ? [
-      { id: 'p1', ratio: 0.2, titleKh: 'លំហាត់អនុវត្តន៍ ១ (កម្រិតមូលដ្ឋាន)', titleEn: 'Practice Quiz 1 (Basic)', icon: 'extension-puzzle' as const },
-      { id: 'p2', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ២ (កម្រិតមធ្យម)', titleEn: 'Practice Quiz 2 (Medium)', icon: 'flash' as const },
-      { id: 'p3', ratio: 0.65, titleKh: 'លំហាត់អនុវត្តន៍ ៣ (កម្រិតខ្ពស់)', titleEn: 'Practice Quiz 3 (Advanced)', icon: 'flame' as const },
-      { id: 'p4', ratio: 0.85, titleKh: 'លំហាត់អនុវត្តន៍ ៤ (ត្រៀមប្រឡង)', titleEn: 'Practice Quiz 4 (Exam Prep)', icon: 'rocket' as const },
-      { id: 'p5', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ (បាក់ឌុប)', titleEn: 'Final Challenge (Bac II)', icon: 'trophy' as const },
+    // 2. Add Practice Quiz steps dynamically based on grade, question bank size,
+    // and — new — how much difficulty-tagged content actually exists. The ladder
+    // only promises a stage's difficulty label if that band has enough real
+    // content to back it; otherwise it degrades to a plain, unfiltered stage
+    // (today's behavior) rather than silently recycling the same few questions
+    // under an "Advanced"/"Exam Prep" label that doesn't mean anything yet.
+    const bandCounts = unit.difficultyCounts ?? {};
+    const countInRange = (lo: number, hi: number) => {
+      let sum = 0;
+      for (let lvl = lo; lvl <= hi; lvl++) sum += bandCounts[lvl as 1 | 2 | 3 | 4 | 5] ?? 0;
+      return sum;
+    };
+    const MIN_PER_BAND = 2;
+    const has5DistinctBands = [1, 2, 3, 4, 5].every((lvl) => countInRange(lvl, lvl) >= MIN_PER_BAND);
+    const has3DistinctBands =
+      countInRange(1, 2) >= MIN_PER_BAND && countInRange(3, 3) >= MIN_PER_BAND && countInRange(4, 5) >= MIN_PER_BAND;
+    const wantsLongLadder = (unit.totalQuestions > 12) || (path?.subject?.grade === '12');
+
+    const rawSteps = wantsLongLadder && has5DistinctBands ? [
+      { id: 'p1', ratio: 0.2, titleKh: 'លំហាត់អនុវត្តន៍ ១ (កម្រិតមូលដ្ឋាន)', titleEn: 'Practice Quiz 1 (Basic)', icon: 'extension-puzzle' as const, minDifficulty: 1, maxDifficulty: 1 },
+      { id: 'p2', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ២ (កម្រិតមធ្យម)', titleEn: 'Practice Quiz 2 (Medium)', icon: 'flash' as const, minDifficulty: 2, maxDifficulty: 2 },
+      { id: 'p3', ratio: 0.65, titleKh: 'លំហាត់អនុវត្តន៍ ៣ (កម្រិតខ្ពស់)', titleEn: 'Practice Quiz 3 (Advanced)', icon: 'flame' as const, minDifficulty: 3, maxDifficulty: 3 },
+      { id: 'p4', ratio: 0.85, titleKh: 'លំហាត់អនុវត្តន៍ ៤ (ត្រៀមប្រឡង)', titleEn: 'Practice Quiz 4 (Exam Prep)', icon: 'rocket' as const, minDifficulty: 4, maxDifficulty: 4 },
+      { id: 'p5', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ (បាក់ឌុប)', titleEn: 'Final Challenge (Bac II)', icon: 'trophy' as const, minDifficulty: 5, maxDifficulty: 5 },
+    ] : has3DistinctBands ? [
+      { id: 'p1', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ១', titleEn: 'Practice Quiz 1', icon: 'extension-puzzle' as const, minDifficulty: 1, maxDifficulty: 2 },
+      { id: 'p2', ratio: 0.8, titleKh: 'លំហាត់អនុវត្តន៍ ២', titleEn: 'Practice Quiz 2', icon: 'flash' as const, minDifficulty: 3, maxDifficulty: 3 },
+      { id: 'p3', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ', titleEn: 'Final Challenge', icon: 'trophy' as const, minDifficulty: 4, maxDifficulty: 5 },
     ] : [
-      { id: 'p1', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ១', titleEn: 'Practice Quiz 1', icon: 'extension-puzzle' as const },
-      { id: 'p2', ratio: 0.8, titleKh: 'លំហាត់អនុវត្តន៍ ២', titleEn: 'Practice Quiz 2', icon: 'flash' as const },
-      { id: 'p3', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ', titleEn: 'Final Challenge', icon: 'trophy' as const },
+      { id: 'p1', ratio: 0.4, titleKh: 'លំហាត់អនុវត្តន៍ ១', titleEn: 'Practice Quiz 1', icon: 'extension-puzzle' as const, minDifficulty: undefined, maxDifficulty: undefined },
+      { id: 'p2', ratio: 0.8, titleKh: 'លំហាត់អនុវត្តន៍ ២', titleEn: 'Practice Quiz 2', icon: 'flash' as const, minDifficulty: undefined, maxDifficulty: undefined },
+      { id: 'p3', ratio: 1.0, titleKh: 'លំហាត់ផ្ដាច់ព្រ័ត្រ', titleEn: 'Final Challenge', icon: 'trophy' as const, minDifficulty: undefined, maxDifficulty: undefined },
     ];
 
     const practiceSteps: Array<{
@@ -1390,6 +1412,8 @@ export function LearnHomeScreen() {
       titleEn: string;
       icon: keyof typeof Ionicons.glyphMap;
       state: 'locked' | 'unlocked' | 'completed';
+      minDifficulty?: number;
+      maxDifficulty?: number;
     }> = [];
 
     for (const raw of rawSteps) {
@@ -1401,7 +1425,9 @@ export function LearnHomeScreen() {
         titleKh: raw.titleKh,
         titleEn: raw.titleEn,
         icon: raw.icon,
-        state: 'locked'
+        state: 'locked',
+        minDifficulty: raw.minDifficulty,
+        maxDifficulty: raw.maxDifficulty,
       });
     }
 
@@ -1564,7 +1590,11 @@ export function LearnHomeScreen() {
                     if (isLesson) {
                       navigation.navigate('UnitLesson', params);
                     } else {
-                      navigation.navigate('PracticeSession', params);
+                      navigation.navigate('PracticeSession', {
+                        ...params,
+                        minDifficulty: step.minDifficulty,
+                        maxDifficulty: step.maxDifficulty,
+                      });
                     }
                   }}
                   style={{
@@ -1795,6 +1825,72 @@ export function LearnHomeScreen() {
           return renderUnitCard(u, i, isLast);
         })}
         {renderTrophyRow(allDone)}
+        {renderMixedReviewCard()}
+        {renderExamPapersCard()}
+      </View>
+    );
+  };
+
+  // ── Mixed Review — cross-unit exam-prep quiz over the whole subject ──
+  const renderMixedReviewCard = () => {
+    if (!path || path.units.every((u) => u.state === 'no_content')) return null;
+    return (
+      <View style={[styles.unitCardOuter, { paddingBottom: 8 }]}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={[styles.trophyRow, styles.softShadow, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('PracticeSession', {
+              subjectId: path.subject.id,
+              title: t('learn.path.mixedReview', 'Mixed Review'),
+              grade: path.subject.grade,
+              subjectName: path.subject.nameEn || path.subject.name,
+              subjectNameKh: path.subject.nameKh,
+            });
+          }}
+        >
+          <View style={styles.trophyIconCircleWhite}>
+            <Ionicons name="shuffle" size={20} color={colors.textSecondary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.trophyLabel, { color: colors.textSecondary }]}>
+              {t('learn.path.mixedReview', 'Mixed Review')}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // ── Exam Papers — real-exam-format quizzes for this subject ──
+  const renderExamPapersCard = () => {
+    if (!path?.subject?.code) return null;
+    return (
+      <View style={[styles.unitCardOuter, { paddingBottom: 8 }]}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={[styles.trophyRow, styles.softShadow, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('ExamPaperBrowse', {
+              courseCode: path.subject.code,
+              subjectName: path.subject.nameEn || path.subject.name,
+              subjectNameKh: path.subject.nameKh,
+            });
+          }}
+        >
+          <View style={styles.trophyIconCircleWhite}>
+            <Ionicons name="document-text" size={20} color="#8B5CF6" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.trophyLabel, { color: colors.textSecondary }]}>
+              {t('learn.path.examPapers', 'Exam Papers')}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+        </TouchableOpacity>
       </View>
     );
   };

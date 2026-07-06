@@ -56,6 +56,12 @@ export interface QuizItem {
   attemptCount?: number;
   lastAttemptAt?: string;
   createdAt: string;
+  /** Present only on exam-paper posts (seeded/generated via the exam-paper scripts). */
+  courseCode?: string | null;
+  examDate?: string | null;
+  examDuration?: number | null;
+  examTotalPoints?: number | null;
+  examPassingScore?: number | null;
 }
 
 export interface QuizQuestion {
@@ -96,6 +102,9 @@ export interface BrowseQuizzesParams {
   classId?: string;
   page?: number;
   limit?: number;
+  /** Exam-paper filters — see ExamPaperBrowseScreen. */
+  courseCode?: string;
+  examOnly?: boolean;
 }
 
 export interface MyJoinedQuizzesParams {

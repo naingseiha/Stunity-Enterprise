@@ -173,8 +173,20 @@ export type LearnStackParamList = {
   LearningPath: { pathId: string };
   LearnHome: undefined;
   UnitLesson: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
-  PracticeSession: { topicId: string; title: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
+  PracticeSession: {
+    /** Exactly one of topicId/subjectId is expected. subjectId = cross-unit "Mixed Review". */
+    topicId?: string;
+    subjectId?: string;
+    title: string;
+    grade?: string;
+    subjectName?: string;
+    subjectNameKh?: string | null;
+    /** 1-5 difficulty band for this practice stage — omitted means unfiltered (today's behavior). */
+    minDifficulty?: number;
+    maxDifficulty?: number;
+  };
   TutorChat: { topicId?: string; title?: string; grade?: string; subjectName?: string; subjectNameKh?: string | null };
+  ExamPaperBrowse: { courseCode: string; subjectName?: string; subjectNameKh?: string | null };
   MyCourses: undefined;
   MyCreatedCourses: undefined;
   InstructorDashboard: undefined;

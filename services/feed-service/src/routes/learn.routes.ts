@@ -122,7 +122,7 @@ router.get('/learn/path', authenticateToken, async (req: AuthRequest, res: Respo
     const questions = topicIds.length
       ? await prismaRead.quizQuestion.findMany({
           where: { topicId: { in: topicIds } },
-          select: { id: true, topicId: true },
+          select: { id: true, topicId: true, difficulty: true },
         })
       : [];
     const correctResponses = questions.length
@@ -169,24 +169,54 @@ router.get('/learn/lesson', authenticateToken, async (req: AuthRequest, res: Res
   }
 });
 
-// GET /learn/practice?topicId=…&limit=10 — a batch of tagged questions for a
-// unit (its own tag + child-skill tags). Unanswered-correct questions first;
-// options deterministically shuffled like reels so chosenIndex lines up.
+// GET /learn/practice?topicId=…&limit=10&minDifficulty=&maxDifficulty= — a
+// batch of tagged questions for a unit (its own tag + child-skill tags).
+// GET /learn/practice?subjectId=…&limit=… — a mixed-review batch drawing
+// from EVERY topic in the subject instead of one unit ("Mixed Review").
+// Exactly one of topicId/subjectId is required. minDifficulty/maxDifficulty
+// (1-5) are optional — omitted means unfiltered, the original behavior.
+// Unanswered-correct questions first; options deterministically shuffled
+// like reels so chosenIndex lines up.
 router.get('/learn/practice', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const topicId = typeof req.query.topicId === 'string' ? req.query.topicId.trim() : '';
-    if (!topicId) return res.status(400).json({ success: false, error: 'topicId is required' });
+    const subjectId = typeof req.query.subjectId === 'string' ? req.query.subjectId.trim() : '';
+    if (!topicId && !subjectId) {
+      return res.status(400).json({ success: false, error: 'topicId or subjectId is required' });
+    }
     const limit = Math.min(Math.max(parseInt((req.query.limit as string) || '10', 10) || 10, 1), 20);
 
-    const children = await prismaRead.topic.findMany({
-      where: { parentId: topicId, isActive: true },
-      select: { id: true },
-    });
-    const topicIds = [topicId, ...children.map((c) => c.id)];
+    const parseDifficultyBound = (raw: unknown): number | undefined => {
+      const n = parseInt(raw as string, 10);
+      return Number.isInteger(n) && n >= 1 && n <= 5 ? n : undefined;
+    };
+    const minDifficulty = parseDifficultyBound(req.query.minDifficulty);
+    const maxDifficulty = parseDifficultyBound(req.query.maxDifficulty);
+
+    let topicIds: string[];
+    if (subjectId) {
+      const subjectTopics = await prismaRead.topic.findMany({
+        where: { subjectId, isActive: true },
+        select: { id: true },
+      });
+      topicIds = subjectTopics.map((t) => t.id);
+    } else {
+      const children = await prismaRead.topic.findMany({
+        where: { parentId: topicId, isActive: true },
+        select: { id: true },
+      });
+      topicIds = [topicId, ...children.map((c) => c.id)];
+    }
+    if (topicIds.length === 0) return res.json({ success: true, data: { questions: [] } });
 
     const questions = await prismaRead.quizQuestion.findMany({
-      where: { topicId: { in: topicIds } },
+      where: {
+        topicId: { in: topicIds },
+        ...(minDifficulty !== undefined || maxDifficulty !== undefined
+          ? { difficulty: { gte: minDifficulty, lte: maxDifficulty } }
+          : {}),
+      },
       select: {
         id: true,
         question: true,

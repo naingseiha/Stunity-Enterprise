@@ -2,7 +2,7 @@ import { deriveUnitStates, UNIT_TARGET_CORRECT } from './learnPath';
 
 const unit = (id: string, order: number) => ({ id, parentId: null, name: id, nameKh: null, order });
 const skill = (id: string, parentId: string) => ({ id, parentId, name: id, nameKh: null, order: 0 });
-const q = (id: string, topicId: string) => ({ id, topicId });
+const q = (id: string, topicId: string, difficulty?: number) => ({ id, topicId, difficulty });
 
 describe('deriveUnitStates', () => {
   it('rolls child-skill questions up into the parent unit', () => {
@@ -59,5 +59,25 @@ describe('deriveUnitStates', () => {
     const questions = [q('q1', 'u1'), q('q2', 'other-subject-topic')];
     const [u1] = deriveUnitStates(topics, questions, new Set());
     expect(u1.totalQuestions).toBe(1);
+  });
+
+  it('buckets tagged questions into per-unit difficultyCounts, rolling up child skills', () => {
+    const topics = [unit('u1', 0), skill('s1', 'u1')];
+    const questions = [
+      q('q1', 'u1', 1),
+      q('q2', 'u1', 1),
+      q('q3', 'u1', 3),
+      q('q4', 's1', 3),
+      q('q5', 'u1'), // untagged — excluded from the bucket counts
+    ];
+    const [u1] = deriveUnitStates(topics, questions, new Set());
+    expect(u1.difficultyCounts).toEqual({ 1: 2, 3: 2 });
+  });
+
+  it('reports an empty difficultyCounts object when no question is difficulty-tagged', () => {
+    const topics = [unit('u1', 0)];
+    const questions = [q('q1', 'u1'), q('q2', 'u1')];
+    const [u1] = deriveUnitStates(topics, questions, new Set());
+    expect(u1.difficultyCounts).toEqual({});
   });
 });

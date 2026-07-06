@@ -1710,7 +1710,13 @@
       "unitBanner": "Unit {{n}}",
       "mySubjects": "My subjects",
       "addSubject": "Add",
-      "finishTrophy": "Finish"
+      "finishTrophy": "Finish",
+      "mixedReview": "Mixed Review",
+      "examPapers": "Exam Papers",
+      "examPapersEmpty": "No exam papers here yet.",
+      "activeSubject": "Currently studying",
+      "tapToStudy": "Tap to study",
+      "reviewingMistakes": "Reviewing Mistakes"
     },
     "tutor": {
       "title": "AI Tutor",
@@ -2120,6 +2126,17 @@
       "correctAnswer": "Correct Answer:",
       "explanation": "Explanation"
     },
+    "result": {
+      "title": "Quiz Result",
+      "perfectTitle": "Congratulations!",
+      "doneTitle": "Milestone Unlocked!",
+      "perfectDesc": "You've successfully reached your learning goal. Every little step added up to something great!",
+      "doneDesc": "You've successfully completed this practice session. Every little step added up to something great!",
+      "yourScore": "YOUR SCORE",
+      "earnedCoins": "EARNED COINS",
+      "shareResults": "Share Results",
+      "shareMessage": "I scored {{score}}/{{total}} on \"{{title}}\" and earned {{xp}} XP on Stunity!"
+    },
     "levelUp": {
       "title": "Level Up!",
       "subtitle": "You've reached a new level!",
@@ -2276,6 +2293,9 @@
       "unavailableBody": "This quiz does not have available questions yet."
     },
     "takeQuiz": {
+      "practice": "Practice",
+      "question": "Question",
+      "takeNew": "Take New Quiz",
       "noQuestions": "No questions available for this quiz.",
       "goBack": "Go Back",
       "timesUp": "Time's Up!",

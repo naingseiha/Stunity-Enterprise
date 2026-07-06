@@ -77,11 +77,15 @@ const isMultipleChoiceCorrect = (userAnswer: unknown, correctAnswer: unknown, op
 // Quiz Discovery Endpoints (new)
 // ========================================
 
-// GET /quizzes — Browse all published quizzes (paginated, category, search)
+// GET /quizzes — Browse all published quizzes (paginated, category, search).
+// courseCode + examOnly are optional filters used by the Learn tab's Exam
+// Paper Browse screen to surface only exam-paper posts (examDate IS NOT
+// NULL) for a given subject's courseCode — everything else about this list
+// (grading, results, XP) is the same generic quiz-taking pipeline.
 router.get('/quizzes', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { category, search, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const { category, search, courseCode, examOnly, page = '1', limit = '20' } = req.query as Record<string, string>;
     const take = Math.min(parseInt(limit) || 20, 50);
     const skip = (parseInt(page) - 1) * take;
 
@@ -105,12 +109,33 @@ router.get('/quizzes', authenticateToken, async (req: AuthRequest, res: Response
         ],
       });
     }
+    if (courseCode) {
+      postWhere.AND.push({ courseCode });
+    }
+    if (examOnly === 'true') {
+      postWhere.AND.push({ examDate: { not: null } });
+    }
 
     const [quizzes, total] = await Promise.all([
       prisma.quiz.findMany({
         where: { post: postWhere },
         include: {
-          post: { select: { id: true, title: true, content: true, topicTags: true, authorId: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } }, createdAt: true } },
+          post: {
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              topicTags: true,
+              authorId: true,
+              author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
+              createdAt: true,
+              courseCode: true,
+              examDate: true,
+              examDuration: true,
+              examTotalPoints: true,
+              examPassingScore: true,
+            },
+          },
           attempts: { where: { userId }, select: { id: true, score: true, passed: true, pointsEarned: true, submittedAt: true }, take: 1, orderBy: { submittedAt: 'desc' } },
         },
         orderBy: { post: { createdAt: 'desc' } },
@@ -133,6 +158,11 @@ router.get('/quizzes', authenticateToken, async (req: AuthRequest, res: Response
       totalPoints: q.totalPoints,
       userAttempt: (q.attempts as any[])[0] || null,
       createdAt: q.post.createdAt,
+      courseCode: q.post.courseCode,
+      examDate: q.post.examDate,
+      examDuration: q.post.examDuration,
+      examTotalPoints: q.post.examTotalPoints,
+      examPassingScore: q.post.examPassingScore,
     }));
 
     res.json({ success: true, data, pagination: { page: parseInt(page), limit: take, total, pages: Math.ceil(total / take) } });
