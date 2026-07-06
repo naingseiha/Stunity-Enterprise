@@ -2,34 +2,45 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
+import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
 import { fetchQuizById } from '@/services/quiz';
 import { normalizeQuiz, NormalizedQuiz } from '@/utils/quiz';
 import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
 
-const BG = '#0F172A';
-const SURFACE = '#182235';
-const BORDER = 'rgba(255,255,255,0.1)';
 const PRIMARY = '#8B5CF6';
-const CYAN = '#38BDF8';
+
+const STAT_META = [
+  { icon: 'help-circle-outline' as const, label: 'Questions', color: '#EC4899', bg: '#FDF2F8', darkBg: '#2D0A1E' },
+  { icon: 'time-outline' as const, label: 'Time', color: '#0EA5E9', bg: '#F0F9FF', darkBg: '#0A1E2D' },
+  { icon: 'trophy-outline' as const, label: 'Points', color: '#F59E0B', bg: '#FFFBEB', darkBg: '#2D1A00' },
+];
+
+const RULES = [
+  { icon: 'shield-checkmark-outline' as const, color: '#8B5CF6', key: 'ruleFocus' },
+  { icon: 'timer-outline' as const, color: '#0EA5E9', key: 'ruleTimer' },
+  { icon: 'checkmark-done-outline' as const, color: '#10B981', key: 'ruleReview' },
+  { icon: 'cloud-upload-outline' as const, color: '#F59E0B', key: 'ruleSubmit' },
+] as const;
 
 export function QuizDetailsScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = createStyles(colors, isDark);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
   const initialQuiz = route.params?.quiz;
 
   const [quiz, setQuiz] = useState<NormalizedQuiz | null>(() => normalizeQuiz(initialQuiz));
@@ -38,63 +49,36 @@ export function QuizDetailsScreen() {
   useEffect(() => {
     let mounted = true;
     const normalized = normalizeQuiz(initialQuiz);
-
-    if (!normalized?.id || normalized.questions.length > 0) {
-      setQuiz(normalized);
-      return;
-    }
-
+    if (!normalized?.id || normalized.questions.length > 0) { setQuiz(normalized); return; }
     setQuiz(normalized);
     setLoading(true);
     fetchQuizById(normalized.id)
-      .then((freshQuiz) => {
-        if (!mounted) return;
-        setQuiz(normalizeQuiz({ ...normalized, ...freshQuiz }));
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
+      .then((f) => { if (!mounted) return; setQuiz(normalizeQuiz({ ...normalized, ...f })); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
   }, [initialQuiz]);
 
   const questionCount = quiz?.questions.length || 0;
-  const timeLabel = useMemo(() => {
-    if (!quiz?.timeLimit) return t('quiz.details.noTimeLimit');
-    return t('quiz.details.minutes', { count: quiz.timeLimit });
-  }, [quiz?.timeLimit, t]);
-
+  const timeLabelShort = useMemo(() => quiz?.timeLimit ? `${quiz.timeLimit}` : '∞', [quiz?.timeLimit]);
   const canStart = !!quiz && questionCount > 0 && !loading;
 
   const handleStart = useCallback(() => {
     if (!quiz) return;
-    if (!canStart) {
-      Alert.alert(t('quiz.details.unavailableTitle'), t('quiz.details.unavailableBody'));
-      return;
-    }
-
+    if (!canStart) { Alert.alert(t('quiz.details.unavailableTitle'), t('quiz.details.unavailableBody')); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      t('quiz.details.confirmTitle'),
-      t('quiz.details.confirmBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('quiz.details.confirmStart'),
-          onPress: () => navigation.navigate('TakeQuiz', { quiz }),
-        },
-      ]
-    );
+    Alert.alert(t('quiz.details.confirmTitle'), t('quiz.details.confirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('quiz.details.confirmStart'), onPress: () => navigation.navigate('TakeQuiz', { quiz }) },
+    ]);
   }, [canStart, navigation, quiz, t]);
+
+  const statValues = [String(questionCount), `${timeLabelShort} min`, String(quiz?.totalPoints || questionCount * 10)];
 
   if (!quiz) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <StatusBar barStyle="light-content" />
         <View style={styles.emptyState}>
-          <Ionicons name="alert-circle-outline" size={48} color="#94A3B8" />
+          <View style={styles.emptyIconWrap}><Ionicons name="alert-circle-outline" size={40} color={PRIMARY} /></View>
           <Text style={styles.emptyTitle}>{t('quiz.details.unavailableTitle')}</Text>
           <Text style={styles.emptyText}>{t('quiz.details.unavailableBody')}</Text>
           <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
@@ -106,346 +90,291 @@ export function QuizDetailsScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="chevron-back" size={26} color="#F8FAFC" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{t('quiz.details.title')}</Text>
-      </View>
+    <View style={styles.root}>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false}>
-        <LinearGradient
-          colors={['#312E81', '#1E1B4B', '#111827']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.heroIcon}>
-            <Ionicons name="rocket" size={30} color="#FDE68A" />
+      {/* ── TOP: Compact gradient header ── */}
+      <LinearGradient
+        colors={['#5B21B6', '#7C3AED', '#A855F7', '#EC4899']}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.hero, { paddingTop: insets.top + 8 }]}
+      >
+        {/* Blobs */}
+        <View style={styles.blob1} />
+        <View style={styles.blob2} />
+
+        {/* Nav row */}
+        <View style={styles.navRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={22} color="#FFF" />
+          </TouchableOpacity>
+          <View style={styles.heroBadge}>
+            <Ionicons name="rocket" size={13} color="#FDE68A" />
+            <Text style={styles.heroBadgeText}>Exam</Text>
           </View>
-          {renderPostTitleText(quiz.title, styles.quizTitle)}
-          {!!quiz.description && (
-            renderPostBodyText(quiz.description, styles.quizDescription, 4)
-          )}
-        </LinearGradient>
-
-        <View style={styles.statsRow}>
-          <Stat icon="document-text-outline" label={t('quiz.details.questions')} value={String(questionCount)} color="#EC4899" />
-          <Stat icon="time-outline" label={t('quiz.details.time')} value={timeLabel} color={CYAN} />
-          <Stat icon="star" label={t('quiz.details.points')} value={String(quiz.totalPoints || questionCount * 10)} color="#F59E0B" />
         </View>
 
+        {/* Title */}
+        <View style={styles.heroBody}>
+          {renderPostTitleText(quiz.title, styles.quizTitle)}
+          {!!quiz.description && renderPostBodyText(quiz.description, styles.quizDesc, 2)}
+        </View>
+      </LinearGradient>
+
+      {/* ── MIDDLE: Stats + Attempt + Rules ── */}
+      <View style={styles.body}>
+
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          {STAT_META.map((s, i) => (
+            <View key={s.label} style={styles.statCard}>
+              <View style={[styles.statIconWrap, { backgroundColor: isDark ? s.darkBg : s.bg }]}>
+                <Ionicons name={s.icon} size={20} color={s.color} />
+              </View>
+              <Text style={[styles.statValue, { color: s.color }]} numberOfLines={1} adjustsFontSizeToFit>
+                {statValues[i]}
+              </Text>
+              <Text style={styles.statUnit}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Previous attempt banner — inline, only shown if exists */}
         {!!quiz.userAttempt && (
           <TouchableOpacity
-            style={styles.attemptCard}
             activeOpacity={quiz.id ? 0.8 : 1}
             disabled={!quiz.id}
             onPress={() => quiz.id && navigation.navigate('QuizHistory' as any, { quizId: quiz.id, title: quiz.title })}
-            accessibilityRole="button"
-            accessibilityLabel={t('quiz.history.viewHistory', { defaultValue: 'View attempt history' })}
+            style={styles.attemptBanner}
           >
-            <Ionicons
-              name={quiz.userAttempt.passed ? 'checkmark-circle' : 'refresh-circle'}
-              size={24}
-              color={quiz.userAttempt.passed ? '#10B981' : '#F59E0B'}
-            />
-            <View style={styles.attemptTextWrap}>
-              <Text style={styles.attemptTitle}>{t('quiz.details.previousAttempt')}</Text>
-              <Text style={styles.attemptText}>
-                {t('quiz.details.previousScore', { score: Math.round(quiz.userAttempt.score || 0) })}
-              </Text>
-            </View>
-            {!!quiz.id && <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />}
+            <LinearGradient
+              colors={quiz.userAttempt.passed ? ['#064E3B', '#065F46'] : ['#451A03', '#78350F']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.attemptGradient}
+            >
+              <Ionicons
+                name={quiz.userAttempt.passed ? 'checkmark-circle' : 'refresh-circle'}
+                size={26} color={quiz.userAttempt.passed ? '#34D399' : '#FBBF24'}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.attemptTitle}>{t('quiz.details.previousAttempt')}</Text>
+                <Text style={styles.attemptScore}>{t('quiz.details.previousScore', { score: Math.round(quiz.userAttempt.score || 0) })}</Text>
+              </View>
+              {!!quiz.id && <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.5)" />}
+            </LinearGradient>
           </TouchableOpacity>
         )}
 
-        <View style={styles.infoPanel}>
-          <Text style={styles.sectionTitle}>{t('quiz.details.beforeYouStart')}</Text>
-          <InfoRow icon="shield-checkmark-outline" text={t('quiz.details.ruleFocus')} />
-          <InfoRow icon="timer-outline" text={quiz.timeLimit ? t('quiz.details.ruleTimer') : t('quiz.details.ruleNoTimer')} />
-          <InfoRow icon="checkmark-done-outline" text={t('quiz.details.ruleReview')} />
-          <InfoRow icon="cloud-upload-outline" text={t('quiz.details.ruleSubmit')} />
+        {/* Rules – 2×2 grid */}
+        <View style={styles.rulesSection}>
+          <Text style={styles.rulesSectionTitle}>{t('quiz.details.beforeYouStart')}</Text>
+          <View style={styles.rulesGrid}>
+            {RULES.map((rule, idx) => (
+              <View key={idx} style={[styles.ruleCard, { backgroundColor: isDark ? `${rule.color}18` : `${rule.color}10` }]}>
+                <View style={[styles.ruleIconWrap, { backgroundColor: `${rule.color}22` }]}>
+                  <Ionicons name={rule.icon} size={16} color={rule.color} />
+                </View>
+                <Text style={styles.ruleText} numberOfLines={3}>
+                  {rule.key === 'ruleTimer'
+                    ? (quiz.timeLimit ? t('quiz.details.ruleTimer') : t('quiz.details.ruleNoTimer'))
+                    : t(`quiz.details.${rule.key}`)}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {loading && (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator color={PRIMARY} />
-            <Text style={styles.loadingText}>{t('quiz.details.loading')}</Text>
-          </View>
-        )}
-      </ScrollView>
+        {loading && <ActivityIndicator color={PRIMARY} style={{ marginTop: 8 }} />}
+      </View>
 
-      <View style={styles.footer}>
+      {/* ── BOTTOM: CTA button ── */}
+      <View style={[styles.ctaContainer, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
-          style={[styles.startButton, !canStart && styles.startButtonDisabled]}
-          activeOpacity={0.85}
+          style={[styles.ctaOuter, !canStart && { opacity: 0.5 }]}
+          activeOpacity={0.9}
           onPress={handleStart}
           disabled={loading}
         >
-          <Text style={styles.startButtonText}>
-            {quiz.userAttempt ? t('quiz.details.retakeQuiz') : t('quiz.details.startQuiz')}
-          </Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          <LinearGradient
+            colors={['#7C3AED', '#A855F7', '#EC4899']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.ctaBtn}
+          >
+            <Text style={styles.ctaText}>
+              {quiz.userAttempt ? t('quiz.details.retakeQuiz') : t('quiz.details.startQuiz')}
+            </Text>
+            <View style={styles.ctaArrow}>
+              <Ionicons name="arrow-forward" size={18} color="#7C3AED" />
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
-  );
-}
 
-function Stat({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  color: string;
-}) {
-  return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIcon, { backgroundColor: `${color}22` }]}>
-        <Ionicons name={icon} size={18} color={color} />
-      </View>
-      <Text style={[styles.statValue, { color }]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
-function InfoRow({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Ionicons name={icon} size={18} color="#A78BFA" />
-      <Text style={styles.infoText}>{text}</Text>
-    </View>
-  );
-}
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+  safeArea: { flex: 1, backgroundColor: colors.background },
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  headerTitle: {
-    flex: 1,
-    color: '#F8FAFC',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  content: {
-    flex: 1,
-  },
-  contentInner: {
-    padding: 16,
-    paddingBottom: 24,
-  },
+  // ── Hero ──
   hero: {
-    minHeight: 220,
-    borderRadius: 18,
-    padding: 22,
-    justifyContent: 'flex-end',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     overflow: 'hidden',
   },
-  heroIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    marginBottom: 18,
-  },
-  quizTitle: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '900',
-    lineHeight: 42,
-    paddingTop: 4,
-    paddingBottom: 2,
-  },
-  quizDescription: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 15,
-    lineHeight: 26,
-    marginTop: 8,
-  },
-  statsRow: {
+  navRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
   },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
+  },
+  heroBadgeText: { color: '#FDE68A', fontSize: 12, fontWeight: '700' },
+  heroBody: { paddingTop: 4 },
+  quizTitle: {
+    color: '#FFFFFF', fontSize: 22, fontWeight: '900',
+    lineHeight: 30, letterSpacing: -0.5,
+  },
+  quizDesc: {
+    color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, marginTop: 6,
+  },
+  blob1: {
+    position: 'absolute', top: -50, right: -50,
+    width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  blob2: {
+    position: 'absolute', bottom: -20, right: 60,
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+
+  // ── Body ──
+  body: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 12,
+  },
+
+  // Stats
+  statsRow: { flexDirection: 'row', gap: 10 },
   statCard: {
     flex: 1,
-    minHeight: 126,
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
-  statLabel: {
-    color: '#94A3B8',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  attemptCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 14,
-    padding: 14,
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  attemptTextWrap: {
-    flex: 1,
-  },
-  attemptTitle: {
-    color: '#F8FAFC',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  attemptText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  infoPanel: {
-    marginTop: 14,
-    padding: 16,
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    gap: 12,
-  },
-  sectionTitle: {
-    color: '#F8FAFC',
-    fontSize: 17,
-    fontWeight: '900',
-    marginBottom: 2,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  infoText: {
-    flex: 1,
-    color: '#CBD5E1',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  loadingText: {
-    color: '#CBD5E1',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  footer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-    backgroundColor: 'rgba(15,23,42,0.98)',
-  },
-  startButton: {
-    minHeight: 58,
+    backgroundColor: colors.card,
     borderRadius: 18,
-    backgroundColor: PRIMARY,
-    flexDirection: 'row',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: isDark ? 0.0 : 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  startButtonDisabled: {
-    opacity: 0.55,
+  statIconWrap: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
   },
-  startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '900',
+  statValue: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5, textAlign: 'center' },
+  statUnit: {
+    fontSize: 10, fontWeight: '700', color: colors.textSecondary,
+    textTransform: 'uppercase', letterSpacing: 0.4, textAlign: 'center',
   },
-  emptyState: {
+
+  // Attempt
+  attemptBanner: { borderRadius: 16, overflow: 'hidden' },
+  attemptGradient: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
+  },
+  attemptTitle: { color: '#F1F5F9', fontSize: 13, fontWeight: '800' },
+  attemptScore: { color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 1 },
+
+  // Rules 2×2 grid
+  rulesSection: {
     flex: 1,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: isDark ? 0.0 : 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  emptyTitle: {
-    color: '#F8FAFC',
-    fontSize: 20,
-    fontWeight: '900',
-    marginTop: 14,
+  rulesSectionTitle: {
+    color: colors.text, fontSize: 15, fontWeight: '900', letterSpacing: -0.3,
   },
-  emptyText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 6,
+  rulesGrid: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
+  ruleCard: {
+    width: '48%',
+    flex: 1,
+    minWidth: '47%',
+    borderRadius: 14,
+    padding: 12,
+    gap: 8,
+    justifyContent: 'flex-start',
+  },
+  ruleIconWrap: {
+    width: 30, height: 30, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  ruleText: {
+    color: colors.textSecondary, fontSize: 12, lineHeight: 17,
+  },
+
+  // CTA
+  ctaContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  ctaOuter: { borderRadius: 24 },
+  ctaBtn: {
+    height: 58, borderRadius: 24,
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', paddingHorizontal: 24, gap: 10,
+  },
+  ctaText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', letterSpacing: 0.2 },
+  ctaArrow: {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
+  },
+
+  // Empty
+  emptyState: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  emptyIconWrap: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#8B5CF618', alignItems: 'center', justifyContent: 'center',
+  },
+  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '900', marginTop: 4 },
+  emptyText: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 },
   secondaryButton: {
-    marginTop: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginTop: 16, paddingHorizontal: 22, paddingVertical: 13,
+    borderRadius: 16, backgroundColor: '#8B5CF618',
   },
-  secondaryButtonText: {
-    color: '#F8FAFC',
-    fontSize: 14,
-    fontWeight: '800',
-  },
+  secondaryButtonText: { color: PRIMARY, fontSize: 15, fontWeight: '800' },
 });
