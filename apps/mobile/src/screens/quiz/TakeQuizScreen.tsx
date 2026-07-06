@@ -31,6 +31,21 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
 import { useFeedStore } from '@/stores';
 import { normalizeQuiz, NormalizedQuiz, NormalizedQuizQuestion } from '@/utils/quiz';
+import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
+
+// This screen's UI is always dark regardless of the app's own theme setting
+// (fixed #0F172A background etc.) — MarkdownMathView needs colors matching
+// THIS screen's real palette, not the app theme context, or its text could
+// render invisible (e.g. dark text on this screen's dark background if the
+// user's actual app theme happens to be light).
+const QUIZ_MARKDOWN_COLORS = {
+  text: '#F8FAFC',
+  textSecondary: 'rgba(255,255,255,0.85)',
+  textTertiary: 'rgba(255,255,255,0.5)',
+  surfaceVariant: 'rgba(255,255,255,0.05)',
+  border: 'rgba(255,255,255,0.12)',
+  card: 'rgba(255,255,255,0.05)',
+};
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -131,6 +146,29 @@ export function TakeQuizScreen() {
     } catch {
       return fallback;
     }
+  };
+
+  // ORDERING questions are authored with options already in the correct
+  // final order (correctAnswer is the trivial ascending index sequence,
+  // and grading compares the submitted order against `options` directly —
+  // see quizGrading.ts) — so the initial display MUST be shuffled, or
+  // leaving the items untouched is trivially "correct" with no actual task,
+  // and a student who (reasonably) tries to reorder an already-correct list
+  // ends up breaking a correct answer. Deterministic per-question so it
+  // doesn't re-shuffle on every re-render of the same question.
+  const seededShuffle = <T,>(items: T[], seed: string): T[] => {
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    const rand = () => {
+      h = (h * 1103515245 + 12345) >>> 0;
+      return h / 0xffffffff;
+    };
+    const arr = [...items];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   };
 
   const handleAnswerChange = (answer: string) => {
@@ -526,7 +564,9 @@ export function TakeQuizScreen() {
             </View>
 
             {/* Question Text */}
-            <Text style={styles.questionText}>{currentQuestion.text}</Text>
+            <View style={{ marginBottom: 4 }}>
+              <MarkdownMathView text={currentQuestion.text} colors={QUIZ_MARKDOWN_COLORS} isDark minHeight={30} />
+            </View>
 
             {/* Answer Input */}
             <View style={styles.answerSection}>
@@ -546,9 +586,14 @@ export function TakeQuizScreen() {
                             {OPTION_LETTERS[index]}
                           </Text>
                         </View>
-                        <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={4} ellipsizeMode="tail">
-                          {option}
-                        </Text>
+                        <View style={{ flex: 1, pointerEvents: 'none' }}>
+                          <MarkdownMathView
+                            text={option}
+                            colors={isSelected ? { ...QUIZ_MARKDOWN_COLORS, text: '#FFFFFF' } : QUIZ_MARKDOWN_COLORS}
+                            isDark
+                            minHeight={22}
+                          />
+                        </View>
                         {isSelected && (
                           <Ionicons name="checkmark-circle" size={24} color="#6366F1" />
                         )}
@@ -639,7 +684,10 @@ export function TakeQuizScreen() {
                 <View style={styles.orderingContainer}>
                   <Text style={styles.instructionText}>{t('quiz.takeQuiz.arrangeOrder')}</Text>
                   {(() => {
-                    const items: string[] = parseJsonAnswer(currentAnswer, currentQuestion.options || []);
+                    const items: string[] = parseJsonAnswer(
+                      currentAnswer,
+                      seededShuffle(currentQuestion.options || [], currentQuestion.id),
+                    );
 
                     const moveItem = (from: number, to: number) => {
                       const newItems = [...items];
@@ -653,7 +701,9 @@ export function TakeQuizScreen() {
                         <View style={styles.orderingNumber}>
                           <Text style={styles.orderingNumberText}>{index + 1}</Text>
                         </View>
-                        <Text style={styles.orderingText}>{item}</Text>
+                        <View style={{ flex: 1, pointerEvents: 'none' }}>
+                          <MarkdownMathView text={item} colors={QUIZ_MARKDOWN_COLORS} isDark minHeight={22} />
+                        </View>
                         <View style={styles.orderingControls}>
                           <TouchableOpacity
                             disabled={index === 0}
@@ -703,7 +753,9 @@ export function TakeQuizScreen() {
                     return leftItems.map((left, idx) => (
                       <View key={`${currentQuestion.id}-match-${idx}-${left}`} style={styles.matchRow}>
                         <View style={styles.matchLeft}>
-                          <Text style={styles.matchText}>{left}</Text>
+                          <View style={{ pointerEvents: 'none' }}>
+                            <MarkdownMathView text={left} colors={QUIZ_MARKDOWN_COLORS} isDark minHeight={20} />
+                          </View>
                         </View>
                         <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
                         <View style={styles.matchRight}>

@@ -23,7 +23,19 @@ import { useTranslation } from 'react-i18next';
 import { CelebrationConfetti } from '@/components/common';
 import { normalizeQuiz, type NormalizedQuizQuestion } from '@/utils/quiz';
 import { MarkdownMathView } from '@/components/learn/MarkdownMathView';
-import { useThemeContext } from '@/contexts';
+// This screen's UI is always dark regardless of the app's own theme setting
+// (fixed #0F172A background throughout) — MarkdownMathView needs colors
+// matching THIS screen's real palette, not the app theme context, or its
+// text could render invisible (e.g. dark-mode text really meaning light-
+// theme colors if the user's actual app theme happens to be light).
+const QUIZ_MARKDOWN_COLORS = {
+  text: '#F8FAFC',
+  textSecondary: 'rgba(255,255,255,0.85)',
+  textTertiary: 'rgba(255,255,255,0.5)',
+  surfaceVariant: 'rgba(255,255,255,0.05)',
+  border: 'rgba(255,255,255,0.12)',
+  card: 'rgba(255,255,255,0.05)',
+};
 
 // Brand Colors
 const TEAL = '#09CFF7';
@@ -47,6 +59,8 @@ interface Quiz {
   questions: QuizQuestion[];
   passingScore: number;
   totalPoints: number;
+  /** Present only on exam-paper posts — drives the handwriting-style explanation view. */
+  examDate?: string | null;
 }
 
 interface UserAnswer {
@@ -119,7 +133,6 @@ const areAnswersEquivalent = (question: QuizQuestion, userAnswer: unknown, corre
 export function QuizResultsScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const { t } = useTranslation();
-  const { colors, isDark } = useThemeContext();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const {
@@ -148,6 +161,7 @@ export function QuizResultsScreen() {
     () => normalizeQuiz(quiz),
     [quiz],
   );
+  const isExamPaper = !!quiz.examDate;
 
   const questions: NormalizedQuizQuestion[] = normalizedQuiz?.questions ?? [];
 
@@ -242,6 +256,32 @@ export function QuizResultsScreen() {
     }
     if (type === 'TRUE_FALSE') {
       return String(answer) === 'true' ? t('quiz.takeQuiz.true') : t('quiz.takeQuiz.false');
+    }
+    if (type === 'ORDERING') {
+      try {
+        const items = typeof answer === 'string' ? JSON.parse(answer) : answer;
+        if (Array.isArray(items)) {
+          // correctAnswer is stored as an index array (e.g. [0,1,2,3] — see
+          // quizGrading.ts, which grades ORDERING against `options` directly
+          // and treats correctAnswer as documentation-only); the user's
+          // submitted answer is an array of the actual step text instead.
+          const isIndexArray = items.every((v) => typeof v === 'number');
+          const labels = isIndexArray && options ? items.map((i) => options[i] ?? i) : items;
+          return labels.map((item, i) => `${i + 1}. ${item}`).join('\n\n');
+        }
+      } catch {
+        // fall through to default
+      }
+    }
+    if (type === 'MATCHING') {
+      try {
+        const matches = typeof answer === 'string' ? JSON.parse(answer) : answer;
+        if (matches && typeof matches === 'object') {
+          return Object.entries(matches).map(([left, right]) => `${left} → ${right}`).join('\n\n');
+        }
+      } catch {
+        // fall through to default
+      }
     }
     return String(answer);
   };
@@ -496,7 +536,7 @@ export function QuizResultsScreen() {
                       </View>
                     </View>
                     <View style={{ marginBottom: 12 }}>
-                      <MarkdownMathView text={result.question.text} colors={colors} isDark={isDark} minHeight={40} />
+                      <MarkdownMathView text={result.question.text} colors={QUIZ_MARKDOWN_COLORS} isDark minHeight={40} />
                     </View>
                     
                     <View style={styles.answersBox}>
@@ -504,7 +544,7 @@ export function QuizResultsScreen() {
                         <Text style={styles.answerLabel}>{t('quiz.results.yourAnswer')}</Text>
                         {/(\$|\\|\^|_)/.test(formatAnswer(result.question.type, result.userAnswer, result.question.options)) ? (
                           <View style={{ flex: 1, pointerEvents: 'none' }}>
-                            <MarkdownMathView text={formatAnswer(result.question.type, result.userAnswer, result.question.options)} colors={colors} isDark={isDark} minHeight={30} />
+                            <MarkdownMathView text={formatAnswer(result.question.type, result.userAnswer, result.question.options)} colors={QUIZ_MARKDOWN_COLORS} isDark minHeight={30} />
                           </View>
                         ) : (
                           <Text style={[
@@ -521,7 +561,7 @@ export function QuizResultsScreen() {
                           <Text style={styles.answerLabel}>{t('quiz.results.correctAnswer')}</Text>
                           {/(\$|\\|\^|_)/.test(formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)) ? (
                             <View style={{ flex: 1, pointerEvents: 'none' }}>
-                              <MarkdownMathView text={formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)} colors={colors} isDark={isDark} minHeight={30} />
+                              <MarkdownMathView text={formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)} colors={QUIZ_MARKDOWN_COLORS} isDark minHeight={30} />
                             </View>
                           ) : (
                             <Text style={[styles.answerValue, { color: '#10B981' }]}>
@@ -537,7 +577,13 @@ export function QuizResultsScreen() {
                         <Ionicons name="information-circle" size={16} color={TEAL} style={{ marginTop: 2, marginRight: 8 }} />
                         <View style={{ flex: 1, pointerEvents: 'none' }}>
                           <Text style={styles.explanationTitle}>{t('quiz.results.explanation')}</Text>
-                          <MarkdownMathView text={result.question.explanation} colors={colors} isDark={isDark} minHeight={40} />
+                          <MarkdownMathView
+                            text={result.question.explanation}
+                            colors={QUIZ_MARKDOWN_COLORS}
+                            isDark
+                            minHeight={40}
+                            variant={isExamPaper ? 'handwriting' : 'default'}
+                          />
                         </View>
                       </View>
                     )}

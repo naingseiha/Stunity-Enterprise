@@ -26,7 +26,15 @@ export const markdownMathIt = MarkdownIt({ typographer: true }).use(texmath, {
 
 const KATEX_CSS_CDN = 'https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.css';
 
-export function buildMarkdownMathHtml(bodyHtml: string, colors: any, isDark: boolean): string {
+export type MarkdownMathVariant = 'default' | 'handwriting';
+
+export function buildMarkdownMathHtml(
+  bodyHtml: string,
+  colors: any,
+  isDark: boolean,
+  variant: MarkdownMathVariant = 'default',
+): string {
+  const isHandwriting = variant === 'handwriting';
   const accentColor = '#0EA5E9';
   const headingColor = isDark ? '#38BDF8' : '#0369A1';
   const blockquoteBg = isDark
@@ -36,6 +44,23 @@ export function buildMarkdownMathHtml(bodyHtml: string, colors: any, isDark: boo
   const formulaBg = isDark ? 'rgba(14, 165, 233, 0.06)' : '#F0F9FF';
   const formulaBorder = isDark ? 'rgba(14, 165, 233, 0.25)' : '#BEE3F8';
 
+  // Handwriting mode: no true Khmer cursive font exists (checked — Google
+  // Fonts' Khmer selection is sans/serif/display only), so this is a
+  // deliberate hybrid: 'Caveat' (a real cursive face) leads the font stack
+  // for Latin/numeric/math glyphs it covers, and the browser falls through
+  // to the existing warm 'Battambang' body font for Khmer characters Caveat
+  // doesn't have — plus an ink-blue ink color and a faint lined-paper
+  // background so it reads as a teacher's handwritten walkthrough.
+  const bodyFontStack = isHandwriting
+    ? `'Caveat', 'Battambang', 'Kantumruy Pro', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'Times New Roman', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`
+    : `'Kantumruy Pro', 'Battambang', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'Times New Roman', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+  const inkColor = isHandwriting ? (isDark ? '#93C5FD' : '#1E3A8A') : colors.text;
+  const paperBg = isHandwriting
+    ? isDark
+      ? `repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 27px, rgba(147,197,253,0.12) 28px)`
+      : `repeating-linear-gradient(180deg, #FFFDF5 0px, #FFFDF5 27px, #CBD9F5 28px)`
+    : 'transparent';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -43,23 +68,23 @@ export function buildMarkdownMathHtml(bodyHtml: string, colors: any, isDark: boo
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:wght@400;700&family=Koulen&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:wght@400;700&family=Koulen${isHandwriting ? '&family=Caveat:wght@400;700' : ''}&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${KATEX_CSS_CDN}">
 <style>
   * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
-    background: transparent;
-    color: ${colors.text};
-    font-family: 'Kantumruy Pro', 'Battambang', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'Times New Roman', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 15px;
+    background: ${paperBg};
+    color: ${inkColor};
+    font-family: ${bodyFontStack};
+    font-size: ${isHandwriting ? '17px' : '15px'};
     line-height: 1.65;
     -webkit-text-size-adjust: 100%;
   }
-  body { padding: 1px 2px; overflow-x: hidden; }
+  body { padding: ${isHandwriting ? '10px 14px' : '1px 2px'}; overflow-x: hidden; }
   h1, h2, h3 {
     font-family: 'Koulen', 'Kantumruy Pro', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'Times New Roman', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: ${headingColor};
+    color: ${isHandwriting ? inkColor : headingColor};
     font-weight: 400;
     margin: 22px 0 12px;
     line-height: 1.45;
@@ -70,7 +95,7 @@ export function buildMarkdownMathHtml(bodyHtml: string, colors: any, isDark: boo
   h3 { font-size: 16px; }
   strong {
     font-weight: 700;
-    color: ${isDark ? '#F1F5F9' : '#0F172A'};
+    color: ${isHandwriting ? inkColor : (isDark ? '#F1F5F9' : '#0F172A')};
   }
   ul, ol { padding-left: 20px; margin: 8px 0; }
   li { margin-bottom: 6px; }
@@ -121,6 +146,7 @@ export function buildMarkdownMathHtml(bodyHtml: string, colors: any, isDark: boo
   .katex .text, .katex .mord.text {
     font-family: 'Kantumruy Pro', 'Battambang', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'Times New Roman', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
   }
+  ${isHandwriting ? `body { color: ${inkColor}; } .katex-display { border-style: dashed; }` : ''}
   /* Formula-sheet cards (used by FormulaListView) — mirrors the native
      formulaCard style in UnitLessonScreen so both rendering paths match. */
   .formula-card {
@@ -241,12 +267,14 @@ interface MarkdownMathViewProps {
   colors: any;
   isDark: boolean;
   minHeight?: number;
+  /** 'handwriting' renders like a teacher's handwritten walkthrough — used for exam-paper explanations. */
+  variant?: MarkdownMathVariant;
 }
 
-export function MarkdownMathView({ text, colors, isDark, minHeight = 60 }: MarkdownMathViewProps) {
+export function MarkdownMathView({ text, colors, isDark, minHeight = 60, variant = 'default' }: MarkdownMathViewProps) {
   const html = useMemo(
-    () => buildMarkdownMathHtml(markdownMathIt.render(sanitizeMathSymbols(text)), colors, isDark),
-    [text, colors, isDark],
+    () => buildMarkdownMathHtml(markdownMathIt.render(sanitizeMathSymbols(text)), colors, isDark, variant),
+    [text, colors, isDark, variant],
   );
   return <AutoHeightWebView html={html} minHeight={minHeight} />;
 }
