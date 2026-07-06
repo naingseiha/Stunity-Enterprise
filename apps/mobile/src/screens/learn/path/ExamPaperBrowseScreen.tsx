@@ -1,19 +1,20 @@
 /**
- * ExamPaperBrowseScreen — lists real-exam-format Quiz posts for a subject.
- * Creative redesign: immersive header, numbered cards, gradient icon badges.
+ * ExamPaperBrowseScreen — Flat-design card list with collapsible header.
+ * Cards use soft pastel backgrounds (first card is vibrant).
+ * Header collapses on scroll via Animated API.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Dimensions,
+  Platform,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -25,16 +26,29 @@ import { LearnStackScreenProps } from '@/navigation/types';
 
 type Props = LearnStackScreenProps<'ExamPaperBrowse'>;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Gradient pairs for cards (cycles)
-const CARD_GRADIENTS: [string, string][] = [
-  ['#7C3AED', '#A855F7'],
-  ['#0284C7', '#38BDF8'],
-  ['#B45309', '#F59E0B'],
-  ['#065F46', '#34D399'],
-  ['#9D174D', '#F472B6'],
+// ── Card palette (cycles). Index 0 = vibrant, rest = soft pastel ──
+const CARD_PALETTE = [
+  { bg: '#F87171', textColor: '#FFFFFF',  metaColor: 'rgba(255,255,255,0.75)', tagBg: 'rgba(255,255,255,0.22)', tagText: '#FFF', numColor: 'rgba(255,255,255,0.5)' },
+  { bg: '#EDE9FE', textColor: '#3730A3',  metaColor: '#6D6BAA',               tagBg: '#DDD6FE',               tagText: '#4C1D95', numColor: '#A5B4FC' },
+  { bg: '#FEF9C3', textColor: '#713F12',  metaColor: '#92712A',               tagBg: '#FDE68A',               tagText: '#78350F', numColor: '#FCD34D' },
+  { bg: '#DCFCE7', textColor: '#14532D',  metaColor: '#3A7A50',               tagBg: '#BBF7D0',               tagText: '#166534', numColor: '#6EE7B7' },
+  { bg: '#FCE7F3', textColor: '#831843',  metaColor: '#9D6070',               tagBg: '#FBCFE8',               tagText: '#9D174D', numColor: '#F9A8D4' },
+  { bg: '#E0F2FE', textColor: '#0C4A6E',  metaColor: '#2D7A9A',               tagBg: '#BAE6FD',               tagText: '#075985', numColor: '#7DD3FC' },
 ];
+
+// Dark mode palette
+const CARD_PALETTE_DARK = [
+  { bg: '#7F1D1D', textColor: '#FEF2F2',  metaColor: 'rgba(254,242,242,0.7)', tagBg: 'rgba(255,255,255,0.15)', tagText: '#FCA5A5', numColor: '#FCA5A5' },
+  { bg: '#1E1B4B', textColor: '#EDE9FE',  metaColor: '#A5B4FC',               tagBg: 'rgba(139,92,246,0.2)',   tagText: '#C4B5FD', numColor: '#818CF8' },
+  { bg: '#1C1400', textColor: '#FEF9C3',  metaColor: '#D4A955',               tagBg: 'rgba(234,179,8,0.2)',    tagText: '#FCD34D', numColor: '#F59E0B' },
+  { bg: '#052E16', textColor: '#DCFCE7',  metaColor: '#6EE7B7',               tagBg: 'rgba(16,185,129,0.2)',   tagText: '#6EE7B7', numColor: '#34D399' },
+  { bg: '#500724', textColor: '#FCE7F3',  metaColor: '#F9A8D4',               tagBg: 'rgba(236,72,153,0.2)',   tagText: '#F9A8D4', numColor: '#F472B6' },
+  { bg: '#082F49', textColor: '#E0F2FE',  metaColor: '#7DD3FC',               tagBg: 'rgba(14,165,233,0.2)',   tagText: '#7DD3FC', numColor: '#38BDF8' },
+];
+
+const HEADER_MAX = 140;
+const HEADER_MIN = 0;
+const SCROLL_THRESHOLD = 80;
 
 export function ExamPaperBrowseScreen() {
   const { t, i18n } = useTranslation();
@@ -48,6 +62,9 @@ export function ExamPaperBrowseScreen() {
 
   const [papers, setPapers] = useState<QuizItem[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+
+  // Animated scroll value
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const load = useCallback(() => {
     setLoadError(false);
@@ -65,64 +82,94 @@ export function ExamPaperBrowseScreen() {
   };
 
   const displayTitle = isKh ? subjectNameKh || subjectName : subjectName || subjectNameKh;
+  const palette = isDark ? CARD_PALETTE_DARK : CARD_PALETTE;
+
+  // Animated interpolations
+  const extraHeaderHeight = scrollY.interpolate({
+    inputRange: [0, SCROLL_THRESHOLD],
+    outputRange: [HEADER_MAX, HEADER_MIN],
+    extrapolate: 'clamp',
+  });
+  const subHeaderOpacity = scrollY.interpolate({
+    inputRange: [0, SCROLL_THRESHOLD * 0.6],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+  const headerElevation = scrollY.interpolate({
+    inputRange: [0, 10],
+    outputRange: [0, 6],
+    extrapolate: 'clamp',
+  });
+
+  const NavBar = (
+    <View style={[styles.navBar, { paddingTop: insets.top + 4 }]}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backBtn}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="chevron-back" size={22} color="#FFF" />
+      </TouchableOpacity>
+      <Text style={styles.navTitle} numberOfLines={1}>
+        {displayTitle || t('learn.path.examPapers')}
+      </Text>
+      <View style={{ width: 36 }} />
+    </View>
+  );
 
   return (
-    <View style={styles.root}>
-      {/* ── Immersive Header ── */}
-      <LinearGradient
-        colors={['#5B21B6', '#7C3AED', '#C084FC']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.headerGradient, { paddingTop: insets.top + 4 }]}
-      >
-        {/* Decorative shapes */}
-        <View style={styles.hdrBlob1} />
-        <View style={styles.hdrBlob2} />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
 
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleWrap}>
-            <Text style={styles.headerSubtitle}>{t('learn.path.examPapers')}</Text>
-            {!!displayTitle && (
-              <Text style={styles.headerTitle} numberOfLines={1}>{displayTitle}</Text>
+      {/* ── Animated collapsible gradient header ── */}
+      <Animated.View style={{ elevation: headerElevation }}>
+        <LinearGradient
+          colors={['#5B21B6', '#7C3AED', '#C084FC']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
+          {/* Blobs */}
+          <View style={styles.hdrBlob1} />
+          <View style={styles.hdrBlob2} />
+
+          {/* Fixed nav bar */}
+          {NavBar}
+
+          {/* Collapsible subtitle area */}
+          <Animated.View style={[styles.headerExpanded, { height: extraHeaderHeight, opacity: subHeaderOpacity }]}>
+            <Text style={styles.headerSub}>
+              {t('learn.path.examPapers')}
+            </Text>
+            {papers && papers.length > 0 && (
+              <View style={styles.statsStrip}>
+                <View style={styles.statPill}>
+                  <Ionicons name="document-text-outline" size={13} color="#FDE68A" />
+                  <Text style={styles.statPillText}>{papers.length} Papers</Text>
+                </View>
+                <View style={styles.statPill}>
+                  <Ionicons name="school-outline" size={13} color="#FDE68A" />
+                  <Text style={styles.statPillText}>Official Exams</Text>
+                </View>
+              </View>
             )}
-          </View>
-          <View style={styles.backBtn} />
-        </View>
+          </Animated.View>
+        </LinearGradient>
+      </Animated.View>
 
-        {/* Stats strip */}
-        {papers && papers.length > 0 && (
-          <View style={styles.statsStrip}>
-            <View style={styles.statPill}>
-              <Ionicons name="document-text-outline" size={14} color="#FDE68A" />
-              <Text style={styles.statPillText}>{papers.length} Papers</Text>
-            </View>
-            <View style={styles.statPill}>
-              <Ionicons name="school-outline" size={14} color="#FDE68A" />
-              <Text style={styles.statPillText}>Official Exams</Text>
-            </View>
-          </View>
-        )}
-      </LinearGradient>
-
-      {/* ── Content ── */}
+      {/* ── States ── */}
       {papers === null && !loadError && (
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#8B5CF6" />
-          <Text style={styles.loadingText}>Loading papers...</Text>
+          <Text style={styles.stateText}>Loading...</Text>
         </View>
       )}
 
       {loadError && (
         <View style={styles.centerBox}>
-          <View style={styles.errorIconWrap}>
-            <Ionicons name="cloud-offline-outline" size={36} color="#8B5CF6" />
-          </View>
-          <Text style={styles.emptyTitle}>{t('learn.path.loadError')}</Text>
+          <View style={styles.stateIconWrap}><Ionicons name="cloud-offline-outline" size={34} color="#8B5CF6" /></View>
+          <Text style={styles.stateTitle}>{t('learn.path.loadError')}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={load}>
-            <Ionicons name="refresh-outline" size={16} color="#FFF" />
+            <Ionicons name="refresh-outline" size={15} color="#FFF" />
             <Text style={styles.retryText}>{t('learn.path.retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -130,69 +177,70 @@ export function ExamPaperBrowseScreen() {
 
       {papers && papers.length === 0 && (
         <View style={styles.centerBox}>
-          <View style={styles.errorIconWrap}>
-            <Ionicons name="document-text-outline" size={36} color="#8B5CF6" />
-          </View>
-          <Text style={styles.emptyTitle}>{t('learn.path.examPapersEmpty')}</Text>
+          <View style={styles.stateIconWrap}><Ionicons name="document-text-outline" size={34} color="#8B5CF6" /></View>
+          <Text style={styles.stateTitle}>{t('learn.path.examPapersEmpty')}</Text>
         </View>
       )}
 
+      {/* ── Paper list ── */}
       {papers && papers.length > 0 && (
-        <ScrollView
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
+        <Animated.ScrollView
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
         >
           {papers.map((quiz, index) => {
             const year = quiz.examDate ? new Date(quiz.examDate).getFullYear() : null;
-            const [gradStart, gradEnd] = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+            const p = palette[index % palette.length];
+            const num = String(index + 1).padStart(2, '0');
 
             return (
               <TouchableOpacity
                 key={quiz.id}
-                style={styles.card}
-                activeOpacity={0.82}
+                style={[styles.card, { backgroundColor: p.bg }]}
+                activeOpacity={0.78}
                 onPress={() => openPaper(quiz)}
               >
-                {/* Left: gradient number badge */}
-                <LinearGradient
-                  colors={[gradStart, gradEnd]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.cardBadge}
-                >
-                  <Text style={styles.cardBadgeNum}>{String(index + 1).padStart(2, '0')}</Text>
-                  <Ionicons name="document-text" size={14} color="rgba(255,255,255,0.7)" />
-                </LinearGradient>
+                {/* Number label */}
+                <Text style={[styles.cardNum, { color: p.numColor }]}>{num}</Text>
 
-                {/* Middle: text content */}
-                <View style={styles.cardBody}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>
-                    {quiz.title}{year ? ` (${year})` : ''}
+                {/* Title + Year */}
+                <View style={styles.cardTitleRow}>
+                  <Text style={[styles.cardTitle, { color: p.textColor }]} numberOfLines={2}>
+                    {quiz.title}
+                    {year ? ` (${year})` : ''}
                   </Text>
+                </View>
+
+                {/* Tags row */}
+                {(!!quiz.examDuration || !!quiz.examTotalPoints) && (
                   <View style={styles.cardTagRow}>
                     {!!quiz.examDuration && (
-                      <View style={[styles.cardTag, { backgroundColor: isDark ? '#1E1B4B' : '#EDE9FE' }]}>
-                        <Ionicons name="time-outline" size={12} color="#8B5CF6" />
-                        <Text style={[styles.cardTagText, { color: '#8B5CF6' }]}>{quiz.examDuration} min</Text>
+                      <View style={[styles.cardTag, { backgroundColor: p.tagBg }]}>
+                        <Ionicons name="time-outline" size={12} color={p.tagText} />
+                        <Text style={[styles.cardTagText, { color: p.tagText }]}>
+                          {quiz.examDuration} min
+                        </Text>
                       </View>
                     )}
                     {!!quiz.examTotalPoints && (
-                      <View style={[styles.cardTag, { backgroundColor: isDark ? '#1C1917' : '#FEF9C3' }]}>
-                        <Ionicons name="star" size={12} color="#D97706" />
-                        <Text style={[styles.cardTagText, { color: '#D97706' }]}>{quiz.examTotalPoints} pts</Text>
+                      <View style={[styles.cardTag, { backgroundColor: p.tagBg }]}>
+                        <Ionicons name="star-outline" size={12} color={p.tagText} />
+                        <Text style={[styles.cardTagText, { color: p.tagText }]}>
+                          {quiz.examTotalPoints} pts
+                        </Text>
                       </View>
                     )}
                   </View>
-                </View>
-
-                {/* Right: arrow */}
-                <View style={[styles.cardArrow, { backgroundColor: isDark ? '#1E1B4B' : '#EDE9FE' }]}>
-                  <Ionicons name="arrow-forward" size={16} color="#8B5CF6" />
-                </View>
+                )}
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </Animated.ScrollView>
       )}
     </View>
   );
@@ -200,110 +248,115 @@ export function ExamPaperBrowseScreen() {
 
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.background },
+    root: { flex: 1 },
 
     // Header
     headerGradient: {
-      paddingHorizontal: 16,
-      paddingBottom: 20,
       overflow: 'hidden',
     },
     hdrBlob1: {
-      position: 'absolute', top: -40, right: -50,
+      position: 'absolute', top: -50, right: -50,
       width: 160, height: 160, borderRadius: 80,
-      backgroundColor: 'rgba(255,255,255,0.08)',
+      backgroundColor: 'rgba(255,255,255,0.07)',
     },
     hdrBlob2: {
       position: 'absolute', bottom: -20, left: -20,
-      width: 100, height: 100, borderRadius: 50,
+      width: 90, height: 90, borderRadius: 45,
       backgroundColor: 'rgba(255,255,255,0.05)',
     },
-    headerRow: {
+
+    // Fixed nav bar inside gradient
+    navBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 8,
+      paddingHorizontal: 16,
+      paddingBottom: 12,
     },
     backBtn: {
-      width: 38, height: 38, borderRadius: 19,
-      backgroundColor: 'rgba(255,255,255,0.18)',
-      alignItems: 'center',
-      justifyContent: 'center',
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center', justifyContent: 'center',
     },
-    headerTitleWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
-    headerSubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
-    headerTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900', marginTop: 2 },
+    navTitle: {
+      flex: 1,
+      textAlign: 'center',
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '800',
+      paddingHorizontal: 8,
+    },
 
-    statsStrip: { flexDirection: 'row', gap: 8, marginTop: 12 },
+    // Collapsible expanded area
+    headerExpanded: {
+      paddingHorizontal: 20,
+      paddingBottom: 18,
+      overflow: 'hidden',
+      justifyContent: 'flex-end',
+      gap: 10,
+    },
+    headerSub: {
+      color: 'rgba(255,255,255,0.65)',
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    statsStrip: { flexDirection: 'row', gap: 8 },
     statPill: {
       flexDirection: 'row', alignItems: 'center', gap: 5,
       backgroundColor: 'rgba(255,255,255,0.15)',
-      paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+      paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
     },
-    statPillText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
+    statPillText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
 
     // Center states
     centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-    errorIconWrap: {
-      width: 72, height: 72, borderRadius: 36,
-      backgroundColor: '#8B5CF618',
+    stateIconWrap: {
+      width: 68, height: 68, borderRadius: 34,
+      backgroundColor: 'rgba(139,92,246,0.1)',
       alignItems: 'center', justifyContent: 'center',
     },
-    emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
-    loadingText: { fontSize: 14, color: colors.textSecondary, marginTop: 8 },
+    stateTitle: { fontSize: 15, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
+    stateText: { fontSize: 14, color: colors.textSecondary },
     retryBtn: {
       flexDirection: 'row', alignItems: 'center', gap: 6,
       backgroundColor: '#8B5CF6',
-      paddingHorizontal: 20, paddingVertical: 10, borderRadius: 14,
-      marginTop: 4,
+      paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14,
     },
     retryText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
 
     // List
-    listContent: { padding: 16, gap: 12 },
+    listContent: { padding: 16, gap: 14 },
 
-    // Card
+    // Card — flat design
     card: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 14,
-      padding: 14,
-      borderRadius: 22,
-      backgroundColor: colors.card,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.0 : 0.06,
-      shadowRadius: 12,
-      elevation: 3,
+      borderRadius: 20,
+      padding: 18,
+      gap: 8,
     },
-    cardBadge: {
-      width: 52,
-      height: 64,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 4,
-    },
-    cardBadgeNum: {
-      color: '#FFFFFF',
-      fontSize: 18,
+
+    // Number label (top-left, inside card)
+    cardNum: {
+      fontSize: 13,
       fontWeight: '900',
-      letterSpacing: -0.5,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
     },
-    cardBody: { flex: 1 },
+
+    // Title row
+    cardTitleRow: { gap: 2 },
     cardTitle: {
-      fontSize: 15,
+      fontSize: 17,
       fontWeight: '800',
-      color: colors.text,
-      lineHeight: 22,
+      lineHeight: 24,
+      letterSpacing: -0.3,
     },
-    cardTagRow: { flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+
+    // Tags
+    cardTagRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
     cardTag: {
       flexDirection: 'row', alignItems: 'center', gap: 4,
       paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
     },
     cardTagText: { fontSize: 12, fontWeight: '700' },
-    cardArrow: {
-      width: 34, height: 34, borderRadius: 17,
-      alignItems: 'center', justifyContent: 'center',
-    },
   });
