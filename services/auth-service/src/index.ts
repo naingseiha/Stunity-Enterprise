@@ -152,6 +152,7 @@ app.use('/auth/social', authLimiter);
 app.use('/auth/register', registerLimiter);
 app.use('/auth/parent/register', registerLimiter);
 app.use('/auth/claim-codes/validate', claimPreviewLimiter);
+app.use('/auth/claim-codes/preview', claimPreviewLimiter);
 
 // Legacy parent enrollment linked school/roster data before approval. Keep existing
 // parent password login, but close new enrollment until it uses SchoolLinkService.
@@ -2920,11 +2921,11 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
 // ============================================================================
 
 /**
- * POST /auth/claim-codes/validate
- * Validate a claim code without claiming it
+ * POST /auth/claim-codes/validate (legacy) or /auth/claim-codes/preview (authenticated)
+ * Preview a claim code without claiming it
  * Returns school and student/teacher information if valid
  */
-app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
+async function handleClaimCodePreview(req: Request, res: Response) {
   try {
     const code = typeof req.body?.code === 'string' ? req.body.code.trim().toUpperCase() : '';
 
@@ -3024,7 +3025,7 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
       });
     }
 
-    // Public preview is deliberately masked. Full roster data is never returned here.
+    // Preview is deliberately masked. Full roster data is never returned here.
     res.json({
       success: true,
       data: buildMaskedClaimPreview(claimCode as any),
@@ -3037,7 +3038,13 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
       details: error.message,
     });
   }
-});
+}
+
+// Legacy unauthenticated adapter retained for already-released claim scanners.
+app.post('/auth/claim-codes/validate', handleClaimCodePreview);
+
+// New school-link flow previews only after the user has authenticated.
+app.post('/auth/claim-codes/preview', authenticateToken, handleClaimCodePreview);
 
 /**
  * POST /auth/claim-codes/link
@@ -3856,6 +3863,7 @@ app.listen(PORT, () => {
   console.log('');
   console.log('🎫 Claim Code Endpoints:');
   console.log('   POST /auth/claim-codes/validate           - Validate claim code');
+  console.log('   POST /auth/claim-codes/preview            - Authenticated claim preview');
   console.log('   POST /auth/claim-codes/link               - Link code to account');
   console.log('   POST /auth/register/with-claim-code       - Register with code');
   console.log('   POST /auth/login/claim-code               - First-time login');

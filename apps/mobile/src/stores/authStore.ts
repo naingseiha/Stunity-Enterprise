@@ -632,7 +632,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           const response = await authApi.post(
-            '/auth/claim-codes/validate',
+            '/auth/claim-codes/preview',
             { code },
             {
               timeout: 15000,
