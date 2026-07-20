@@ -98,6 +98,7 @@ export type MainStackParamList = {
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
+  PasswordLogin: undefined;
   Register: undefined;
   ParentLogin: undefined;
   ParentRegister: undefined;

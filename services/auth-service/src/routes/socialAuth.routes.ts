@@ -1,6 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient, SocialProvider } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { generateUniqueUsername } from '../utils/username';
+import { normalizeEmail } from '../security/identifiers';
+import { resolveUnlinkedSocialAccount } from '../security/authPolicy';
+import { SchoolLinkError, submitSchoolLinkRequest } from '../domain/schoolLinkService';
 
 const router = Router();
 
@@ -16,7 +20,20 @@ interface ProviderProfile {
   email: string;
   displayName: string;
   avatarUrl: string;
-  rawProfile: any;
+  verifiedClaims: Record<string, unknown>;
+}
+
+class SocialAuthError extends Error {
+  constructor(message: string, public readonly statusCode = 401, public readonly code = 'SOCIAL_AUTH_FAILED') {
+    super(message);
+  }
+}
+
+function sendSocialAuthError(res: Response, error: unknown, fallback: string) {
+  const typed = error as Partial<SocialAuthError | SchoolLinkError> & { message?: string };
+  const statusCode = typeof typed.statusCode === 'number' ? typed.statusCode : 401;
+  const code = typeof typed.code === 'string' ? typed.code : 'SOCIAL_AUTH_FAILED';
+  return res.status(statusCode).json({ success: false, code, error: typed.message || fallback });
 }
 
 async function verifyGoogleToken(idToken: string): Promise<ProviderProfile> {
@@ -34,10 +51,10 @@ async function verifyGoogleToken(idToken: string): Promise<ProviderProfile> {
   return {
     provider: 'GOOGLE',
     providerUserId: payload.sub,
-    email: payload.email!,
+    email: normalizeEmail(payload.email) || '',
     displayName: payload.name || '',
     avatarUrl: payload.picture || '',
-    rawProfile: payload,
+    verifiedClaims: { issuer: payload.iss, audience: payload.aud, subject: payload.sub, emailVerified: true },
   };
 }
 
@@ -58,10 +75,10 @@ async function verifyAppleToken(identityToken: string, fullName?: any): Promise<
   return {
     provider: 'APPLE',
     providerUserId: payload.sub,
-    email: payload.email || '',
+    email: normalizeEmail(payload.email) || '',
     displayName,
     avatarUrl: '',
-    rawProfile: payload,
+    verifiedClaims: { issuer: payload.iss, audience: payload.aud, subject: payload.sub, emailVerified: payload.email_verified },
   };
 }
 
@@ -85,10 +102,10 @@ async function verifyFacebookToken(accessToken: string): Promise<ProviderProfile
   return {
     provider: 'FACEBOOK',
     providerUserId: profile.id,
-    email: profile.email,
+    email: normalizeEmail(profile.email) || '',
     displayName: profile.name || '',
     avatarUrl: profile.picture?.data?.url || '',
-    rawProfile: profile,
+    verifiedClaims: { appId: debugRes.data.app_id, subject: profile.id },
   };
 }
 
@@ -116,10 +133,10 @@ async function verifyLinkedInCode(authorizationCode: string, redirectUri: string
   return {
     provider: 'LINKEDIN',
     providerUserId: profile.sub,
-    email: profile.email,
+    email: normalizeEmail(profile.email) || '',
     displayName: profile.name || '',
     avatarUrl: profile.picture || '',
-    rawProfile: profile,
+    verifiedClaims: { issuer: profile.iss, subject: profile.sub, emailVerified: profile.email_verified },
   };
 }
 
@@ -146,37 +163,36 @@ async function handleSocialLogin(
   if (socialAccount) {
     user = socialAccount.user;
   } else {
-    // Check if email already exists
-    user = await prisma.user.findUnique({
-      where: { email: providerData.email },
-      include: { school: true },
-    });
+    const matchingEmailUser = providerData.email
+      ? await prisma.user.findFirst({
+          where: { email: { equals: providerData.email, mode: 'insensitive' } },
+          select: { id: true },
+        })
+      : null;
+    const resolution = resolveUnlinkedSocialAccount(false, !!matchingEmailUser);
 
-    if (user) {
-      // Link social account to existing user
-      await prisma.socialAccount.create({
-        data: {
-          userId: user.id,
-          provider: providerData.provider,
-          providerUserId: providerData.providerUserId,
-          email: providerData.email,
-          displayName: providerData.displayName,
-          avatarUrl: providerData.avatarUrl,
-          rawProfile: providerData.rawProfile,
-        },
-      });
+    if (resolution === 'REQUIRE_AUTHENTICATED_LINK') {
+      throw new SocialAuthError(
+        'An account already uses this email. Sign in to that account and link this provider from settings.',
+        409,
+        'ACCOUNT_LINK_REQUIRED',
+      );
     } else {
       // Brand new user
       const nameParts = providerData.displayName.split(' ');
+      const firstName = nameParts[0] || 'Stunity';
+      const lastName = nameParts.slice(1).join(' ') || 'User';
+      const username = await generateUniqueUsername(prisma, firstName, lastName);
       user = await prisma.user.create({
         data: {
-          email: providerData.email,
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
+          email: providerData.email || null,
+          username,
+          firstName,
+          lastName,
           password: '',
           role: 'STUDENT',
           accountType: 'SOCIAL_ONLY',
-          isEmailVerified: true,
+          isEmailVerified: !!providerData.email,
           profilePictureUrl: providerData.avatarUrl,
           socialFeaturesEnabled: true,
           socialAccounts: {
@@ -186,7 +202,7 @@ async function handleSocialLogin(
               email: providerData.email,
               displayName: providerData.displayName,
               avatarUrl: providerData.avatarUrl,
-              rawProfile: providerData.rawProfile,
+              rawProfile: providerData.verifiedClaims as any,
             },
           },
         },
@@ -200,26 +216,10 @@ async function handleSocialLogin(
     throw new Error('Account is deactivated');
   }
 
-  // 3. Process claim code if provided
+  // 3. A social credential can authenticate a General Account, but never approve school access.
+  let schoolLink = null;
   if (claimCode && !user.schoolId) {
-    const code = await prisma.claimCode.findFirst({
-      where: { code: claimCode, isActive: true, claimedByUserId: null },
-    });
-    if (code) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { schoolId: code.schoolId },
-      });
-      await prisma.claimCode.update({
-        where: { id: code.id },
-        data: { isActive: false, claimedByUserId: user.id, claimedAt: new Date() },
-      });
-      // Refetch user with school
-      user = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { school: true },
-      }) as any;
-    }
+    schoolLink = await submitSchoolLinkRequest(prisma, user.id, claimCode);
   }
 
   // 4. Check 2FA
@@ -243,6 +243,7 @@ async function handleSocialLogin(
       email: user.email,
       role: user.role,
       schoolId: user.schoolId,
+      schoolAccessVersion: user.schoolAccessVersion,
       school: user.school ? {
         id: user.school.id,
         name: user.school.name,
@@ -282,6 +283,7 @@ async function handleSocialLogin(
       schoolId: user.schoolId,
     },
     school: user.school,
+    schoolLink,
     tokens: { accessToken, refreshToken, expiresIn: JWT_EXPIRATION },
   };
 }
@@ -306,7 +308,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       res.json({ success: true, data: result });
     } catch (error: any) {
       console.error('Google login error:', error.message);
-      res.status(401).json({ success: false, error: error.message || 'Google login failed' });
+      sendSocialAuthError(res, error, 'Google login failed');
     }
   });
 
@@ -327,7 +329,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       res.json({ success: true, data: result });
     } catch (error: any) {
       console.error('Apple login error:', error.message);
-      res.status(401).json({ success: false, error: error.message || 'Apple login failed' });
+      sendSocialAuthError(res, error, 'Apple login failed');
     }
   });
 
@@ -348,7 +350,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       res.json({ success: true, data: result });
     } catch (error: any) {
       console.error('Facebook login error:', error.message);
-      res.status(401).json({ success: false, error: error.message || 'Facebook login failed' });
+      sendSocialAuthError(res, error, 'Facebook login failed');
     }
   });
 
@@ -369,7 +371,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       res.json({ success: true, data: result });
     } catch (error: any) {
       console.error('LinkedIn login error:', error.message);
-      res.status(401).json({ success: false, error: error.message || 'LinkedIn login failed' });
+      sendSocialAuthError(res, error, 'LinkedIn login failed');
     }
   });
 
@@ -421,7 +423,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
           email: profile.email,
           displayName: profile.displayName,
           avatarUrl: profile.avatarUrl,
-          rawProfile: profile.rawProfile,
+          rawProfile: profile.verifiedClaims as any,
         },
       });
 

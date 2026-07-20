@@ -5,8 +5,9 @@ import { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { LogIn, AlertCircle, Users, School, UserPlus } from 'lucide-react';
+import { LogIn, AlertCircle, School, UserPlus } from 'lucide-react';
 import { login, TokenManager } from '@/lib/api/auth';
+import PasswordlessAuthCard from '@/components/auth/PasswordlessAuthCard';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
@@ -91,6 +92,13 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
         router.replace(`/${locale}/auth/login`);
       });
   }, [locale, router, searchParams]);
+
+  if (
+    process.env.NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED === 'true' &&
+    searchParams?.get('method') !== 'password'
+  ) {
+    return <PasswordlessAuthCard locale={locale} redirectForUser={getRedirectPath} />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,45 +201,8 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
             </div>
           </form>
 
-          {/* Social Auth Gateway */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100 dark:border-gray-800" />
-            </div>
-            <div className="relative flex justify-center uppercase">
-              <span className="bg-white dark:bg-gray-900/0 px-3 text-[10px] font-bold text-slate-300 dark:text-gray-600 tracking-[0.2em] transition-colors"><AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_60d8653d" /></span>
-            </div>
-          </div>
-
-          <div className="flex justify-center gap-4 mb-8">
-            {[
-              { name: 'Google', href: '/auth/social/google', icon: <svg viewBox="0 0 24 24" className="w-5 h-5"><path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 5.48c1.67 0 3.2.57 4.4 1.7l3.27-3.27A11.97 11.97 0 0 0 12 .96 12 12 0 0 0 1.24 6.65l4.03 3.11Z" /><path fill="#34A853" d="M16.04 18.01A7.4 7.4 0 0 1 12 19.48a7.08 7.08 0 0 1-6.73-4.28l-4.03 3.11A12 12 0 0 0 12 24c3.04 0 5.8-1.08 7.93-2.95l-3.89-3.04Z" /><path fill="#4A90D9" d="M19.93 21.05C22.08 19.12 23.5 16.2 23.5 12c0-.72-.07-1.41-.2-2.07H12v4.55h6.44c-.32 1.53-1.16 2.72-2.4 3.53l3.89 3.04Z" /><path fill="#FBBC05" d="M5.27 15.2a7.2 7.2 0 0 1 0-6.44L1.24 5.65A12.05 12.05 0 0 0 0 12c0 2.3.64 4.45 1.24 5.35l4.03-2.15Z" /></svg> },
-              { name: 'Apple', href: '/auth/social/apple', icon: <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09ZM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.32 2.32-2.12 4.53-3.74 4.25Z" /></svg> },
-              { name: 'Facebook', href: '/auth/social/facebook', icon: <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg> },
-              { name: 'LinkedIn', href: '/auth/social/linkedin', icon: <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg> },
-            ].map(({ name, href, icon }) => (
-              <button
-                key={name}
-                type="button"
-                className="w-11 h-11 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 shadow-sm hover:shadow hover:border-slate-200 dark:border-gray-800 dark:hover:border-gray-600 transition-all active:scale-95"
-                title={`Continue with ${name}`}
-                onClick={() => { window.location.href = `${AUTH_SERVICE_URL}${href}`; }}
-              >
-                {icon}
-              </button>
-            ))}
-          </div>
-
           {/* Secondary Action Buttons */}
-          <div className="grid grid-cols-2 gap-4">
-            <Link
-              href={`/${locale}/auth/parent/register`}
-              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-800 transition-all"
-            >
-              <Users className="w-4 h-4 text-stunity-primary-500 opacity-80" />
-              <AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_919cc2e7" />
-            </Link>
-
+          <div className="grid grid-cols-1 gap-4">
             <Link
               href={`/${locale}/register-school`}
               className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-800 transition-all"

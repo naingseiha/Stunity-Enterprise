@@ -9,7 +9,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, AuthTokens, LoginCredentials, RegisterData } from '@/types';
+import { User, AuthTokens, LoginCredentials, OtpChallengeResponse, OtpVerifyResult, RegisterData } from '@/types';
 import { authApi } from '@/api/client';
 import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
@@ -27,12 +27,16 @@ interface AuthState {
   initialize: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
+  startPhoneOtp: (phone: string, preferredChannel?: 'AUTO' | 'TELEGRAM' | 'SMS') => Promise<{ success: boolean; data?: OtpChallengeResponse; error?: string }>;
+  verifyPhoneOtp: (challengeId: string, code: string) => Promise<{ success: boolean; data?: OtpVerifyResult; error?: string }>;
+  enrollPasswordless: (input: { enrollmentToken: string; firstName: string; lastName: string; acceptedTermsVersion: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
   linkClaimCode: (code: string, verificationData?: any) => Promise<{ success: boolean; error?: string; data?: any }>;
+  cancelSchoolLink: () => Promise<{ success: boolean; error?: string }>;
   validateClaimCode: (code: string) => Promise<{ success: boolean; error?: string; data?: any }>;
   parentLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
   parentRegister: (data: { firstName: string; lastName: string; phone: string; password: string; claimCode?: string }) => Promise<boolean>;
@@ -109,6 +113,16 @@ const prewarmFeedAfterAuth = (role?: User['role']) => {
       .catch(() => { });
   }, 0);
 };
+
+const AUTH_DEVICE_ID_KEY = '@stunity/auth-device-id';
+
+async function getAuthDeviceId(): Promise<string> {
+  const existing = await AsyncStorage.getItem(AUTH_DEVICE_ID_KEY);
+  if (existing) return existing;
+  const created = `mobile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+  await AsyncStorage.setItem(AUTH_DEVICE_ID_KEY, created);
+  return created;
+}
 
 const mapAuthResponseUser = (apiUser: any, responseData: any): User => {
   return mapApiUserToUser({
@@ -320,7 +334,6 @@ export const useAuthStore = create<AuthState>()(
             firstName: data.firstName,
             lastName: data.lastName,
             phone: data.phone,
-            role: data.role || 'STUDENT',
           });
 
           if (!response.data.success) {
@@ -354,6 +367,69 @@ export const useAuthStore = create<AuthState>()(
             error: message,
           });
           return false;
+        }
+      },
+
+      startPhoneOtp: async (phone, preferredChannel = 'AUTO') => {
+        try {
+          set({ isLoading: true, error: null });
+          const deviceId = await getAuthDeviceId();
+          const response = await authApi.post('/auth/otp/start', { phone, preferredChannel, deviceId });
+          set({ isLoading: false });
+          return { success: true, data: response.data.data as OtpChallengeResponse };
+        } catch (error: any) {
+          const message = error.response?.data?.error || 'Unable to send verification code';
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
+        }
+      },
+
+      verifyPhoneOtp: async (challengeId, code) => {
+        try {
+          set({ isLoading: true, error: null });
+          const deviceId = await getAuthDeviceId();
+          const response = await authApi.post('/auth/otp/verify', { challengeId, code, deviceId });
+          const data = response.data.data;
+          if (data.status === 'AUTHENTICATED') {
+            const { useFeedStore } = await import('./feedStore');
+            useFeedStore.getState().reset();
+            await tokenService.setTokens(data.tokens as AuthTokens);
+            await tokenService.setUserId(data.user.id);
+            const user = mapAuthResponseUser(data.user, data);
+            set({ user, isAuthenticated: true, isLoading: false });
+            prewarmFeedAfterAuth(user.role);
+            return { success: true, data: { status: 'AUTHENTICATED' } as OtpVerifyResult };
+          }
+          set({ isLoading: false });
+          return {
+            success: true,
+            data: { status: 'ENROLLMENT_REQUIRED', enrollmentToken: data.enrollmentToken } as OtpVerifyResult,
+          };
+        } catch (error: any) {
+          const message = error.response?.data?.error || 'Invalid or expired verification code';
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
+        }
+      },
+
+      enrollPasswordless: async (input) => {
+        try {
+          set({ isLoading: true, error: null });
+          const deviceId = await getAuthDeviceId();
+          const response = await authApi.post('/auth/enroll', { ...input, deviceId });
+          const { user: apiUser, tokens } = response.data.data;
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+          await tokenService.setTokens(tokens as AuthTokens);
+          await tokenService.setUserId(apiUser.id);
+          const user = mapAuthResponseUser(apiUser, response.data.data);
+          set({ user, isAuthenticated: true, isLoading: false });
+          prewarmFeedAfterAuth(user.role);
+          return { success: true };
+        } catch (error: any) {
+          const message = error.response?.data?.error || 'Unable to finish account setup';
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
         }
       },
 
@@ -493,7 +569,7 @@ export const useAuthStore = create<AuthState>()(
       linkClaimCode: async (code: string, verificationData?: any) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await authApi.post('/auth/claim-codes/link', { code, verificationData });
+          const response = await authApi.post('/auth/school-links', { code, verificationData });
 
           if (response.data.success) {
             // If it was immediate (legacy/admin approve), we might get a token
@@ -514,7 +590,8 @@ export const useAuthStore = create<AuthState>()(
                   linkingStatus: 'PENDING',
                   pendingLinkData: {
                     code,
-                    school: response.data.data.school,
+                    schoolId: response.data.data.school?.id,
+                    schoolName: response.data.data.school?.name,
                     submittedAt: new Date().toISOString()
                   }
                 });
@@ -529,6 +606,23 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error: any) {
           const errorMessage = error.response?.data?.error || 'Failed to link claim code';
+          set({ isLoading: false, error: errorMessage });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      cancelSchoolLink: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          await authApi.post('/auth/school-links/current/cancel');
+          const currentUser = get().user;
+          if (currentUser) {
+            get().updateUser({ linkingStatus: 'NONE', pendingLinkData: null });
+          }
+          set({ isLoading: false });
+          return { success: true };
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.error || 'Failed to cancel school link request';
           set({ isLoading: false, error: errorMessage });
           return { success: false, error: errorMessage };
         }

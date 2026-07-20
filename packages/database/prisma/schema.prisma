@@ -57,6 +57,7 @@ model School {
   registrationStatus    RegistrationStatus     @default(APPROVED)
   academicYears         AcademicYear[]
   claimCodes            ClaimCode[]
+  schoolLinkRequests    SchoolLinkRequest[]
   classes               Class[]
   featureFlags          FeatureFlag[]
   idGenerationLogs      IdGenerationLog[]
@@ -308,7 +309,7 @@ model Student {
   studentIdMeta              Json?
   customFields               Json?
   attendance                 Attendance[]
-  claimCode                  ClaimCode?
+  claimCodes                 ClaimCode[]
   conversations              Conversation[]
   grades                     Grade[]
   studentClasses             StudentClass[]
@@ -615,7 +616,7 @@ model Teacher {
   teacherIdFormat           IdFormat?
   teacherIdMeta             Json?
   customFields              Json?
-  claimCode                 ClaimCode?
+  claimCodes                ClaimCode[]
   conversations             Conversation[]
   subjectTeachers           SubjectTeacher[]
   TeacherAttendance         TeacherAttendance[]
@@ -661,6 +662,7 @@ model User {
   isSuperAdmin                 Boolean                      @default(false)
   linkingStatus                LinkingStatus                @default(NONE)
   pendingLinkData              Json?
+  schoolAccessVersion          Int                          @default(0)
   lastPasswordHashes           String[]
   passwordChangedAt            DateTime?
   passwordExpiresAt            DateTime?
@@ -710,6 +712,7 @@ model User {
   learningStreak               LearningStreak?
   quizAttemptRecords           QuizAttemptRecord[]
   verificationRequests         VerificationRequest[]
+  verifiedContacts             VerifiedContact[]
   recallCards                  RecallCard[]
   recallReviews                RecallReview[]
   reelResponses                ReelResponse[]
@@ -733,7 +736,10 @@ model User {
   certifications               Certification[]
   courseCertificates           CourseCertificate[]
   userChallenges               Challenge[]
-  claimedCode                  ClaimCode?
+  claimedCodes                 ClaimCode[]
+  schoolLinkRequests           SchoolLinkRequest[]          @relation("SchoolLinkRequestUser")
+  reviewedSchoolLinkRequests   SchoolLinkRequest[]          @relation("SchoolLinkRequestReviewer")
+  unlinkedSchoolLinkRequests   SchoolLinkRequest[]          @relation("SchoolLinkRequestUnlinker")
   clubAnnouncements            ClubAnnouncement[]           @relation("ClubAnnouncementCreator")
   clubSubmissionGrading        ClubAssignmentSubmission[]   @relation("ClubSubmissionGrader")
   clubAssignments              ClubAssignment[]             @relation("ClubAssignmentCreator")
@@ -1799,12 +1805,12 @@ model ClaimCode {
   code             String        @unique
   type             ClaimCodeType
   schoolId         String
-  studentId        String?       @unique
-  teacherId        String?       @unique
+  studentId        String?
+  teacherId        String?
   expiresAt        DateTime
   createdAt        DateTime      @default(now())
   claimedAt        DateTime?
-  claimedByUserId  String?       @unique
+  claimedByUserId  String?
   verificationData Json?
   isActive         Boolean       @default(true)
   revokedAt        DateTime?
@@ -1814,6 +1820,7 @@ model ClaimCode {
   school           School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student          Student?      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   teacher          Teacher?      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  schoolLinkRequests SchoolLinkRequest[]
 
   @@index([code])
   @@index([schoolId])
@@ -1823,6 +1830,97 @@ model ClaimCode {
   @@index([isActive])
   @@index([expiresAt])
   @@map("claim_codes")
+}
+
+model SchoolLinkRequest {
+  id               String                  @id @default(cuid())
+  userId           String
+  schoolId         String
+  claimCodeId      String
+  studentId        String?
+  teacherId        String?
+  requestedRole    UserRole
+  status           SchoolLinkRequestStatus @default(PENDING)
+  submittedAt      DateTime                @default(now())
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  reviewReason     String?
+  unlinkedAt       DateTime?
+  unlinkedByUserId String?
+  unlinkReason     String?
+  metadata         Json?
+  user             User                    @relation("SchoolLinkRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  school           School                  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  claimCode        ClaimCode               @relation(fields: [claimCodeId], references: [id], onDelete: Restrict)
+  reviewedByUser   User?                   @relation("SchoolLinkRequestReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  unlinkedByUser   User?                   @relation("SchoolLinkRequestUnlinker", fields: [unlinkedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([schoolId, status, submittedAt])
+  @@index([claimCodeId, status])
+  @@index([studentId, status])
+  @@index([teacherId, status])
+  @@map("school_link_requests")
+}
+
+model SchoolLinkAuditEvent {
+  id          String                   @id @default(cuid())
+  requestId   String?
+  userId      String
+  schoolId    String
+  claimCodeId String?
+  actorUserId String?
+  eventType   SchoolLinkAuditEventType
+  reason      String?
+  beforeState Json?
+  afterState  Json?
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime                 @default(now())
+
+  @@index([requestId, createdAt])
+  @@index([userId, createdAt])
+  @@index([schoolId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("school_link_audit_events")
+}
+
+model VerifiedContact {
+  id              String      @id @default(cuid())
+  userId          String
+  type            ContactType
+  normalizedValue String
+  displayValue    String?
+  verifiedAt      DateTime
+  isPrimary       Boolean     @default(false)
+  disabledAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([type, normalizedValue])
+  @@index([userId, type])
+  @@map("verified_contacts")
+}
+
+model OtpAuthAuditEvent {
+  id              String           @id @default(cuid())
+  challengeId     String?
+  userId          String?
+  destinationHash String
+  eventType       OtpAuthEventType
+  channel         String?
+  purpose         String
+  reasonCode      String?
+  metadata        Json?
+  ipAddress       String?
+  createdAt       DateTime         @default(now())
+
+  @@index([challengeId, createdAt])
+  @@index([userId, createdAt])
+  @@index([destinationHash, createdAt])
+  @@index([eventType, createdAt])
+  @@map("otp_auth_audit_events")
 }
 
 model IdGenerationLog {
@@ -4313,6 +4411,38 @@ enum LinkingStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum SchoolLinkRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  UNLINKED
+}
+
+enum SchoolLinkAuditEventType {
+  VIEWED
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+  UNLINKED
+  REISSUED
+}
+
+enum ContactType {
+  PHONE
+  EMAIL
+}
+
+enum OtpAuthEventType {
+  REQUESTED
+  SENT
+  FAILED
+  VERIFIED
+  RATE_LIMITED
+  ENROLLED
 }
 
 enum ClaimCodeType {

@@ -105,6 +105,45 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
   return result;
 }
 
+const WEB_AUTH_DEVICE_ID_KEY = 'stunityAuthDeviceId';
+
+function getWebAuthDeviceId(): string {
+  if (typeof window === 'undefined') return 'web_server_render';
+  const existing = localStorage.getItem(WEB_AUTH_DEVICE_ID_KEY);
+  if (existing) return existing;
+  const created = `web_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+  localStorage.setItem(WEB_AUTH_DEVICE_ID_KEY, created);
+  return created;
+}
+
+async function passwordlessRequest(path: string, body: Record<string, unknown>) {
+  const response = await fetch(`${AUTH_SERVICE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, deviceId: getWebAuthDeviceId() }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Passwordless authentication failed');
+  return result.data;
+}
+
+export function startPhoneOtp(phone: string, preferredChannel: 'AUTO' | 'TELEGRAM' | 'SMS' = 'AUTO') {
+  return passwordlessRequest('/auth/otp/start', { phone, preferredChannel });
+}
+
+export function verifyPhoneOtp(challengeId: string, code: string) {
+  return passwordlessRequest('/auth/otp/verify', { challengeId, code });
+}
+
+export function enrollPasswordless(input: {
+  enrollmentToken: string;
+  firstName: string;
+  lastName: string;
+  acceptedTermsVersion: string;
+}) {
+  return passwordlessRequest('/auth/enroll', input);
+}
+
 export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
   const response = await fetch(`${AUTH_SERVICE_URL}/auth/verify`, {
     method: 'GET',
@@ -383,15 +422,21 @@ export async function disable2FA(token: string, code: string): Promise<{ success
 
 // ─── Social Authentication ───────────────────────────────────────────
 
+export type SocialLoginArtifact =
+  | { provider: 'google'; idToken: string }
+  | { provider: 'apple'; identityToken: string; fullName?: { givenName?: string; familyName?: string } }
+  | { provider: 'facebook'; accessToken: string }
+  | { provider: 'linkedin'; authorizationCode: string; redirectUri: string };
+
 export async function socialLogin(
-  provider: 'google' | 'apple' | 'facebook' | 'linkedin',
-  token: string,
+  artifact: SocialLoginArtifact,
   claimCode?: string
 ): Promise<LoginResponse> {
+  const { provider, ...providerPayload } = artifact;
   const response = await fetch(`${AUTH_SERVICE_URL}/auth/social/${provider}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, claimCode }),
+    body: JSON.stringify({ ...providerPayload, claimCode }),
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({ error: 'Social login failed' }));

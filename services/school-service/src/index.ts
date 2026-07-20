@@ -5059,8 +5059,9 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
             },
           },
         };
-        const existingClaimCode = await prisma.claimCode.findUnique({
-          where: { studentId },
+        const existingClaimCode = await prisma.claimCode.findFirst({
+          where: { studentId, isActive: true, claimedAt: null, claimedByUserId: null },
+          orderBy: { createdAt: 'desc' },
           include,
         });
         if (existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId) {
@@ -5149,8 +5150,9 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
             },
           },
         };
-        const existingClaimCode = await prisma.claimCode.findUnique({
-          where: { teacherId },
+        const existingClaimCode = await prisma.claimCode.findFirst({
+          where: { teacherId, isActive: true, claimedAt: null, claimedByUserId: null },
+          orderBy: { createdAt: 'desc' },
           include,
         });
         if (existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId) {

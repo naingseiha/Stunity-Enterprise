@@ -20,7 +20,7 @@ import {
   XCircle,
   QrCode,
 } from 'lucide-react';
-import { claimCodeService, type ClaimCode, type ClaimCodeStats, type PendingLink } from '@/lib/api/claimCodes';
+import { claimCodeService, type ApprovedSchoolLink, type ClaimCode, type ClaimCodeStats, type PendingLink } from '@/lib/api/claimCodes';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { TokenManager } from '@/lib/api/auth';
 import { GenerateCodesModal } from '@/components/claim-codes/GenerateCodesModal';
@@ -169,9 +169,11 @@ export default function ClaimCodesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
-  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'profile-requests'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'linked' | 'profile-requests'>('inventory');
   const [pendingLinks, setPendingLinks] = useState<PendingLink[]>([]);
   const [pendingLoading, setPendingLoading] = useState(false);
+  const [linkedLinks, setLinkedLinks] = useState<ApprovedSchoolLink[]>([]);
+  const [linkedLoading, setLinkedLoading] = useState(false);
   
   // Profile requests state
   const [profileRequests, setProfileRequests] = useState<any[]>([]);
@@ -191,6 +193,10 @@ export default function ClaimCodesPage() {
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [confirmingApproveProfileRequest, setConfirmingApproveProfileRequest] = useState<any | null>(null);
   const [approvingProfileRequestId, setApprovingProfileRequestId] = useState<string | null>(null);
+  const [unlinkingLink, setUnlinkingLink] = useState<ApprovedSchoolLink | null>(null);
+  const [unlinkPassword, setUnlinkPassword] = useState('');
+  const [unlinkReason, setUnlinkReason] = useState('');
+  const [reissueClaimCode, setReissueClaimCode] = useState(true);
 
   const userData = TokenManager.getUserData();
   const user = userData.user;
@@ -256,6 +262,11 @@ export default function ClaimCodesPage() {
         const fetchedPending = await claimCodeService.getPendingLinks(schoolId);
         setPendingLinks(fetchedPending);
         setPendingLoading(false);
+      } else if (activeTab === 'linked') {
+        setLinkedLoading(true);
+        const fetchedLinked = await claimCodeService.getApprovedLinks(schoolId);
+        setLinkedLinks(fetchedLinked);
+        setLinkedLoading(false);
       } else if (activeTab === 'profile-requests') {
         setProfileRequestsLoading(true);
         const token = TokenManager.getAccessToken();
@@ -353,6 +364,30 @@ export default function ClaimCodesPage() {
     } catch (error: any) {
       console.error('Failed to reject link:', error);
       setStatus({ type: 'error', message: error.message || 'Rejection failed.' });
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleUnlinkLink = async () => {
+    if (!unlinkingLink || unlinkReason.trim().length < 3 || !unlinkPassword) return;
+    setIsProcessingAction(true);
+    try {
+      await claimCodeService.unlinkLink(unlinkingLink.id, {
+        adminPassword: unlinkPassword,
+        reason: unlinkReason.trim(),
+        expectedUserId: unlinkingLink.userId,
+        expectedStudentId: unlinkingLink.studentId,
+        expectedTeacherId: unlinkingLink.teacherId,
+        reissueClaimCode,
+      });
+      setStatus({ type: 'success', message: 'School link removed. Academic records were preserved.' });
+      setUnlinkingLink(null);
+      setUnlinkPassword('');
+      setUnlinkReason('');
+      await loadData(true);
+    } catch (error: any) {
+      setStatus({ type: 'error', message: error.message || 'Unlink failed.' });
     } finally {
       setIsProcessingAction(false);
     }
@@ -620,6 +655,14 @@ export default function ClaimCodesPage() {
                           {profileRequests.length}
                         </span>
                       )}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('linked')}
+                      className={`relative pb-4 text-sm font-black uppercase tracking-[0.2em] transition-colors ${
+                        activeTab === 'linked' ? 'border-b-2 border-indigo-500 text-slate-950' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Linked Accounts
                     </button>
                   </div>
                 </div>
@@ -895,7 +938,7 @@ export default function ClaimCodesPage() {
                                     <td className="px-5 py-3.5 text-right">
                                       <div className="flex items-center justify-end gap-2">
                                         <button
-                                          onClick={() => setRejectingUserId(link.id)}
+                                          onClick={() => setRejectingUserId(link.requestId)}
                                           disabled={isProcessingAction}
                                           className="inline-flex items-center gap-1.5 rounded-[0.8rem] border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
                                           title={autoT("auto.web.admin_claim_codes_page.k_f03819e3")}
@@ -916,7 +959,7 @@ export default function ClaimCodesPage() {
                                           disabled={isProcessingAction}
                                           className="inline-flex items-center gap-1.5 rounded-[0.8rem] bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                         >
-                                          {approvingLinkId === link.id ? (
+                                          {approvingLinkId === link.requestId ? (
                                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                           ) : (
                                             <CheckCircle2 className="h-3.5 w-3.5" />
@@ -934,6 +977,33 @@ export default function ClaimCodesPage() {
                       )}
                     </div>
                   </>
+                ) : activeTab === 'linked' ? (
+                  <div className="overflow-hidden rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50">
+                    {linkedLoading ? (
+                      <div className="flex items-center justify-center px-6 py-16"><Loader2 className="h-8 w-8 animate-spin text-indigo-500" /></div>
+                    ) : linkedLinks.length === 0 ? (
+                      <div className="px-6 py-16 text-center text-sm font-medium text-slate-500">No approved school links found.</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
+                          <thead className="bg-white dark:bg-gray-900/80"><tr>
+                            {['User', 'Type', 'Claim Code', 'Approved', 'Actions'].map((label) => <th key={label} className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</th>)}
+                          </tr></thead>
+                          <tbody className="divide-y divide-slate-200 bg-white dark:bg-gray-900/70">
+                            {linkedLinks.map((link) => (
+                              <tr key={link.id}>
+                                <td className="px-5 py-3.5"><p className="text-sm font-semibold text-slate-900 dark:text-white">{link.user.firstName} {link.user.lastName}</p><p className="text-xs text-slate-400">{link.user.email || '--'}</p></td>
+                                <td className="px-5 py-3.5 text-xs font-bold uppercase text-slate-500">{link.claimCode.type}</td>
+                                <td className="px-5 py-3.5 font-mono text-xs font-semibold text-slate-700 dark:text-gray-300">{link.claimCode.code}</td>
+                                <td className="px-5 py-3.5 text-xs text-slate-500">{formatDateLabel(link.reviewedAt)}</td>
+                                <td className="px-5 py-3.5"><button onClick={() => setUnlinkingLink(link)} disabled={isProcessingAction} className="inline-flex items-center gap-1.5 rounded-[0.8rem] border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"><XCircle className="h-3.5 w-3.5" /> Unlink</button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 ) : activeTab === 'profile-requests' ? (
                   <>
                     <div className="overflow-hidden rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50">
@@ -1304,7 +1374,7 @@ export default function ClaimCodesPage() {
                 </button>
                 <button
                   onClick={() => {
-                    void handleApproveLink(link.id);
+                    void handleApproveLink(link.requestId);
                     setReviewingPendingLink(null);
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700"
@@ -1373,13 +1443,31 @@ export default function ClaimCodesPage() {
                 Cancel
               </button>
               <button
-                onClick={() => handleApproveLink(confirmingApproveLink.id)}
+                onClick={() => handleApproveLink(confirmingApproveLink.requestId)}
                 disabled={isProcessingAction}
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isProcessingAction && <Loader2 className="h-4 w-4 animate-spin" />}
                 Approve Now
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {unlinkingLink && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
+            <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Unlink school account</h3>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500">This removes school access but preserves the roster profile and academic records. Fresh admin password confirmation is required.</p>
+            <label className="mt-5 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Reason</label>
+            <textarea value={unlinkReason} onChange={(event) => setUnlinkReason(event.target.value)} className="mt-2 h-24 w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-300" placeholder="Explain why this link is being removed" />
+            <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Admin password</label>
+            <input type="password" value={unlinkPassword} onChange={(event) => setUnlinkPassword(event.target.value)} className="mt-2 w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-300" autoComplete="current-password" />
+            <label className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-600"><input type="checkbox" checked={reissueClaimCode} onChange={(event) => setReissueClaimCode(event.target.checked)} /> Issue a fresh 30-day Claim Code</label>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setUnlinkingLink(null)} disabled={isProcessingAction} className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50">Cancel</button>
+              <button onClick={handleUnlinkLink} disabled={isProcessingAction || unlinkReason.trim().length < 3 || !unlinkPassword} className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50">{isProcessingAction && <Loader2 className="h-4 w-4 animate-spin" />} Unlink Account</button>
             </div>
           </div>
         </div>

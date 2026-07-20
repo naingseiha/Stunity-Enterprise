@@ -195,6 +195,7 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
           email: user.email,
           role: user.role,
           schoolId: user.schoolId,
+          schoolAccessVersion: user.schoolAccessVersion,
           school: user.school ? {
             id: user.school.id,
             name: user.school.name,

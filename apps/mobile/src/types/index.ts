@@ -213,10 +213,20 @@ export interface RegisterData {
   email?: string;
   phone?: string;
   password: string;
-  role: UserRole;
-  organization?: string;
-  organizationType?: "university" | "school" | "corporate" | "other";
 }
+
+export interface OtpChallengeResponse {
+  challengeId: string;
+  channel: 'TELEGRAM' | 'SMS' | 'TEST';
+  maskedDestination: string;
+  expiresAt: string;
+  resendAt: string;
+  smsFallbackAvailable: boolean;
+}
+
+export type OtpVerifyResult =
+  | { status: 'AUTHENTICATED' }
+  | { status: 'ENROLLMENT_REQUIRED'; enrollmentToken: string };
 
 // Post Types
 export type PostType =

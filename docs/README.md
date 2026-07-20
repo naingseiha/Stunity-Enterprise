@@ -55,7 +55,10 @@ Long-form guides live in **[guides/](guides/README.md)** (education model, onboa
 
 ### Planning (active)
 
+- [PASSWORDLESS_PROVIDER_SETUP.md](PASSWORDLESS_PROVIDER_SETUP.md) — safe `.env`/Telegram/SMS credential setup and staging rollout checklist
+
 - [POLYGLOT_ARCHITECTURE_PLAN.md](POLYGLOT_ARCHITECTURE_PLAN.md) — long-term i18n / polyglot direction
+- [PASSWORDLESS_AUTH_AND_SCHOOL_LINKING_IMPLEMENTATION.md](PASSWORDLESS_AUTH_AND_SCHOOL_LINKING_IMPLEMENTATION.md) — authoritative implementation plan for phone/Telegram passwordless auth, passkeys, deferred school linking, and safe unlink/reissue
 
 ## Vision and future implementation
 

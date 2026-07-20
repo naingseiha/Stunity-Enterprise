@@ -26,7 +26,6 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StunityLogo from '../../../assets/Stunity.svg';
 
@@ -49,8 +48,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   // Session persists until logout (like Facebook) - no remember me checkbox needed
   const [showPassword, setShowPassword] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
-
   const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
@@ -71,56 +68,6 @@ export default function LoginScreen() {
     if (!success && error) {
       Alert.alert('Login Failed', error);
     }
-  };
-
-  const handleBiometricLogin = async () => {
-    try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (!hasHardware || !isEnrolled) {
-        Alert.alert('Biometric Not Available', 'Please use your email and password to login.');
-        return;
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Login to Stunity',
-        cancelLabel: 'Cancel',
-        disableDeviceFallback: false,
-      });
-
-      if (result.success) {
-        Alert.alert('Success', 'Biometric authentication successful!');
-      }
-    } catch (error) {
-      if (__DEV__) { console.error('Biometric error:', error); }
-    }
-  };
-
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
-    setSocialLoading(provider);
-    try {
-      if (provider === 'apple' && Platform.OS !== 'ios') {
-        Alert.alert('Not Available', 'Apple Sign-In is only available on iOS devices.');
-        return;
-      }
-
-      // OAuth flow: backend handles token verification
-      // Configure GOOGLE_CLIENT_ID / APPLE_SERVICE_ID in .env to activate
-      Alert.alert(
-        'OAuth Configuration',
-        `${provider === 'google' ? 'Google' : 'Apple'} Sign-In is ready on the backend. Configure your ${provider === 'google' ? 'GOOGLE_CLIENT_ID' : 'APPLE_SERVICE_ID'} in the .env file to activate.`,
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      Alert.alert('Error', 'Social login failed. Please try again.');
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const handleSSOLogin = () => {
-    Alert.alert('Enterprise SSO', 'Please contact your organization administrator for SSO access.');
   };
 
   return (
@@ -243,50 +190,6 @@ export default function LoginScreen() {
                     {isLoading ? 'Signing in...' : t('common.login')}
                   </Text>
                 </LinearGradient>
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* Divider */}
-            <Animated.View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}><AutoI18nText i18nKey="auto.mobile.screens_auth_LoginScreen.k_53e0e39e" /></Text>
-              <View style={styles.dividerLine} />
-            </Animated.View>
-
-            {/* OAuth Buttons — flat icon-only row */}
-            <Animated.View style={styles.oauthRow}>
-              <TouchableOpacity
-                style={styles.oauthButton}
-                activeOpacity={0.7}
-                onPress={() => handleSocialLogin('google')}
-                disabled={socialLoading !== null}
-              >
-                <Ionicons name="logo-google" size={22} color="#EA4335" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.oauthButton}
-                activeOpacity={0.7}
-                onPress={() => handleSocialLogin('apple')}
-                disabled={socialLoading !== null}
-              >
-                <Ionicons name="logo-apple" size={24} color="#000" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.oauthButton}
-                activeOpacity={0.7}
-                onPress={handleSSOLogin}
-              >
-                <Ionicons name="business-outline" size={22} color={BRAND_TEAL} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.oauthButton}
-                activeOpacity={0.7}
-                onPress={handleBiometricLogin}
-              >
-                <Ionicons name="finger-print-outline" size={22} color="#8B5CF6" />
               </TouchableOpacity>
             </Animated.View>
 

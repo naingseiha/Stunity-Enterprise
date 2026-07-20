@@ -94,7 +94,7 @@ export default function ParentRegisterScreen() {
             if (resp.data.success) {
                 setClaimData(resp.data.data);
                 setIsCodeValidated(true);
-                Alert.alert('Success', `Successfully found student: ${resp.data.data.student.firstName} ${resp.data.data.student.lastName}`);
+                Alert.alert('Success', `Successfully found student: ${resp.data.data.student.maskedName}`);
             } else {
                 Alert.alert('Invalid', resp.data.error || 'Claim code not found');
             }

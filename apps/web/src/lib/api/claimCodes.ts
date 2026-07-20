@@ -38,6 +38,7 @@ export interface ClaimCode {
 
 export interface PendingLink {
   id: string;
+  requestId: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -52,6 +53,22 @@ export interface PendingLink {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ApprovedSchoolLink {
+  id: string;
+  userId: string;
+  schoolId: string;
+  studentId?: string | null;
+  teacherId?: string | null;
+  submittedAt: string;
+  reviewedAt?: string | null;
+  user: {
+    firstName: string;
+    lastName: string;
+    email?: string | null;
+  };
+  claimCode: { code: string; type: string };
 }
 
 export interface GenerateCodesParams {
@@ -310,8 +327,9 @@ class ClaimCodeService {
    * Get all pending school link requests
    */
   async getPendingLinks(schoolId?: string): Promise<PendingLink[]> {
-    const query = schoolId ? `?schoolId=${schoolId}` : '';
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/pending-links${query}`, {
+    const params = new URLSearchParams({ status: 'PENDING' });
+    if (schoolId) params.set('schoolId', schoolId);
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/school-links?${params.toString()}`, {
       headers: this.getHeaders(),
     });
 
@@ -320,14 +338,32 @@ class ClaimCodeService {
     }
 
     const result = await response.json();
-    return result.data;
+    return result.data.map((request: any) => ({
+      id: request.user.id,
+      requestId: request.id,
+      firstName: request.user.firstName,
+      lastName: request.user.lastName,
+      email: request.user.email || '',
+      profilePictureUrl: request.user.profilePictureUrl,
+      pendingLinkData: {
+        code: request.claimCode.code,
+        schoolId: request.schoolId,
+        schoolName: request.school.name,
+        type: request.claimCode.type,
+        submittedAt: request.submittedAt,
+        studentId: request.studentId,
+        teacherId: request.teacherId,
+      },
+      createdAt: request.user.createdAt,
+      updatedAt: request.user.updatedAt,
+    }));
   }
 
   /**
    * Approve a pending school link request
    */
-  async approveLink(userId: string): Promise<void> {
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/approve-link/${userId}`, {
+  async approveLink(requestId: string): Promise<void> {
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/school-links/${requestId}/approve`, {
       method: 'POST',
       headers: this.getHeaders(),
     });
@@ -341,8 +377,8 @@ class ClaimCodeService {
   /**
    * Reject a pending school link request
    */
-  async rejectLink(userId: string, reason?: string): Promise<void> {
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/reject-link/${userId}`, {
+  async rejectLink(requestId: string, reason?: string): Promise<void> {
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/school-links/${requestId}/reject`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ reason }),
@@ -352,6 +388,38 @@ class ClaimCodeService {
       const error = await response.json();
       throw new Error(error.error || 'Failed to reject link');
     }
+  }
+
+  async getApprovedLinks(schoolId?: string): Promise<ApprovedSchoolLink[]> {
+    const params = new URLSearchParams({ status: 'APPROVED' });
+    if (schoolId) params.set('schoolId', schoolId);
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/school-links?${params.toString()}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch linked accounts');
+    const result = await response.json();
+    return result.data;
+  }
+
+  async unlinkLink(
+    requestId: string,
+    input: {
+      adminPassword: string;
+      reason: string;
+      expectedUserId: string;
+      expectedStudentId?: string | null;
+      expectedTeacherId?: string | null;
+      reissueClaimCode?: boolean;
+    },
+  ): Promise<any> {
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/school-links/${requestId}/unlink`, {
+      method: 'POST',
+      headers: { ...this.getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Failed to unlink account');
+    return result.data;
   }
 }
 

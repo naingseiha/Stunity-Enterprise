@@ -3,7 +3,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Register Screen — Premium Enterprise Design
  * 
- * 4-step registration with gradient progress, glass cards, enhanced role selection
+ * General Account registration with a short, school-independent flow.
  * Matches the premium sky-blue design language
  */
 
@@ -32,23 +32,14 @@ import { Button, Input } from '@/components/common';
 import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
-import { UserRole } from '@/types';
 import { validatePassword } from '@/utils';
-import { authApi } from '@/api/client';
 
 const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
 
 type NavigationProp = AuthStackScreenProps<'Register'>['navigation'];
 
-const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; description: string; color: string; bg: string }[] = [
-  { value: 'STUDENT', label: 'Student', icon: 'school-outline', description: 'I want to learn', color: BRAND_TEAL, bg: '#ECFEFF' },
-  { value: 'TEACHER', label: 'Educator', icon: 'easel-outline', description: 'I want to teach', color: '#8B5CF6', bg: '#F3E8FF' },
-  { value: 'PARENT', label: 'Parent', icon: 'people-outline', description: "I'm a parent", color: '#F59E0B', bg: '#FEF3C7' },
-];
-
-const STEP_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['person', 'people', 'lock-closed'];
-const STEP_LABELS = ['Info', 'Role', 'Account'];
+const STEP_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['person', 'lock-closed'];
 
 export default function RegisterScreen() {
     const { t: autoT } = useTranslation();
@@ -59,21 +50,15 @@ export default function RegisterScreen() {
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [organization, setOrganization] = useState('');
-  const [organizationType, setOrganizationType] = useState<'university' | 'school' | 'corporate' | 'other'>('university');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('STUDENT');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [acceptCompliance, setAcceptCompliance] = useState(false);
 
-  // Eliminated Claim Code state here
-
   const lastNameRef = useRef<TextInput>(null);
-  const organizationRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmPasswordRef = useRef<TextInput>(null);
@@ -87,8 +72,6 @@ export default function RegisterScreen() {
         return;
       }
       setStep(2);
-    } else if (step === 2) {
-      setStep(3);
     }
   };
 
@@ -118,10 +101,6 @@ export default function RegisterScreen() {
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
       password,
-      role,
-      // No organization for manual unlinked registration
-      organization: undefined,
-      organizationType: undefined,
     });
 
     if (success) {
@@ -134,7 +113,7 @@ export default function RegisterScreen() {
   // ── Progress Bar ────────────────────────────────────────
   const renderProgress = () => (
     <View style={s.progressContainer}>
-      {[1, 2, 3].map((n, i) => (
+      {[1, 2].map((n, i) => (
         <React.Fragment key={n}>
           {i > 0 && (
             <View style={[s.progressLine, n <= step && s.progressLineActive]} />
@@ -198,77 +177,11 @@ export default function RegisterScreen() {
         </LinearGradient>
       </TouchableOpacity>
 
-      <View style={s.claimFastTrackContainer}>
-        <View style={s.miniDivider} />
-        <Text style={s.fastTrackText}>OR</Text>
-        <View style={s.miniDivider} />
-      </View>
-
-      <TouchableOpacity
-        onPress={() => navigation.navigate('ClaimCodeSetup')}
-        activeOpacity={0.7}
-        style={s.fastTrackButton}
-      >
-        <Ionicons name="qr-code-outline" size={18} color={BRAND_TEAL} />
-        <Text style={s.fastTrackButtonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_92f9ea6c" /></Text>
-        <Ionicons name="chevron-forward" size={14} color={BRAND_TEAL} style={{ marginLeft: 'auto' }} />
-      </TouchableOpacity>
     </Animated.View>
   );
 
-  // ── Step 2: Role Selection ──────────────────────────────
+  // ── Step 2: Credentials ─────────────────────────────────
   const renderStep2 = () => (
-    <Animated.View style={s.stepContent}>
-      {renderProgress()}
-
-      <View style={s.stepHeader}>
-        <View style={[s.stepIconBg, { backgroundColor: '#FEF3C7' }]}>
-          <Ionicons name="people" size={22} color="#F59E0B" />
-        </View>
-        <Text style={[s.stepTitle, layout.isTablet && s.stepTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_4ec6c861" /></Text>
-        <Text style={[s.stepSubtitle, layout.isTablet && s.stepSubtitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_0073c7e3" /></Text>
-      </View>
-
-      <View style={[s.rolesContainer, layout.isTablet && s.rolesContainerTablet]}>
-        {ROLES.map((r, i) => (
-          <Animated.View key={r.value} style={layout.isTablet ? { flex: 1 } : undefined}>
-            <TouchableOpacity
-              style={[s.roleCard, layout.isTablet && s.roleCardRowTablet, role === r.value && { borderColor: r.color, backgroundColor: r.bg }]}
-              onPress={() => setRole(r.value)}
-              activeOpacity={0.8}
-            >
-              <View style={[s.roleIcon, { backgroundColor: role === r.value ? r.color : r.bg }]}>
-                <Ionicons
-                  name={r.icon}
-                  size={24}
-                  color={role === r.value ? '#fff' : r.color}
-                />
-              </View>
-              <View style={[s.roleInfo, layout.isTablet && s.roleInfoTablet]}>
-                <Text style={[s.roleLabel, role === r.value && { color: r.color }]} numberOfLines={2}>{r.label}</Text>
-                <Text style={s.roleDescription} numberOfLines={layout.isTablet ? 2 : 3}>{r.description}</Text>
-              </View>
-              {!!(role === r.value) && (
-                <Animated.View>
-                  <Ionicons name="checkmark-circle" size={24} color={r.color} />
-                </Animated.View>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        ))}
-      </View>
-
-      <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
-        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.ctaButton, layout.isTablet && s.ctaButtonTablet]}>
-          <Text style={[s.ctaText, layout.isTablet && s.ctaTextTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  // ── Step 3: Credentials ─────────────────────────────────
-  const renderStep3 = () => (
     <Animated.View style={s.stepContent}>
       {renderProgress()}
 
@@ -451,7 +364,7 @@ export default function RegisterScreen() {
 
               <Text style={[s.headerTitle, layout.isTablet && s.headerTitleTablet]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_a069174f" /></Text>
               <View style={s.stepBadge}>
-                <Text style={s.stepBadgeText}>{step}/3</Text>
+                <Text style={s.stepBadgeText}>{step}/2</Text>
               </View>
             </Animated.View>
 
@@ -459,7 +372,6 @@ export default function RegisterScreen() {
             <Animated.View style={s.content}>
               {step === 1 && renderStep1()}
               {step === 2 && renderStep2()}
-              {step === 3 && renderStep3()}
             </Animated.View>
             </>
             </AuthTabletShell>

@@ -18,7 +18,27 @@ export function LinkSchoolCard() {
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
     const [isScannerVisible, setIsScannerVisible] = useState(false);
 
-    const { linkClaimCode, validateClaimCode, user } = useAuthStore();
+    const { linkClaimCode, validateClaimCode, cancelSchoolLink, user } = useAuthStore();
+
+    const confirmCancellation = () => {
+        Alert.alert(
+            'Cancel school link request?',
+            'You can submit this or another Claim Code again later.',
+            [
+                { text: 'Keep Request', style: 'cancel' },
+                {
+                    text: 'Cancel Request',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsSubmitting(true);
+                        const result = await cancelSchoolLink();
+                        setIsSubmitting(false);
+                        if (!result.success) Alert.alert('Unable to cancel', result.error);
+                    },
+                },
+            ],
+        );
+    };
 
     // If request is already pending, show status UI
     if (user?.linkingStatus === 'PENDING') {
@@ -37,6 +57,14 @@ export function LinkSchoolCard() {
                     <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 8 }} />
                     <Text style={styles.pendingText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_5eebc90e" /></Text>
                 </View>
+                <TouchableOpacity
+                    style={[styles.cancelRequestButton, { borderColor: colors.border }]}
+                    onPress={confirmCancellation}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? <ActivityIndicator size="small" color="#DC2626" /> : <Ionicons name="close-circle-outline" size={18} color="#DC2626" />}
+                    <Text style={styles.cancelRequestText}>Cancel Request</Text>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -70,10 +98,10 @@ export function LinkSchoolCard() {
         
         if (type === 'STUDENT' && data.student) {
             const student = data.student;
-            confirmMessage = `Link to ${schoolName}?\n\nStudent: ${student.firstName} ${student.lastName}\nClass: ${student.className || 'N/A'}\nGrade: ${student.gradeLevel || 'N/A'}`;
+            confirmMessage = `Link to ${schoolName}?\n\nStudent: ${student.maskedName}\nClass: ${student.className || 'N/A'}\nGrade: ${student.gradeLevel || 'N/A'}`;
         } else if (type === 'TEACHER' && data.teacher) {
             const teacher = data.teacher;
-            confirmMessage = `Link to ${schoolName}?\n\nTeacher: ${teacher.firstName} ${teacher.lastName}`;
+            confirmMessage = `Link to ${schoolName}?\n\nTeacher: ${teacher.maskedName}`;
         }
 
         setIsSubmitting(false);
@@ -331,5 +359,20 @@ const styles = StyleSheet.create({
         color: '#D97706',
         fontSize: 14,
         fontWeight: '600',
+    },
+    cancelRequestButton: {
+        marginTop: 12,
+        minHeight: 42,
+        borderWidth: 1,
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    cancelRequestText: {
+        color: '#DC2626',
+        fontSize: 14,
+        fontWeight: '700',
     },
 });

@@ -179,12 +179,6 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
 
           <div className="mt-6 text-center space-y-3">
             <Link
-              href={`/${locale}/auth/parent/register`}
-              className="block text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium"
-            >
-              {t('registerPrompt')}
-            </Link>
-            <Link
               href={`/${locale}/auth/login`}
               className="block text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm"
             >

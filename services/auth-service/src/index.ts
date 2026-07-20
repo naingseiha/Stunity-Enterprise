@@ -17,6 +17,22 @@ import socialAuthRoutes from './routes/socialAuth.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
 import ssoRoutes from './routes/sso.routes';
 import translationRoutes from './routes/translation.routes';
+import passwordlessRoutes from './routes/passwordless.routes';
+import { isPasswordHashUsable, publicRegistrationAuthorization } from './security/authPolicy';
+import { normalizeEmail, normalizePhone, phoneLookupCandidates } from './security/identifiers';
+import { buildMaskedClaimPreview } from './security/claimPreview';
+import { createSharedRateLimitStore } from './security/rateLimitStore';
+import { assertPasswordlessProductionConfig } from './passwordless/providerConfig';
+import {
+  SchoolLinkError,
+  approveSchoolLinkRequest,
+  cancelSchoolLinkRequest,
+  getCurrentSchoolLink,
+  listSchoolLinkRequests,
+  rejectSchoolLinkRequest,
+  submitSchoolLinkRequest,
+  unlinkSchoolLinkRequest,
+} from './domain/schoolLinkService';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -28,6 +44,7 @@ const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
+assertPasswordlessProductionConfig();
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 // Remember-me style: long-lived tokens until explicit logout
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '30d';       // Access token: 30d (reduces refresh calls)
@@ -87,8 +104,9 @@ app.use(helmet({
 app.use(hpp());
 app.use(express.json({ limit: '10kb' }));
 
-// Rate limiters (in-memory — sufficient for single-instance / solo dev)
+// Redis-backed in production so limits apply across all Cloud Run instances.
 const globalLimiter = rateLimit({
+  store: createSharedRateLimitStore('global'),
   windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
@@ -97,6 +115,7 @@ const globalLimiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
+  store: createSharedRateLimitStore('login'),
   windowMs: 15 * 60 * 1000,
   max: 10,
   skipSuccessfulRequests: true,
@@ -104,16 +123,38 @@ const authLimiter = rateLimit({
 });
 
 const registerLimiter = rateLimit({
+  store: createSharedRateLimitStore('register'),
   windowMs: 60 * 60 * 1000,
   max: 5,
   message: { success: false, error: 'Too many accounts created. Try again later.' },
 });
 
+const claimPreviewLimiter = rateLimit({
+  store: createSharedRateLimitStore('claim-preview'),
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many claim code attempts. Try again later.' },
+});
+
 app.use('/auth', globalLimiter);
 app.use('/auth/login', authLimiter);
 app.use('/auth/parent/login', authLimiter);
+app.use('/auth/social', authLimiter);
 app.use('/auth/register', registerLimiter);
 app.use('/auth/parent/register', registerLimiter);
+app.use('/auth/claim-codes/validate', claimPreviewLimiter);
+
+// Legacy parent enrollment linked school/roster data before approval. Keep existing
+// parent password login, but close new enrollment until it uses SchoolLinkService.
+app.use(['/auth/parent/register', '/auth/parent/find-student'], (_req: Request, res: Response) => {
+  return res.status(410).json({
+    success: false,
+    code: 'GENERAL_ACCOUNT_REQUIRED',
+    error: 'Create a General Account first, then link school access with a Claim Code and admin approval.',
+  });
+});
 
 // ─── Password Policy ─────────────────────────────────────────────────
 const COMMON_PASSWORDS = new Set([
@@ -164,12 +205,6 @@ function validatePassword(password: string): { isValid: boolean; errors: string[
   if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) errors.push('At least 1 special character');
   if (COMMON_PASSWORDS.has(password.toLowerCase())) errors.push('This password is too common');
   return { isValid: errors.length === 0, errors };
-}
-
-function isPasswordHashUsable(hash: string | null | undefined): boolean {
-  if (!hash) return false;
-  // bcrypt hashes are 60 chars and start with $2a$, $2b$, or $2y$
-  return /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(hash);
 }
 
 type SchoolAccessScope = 'FULL' | 'PENDING_REVIEW';
@@ -345,6 +380,19 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return res.status(401).json({
         success: false,
         error: 'User not found or inactive',
+      });
+    }
+
+    // Access tokens issued before a school unlink are invalid immediately. Tokens
+    // created before this field existed are version 0 for backward compatibility.
+    const tokenSchoolAccessVersion = Number.isInteger(decoded.schoolAccessVersion)
+      ? decoded.schoolAccessVersion
+      : 0;
+    if (tokenSchoolAccessVersion !== user.schoolAccessVersion) {
+      return res.status(401).json({
+        success: false,
+        code: 'SCHOOL_ACCESS_CHANGED',
+        error: 'School access changed. Please sign in again.',
       });
     }
 
@@ -723,6 +771,11 @@ app.get(
 
 // ─── Mount modular route files ───────────────────────────────────────
 app.use('/auth', passwordResetRoutes(prisma));
+app.use('/auth', passwordlessRoutes(prisma, {
+  jwtSecret: JWT_SECRET,
+  accessTokenExpiration: JWT_EXPIRATION,
+  refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+}));
 app.use('/auth/social', socialAuthRoutes(prisma));
 app.use('/auth/sso', ssoRoutes(prisma));
 app.use('/auth/2fa', twoFactorRoutes(prisma));
@@ -761,7 +814,7 @@ app.get('/api/info', (req: Request, res: Response) => {
 app.post(
   '/auth/login',
   [
-    body('email').optional().isEmail().withMessage('Email must be valid when provided'),
+    body('email').optional({ checkFalsy: true }).trim().isEmail().withMessage('Email must be valid when provided'),
     body('phone').optional().notEmpty().withMessage('Phone must be non-empty when provided'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
@@ -776,28 +829,31 @@ app.post(
       }
 
       const { email, phone, password } = req.body;
-      const emailTrim = typeof email === 'string' ? email.trim() : '';
-      const phoneTrim = typeof phone === 'string' ? phone.trim() : '';
+      const normalizedEmail = normalizeEmail(email);
+      const rawPhone = typeof phone === 'string' ? phone.trim() : '';
+      const normalizedPhone = rawPhone ? normalizePhone(rawPhone) : null;
 
-      if (!emailTrim && !phoneTrim) {
+      if (!normalizedEmail && !rawPhone) {
         return res.status(400).json({
           success: false,
           error: 'Please provide email or phone number',
         });
       }
+      if (rawPhone && !normalizedPhone) {
+        return res.status(400).json({ success: false, error: 'Invalid phone number' });
+      }
 
       // Debug logging
       console.log('🔐 Login attempt:', {
-        email: emailTrim || '(none)',
-        phone: phoneTrim || '(none)',
+        method: normalizedEmail ? 'email' : 'phone',
         passwordLength: password?.length,
         timestamp: new Date().toISOString()
       });
 
       // Find user by email or phone
-      const user = emailTrim
-        ? await prisma.user.findUnique({
-          where: { email: emailTrim },
+      const user = normalizedEmail
+        ? await prisma.user.findFirst({
+          where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
           include: {
             school: {
               select: {
@@ -815,7 +871,7 @@ app.post(
           },
         })
         : await prisma.user.findFirst({
-          where: { phone: phoneTrim },
+          where: { phone: { in: phoneLookupCandidates(rawPhone) } },
           include: {
             school: {
               select: {
@@ -834,14 +890,14 @@ app.post(
         });
 
       if (!user) {
-        console.log('❌ User not found:', emailTrim || phoneTrim);
+        console.log('❌ User not found for submitted identifier');
         return res.status(401).json({
           success: false,
           error: 'Invalid email or password',
         });
       }
 
-      console.log('✅ User found:', user.email || user.phone);
+      console.log('✅ User found for submitted identifier');
 
       // Check if user is active
       if (!user.isActive) {
@@ -871,16 +927,8 @@ app.post(
       }
 
       const hasUsablePasswordHash = isPasswordHashUsable(user.password);
-      const isLegacyAdminPasswordAccount =
-        user.accountType === 'SOCIAL_ONLY' &&
-        hasUsablePasswordHash &&
-        (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
-
-      // Reject password flow for social-only accounts, except legacy admin records
-      if (
-        !hasUsablePasswordHash ||
-        (user.accountType === 'SOCIAL_ONLY' && !isLegacyAdminPasswordAccount)
-      ) {
+      // Authentication method is determined by the credential, never by school affiliation.
+      if (!hasUsablePasswordHash) {
         return res.status(401).json({
           success: false,
           error: 'This account uses social sign-in or requires password reset',
@@ -900,12 +948,12 @@ app.post(
       }
 
       console.log('🔑 Password check:', {
-        identifier: user.email || user.phone,
+        userId: user.id,
         valid: isPasswordValid
       });
 
       if (!isPasswordValid) {
-        console.log('❌ Invalid password for:', user.email || user.phone);
+        console.log('❌ Invalid password for user:', user.id);
         await recordFailedAttempt(user);
         return res.status(401).json({
           success: false,
@@ -913,14 +961,14 @@ app.post(
         });
       }
 
-      console.log('✅ Login successful for:', user.email || user.phone);
+      console.log('✅ Login successful for user:', user.id);
 
       // Reset failed attempts + update last login
       await recordSuccessfulLogin(user.id);
-      if (isLegacyAdminPasswordAccount) {
+      if (user.accountType === 'SOCIAL_ONLY') {
         await prisma.user.update({
           where: { id: user.id },
-          data: { accountType: 'SCHOOL_ONLY' },
+          data: { accountType: 'HYBRID' },
         });
       }
 
@@ -947,6 +995,7 @@ app.post(
           email: user.email,
           role: user.role,
           schoolId: user.schoolId,
+          schoolAccessVersion: user.schoolAccessVersion,
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
           schoolAccessScope: schoolAccess.accessScope,
           school: schoolPayload,
@@ -1019,7 +1068,7 @@ app.post(
 
 /**
  * POST /auth/register
- * Basic registration for social-only users (no school affiliation)
+ * Basic registration for General Accounts (no school affiliation)
  * Accepts email OR phone (at least one required, like Facebook)
  */
 app.post(
@@ -1028,7 +1077,7 @@ app.post(
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').notEmpty().withMessage('First name is required'),
     body('lastName').notEmpty().withMessage('Last name is required'),
-    body('email').optional().isEmail().withMessage('Email must be valid when provided'),
+    body('email').optional({ checkFalsy: true }).trim().isEmail().withMessage('Email must be valid when provided'),
     body('phone').optional().notEmpty().withMessage('Phone must be non-empty when provided'),
   ],
   async (req: Request, res: Response) => {
@@ -1041,16 +1090,21 @@ app.post(
         });
       }
 
-      const { email, password, firstName, lastName, phone, role = 'STUDENT' } = req.body;
-      const emailTrim = typeof email === 'string' ? email.trim() : '';
-      const phoneTrim = typeof phone === 'string' ? phone.trim() : '';
+      const { email, password, firstName, lastName, phone } = req.body;
+      const normalizedEmail = normalizeEmail(email);
+      const rawPhone = typeof phone === 'string' ? phone.trim() : '';
+      const normalizedPhone = rawPhone ? normalizePhone(rawPhone) : null;
+      const authorization = publicRegistrationAuthorization();
 
       // Require at least one of email or phone
-      if (!emailTrim && !phoneTrim) {
+      if (!normalizedEmail && !rawPhone) {
         return res.status(400).json({
           success: false,
           error: 'Please provide email or phone number (at least one required)',
         });
+      }
+      if (rawPhone && !normalizedPhone) {
+        return res.status(400).json({ success: false, error: 'Invalid phone number' });
       }
 
       // Enforce password policy
@@ -1064,18 +1118,14 @@ app.post(
       }
 
       console.log('📝 Registration attempt:', {
-        email: emailTrim || '(none)',
-        phone: phoneTrim || '(none)',
-        firstName,
-        lastName,
-        role,
+        method: normalizedEmail && normalizedPhone ? 'email_and_phone' : normalizedEmail ? 'email' : 'phone',
         timestamp: new Date().toISOString()
       });
 
       // Check if email already exists (when provided)
-      if (emailTrim) {
-        const existingByEmail = await prisma.user.findUnique({
-          where: { email: emailTrim },
+      if (normalizedEmail) {
+        const existingByEmail = await prisma.user.findFirst({
+          where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
         });
         if (existingByEmail) {
           return res.status(400).json({
@@ -1086,9 +1136,9 @@ app.post(
       }
 
       // Check if phone already exists (when provided)
-      if (phoneTrim) {
+      if (normalizedPhone) {
         const existingByPhone = await prisma.user.findFirst({
-          where: { phone: phoneTrim },
+          where: { phone: { in: phoneLookupCandidates(rawPhone) } },
         });
         if (existingByPhone) {
           return res.status(400).json({
@@ -1107,14 +1157,14 @@ app.post(
       // Create user (email and phone are optional in schema)
       const user = await prisma.user.create({
         data: {
-          email: emailTrim || null,
-          phone: phoneTrim || null,
+          email: normalizedEmail,
+          phone: normalizedPhone,
           username,
           password: hashedPassword,
           firstName,
           lastName,
-          role,
-          accountType: 'SOCIAL_ONLY', // No school affiliation
+          role: authorization.role,
+          accountType: authorization.accountType,
           socialFeaturesEnabled: true,
           isEmailVerified: false,
           isActive: true,
@@ -1130,6 +1180,7 @@ app.post(
           email: user.email,
           role: user.role,
           accountType: user.accountType,
+          schoolAccessVersion: user.schoolAccessVersion,
         },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
@@ -1309,6 +1360,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         schoolId: user.schoolId,
+        schoolAccessVersion: user.schoolAccessVersion,
         isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
         schoolAccessScope: schoolAccess.accessScope,
         school: schoolPayload,
@@ -1715,6 +1767,7 @@ app.post(
           phone: user.phone,
           role: user.role,
           schoolId: user.schoolId,
+          schoolAccessVersion: user.schoolAccessVersion,
           parentId: user.parentId,
           children: children.map(c => c.id),
         },
@@ -2174,6 +2227,10 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
         isActive: user.isActive,
         createdAt: user.createdAt,
         schoolId: user.schoolId,
+        accountType: user.accountType,
+        linkingStatus: user.linkingStatus,
+        pendingLinkData: user.pendingLinkData,
+        schoolAccessVersion: user.schoolAccessVersion,
         teacherId: user.teacherId,
         studentId: user.studentId,
         teacher: user.teacherId ? { id: user.teacherId } : null,
@@ -2852,7 +2909,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
  */
 app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
   try {
-    const { code } = req.body;
+    const code = typeof req.body?.code === 'string' ? req.body.code.trim().toUpperCase() : '';
 
     if (!code) {
       return res.status(400).json({
@@ -2877,18 +2934,12 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
           select: {
             id: true,
             name: true,
-            schoolType: true,
-            address: true,
           },
         },
         student: {
           select: {
-            id: true,
-            studentId: true,
             firstName: true,
             lastName: true,
-            dateOfBirth: true,
-            gender: true,
             user: { select: { id: true } },
             // include class info for the confirmation alert
             studentClasses: {
@@ -2902,12 +2953,8 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
         },
         teacher: {
           select: {
-            id: true,
-            teacherId: true,
             firstName: true,
             lastName: true,
-            dateOfBirth: true,
-            gender: true,
             user: { select: { id: true } },
           },
         },
@@ -2960,24 +3007,10 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
       });
     }
 
-    // Return validation success with data
+    // Public preview is deliberately masked. Full roster data is never returned here.
     res.json({
       success: true,
-      data: {
-        code: claimCode.code,
-        type: claimCode.type,
-        school: (claimCode as any).school,
-        student: (claimCode as any).student
-          ? {
-              ...(claimCode as any).student,
-              className: (claimCode as any).student.studentClasses?.[0]?.class?.name || null,
-              gradeLevel: (claimCode as any).student.studentClasses?.[0]?.class?.grade || null,
-            }
-          : null,
-        teacher: (claimCode as any).teacher || null,
-        expiresAt: claimCode.expiresAt,
-        requiresVerification: !!claimCode.verificationData,
-      },
+      data: buildMaskedClaimPreview(claimCode as any),
     });
   } catch (error: any) {
     console.error('Validate claim code error:', error);
@@ -2996,7 +3029,8 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
  */
 app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { code, verificationData } = req.body;
+    const code = typeof req.body?.code === 'string' ? req.body.code.trim().toUpperCase() : '';
+    const { verificationData } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -3013,150 +3047,198 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
       });
     }
 
-    // Idempotency Guards
-    const currentUser = await prisma.user.findUnique({ where: { id: userId } });
-    if (currentUser?.linkingStatus === 'PENDING') {
-      return res.status(409).json({
-        success: false,
-        error: 'You already have a pending link request. Please wait for admin approval.',
-      });
-    }
-    if (currentUser?.schoolId) {
-      return res.status(409).json({
-        success: false,
-        error: 'Your account is already linked to a school.',
-      });
-    }
-
-    // Find claim code
-    const claimCode = await prisma.claimCode.findUnique({
-      where: { code },
-      include: {
-        school: true,
-        student: true,
-        teacher: true,
-      },
-    });
-
-    if (!claimCode) {
-      return res.status(404).json({
-        success: false,
-        error: 'Claim code not found',
-      });
-    }
-
-    // Validate claim code status
-    if (claimCode.expiresAt && claimCode.expiresAt < new Date()) {
-      return res.status(400).json({
-        success: false,
-        error: 'Claim code has expired',
-      });
-    }
-
-    if (claimCode.claimedAt) {
-      return res.status(400).json({
-        success: false,
-        error: 'Claim code has already been used',
-      });
-    }
-
-    if (claimCode.revokedAt || !claimCode.isActive) {
-      return res.status(400).json({
-        success: false,
-        error: 'Claim code is not valid',
-      });
-    }
-
-    const linkedProfile =
-      claimCode.studentId
-        ? await prisma.user.findUnique({ where: { studentId: claimCode.studentId }, select: { id: true } })
-        : claimCode.teacherId
-          ? await prisma.user.findUnique({ where: { teacherId: claimCode.teacherId }, select: { id: true } })
-          : null;
-    if (linkedProfile) {
-      return res.status(409).json({
-        success: false,
-        error: 'This school profile is already linked to an account.',
-      });
-    }
-
-    const pendingForCode = await findPendingUserForClaimCode((claimCode as any).code, userId);
-    if (pendingForCode) {
-      return res.status(409).json({
-        success: false,
-        error: 'This claim code already has a pending approval request.',
-      });
-    }
-
-    // Verify data if required
-    if (claimCode.verificationData) {
-      const expectedData = claimCode.verificationData as any;
-
-      if (expectedData.firstName && verificationData?.firstName) {
-        if (expectedData.firstName.toLowerCase() !== verificationData.firstName.toLowerCase()) {
-          return res.status(400).json({
-            success: false,
-            error: 'Verification failed: First name does not match',
-          });
-        }
-      }
-
-      if (expectedData.lastName && verificationData?.lastName) {
-        if (expectedData.lastName.toLowerCase() !== verificationData.lastName.toLowerCase()) {
-          return res.status(400).json({
-            success: false,
-            error: 'Verification failed: Last name does not match',
-          });
-        }
-      }
-
-      if (expectedData.dateOfBirth && verificationData?.dateOfBirth) {
-        if (expectedData.dateOfBirth !== verificationData.dateOfBirth) {
-          return res.status(400).json({
-            success: false,
-            error: 'Verification failed: Date of birth does not match',
-          });
-        }
-      }
-    }
-
-    // Store pending link data — do NOT apply role/schoolId yet
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        linkingStatus: 'PENDING',
-        pendingLinkData: {
-          code: (claimCode as any).code,
-          schoolId: (claimCode as any).school.id,
-          schoolName: (claimCode as any).school.name,
-          type: (claimCode as any).type,
-          studentId: (claimCode as any).studentId || null,
-          teacherId: (claimCode as any).teacherId || null,
-          submittedAt: new Date().toISOString(),
-          verificationData: verificationData || null,
-        } as any,
-      },
-    });
-
-    // Return success with pending status
+    const result = await submitSchoolLinkRequest(prisma, userId, code, verificationData, { ipAddress: req.ip });
     res.json({
       success: true,
       message: 'Link request submitted. Awaiting admin approval.',
-      data: {
-        linkingStatus: 'PENDING',
-        school: {
-          id: (claimCode as any).school.id,
-          name: (claimCode as any).school.name,
-        },
-      },
+      data: result,
     });
   } catch (error: any) {
     console.error('Link claim code error:', error);
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
     res.status(500).json({
       success: false,
       error: 'Failed to link claim code',
       details: error.message,
     });
+  }
+});
+
+// Normalized Phase 1 API. The legacy /claim-codes/link endpoint remains an
+// adapter for already-released mobile clients.
+app.post('/auth/school-links', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
+    const result = await submitSchoolLinkRequest(
+      prisma,
+      userId,
+      typeof req.body?.code === 'string' ? req.body.code : '',
+      req.body?.verificationData,
+      { ipAddress: req.ip },
+    );
+    return res.status(202).json({ success: true, message: 'Link request submitted. Awaiting admin approval.', data: result });
+  } catch (error: any) {
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Submit school link error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to submit school link request' });
+  }
+});
+
+app.get('/auth/school-links/current', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) return res.status(401).json({ success: false, error: 'User not authenticated' });
+    const request = await getCurrentSchoolLink(prisma, req.user.id);
+    return res.json({ success: true, data: request });
+  } catch (error) {
+    console.error('Fetch current school link error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch school link' });
+  }
+});
+
+app.post('/auth/school-links/current/cancel', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) return res.status(401).json({ success: false, error: 'User not authenticated' });
+    const result = await cancelSchoolLinkRequest(prisma, req.user.id, { ipAddress: req.ip });
+    return res.json({ success: true, message: 'School link request cancelled.', data: result });
+  } catch (error: any) {
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Cancel school link error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to cancel school link request' });
+  }
+});
+
+app.get('/auth/admin/school-links', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    const schoolId = req.user?.role === 'SUPER_ADMIN'
+      ? (typeof req.query.schoolId === 'string' ? req.query.schoolId : '')
+      : (req.user?.schoolId || '');
+    if (!schoolId) return res.status(400).json({ success: false, error: 'schoolId is required' });
+    const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'UNLINKED'] as const;
+    const requestedStatus = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : 'PENDING';
+    if (!allowedStatuses.includes(requestedStatus as any)) {
+      return res.status(400).json({ success: false, error: 'Invalid school-link status' });
+    }
+    const requests = await listSchoolLinkRequests(prisma, schoolId, requestedStatus as any);
+    return res.json({ success: true, data: requests });
+  } catch (error) {
+    console.error('Fetch school links error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch school links' });
+  }
+});
+
+app.post('/auth/admin/school-links/:requestId/approve', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    const result = await approveSchoolLinkRequest(prisma, req.params.requestId, {
+      userId: req.user!.id,
+      role: req.user!.role,
+      schoolId: req.user!.schoolId,
+      ipAddress: req.ip,
+    });
+    try {
+      await prisma.notification.create({
+        data: {
+          recipientId: result.userId,
+          type: 'SYSTEM',
+          title: 'School Account Linked ✅',
+          message: `Your account has been approved and linked to ${result.schoolName}.`,
+        },
+      });
+    } catch (notificationError) {
+      console.warn('Failed to send approval notification:', notificationError);
+    }
+    return res.json({ success: true, message: 'Account link approved successfully.', data: result });
+  } catch (error: any) {
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Approve school link error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to approve link request' });
+  }
+});
+
+app.post('/auth/admin/school-links/:requestId/reject', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    const result = await rejectSchoolLinkRequest(prisma, req.params.requestId, {
+      userId: req.user!.id,
+      role: req.user!.role,
+      schoolId: req.user!.schoolId,
+      ipAddress: req.ip,
+    }, req.body?.reason);
+    try {
+      await prisma.notification.create({
+        data: {
+          recipientId: result.userId,
+          type: 'SYSTEM',
+          title: 'School Link Request Rejected',
+          message: `Your school link request was rejected: ${result.reason}`,
+        },
+      });
+    } catch (notificationError) {
+      console.warn('Failed to send rejection notification:', notificationError);
+    }
+    return res.json({ success: true, message: 'Link request rejected.', data: result });
+  } catch (error: any) {
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Reject school link error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reject link request' });
+  }
+});
+
+app.post('/auth/admin/school-links/:requestId/unlink', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    // Destructive school-access changes require fresh credential proof. This is
+    // deliberately server-verified rather than trusting a client timestamp.
+    const actor = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { password: true } });
+    const adminPassword = typeof req.body?.adminPassword === 'string' ? req.body.adminPassword : '';
+    if (!actor || !isPasswordHashUsable(actor.password) || !adminPassword || !(await bcrypt.compare(adminPassword, actor.password))) {
+      return res.status(401).json({ success: false, code: 'ADMIN_REAUTH_REQUIRED', error: 'Admin password confirmation is required.' });
+    }
+    const result = await unlinkSchoolLinkRequest(prisma, req.params.requestId, {
+      userId: req.user!.id,
+      role: req.user!.role,
+      schoolId: req.user!.schoolId,
+      ipAddress: req.ip,
+    }, req.body || {});
+    try {
+      await prisma.notification.create({
+        data: {
+          recipientId: result.userId,
+          type: 'SYSTEM',
+          title: 'School Account Unlinked',
+          message: `Your General Account was unlinked from ${result.schoolName}. Your school records were preserved.`,
+        },
+      });
+    } catch (notificationError) {
+      console.warn('Failed to send unlink notification:', notificationError);
+    }
+    return res.json({ success: true, message: 'School link removed. Academic records were preserved.', data: result });
+  } catch (error: any) {
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Unlink school account error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to unlink school account' });
   }
 });
 
@@ -3172,6 +3254,13 @@ app.get('/auth/admin/pending-links', authenticateToken, async (req: AuthRequest,
     // Only ADMIN or SUPER_ADMIN can access
     if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
       return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const requestedSchoolId = req.user?.role === 'SUPER_ADMIN'
+      ? (typeof schoolId === 'string' ? schoolId : '')
+      : req.user?.schoolId;
+    if (req.user?.role !== 'SUPER_ADMIN' && !requestedSchoolId) {
+      return res.status(403).json({ success: false, error: 'School-scoped admin access required' });
     }
 
     const pendingUsers = await prisma.user.findMany({
@@ -3192,8 +3281,8 @@ app.get('/auth/admin/pending-links', authenticateToken, async (req: AuthRequest,
     });
 
     // Post-filter by schoolId if provided
-    const filtered = schoolId
-      ? pendingUsers.filter((u: any) => (u.pendingLinkData as any)?.schoolId === schoolId)
+    const filtered = requestedSchoolId
+      ? pendingUsers.filter((u: any) => (u.pendingLinkData as any)?.schoolId === requestedSchoolId)
       : pendingUsers;
 
     const actionablePending = [];
@@ -3285,6 +3374,33 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
 
     const { userId } = req.params;
 
+    // Compatibility adapter for clients that still address a request by user id.
+    const normalizedRequest = await prisma.schoolLinkRequest.findFirst({
+      where: { userId, status: 'PENDING' },
+      select: { id: true },
+    });
+    if (normalizedRequest) {
+      const result = await approveSchoolLinkRequest(prisma, normalizedRequest.id, {
+        userId: req.user!.id,
+        role: req.user!.role,
+        schoolId: req.user!.schoolId,
+        ipAddress: req.ip,
+      });
+      try {
+        await prisma.notification.create({
+          data: {
+            recipientId: result.userId,
+            type: 'SYSTEM',
+            title: 'School Account Linked ✅',
+            message: `Your account has been approved and linked to ${result.schoolName}.`,
+          },
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send approval notification:', notificationError);
+      }
+      return res.json({ success: true, message: 'Account link approved successfully.', data: result });
+    }
+
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user || user.linkingStatus !== 'PENDING') {
@@ -3292,6 +3408,9 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
     }
 
     const pendingData = user.pendingLinkData as any;
+    if (req.user?.role !== 'SUPER_ADMIN' && pendingData?.schoolId !== req.user?.schoolId) {
+      return res.status(403).json({ success: false, error: 'Cannot approve requests from another school' });
+    }
     if (!pendingData?.code || !pendingData?.schoolId) {
       return res.status(400).json({ success: false, error: 'Invalid pending link data' });
     }
@@ -3305,10 +3424,10 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
       include: { school: true, student: true, teacher: true },
     });
 
-    if (!claimCode && !pendingData.studentId && !pendingData.teacherId) {
+    if (!claimCode) {
       return res.status(404).json({
         success: false,
-        error: 'Claim code no longer exists and no target profile was stored. Please reject this request and ask the user to scan a new code.',
+        error: 'Claim code no longer exists. Please reject this request and ask the user to scan a new code.',
       });
     }
 
@@ -3318,6 +3437,9 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
 
     if (claimCode?.claimedAt && claimCode.claimedByUserId !== userId) {
       return res.status(409).json({ success: false, error: 'Claim code was already used by another user' });
+    }
+    if (!claimCode.isActive || claimCode.revokedAt || claimCode.expiresAt < new Date()) {
+      return res.status(409).json({ success: false, error: 'Claim code is no longer active' });
     }
 
     if (pendingData.studentId) {
@@ -3433,13 +3555,24 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
 
       // Mark the claim code as claimed NOW (only on approval)
       if (claimCode) {
-        await tx.claimCode.update({
-          where: { id: claimCode.id },
+        const claimUpdate = await tx.claimCode.updateMany({
+          where: {
+            id: claimCode.id,
+            schoolId: pendingData.schoolId,
+            isActive: true,
+            revokedAt: null,
+            claimedAt: null,
+            claimedByUserId: null,
+            expiresAt: { gt: new Date() },
+          },
           data: {
             claimedAt: new Date(),
             claimedByUserId: userId,
           },
         });
+        if (claimUpdate.count !== 1) {
+          throw new SchoolLinkError('Claim code changed before approval. No school access was granted.', 409, 'CLAIM_APPROVAL_CONFLICT');
+        }
       }
     });
 
@@ -3460,6 +3593,9 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
     res.json({ success: true, message: 'Account link approved successfully.' });
   } catch (error: any) {
     console.error('Approve link error:', error);
+    if (error instanceof SchoolLinkError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
     if (error?.code === 'P2002') {
       return res.status(409).json({
         success: false,
@@ -3483,6 +3619,33 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
     const { userId } = req.params;
     const { reason } = req.body;
 
+    // Compatibility adapter for clients that still address a request by user id.
+    const normalizedRequest = await prisma.schoolLinkRequest.findFirst({
+      where: { userId, status: 'PENDING' },
+      select: { id: true },
+    });
+    if (normalizedRequest) {
+      const result = await rejectSchoolLinkRequest(prisma, normalizedRequest.id, {
+        userId: req.user!.id,
+        role: req.user!.role,
+        schoolId: req.user!.schoolId,
+        ipAddress: req.ip,
+      }, reason || 'Rejected by school administrator');
+      try {
+        await prisma.notification.create({
+          data: {
+            recipientId: result.userId,
+            type: 'SYSTEM',
+            title: 'School Link Request Rejected',
+            message: `Your school link request was rejected: ${result.reason}`,
+          },
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send rejection notification:', notificationError);
+      }
+      return res.json({ success: true, message: 'Link request rejected.', data: result });
+    }
+
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user || user.linkingStatus !== 'PENDING') {
@@ -3490,6 +3653,9 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
     }
 
     const pendingData = user.pendingLinkData as any;
+    if (req.user?.role !== 'SUPER_ADMIN' && pendingData?.schoolId !== req.user?.schoolId) {
+      return res.status(403).json({ success: false, error: 'Cannot reject requests from another school' });
+    }
 
     // Reset user status
     await prisma.user.update({
@@ -3531,11 +3697,13 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
 app.post('/auth/register/with-claim-code', async (req: Request, res: Response) => {
   try {
     let { code, email, password, firstName, lastName, phone, verificationData } = req.body;
-    const emailTrim = typeof email === 'string' ? email.trim() : '';
-    const phoneTrim = typeof phone === 'string' ? phone.trim() : '';
+    code = typeof code === 'string' ? code.trim().toUpperCase() : '';
+    const normalizedEmail = normalizeEmail(email);
+    const rawPhone = typeof phone === 'string' ? phone.trim() : '';
+    const normalizedPhone = rawPhone ? normalizePhone(rawPhone) : null;
 
     // Validate required fields (relaxed firstName/lastName as we can get them from claim code)
-    if (!code || !password || (!emailTrim && !phoneTrim)) {
+    if (!code || !password || (!normalizedEmail && !rawPhone)) {
       return res.status(400).json({
         success: false,
         error: 'Missing required credentials (code, password, and email or phone)',
@@ -3544,17 +3712,28 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
 
     // Validate email format (if email is provided)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (emailTrim && !emailRegex.test(emailTrim)) {
+    if (normalizedEmail && !emailRegex.test(normalizedEmail)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid email format',
       });
     }
+    if (rawPhone && !normalizedPhone) {
+      return res.status(400).json({ success: false, error: 'Invalid phone number' });
+    }
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password does not meet requirements',
+        details: passwordCheck.errors,
+      });
+    }
 
     // Check if email / phone already exists
-    if (emailTrim) {
-      const existingByEmail = await prisma.user.findUnique({
-        where: { email: emailTrim },
+    if (normalizedEmail) {
+      const existingByEmail = await prisma.user.findFirst({
+        where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
       });
 
       if (existingByEmail) {
@@ -3564,9 +3743,9 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
         });
       }
     }
-    if (phoneTrim) {
+    if (normalizedPhone) {
       const existingByPhone = await prisma.user.findFirst({
-        where: { phone: phoneTrim },
+        where: { phone: { in: phoneLookupCandidates(rawPhone) } },
       });
 
       if (existingByPhone) {
@@ -3691,17 +3870,15 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       const claimUsername = await generateUniqueUsername(tx, firstName, lastName);
       const user = await tx.user.create({
         data: {
-          email: emailTrim || null,
+          email: normalizedEmail,
           username: claimUsername,
           password: hashedPassword,
           firstName,
           lastName,
-          phone: phoneTrim || null,
+          phone: normalizedPhone,
           accountType: 'HYBRID',
-          organizationCode: claimCode.school.id,
-          organizationName: claimCode.school.name,
-          organizationType: claimCode.school.schoolType,
-          role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
+          // Pending claims never grant school role, organization, or school authorization.
+          role: 'STUDENT',
           socialFeaturesEnabled: true,
           isEmailVerified: false,
           linkingStatus: 'PENDING',
@@ -3721,6 +3898,10 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       return user;
     });
 
+    // Keep this legacy endpoint compatible while routing its school-link state
+    // through the normalized lifecycle and audit trail.
+    await submitSchoolLinkRequest(prisma, result.id, code, verificationData, { ipAddress: req.ip });
+
     // Generate tokens using the same claim shape as normal login.
     const token = jwt.sign(
       {
@@ -3728,6 +3909,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
         email: result.email,
         role: result.role,
         schoolId: null,
+        schoolAccessVersion: result.schoolAccessVersion,
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
@@ -3786,6 +3968,13 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
  * Uses claim code as temporary authentication
  */
 app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
+  return res.status(410).json({
+    success: false,
+    code: 'CLAIM_CODE_IS_NOT_AUTHENTICATION',
+    error: 'Sign in or create a General Account first, then submit the Claim Code for school approval.',
+  });
+
+  /* Legacy implementation retained temporarily for rollback reference; this path is intentionally unreachable.
   try {
     const { code, temporaryPassword, verificationData } = req.body;
 
@@ -3933,6 +4122,7 @@ app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
       details: error.message,
     });
   }
+  */
 });
 
 // Start server

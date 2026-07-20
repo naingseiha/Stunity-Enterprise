@@ -408,9 +408,9 @@ export default function ClaimCodeSetupScreen() {
     const student = claimCodeData?.student;
     const teacher = claimCodeData?.teacher;
     const name = student
-      ? `${student.firstName} ${student.lastName}`
+      ? student.maskedName
       : teacher
-      ? `${teacher.firstName} ${teacher.lastName}`
+      ? teacher.maskedName
       : t('common.unknown');
     const role = student ? t('auth.claimCodeSetup.confirmation.roleStudent') : teacher ? t('auth.claimCodeSetup.confirmation.roleTeacher') : t('auth.claimCodeSetup.confirmation.roleUser');
     const schoolName = claimCodeData?.school?.name || t('auth.claimCodeSetup.confirmation.schoolFallback');

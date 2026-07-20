@@ -220,7 +220,7 @@ export default function ParentLoginScreen() {
 
             {/* Footer */}
             <TouchableOpacity
-              onPress={() => navigation.navigate('ParentRegister')}
+              onPress={() => navigation.navigate('Register')}
               style={styles.footer}
             >
               <Text style={styles.footerText}>

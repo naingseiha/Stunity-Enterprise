@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import { normalizeEmail } from '../security/identifiers';
+import { createSharedRateLimitStore } from '../security/rateLimitStore';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 
@@ -8,13 +10,6 @@ const router = Router();
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-
-// Strict rate limit for password reset
-const resetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 3,
-  message: { success: false, error: 'Too many reset attempts. Try again in 1 hour.' },
-});
 
 // ─── Password Policy (shared with index.ts — could be extracted to utils later) ───
 const COMMON_PASSWORDS = new Set([
@@ -103,17 +98,27 @@ async function sendResetEmail(email: string, token: string): Promise<void> {
 }
 
 export default function passwordResetRoutes(prisma: PrismaClient) {
+  // Construct after the auth-service bootstrap loads the root environment.
+  const resetLimiter = rateLimit({
+    store: createSharedRateLimitStore('password-reset'),
+    windowMs: 60 * 60 * 1000,
+    max: 3,
+    message: { success: false, error: 'Too many reset attempts. Try again in 1 hour.' },
+  });
+
   // POST /auth/forgot-password
   router.post('/forgot-password', resetLimiter, async (req: Request, res: Response) => {
     try {
-      const { email } = req.body;
+      const email = normalizeEmail(req.body?.email);
 
       if (!email) {
         return res.status(400).json({ success: false, error: 'Email is required' });
       }
 
       // Always return success to prevent email enumeration
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' } },
+      });
       if (!user) {
         return res.json({
           success: true,
