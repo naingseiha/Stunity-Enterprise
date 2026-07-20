@@ -463,7 +463,10 @@
       "orDivider": "ឬ",
       "continueWithTelegram": "បន្តជាមួយ Telegram",
       "telegramErrorTitle": "ការចូលគណនីតាម Telegram បរាជ័យ",
-      "telegramErrorBody": "ការចូលគណនីតាម Telegram មិនបានបញ្ចប់ទេ។ សូមព្យាយាមម្តងទៀត។"
+      "telegramErrorBody": "ការចូលគណនីតាម Telegram មិនបានបញ្ចប់ទេ។ សូមព្យាយាមម្តងទៀត។",
+      "usePasskey": "ប្រើ Passkey",
+      "passkeyErrorTitle": "ការចូលគណនីតាម Passkey បរាជ័យ",
+      "passkeyErrorBody": "មិនអាចចូលគណនីដោយប្រើ Passkey បានទេ។ សូមព្យាយាមម្តងទៀត។"
     },
     "schoolClaim": {
       "preparing": "កំពុងរៀបចំការភ្ជាប់សាលាដោយសុវត្ថិភាព…",

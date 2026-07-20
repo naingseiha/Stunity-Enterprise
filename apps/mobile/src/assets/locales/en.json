@@ -463,7 +463,10 @@
       "orDivider": "or",
       "continueWithTelegram": "Continue with Telegram",
       "telegramErrorTitle": "Telegram sign-in failed",
-      "telegramErrorBody": "Telegram sign-in did not complete. Try again."
+      "telegramErrorBody": "Telegram sign-in did not complete. Try again.",
+      "usePasskey": "Use passkey",
+      "passkeyErrorTitle": "Passkey sign-in failed",
+      "passkeyErrorBody": "Could not sign in with a passkey. Try again."
     },
     "schoolClaim": {
       "preparing": "Preparing your secure school link…",

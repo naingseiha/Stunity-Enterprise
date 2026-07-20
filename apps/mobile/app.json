@@ -19,10 +19,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.stunity.mobile",
       "buildNumber": "12",
-      "_comment_associatedDomains": "Universal Links for shared post/reel and school Claim URLs. REQUIRES the site to host /.well-known/apple-app-site-association for appID <TEAM_ID>.app.stunity.mobile — until that file is live, https links open in Safari, not the app. The stunity:// scheme works without it.",
+      "_comment_associatedDomains": "Universal Links for shared post/reel and school Claim URLs. REQUIRES the site to host /.well-known/apple-app-site-association for appID <TEAM_ID>.app.stunity.mobile — until that file is live, https links open in Safari, not the app. The stunity:// scheme works without it. The webcredentials entries are for native passkeys and REQUIRE the same AASA file to also list a top-level \"webcredentials\": { \"apps\": [\"<TEAM_ID>.app.stunity.mobile\"] } — until that's live, passkey ceremonies fail RP verification on-device.",
       "associatedDomains": [
         "applinks:stunity.app",
-        "applinks:www.stunity.app"
+        "applinks:www.stunity.app",
+        "webcredentials:stunity.app",
+        "webcredentials:www.stunity.app"
       ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -123,7 +125,18 @@
       "expo-notifications",
       "expo-video",
       "@sentry/react-native",
-      "./plugins/withFmtConstevalFix.js"
+      "./plugins/withFmtConstevalFix.js",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          },
+          "android": {
+            "compileSdkVersion": 35
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

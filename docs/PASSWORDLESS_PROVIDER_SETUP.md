@@ -289,11 +289,51 @@ Two safety checks live in the routes, not just the client:
 Set `NEXT_PUBLIC_AUTH_PASSKEYS_ENABLED="true"` in the web build environment
 once the backend flag and RP config are confirmed working.
 
-**Mobile native passkeys are not implemented in this change.** Expo/React
-Native has no built-in WebAuthn API; supporting it natively needs a
-Credential Manager (Android) / `ASAuthorizationController` (iOS) bridge (e.g.
-`react-native-passkeys`), which is a materially larger integration than the
-web browser flow above and is left for a follow-up.
+### Mobile (Expo)
+
+Native passkeys use `react-native-passkeys` (pinned to `0.4.0` — later
+releases require Expo SDK 53+, and this app is on SDK 52), which bridges to
+Credential Manager on Android and `ASAuthorizationController` on iOS behind
+the same `create`/`get` API shape the web flow uses
+(`services/auth-service/src/routes/passkey.routes.ts` needs no changes).
+
+- `apps/mobile/src/api/passkeys.ts` mirrors the web `lib/api/passkeys.ts`
+  client calls.
+- `apps/mobile/src/stores/authStore.ts`'s `passkeySignIn()` is wired to a
+  **"Use passkey"** button on the phone-entry screen
+  (`PasswordlessAuthScreen.tsx`, login entry only, public ceremony).
+- `enrollPasskey()` is offered from **Profile → Password & Security**
+  (`PasswordSecurityScreen.tsx`) rather than immediately after passwordless
+  sign-up like the web `PASSKEY_OFFER` step — the mobile root navigator
+  switches stacks the instant `isAuthenticated` flips true, so there's no
+  in-place interstitial screen to show first without restructuring the auth
+  state machine. Settings is an already-authenticated screen, so enrollment,
+  listing, and removal (`GET`/`DELETE /auth/me/passkeys`) all work there
+  without that conflict.
+- Both surfaces are gated by `EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED` AND
+  `Passkeys.isSupported()` (`apps/mobile/.env.local` defaults this flag to
+  `false` — see the comment there for why: the native module isn't present
+  in a dev-client binary until it's rebuilt).
+
+**This is a native module — Metro/Expo Go cannot load it.** After installing
+it, you must rebuild the dev client before the flag can safely be turned on:
+
+```sh
+npx expo prebuild -p ios && npx expo run:ios       # or
+npx expo prebuild -p android && npx expo run:android
+```
+
+**Associated domains still need real hosting.** `app.json`'s iOS
+`associatedDomains` now includes `webcredentials:stunity.app` /
+`webcredentials:www.stunity.app` alongside the existing `applinks:` entries,
+and Android's `assetlinks.json` needs a `delegate_permission/common.get_login_creds`
+relation added to whatever's generated for app links. Until the AASA file at
+`https://stunity.app/.well-known/apple-app-site-association` includes a
+top-level `"webcredentials": { "apps": ["<TEAM_ID>.app.stunity.mobile"] }`
+block and `assetlinks.json` includes the login-creds relation, on-device
+passkey ceremonies will fail RP ID verification — this is the same hosting
+gap already blocking universal links (see
+`project_learning_reels_nav_hardening` in memory), not a new one.
 
 ## Safe rollback
 

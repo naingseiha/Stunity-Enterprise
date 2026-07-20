@@ -1,5 +1,5 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -15,11 +15,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as Passkeys from 'react-native-passkeys';
 import { ProfileStackParamList } from '@/navigation/types';
 import { authApi } from '@/api/client';
+import * as passkeysApi from '@/api/passkeys';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
+
+const PASSKEYS_ENABLED = process.env.EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED === 'true';
+
+type PasskeyEntry = { id: string; deviceLabel: string | null; createdAt: string; lastUsedAt: string | null };
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'PasswordSecurity'>;
 
@@ -36,7 +42,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
     const { t: autoT } = useTranslation();
     const { t } = useTranslation();
     const { colors } = useThemeContext();
-    const { logout } = useAuthStore();
+    const { logout, enrollPasskey } = useAuthStore();
 
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -45,6 +51,61 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
+    const passkeysSupported = PASSKEYS_ENABLED && Passkeys.isSupported();
+    const [passkeys, setPasskeys] = useState<PasskeyEntry[]>([]);
+    const [passkeysLoading, setPasskeysLoading] = useState(false);
+    const [enrollingPasskey, setEnrollingPasskey] = useState(false);
+
+    const loadPasskeys = async () => {
+        if (!passkeysSupported) return;
+        setPasskeysLoading(true);
+        try {
+            const data = await passkeysApi.listPasskeys();
+            setPasskeys(data.passkeys);
+        } catch {
+            // Non-critical — leave the list as-is and let the user retry via pull-to-refresh equivalent (re-enroll/back).
+        } finally {
+            setPasskeysLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void loadPasskeys();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleAddPasskey = async () => {
+        setEnrollingPasskey(true);
+        const result = await enrollPasskey();
+        setEnrollingPasskey(false);
+        if (!result.success && !result.cancelled) {
+            Alert.alert(t('common.error'), result.error || 'Unable to set up a passkey.');
+            return;
+        }
+        if (result.success) {
+            void loadPasskeys();
+        }
+    };
+
+    const handleRemovePasskey = (id: string) => {
+        Alert.alert('Remove passkey', 'Are you sure you want to remove this passkey?', [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+                text: t('common.remove') || 'Remove',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await passkeysApi.removePasskey(id);
+                        void loadPasskeys();
+                    } catch (error: any) {
+                        const message = error?.response?.data?.error || 'Unable to remove this passkey.';
+                        Alert.alert(t('common.error'), message);
+                    }
+                },
+            },
+        ]);
+    };
 
     const handleSave = async () => {
         if (!currentPassword || !newPassword || !confirmPassword) {
@@ -171,6 +232,54 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                             </>
                         )}
                     </TouchableOpacity>
+
+                    {passkeysSupported && (
+                        <View style={[styles.rulesCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 20 }]}>
+                            <Text style={[styles.rulesTitle, { color: colors.text }]}>Passkeys</Text>
+                            <Text style={[styles.description, { color: colors.textSecondary, marginBottom: 12 }]}>
+                                Sign in with your fingerprint or face instead of a code.
+                            </Text>
+
+                            {passkeysLoading ? (
+                                <ActivityIndicator size="small" color={colors.textSecondary} />
+                            ) : (
+                                passkeys.map((passkey) => (
+                                    <View key={passkey.id} style={styles.passkeyRow}>
+                                        <View style={styles.passkeyInfo}>
+                                            <Text style={[styles.passkeyLabel, { color: colors.text }]}>
+                                                {passkey.deviceLabel || 'Passkey'}
+                                            </Text>
+                                            <Text style={[styles.passkeyMeta, { color: colors.textSecondary }]}>
+                                                Added {new Date(passkey.createdAt).toLocaleDateString()}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={() => handleRemovePasskey(passkey.id)}
+                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        >
+                                            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))
+                            )}
+
+                            <TouchableOpacity
+                                style={[styles.passkeyAddButton, enrollingPasskey && styles.saveButtonDisabled]}
+                                onPress={handleAddPasskey}
+                                activeOpacity={0.8}
+                                disabled={enrollingPasskey}
+                            >
+                                {enrollingPasskey ? (
+                                    <ActivityIndicator size="small" color="#0EA5E9" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="finger-print-outline" size={18} color="#0EA5E9" />
+                                        <Text style={styles.passkeyAddButtonText}>Add a passkey</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -319,6 +428,41 @@ const styles = StyleSheet.create({
     saveButtonText: {
         color: '#FFFFFF',
         fontSize: 15,
+        fontWeight: '700',
+    },
+    passkeyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#EEF2F7',
+    },
+    passkeyInfo: {
+        flex: 1,
+        gap: 2,
+    },
+    passkeyLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    passkeyMeta: {
+        fontSize: 12,
+    },
+    passkeyAddButton: {
+        marginTop: 12,
+        height: 44,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#0EA5E9',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+    },
+    passkeyAddButtonText: {
+        color: '#0EA5E9',
+        fontSize: 14,
         fontWeight: '700',
     },
 });

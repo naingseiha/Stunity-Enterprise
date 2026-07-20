@@ -16,16 +16,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import * as Passkeys from 'react-native-passkeys';
 import { useAuthStore } from '@/stores';
 import type { OtpChallengeResponse } from '@/types';
 import { normalizePhonePreview } from '@/utils/passwordlessPhone';
 
 type Step = 'PHONE' | 'OTP' | 'PROFILE';
 
+const PASSKEYS_ENABLED = process.env.EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED === 'true';
+
 export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 'register' }) {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { startPhoneOtp, verifyPhoneOtp, enrollPasswordless, startTelegramOidc, isLoading } = useAuthStore();
+  const { startPhoneOtp, verifyPhoneOtp, enrollPasswordless, startTelegramOidc, passkeySignIn, isLoading } = useAuthStore();
+  const passkeysSupported = PASSKEYS_ENABLED && Passkeys.isSupported();
   const [step, setStep] = useState<Step>('PHONE');
   const [phone, setPhone] = useState('');
   const [challenge, setChallenge] = useState<OtpChallengeResponse | null>(null);
@@ -120,6 +124,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
     }
   };
 
+  const continueWithPasskey = async () => {
+    const result = await passkeySignIn();
+    if (!result.success && !result.cancelled) {
+      Alert.alert(t('auth.passwordless.passkeyErrorTitle'), result.error || t('auth.passwordless.passkeyErrorBody'));
+    }
+  };
+
   const goBack = () => {
     if (step === 'PROFILE') setStep('OTP');
     else if (step === 'OTP') setStep('PHONE');
@@ -173,6 +184,19 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   {phonePreview ? t('auth.passwordless.canonicalPreview', { phone: phonePreview }) : ' '}
                 </Text>
                 <PrimaryButton label={t('auth.passwordless.continue')} loading={isLoading} disabled={!phonePreview} onPress={() => void start()} />
+                {entry === 'login' && passkeysSupported && (
+                  <TouchableOpacity
+                    onPress={() => void continueWithPasskey()}
+                    disabled={isLoading}
+                    style={[styles.telegramButton, isLoading && styles.disabledButton]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('auth.passwordless.usePasskey')}
+                    accessibilityState={{ disabled: isLoading }}
+                  >
+                    <Ionicons name="finger-print-outline" size={18} color="#0F172A" />
+                    <Text style={styles.telegramButtonText}>{t('auth.passwordless.usePasskey')}</Text>
+                  </TouchableOpacity>
+                )}
                 {process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true' && (
                   <>
                     <View style={styles.dividerRow}>

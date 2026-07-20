@@ -10,8 +10,12 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+import * as Passkeys from 'react-native-passkeys';
 import { User, AuthTokens, LoginCredentials, OtpChallengeResponse, OtpVerifyResult, RegisterData } from '@/types';
 import { authApi } from '@/api/client';
+import * as passkeysApi from '@/api/passkeys';
 import { Config } from '@/config';
 import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
@@ -33,6 +37,8 @@ interface AuthState {
   verifyPhoneOtp: (challengeId: string, code: string) => Promise<{ success: boolean; data?: OtpVerifyResult; error?: string }>;
   enrollPasswordless: (input: { enrollmentToken: string; firstName: string; lastName: string; acceptedTermsVersion: string }) => Promise<{ success: boolean; error?: string }>;
   startTelegramOidc: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  enrollPasskey: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  passkeySignIn: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -473,6 +479,60 @@ export const useAuthStore = create<AuthState>()(
           return { success: true };
         } catch (error: any) {
           const message = error.response?.data?.error || 'Unable to complete Telegram sign-in';
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
+        }
+      },
+
+      enrollPasskey: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const options = await passkeysApi.getRegistrationOptions();
+          const response = await Passkeys.create(options as any);
+          if (!response) {
+            set({ isLoading: false });
+            return { success: false, cancelled: true };
+          }
+          const deviceLabel = Device.deviceName || `${Platform.OS} device`;
+          await passkeysApi.verifyRegistration(response, deviceLabel);
+          set({ isLoading: false });
+          return { success: true };
+        } catch (error: any) {
+          // Enrollment is optional — a cancelled/unsupported ceremony should
+          // not block the user from reaching the app.
+          set({ isLoading: false });
+          if (error?.name === 'NotAllowedError' || error?.name === 'NotSupportedError') {
+            return { success: false, cancelled: true };
+          }
+          const message = error.response?.data?.error || 'Unable to set up a passkey';
+          return { success: false, error: message };
+        }
+      },
+
+      passkeySignIn: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const { challengeId, options } = await passkeysApi.getAuthenticationOptions();
+          const response = await Passkeys.get(options as any);
+          if (!response) {
+            set({ isLoading: false });
+            return { success: false, cancelled: true };
+          }
+          const data = await passkeysApi.verifyAuthentication(challengeId, response);
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+          await tokenService.setTokens(data.tokens as AuthTokens);
+          await tokenService.setUserId(data.user.id);
+          const user = mapAuthResponseUser(data.user, data);
+          set({ user, isAuthenticated: true, isLoading: false });
+          prewarmFeedAfterAuth(user.role);
+          return { success: true };
+        } catch (error: any) {
+          if (error?.name === 'NotAllowedError' || error?.name === 'NotSupportedError') {
+            set({ isLoading: false });
+            return { success: false, cancelled: true };
+          }
+          const message = error.response?.data?.error || 'Could not sign in with a passkey';
           set({ isLoading: false, error: message });
           return { success: false, error: message };
         }
