@@ -3,18 +3,28 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowRight, ChevronLeft, Smartphone } from "lucide-react";
+import { ArrowRight, ChevronLeft, Fingerprint, Smartphone } from "lucide-react";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import {
   enrollPasswordless,
+  getTelegramOidcStartUrl,
   startPhoneOtp,
   TokenManager,
   verifyPhoneOtp,
 } from "@/lib/api/auth";
+import {
+  getAuthenticationOptions,
+  getRegistrationOptions,
+  verifyAuthentication,
+  verifyRegistration,
+} from "@/lib/api/passkeys";
 import { normalizePhonePreview } from "@/lib/auth/passwordless-phone";
 import { getAuthRedirectPath } from "@/lib/auth/redirect";
 
-type Step = "PHONE" | "OTP" | "PROFILE";
+type Step = "PHONE" | "OTP" | "PROFILE" | "PASSKEY_OFFER";
 type Entry = "login" | "register";
+
+const PASSKEYS_ENABLED = process.env.NEXT_PUBLIC_AUTH_PASSKEYS_ENABLED === "true";
 
 type OtpChallenge = {
   challengeId: string;
@@ -42,6 +52,7 @@ export default function PasswordlessAuthCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [now, setNow] = useState(Date.now());
+  const [pendingRedirect, setPendingRedirect] = useState("");
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const codeInputRef = useRef<HTMLInputElement>(null);
   const firstNameInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +102,15 @@ export default function PasswordlessAuthCard({
     }
   };
 
+  const finishSignIn = (redirectPath: string) => {
+    if (PASSKEYS_ENABLED) {
+      setPendingRedirect(redirectPath);
+      setStep("PASSKEY_OFFER");
+      return;
+    }
+    window.location.href = redirectPath;
+  };
+
   const verify = async () => {
     if (!challenge) return;
     setLoading(true);
@@ -103,11 +123,7 @@ export default function PasswordlessAuthCard({
           data.tokens.refreshToken,
         );
         TokenManager.setUserData(data.user, data.school || null);
-        window.location.href = getAuthRedirectPath(
-          locale,
-          data.user,
-          data.school,
-        );
+        finishSignIn(getAuthRedirectPath(locale, data.user, data.school));
         return;
       }
       setEnrollmentToken(data.enrollmentToken);
@@ -132,9 +148,42 @@ export default function PasswordlessAuthCard({
       });
       TokenManager.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       TokenManager.setUserData(data.user, null);
-      window.location.href = getAuthRedirectPath(locale, data.user, null);
+      finishSignIn(getAuthRedirectPath(locale, data.user, null));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("enrollmentError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const enrollPasskey = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const options = await getRegistrationOptions();
+      const response = await startRegistration({ optionsJSON: options as any });
+      await verifyRegistration(response);
+    } catch {
+      // Enrollment is optional — a cancelled/unsupported ceremony should not
+      // block the user from reaching the app.
+    } finally {
+      setLoading(false);
+      window.location.href = pendingRedirect;
+    }
+  };
+
+  const passkeySignIn = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { challengeId, options } = await getAuthenticationOptions();
+      const response = await startAuthentication({ optionsJSON: options as any });
+      const data = await verifyAuthentication(challengeId, response);
+      TokenManager.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+      TokenManager.setUserData(data.user, data.school || null);
+      window.location.href = getAuthRedirectPath(locale, data.user, data.school);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("passkeyError"));
     } finally {
       setLoading(false);
     }
@@ -157,13 +206,17 @@ export default function PasswordlessAuthCard({
       ? t(entry === "register" ? "createTitle" : "signInTitle")
       : step === "OTP"
         ? t("otpTitle")
-        : t("profileTitle");
+        : step === "PROFILE"
+          ? t("profileTitle")
+          : t("passkeyOfferTitle");
   const subtitle =
     step === "PHONE"
       ? t(entry === "register" ? "createSubtitle" : "signInSubtitle")
       : step === "OTP"
         ? t("otpSubtitle", { destination: challenge?.maskedDestination || "" })
-        : t("profileSubtitle");
+        : step === "PROFILE"
+          ? t("profileSubtitle")
+          : t("passkeyOfferSubtitle");
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-cyan-50 via-sky-50 to-white px-5 py-10 text-slate-950">
@@ -171,7 +224,7 @@ export default function PasswordlessAuthCard({
         aria-busy={loading}
         className="mx-auto w-full max-w-md rounded-[2rem] border border-white bg-white/90 p-7 shadow-2xl shadow-sky-100 backdrop-blur sm:p-9"
       >
-        {step !== "PHONE" && (
+        {step !== "PHONE" && step !== "PASSKEY_OFFER" && (
           <button
             type="button"
             onClick={goBack}
@@ -250,6 +303,32 @@ export default function PasswordlessAuthCard({
                 disabled={!phonePreview}
                 loadingLabel={t("pleaseWait")}
               />
+              {PASSKEYS_ENABLED && entry === "login" && (
+                <button
+                  type="button"
+                  onClick={() => void passkeySignIn()}
+                  disabled={loading}
+                  className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-800 shadow-sm transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Fingerprint aria-hidden="true" className="h-4 w-4" />
+                  {t("usePasskey")}
+                </button>
+              )}
+              {process.env.NEXT_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === "true" && (
+                <>
+                  <div className="mt-6 flex items-center gap-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    <span className="h-px flex-1 bg-slate-200" />
+                    {t("orDivider")}
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
+                  <a
+                    href={getTelegramOidcStartUrl()}
+                    className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-800 shadow-sm transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+                  >
+                    {t("continueWithTelegram")}
+                  </a>
+                </>
+              )}
               <Link
                 href={`/${locale}/auth/login?method=password`}
                 className="mt-5 block rounded text-center text-sm font-bold text-slate-600 hover:text-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
@@ -374,6 +453,34 @@ export default function PasswordlessAuthCard({
                 disabled={!firstName.trim() || !lastName.trim() || !accepted}
                 loadingLabel={t("pleaseWait")}
               />
+            </div>
+          )}
+
+          {step === "PASSKEY_OFFER" && (
+            <div>
+              <button
+                type="button"
+                onClick={() => void enrollPasskey()}
+                disabled={loading}
+                className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? (
+                  t("pleaseWait")
+                ) : (
+                  <>
+                    <Fingerprint aria-hidden="true" className="h-4 w-4" />
+                    {t("usePasskey")}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => (window.location.href = pendingRedirect)}
+                disabled={loading}
+                className="mt-4 block w-full rounded text-center text-sm font-bold text-slate-600 hover:text-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+              >
+                {t("notNow")}
+              </button>
             </div>
           )}
         </form>

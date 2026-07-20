@@ -18,6 +18,8 @@ import twoFactorRoutes from './routes/twoFactor.routes';
 import ssoRoutes from './routes/sso.routes';
 import translationRoutes from './routes/translation.routes';
 import passwordlessRoutes from './routes/passwordless.routes';
+import oidcTelegramRoutes from './routes/oidcTelegram.routes';
+import passkeyRoutes from './routes/passkey.routes';
 import { isPasswordHashUsable, publicRegistrationAuthorization } from './security/authPolicy';
 import { normalizeEmail, normalizePhone, phoneLookupCandidates } from './security/identifiers';
 import { buildMaskedClaimPreview } from './security/claimPreview';
@@ -155,6 +157,8 @@ app.use('/auth', globalLimiter);
 app.use('/auth/login', authLimiter);
 app.use('/auth/parent/login', authLimiter);
 app.use('/auth/social', authLimiter);
+app.use('/auth/oidc/telegram', authLimiter);
+app.use('/auth/passkeys', authLimiter);
 app.use('/auth/register', registerLimiter);
 app.use('/auth/parent/register', registerLimiter);
 app.use('/auth/claim-codes/validate', claimPreviewLimiter);
@@ -801,6 +805,13 @@ app.use('/auth', passwordlessRoutes(prisma, {
   metrics: authOperationalMetrics,
 }));
 app.use('/auth/social', socialAuthRoutes(prisma));
+app.use('/auth/oidc/telegram', oidcTelegramRoutes(prisma, { metrics: authOperationalMetrics }));
+app.use('/auth', passkeyRoutes(prisma, authenticateToken, {
+  jwtSecret: JWT_SECRET,
+  accessTokenExpiration: JWT_EXPIRATION,
+  refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+  metrics: authOperationalMetrics,
+}));
 app.use('/auth/sso', ssoRoutes(prisma));
 app.use('/auth/2fa', twoFactorRoutes(prisma));
 app.use('/auth/translations', translationRoutes(prisma, authenticateToken, authorize));

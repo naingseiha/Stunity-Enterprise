@@ -144,6 +144,23 @@ export function enrollPasswordless(input: {
   return passwordlessRequest('/auth/enroll', input);
 }
 
+// Telegram OIDC is a browser redirect flow (Authorization Code + PKCE), not a
+// token POST, so this just points the user agent at the auth service.
+export function getTelegramOidcStartUrl(): string {
+  return `${AUTH_SERVICE_URL}/auth/oidc/telegram/start`;
+}
+
+export async function exchangeTelegramOidcSession(code: string) {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/oidc/telegram/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'This sign-in link has expired.');
+  return result.data;
+}
+
 export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
   const response = await fetch(`${AUTH_SERVICE_URL}/auth/verify`, {
     method: 'GET',

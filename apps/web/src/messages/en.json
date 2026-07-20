@@ -217,7 +217,17 @@
       "registrationUnavailableTitle": "Phone registration is not enabled yet",
       "registrationUnavailableBody": "General Account registration remains behind a rollout flag in this environment. Existing accounts can still sign in, and school registration remains available.",
       "backToSignIn": "Back to sign in",
-      "registerSchool": "Register a school"
+      "registerSchool": "Register a school",
+      "continueWithTelegram": "Continue with Telegram",
+      "orDivider": "or",
+      "oidcCompleting": "Finishing sign-in…",
+      "oidcError": "Telegram sign-in did not complete. Try again.",
+      "oidcTryAgain": "Try again",
+      "usePasskey": "Use fingerprint or face",
+      "passkeyOfferTitle": "Sign in faster next time",
+      "passkeyOfferSubtitle": "Use your fingerprint or face instead of a code.",
+      "notNow": "Not now",
+      "passkeyError": "Could not sign in with a passkey. Try another method."
     },
     "welcome": {
       "title": "Welcome to Stunity",

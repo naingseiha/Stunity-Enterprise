@@ -217,7 +217,17 @@
       "registrationUnavailableTitle": "ការចុះឈ្មោះតាមទូរស័ព្ទមិនទាន់បានបើកទេ",
       "registrationUnavailableBody": "ការចុះឈ្មោះគណនីទូទៅនៅតែស្ថិតក្រោម rollout flag ក្នុងបរិស្ថាននេះ។ គណនីដែលមានស្រាប់នៅតែអាចចូលបាន ហើយការចុះឈ្មោះសាលានៅតែមាន។",
       "backToSignIn": "ត្រឡប់ទៅចូលគណនី",
-      "registerSchool": "ចុះឈ្មោះសាលា"
+      "registerSchool": "ចុះឈ្មោះសាលា",
+      "continueWithTelegram": "បន្តជាមួយ Telegram",
+      "orDivider": "ឬ",
+      "oidcCompleting": "កំពុងបញ្ចប់ការចូលគណនី…",
+      "oidcError": "ការចូលគណនីតាម Telegram មិនបានបញ្ចប់ទេ។ សូមព្យាយាមម្តងទៀត។",
+      "oidcTryAgain": "ព្យាយាមម្តងទៀត",
+      "usePasskey": "ប្រើស្នាមម្រាមដៃ ឬមុខ",
+      "passkeyOfferTitle": "ចូលគណនីលឿនជាងមុននាពេលក្រោយ",
+      "passkeyOfferSubtitle": "ប្រើស្នាមម្រាមដៃ ឬមុខរបស់អ្នកជំនួសលេខកូដ។",
+      "notNow": "កុំទាន់",
+      "passkeyError": "មិនអាចចូលគណនីដោយ passkey បានទេ។ សូមសាកល្បងវិធីផ្សេងទៀត។"
     },
     "welcome": {
       "title": "ស្វាគមន៍មកកាន់ Stunity",

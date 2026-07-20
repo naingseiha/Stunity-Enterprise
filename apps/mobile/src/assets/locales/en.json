@@ -459,7 +459,11 @@
       "consentRequiredBody": "Please accept the Terms of Service and Privacy Policy.",
       "createAccount": "Create account",
       "enrollmentErrorTitle": "Account setup failed",
-      "enrollmentErrorBody": "Unable to finish account setup."
+      "enrollmentErrorBody": "Unable to finish account setup.",
+      "orDivider": "or",
+      "continueWithTelegram": "Continue with Telegram",
+      "telegramErrorTitle": "Telegram sign-in failed",
+      "telegramErrorBody": "Telegram sign-in did not complete. Try again."
     },
     "schoolClaim": {
       "preparing": "Preparing your secure school link…",

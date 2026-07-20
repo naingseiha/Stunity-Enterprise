@@ -50,6 +50,7 @@
     "expo-splash-screen": "~0.29.11",
     "expo-status-bar": "~2.0.0",
     "expo-video": "~2.0.6",
+    "expo-web-browser": "~14.0.2",
     "i18next": "^25.8.18",
     "jpeg-js": "^0.4.4",
     "jsqr": "^1.4.0",

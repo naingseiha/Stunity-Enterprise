@@ -14,6 +14,10 @@ export type OidcAuthorizationRequest = {
   issuer: string;
   createdAt: number;
   expiresAt: number;
+  // Which surface started the flow, so the callback knows whether to hand the
+  // one-time session code back to a web origin or a native deep link. Absent
+  // (older/unknown) requests are treated as "web".
+  clientKind?: "web" | "mobile";
 };
 
 export interface OidcStateStore {
@@ -61,6 +65,7 @@ export function createOidcAuthorizationRequest(input: {
   issuer: string;
   now?: number;
   ttlMs?: number;
+  clientKind?: "web" | "mobile";
 }): OidcAuthorizationRequest {
   const createdAt = input.now ?? Date.now();
   const expiresAt = createdAt + (input.ttlMs ?? DEFAULT_STATE_TTL_MS);
@@ -75,6 +80,7 @@ export function createOidcAuthorizationRequest(input: {
     issuer: input.issuer,
     createdAt,
     expiresAt,
+    clientKind: input.clientKind,
   };
 }
 

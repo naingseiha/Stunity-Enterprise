@@ -459,7 +459,11 @@
       "consentRequiredBody": "សូមយល់ព្រមនឹងលក្ខខណ្ឌប្រើប្រាស់ និងគោលការណ៍ឯកជនភាព។",
       "createAccount": "បង្កើតគណនី",
       "enrollmentErrorTitle": "ការរៀបចំគណនីបរាជ័យ",
-      "enrollmentErrorBody": "មិនអាចបញ្ចប់ការរៀបចំគណនីបានទេ។"
+      "enrollmentErrorBody": "មិនអាចបញ្ចប់ការរៀបចំគណនីបានទេ។",
+      "orDivider": "ឬ",
+      "continueWithTelegram": "បន្តជាមួយ Telegram",
+      "telegramErrorTitle": "ការចូលគណនីតាម Telegram បរាជ័យ",
+      "telegramErrorBody": "ការចូលគណនីតាម Telegram មិនបានបញ្ចប់ទេ។ សូមព្យាយាមម្តងទៀត។"
     },
     "schoolClaim": {
       "preparing": "កំពុងរៀបចំការភ្ជាប់សាលាដោយសុវត្ថិភាព…",

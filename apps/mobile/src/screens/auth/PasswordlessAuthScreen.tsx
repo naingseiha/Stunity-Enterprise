@@ -25,7 +25,7 @@ type Step = 'PHONE' | 'OTP' | 'PROFILE';
 export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 'register' }) {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { startPhoneOtp, verifyPhoneOtp, enrollPasswordless, isLoading } = useAuthStore();
+  const { startPhoneOtp, verifyPhoneOtp, enrollPasswordless, startTelegramOidc, isLoading } = useAuthStore();
   const [step, setStep] = useState<Step>('PHONE');
   const [phone, setPhone] = useState('');
   const [challenge, setChallenge] = useState<OtpChallengeResponse | null>(null);
@@ -113,6 +113,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
     }
   };
 
+  const continueWithTelegram = async () => {
+    const result = await startTelegramOidc();
+    if (!result.success && !result.cancelled) {
+      Alert.alert(t('auth.passwordless.telegramErrorTitle'), result.error || t('auth.passwordless.telegramErrorBody'));
+    }
+  };
+
   const goBack = () => {
     if (step === 'PROFILE') setStep('OTP');
     else if (step === 'OTP') setStep('PHONE');
@@ -166,6 +173,26 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   {phonePreview ? t('auth.passwordless.canonicalPreview', { phone: phonePreview }) : ' '}
                 </Text>
                 <PrimaryButton label={t('auth.passwordless.continue')} loading={isLoading} disabled={!phonePreview} onPress={() => void start()} />
+                {process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true' && (
+                  <>
+                    <View style={styles.dividerRow}>
+                      <View style={styles.dividerLine} />
+                      <Text style={styles.dividerText}>{t('auth.passwordless.orDivider')}</Text>
+                      <View style={styles.dividerLine} />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => void continueWithTelegram()}
+                      disabled={isLoading}
+                      style={[styles.telegramButton, isLoading && styles.disabledButton]}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('auth.passwordless.continueWithTelegram')}
+                      accessibilityState={{ disabled: isLoading }}
+                    >
+                      <Ionicons name="paper-plane-outline" size={18} color="#0F172A" />
+                      <Text style={styles.telegramButtonText}>{t('auth.passwordless.continueWithTelegram')}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
                 <TouchableOpacity
                   onPress={() => navigation.navigate('PasswordLogin')}
                   style={styles.secondaryButton}
@@ -324,6 +351,11 @@ const styles = StyleSheet.create({
   disabledButton: { shadowOpacity: 0, elevation: 0 },
   primaryButton: { minHeight: 58, borderRadius: 18, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
+  dividerText: { fontSize: 12, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase' },
+  telegramButton: { marginTop: 16, minHeight: 56, borderRadius: 18, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: '#fff', flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' },
+  telegramButtonText: { fontSize: 15, fontWeight: '800', color: '#0F172A' },
   secondaryButton: { alignItems: 'center', paddingVertical: 18 },
   secondaryText: { color: '#475569', fontSize: 14, fontWeight: '700' },
   resendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },

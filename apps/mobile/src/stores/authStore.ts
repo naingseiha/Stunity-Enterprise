@@ -9,8 +9,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
 import { User, AuthTokens, LoginCredentials, OtpChallengeResponse, OtpVerifyResult, RegisterData } from '@/types';
 import { authApi } from '@/api/client';
+import { Config } from '@/config';
 import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
 
@@ -30,6 +32,7 @@ interface AuthState {
   startPhoneOtp: (phone: string, preferredChannel?: 'AUTO' | 'TELEGRAM' | 'SMS') => Promise<{ success: boolean; data?: OtpChallengeResponse; error?: string }>;
   verifyPhoneOtp: (challengeId: string, code: string) => Promise<{ success: boolean; data?: OtpVerifyResult; error?: string }>;
   enrollPasswordless: (input: { enrollmentToken: string; firstName: string; lastName: string; acceptedTermsVersion: string }) => Promise<{ success: boolean; error?: string }>;
+  startTelegramOidc: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -428,6 +431,48 @@ export const useAuthStore = create<AuthState>()(
           return { success: true };
         } catch (error: any) {
           const message = error.response?.data?.error || 'Unable to finish account setup';
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
+        }
+      },
+
+      startTelegramOidc: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const redirectUrl = 'stunity://auth/oidc/complete';
+          const authUrl = `${Config.authUrl}/auth/oidc/telegram/start?client=mobile`;
+          const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+          if (result.type !== 'success' || !result.url) {
+            set({ isLoading: false });
+            return { success: false, cancelled: true };
+          }
+          const callback = new URL(result.url);
+          const status = callback.searchParams.get('status');
+          const sessionCode = callback.searchParams.get('code');
+          if (status !== 'ok' || !sessionCode) {
+            const message = callback.searchParams.get('code') || 'Telegram sign-in did not complete';
+            set({ isLoading: false, error: message });
+            return { success: false, error: message };
+          }
+
+          const response = await authApi.post('/auth/oidc/telegram/session', { code: sessionCode });
+          const data = response.data.data;
+          if (data.requires2FA) {
+            // Mobile two-factor challenge UI for federated sign-in is not
+            // built yet; surface a clear error instead of stalling here.
+            set({ isLoading: false, error: 'Two-factor sign-in is not yet supported for Telegram.' });
+            return { success: false, error: 'Two-factor sign-in is not yet supported for Telegram.' };
+          }
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+          await tokenService.setTokens(data.tokens as AuthTokens);
+          await tokenService.setUserId(data.user.id);
+          const user = mapAuthResponseUser(data.user, data);
+          set({ user, isAuthenticated: true, isLoading: false });
+          prewarmFeedAfterAuth(user.role);
+          return { success: true };
+        } catch (error: any) {
+          const message = error.response?.data?.error || 'Unable to complete Telegram sign-in';
           set({ isLoading: false, error: message });
           return { success: false, error: message };
         }

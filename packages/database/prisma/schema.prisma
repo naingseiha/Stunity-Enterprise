@@ -4535,6 +4535,7 @@ enum SocialProvider {
   APPLE
   FACEBOOK
   LINKEDIN
+  TELEGRAM
 }
 
 enum AchievementCategory {

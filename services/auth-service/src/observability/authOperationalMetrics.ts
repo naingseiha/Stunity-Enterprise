@@ -6,6 +6,8 @@ export type AuthMetricName =
   | "auth_otp_fallback_total"
   | "auth_login_completed_total"
   | "auth_login_duration_ms"
+  | "auth_passkey_enrollment_total"
+  | "auth_passkey_login_total"
   | "school_link_submitted_total"
   | "school_link_approved_total"
   | "school_link_rejected_total"
@@ -65,11 +67,17 @@ const allowedLabels: Record<
     to: new Set(["TELEGRAM", "SMS", "UNKNOWN"]),
   },
   auth_login_completed_total: {
-    method: new Set(["PHONE_OTP"]),
+    method: new Set(["PHONE_OTP", "TELEGRAM_OIDC", "PASSKEY"]),
     new_or_returning: new Set(["NEW", "RETURNING"]),
   },
   auth_login_duration_ms: {
-    method: new Set(["PHONE_OTP"]),
+    method: new Set(["PHONE_OTP", "TELEGRAM_OIDC", "PASSKEY"]),
+  },
+  auth_passkey_enrollment_total: {
+    result: new Set(["SUCCESS", "FAILURE"]),
+  },
+  auth_passkey_login_total: {
+    result: new Set(["SUCCESS", "FAILURE", "REUSE_DETECTED"]),
   },
   school_link_submitted_total: {},
   school_link_approved_total: {},

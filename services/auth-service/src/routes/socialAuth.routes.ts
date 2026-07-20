@@ -14,7 +14,7 @@ const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 // ─── Provider Token Verification ─────────────────────────────────────
 
-interface ProviderProfile {
+export interface ProviderProfile {
   provider: SocialProvider;
   providerUserId: string;
   email: string;
@@ -23,7 +23,7 @@ interface ProviderProfile {
   verifiedClaims: Record<string, unknown>;
 }
 
-class SocialAuthError extends Error {
+export class SocialAuthError extends Error {
   constructor(message: string, public readonly statusCode = 401, public readonly code = 'SOCIAL_AUTH_FAILED') {
     super(message);
   }
@@ -142,7 +142,7 @@ async function verifyLinkedInCode(authorizationCode: string, redirectUri: string
 
 // ─── Unified Social Login Handler ────────────────────────────────────
 
-async function handleSocialLogin(
+export async function handleSocialLogin(
   prisma: PrismaClient,
   providerData: ProviderProfile,
   claimCode?: string,
@@ -159,10 +159,12 @@ async function handleSocialLogin(
   });
 
   let user;
+  let isNewUser = false;
 
   if (socialAccount) {
     user = socialAccount.user;
   } else {
+    isNewUser = true;
     const matchingEmailUser = providerData.email
       ? await prisma.user.findFirst({
           where: { email: { equals: providerData.email, mode: 'insensitive' } },
@@ -233,7 +235,7 @@ async function handleSocialLogin(
       JWT_SECRET,
       { expiresIn: '5m' }
     );
-    return { requires2FA: true, challengeToken };
+    return { requires2FA: true, challengeToken, isNewUser };
   }
 
   // 5. Issue Stunity JWT
@@ -273,6 +275,7 @@ async function handleSocialLogin(
 
   return {
     requires2FA: false,
+    isNewUser,
     user: {
       id: user.id,
       email: user.email,
