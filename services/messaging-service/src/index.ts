@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
+import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
 
 // Load environment variables from root .env
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -242,6 +243,44 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
             lastName: student.lastName,
           }));
         }
+      }
+    }
+
+    // Phase 5 shadow read: compare the legacy User projection against
+    // SchoolMembership without changing the live authorization decision
+    // above. Only logs when the two sources disagree, to avoid spamming
+    // logs on every request while this is a temporary QA/rollout signal.
+    if (process.env.MESSAGING_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED === 'true') {
+      try {
+        const [legacyUser, membership] = await Promise.all([
+          prisma.user.findUnique({
+            where: { id: decoded.userId },
+            select: { schoolId: true, studentId: true, teacherId: true, role: true },
+          }),
+          prisma.schoolMembership.findFirst({
+            where: schoolId ? { userId: decoded.userId, schoolId } : { userId: decoded.userId, status: 'ACTIVE' },
+            select: { schoolId: true, studentId: true, teacherId: true, role: true, status: true },
+            orderBy: { updatedAt: 'desc' },
+          }),
+        ]);
+        if (legacyUser) {
+          const comparison = compareSchoolAuthorizationProjection(
+            {
+              schoolId: legacyUser.schoolId,
+              studentId: legacyUser.studentId,
+              teacherId: legacyUser.teacherId,
+              role: legacyUser.role,
+            },
+            membership,
+          );
+          if (!comparison.migrationSafe) {
+            console.warn(
+              `[school_membership_projection] mismatch user=${decoded.userId} code=${comparison.comparisonCode}`,
+            );
+          }
+        }
+      } catch (shadowError) {
+        console.warn('[school_membership_projection] shadow read failed', shadowError);
       }
     }
 
