@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,22 +15,39 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores';
+import type { OtpChallengeResponse } from '@/types';
+import { normalizePhonePreview } from '@/utils/passwordlessPhone';
 
 type Step = 'PHONE' | 'OTP' | 'PROFILE';
 
 export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 'register' }) {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { startPhoneOtp, verifyPhoneOtp, enrollPasswordless, isLoading } = useAuthStore();
   const [step, setStep] = useState<Step>('PHONE');
   const [phone, setPhone] = useState('');
-  const [challenge, setChallenge] = useState<any>(null);
+  const [challenge, setChallenge] = useState<OtpChallengeResponse | null>(null);
   const [code, setCode] = useState('');
   const [enrollmentToken, setEnrollmentToken] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const phoneInputRef = useRef<TextInput>(null);
+  const codeInputRef = useRef<TextInput>(null);
+  const firstNameInputRef = useRef<TextInput>(null);
+  const phonePreview = normalizePhonePreview(phone);
+
+  useEffect(() => {
+    const target = step === 'PHONE'
+      ? phoneInputRef.current
+      : step === 'OTP'
+        ? codeInputRef.current
+        : firstNameInputRef.current;
+    target?.focus();
+  }, [step]);
 
   useEffect(() => {
     if (step !== 'OTP') return;
@@ -44,13 +61,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
   }, [challenge?.resendAt, now]);
 
   const start = async (preferredChannel: 'AUTO' | 'SMS' = 'AUTO') => {
-    if (phone.trim().length < 8) {
-      Alert.alert('Check phone number', 'Enter a valid Cambodia or international phone number.');
+    if (!phonePreview) {
+      Alert.alert(t('auth.passwordless.checkPhoneTitle'), t('auth.passwordless.checkPhoneBody'));
       return;
     }
-    const result = await startPhoneOtp(phone.trim(), preferredChannel);
+    const result = await startPhoneOtp(phonePreview, preferredChannel);
     if (!result.success || !result.data) {
-      Alert.alert('Unable to send code', result.error);
+      Alert.alert(t('auth.passwordless.sendErrorTitle'), result.error || t('auth.passwordless.sendErrorBody'));
       return;
     }
     setChallenge(result.data);
@@ -61,12 +78,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
 
   const verify = async () => {
     if (!/^\d{6}$/.test(code)) {
-      Alert.alert('Enter the code', 'The verification code has six digits.');
+      Alert.alert(t('auth.passwordless.codeRequiredTitle'), t('auth.passwordless.codeRequiredBody'));
       return;
     }
+    if (!challenge) return;
     const result = await verifyPhoneOtp(challenge.challengeId, code);
     if (!result.success || !result.data) {
-      Alert.alert('Verification failed', result.error);
+      Alert.alert(t('auth.passwordless.verificationErrorTitle'), result.error || t('auth.passwordless.verificationErrorBody'));
       return;
     }
     if (result.data.status === 'ENROLLMENT_REQUIRED') {
@@ -77,11 +95,11 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
 
   const enroll = async () => {
     if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Name required', 'Enter your first and last name.');
+      Alert.alert(t('auth.passwordless.nameRequiredTitle'), t('auth.passwordless.nameRequiredBody'));
       return;
     }
     if (!accepted) {
-      Alert.alert('Consent required', 'Please accept the Terms of Service and Privacy Policy.');
+      Alert.alert(t('auth.passwordless.consentRequiredTitle'), t('auth.passwordless.consentRequiredBody'));
       return;
     }
     const result = await enrollPasswordless({
@@ -90,7 +108,9 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
       lastName: lastName.trim(),
       acceptedTermsVersion: process.env.EXPO_PUBLIC_TERMS_VERSION || '2026-07',
     });
-    if (!result.success) Alert.alert('Account setup failed', result.error);
+    if (!result.success) {
+      Alert.alert(t('auth.passwordless.enrollmentErrorTitle'), result.error || t('auth.passwordless.enrollmentErrorBody'));
+    }
   };
 
   const goBack = () => {
@@ -105,8 +125,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity onPress={goBack} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={26} color="#0F172A" />
+            <TouchableOpacity
+              onPress={goBack}
+              style={styles.backButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.passwordless.back')}
+            >
+              <Ionicons name="chevron-back" size={26} color="#0F172A" accessibilityElementsHidden />
             </TouchableOpacity>
 
             <View style={styles.heroIcon}>
@@ -115,40 +140,57 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
 
             {step === 'PHONE' && (
               <>
-                <Text style={styles.title}>{entry === 'login' ? 'Continue to Stunity' : 'Create your Stunity Account'}</Text>
-                <Text style={styles.subtitle}>Enter your phone number. We’ll send a secure verification code—no password needed.</Text>
-                <Text style={styles.label}>Phone number</Text>
+                <Text style={styles.title}>{t(entry === 'login' ? 'auth.passwordless.signInTitle' : 'auth.passwordless.createTitle')}</Text>
+                <Text style={styles.subtitle}>{t(entry === 'login' ? 'auth.passwordless.signInSubtitle' : 'auth.passwordless.createSubtitle')}</Text>
+                <Text style={styles.label}>{t('auth.passwordless.phoneLabel')}</Text>
                 <View style={styles.phoneInputRow}>
                   <View style={styles.countryCode}><Text style={styles.countryCodeText}>🇰🇭 +855</Text></View>
                   <TextInput
+                    ref={phoneInputRef}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder="012 345 678"
+                    placeholder={t('auth.passwordless.phonePlaceholder')}
                     placeholderTextColor="#94A3B8"
                     keyboardType="phone-pad"
                     textContentType="telephoneNumber"
                     autoComplete="tel"
+                    accessibilityLabel={t('auth.passwordless.phoneLabel')}
+                    accessibilityHint={t('auth.passwordless.phoneHelp')}
                     style={styles.phoneInput}
                     returnKeyType="go"
                     onSubmitEditing={() => void start()}
                   />
                 </View>
-                <Text style={styles.helper}>Local 0-prefix and international + formats are supported.</Text>
-                <PrimaryButton label="Continue" loading={isLoading} onPress={() => void start()} />
-                <TouchableOpacity onPress={() => navigation.navigate('PasswordLogin')} style={styles.secondaryButton}>
-                  <Text style={styles.secondaryText}>Use email or password instead</Text>
+                <Text style={styles.helper}>{t('auth.passwordless.phoneHelp')}</Text>
+                <Text style={styles.preview} accessibilityLiveRegion="polite">
+                  {phonePreview ? t('auth.passwordless.canonicalPreview', { phone: phonePreview }) : ' '}
+                </Text>
+                <PrimaryButton label={t('auth.passwordless.continue')} loading={isLoading} disabled={!phonePreview} onPress={() => void start()} />
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('PasswordLogin')}
+                  style={styles.secondaryButton}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.secondaryText}>{t('auth.passwordless.passwordInstead')}</Text>
                 </TouchableOpacity>
               </>
             )}
 
             {step === 'OTP' && (
               <>
-                <Text style={styles.title}>Enter verification code</Text>
+                <Text style={styles.title}>{t('auth.passwordless.otpTitle')}</Text>
                 <Text style={styles.subtitle}>
-                  {challenge?.channel === 'TELEGRAM' ? 'Sent through Telegram Gateway to ' : challenge?.channel === 'SMS' ? 'Sent by SMS to ' : 'Development verification for '}
+                  {t(
+                    challenge?.channel === 'TELEGRAM'
+                      ? 'auth.passwordless.telegramSubtitle'
+                      : challenge?.channel === 'SMS'
+                        ? 'auth.passwordless.smsSubtitle'
+                        : 'auth.passwordless.verificationSubtitle',
+                  )}{' '}
                   <Text style={styles.strong}>{challenge?.maskedDestination}</Text>
                 </Text>
                 <TextInput
+                  ref={codeInputRef}
                   value={code}
                   onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="000000"
@@ -156,40 +198,82 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   keyboardType="number-pad"
                   textContentType="oneTimeCode"
                   autoComplete="sms-otp"
+                  accessibilityLabel={t('auth.passwordless.otpLabel')}
+                  accessibilityHint={t('auth.passwordless.otpHelp')}
                   style={styles.otpInput}
                   maxLength={6}
-                  autoFocus
                   returnKeyType="done"
                   onSubmitEditing={() => void verify()}
                 />
-                <PrimaryButton label="Verify and continue" loading={isLoading} onPress={() => void verify()} />
+                <PrimaryButton label={t('auth.passwordless.verifyContinue')} loading={isLoading} disabled={code.length !== 6} onPress={() => void verify()} />
                 <View style={styles.resendRow}>
-                  <TouchableOpacity disabled={resendSeconds > 0 || isLoading} onPress={() => void start()}>
+                  <TouchableOpacity
+                    disabled={resendSeconds > 0 || isLoading}
+                    onPress={() => void start()}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: resendSeconds > 0 || isLoading }}
+                  >
                     <Text style={[styles.linkText, resendSeconds > 0 && styles.disabledText]}>
-                      {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : 'I did not receive a code'}
+                      {resendSeconds > 0
+                        ? t('auth.passwordless.resendIn', { seconds: resendSeconds })
+                        : t('auth.passwordless.codeNotReceived')}
                     </Text>
                   </TouchableOpacity>
                   {challenge?.smsFallbackAvailable && resendSeconds === 0 && (
-                    <TouchableOpacity disabled={isLoading} onPress={() => void start('SMS')}><Text style={styles.linkText}>Use SMS</Text></TouchableOpacity>
+                    <TouchableOpacity disabled={isLoading} onPress={() => void start('SMS')} accessibilityRole="button">
+                      <Text style={styles.linkText}>{t('auth.passwordless.useSms')}</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
-                <TouchableOpacity onPress={() => setStep('PHONE')} style={styles.secondaryButton}><Text style={styles.secondaryText}>Change phone number</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => setStep('PHONE')} style={styles.secondaryButton} accessibilityRole="button">
+                  <Text style={styles.secondaryText}>{t('auth.passwordless.changePhone')}</Text>
+                </TouchableOpacity>
               </>
             )}
 
             {step === 'PROFILE' && (
               <>
-                <Text style={styles.title}>Tell us your name</Text>
-                <Text style={styles.subtitle}>Your phone is verified. Complete the minimum profile to enter Stunity.</Text>
-                <Text style={styles.label}>First name</Text>
-                <TextInput value={firstName} onChangeText={setFirstName} placeholder="First name" placeholderTextColor="#94A3B8" autoCapitalize="words" style={styles.textInput} />
-                <Text style={styles.label}>Last name</Text>
-                <TextInput value={lastName} onChangeText={setLastName} placeholder="Last name" placeholderTextColor="#94A3B8" autoCapitalize="words" style={styles.textInput} />
-                <TouchableOpacity onPress={() => setAccepted(!accepted)} style={styles.consentRow}>
+                <Text style={styles.title}>{t('auth.passwordless.profileTitle')}</Text>
+                <Text style={styles.subtitle}>{t('auth.passwordless.profileSubtitle')}</Text>
+                <Text style={styles.label}>{t('auth.passwordless.firstName')}</Text>
+                <TextInput
+                  ref={firstNameInputRef}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder={t('auth.passwordless.firstName')}
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="words"
+                  autoComplete="name-given"
+                  accessibilityLabel={t('auth.passwordless.firstName')}
+                  style={styles.textInput}
+                />
+                <Text style={styles.label}>{t('auth.passwordless.lastName')}</Text>
+                <TextInput
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder={t('auth.passwordless.lastName')}
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="words"
+                  autoComplete="name-family"
+                  accessibilityLabel={t('auth.passwordless.lastName')}
+                  style={styles.textInput}
+                />
+                <TouchableOpacity
+                  onPress={() => setAccepted(!accepted)}
+                  style={styles.consentRow}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: accepted }}
+                  accessibilityLabel={t('auth.passwordless.termsConsent')}
+                >
                   <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>{accepted && <Ionicons name="checkmark" size={16} color="#fff" />}</View>
-                  <Text style={styles.consentText}>I agree to the <Text style={styles.linkText}>Terms of Service</Text> and <Text style={styles.linkText}>Privacy Policy</Text>.</Text>
+                  <Text style={styles.consentText}>{t('auth.passwordless.termsConsent')}</Text>
                 </TouchableOpacity>
-                <PrimaryButton label="Create account" loading={isLoading} onPress={() => void enroll()} />
+                <PrimaryButton
+                  label={t('auth.passwordless.createAccount')}
+                  loading={isLoading}
+                  disabled={!firstName.trim() || !lastName.trim() || !accepted}
+                  onPress={() => void enroll()}
+                />
               </>
             )}
           </ScrollView>
@@ -199,10 +283,18 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
   );
 }
 
-function PrimaryButton({ label, loading, onPress }: { label: string; loading: boolean; onPress: () => void }) {
+function PrimaryButton({ label, loading, disabled, onPress }: { label: string; loading: boolean; disabled?: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity disabled={loading} onPress={onPress} activeOpacity={0.85} style={styles.buttonShadow}>
-      <LinearGradient colors={loading ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']} style={styles.primaryButton}>
+    <TouchableOpacity
+      disabled={loading || disabled}
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[styles.buttonShadow, disabled && styles.disabledButton]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: Boolean(loading || disabled), busy: loading }}
+    >
+      <LinearGradient colors={loading || disabled ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']} style={styles.primaryButton}>
         {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.primaryText}>{label}</Text><Ionicons name="arrow-forward" size={20} color="#fff" /></>}
       </LinearGradient>
     </TouchableOpacity>
@@ -225,9 +317,11 @@ const styles = StyleSheet.create({
   countryCodeText: { fontSize: 15, fontWeight: '700', color: '#334155' },
   phoneInput: { flex: 1, paddingHorizontal: 16, fontSize: 18, color: '#0F172A' },
   helper: { marginTop: 8, fontSize: 12, color: '#64748B' },
+  preview: { minHeight: 20, marginTop: 4, fontSize: 13, fontWeight: '700', color: '#0369A1' },
   textInput: { height: 58, borderRadius: 18, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: '#fff', paddingHorizontal: 18, fontSize: 17, color: '#0F172A', marginBottom: 18 },
   otpInput: { height: 72, borderRadius: 20, borderWidth: 1, borderColor: '#7DD3FC', backgroundColor: '#fff', textAlign: 'center', fontSize: 32, letterSpacing: 12, fontWeight: '700', color: '#0F172A', paddingLeft: 12 },
   buttonShadow: { marginTop: 24, borderRadius: 18, shadowColor: '#0284C7', shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 7 }, elevation: 5 },
+  disabledButton: { shadowOpacity: 0, elevation: 0 },
   primaryButton: { minHeight: 58, borderRadius: 18, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: '#fff', fontSize: 17, fontWeight: '800' },
   secondaryButton: { alignItems: 'center', paddingVertical: 18 },
