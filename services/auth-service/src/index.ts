@@ -28,6 +28,11 @@ import { requireNormalizedSchoolLinkRequestId } from './domain/legacySchoolLinkA
 import { publicPendingLinkData } from './security/publicAuthResponse';
 import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
 import {
+  AuthSessionManagementError,
+  listActiveAuthSessions,
+  revokeOwnedAuthSession,
+} from './domain/authSessionManagement';
+import {
   SchoolLinkError,
   approveSchoolLinkRequest,
   cancelSchoolLinkRequest,
@@ -1295,6 +1300,47 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
       error: 'Failed to logout',
       details: error.message,
     });
+  }
+});
+
+app.get('/auth/me/sessions', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (process.env.AUTH_DB_SESSIONS_ENABLED !== 'true') {
+    return res.status(503).json({
+      success: false,
+      code: 'AUTH_SESSIONS_NOT_ENABLED',
+      error: 'Session management is not enabled for this environment.',
+    });
+  }
+  try {
+    const sessions = await listActiveAuthSessions(prisma, req.user!.id);
+    return res.json({ success: true, data: { sessions } });
+  } catch (error) {
+    console.error('List auth sessions error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to list sessions' });
+  }
+});
+
+app.delete('/auth/me/sessions/:sessionId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (process.env.AUTH_DB_SESSIONS_ENABLED !== 'true') {
+    return res.status(503).json({
+      success: false,
+      code: 'AUTH_SESSIONS_NOT_ENABLED',
+      error: 'Session management is not enabled for this environment.',
+    });
+  }
+  const sessionId = typeof req.params.sessionId === 'string' ? req.params.sessionId.trim() : '';
+  if (!sessionId || sessionId.length > 200) {
+    return res.status(400).json({ success: false, error: 'Invalid session id' });
+  }
+  try {
+    const result = await revokeOwnedAuthSession(prisma, req.user!.id, sessionId);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    if (error instanceof AuthSessionManagementError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Revoke auth session error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to revoke session' });
   }
 });
 

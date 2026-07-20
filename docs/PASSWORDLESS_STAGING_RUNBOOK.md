@@ -70,6 +70,7 @@ PASSWORDLESS_AUTH_ENABLED="false"
 AUTH_STRUCTURED_METRICS_ENABLED="false"
 AUTH_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED="false"
 AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED="false"
+AUTH_DB_SESSIONS_ENABLED="false"
 EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 ```
@@ -92,6 +93,11 @@ do not enable membership-authoritative mode until mismatches are resolved.
 Enable `AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED="true"` only after the membership
 backfill and dual-read comparison are clean. Approval and unlink then update the
 membership and legacy User projections in the same serializable transaction.
+
+Keep `AUTH_DB_SESSIONS_ENABLED="false"` until login and refresh issuance uses
+the rotating opaque-session service. When enabled, authenticated users may list
+bounded device metadata and remotely revoke only sessions they own; token hashes
+and IP addresses are never returned.
 
 Structured metric events are emitted as JSON to stdout for the platform logging
 pipeline. Create bounded log-based counters/distributions for:
