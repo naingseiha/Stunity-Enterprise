@@ -10,7 +10,8 @@ export type AuthMetricName =
   | "school_link_approved_total"
   | "school_link_rejected_total"
   | "school_link_unlinked_total"
-  | "school_claim_reissued_total";
+  | "school_claim_reissued_total"
+  | "school_membership_projection_total";
 
 export interface AuthOperationalMetrics {
   increment(name: AuthMetricName, labels?: Record<string, string>): void;
@@ -79,6 +80,20 @@ const allowedLabels: Record<
     reason_code: new Set(["UNSPECIFIED"]),
   },
   school_claim_reissued_total: {},
+  school_membership_projection_total: {
+    result: new Set([
+      "MATCH",
+      "MATCH_UNLINKED",
+      "MATCH_INACTIVE",
+      "MISSING_MEMBERSHIP",
+      "MISSING_LEGACY_PROJECTION",
+      "STALE_LEGACY_LINK",
+      "SCHOOL_MISMATCH",
+      "ROLE_MISMATCH",
+      "ROSTER_MISMATCH",
+      "UNKNOWN",
+    ]),
+  },
 };
 
 function boundedLabels(

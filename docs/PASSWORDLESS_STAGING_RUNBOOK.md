@@ -68,6 +68,7 @@ approved:
 ```dotenv
 PASSWORDLESS_AUTH_ENABLED="false"
 AUTH_STRUCTURED_METRICS_ENABLED="false"
+AUTH_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED="false"
 EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 ```
@@ -81,6 +82,11 @@ Before a pilot, set `AUTH_STRUCTURED_METRICS_ENABLED="true"` in the auth-service
 environment and verify `GET /health/ready` reports `observability: true`. The
 endpoint exposes configuration modes and readiness only; it never returns
 provider credentials, phone numbers, claim codes, or user identifiers.
+
+After the Phase 5 migration is applied, enable
+`AUTH_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED="true"` in staging only. This keeps
+legacy authorization authoritative while emitting bounded comparison results;
+do not enable membership-authoritative mode until mismatches are resolved.
 
 Structured metric events are emitted as JSON to stdout for the platform logging
 pipeline. Create bounded log-based counters/distributions for:
@@ -97,6 +103,7 @@ pipeline. Create bounded log-based counters/distributions for:
 - `school_link_rejected_total`
 - `school_link_unlinked_total`
 - `school_claim_reissued_total`
+- `school_membership_projection_total{result}`
 
 Only allowlisted labels are emitted. Unknown provider/error values collapse to
 `UNKNOWN` or `OTHER` so destinations and unbounded identifiers cannot become

@@ -26,6 +26,7 @@ import { assertPasswordlessProductionConfig, buildPasswordlessReadiness } from '
 import { createStructuredAuthMetrics } from './observability/authOperationalMetrics';
 import { requireNormalizedSchoolLinkRequestId } from './domain/legacySchoolLinkAdapter';
 import { publicPendingLinkData } from './security/publicAuthResponse';
+import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
 import {
   SchoolLinkError,
   approveSchoolLinkRequest,
@@ -383,6 +384,33 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
         success: false,
         code: 'SCHOOL_ACCESS_CHANGED',
         error: 'School access changed. Please sign in again.',
+      });
+    }
+
+    // Phase 5 shadow read: compare normalized membership authorization with the
+    // legacy User projection without changing the live authorization decision.
+    if (process.env.AUTH_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED === 'true') {
+      const membership = await prisma.schoolMembership.findFirst({
+        where: user.schoolId
+          ? { userId: user.id, schoolId: user.schoolId }
+          : { userId: user.id, status: 'ACTIVE' },
+        select: {
+          schoolId: true,
+          studentId: true,
+          teacherId: true,
+          role: true,
+          status: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+      const comparison = compareSchoolAuthorizationProjection({
+        schoolId: user.schoolId,
+        studentId: user.studentId,
+        teacherId: user.teacherId,
+        role: user.role,
+      }, membership);
+      authOperationalMetrics.increment('school_membership_projection_total', {
+        result: comparison.comparisonCode,
       });
     }
 

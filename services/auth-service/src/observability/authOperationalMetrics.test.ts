@@ -42,6 +42,21 @@ test("school-link free text cannot become a metric label", () => {
   assert.ok(!JSON.stringify(events).includes("+85512123456"));
 });
 
+test("membership dual-read metrics expose only bounded comparison codes", () => {
+  const events: any[] = [];
+  const metrics = createStructuredAuthMetrics({
+    enabled: true,
+    emit: (event) => events.push(event),
+  });
+  metrics.increment("school_membership_projection_total", {
+    result: "school-1:user-secret",
+    schoolId: "school-1",
+  });
+  assert.deepEqual(events[0].labels, { result: "UNKNOWN" });
+  assert.ok(!JSON.stringify(events).includes("school-1"));
+  assert.ok(!JSON.stringify(events).includes("user-secret"));
+});
+
 test("structured auth metrics are disabled unless explicitly enabled", () => {
   const events: any[] = [];
   const metrics = createStructuredAuthMetrics({
