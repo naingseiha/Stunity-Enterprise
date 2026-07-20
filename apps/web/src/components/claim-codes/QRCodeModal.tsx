@@ -3,6 +3,7 @@ import React from 'react';
 import QRCode from 'react-qr-code';
 import { X, Download, Printer } from 'lucide-react';
 import { ClaimCode } from '@/lib/api/claimCodes';
+import { buildClaimDeepLink } from '@/lib/auth/claim-links';
 
 interface QRCodeModalProps {
   isOpen: boolean;
@@ -19,8 +20,9 @@ export function QRCodeModal({ isOpen, onClose, claimCode }: QRCodeModalProps) {
   else if (claimCode.teacher) fullName = `${claimCode.teacher.firstName} ${claimCode.teacher.lastName}`;
   else if (claimCode.claimedByUser) fullName = `${claimCode.claimedByUser.firstName} ${claimCode.claimedByUser.lastName}`;
 
-  // Option B: Deep Link URI format
-  const qrPayload = `stunity://link-school?code=${encodeURIComponent(claimCode.code)}`;
+  // Canonical claim deep link. Mobile keeps a legacy `link-school` route for
+  // QR cards printed before the passwordless school-link flow shipped.
+  const qrPayload = buildClaimDeepLink(claimCode.code);
 
   const handleDownload = () => {
     const svg = document.getElementById('claim-qr-code');

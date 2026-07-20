@@ -132,6 +132,9 @@ const RootNavigator: React.FC = () => {
         SchoolClaim: {
           path: 'claim/:claimCode?',
         },
+        SchoolClaimLegacy: {
+          path: 'link-school',
+        },
       },
     } as any,
   };
@@ -171,6 +174,11 @@ const RootNavigator: React.FC = () => {
         )}
         <Stack.Screen
           name="SchoolClaim"
+          component={SchoolClaimContinuationScreen}
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="SchoolClaimLegacy"
           component={SchoolClaimContinuationScreen}
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />

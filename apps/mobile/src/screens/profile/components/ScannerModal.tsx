@@ -30,7 +30,8 @@ export function ScannerModal({ isVisible, onClose, onScan }: ScannerModalProps) 
     setScanned(true);
 
     // Deep Link URI format parser (Option B)
-    // Accepts either raw code "STNT-XXXX-YYYY" or URI "stunity://link-school?code=STNT-XXXX-YYYY"
+    // Accepts either raw code "STNT-XXXX-YYYY" or a claim URI such as
+    // "stunity://claim?code=STNT-XXXX-YYYY" (legacy link-school URLs too).
     let extractCode = data;
     const codeMatch = data.match(/[?&]code=([^&]+)/i);
     if (codeMatch?.[1]) {

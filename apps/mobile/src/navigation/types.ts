@@ -53,6 +53,7 @@ export type RootStackParamList = {
   ImageViewer: { images: string[]; initialIndex?: number };
   ForceChangePassword: undefined;
   SchoolClaim: { claimCode?: string; code?: string } | undefined;
+  SchoolClaimLegacy: { code?: string } | undefined;
 };
 
 // Main Stack (for screens outside tabs)
