@@ -215,7 +215,22 @@ async function run() {
   const featureTables = {
     phase1: await tableExists("school_link_requests"),
     phase2: await tableExists("verified_contacts"),
+    phase4Passkeys: await tableExists("passkey_credentials"),
+    phase4Sessions: await tableExists("auth_sessions"),
+    phase5Memberships: await tableExists("school_memberships"),
   };
+  const phase4Partial = featureTables.phase4Passkeys !== featureTables.phase4Sessions;
+  if (phase4Partial) {
+    blockers.push("Phase 4 tables are partially applied; recover the migration before continuing");
+  }
+  if (featureTables.phase5Memberships && !featureTables.phase1) {
+    blockers.push("Phase 5 memberships exist without Phase 1 school-link requests");
+  }
+  record(
+    "feature_table_consistency",
+    phase4Partial || (featureTables.phase5Memberships && !featureTables.phase1) ? "block" : "pass",
+    featureTables,
+  );
   record("feature_tables", "pass", featureTables);
   console.log(
     JSON.stringify(

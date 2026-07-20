@@ -46,6 +46,15 @@ directories are applied:
 
 - `20260720180000_passwordless_school_link_phase1`
 - `20260720190000_phone_passwordless_phase2`
+- `20260720200000_passkey_auth_sessions_phase4`
+- `20260720210000_school_memberships_phase5`
+
+The Phase 4 migration stores passkey public keys and hashed refresh-session
+metadata only; it does not enable passkey endpoints by itself. The Phase 5
+migration backfills active memberships from approved normalized school links and
+legacy approved users, while `User.schoolId`, `User.studentId`, `User.teacherId`,
+and `User.role` remain compatibility projections until every service has moved
+to membership-aware authorization.
 
 If the migration ledger reports a failure, stop and recover that migration
 before attempting a later one. Do not mark a failed migration applied merely to

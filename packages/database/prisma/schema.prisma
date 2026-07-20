@@ -58,6 +58,7 @@ model School {
   academicYears         AcademicYear[]
   claimCodes            ClaimCode[]
   schoolLinkRequests    SchoolLinkRequest[]
+  schoolMemberships     SchoolMembership[]
   classes               Class[]
   featureFlags          FeatureFlag[]
   idGenerationLogs      IdGenerationLog[]
@@ -740,6 +741,9 @@ model User {
   schoolLinkRequests           SchoolLinkRequest[]          @relation("SchoolLinkRequestUser")
   reviewedSchoolLinkRequests   SchoolLinkRequest[]          @relation("SchoolLinkRequestReviewer")
   unlinkedSchoolLinkRequests   SchoolLinkRequest[]          @relation("SchoolLinkRequestUnlinker")
+  passkeyCredentials           PasskeyCredential[]
+  authSessions                 AuthSession[]
+  schoolMemberships            SchoolMembership[]
   clubAnnouncements            ClubAnnouncement[]           @relation("ClubAnnouncementCreator")
   clubSubmissionGrading        ClubAssignmentSubmission[]   @relation("ClubSubmissionGrader")
   clubAssignments              ClubAssignment[]             @relation("ClubAssignmentCreator")
@@ -1854,6 +1858,7 @@ model SchoolLinkRequest {
   claimCode        ClaimCode               @relation(fields: [claimCodeId], references: [id], onDelete: Restrict)
   reviewedByUser   User?                   @relation("SchoolLinkRequestReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
   unlinkedByUser   User?                   @relation("SchoolLinkRequestUnlinker", fields: [unlinkedByUserId], references: [id], onDelete: SetNull)
+  membership       SchoolMembership?
 
   @@index([userId, status])
   @@index([schoolId, status, submittedAt])
@@ -1921,6 +1926,67 @@ model OtpAuthAuditEvent {
   @@index([destinationHash, createdAt])
   @@index([eventType, createdAt])
   @@map("otp_auth_audit_events")
+}
+
+model PasskeyCredential {
+  id           String   @id @default(cuid())
+  userId       String
+  credentialId String   @unique
+  publicKey    Bytes
+  counter      BigInt   @default(0)
+  transports   String[]
+  deviceLabel  String?
+  backedUp     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+  revokedAt    DateTime?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("passkey_credentials")
+}
+
+model AuthSession {
+  id                  String   @id @default(cuid())
+  userId              String
+  refreshTokenHash    String   @unique
+  deviceId            String?
+  deviceName          String?
+  ipAddress           String?
+  userAgent           String?
+  schoolAccessVersion Int      @default(0)
+  createdAt           DateTime @default(now())
+  lastUsedAt          DateTime @default(now())
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  revokeReason        String?
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model SchoolMembership {
+  id           String                 @id @default(cuid())
+  userId       String
+  schoolId     String
+  studentId    String?                @unique
+  teacherId    String?                @unique
+  role         UserRole
+  status       SchoolMembershipStatus @default(ACTIVE)
+  linkedAt     DateTime               @default(now())
+  unlinkedAt   DateTime?
+  linkRequestId String?               @unique
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school       School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  linkRequest  SchoolLinkRequest?     @relation(fields: [linkRequestId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, schoolId])
+  @@index([schoolId, role, status])
+  @@map("school_memberships")
 }
 
 model IdGenerationLog {
@@ -4418,6 +4484,12 @@ enum SchoolLinkRequestStatus {
   APPROVED
   REJECTED
   CANCELLED
+  UNLINKED
+}
+
+enum SchoolMembershipStatus {
+  ACTIVE
+  SUSPENDED
   UNLINKED
 }
 
