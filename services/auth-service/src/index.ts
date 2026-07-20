@@ -44,7 +44,10 @@ const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
-assertPasswordlessProductionConfig();
+const passwordlessConfig = assertPasswordlessProductionConfig();
+for (const warning of passwordlessConfig.warnings) {
+  console.warn(`Passwordless configuration warning: ${warning}`);
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 // Remember-me style: long-lived tokens until explicit logout
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '30d';       // Access token: 30d (reduces refresh calls)
