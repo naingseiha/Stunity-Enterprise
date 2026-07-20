@@ -22,6 +22,10 @@ import {
   type PreferredVerificationChannel,
   type VerificationProviders,
 } from "../passwordless/verificationProvider";
+import {
+  createStructuredAuthMetrics,
+  type AuthOperationalMetrics,
+} from "../observability/authOperationalMetrics";
 
 type PasswordlessRouteOptions = {
   jwtSecret: string;
@@ -29,6 +33,7 @@ type PasswordlessRouteOptions = {
   refreshTokenExpiration: string;
   store?: OtpChallengeStore;
   providers?: VerificationProviders;
+  metrics?: AuthOperationalMetrics;
 };
 
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -105,6 +110,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
   const router = Router();
   const store = options.store || createOtpChallengeStore();
   const providers = options.providers || createVerificationProviders();
+  const metrics = options.metrics || createStructuredAuthMetrics();
 
   const requireEnabled = (_req: Request, res: Response, next: () => void) => {
     if (process.env.PASSWORDLESS_AUTH_ENABLED !== "true") {
@@ -153,6 +159,10 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
     try {
       await store.assertStartAllowed({ destinationHash, deviceId, ipAddress, purpose: "SIGN_IN", userId: knownUserId });
     } catch (error: any) {
+      metrics.increment("auth_otp_failed_total", {
+        channel: "UNKNOWN",
+        reason: error.code || "OTP_RATE_LIMITED",
+      });
       await prisma.otpAuthAuditEvent.create({
         data: { destinationHash, eventType: "RATE_LIMITED", purpose: "SIGN_IN", reasonCode: error.code || "OTP_RATE_LIMITED", ipAddress },
       }).catch(() => undefined);
@@ -164,6 +174,10 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
     try {
       selected = await selectVerificationProvider(providers, phone, preferred as PreferredVerificationChannel);
     } catch (error: any) {
+      metrics.increment("auth_otp_failed_total", {
+        channel: "UNKNOWN",
+        reason: error.code || "OTP_CHANNEL_UNAVAILABLE",
+      });
       await prisma.otpAuthAuditEvent.create({
         data: { destinationHash, eventType: "FAILED", purpose: "SIGN_IN", reasonCode: error.code || "OTP_CHANNEL_UNAVAILABLE", ipAddress },
       }).catch(() => undefined);
@@ -187,6 +201,10 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
       attempts: 0,
       maxAttempts: 5,
     };
+    metrics.increment("auth_otp_started_total", { channel: challenge.channel, purpose: challenge.purpose });
+    if (preferred === "AUTO" && challenge.channel === "SMS" && providers.telegram) {
+      metrics.increment("auth_otp_fallback_total", { from: "TELEGRAM", to: "SMS" });
+    }
 
     try {
       await prisma.otpAuthAuditEvent.create({
@@ -205,6 +223,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
       await prisma.otpAuthAuditEvent.create({
         data: { challengeId, destinationHash, eventType: "SENT", channel: challenge.channel, purpose: challenge.purpose, ipAddress },
       });
+      metrics.increment("auth_otp_delivered_total", { channel: challenge.channel });
       return res.status(202).json({
         success: true,
         data: {
@@ -219,6 +238,10 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
         requestId: apiRequestId,
       });
     } catch (error: any) {
+      metrics.increment("auth_otp_failed_total", {
+        channel: challenge.channel,
+        reason: error?.code || "OTP_DELIVERY_FAILED",
+      });
       await store.delete(challengeId).catch(() => undefined);
       await prisma.otpAuthAuditEvent.create({
         data: {
@@ -249,16 +272,22 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
     const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
     const deviceId = typeof req.body?.deviceId === "string" ? req.body.deviceId.trim() : "";
     if (!challengeId || !/^\d{6}$/.test(code) || !deviceId) {
+      metrics.increment("auth_otp_failed_total", { channel: "UNKNOWN", reason: "OTP_INVALID" });
       return res.status(400).json({ success: false, code: "OTP_INVALID", error: "The verification code is invalid or expired.", requestId: apiRequestId });
     }
 
     const challenge = await store.get(challengeId);
     if (!challenge || challenge.deviceId !== deviceId || challenge.expiresAt <= Date.now()) {
+      metrics.increment("auth_otp_failed_total", { channel: challenge?.channel || "UNKNOWN", reason: "OTP_INVALID" });
       return res.status(400).json({ success: false, code: "OTP_INVALID", error: "The verification code is invalid or expired.", requestId: apiRequestId });
     }
     const providedHash = hashOtp(challenge.id, challenge.normalizedDestination, code);
     if (!safeHashEquals(providedHash, challenge.codeHash)) {
       const attempt = await store.failAttempt(challenge.id);
+      metrics.increment("auth_otp_failed_total", {
+        channel: challenge.channel,
+        reason: attempt.locked ? "OTP_ATTEMPTS_EXHAUSTED" : "OTP_CODE_MISMATCH",
+      });
       await prisma.otpAuthAuditEvent.create({
         data: {
           challengeId,
@@ -277,6 +306,10 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
     if (provider?.verify && challenge.receiptId) {
       const providerVerification = await provider.verify({ receiptId: challenge.receiptId, code });
       if (!providerVerification.valid) {
+        metrics.increment("auth_otp_failed_total", {
+          channel: challenge.channel,
+          reason: providerVerification.reasonCode || "TELEGRAM_CODE_INVALID",
+        });
         await prisma.otpAuthAuditEvent.create({
           data: {
             challengeId,
@@ -292,6 +325,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
       }
     }
     if (!(await store.consume(challenge.id, challenge.codeHash, deviceId))) {
+      metrics.increment("auth_otp_failed_total", { channel: challenge.channel, reason: "OTP_ALREADY_USED" });
       return res.status(409).json({ success: false, code: "OTP_ALREADY_USED", error: "The verification code has already been used.", requestId: apiRequestId });
     }
 
@@ -311,6 +345,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
         ipAddress: req.ip,
       },
     });
+    metrics.increment("auth_otp_verified_total", { channel: challenge.channel });
 
     if (usableContact) {
       const tokens = issueTokens(usableContact.user, options);
@@ -318,6 +353,8 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
         where: { id: usableContact.userId },
         data: { lastLogin: new Date(), loginCount: { increment: 1 }, failedAttempts: 0, lockedUntil: null },
       });
+      metrics.increment("auth_login_completed_total", { method: "PHONE_OTP", new_or_returning: "RETURNING" });
+      metrics.observe("auth_login_duration_ms", Date.now() - challenge.createdAt, { method: "PHONE_OTP" });
       return res.json({
         success: true,
         data: { status: "AUTHENTICATED", user: publicUser(usableContact.user), tokens },
@@ -334,6 +371,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
       destinationHash: challenge.destinationHash,
       deviceId,
       nonce: enrollmentNonce,
+      startedAt: challenge.createdAt,
     }, options.jwtSecret, { expiresIn: "10m" });
     return res.json({
       success: true,
@@ -429,6 +467,13 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
           metadata: { acceptedTermsVersion },
         },
       });
+      metrics.increment("auth_login_completed_total", { method: "PHONE_OTP", new_or_returning: "NEW" });
+      const loginStartedAt = typeof decoded.startedAt === "number"
+        ? decoded.startedAt
+        : typeof decoded.iat === "number"
+          ? decoded.iat * 1000
+          : Date.now();
+      metrics.observe("auth_login_duration_ms", Math.max(0, Date.now() - loginStartedAt), { method: "PHONE_OTP" });
       return res.status(201).json({
         success: true,
         data: { user: publicUser(user), tokens: issueTokens(user, options) },

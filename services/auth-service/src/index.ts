@@ -22,7 +22,8 @@ import { isPasswordHashUsable, publicRegistrationAuthorization } from './securit
 import { normalizeEmail, normalizePhone, phoneLookupCandidates } from './security/identifiers';
 import { buildMaskedClaimPreview } from './security/claimPreview';
 import { createSharedRateLimitStore } from './security/rateLimitStore';
-import { assertPasswordlessProductionConfig } from './passwordless/providerConfig';
+import { assertPasswordlessProductionConfig, buildPasswordlessReadiness } from './passwordless/providerConfig';
+import { createStructuredAuthMetrics } from './observability/authOperationalMetrics';
 import {
   SchoolLinkError,
   approveSchoolLinkRequest,
@@ -45,6 +46,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
 const passwordlessConfig = assertPasswordlessProductionConfig();
+const authOperationalMetrics = createStructuredAuthMetrics();
 for (const warning of passwordlessConfig.warnings) {
   console.warn(`Passwordless configuration warning: ${warning}`);
 }
@@ -778,6 +780,7 @@ app.use('/auth', passwordlessRoutes(prisma, {
   jwtSecret: JWT_SECRET,
   accessTokenExpiration: JWT_EXPIRATION,
   refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+  metrics: authOperationalMetrics,
 }));
 app.use('/auth/social', socialAuthRoutes(prisma));
 app.use('/auth/sso', ssoRoutes(prisma));
@@ -793,6 +796,33 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     version: '2.0.0',
   });
+});
+
+// Readiness is explicit and may touch the database. Passwordless configuration
+// is reported without provider credentials or destinations so staging gates can
+// distinguish a healthy legacy-password service from a ready OTP pilot.
+app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
+  const passwordless = buildPasswordlessReadiness();
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.status(passwordless.ready ? 200 : 503).json({
+      status: passwordless.ready ? 'ready' : 'not_ready',
+      service: 'auth-service',
+      checks: {
+        database: { ready: true },
+        passwordless,
+      },
+    });
+  } catch {
+    return res.status(503).json({
+      status: 'not_ready',
+      service: 'auth-service',
+      checks: {
+        database: { ready: false },
+        passwordless,
+      },
+    });
+  }
 });
 
 // API info
@@ -3051,6 +3081,7 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
     }
 
     const result = await submitSchoolLinkRequest(prisma, userId, code, verificationData, { ipAddress: req.ip });
+    authOperationalMetrics.increment('school_link_submitted_total');
     res.json({
       success: true,
       message: 'Link request submitted. Awaiting admin approval.',
@@ -3082,6 +3113,7 @@ app.post('/auth/school-links', authenticateToken, async (req: AuthRequest, res: 
       req.body?.verificationData,
       { ipAddress: req.ip },
     );
+    authOperationalMetrics.increment('school_link_submitted_total');
     return res.status(202).json({ success: true, message: 'Link request submitted. Awaiting admin approval.', data: result });
   } catch (error: any) {
     if (error instanceof SchoolLinkError) {
@@ -3150,6 +3182,7 @@ app.post('/auth/admin/school-links/:requestId/approve', authenticateToken, async
       schoolId: req.user!.schoolId,
       ipAddress: req.ip,
     });
+    authOperationalMetrics.increment('school_link_approved_total');
     try {
       await prisma.notification.create({
         data: {
@@ -3183,6 +3216,7 @@ app.post('/auth/admin/school-links/:requestId/reject', authenticateToken, async 
       schoolId: req.user!.schoolId,
       ipAddress: req.ip,
     }, req.body?.reason);
+    authOperationalMetrics.increment('school_link_rejected_total', { reason_code: 'UNSPECIFIED' });
     try {
       await prisma.notification.create({
         data: {
@@ -3223,6 +3257,8 @@ app.post('/auth/admin/school-links/:requestId/unlink', authenticateToken, async 
       schoolId: req.user!.schoolId,
       ipAddress: req.ip,
     }, req.body || {});
+    authOperationalMetrics.increment('school_link_unlinked_total', { reason_code: 'UNSPECIFIED' });
+    if (result.replacementClaimCode) authOperationalMetrics.increment('school_claim_reissued_total');
     try {
       await prisma.notification.create({
         data: {
@@ -3389,6 +3425,7 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
         schoolId: req.user!.schoolId,
         ipAddress: req.ip,
       });
+      authOperationalMetrics.increment('school_link_approved_total');
       try {
         await prisma.notification.create({
           data: {
@@ -3634,6 +3671,7 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
         schoolId: req.user!.schoolId,
         ipAddress: req.ip,
       }, reason || 'Rejected by school administrator');
+      authOperationalMetrics.increment('school_link_rejected_total', { reason_code: 'UNSPECIFIED' });
       try {
         await prisma.notification.create({
           data: {
@@ -3904,6 +3942,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     // Keep this legacy endpoint compatible while routing its school-link state
     // through the normalized lifecycle and audit trail.
     await submitSchoolLinkRequest(prisma, result.id, code, verificationData, { ipAddress: req.ip });
+    authOperationalMetrics.increment('school_link_submitted_total');
 
     // Generate tokens using the same claim shape as normal login.
     const token = jwt.sign(

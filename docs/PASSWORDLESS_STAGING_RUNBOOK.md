@@ -53,6 +53,7 @@ approved:
 
 ```dotenv
 PASSWORDLESS_AUTH_ENABLED="false"
+AUTH_STRUCTURED_METRICS_ENABLED="false"
 EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 ```
@@ -61,6 +62,31 @@ When a staging pilot is explicitly approved, configure a unique
 `OTP_HMAC_SECRET`, shared Redis, and the approved Telegram/SMS adapter in the
 secret manager. `OTP_LOCAL_TEST_CODE` is for local QA only and must be empty in
 staging and production.
+
+Before a pilot, set `AUTH_STRUCTURED_METRICS_ENABLED="true"` in the auth-service
+environment and verify `GET /health/ready` reports `observability: true`. The
+endpoint exposes configuration modes and readiness only; it never returns
+provider credentials, phone numbers, claim codes, or user identifiers.
+
+Structured metric events are emitted as JSON to stdout for the platform logging
+pipeline. Create bounded log-based counters/distributions for:
+
+- `auth_otp_started_total`
+- `auth_otp_delivered_total`
+- `auth_otp_verified_total`
+- `auth_otp_failed_total`
+- `auth_otp_fallback_total`
+- `auth_login_completed_total`
+- `auth_login_duration_ms`
+- `school_link_submitted_total`
+- `school_link_approved_total`
+- `school_link_rejected_total`
+- `school_link_unlinked_total`
+- `school_claim_reissued_total`
+
+Only allowlisted labels are emitted. Unknown provider/error values collapse to
+`UNKNOWN` or `OTHER` so destinations and unbounded identifiers cannot become
+metric labels.
 
 ## 4. Verification and privacy checks
 

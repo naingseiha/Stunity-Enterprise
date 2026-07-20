@@ -24,6 +24,7 @@ that cannot be delivered safely.
 | Variable | Local password flow | Local passwordless QA | Staging/production |
 | --- | --- | --- | --- |
 | `PASSWORDLESS_AUTH_ENABLED` | `false` | `true` | `true` only after pilot approval |
+| `AUTH_STRUCTURED_METRICS_ENABLED` | `false` | optional | `true` before pilot activation |
 | `OTP_HMAC_SECRET` | placeholder is fine | random 32+ character secret | random 32+ character secret in a secret manager |
 | `REDIS_URL` | existing local Redis | shared Redis reachable by auth service | managed/shared Redis (required for multi-instance safety) |
 | `OTP_LOCAL_TEST_CODE` | empty | six digits, non-production only | always empty |

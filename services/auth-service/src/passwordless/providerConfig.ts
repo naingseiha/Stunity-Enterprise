@@ -6,6 +6,22 @@ export type PasswordlessConfig = {
   telegramMode: "DIRECT" | "BRIDGE" | "NONE";
   smsMode: "BRIDGE" | "NONE";
   localTestConfigured: boolean;
+  structuredMetricsEnabled: boolean;
+  errors: string[];
+  warnings: string[];
+};
+
+export type PasswordlessReadiness = {
+  ready: boolean;
+  status: "disabled" | "ready" | "not_ready";
+  sharedState: boolean;
+  hmac: boolean;
+  observability: boolean;
+  providers: {
+    telegram: "DIRECT" | "BRIDGE" | "NONE";
+    sms: "BRIDGE" | "NONE";
+    localTest: boolean;
+  };
   errors: string[];
   warnings: string[];
 };
@@ -28,6 +44,7 @@ export function readPasswordlessConfig(env: Env = process.env): PasswordlessConf
       : "NONE";
   const smsMode = env.OTP_SMS_PROVIDER_URL?.trim() ? "BRIDGE" : "NONE";
   const localTestConfigured = !production && /^\d{6}$/.test(env.OTP_LOCAL_TEST_CODE || "");
+  const structuredMetricsEnabled = env.AUTH_STRUCTURED_METRICS_ENABLED === "true";
 
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -46,6 +63,9 @@ export function readPasswordlessConfig(env: Env = process.env): PasswordlessConf
     if (smsMode === "NONE") {
       warnings.push("SMS fallback is not configured; Telegram-only delivery is not suitable for broad rollout.");
     }
+    if (!structuredMetricsEnabled) {
+      warnings.push("AUTH_STRUCTURED_METRICS_ENABLED is false; rollout dashboards will not receive OTP metrics.");
+    }
   }
   return {
     enabled,
@@ -55,6 +75,7 @@ export function readPasswordlessConfig(env: Env = process.env): PasswordlessConf
     telegramMode,
     smsMode,
     localTestConfigured,
+    structuredMetricsEnabled,
     errors,
     warnings,
   };
@@ -66,4 +87,49 @@ export function assertPasswordlessProductionConfig(env: Env = process.env): Pass
     throw new Error(`FATAL: passwordless configuration is incomplete: ${config.errors.join(" ")}`);
   }
   return config;
+}
+
+export function buildPasswordlessReadiness(env: Env = process.env): PasswordlessReadiness {
+  const config = readPasswordlessConfig(env);
+  if (!config.enabled) {
+    return {
+      ready: true,
+      status: "disabled",
+      sharedState: config.redisConfigured,
+      hmac: config.hmacConfigured,
+      observability: config.structuredMetricsEnabled,
+      providers: {
+        telegram: config.telegramMode,
+        sms: config.smsMode,
+        localTest: config.localTestConfigured,
+      },
+      errors: [],
+      warnings: config.warnings,
+    };
+  }
+
+  const errors = [...config.errors];
+  const hasDelivery = config.telegramMode !== "NONE" || config.smsMode !== "NONE" || config.localTestConfigured;
+  if (!hasDelivery) errors.push("No passwordless delivery provider is available.");
+  if (config.production && !config.redisConfigured && !errors.some((error) => error.includes("REDIS_URL"))) {
+    errors.push("Shared OTP state is unavailable.");
+  }
+  if (config.production && !config.structuredMetricsEnabled) {
+    errors.push("Structured passwordless metrics are required for rollout readiness.");
+  }
+
+  return {
+    ready: errors.length === 0,
+    status: errors.length === 0 ? "ready" : "not_ready",
+    sharedState: config.redisConfigured,
+    hmac: config.hmacConfigured,
+    observability: config.structuredMetricsEnabled,
+    providers: {
+      telegram: config.telegramMode,
+      sms: config.smsMode,
+      localTest: config.localTestConfigured,
+    },
+    errors,
+    warnings: config.warnings,
+  };
 }

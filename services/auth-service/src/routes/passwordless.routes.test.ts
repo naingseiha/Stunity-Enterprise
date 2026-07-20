@@ -4,6 +4,14 @@ import express from "express";
 import passwordlessRoutes from "./passwordless.routes";
 import { createMemoryOtpChallengeStoreForTests } from "../passwordless/otpChallengeStore";
 import type { VerificationChannelProvider } from "../passwordless/verificationProvider";
+import type { AuthOperationalMetrics } from "../observability/authOperationalMetrics";
+
+function captureMetrics(events: Array<{ name: string; value: number; labels?: Record<string, string> }>): AuthOperationalMetrics {
+  return {
+    increment: (name, labels) => events.push({ name, value: 1, labels }),
+    observe: (name, value, labels) => events.push({ name, value, labels }),
+  };
+}
 
 test("new phone is verified before enrollment and no empty User is created", async (t) => {
   const previousFlag = process.env.PASSWORDLESS_AUTH_ENABLED;
@@ -16,6 +24,7 @@ test("new phone is verified before enrollment and no empty User is created", asy
   let deliveredCode = "";
   let userCreateCalls = 0;
   const auditEvents: any[] = [];
+  const metricEvents: Array<{ name: string; value: number; labels?: Record<string, string> }> = [];
   const telegram: VerificationChannelProvider = {
     channel: "TELEGRAM",
     canSend: async () => ({ available: true }),
@@ -37,6 +46,7 @@ test("new phone is verified before enrollment and no empty User is created", asy
     refreshTokenExpiration: "90d",
     store: createMemoryOtpChallengeStoreForTests(),
     providers: { telegram },
+    metrics: captureMetrics(metricEvents),
   }));
   let server: ReturnType<typeof app.listen>;
   try {
@@ -79,6 +89,11 @@ test("new phone is verified before enrollment and no empty User is created", asy
   assert.ok(verified.data.enrollmentToken);
   assert.equal(userCreateCalls, 0);
   assert.equal(auditEvents[auditEvents.length - 1]?.eventType, "VERIFIED");
+  assert.deepEqual(metricEvents.filter((event) => event.name !== "auth_login_duration_ms"), [
+    { name: "auth_otp_started_total", value: 1, labels: { channel: "TELEGRAM", purpose: "SIGN_IN" } },
+    { name: "auth_otp_delivered_total", value: 1, labels: { channel: "TELEGRAM" } },
+    { name: "auth_otp_verified_total", value: 1, labels: { channel: "TELEGRAM" } },
+  ]);
 });
 
 test("existing-user OTP response redacts plaintext legacy claim data", async (t) => {
@@ -90,6 +105,7 @@ test("existing-user OTP response redacts plaintext legacy claim data", async (t)
   });
 
   let deliveredCode = "";
+  const metricEvents: Array<{ name: string; value: number; labels?: Record<string, string> }> = [];
   const user = {
     id: "user-1",
     email: null,
@@ -134,6 +150,7 @@ test("existing-user OTP response redacts plaintext legacy claim data", async (t)
     refreshTokenExpiration: "90d",
     store: createMemoryOtpChallengeStoreForTests(),
     providers: { telegram },
+    metrics: captureMetrics(metricEvents),
   }));
   let server: ReturnType<typeof app.listen>;
   try {
@@ -173,4 +190,8 @@ test("existing-user OTP response redacts plaintext legacy claim data", async (t)
     submittedAt: "2026-07-20T00:00:00.000Z",
   });
   assert.ok(!JSON.stringify(verified).includes("SECRET-CLAIM-CODE"));
+  assert.ok(metricEvents.some((event) => (
+    event.name === "auth_login_completed_total" && event.labels?.new_or_returning === "RETURNING"
+  )));
+  assert.ok(metricEvents.some((event) => event.name === "auth_login_duration_ms" && event.value >= 0));
 });
