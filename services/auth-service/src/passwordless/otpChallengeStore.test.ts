@@ -68,3 +68,26 @@ test("provider budgets stop paid sends after the configured daily limit", async 
     else process.env.OTP_DAILY_SMS_LIMIT = previous;
   }
 });
+
+test("known users are rate limited across changing phone destinations", async () => {
+  const store = createMemoryOtpChallengeStoreForTests();
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    await store.assertStartAllowed({
+      destinationHash: `phone-${attempt}`,
+      deviceId: `device-${attempt}-1234`,
+      ipAddress: `192.0.2.${attempt}`,
+      purpose: "SIGN_IN",
+      userId: "user-known-1",
+    });
+  }
+  await assert.rejects(
+    () => store.assertStartAllowed({
+      destinationHash: "phone-6",
+      deviceId: "device-6-1234",
+      ipAddress: "192.0.2.6",
+      purpose: "SIGN_IN",
+      userId: "user-known-1",
+    }),
+    { code: "OTP_RATE_LIMITED" },
+  );
+});

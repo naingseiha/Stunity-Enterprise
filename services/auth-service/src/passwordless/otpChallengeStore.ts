@@ -20,7 +20,13 @@ export type OtpChallenge = {
   maxAttempts: number;
 };
 
-export type OtpStartLimitInput = { destinationHash: string; deviceId: string; ipAddress: string; purpose: "SIGN_IN" };
+export type OtpStartLimitInput = {
+  destinationHash: string;
+  deviceId: string;
+  ipAddress: string;
+  purpose: "SIGN_IN";
+  userId?: string;
+};
 
 export interface OtpChallengeStore {
   assertStartAllowed(input: OtpStartLimitInput): Promise<void>;
@@ -70,6 +76,7 @@ class RedisOtpChallengeStore implements OtpChallengeStore {
     }
     const limits = [
       [`phone:${input.destinationHash}`, 5, 60 * 60],
+      ...(input.userId ? [[`user:${hashLimitKey(input.userId)}`, 5, 60 * 60] as const] : []),
       [`device:${hashLimitKey(input.deviceId)}`, 10, 60 * 60],
       [`ip:${hashLimitKey(input.ipAddress)}`, 20, 60 * 60],
     ] as const;
@@ -204,6 +211,7 @@ class MemoryOtpChallengeStore implements OtpChallengeStore {
     }
     const entries: Array<[string, number]> = [
       [`phone:${input.destinationHash}`, 5],
+      ...(input.userId ? [[`user:${hashLimitKey(input.userId)}`, 5] as [string, number]] : []),
       [`device:${hashLimitKey(input.deviceId)}`, 10],
       [`ip:${hashLimitKey(input.ipAddress)}`, 20],
     ];

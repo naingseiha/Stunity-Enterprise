@@ -122,8 +122,21 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
 
     const destinationHash = hashOtpDestination(phone);
     const ipAddress = req.ip || "unknown";
+    // Resolve only an already-verified, active contact for abuse limiting. The
+    // response remains enumeration-safe and new-phone enrollment is unaffected.
+    let knownUserId: string | undefined;
     try {
-      await store.assertStartAllowed({ destinationHash, deviceId, ipAddress, purpose: "SIGN_IN" });
+      const knownContact = await prisma.verifiedContact.findUnique({
+        where: { type_normalizedValue: { type: "PHONE", normalizedValue: phone } },
+        select: { userId: true, disabledAt: true, user: { select: { isActive: true } } },
+      });
+      if (knownContact && !knownContact.disabledAt && knownContact.user.isActive) knownUserId = knownContact.userId;
+    } catch {
+      // A lookup failure must not turn a generic OTP request into an account
+      // existence signal; phone/device/IP limits still apply below.
+    }
+    try {
+      await store.assertStartAllowed({ destinationHash, deviceId, ipAddress, purpose: "SIGN_IN", userId: knownUserId });
     } catch (error: any) {
       await prisma.otpAuthAuditEvent.create({
         data: { destinationHash, eventType: "RATE_LIMITED", purpose: "SIGN_IN", reasonCode: error.code || "OTP_RATE_LIMITED", ipAddress },
