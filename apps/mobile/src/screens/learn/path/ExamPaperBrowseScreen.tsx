@@ -1,18 +1,20 @@
 /**
- * ExamPaperBrowseScreen — Flat-design card list with collapsible header.
- * Cards use soft pastel backgrounds (first card is vibrant).
- * Header collapses on scroll via Animated API.
+ * ExamPaperBrowseScreen — Exact Design Match to Reference Screenshot
+ *
+ * 1. Rich Purple Gradient Header: Centered title with 2 left-aligned badge pills below.
+ * 2. Clean White Cards: Generous rounded corners (borderRadius: 24) and soft shadow.
+ * 3. Left Bullet Badges: Vertical rounded rectangles (01, 02, 03) in solid vibrant colors.
+ * 4. Soft Pastel Tag Pills & Action Circle: High contrast, clean modern typography.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Animated,
   View,
   Text,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,29 +28,15 @@ import { LearnStackScreenProps } from '@/navigation/types';
 
 type Props = LearnStackScreenProps<'ExamPaperBrowse'>;
 
-// ── Card palette (cycles). Index 0 = vibrant, rest = soft pastel ──
-const CARD_PALETTE = [
-  { bg: '#F87171', textColor: '#FFFFFF',  metaColor: 'rgba(255,255,255,0.75)', tagBg: 'rgba(255,255,255,0.22)', tagText: '#FFF', numColor: 'rgba(255,255,255,0.5)' },
-  { bg: '#EDE9FE', textColor: '#3730A3',  metaColor: '#6D6BAA',               tagBg: '#DDD6FE',               tagText: '#4C1D95', numColor: '#A5B4FC' },
-  { bg: '#FEF9C3', textColor: '#713F12',  metaColor: '#92712A',               tagBg: '#FDE68A',               tagText: '#78350F', numColor: '#FCD34D' },
-  { bg: '#DCFCE7', textColor: '#14532D',  metaColor: '#3A7A50',               tagBg: '#BBF7D0',               tagText: '#166534', numColor: '#6EE7B7' },
-  { bg: '#FCE7F3', textColor: '#831843',  metaColor: '#9D6070',               tagBg: '#FBCFE8',               tagText: '#9D174D', numColor: '#F9A8D4' },
-  { bg: '#E0F2FE', textColor: '#0C4A6E',  metaColor: '#2D7A9A',               tagBg: '#BAE6FD',               tagText: '#075985', numColor: '#7DD3FC' },
+// ── Left Bullet Badge Palette (matches 01 Purple, 02 Blue, 03 Amber from screenshot) ──
+const BADGE_PALETTE = [
+  '#8B5CF6', // 01: Purple
+  '#0EA5E9', // 02: Blue/Teal
+  '#F59E0B', // 03: Amber/Orange
+  '#10B981', // 04: Emerald Green
+  '#EC4899', // 05: Rose/Pink
+  '#6366F1', // 06: Indigo
 ];
-
-// Dark mode palette
-const CARD_PALETTE_DARK = [
-  { bg: '#7F1D1D', textColor: '#FEF2F2',  metaColor: 'rgba(254,242,242,0.7)', tagBg: 'rgba(255,255,255,0.15)', tagText: '#FCA5A5', numColor: '#FCA5A5' },
-  { bg: '#1E1B4B', textColor: '#EDE9FE',  metaColor: '#A5B4FC',               tagBg: 'rgba(139,92,246,0.2)',   tagText: '#C4B5FD', numColor: '#818CF8' },
-  { bg: '#1C1400', textColor: '#FEF9C3',  metaColor: '#D4A955',               tagBg: 'rgba(234,179,8,0.2)',    tagText: '#FCD34D', numColor: '#F59E0B' },
-  { bg: '#052E16', textColor: '#DCFCE7',  metaColor: '#6EE7B7',               tagBg: 'rgba(16,185,129,0.2)',   tagText: '#6EE7B7', numColor: '#34D399' },
-  { bg: '#500724', textColor: '#FCE7F3',  metaColor: '#F9A8D4',               tagBg: 'rgba(236,72,153,0.2)',   tagText: '#F9A8D4', numColor: '#F472B6' },
-  { bg: '#082F49', textColor: '#E0F2FE',  metaColor: '#7DD3FC',               tagBg: 'rgba(14,165,233,0.2)',   tagText: '#7DD3FC', numColor: '#38BDF8' },
-];
-
-const HEADER_MAX = 140;
-const HEADER_MIN = 0;
-const SCROLL_THRESHOLD = 80;
 
 export function ExamPaperBrowseScreen() {
   const { t, i18n } = useTranslation();
@@ -63,18 +51,20 @@ export function ExamPaperBrowseScreen() {
   const [papers, setPapers] = useState<QuizItem[] | null>(null);
   const [loadError, setLoadError] = useState(false);
 
-  // Animated scroll value
-  const scrollY = useRef(new Animated.Value(0)).current;
-
   const load = useCallback(() => {
     setLoadError(false);
     setPapers(null);
     browseQuizzes({ courseCode, examOnly: true, limit: 50 })
       .then((res) => setPapers(res.data))
-      .catch(() => { setPapers(null); setLoadError(true); });
+      .catch(() => {
+        setPapers(null);
+        setLoadError(true);
+      });
   }, [courseCode]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const openPaper = (quiz: QuizItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -82,94 +72,73 @@ export function ExamPaperBrowseScreen() {
   };
 
   const displayTitle = isKh ? subjectNameKh || subjectName : subjectName || subjectNameKh;
-  const palette = isDark ? CARD_PALETTE_DARK : CARD_PALETTE;
-
-  // Animated interpolations
-  const extraHeaderHeight = scrollY.interpolate({
-    inputRange: [0, SCROLL_THRESHOLD],
-    outputRange: [HEADER_MAX, HEADER_MIN],
-    extrapolate: 'clamp',
-  });
-  const subHeaderOpacity = scrollY.interpolate({
-    inputRange: [0, SCROLL_THRESHOLD * 0.6],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
-  const headerElevation = scrollY.interpolate({
-    inputRange: [0, 10],
-    outputRange: [0, 6],
-    extrapolate: 'clamp',
-  });
-
-  const NavBar = (
-    <View style={[styles.navBar, { paddingTop: insets.top + 4 }]}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backBtn}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="chevron-back" size={22} color="#FFF" />
-      </TouchableOpacity>
-      <Text style={styles.navTitle} numberOfLines={1}>
-        {displayTitle || t('learn.path.examPapers')}
-      </Text>
-      <View style={{ width: 36 }} />
-    </View>
-  );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View style={styles.root}>
+      {/* ── Rich Purple Gradient Header (exact match to screenshot) ── */}
+      <LinearGradient
+        colors={isDark ? ['#312E81', '#1E1B4B'] : ['#7C3AED', '#8B5CF6', '#A855F7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
+      >
+        {/* Decorative Blobs */}
+        <View style={styles.hdrBlobRight} />
+        <View style={styles.hdrBlobLeft} />
 
-      {/* ── Animated collapsible gradient header ── */}
-      <Animated.View style={{ elevation: headerElevation }}>
-        <LinearGradient
-          colors={['#5B21B6', '#7C3AED', '#C084FC']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
-        >
-          {/* Blobs */}
-          <View style={styles.hdrBlob1} />
-          <View style={styles.hdrBlob2} />
+        {/* Top Nav Row */}
+        <View style={styles.navRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="chevron-back" size={22} color="#FFF" />
+          </TouchableOpacity>
 
-          {/* Fixed nav bar */}
-          {NavBar}
-
-          {/* Collapsible subtitle area */}
-          <Animated.View style={[styles.headerExpanded, { height: extraHeaderHeight, opacity: subHeaderOpacity }]}>
-            <Text style={styles.headerSub}>
-              {t('learn.path.examPapers')}
+          <View style={styles.titleWrap}>
+            <Text style={styles.headerSubTitle}>{t('learn.path.examPapers')}</Text>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {displayTitle || t('learn.path.examPapers')}
             </Text>
-            {papers && papers.length > 0 && (
-              <View style={styles.statsStrip}>
-                <View style={styles.statPill}>
-                  <Ionicons name="document-text-outline" size={13} color="#FDE68A" />
-                  <Text style={styles.statPillText}>{papers.length} Papers</Text>
-                </View>
-                <View style={styles.statPill}>
-                  <Ionicons name="school-outline" size={13} color="#FDE68A" />
-                  <Text style={styles.statPillText}>Official Exams</Text>
-                </View>
-              </View>
-            )}
-          </Animated.View>
-        </LinearGradient>
-      </Animated.View>
+          </View>
+
+          <View style={{ width: 38 }} />
+        </View>
+
+        {/* Bottom Pills Row (Left Aligned under title) */}
+        {papers && papers.length > 0 && (
+          <View style={styles.headerPillsRow}>
+            <View style={styles.headerPill}>
+              <Ionicons name="document-text" size={14} color="#FDE68A" />
+              <Text style={styles.headerPillText}>
+                {papers.length} {t('learn.path.examPapers', { defaultValue: 'Papers' })}
+              </Text>
+            </View>
+            <View style={styles.headerPill}>
+              <Ionicons name="school" size={14} color="#FDE68A" />
+              <Text style={styles.headerPillText}>Official Exams</Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
 
       {/* ── States ── */}
       {papers === null && !loadError && (
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#8B5CF6" />
-          <Text style={styles.stateText}>Loading...</Text>
+          <Text style={styles.stateText}>{t('common.loading', { defaultValue: 'Loading papers...' })}</Text>
         </View>
       )}
 
       {loadError && (
         <View style={styles.centerBox}>
-          <View style={styles.stateIconWrap}><Ionicons name="cloud-offline-outline" size={34} color="#8B5CF6" /></View>
+          <View style={styles.stateIconWrap}>
+            <Ionicons name="cloud-offline-outline" size={36} color="#8B5CF6" />
+          </View>
           <Text style={styles.stateTitle}>{t('learn.path.loadError')}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={load}>
-            <Ionicons name="refresh-outline" size={15} color="#FFF" />
+            <Ionicons name="refresh-outline" size={16} color="#FFF" />
             <Text style={styles.retryText}>{t('learn.path.retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -177,70 +146,66 @@ export function ExamPaperBrowseScreen() {
 
       {papers && papers.length === 0 && (
         <View style={styles.centerBox}>
-          <View style={styles.stateIconWrap}><Ionicons name="document-text-outline" size={34} color="#8B5CF6" /></View>
+          <View style={styles.stateIconWrap}>
+            <Ionicons name="document-text-outline" size={36} color="#8B5CF6" />
+          </View>
           <Text style={styles.stateTitle}>{t('learn.path.examPapersEmpty')}</Text>
         </View>
       )}
 
-      {/* ── Paper list ── */}
+      {/* ── White Cards List with Left Bullet Badges (100% Native Smooth Scroll) ── */}
       {papers && papers.length > 0 && (
-        <Animated.ScrollView
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
-          )}
-          scrollEventThrottle={16}
+        <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 28 }]}
         >
           {papers.map((quiz, index) => {
-            const year = quiz.examDate ? new Date(quiz.examDate).getFullYear() : null;
-            const p = palette[index % palette.length];
-            const num = String(index + 1).padStart(2, '0');
+            const badgeColor = BADGE_PALETTE[index % BADGE_PALETTE.length];
+            const numStr = String(index + 1).padStart(2, '0');
 
             return (
               <TouchableOpacity
                 key={quiz.id}
-                style={[styles.card, { backgroundColor: p.bg }]}
-                activeOpacity={0.78}
+                style={styles.card}
+                activeOpacity={0.82}
                 onPress={() => openPaper(quiz)}
               >
-                {/* Number label */}
-                <Text style={[styles.cardNum, { color: p.numColor }]}>{num}</Text>
-
-                {/* Title + Year */}
-                <View style={styles.cardTitleRow}>
-                  <Text style={[styles.cardTitle, { color: p.textColor }]} numberOfLines={2}>
-                    {quiz.title}
-                    {year ? ` (${year})` : ''}
-                  </Text>
+                {/* Left Column: Vertical Bullet Badge (#01, #02, #03) */}
+                <View style={[styles.bulletBadge, { backgroundColor: badgeColor }]}>
+                  <Text style={styles.bulletNum}>{numStr}</Text>
+                  <Ionicons name="document-text" size={15} color="rgba(255,255,255,0.85)" style={{ marginTop: 2 }} />
                 </View>
 
-                {/* Tags row */}
-                {(!!quiz.examDuration || !!quiz.examTotalPoints) && (
-                  <View style={styles.cardTagRow}>
+                {/* Middle Column: Title + Tag Pills */}
+                <View style={styles.cardMiddle}>
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {quiz.title}
+                  </Text>
+
+                  <View style={styles.tagsRow}>
                     {!!quiz.examDuration && (
-                      <View style={[styles.cardTag, { backgroundColor: p.tagBg }]}>
-                        <Ionicons name="time-outline" size={12} color={p.tagText} />
-                        <Text style={[styles.cardTagText, { color: p.tagText }]}>
-                          {quiz.examDuration} min
-                        </Text>
+                      <View style={styles.durationPill}>
+                        <Ionicons name="time-outline" size={13} color="#6D28D9" />
+                        <Text style={styles.durationText}>{quiz.examDuration} min</Text>
                       </View>
                     )}
                     {!!quiz.examTotalPoints && (
-                      <View style={[styles.cardTag, { backgroundColor: p.tagBg }]}>
-                        <Ionicons name="star-outline" size={12} color={p.tagText} />
-                        <Text style={[styles.cardTagText, { color: p.tagText }]}>
-                          {quiz.examTotalPoints} pts
-                        </Text>
+                      <View style={styles.pointsPill}>
+                        <Ionicons name="star" size={13} color="#D97706" />
+                        <Text style={styles.pointsText}>{quiz.examTotalPoints} pts</Text>
                       </View>
                     )}
                   </View>
-                )}
+                </View>
+
+                {/* Right Column: Circular Action Arrow */}
+                <View style={styles.actionCircle}>
+                  <Ionicons name="arrow-forward" size={18} color="#7C3AED" />
+                </View>
               </TouchableOpacity>
             );
           })}
-        </Animated.ScrollView>
+        </ScrollView>
       )}
     </View>
   );
@@ -248,115 +213,218 @@ export function ExamPaperBrowseScreen() {
 
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create({
-    root: { flex: 1 },
+    root: {
+      flex: 1,
+      backgroundColor: isDark ? colors.background : '#F8FAFC',
+    },
 
-    // Header
-    headerGradient: {
+    // ── Rich Purple Gradient Header ──
+    header: {
+      paddingHorizontal: 16,
+      paddingBottom: 22,
       overflow: 'hidden',
     },
-    hdrBlob1: {
-      position: 'absolute', top: -50, right: -50,
-      width: 160, height: 160, borderRadius: 80,
-      backgroundColor: 'rgba(255,255,255,0.07)',
+    hdrBlobRight: {
+      position: 'absolute',
+      top: -30,
+      right: -30,
+      width: 140,
+      height: 140,
+      borderRadius: 70,
+      backgroundColor: 'rgba(255,255,255,0.08)',
     },
-    hdrBlob2: {
-      position: 'absolute', bottom: -20, left: -20,
-      width: 90, height: 90, borderRadius: 45,
-      backgroundColor: 'rgba(255,255,255,0.05)',
+    hdrBlobLeft: {
+      position: 'absolute',
+      bottom: -40,
+      left: -40,
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      backgroundColor: 'rgba(255,255,255,0.06)',
     },
-
-    // Fixed nav bar inside gradient
-    navBar: {
+    navRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingBottom: 12,
+      justifyContent: 'space-between',
+      marginBottom: 16,
     },
     backBtn: {
-      width: 36, height: 36, borderRadius: 18,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      alignItems: 'center', justifyContent: 'center',
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: 'rgba(255,255,255,0.22)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    navTitle: {
+    titleWrap: {
       flex: 1,
-      textAlign: 'center',
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '800',
+      alignItems: 'center',
       paddingHorizontal: 8,
     },
-
-    // Collapsible expanded area
-    headerExpanded: {
-      paddingHorizontal: 20,
-      paddingBottom: 18,
-      overflow: 'hidden',
-      justifyContent: 'flex-end',
-      gap: 10,
-    },
-    headerSub: {
-      color: 'rgba(255,255,255,0.65)',
-      fontSize: 12,
-      fontWeight: '600',
+    headerSubTitle: {
+      color: 'rgba(255,255,255,0.75)',
+      fontSize: 11,
+      fontWeight: '700',
       textTransform: 'uppercase',
-      letterSpacing: 1,
+      letterSpacing: 1.5,
     },
-    statsStrip: { flexDirection: 'row', gap: 8 },
-    statPill: {
-      flexDirection: 'row', alignItems: 'center', gap: 5,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
-    },
-    statPillText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
-
-    // Center states
-    centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-    stateIconWrap: {
-      width: 68, height: 68, borderRadius: 34,
-      backgroundColor: 'rgba(139,92,246,0.1)',
-      alignItems: 'center', justifyContent: 'center',
-    },
-    stateTitle: { fontSize: 15, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
-    stateText: { fontSize: 14, color: colors.textSecondary },
-    retryBtn: {
-      flexDirection: 'row', alignItems: 'center', gap: 6,
-      backgroundColor: '#8B5CF6',
-      paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14,
-    },
-    retryText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-
-    // List
-    listContent: { padding: 16, gap: 14 },
-
-    // Card — flat design
-    card: {
-      borderRadius: 20,
-      padding: 18,
-      gap: 8,
-    },
-
-    // Number label (top-left, inside card)
-    cardNum: {
-      fontSize: 13,
+    headerTitle: {
+      color: '#FFFFFF',
+      fontSize: 20,
       fontWeight: '900',
-      letterSpacing: 1,
-      textTransform: 'uppercase',
+      marginTop: 2,
+    },
+    headerPillsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 4,
+    },
+    headerPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+    },
+    headerPillText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
     },
 
-    // Title row
-    cardTitleRow: { gap: 2 },
-    cardTitle: {
-      fontSize: 17,
+    // ── States ──
+    centerBox: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 32,
+      gap: 12,
+    },
+    stateIconWrap: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(139,92,246,0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stateTitle: {
+      fontSize: 16,
       fontWeight: '800',
-      lineHeight: 24,
-      letterSpacing: -0.3,
+      color: colors.text,
+      textAlign: 'center',
+    },
+    stateText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    retryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: '#8B5CF6',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 16,
+      marginTop: 4,
+    },
+    retryText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#FFF',
     },
 
-    // Tags
-    cardTagRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 2 },
-    cardTag: {
-      flexDirection: 'row', alignItems: 'center', gap: 4,
-      paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+    // ── List & White Cards ──
+    listContent: {
+      padding: 16,
+      gap: 14,
     },
-    cardTagText: { fontSize: 12, fontWeight: '700' },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? colors.card : '#FFFFFF',
+      borderRadius: 24,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.0 : 0.05,
+      shadowRadius: 12,
+      elevation: 3,
+    },
+
+    // Left Column: Vertical Bullet Badge
+    bulletBadge: {
+      width: 58,
+      height: 76,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bulletNum: {
+      color: '#FFFFFF',
+      fontSize: 20,
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+
+    // Middle Column: Title + Tags
+    cardMiddle: {
+      flex: 1,
+      paddingHorizontal: 14,
+      justifyContent: 'center',
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '700',
+      lineHeight: 22,
+    },
+    tagsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 8,
+      flexWrap: 'wrap',
+    },
+    durationPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: isDark ? 'rgba(139,92,246,0.18)' : '#EDE9FE',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    durationText: {
+      color: isDark ? '#C4B5FD' : '#6D28D9',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    pointsPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: isDark ? 'rgba(245,158,11,0.18)' : '#FEF3C7',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    pointsText: {
+      color: isDark ? '#FDE68A' : '#D97706',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    // Right Column: Action Circle Arrow
+    actionCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(139,92,246,0.15)' : '#F3E8FF',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
