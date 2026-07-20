@@ -230,9 +230,23 @@ async function run() {
 try {
   await run();
 } catch (error) {
-  console.error(
-    `Passwordless migration preflight failed: ${error instanceof Error ? error.message : String(error)}`,
-  );
+  const code = error && typeof error === "object" && "code" in error
+    ? String(error.code)
+    : "UNKNOWN";
+  const connectionCodes = new Set([
+    "ENOTFOUND",
+    "ETIMEDOUT",
+    "ECONNREFUSED",
+    "EHOSTUNREACH",
+    "ENETUNREACH",
+  ]);
+  if (connectionCodes.has(code)) {
+    console.error(
+      `Passwordless migration preflight could not connect to the configured database (${code}). Verify the staging direct URL and network access.`,
+    );
+  } else {
+    console.error(`Passwordless migration preflight failed (${code}).`);
+  }
   process.exitCode = 2;
 } finally {
   await client.end().catch(() => undefined);

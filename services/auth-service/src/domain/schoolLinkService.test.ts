@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  approveSchoolLinkRequest,
   cancelSchoolLinkRequest,
+  rejectSchoolLinkRequest,
   submitSchoolLinkRequest,
   unlinkSchoolLinkRequest,
 } from "./schoolLinkService";
@@ -147,4 +149,95 @@ test("unlink increments access version and preserves the roster pointers outside
   assert.deepEqual(userUpdate.data.schoolAccessVersion, { increment: 1 });
   assert.equal(claimUpdate.data.isActive, false);
   assert.equal(claimUpdate.data.revokedBy, "admin-1");
+});
+
+test("school-scoped admins cannot approve a request from another school", async () => {
+  let userUpdateCalls = 0;
+  const prisma = {
+    $transaction: async (callback: any) => callback(prisma),
+    schoolLinkRequest: {
+      findUnique: async () => ({ id: "request-1", status: "PENDING", schoolId: "school-1" }),
+    },
+    user: { update: async () => { userUpdateCalls += 1; return {}; } },
+  };
+
+  await assert.rejects(
+    () => approveSchoolLinkRequest(prisma as any, "request-1", {
+      userId: "admin-2",
+      role: "ADMIN",
+      schoolId: "school-2",
+    }),
+    (error: any) => error.code === "SCHOOL_LINK_WRONG_SCHOOL" && error.statusCode === 403,
+  );
+  assert.equal(userUpdateCalls, 0);
+});
+
+test("unlink requires an explicit user confirmation before mutating state", async () => {
+  let requestUpdateCalls = 0;
+  let userUpdateCalls = 0;
+  let claimUpdateCalls = 0;
+  const request = {
+    id: "request-1",
+    userId: "user-1",
+    schoolId: "school-1",
+    claimCodeId: "claim-1",
+    studentId: "student-1",
+    teacherId: null,
+    status: "APPROVED",
+    user: {
+      id: "user-1",
+      schoolId: "school-1",
+      studentId: "student-1",
+      teacherId: null,
+      schoolAccessVersion: 2,
+    },
+    school: { id: "school-1", name: "School" },
+    claimCode: { id: "claim-1", type: "STUDENT", verificationData: null },
+  };
+  const prisma = {
+    $transaction: async (callback: any) => callback(prisma),
+    schoolLinkRequest: {
+      findUnique: async () => request,
+      updateMany: async () => { requestUpdateCalls += 1; return { count: 1 }; },
+    },
+    user: { update: async () => { userUpdateCalls += 1; return {}; } },
+    claimCode: { update: async () => { claimUpdateCalls += 1; return {}; } },
+  };
+
+  await assert.rejects(
+    () => unlinkSchoolLinkRequest(prisma as any, "request-1", {
+      userId: "admin-1",
+      role: "ADMIN",
+      schoolId: "school-1",
+    }, {
+      reason: "Wrong school selected",
+      expectedUserId: "another-user",
+      expectedStudentId: "student-1",
+      reissueClaimCode: false,
+    }),
+    (error: any) => error.code === "UNLINK_CONFIRMATION_MISMATCH" && error.statusCode === 409,
+  );
+  assert.equal(requestUpdateCalls, 0);
+  assert.equal(userUpdateCalls, 0);
+  assert.equal(claimUpdateCalls, 0);
+});
+
+test("rejecting a school-link request requires a non-empty audit reason", async () => {
+  let transactionCalls = 0;
+  const prisma = {
+    $transaction: async (callback: any) => {
+      transactionCalls += 1;
+      return callback(prisma);
+    },
+  };
+
+  await assert.rejects(
+    () => rejectSchoolLinkRequest(prisma as any, "request-1", {
+      userId: "admin-1",
+      role: "ADMIN",
+      schoolId: "school-1",
+    }, "  "),
+    (error: any) => error.code === "SCHOOL_LINK_REASON_REQUIRED" && error.statusCode === 400,
+  );
+  assert.equal(transactionCalls, 0);
 });
