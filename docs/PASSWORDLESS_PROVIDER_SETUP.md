@@ -101,18 +101,20 @@ and Auth Token as secrets ([credential guidance](https://help.twilio.com/article
 
 ## Staging checklist before enabling the flag
 
-1. Apply the Phase 2 Prisma migration in the staging database using the normal
+1. Run `DIRECT_URL="<staging-direct-url>" npm run db:passwordless-preflight`
+   and resolve every blocker. See `docs/PASSWORDLESS_STAGING_RUNBOOK.md`.
+2. Apply the Phase 2 Prisma migration in the staging database using the normal
    migration pipeline (never `db push` against a shared/prod database).
-2. Configure a shared Redis URL and a unique `OTP_HMAC_SECRET`.
-3. Configure Telegram Gateway and/or the approved SMS bridge. For broad rollout,
+3. Configure a shared Redis URL and a unique `OTP_HMAC_SECRET`.
+4. Configure Telegram Gateway and/or the approved SMS bridge. For broad rollout,
    keep an SMS fallback available when Telegram cannot deliver.
-4. Set `EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED` and
+5. Set `EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED` and
    `NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED` only in the corresponding staging
    build environments.
-5. Test: new phone → OTP → General Account enrollment; existing verified phone
+6. Test: new phone → OTP → General Account enrollment; existing verified phone
    → sign-in; wrong-code lockout; resend cooldown; Telegram unavailable → SMS;
    and no OTP/code/token appears in logs.
-6. Monitor delivery failures, rate-limit events, and `OtpAuthAuditEvent` records
+7. Monitor delivery failures, rate-limit events, and `OtpAuthAuditEvent` records
    before expanding the pilot.
 
 ## Safe rollback

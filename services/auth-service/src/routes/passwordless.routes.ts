@@ -45,6 +45,17 @@ function requestId(): string {
   return `req_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
+function publicPendingLinkData(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const data = value as Record<string, unknown>;
+  return {
+    schoolId: typeof data.schoolId === "string" ? data.schoolId : null,
+    schoolName: typeof data.schoolName === "string" ? data.schoolName : null,
+    type: typeof data.type === "string" ? data.type : null,
+    submittedAt: typeof data.submittedAt === "string" ? data.submittedAt : null,
+  };
+}
+
 function issueTokens(user: {
   id: string;
   email: string | null;
@@ -81,7 +92,11 @@ function publicUser(user: any) {
     accountType: user.accountType,
     schoolId: user.schoolId,
     linkingStatus: user.linkingStatus,
-    pendingLinkData: user.pendingLinkData,
+    // The legacy projection can contain a plaintext claim code and roster
+    // identifiers. Keep the user-facing response limited to status metadata;
+    // claim preview/confirmation must go through the authenticated school-link
+    // service instead.
+    pendingLinkData: publicPendingLinkData(user.pendingLinkData),
     profilePictureUrl: user.profilePictureUrl,
   };
 }

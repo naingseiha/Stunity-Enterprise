@@ -25,6 +25,7 @@
     "db:generate": "npx prisma generate --schema=packages/database/prisma/schema.prisma",
     "db:push": "tsx scripts/db-safety-check.ts && cd packages/database && npx prisma db push",
     "db:migrate": "tsx scripts/db-safety-check.ts && cd packages/database && npx prisma migrate dev",
+    "db:passwordless-preflight": "node scripts/testing/passwordless-migration-preflight.mjs",
     "deploy:list-changed-services": "bash scripts/list-changed-cloud-run-services.sh",
     "check:prisma-singleton": "bash scripts/check-prisma-singleton.sh",
     "seed:all": "tsx scripts/db-safety-check.ts && cd packages/database && npx prisma db seed && cd ../.. && npm run seed:test-data && npm run seed:school-management",
