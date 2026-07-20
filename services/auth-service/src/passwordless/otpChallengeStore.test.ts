@@ -91,3 +91,24 @@ test("known users are rate limited across changing phone destinations", async ()
     { code: "OTP_RATE_LIMITED" },
   );
 });
+
+test("OTP starts are rate limited across an abusive IP subnet", async () => {
+  const store = createMemoryOtpChallengeStoreForTests();
+  for (let attempt = 1; attempt <= 50; attempt += 1) {
+    await store.assertStartAllowed({
+      destinationHash: `subnet-phone-${attempt}`,
+      deviceId: `subnet-device-${attempt}`,
+      ipAddress: `198.51.100.${attempt}`,
+      purpose: "SIGN_IN",
+    });
+  }
+  await assert.rejects(
+    () => store.assertStartAllowed({
+      destinationHash: "subnet-phone-51",
+      deviceId: "subnet-device-51",
+      ipAddress: "198.51.100.51",
+      purpose: "SIGN_IN",
+    }),
+    { code: "OTP_RATE_LIMITED" },
+  );
+});

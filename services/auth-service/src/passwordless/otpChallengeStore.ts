@@ -3,6 +3,7 @@ import type Redis from "ioredis";
 import { getSharedAuthRedis } from "../security/rateLimitStore";
 import { hashLimitKey } from "./otpCrypto";
 import type { VerificationChannel } from "./verificationProvider";
+import { clientSubnetBucket } from "../security/networkIdentifiers";
 
 export type OtpChallenge = {
   id: string;
@@ -79,6 +80,7 @@ class RedisOtpChallengeStore implements OtpChallengeStore {
       ...(input.userId ? [[`user:${hashLimitKey(input.userId)}`, 5, 60 * 60] as const] : []),
       [`device:${hashLimitKey(input.deviceId)}`, 10, 60 * 60],
       [`ip:${hashLimitKey(input.ipAddress)}`, 20, 60 * 60],
+      [`subnet:${hashLimitKey(clientSubnetBucket(input.ipAddress))}`, 50, 60 * 60],
     ] as const;
     for (const [key, max, ttlSeconds] of limits) {
       const count = Number(await this.redis.eval(
@@ -214,6 +216,7 @@ class MemoryOtpChallengeStore implements OtpChallengeStore {
       ...(input.userId ? [[`user:${hashLimitKey(input.userId)}`, 5] as [string, number]] : []),
       [`device:${hashLimitKey(input.deviceId)}`, 10],
       [`ip:${hashLimitKey(input.ipAddress)}`, 20],
+      [`subnet:${hashLimitKey(clientSubnetBucket(input.ipAddress))}`, 50],
     ];
     for (const [key, max] of entries) {
       const now = Date.now();

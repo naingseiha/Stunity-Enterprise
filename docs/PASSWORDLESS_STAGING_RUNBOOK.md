@@ -127,7 +127,9 @@ fallback, and budget events before restoring the pilot.
 ### Suspicious OTP traffic
 
 Disable the passwordless flag, preserve the audit rows, and review aggregate
-counts by channel, reason code, IP, and destination hash. Never export raw
+counts by channel, reason code, IP, subnet bucket, and destination hash. OTP
+start limits group IPv4 clients by `/24` and IPv6 clients by `/64`, and persist
+only hashed network keys in shared Redis. Never export raw
 destinations or OTP content to tickets or dashboards.
 
 ### Lost or changed phone
