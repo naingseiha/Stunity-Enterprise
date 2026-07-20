@@ -52,6 +52,7 @@ export type RootStackParamList = {
   Comments: { postId: string; postType?: string };
   ImageViewer: { images: string[]; initialIndex?: number };
   ForceChangePassword: undefined;
+  SchoolClaim: { claimCode?: string; code?: string } | undefined;
 };
 
 // Main Stack (for screens outside tabs)

@@ -110,6 +110,26 @@ Inspect `verified_contacts` and `otp_auth_audit_events` using a read-only suppor
 role. Confirm audit metadata contains no OTP value, provider token, refresh
 token, plaintext claim code, or full destination.
 
+### Claim deep-link QA
+
+Use a non-production Claim Code in either supported shape:
+
+- `stunity://claim/STNT-XXXX-XXXX`
+- `stunity://claim?code=STNT-XXXX-XXXX`
+- `https://stunity.app/claim/STNT-XXXX-XXXX`
+- `https://stunity.app/claim?code=STNT-XXXX-XXXX`
+
+The client stores only the normalized Claim Code and timestamps in encrypted
+device storage, expires it after 15 minutes, and resumes masked confirmation
+after authentication or app restart. Confirm that **Cancel and continue without
+linking** clears the saved Claim Code and enters the General Account without
+submitting a school-link request.
+
+The custom `stunity://` scheme is the staging-safe test path. HTTPS Universal/App
+Links require the deployed `apple-app-site-association` and `assetlinks.json`
+files to authorize `/claim`; the mobile configuration alone does not activate
+the web-domain association.
+
 ## 5. Operational response
 
 ### Telegram unavailable or balance exhausted

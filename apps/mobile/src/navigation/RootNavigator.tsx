@@ -4,8 +4,8 @@
  * Main navigation structure for the app
  */
 
-import React from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from 'react';
+import { NavigationContainer, DefaultTheme, DarkTheme, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar, View, Text, ActivityIndicator } from 'react-native';
 
@@ -20,7 +20,8 @@ import MainNavigator from './MainNavigator';
 import ParentNavigator from './ParentNavigator';
 
 // Import screens
-import { ForceChangePasswordScreen } from '@/screens/auth';
+import { ForceChangePasswordScreen, SchoolClaimContinuationScreen } from '@/screens/auth';
+import { getPendingSchoolClaim } from '@/services/pendingSchoolClaim';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -51,6 +52,33 @@ const RootNavigator: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const isParent = user?.role === 'PARENT';
   const mustChangePassword = isAuthenticated && user?.isDefaultPassword;
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const [navigationReady, setNavigationReady] = useState(false);
+  const lastResumeKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!navigationReady || !isInitialized || mustChangePassword) return;
+    let active = true;
+    const resumePendingClaim = async () => {
+      const pending = await getPendingSchoolClaim();
+      if (!active || !pending) return;
+      const resumeKey = `${pending.expiresAt}:${isAuthenticated ? 'authenticated' : 'anonymous'}`;
+      if (lastResumeKeyRef.current === resumeKey) return;
+      lastResumeKeyRef.current = resumeKey;
+
+      if (isAuthenticated) {
+        if (navigationRef.getCurrentRoute()?.name !== 'SchoolClaim') {
+          navigationRef.navigate('SchoolClaim', { claimCode: pending.code });
+        }
+      } else {
+        navigationRef.navigate('Auth', { screen: 'Register' });
+      }
+    };
+    void resumePendingClaim();
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, isInitialized, mustChangePassword, navigationReady, navigationRef]);
 
   // Show loading while initializing
   if (!isInitialized) {
@@ -101,12 +129,20 @@ const RootNavigator: React.FC = () => {
             },
           },
         },
+        SchoolClaim: {
+          path: 'claim/:claimCode?',
+        },
       },
     } as any,
   };
 
   return (
-    <NavigationContainer theme={createNavigationTheme(colors, isDark)} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={createNavigationTheme(colors, isDark)}
+      linking={linking}
+      onReady={() => setNavigationReady(true)}
+    >
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
@@ -133,6 +169,11 @@ const RootNavigator: React.FC = () => {
             component={MainStackScreen}
           />
         )}
+        <Stack.Screen
+          name="SchoolClaim"
+          component={SchoolClaimContinuationScreen}
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

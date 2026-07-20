@@ -461,6 +461,30 @@
       "enrollmentErrorTitle": "Account setup failed",
       "enrollmentErrorBody": "Unable to finish account setup."
     },
+    "schoolClaim": {
+      "preparing": "Preparing your secure school link…",
+      "title": "Confirm your school profile",
+      "subtitle": "Your General Account is ready. Review the masked school record before submitting a link request.",
+      "school": "School",
+      "role": "Role",
+      "roles": {
+        "student": "Student",
+        "teacher": "Teacher",
+        "staff": "Staff",
+        "parent": "Parent"
+      },
+      "profile": "Profile",
+      "class": "Class",
+      "unknownSchool": "School",
+      "confirm": "Confirm and request school link",
+      "cancel": "Cancel and continue without linking",
+      "continue": "Continue to Stunity",
+      "successTitle": "Request submitted",
+      "successBody": "Your General Account remains available while a school administrator reviews the link request.",
+      "invalidOrExpired": "This Claim Code is invalid or the saved link session has expired. Scan the school's QR code again.",
+      "previewFailed": "Unable to load the masked school profile.",
+      "submitFailed": "Unable to submit the school link request."
+    },
     "parentLogin": {
       "title": "Sign in to Parent Portal",
       "enterPhonePassword": "Please enter your phone number and password",

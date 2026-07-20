@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.stunity.mobile",
       "buildNumber": "12",
-      "_comment_associatedDomains": "Universal Links for shared post/reel URLs (https://stunity.app/posts/:id). REQUIRES the site to host /.well-known/apple-app-site-association for appID <TEAM_ID>.app.stunity.mobile — until that file is live, https links open in Safari, not the app. The stunity:// scheme works without it.",
+      "_comment_associatedDomains": "Universal Links for shared post/reel and school Claim URLs. REQUIRES the site to host /.well-known/apple-app-site-association for appID <TEAM_ID>.app.stunity.mobile — until that file is live, https links open in Safari, not the app. The stunity:// scheme works without it.",
       "associatedDomains": [
         "applinks:stunity.app",
         "applinks:www.stunity.app"
@@ -57,7 +57,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "_comment_intentFilters": "App Links for shared post/reel URLs. autoVerify REQUIRES the site to host /.well-known/assetlinks.json with this package + signing cert SHA256 — until that file is live, links open in the browser (or show a chooser). The stunity:// scheme works without it.",
+      "_comment_intentFilters": "App Links for shared post/reel and school Claim URLs. autoVerify REQUIRES the site to host /.well-known/assetlinks.json with this package + signing cert SHA256 — until that file is live, links open in the browser (or show a chooser). The stunity:// scheme works without it.",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -72,6 +72,16 @@
               "scheme": "https",
               "host": "www.stunity.app",
               "pathPrefix": "/posts"
+            },
+            {
+              "scheme": "https",
+              "host": "stunity.app",
+              "pathPrefix": "/claim"
+            },
+            {
+              "scheme": "https",
+              "host": "www.stunity.app",
+              "pathPrefix": "/claim"
             }
           ],
           "category": [

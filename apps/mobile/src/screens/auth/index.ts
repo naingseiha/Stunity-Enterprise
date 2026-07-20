@@ -12,4 +12,5 @@ export { default as ForceChangePasswordScreen } from './ForceChangePasswordScree
 export { default as ParentLoginScreen } from './ParentLoginScreen';
 export { default as ParentRegisterScreen } from './ParentRegisterScreen';
 export { default as ClaimCodeSetupScreen } from './ClaimCodeSetupScreen';
+export { default as SchoolClaimContinuationScreen } from './SchoolClaimContinuationScreen';
 export { default as PasswordlessAuthScreen } from './PasswordlessAuthScreen';
