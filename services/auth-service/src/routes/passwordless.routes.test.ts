@@ -15,6 +15,7 @@ test("new phone is verified before enrollment and no empty User is created", asy
 
   let deliveredCode = "";
   let userCreateCalls = 0;
+  const auditEvents: any[] = [];
   const telegram: VerificationChannelProvider = {
     channel: "TELEGRAM",
     canSend: async () => ({ available: true }),
@@ -24,7 +25,7 @@ test("new phone is verified before enrollment and no empty User is created", asy
     },
   };
   const prisma = {
-    otpAuthAuditEvent: { create: async ({ data }: any) => ({ id: "audit", ...data }) },
+    otpAuthAuditEvent: { create: async ({ data }: any) => { auditEvents.push(data); return { id: "audit", ...data }; } },
     verifiedContact: { findUnique: async () => null },
     user: { create: async () => { userCreateCalls += 1; return {}; } },
   };
@@ -63,6 +64,9 @@ test("new phone is verified before enrollment and no empty User is created", asy
   assert.equal(started.data.channel, "TELEGRAM");
   assert.match(deliveredCode, /^\d{6}$/);
   assert.equal(userCreateCalls, 0);
+  assert.deepEqual(auditEvents.map((event) => event.eventType), ["REQUESTED", "SENT"]);
+  assert.ok(auditEvents.every((event) => !JSON.stringify(event).includes(deliveredCode)));
+  assert.ok(auditEvents.every((event) => event.destinationHash !== "+85512123456"));
 
   const verifyResponse = await fetch(`${baseUrl}/otp/verify`, {
     method: "POST",
@@ -74,4 +78,5 @@ test("new phone is verified before enrollment and no empty User is created", asy
   assert.equal(verified.data.status, "ENROLLMENT_REQUIRED");
   assert.ok(verified.data.enrollmentToken);
   assert.equal(userCreateCalls, 0);
+  assert.equal(auditEvents[auditEvents.length - 1]?.eventType, "VERIFIED");
 });
