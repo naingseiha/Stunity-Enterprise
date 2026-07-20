@@ -321,7 +321,16 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('en.json'\\)\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('km.json'\\)\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('apps/mobile/src/assets/locales/en.json'\\)\\)\")",
-      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('apps/mobile/src/assets/locales/km.json'\\)\\)\")"
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('apps/mobile/src/assets/locales/km.json'\\)\\)\")",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise diff --stat)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise diff -- apps/mobile/src/screens/learn/path/ExamPaperBrowseScreen.tsx)",
+      "Bash(git -C /Users/naingseiha/Documents/projects/Stunity-Enterprise status --porcelain)",
+      "Bash(dig +short aws-1-ap-southeast-2.pooler.supabase.com)",
+      "Bash(command -v psql)",
+      "Bash(xargs -I{} sh -c 'echo \"== {} ==\"; grep -E \"SUPABASE_URL|DATABASE_URL\" {}')",
+      "Bash(host mwqdsxbxqlkrahoyqqox.supabase.co)",
+      "Bash(dig @8.8.8.8 +short mwqdsxbxqlkrahoyqqox.supabase.co)",
+      "Bash(env)"
     ]
   }
 }
