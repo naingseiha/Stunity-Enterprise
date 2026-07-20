@@ -5,9 +5,10 @@ import { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { LogIn, AlertCircle, School, UserPlus } from 'lucide-react';
+import { LogIn, School, UserPlus } from 'lucide-react';
 import { login, TokenManager } from '@/lib/api/auth';
 import PasswordlessAuthCard from '@/components/auth/PasswordlessAuthCard';
+import { getAuthRedirectPath } from '@/lib/auth/redirect';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
@@ -25,38 +26,12 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const getRedirectPath = (
-    user: { role?: string; isSuperAdmin?: boolean },
-    school?: { id?: string; registrationStatus?: string | null } | null
-  ) => {
-    if (user?.isSuperAdmin || user?.role === 'SUPER_ADMIN') return `/${locale}/super-admin`;
-    const isPendingSchoolAdmin =
-      school?.registrationStatus === 'PENDING' &&
-      (user?.role === 'ADMIN' || user?.role === 'STAFF');
-    if (isPendingSchoolAdmin) {
-      return `/${locale}/onboarding${school?.id ? `?schoolId=${school.id}` : ''}`;
-    }
-    switch (user?.role) {
-      case 'SUPER_ADMIN':
-        return `/${locale}/super-admin`;
-      case 'PARENT':
-        return `/${locale}/parent`;
-      case 'STUDENT':
-        return `/${locale}/student`;
-      case 'TEACHER':
-      case 'ADMIN':
-      case 'STAFF':
-      default:
-        return `/${locale}/feed`;
-    }
-  };
-
   useEffect(() => {
     const checkAuth = () => {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
       if (token && userData.user) {
-        router.replace(getRedirectPath(userData.user, userData.school));
+        router.replace(getAuthRedirectPath(locale, userData.user, userData.school));
       }
     };
     checkAuth();
@@ -79,7 +54,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
         if (data.success && data.data?.tokens && data.data?.user) {
           TokenManager.setTokens(data.data.tokens.accessToken, data.data.tokens.refreshToken);
           TokenManager.setUserData(data.data.user, data.data.school);
-          window.location.href = getRedirectPath(data.data.user, data.data.school);
+          window.location.href = getAuthRedirectPath(locale, data.data.user, data.data.school);
         } else {
           setError(data.error || 'SSO login failed');
           setLoading(false);
@@ -97,7 +72,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
     process.env.NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED === 'true' &&
     searchParams?.get('method') !== 'password'
   ) {
-    return <PasswordlessAuthCard locale={locale} redirectForUser={getRedirectPath} />;
+    return <PasswordlessAuthCard locale={locale} entry="login" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,7 +93,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
         TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
         TokenManager.setUserData(response.user, response.school);
         await new Promise((resolve) => setTimeout(resolve, 200));
-        window.location.href = getRedirectPath(response.user, response.school as any);
+        window.location.href = getAuthRedirectPath(locale, response.user, response.school as any);
         return;
       }
       setError(response.message || t('error'));
@@ -192,7 +167,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
               </button>
 
               <Link
-                href={`/${locale}/auth/choose-role`}
+                href={`/${locale}/auth/register`}
                 className="w-full py-4 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 rounded-full font-bold shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.98] border border-slate-200 dark:border-gray-700"
               >
                 <UserPlus className="w-4 h-4 text-stunity-primary-600 dark:text-stunity-primary-400" />
