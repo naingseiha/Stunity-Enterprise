@@ -122,7 +122,8 @@
       "expo-localization",
       "expo-notifications",
       "expo-video",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "./plugins/withFmtConstevalFix.js"
     ],
     "extra": {
       "eas": {
