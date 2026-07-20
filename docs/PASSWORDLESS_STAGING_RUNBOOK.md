@@ -26,6 +26,11 @@ exits non-zero when any of these would make the Phase 1/2 migration unsafe:
 Resolve blockers and rerun the check. The script never prints phone numbers,
 claim codes, user IDs, or school names.
 
+If a legacy user-id admin endpoint returns
+`SCHOOL_LINK_NORMALIZATION_REQUIRED`, do not approve or reject by editing
+`users.pendingLinkData`. Run the preflight, repair/backfill the normalized
+`SchoolLinkRequest`, and then retry through the same compatibility endpoint.
+
 ## 2. Apply the migrations
 
 After preflight is clean, use the normal migration pipeline with the staging
