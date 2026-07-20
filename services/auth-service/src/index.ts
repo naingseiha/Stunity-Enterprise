@@ -25,6 +25,7 @@ import { createSharedRateLimitStore } from './security/rateLimitStore';
 import { assertPasswordlessProductionConfig, buildPasswordlessReadiness } from './passwordless/providerConfig';
 import { createStructuredAuthMetrics } from './observability/authOperationalMetrics';
 import { requireNormalizedSchoolLinkRequestId } from './domain/legacySchoolLinkAdapter';
+import { publicPendingLinkData } from './security/publicAuthResponse';
 import {
   SchoolLinkError,
   approveSchoolLinkRequest,
@@ -289,24 +290,6 @@ function resolveSchoolAccessContext(
     accessScope: 'FULL',
     canUseHighRiskFeatures: true,
   };
-}
-
-async function findPendingUserForClaimCode(code: string, excludeUserId?: string): Promise<{ id: string } | null> {
-  const pendingUsers = await prisma.user.findMany({
-    where: {
-      linkingStatus: 'PENDING',
-      ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
-    },
-    select: {
-      id: true,
-      pendingLinkData: true,
-    },
-  });
-
-  return pendingUsers.find((user) => {
-    const data = user.pendingLinkData as any;
-    return typeof data?.code === 'string' && data.code.toUpperCase() === code.toUpperCase();
-  }) || null;
 }
 
 // ─── Brute Force Protection ──────────────────────────────────────────
@@ -1069,7 +1052,7 @@ app.post(
             teacher: user.teacherId ? { id: user.teacherId } : null,
             isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
             linkingStatus: user.linkingStatus,
-            pendingLinkData: user.pendingLinkData,
+            pendingLinkData: publicPendingLinkData(user.pendingLinkData),
           },
           school: schoolPayload,
           accessScope: schoolAccess.accessScope,
@@ -2263,7 +2246,7 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
         schoolId: user.schoolId,
         accountType: user.accountType,
         linkingStatus: user.linkingStatus,
-        pendingLinkData: user.pendingLinkData,
+        pendingLinkData: publicPendingLinkData(user.pendingLinkData),
         schoolAccessVersion: user.schoolAccessVersion,
         teacherId: user.teacherId,
         studentId: user.studentId,
@@ -3536,7 +3519,10 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       });
     }
 
-    const pendingForCode = await findPendingUserForClaimCode((claimCode as any).code);
+    const pendingForCode = await prisma.schoolLinkRequest.findFirst({
+      where: { claimCodeId: claimCode.id, status: 'PENDING' },
+      select: { id: true },
+    });
     if (pendingForCode) {
       return res.status(409).json({
         success: false,
@@ -3592,8 +3578,11 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const authorization = publicRegistrationAuthorization();
 
-    // Create user and submit pending school link in transaction. Admin approval applies the school link.
+    // The durable General Account is created first. School-link state is then
+    // submitted through the normalized domain service, which owns dual-write,
+    // reservation, audit, and concurrency rules.
     const result = await prisma.$transaction(async (tx) => {
       // Create user
       const claimUsername = await generateUniqueUsername(tx, firstName, lastName);
@@ -3605,22 +3594,12 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           firstName,
           lastName,
           phone: normalizedPhone,
-          accountType: 'HYBRID',
-          // Pending claims never grant school role, organization, or school authorization.
-          role: 'STUDENT',
+          accountType: authorization.accountType,
+          role: authorization.role,
           socialFeaturesEnabled: true,
           isEmailVerified: false,
-          linkingStatus: 'PENDING',
-          pendingLinkData: {
-            code: (claimCode as any).code,
-            schoolId: claimCode.school.id,
-            schoolName: claimCode.school.name,
-            type: claimCode.type,
-            studentId: claimCode.studentId || null,
-            teacherId: claimCode.teacherId || null,
-            submittedAt: new Date().toISOString(),
-            verificationData: verificationData || null,
-          } as any,
+          linkingStatus: 'NONE',
+          pendingLinkData: null,
         },
       });
 
@@ -3629,7 +3608,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
 
     // Keep this legacy endpoint compatible while routing its school-link state
     // through the normalized lifecycle and audit trail.
-    await submitSchoolLinkRequest(prisma, result.id, code, verificationData, { ipAddress: req.ip });
+    const linkResult = await submitSchoolLinkRequest(prisma, result.id, code, verificationData, { ipAddress: req.ip });
     authOperationalMetrics.increment('school_link_submitted_total');
 
     // Generate tokens using the same claim shape as normal login.
@@ -3664,8 +3643,12 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           accountType: result.accountType,
           profilePictureUrl: result.profilePictureUrl,
           schoolId: null,
-          linkingStatus: result.linkingStatus,
-          pendingLinkData: result.pendingLinkData,
+          linkingStatus: linkResult.linkingStatus,
+          pendingLinkData: publicPendingLinkData({
+            schoolId: linkResult.school.id,
+            schoolName: linkResult.school.name,
+            type: claimCode.type,
+          }),
         },
         school: null,
         pendingSchool: {

@@ -26,6 +26,7 @@ import {
   createStructuredAuthMetrics,
   type AuthOperationalMetrics,
 } from "../observability/authOperationalMetrics";
+import { publicPendingLinkData } from "../security/publicAuthResponse";
 
 type PasswordlessRouteOptions = {
   jwtSecret: string;
@@ -48,17 +49,6 @@ function maskPhone(phone: string): string {
 
 function requestId(): string {
   return `req_${crypto.randomUUID().replace(/-/g, "")}`;
-}
-
-function publicPendingLinkData(value: unknown) {
-  if (!value || typeof value !== "object") return null;
-  const data = value as Record<string, unknown>;
-  return {
-    schoolId: typeof data.schoolId === "string" ? data.schoolId : null,
-    schoolName: typeof data.schoolName === "string" ? data.schoolName : null,
-    type: typeof data.type === "string" ? data.type : null,
-    submittedAt: typeof data.submittedAt === "string" ? data.submittedAt : null,
-  };
 }
 
 function issueTokens(user: {
