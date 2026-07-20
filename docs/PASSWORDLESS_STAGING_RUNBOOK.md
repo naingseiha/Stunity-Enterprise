@@ -106,6 +106,12 @@ With provider delivery enabled only in the isolated pilot cohort, verify:
 7. After unlink, the General Account and academic records remain, while school
    access is invalidated.
 
+For the new authenticated school-link flow, the client calls
+`POST /auth/claim-codes/preview` after login and receives only masked roster
+confirmation fields. `POST /auth/claim-codes/validate` remains available solely
+as a rate-limited compatibility adapter for already-released unauthenticated
+claim scanners; do not use it for new UI flows.
+
 Inspect `verified_contacts` and `otp_auth_audit_events` using a read-only support
 role. Confirm audit metadata contains no OTP value, provider token, refresh
 token, plaintext claim code, or full destination.
