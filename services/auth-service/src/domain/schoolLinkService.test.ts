@@ -241,3 +241,117 @@ test("rejecting a school-link request requires a non-empty audit reason", async 
   );
   assert.equal(transactionCalls, 0);
 });
+
+test("approval dual-writes an active membership when the rollout flag is enabled", async (t) => {
+  const previousFlag = process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED;
+  process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED = "true";
+  t.after(() => {
+    if (previousFlag === undefined) delete process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED;
+    else process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED = previousFlag;
+  });
+
+  let membershipUpsert: any;
+  const request = {
+    id: "request-1",
+    userId: "user-1",
+    schoolId: "school-1",
+    claimCodeId: "claim-1",
+    studentId: "student-1",
+    teacherId: null,
+    requestedRole: "STUDENT",
+    status: "PENDING",
+    user: { id: "user-1", schoolId: null },
+    school: { id: "school-1", name: "School" },
+    claimCode: {
+      id: "claim-1",
+      schoolId: "school-1",
+      studentId: "student-1",
+      teacherId: null,
+      isActive: true,
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      claimedAt: null,
+      claimedByUserId: null,
+    },
+  };
+  const prisma = {
+    $transaction: async (callback: any) => callback(prisma),
+    schoolLinkRequest: {
+      findUnique: async () => request,
+      updateMany: async () => ({ count: 1 }),
+    },
+    student: { findFirst: async () => ({ id: "student-1", user: null }) },
+    claimCode: { updateMany: async () => ({ count: 1 }) },
+    schoolMembership: {
+      upsert: async (args: any) => { membershipUpsert = args; return {}; },
+    },
+    user: { update: async () => ({}) },
+    schoolLinkAuditEvent: { create: async () => ({}) },
+  };
+
+  await approveSchoolLinkRequest(prisma as any, "request-1", {
+    userId: "admin-1",
+    role: "ADMIN",
+    schoolId: "school-1",
+  });
+
+  assert.deepEqual(membershipUpsert.where, {
+    userId_schoolId: { userId: "user-1", schoolId: "school-1" },
+  });
+  assert.equal(membershipUpsert.create.status, "ACTIVE");
+  assert.equal(membershipUpsert.create.linkRequestId, "request-1");
+  assert.equal(membershipUpsert.update.unlinkedAt, null);
+});
+
+test("unlink refuses to drift legacy state when the active membership is missing", async (t) => {
+  const previousFlag = process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED;
+  process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED = "true";
+  t.after(() => {
+    if (previousFlag === undefined) delete process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED;
+    else process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED = previousFlag;
+  });
+
+  let userUpdateCalls = 0;
+  const request = {
+    id: "request-1",
+    userId: "user-1",
+    schoolId: "school-1",
+    claimCodeId: "claim-1",
+    studentId: "student-1",
+    teacherId: null,
+    status: "APPROVED",
+    user: {
+      id: "user-1",
+      schoolId: "school-1",
+      studentId: "student-1",
+      teacherId: null,
+      schoolAccessVersion: 1,
+    },
+    school: { id: "school-1", name: "School" },
+    claimCode: { id: "claim-1", type: "STUDENT", verificationData: null },
+  };
+  const prisma = {
+    $transaction: async (callback: any) => callback(prisma),
+    schoolLinkRequest: {
+      findUnique: async () => request,
+      updateMany: async () => ({ count: 1 }),
+    },
+    schoolMembership: { updateMany: async () => ({ count: 0 }) },
+    user: { update: async () => { userUpdateCalls += 1; return {}; } },
+  };
+
+  await assert.rejects(
+    () => unlinkSchoolLinkRequest(prisma as any, "request-1", {
+      userId: "admin-1",
+      role: "ADMIN",
+      schoolId: "school-1",
+    }, {
+      reason: "Wrong school selected",
+      expectedUserId: "user-1",
+      expectedStudentId: "student-1",
+      reissueClaimCode: false,
+    }),
+    (error: any) => error.code === "SCHOOL_MEMBERSHIP_CONFLICT" && error.statusCode === 409,
+  );
+  assert.equal(userUpdateCalls, 0);
+});

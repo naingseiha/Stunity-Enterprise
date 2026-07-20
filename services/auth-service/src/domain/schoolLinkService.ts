@@ -44,6 +44,10 @@ function requestedRoleForClaim(type: ClaimCodeType): UserRole {
   return "PARENT";
 }
 
+function membershipWritesEnabled(): boolean {
+  return process.env.AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED === "true";
+}
+
 function normalizeReason(rawReason: unknown, fieldName: string): string {
   const reason = typeof rawReason === "string" ? rawReason.trim() : "";
   if (reason.length < 3) {
@@ -364,6 +368,31 @@ export async function approveSchoolLinkRequest(
       });
       if (requestChanged.count !== 1) throw new SchoolLinkError("Request changed before approval", 409, "SCHOOL_LINK_CONFLICT");
 
+      if (membershipWritesEnabled()) {
+        await tx.schoolMembership.upsert({
+          where: { userId_schoolId: { userId: request.userId, schoolId: request.schoolId } },
+          create: {
+            userId: request.userId,
+            schoolId: request.schoolId,
+            studentId: request.studentId,
+            teacherId: request.teacherId,
+            role: request.requestedRole,
+            status: "ACTIVE",
+            linkedAt: now,
+            linkRequestId: request.id,
+          },
+          update: {
+            studentId: request.studentId,
+            teacherId: request.teacherId,
+            role: request.requestedRole,
+            status: "ACTIVE",
+            linkedAt: now,
+            unlinkedAt: null,
+            linkRequestId: request.id,
+          },
+        });
+      }
+
       await tx.user.update({
         where: { id: request.userId },
         data: {
@@ -521,6 +550,24 @@ export async function unlinkSchoolLinkRequest(
         },
       });
       if (changed.count !== 1) throw new SchoolLinkError("Link changed before unlink", 409, "SCHOOL_LINK_CONFLICT");
+
+      if (membershipWritesEnabled()) {
+        const membershipChanged = await tx.schoolMembership.updateMany({
+          where: {
+            userId: request.userId,
+            schoolId: request.schoolId,
+            status: "ACTIVE",
+          },
+          data: { status: "UNLINKED", unlinkedAt: now },
+        });
+        if (membershipChanged.count !== 1) {
+          throw new SchoolLinkError(
+            "Active school membership is missing or changed",
+            409,
+            "SCHOOL_MEMBERSHIP_CONFLICT",
+          );
+        }
+      }
 
       // Clear only the account pointers. Student/teacher rows and academic records
       // remain untouched and can be safely claimed by a corrected General Account.

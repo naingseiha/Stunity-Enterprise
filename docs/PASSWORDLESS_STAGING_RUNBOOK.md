@@ -69,6 +69,7 @@ approved:
 PASSWORDLESS_AUTH_ENABLED="false"
 AUTH_STRUCTURED_METRICS_ENABLED="false"
 AUTH_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED="false"
+AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED="false"
 EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 NEXT_PUBLIC_PASSWORDLESS_AUTH_ENABLED="false"
 ```
@@ -87,6 +88,10 @@ After the Phase 5 migration is applied, enable
 `AUTH_SCHOOL_MEMBERSHIP_DUAL_READ_ENABLED="true"` in staging only. This keeps
 legacy authorization authoritative while emitting bounded comparison results;
 do not enable membership-authoritative mode until mismatches are resolved.
+
+Enable `AUTH_SCHOOL_MEMBERSHIP_WRITE_ENABLED="true"` only after the membership
+backfill and dual-read comparison are clean. Approval and unlink then update the
+membership and legacy User projections in the same serializable transaction.
 
 Structured metric events are emitted as JSON to stdout for the platform logging
 pipeline. Create bounded log-based counters/distributions for:
