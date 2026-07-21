@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.stunity.mobile",
+      "sha256_cert_fingerprints": [
+        "4C:6B:6C:0A:E5:1C:96:9D:4C:B3:FA:84:D0:5A:43:D1:53:7E:94:8A:35:4E:E8:90:AD:F5:61:F0:C1:52:D3:96"
+      ]
+    }
+  }
+]

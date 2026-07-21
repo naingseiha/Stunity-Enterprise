@@ -329,11 +329,23 @@ npx expo prebuild -p android && npx expo run:android
 and Android's `assetlinks.json` needs a `delegate_permission/common.get_login_creds`
 relation added to whatever's generated for app links. Until the AASA file at
 `https://stunity.app/.well-known/apple-app-site-association` includes a
-top-level `"webcredentials": { "apps": ["<TEAM_ID>.app.stunity.mobile"] }`
+top-level `"webcredentials": { "apps": ["T9833NCU4C.app.stunity.mobile"] }`
 block and `assetlinks.json` includes the login-creds relation, on-device
 passkey ceremonies will fail RP ID verification — this is the same hosting
 gap already blocking universal links (see
 `project_learning_reels_nav_hardening` in memory), not a new one.
+
+**Confirmed live end-to-end on the iOS Simulator (2026-07-21), except for
+this exact gap.** After rebuilding the dev client and enabling both flags,
+tapping "Use passkey" correctly: rendered the button, fetched
+`/auth/passkeys/authenticate/options` (200), invoked the native
+`ASAuthorizationController` ceremony, and prompted Face ID (after enabling
+Simulator → Features → Face ID → Enrolled). It only failed at the very last
+step, with the native error `ERR_PASSKEY_REQUEST_FAILED: Unable to verify
+webcredentials association of T9833NCU4C.app.stunity.mobile with domain
+stunity.app` — i.e. exactly the missing-AASA-hosting gap above, confirming
+the whole client-side integration is correct and this hosting step is the
+only remaining blocker for a real device/production test.
 
 ## Safe rollback
 

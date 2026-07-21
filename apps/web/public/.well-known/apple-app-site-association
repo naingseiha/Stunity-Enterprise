@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "T9833NCU4C.app.stunity.mobile",
+        "paths": ["/posts/*", "/claim/*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["T9833NCU4C.app.stunity.mobile"]
+  }
+}
