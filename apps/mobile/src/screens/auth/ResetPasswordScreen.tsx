@@ -1,7 +1,7 @@
 /**
- * Reset Password Screen
- * 
- * Allows users to set a new password using a reset token
+ * Reset Password Screen — Senior UI/UX Creative Enterprise Design
+ * Exact WelcomeScreen 120px WavyDivider, turquoise gradient header,
+ * integrated circular icon badge capsule inputs, glowing cyan submit button, zero-scroll layout.
  */
 
 import React, { useState } from 'react';
@@ -9,28 +9,50 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert, Animated} from 'react-native';
+  Alert,
+  useWindowDimensions,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
+import StunityLogo from '../../../assets/Stunity.svg';
 
-
-import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
 
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
+const INK = '#0F172A';
+const MUTED = '#64748B';
+
 type NavigationProp = AuthStackScreenProps<'ResetPassword'>['navigation'];
 type ResetPasswordRouteProp = RouteProp<{ ResetPassword: { token: string } }, 'ResetPassword'>;
+
+const WavyDivider = React.memo(function WavyDivider({ waveWidth }: { waveWidth: number }) {
+  const w = waveWidth;
+  return (
+    <View style={styles.wavyContainer}>
+      <Svg height={120} width={w} viewBox={`0 0 ${w} 120`} style={styles.wavySvg}>
+        <Path d={`M0 20 C${w * 0.3} 10, ${w * 0.6} 90, ${w} 50 V120 H0 Z`} fill="white" opacity={0.3} />
+        <Path d={`M0 40 C${w * 0.4} 30, ${w * 0.7} 110, ${w} 70 V120 H0 Z`} fill="white" opacity={0.6} />
+        <Path d={`M0 60 C${w * 0.35} 50, ${w * 0.65} 130, ${w} 90 V120 H0 Z`} fill="white" />
+      </Svg>
+    </View>
+  );
+});
 
 export default function ResetPasswordScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ResetPasswordRouteProp>();
+  const { width, height } = useWindowDimensions();
   const token = route.params?.token || '';
 
   const [password, setPassword] = useState('');
@@ -39,23 +61,27 @@ export default function ResetPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const HEADER_H = Math.min(height * 0.31, 250);
+  const logoW = Math.min(width * 0.48, 200);
+  const logoH = logoW * (0.25 / 0.7);
+
   const validatePassword = (pw: string) => {
-    if (pw.length < 8) return t('auth.reset.passwordMin8');
-    if (!/[A-Z]/.test(pw)) return t('auth.reset.passwordNeedUpper');
-    if (!/[a-z]/.test(pw)) return t('auth.reset.passwordNeedLower');
-    if (!/[0-9]/.test(pw)) return t('auth.reset.passwordNeedNumber');
-    if (!/[^A-Za-z0-9]/.test(pw)) return t('auth.reset.passwordNeedSpecial');
+    if (pw.length < 8) return t('auth.reset.passwordMin8', 'Password must be at least 8 characters long');
+    if (!/[A-Z]/.test(pw)) return t('auth.reset.passwordNeedUpper', 'Include at least one uppercase letter');
+    if (!/[a-z]/.test(pw)) return t('auth.reset.passwordNeedLower', 'Include at least one lowercase letter');
+    if (!/[0-9]/.test(pw)) return t('auth.reset.passwordNeedNumber', 'Include at least one number');
+    if (!/[^A-Za-z0-9]/.test(pw)) return t('auth.reset.passwordNeedSpecial', 'Include at least one special symbol');
     return null;
   };
 
   const handleSubmit = async () => {
     const pwError = validatePassword(password);
     if (pwError) {
-      Alert.alert(t('auth.reset.weakPasswordTitle'), pwError);
+      Alert.alert(t('auth.reset.weakPasswordTitle', 'Weak Password'), pwError);
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert(t('common.error'), t('auth.reset.passwordsNotMatch'));
+      Alert.alert('Error', t('auth.reset.passwordsNotMatch', 'Passwords do not match'));
       return;
     }
 
@@ -64,8 +90,8 @@ export default function ResetPasswordScreen() {
       await authApi.post('/auth/reset-password', { token, newPassword: password });
       setSuccess(true);
     } catch (error: any) {
-      const msg = error.response?.data?.error || t('auth.reset.failedReset');
-      Alert.alert(t('common.error'), msg);
+      const msg = error.response?.data?.error || t('auth.reset.failedReset', 'Failed to reset password');
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }
@@ -73,160 +99,189 @@ export default function ResetPasswordScreen() {
 
   if (success) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Animated.View style={styles.content}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
+      <View style={styles.container}>
+        <View style={[styles.headerSection, { height: HEADER_H }]}>
+          <LinearGradient colors={['#FFFFFF', '#ECFEFF', BRAND_TEAL]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} />
+          <View style={styles.logoWrap}><StunityLogo width={logoW} height={logoH} /></View>
+          <WavyDivider waveWidth={width} />
+        </View>
+        <View style={styles.contentArea}>
+          <View style={styles.formShell}>
+            <View style={styles.iconCircleSuccess}>
+              <Ionicons name="checkmark-circle-outline" size={40} color="#10B981" />
+            </View>
+            <Text style={styles.title}>{t('auth.reset.successTitle', 'Password Updated!')}</Text>
+            <Text style={styles.subtitle}>{t('auth.reset.successSubtitle', 'Your account security credentials have been updated successfully.')}</Text>
+            <TouchableOpacity
+              style={styles.primaryShadow}
+              onPress={() => navigation.navigate('Login')}
+              activeOpacity={0.85}
+            >
+              <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.primaryButton}>
+                <Text style={styles.primaryText}>{t('auth.reset.goToLogin', 'Go to Login')}</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.title}>{t('auth.reset.successTitle')}</Text>
-          <Text style={styles.subtitle}>
-            {t('auth.reset.successSubtitle')}
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => navigation.navigate('Login')}
-          >
-            <Text style={styles.primaryButtonText}>{t('auth.reset.goToLogin')}</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </SafeAreaView>
+        </View>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <Animated.View style={styles.content}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="key-outline" size={48} color={Colors.primary} />
-          </View>
-          <Text style={styles.title}>{t('auth.reset.newPasswordTitle')}</Text>
-          <Text style={styles.subtitle}>
-            {t('auth.reset.newPasswordSubtitle')}
-          </Text>
+    <View style={styles.container}>
+      <View style={[styles.headerSection, { height: HEADER_H }]}>
+        <LinearGradient colors={['#FFFFFF', '#ECFEFF', BRAND_TEAL]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} />
+        <SafeAreaView style={styles.headerSafeArea}>
+          <TouchableOpacity style={styles.backCapsule} onPress={() => navigation.goBack()} activeOpacity={0.75}>
+            <Ionicons name="chevron-back" size={22} color={INK} />
+          </TouchableOpacity>
+        </SafeAreaView>
+        <View style={styles.logoWrap}><StunityLogo width={logoW} height={logoH} /></View>
+        <WavyDivider waveWidth={width} />
+      </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder={t('auth.reset.newPasswordPlaceholder')}
-              placeholderTextColor={Colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textSecondary} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <View style={styles.contentArea}>
+          <View style={styles.formShell}>
+            <View style={styles.titleGroup}>
+              <Text style={styles.title}>{t('auth.reset.newPasswordTitle', 'Create New Password')}</Text>
+              <Text style={styles.subtitle}>{t('auth.reset.newPasswordSubtitle', 'Your new password must be unique and satisfy enterprise complexity requirements.')}</Text>
+            </View>
+
+            {/* New Password Capsule */}
+            <View style={styles.inputCapsule}>
+              <View style={styles.iconCircleBadge}>
+                <Ionicons name="lock-closed-outline" size={18} color="#0284C7" />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder={t('auth.reset.newPasswordPlaceholder', 'New Password')}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                placeholderTextColor="#94A3B8"
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Confirm Password Capsule */}
+            <View style={styles.inputCapsule}>
+              <View style={styles.iconCircleBadge}>
+                <Ionicons name="shield-checkmark-outline" size={18} color="#0284C7" />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder={t('auth.reset.confirmPasswordPlaceholder', 'Confirm New Password')}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.primaryShadow, loading && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={loading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={styles.primaryButton}
+              >
+                <Text style={styles.primaryText}>
+                  {loading ? t('auth.reset.resetting', 'Updating...') : t('auth.reset.resetPassword', 'Update Password')}
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder={t('auth.reset.confirmPasswordPlaceholder')}
-              placeholderTextColor={Colors.textTertiary}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            <Text style={styles.primaryButtonText}>
-              {loading ? t('auth.reset.resetting') : t('auth.reset.resetPassword')}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+        </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
-  keyboardView: {
-    flex: 1,
-    paddingHorizontal: Spacing.lg,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-  },
-  iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: `${Colors.primary}15`,
+  container: { flex: 1, backgroundColor: '#fff' },
+
+  // Header & Wave
+  headerSection: { width: '100%', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  headerSafeArea: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  backCapsule: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.lg,
+    marginTop: 8,
+    marginLeft: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: Spacing.sm,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.md,
-  },
-  inputContainer: {
+  logoWrap: { alignItems: 'center', justifyContent: 'center', paddingBottom: 40, paddingTop: 10 },
+  wavyContainer: { position: 'absolute', bottom: -1, width: '100%' },
+  wavySvg: { bottom: 0 },
+
+  // Content Area
+  contentArea: { flex: 1, paddingHorizontal: 32, paddingTop: 10, paddingBottom: 16, justifyContent: 'space-between' },
+  formShell: { width: '100%', alignItems: 'center' },
+
+  iconCircleSuccess: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  titleGroup: { alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: '900', color: INK, marginBottom: 6, textAlign: 'center', letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: MUTED, textAlign: 'center', lineHeight: 20, maxWidth: 340 },
+
+  // Input Capsule
+  inputCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray[50],
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 16,
-    height: 52,
+    height: 60,
+    borderRadius: 999,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 8,
+    marginBottom: 14,
     width: '100%',
-    marginBottom: Spacing.md,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: Colors.text,
-  },
-  primaryButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    height: 52,
-    width: '100%',
+  iconCircleBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.sm,
+    marginRight: 10,
   },
-  primaryButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+  input: { flex: 1, fontSize: 16, color: INK, height: '100%', paddingRight: 14 },
+  eyeBtn: { paddingHorizontal: 12 },
+
+  // Button
+  primaryShadow: {
+    shadowColor: BRAND_TEAL,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
+    borderRadius: 999,
+    width: '100%',
+    marginTop: 6,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+  primaryButton: { height: 64, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
+  primaryText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
+  buttonDisabled: { opacity: 0.6 },
 });

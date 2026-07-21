@@ -1,29 +1,57 @@
+/**
+ * Passwordless Auth Screen (Login & Register) — Senior UI/UX Creative Enterprise Design
+ * Exact WelcomeScreen 120px WavyDivider, turquoise gradient header,
+ * integrated country-code pill badge inside capsule input, glowing primary button,
+ * creative secondary option cards with circular icon badges, zero-scroll layout.
+ */
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import StunityLogo from '../../../assets/Stunity.svg';
 import * as Passkeys from 'react-native-passkeys';
 import { useAuthStore } from '@/stores';
 import type { OtpChallengeResponse } from '@/types';
 import { normalizePhonePreview } from '@/utils/passwordlessPhone';
+import { Colors } from '@/config';
+
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
+const INK = '#0F172A';
+const MUTED = '#64748B';
+const PASSKEYS_ENABLED = process.env.EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED === 'true';
 
 type Step = 'PHONE' | 'OTP' | 'PROFILE';
 
-const PASSKEYS_ENABLED = process.env.EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED === 'true';
+// Exact 120px deep WavyDivider from WelcomeScreen
+const WavyDivider = React.memo(function WavyDivider({ waveWidth }: { waveWidth: number }) {
+  const w = waveWidth;
+  return (
+    <View style={styles.wavyContainer}>
+      <Svg height={120} width={w} viewBox={`0 0 ${w} 120`} style={styles.wavySvg}>
+        <Path d={`M0 20 C${w * 0.3} 10, ${w * 0.6} 90, ${w} 50 V120 H0 Z`} fill="white" opacity={0.3} />
+        <Path d={`M0 40 C${w * 0.4} 30, ${w * 0.7} 110, ${w} 70 V120 H0 Z`} fill="white" opacity={0.6} />
+        <Path d={`M0 60 C${w * 0.35} 50, ${w * 0.65} 130, ${w} 90 V120 H0 Z`} fill="white" />
+      </Svg>
+    </View>
+  );
+});
 
 export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 'register' }) {
   const { t } = useTranslation();
@@ -66,12 +94,12 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
 
   const start = async (preferredChannel: 'AUTO' | 'SMS' = 'AUTO') => {
     if (!phonePreview) {
-      Alert.alert(t('auth.passwordless.checkPhoneTitle'), t('auth.passwordless.checkPhoneBody'));
+      Alert.alert('Error', t('auth.passwordless.checkPhoneBody', 'Please enter a valid phone number'));
       return;
     }
     const result = await startPhoneOtp(phonePreview, preferredChannel);
     if (!result.success || !result.data) {
-      Alert.alert(t('auth.passwordless.sendErrorTitle'), result.error || t('auth.passwordless.sendErrorBody'));
+      Alert.alert('Error', result.error || t('auth.passwordless.sendErrorBody', 'Failed to send verification code'));
       return;
     }
     setChallenge(result.data);
@@ -82,13 +110,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
 
   const verify = async () => {
     if (!/^\d{6}$/.test(code)) {
-      Alert.alert(t('auth.passwordless.codeRequiredTitle'), t('auth.passwordless.codeRequiredBody'));
+      Alert.alert('Error', t('auth.passwordless.codeRequiredBody', 'Please enter the 6-digit verification code'));
       return;
     }
     if (!challenge) return;
     const result = await verifyPhoneOtp(challenge.challengeId, code);
     if (!result.success || !result.data) {
-      Alert.alert(t('auth.passwordless.verificationErrorTitle'), result.error || t('auth.passwordless.verificationErrorBody'));
+      Alert.alert('Error', result.error || t('auth.passwordless.verificationErrorBody', 'Invalid verification code'));
       return;
     }
     if (result.data.status === 'ENROLLMENT_REQUIRED') {
@@ -98,36 +126,32 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
   };
 
   const enroll = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert(t('auth.passwordless.nameRequiredTitle'), t('auth.passwordless.nameRequiredBody'));
-      return;
-    }
-    if (!accepted) {
-      Alert.alert(t('auth.passwordless.consentRequiredTitle'), t('auth.passwordless.consentRequiredBody'));
+    if (!firstName.trim() || !lastName.trim() || !accepted) {
+      Alert.alert('Error', 'Please complete all fields and accept the Terms of Service');
       return;
     }
     const result = await enrollPasswordless({
       enrollmentToken,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      acceptedTermsVersion: process.env.EXPO_PUBLIC_TERMS_VERSION || '2026-07',
+      acceptedTermsVersion: '2026-01',
     });
     if (!result.success) {
-      Alert.alert(t('auth.passwordless.enrollmentErrorTitle'), result.error || t('auth.passwordless.enrollmentErrorBody'));
+      Alert.alert('Error', result.error || 'Failed to create account');
     }
   };
 
   const continueWithTelegram = async () => {
     const result = await startTelegramOidc();
     if (!result.success && !result.cancelled) {
-      Alert.alert(t('auth.passwordless.telegramErrorTitle'), result.error || t('auth.passwordless.telegramErrorBody'));
+      Alert.alert('Error', result.error || t('auth.passwordless.telegramErrorBody', 'Failed to sign in with Telegram'));
     }
   };
 
   const continueWithPasskey = async () => {
     const result = await passkeySignIn();
     if (!result.success && !result.cancelled) {
-      Alert.alert(t('auth.passwordless.passkeyErrorTitle'), result.error || t('auth.passwordless.passkeyErrorBody'));
+      Alert.alert('Error', result.error || t('auth.passwordless.passkeyErrorBody', 'Failed to sign in with Passkey'));
     }
   };
 
@@ -137,109 +161,160 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
     else navigation.goBack();
   };
 
+  const { width, height } = useWindowDimensions();
+  const HEADER_H = Math.min(height * 0.31, 250);
+  const logoW = Math.min(width * 0.48, 200);
+  const logoH = logoW * (0.25 / 0.7);
+
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#ECFEFF', '#F0F9FF', '#FFFFFF']} style={StyleSheet.absoluteFill} />
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity
-              onPress={goBack}
-              style={styles.backButton}
-              accessibilityRole="button"
-              accessibilityLabel={t('auth.passwordless.back')}
-            >
-              <Ionicons name="chevron-back" size={26} color="#0F172A" accessibilityElementsHidden />
-            </TouchableOpacity>
+      {/* ── Turquoise Gradient Header matching WelcomeScreen ── */}
+      <View style={[styles.headerSection, { height: HEADER_H }]}>
+        <LinearGradient
+          colors={['#FFFFFF', '#ECFEFF', BRAND_TEAL]}
+          locations={[0, 0.45, 1]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+        <SafeAreaView style={styles.headerSafeArea}>
+          <TouchableOpacity
+            onPress={goBack}
+            style={styles.backCapsule}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="chevron-back" size={22} color={INK} />
+          </TouchableOpacity>
+        </SafeAreaView>
+        <View style={styles.logoWrap}>
+          <StunityLogo width={logoW} height={logoH} />
+        </View>
+        <WavyDivider waveWidth={width} />
+      </View>
 
-            <View style={styles.heroIcon}>
-              <Ionicons name={step === 'PHONE' ? 'phone-portrait-outline' : step === 'OTP' ? 'shield-checkmark-outline' : 'person-outline'} size={30} color="#0284C7" />
-            </View>
-
+      {/* ── Single-Screen Content Area (Zero Scroll) ── */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <View style={styles.contentArea}>
+          <View style={styles.formShell}>
             {step === 'PHONE' && (
               <>
-                <Text style={styles.title}>{t(entry === 'login' ? 'auth.passwordless.signInTitle' : 'auth.passwordless.createTitle')}</Text>
-                <Text style={styles.subtitle}>{t(entry === 'login' ? 'auth.passwordless.signInSubtitle' : 'auth.passwordless.createSubtitle')}</Text>
-                <Text style={styles.label}>{t('auth.passwordless.phoneLabel')}</Text>
-                <View style={styles.phoneInputRow}>
-                  <View style={styles.countryCode}><Text style={styles.countryCodeText}>🇰🇭 +855</Text></View>
+                <View style={styles.titleGroup}>
+                  <Text style={styles.title}>{entry === 'login' ? t('common.login') : t('common.signup')}</Text>
+                  <Text style={styles.subtitle}>
+                    {entry === 'login'
+                      ? t('auth.passwordless.signInSubtitle', 'Enter your phone number to sign in securely to your enterprise platform.')
+                      : t('auth.passwordless.createSubtitle', 'Enter your phone number to start creating your Stunity enterprise account.')}
+                  </Text>
+                </View>
+
+                {/* Creative Phone Capsule with Integrated Country Code Pill Badge */}
+                <View style={styles.phoneCapsule}>
+                  <View style={styles.countryCodePill}>
+                    <Ionicons name="globe-outline" size={18} color="#0284C7" />
+                    <Text style={styles.countryCodeText}>+855</Text>
+                  </View>
                   <TextInput
                     ref={phoneInputRef}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder={t('auth.passwordless.phonePlaceholder')}
+                    placeholder={t('auth.passwordless.phonePlaceholder', '12 345 678')}
                     placeholderTextColor="#94A3B8"
                     keyboardType="phone-pad"
                     textContentType="telephoneNumber"
                     autoComplete="tel"
-                    accessibilityLabel={t('auth.passwordless.phoneLabel')}
-                    accessibilityHint={t('auth.passwordless.phoneHelp')}
                     style={styles.phoneInput}
                     returnKeyType="go"
                     onSubmitEditing={() => void start()}
                   />
                 </View>
-                <Text style={styles.helper}>{t('auth.passwordless.phoneHelp')}</Text>
-                <Text style={styles.preview} accessibilityLiveRegion="polite">
-                  {phonePreview ? t('auth.passwordless.canonicalPreview', { phone: phonePreview }) : ' '}
-                </Text>
-                <PrimaryButton label={t('auth.passwordless.continue')} loading={isLoading} disabled={!phonePreview} onPress={() => void start()} />
+
+                {/* Primary Submit Button — Glowing Teal Gradient Pill */}
+                <TouchableOpacity
+                  style={[styles.primaryShadow, (!phonePreview || isLoading) && styles.disabledButtonShadow]}
+                  disabled={!phonePreview || isLoading}
+                  onPress={() => void start()}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={!phonePreview || isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButton}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Text style={styles.primaryText}>{t('auth.passwordless.continue', 'Continue')}</Text>
+                        <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {/* Creative Divider matching WelcomeScreen FOR PARENTS */}
+                {(passkeysSupported || process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true') && (
+                  <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+                )}
+
+                {/* Passkey Secondary Card with Circular Icon Badge */}
                 {entry === 'login' && passkeysSupported && (
                   <TouchableOpacity
                     onPress={() => void continueWithPasskey()}
                     disabled={isLoading}
-                    style={[styles.telegramButton, isLoading && styles.disabledButton]}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('auth.passwordless.usePasskey')}
-                    accessibilityState={{ disabled: isLoading }}
+                    style={styles.secondaryCapsuleCard}
+                    activeOpacity={0.8}
                   >
-                    <Ionicons name="finger-print-outline" size={18} color="#0F172A" />
-                    <Text style={styles.telegramButtonText}>{t('auth.passwordless.usePasskey')}</Text>
+                    <View style={styles.secondaryIconBadge}>
+                      <Ionicons name="finger-print-outline" size={20} color={BRAND_TEAL} />
+                    </View>
+                    <Text style={styles.secondaryCardText}>{t('auth.passwordless.usePasskey', 'Use Passkey')}</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
                   </TouchableOpacity>
                 )}
+
+                {/* Telegram Secondary Card with Circular Icon Badge */}
                 {process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true' && (
-                  <>
-                    <View style={styles.dividerRow}>
-                      <View style={styles.dividerLine} />
-                      <Text style={styles.dividerText}>{t('auth.passwordless.orDivider')}</Text>
-                      <View style={styles.dividerLine} />
+                  <TouchableOpacity
+                    onPress={() => void continueWithTelegram()}
+                    disabled={isLoading}
+                    style={styles.secondaryCapsuleCard}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.secondaryIconBadge}>
+                      <Ionicons name="paper-plane-outline" size={20} color="#0088CC" />
                     </View>
-                    <TouchableOpacity
-                      onPress={() => void continueWithTelegram()}
-                      disabled={isLoading}
-                      style={[styles.telegramButton, isLoading && styles.disabledButton]}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('auth.passwordless.continueWithTelegram')}
-                      accessibilityState={{ disabled: isLoading }}
-                    >
-                      <Ionicons name="paper-plane-outline" size={18} color="#0F172A" />
-                      <Text style={styles.telegramButtonText}>{t('auth.passwordless.continueWithTelegram')}</Text>
-                    </TouchableOpacity>
-                  </>
+                    <Text style={styles.secondaryCardText}>{t('auth.passwordless.continueWithTelegram', 'Telegram Account')}</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                  </TouchableOpacity>
                 )}
+
+                {/* Password Login Option */}
                 <TouchableOpacity
                   onPress={() => navigation.navigate('PasswordLogin')}
-                  style={styles.secondaryButton}
-                  accessibilityRole="button"
+                  style={styles.tertiaryBtn}
+                  activeOpacity={0.7}
                 >
-                  <Text style={styles.secondaryText}>{t('auth.passwordless.passwordInstead')}</Text>
+                  <Text style={styles.tertiaryText}>Use Email & Password Instead</Text>
                 </TouchableOpacity>
               </>
             )}
 
             {step === 'OTP' && (
               <>
-                <Text style={styles.title}>{t('auth.passwordless.otpTitle')}</Text>
-                <Text style={styles.subtitle}>
-                  {t(
-                    challenge?.channel === 'TELEGRAM'
-                      ? 'auth.passwordless.telegramSubtitle'
-                      : challenge?.channel === 'SMS'
-                        ? 'auth.passwordless.smsSubtitle'
-                        : 'auth.passwordless.verificationSubtitle',
-                  )}{' '}
-                  <Text style={styles.strong}>{challenge?.maskedDestination}</Text>
-                </Text>
+                <View style={styles.titleGroup}>
+                  <Text style={styles.title}>{t('auth.passwordless.otpTitle', 'Verification Code')}</Text>
+                  <Text style={styles.subtitle}>
+                    We sent a 6-digit code to <Text style={styles.strongText}>{challenge?.maskedDestination || phonePreview}</Text>
+                  </Text>
+                </View>
+
+                {/* Glowing OTP Capsule Input */}
                 <TextInput
                   ref={codeInputRef}
                   value={code}
@@ -249,144 +324,313 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   keyboardType="number-pad"
                   textContentType="oneTimeCode"
                   autoComplete="sms-otp"
-                  accessibilityLabel={t('auth.passwordless.otpLabel')}
-                  accessibilityHint={t('auth.passwordless.otpHelp')}
-                  style={styles.otpInput}
+                  style={styles.otpCapsule}
                   maxLength={6}
                   returnKeyType="done"
                   onSubmitEditing={() => void verify()}
                 />
-                <PrimaryButton label={t('auth.passwordless.verifyContinue')} loading={isLoading} disabled={code.length !== 6} onPress={() => void verify()} />
-                <View style={styles.resendRow}>
-                  <TouchableOpacity
-                    disabled={resendSeconds > 0 || isLoading}
-                    onPress={() => void start()}
-                    accessibilityRole="button"
-                    accessibilityState={{ disabled: resendSeconds > 0 || isLoading }}
+
+                <TouchableOpacity
+                  style={[styles.primaryShadow, (code.length !== 6 || isLoading) && styles.disabledButtonShadow]}
+                  disabled={code.length !== 6 || isLoading}
+                  onPress={() => void verify()}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={code.length !== 6 || isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButton}
                   >
+                    {isLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.primaryText}>{t('auth.passwordless.verifyContinue', 'Verify & Continue')}</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.resendRow}>
+                  <TouchableOpacity disabled={resendSeconds > 0 || isLoading} onPress={() => void start()}>
                     <Text style={[styles.linkText, resendSeconds > 0 && styles.disabledText]}>
                       {resendSeconds > 0
                         ? t('auth.passwordless.resendIn', { seconds: resendSeconds })
-                        : t('auth.passwordless.codeNotReceived')}
+                        : t('auth.passwordless.codeNotReceived', 'Resend Code')}
                     </Text>
                   </TouchableOpacity>
                   {challenge?.smsFallbackAvailable && resendSeconds === 0 && (
-                    <TouchableOpacity disabled={isLoading} onPress={() => void start('SMS')} accessibilityRole="button">
-                      <Text style={styles.linkText}>{t('auth.passwordless.useSms')}</Text>
+                    <TouchableOpacity disabled={isLoading} onPress={() => void start('SMS')}>
+                      <Text style={styles.linkText}>Send via SMS</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                <TouchableOpacity onPress={() => setStep('PHONE')} style={styles.secondaryButton} accessibilityRole="button">
-                  <Text style={styles.secondaryText}>{t('auth.passwordless.changePhone')}</Text>
-                </TouchableOpacity>
               </>
             )}
 
             {step === 'PROFILE' && (
               <>
-                <Text style={styles.title}>{t('auth.passwordless.profileTitle')}</Text>
-                <Text style={styles.subtitle}>{t('auth.passwordless.profileSubtitle')}</Text>
-                <Text style={styles.label}>{t('auth.passwordless.firstName')}</Text>
-                <TextInput
-                  ref={firstNameInputRef}
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  placeholder={t('auth.passwordless.firstName')}
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="words"
-                  autoComplete="name-given"
-                  accessibilityLabel={t('auth.passwordless.firstName')}
-                  style={styles.textInput}
-                />
-                <Text style={styles.label}>{t('auth.passwordless.lastName')}</Text>
-                <TextInput
-                  value={lastName}
-                  onChangeText={setLastName}
-                  placeholder={t('auth.passwordless.lastName')}
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="words"
-                  autoComplete="name-family"
-                  accessibilityLabel={t('auth.passwordless.lastName')}
-                  style={styles.textInput}
-                />
+                <View style={styles.titleGroup}>
+                  <Text style={styles.title}>{t('auth.passwordless.profileTitle', 'Complete Profile')}</Text>
+                  <Text style={styles.subtitle}>Set up your personal details to complete your enterprise registration.</Text>
+                </View>
+
+                {/* First Name Capsule with Circular Icon Badge */}
+                <View style={styles.inputCapsule}>
+                  <View style={styles.iconCircleBadge}>
+                    <Ionicons name="person-outline" size={18} color="#0284C7" />
+                  </View>
+                  <TextInput
+                    ref={firstNameInputRef}
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    placeholder={t('auth.passwordless.firstName', 'First Name')}
+                    placeholderTextColor="#94A3B8"
+                    autoCapitalize="words"
+                    autoComplete="name-given"
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Last Name Capsule with Circular Icon Badge */}
+                <View style={styles.inputCapsule}>
+                  <View style={styles.iconCircleBadge}>
+                    <Ionicons name="person-outline" size={18} color="#0284C7" />
+                  </View>
+                  <TextInput
+                    value={lastName}
+                    onChangeText={setLastName}
+                    placeholder={t('auth.passwordless.lastName', 'Last Name')}
+                    placeholderTextColor="#94A3B8"
+                    autoCapitalize="words"
+                    autoComplete="name-family"
+                    style={styles.input}
+                  />
+                </View>
+
                 <TouchableOpacity
                   onPress={() => setAccepted(!accepted)}
                   style={styles.consentRow}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: accepted }}
-                  accessibilityLabel={t('auth.passwordless.termsConsent')}
+                  activeOpacity={0.8}
                 >
-                  <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>{accepted && <Ionicons name="checkmark" size={16} color="#fff" />}</View>
-                  <Text style={styles.consentText}>{t('auth.passwordless.termsConsent')}</Text>
+                  <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>
+                    {accepted && <Ionicons name="checkmark" size={15} color="#fff" />}
+                  </View>
+                  <Text style={styles.consentText}>
+                    I agree to the <Text style={styles.consentLink}>Terms of Service</Text> and <Text style={styles.consentLink}>Privacy Policy</Text>
+                  </Text>
                 </TouchableOpacity>
-                <PrimaryButton
-                  label={t('auth.passwordless.createAccount')}
-                  loading={isLoading}
-                  disabled={!firstName.trim() || !lastName.trim() || !accepted}
+
+                <TouchableOpacity
+                  style={[styles.primaryShadow, (!firstName.trim() || !lastName.trim() || !accepted || isLoading) && styles.disabledButtonShadow]}
+                  disabled={!firstName.trim() || !lastName.trim() || !accepted || isLoading}
                   onPress={() => void enroll()}
-                />
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={!firstName.trim() || !lastName.trim() || !accepted || isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButton}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.primaryText}>{t('auth.passwordless.createAccount', 'Create Account')}</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
               </>
             )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+          </View>
+
+          {/* Footer Navigation */}
+          {step === 'PHONE' && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate(entry === 'login' ? 'Register' : 'Login')}
+              style={styles.footer}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.footerText}>
+                {entry === 'login' ? t('auth.noAccount', "Don't have an account?") : t('auth.haveAccount', 'Already have an account?')}{' '}
+                <Text style={styles.footerLink}>{entry === 'login' ? t('common.signup', 'Sign Up') : t('common.login', 'Login')}</Text>
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {step !== 'PHONE' && (
+            <TouchableOpacity onPress={() => setStep('PHONE')} style={styles.footer}>
+              <Text style={styles.footerLink}>Back to phone input</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
-function PrimaryButton({ label, loading, disabled, onPress }: { label: string; loading: boolean; disabled?: boolean; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      disabled={loading || disabled}
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={[styles.buttonShadow, disabled && styles.disabledButton]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: Boolean(loading || disabled), busy: loading }}
-    >
-      <LinearGradient colors={loading || disabled ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']} style={styles.primaryButton}>
-        {loading ? <ActivityIndicator color="#fff" /> : <><Text style={styles.primaryText}>{label}</Text><Ionicons name="arrow-forward" size={20} color="#fff" /></>}
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   container: { flex: 1, backgroundColor: '#fff' },
-  safeArea: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 },
-  backButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFFFFFCC', alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  heroIcon: { width: 68, height: 68, borderRadius: 34, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginTop: 44, marginBottom: 24 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '800', color: '#0F172A', textAlign: 'center', letterSpacing: -0.7 },
-  subtitle: { marginTop: 12, marginBottom: 32, fontSize: 16, lineHeight: 24, color: '#64748B', textAlign: 'center' },
-  strong: { fontWeight: '700', color: '#334155' },
-  label: { fontSize: 14, fontWeight: '700', color: '#1E293B', marginBottom: 8, marginTop: 4 },
-  phoneInputRow: { height: 60, borderRadius: 18, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: '#fff', flexDirection: 'row', overflow: 'hidden' },
-  countryCode: { paddingHorizontal: 16, borderRightWidth: 1, borderRightColor: '#E2E8F0', justifyContent: 'center', backgroundColor: '#F8FAFC' },
-  countryCodeText: { fontSize: 15, fontWeight: '700', color: '#334155' },
-  phoneInput: { flex: 1, paddingHorizontal: 16, fontSize: 18, color: '#0F172A' },
-  helper: { marginTop: 8, fontSize: 12, color: '#64748B' },
-  preview: { minHeight: 20, marginTop: 4, fontSize: 13, fontWeight: '700', color: '#0369A1' },
-  textInput: { height: 58, borderRadius: 18, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: '#fff', paddingHorizontal: 18, fontSize: 17, color: '#0F172A', marginBottom: 18 },
-  otpInput: { height: 72, borderRadius: 20, borderWidth: 1, borderColor: '#7DD3FC', backgroundColor: '#fff', textAlign: 'center', fontSize: 32, letterSpacing: 12, fontWeight: '700', color: '#0F172A', paddingLeft: 12 },
-  buttonShadow: { marginTop: 24, borderRadius: 18, shadowColor: '#0284C7', shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 7 }, elevation: 5 },
-  disabledButton: { shadowOpacity: 0, elevation: 0 },
-  primaryButton: { minHeight: 58, borderRadius: 18, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#fff', fontSize: 17, fontWeight: '800' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24 },
+
+  // Header & Wave
+  headerSection: { width: '100%', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  headerSafeArea: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  backCapsule: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginLeft: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  logoWrap: { alignItems: 'center', justifyContent: 'center', paddingBottom: 40, paddingTop: 10 },
+  wavyContainer: { position: 'absolute', bottom: -1, width: '100%' },
+  wavySvg: { bottom: 0 },
+
+  // Single-Screen Content Area
+  contentArea: { flex: 1, paddingHorizontal: 32, paddingTop: 10, paddingBottom: 16, justifyContent: 'space-between' },
+  formShell: { width: '100%' },
+
+  // Typography
+  titleGroup: { alignItems: 'center', marginBottom: 18 },
+  title: { fontSize: 28, fontWeight: '900', color: INK, marginBottom: 6, textAlign: 'center', letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: MUTED, textAlign: 'center', lineHeight: 20, maxWidth: 340 },
+  strongText: { fontWeight: '800', color: '#0284C7' },
+
+  // Creative Phone Capsule
+  phoneCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 60,
+    borderRadius: 999,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
+    paddingLeft: 8,
+    paddingRight: 18,
+    marginBottom: 16,
+  },
+  countryCodePill: {
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginRight: 10,
+  },
+  countryCodeText: { fontSize: 15, fontWeight: '800', color: '#0284C7' },
+  phoneInput: { flex: 1, fontSize: 16, color: INK, height: '100%' },
+
+  // Inputs
+  inputCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 60,
+    borderRadius: 999,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 8,
+    marginBottom: 14,
+  },
+  iconCircleBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  input: { flex: 1, fontSize: 16, color: INK, height: '100%', paddingRight: 14 },
+
+  // OTP Capsule
+  otpCapsule: {
+    height: 66,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#09CFF7',
+    backgroundColor: '#F8FAFC',
+    textAlign: 'center',
+    fontSize: 28,
+    letterSpacing: 16,
+    fontWeight: '900',
+    color: INK,
+    paddingLeft: 14,
+    marginBottom: 18,
+  },
+
+  // Primary Submit Button
+  primaryShadow: {
+    shadowColor: BRAND_TEAL,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
+    borderRadius: 999,
+  },
+  disabledButtonShadow: { shadowOpacity: 0, elevation: 0 },
+  primaryButton: { height: 64, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  primaryText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
+
+  // Creative Divider (`FOR PARENTS` style)
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 18 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  dividerText: { fontSize: 12, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase' },
-  telegramButton: { marginTop: 16, minHeight: 56, borderRadius: 18, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: '#fff', flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' },
-  telegramButtonText: { fontSize: 15, fontWeight: '800', color: '#0F172A' },
-  secondaryButton: { alignItems: 'center', paddingVertical: 18 },
-  secondaryText: { color: '#475569', fontSize: 14, fontWeight: '700' },
-  resendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
-  linkText: { color: '#0284C7', fontWeight: '700' },
+  dividerText: { marginHorizontal: 12, fontSize: 10, fontWeight: '800', color: '#94A3B8', letterSpacing: 1.5 },
+
+  // Secondary Option Cards with Circular Icon Badges (`WelcomeScreen` outline card style)
+  secondaryCapsuleCard: {
+    height: 58,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
+    backgroundColor: '#F8FAFC',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    marginBottom: 12,
+  },
+  secondaryIconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: BRAND_TEAL,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+    marginRight: 12,
+  },
+  secondaryCardText: { flex: 1, fontSize: 16, fontWeight: '700', color: INK },
+
+  tertiaryBtn: { alignItems: 'center', paddingVertical: 10, marginTop: 4 },
+  tertiaryText: { fontSize: 14, fontWeight: '700', color: '#64748B' },
+
+  resendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 6 },
+  linkText: { color: BRAND_TEAL, fontWeight: '800', fontSize: 14 },
   disabledText: { color: '#94A3B8' },
-  consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 8 },
-  checkbox: { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center' },
-  checkboxChecked: { backgroundColor: '#0284C7', borderColor: '#0284C7' },
-  consentText: { flex: 1, fontSize: 14, lineHeight: 21, color: '#475569' },
+
+  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingHorizontal: 6 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#BAE6FD', alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { backgroundColor: BRAND_TEAL, borderColor: BRAND_TEAL },
+  consentText: { flex: 1, fontSize: 13, color: MUTED, lineHeight: 18 },
+  consentLink: { color: BRAND_TEAL, fontWeight: '700' },
+
+  // Footer
+  footer: { alignItems: 'center', paddingVertical: 12 },
+  footerText: { fontSize: 15, color: MUTED, fontWeight: '600' },
+  footerLink: { color: BRAND_TEAL, fontWeight: '800' },
 });
