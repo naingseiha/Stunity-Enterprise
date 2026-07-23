@@ -23,6 +23,8 @@ Use the root [README.md](../README.md) as the main entrypoint. This file indexes
 | [DATABASE_SAFETY.md](DATABASE_SAFETY.md) | Guards around destructive DB commands |
 | [DEV_TO_PRODUCTION_WORKFLOW.md](DEV_TO_PRODUCTION_WORKFLOW.md) | **រលំហូរពេញ:** dev commands → feature work → deploy production |
 | [PRODUCTION_ARCHITECTURE_LONG_TERM.md](PRODUCTION_ARCHITECTURE_LONG_TERM.md) | **Long-term prod strategy:** one Supabase, service consolidation, phases |
+| [ARCHITECTURE_REVIEW_2026-07.md](ARCHITECTURE_REVIEW_2026-07.md) | **Analysis-only ADR:** 16→3-4 service consolidation decision, domain/DB-boundary evidence, phased pre-production migration plan, JWT_SECRET correction |
+| [GCP_NEW_ACCOUNT_MIGRATION.md](GCP_NEW_ACCOUNT_MIGRATION.md) | **Approved plan:** move Cloud Run to a new dedicated-Gmail GCP project (Path B), combined with Phase 0 consolidation; custom `stunity.app` API subdomains; secrets/scheduler/decommission checklist |
 | [MICROSERVICES_CONNECTION_AUDIT.md](MICROSERVICES_CONNECTION_AUDIT.md) | **DB connections, Prisma pools, resource audit** |
 | [LOCAL_DEV.md](LOCAL_DEV.md) | **Supabase pooler, quick-start-lite, connection limits** |
 | [LOCAL_DEVELOPMENT_AND_PRODUCTION.md](LOCAL_DEVELOPMENT_AND_PRODUCTION.md) | Local vs production conventions |
