@@ -83,6 +83,22 @@ Pure code/router move, same DB — verified via tsc + live boot test of both ser
 | `AUTH_PASSKEYS_ENABLED`, `WEBAUTHN_RP_ID=stunity.app`, `WEBAUTHN_RP_NAME`, `WEBAUTHN_ORIGIN=https://stunity.app` | Same as current — RP stays `stunity.app` |
 | CORS allow-list | Explicit origins (`https://stunity.app`, dev origins) — **not `*`** (fixes the store-readiness finding) |
 
+**Phase C shipped 2026-07-24 — all 3 services live on `stunity-prod` / `asia-southeast1`:**
+
+| Service | URL | `/health` |
+|---|---|---|
+| engagement-api | `https://stunity-engagement-api-wi6osjnoxq-as.a.run.app` | 200 |
+| academic-api | `https://stunity-academic-api-wi6osjnoxq-as.a.run.app` | 200 |
+| ai-service | `https://stunity-ai-service-wi6osjnoxq-as.a.run.app` | 200 |
+
+Confirmed `minScale` unset (Cloud Run default scale-to-zero) and `maxScale=3` on all three — the cost-friendly config that was the actual point of this migration.
+
+Two real bugs found only by the live Cloud Build run (local `tsc` passed on both — npm workspaces hoists `@types/jest` and the generated Prisma client to the repo root, masking what an isolated per-service `npm install` actually sees) — both fixed on `main`:
+1. `tsconfig.json` `"lib": ["ES2020"]` (no DOM) broke every `fetch()`/`Response.json()` call site; the original per-service tsconfigs omitted `"lib"` entirely, which defaults to including DOM.
+2. A handful of Prisma `findMany()`/`$queryRaw()` results feeding `Promise.all()` + `new Map(...)` silently inferred as `unknown` in the isolated build only — fixed with explicit type annotations at those call sites (6 files).
+3. `services/academic-api/src/modules/club/index.ts` crashed at Cloud Run startup (`ReferenceError: Cannot access 'jwt_secret_1' before initialization`) — the merge script inserted the `getJwtSecret` import after its first use in that one file; moved to the top.
+4. `ai-service` (pre-existing, untouched by Phase 0) hit the same test-file-in-production-build issue as engagement-api originally did — fixed with the same tsconfig exclusion.
+
 ## Phase D — Custom API domains (recommended before launch)
 
 - [ ] Verify `stunity.app` ownership in the new project (Search Console / `gcloud domains verify`).
