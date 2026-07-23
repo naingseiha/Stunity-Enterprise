@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { prisma } from './lib/prisma';
 import { shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
+import { getJwtSecret } from '../../../../lib/jwt-secret';
 
 
 
@@ -123,7 +124,6 @@ import reportRoutes from './routes/reports';
 import materialRoutes from './routes/materials';
 import announcementRoutes from './routes/announcements';
 import { getSharedPrisma } from '../../core/prisma';
-import { getJwtSecret } from '../../../../lib/jwt-secret';
 
 // Club routes with optional auth for discovery
 app.use('/clubs', optionalAuthMiddleware, clubRoutes);
