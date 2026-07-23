@@ -27,7 +27,10 @@ export class UnlockableService {
      * Get full catalog with ownership status for a user.
      */
     async getUnlockables(userId: string, type?: UnlockableType) {
-        const [unlockables, owned] = await Promise.all([
+        const [unlockables, owned]: [
+            Awaited<ReturnType<typeof prisma.unlockable.findMany>>,
+            Array<{ unlockableId: string; isEquipped: boolean }>,
+        ] = await Promise.all([
             prisma.unlockable.findMany({
                 where: { isActive: true, ...(type ? { type } : {}) },
                 orderBy: { cost: 'asc' },

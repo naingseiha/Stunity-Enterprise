@@ -517,7 +517,12 @@ router.get('/:id/viewers', async (req: AuthRequest, res: Response) => {
 
     // Get user info for viewers
     const viewerIds = views.map(v => v.viewerId);
-    const viewers = await prisma.user.findMany({
+    const viewers: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      profilePictureUrl: string | null;
+    }> = await prisma.user.findMany({
       where: { id: { in: viewerIds } },
       select: {
         id: true,

@@ -18,7 +18,13 @@ const mapAnnouncementsWithAuthors = async (announcements: Array<{
   sentAt: Date;
 }>) => {
   const authorIds = Array.from(new Set(announcements.map((announcement) => announcement.authorId)));
-  const authors = authorIds.length > 0
+  const authors: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    profilePictureUrl: string | null;
+    professionalTitle: string | null;
+  }> = authorIds.length > 0
     ? await prisma.user.findMany({
         where: { id: { in: authorIds } },
         select: {

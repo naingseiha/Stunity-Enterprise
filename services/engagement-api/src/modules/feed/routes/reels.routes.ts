@@ -171,7 +171,11 @@ async function hydrateEngagement(items: any[], userId: string): Promise<any[]> {
 
   // Read-only; route via the replica so per-request hydration doesn't tax the
   // primary's pool slots while writes (interactions, combo) are happening.
-  const [posts, myLikes, reactionCountsMap] = await Promise.all([
+  const [posts, myLikes, reactionCountsMap]: [
+    Array<{ id: string; likesCount: number | null; commentsCount: number | null }>,
+    Array<{ postId: string; reactionType: string | null }>,
+    Awaited<ReturnType<typeof fetchReactionCounts>>,
+  ] = await Promise.all([
     prismaRead.post.findMany({
       where: { id: { in: postIds } },
       select: { id: true, likesCount: true, commentsCount: true },
@@ -183,7 +187,7 @@ async function hydrateEngagement(items: any[], userId: string): Promise<any[]> {
     fetchReactionCounts(prismaRead, postIds),
   ]);
 
-  const countsByPost = new Map(
+  const countsByPost = new Map<string, { likesCount: number; commentsCount: number }>(
     posts.map((p) => [p.id, { likesCount: p.likesCount ?? 0, commentsCount: p.commentsCount ?? 0 }]),
   );
   const myReactionByPost = new Map<string, string>(

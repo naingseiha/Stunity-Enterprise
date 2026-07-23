@@ -456,7 +456,15 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const [pollRows, quiz] = await Promise.all([
+    type PollRow = {
+      id: string;
+      text: string;
+      position: number;
+      createdAt: Date;
+      votes: number;
+      userVotedOptionId: string | null;
+    };
+    const [pollRowsRaw, quiz] = await Promise.all([
       !feedCardOnly && post.postType === 'POLL'
         ? timeStep('pollOptions', () => prismaRead.$queryRaw<Array<{
           id: string;
@@ -504,6 +512,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         }))
         : Promise.resolve(null),
     ]);
+    const pollRows = pollRowsRaw as PollRow[];
     const postWithState = post as typeof post & {
       likes?: { id: string; reactionType: string }[];
       bookmarks?: { id: string }[];
@@ -1601,7 +1610,7 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         where: { postId },
         select: { id: true },
       });
-      const existingRowIds = new Set(existingRows.map((r) => r.id));
+      const existingRowIds = new Set<string>(existingRows.map((r) => r.id));
       const incomingIds = Array.isArray(quizData.questions)
         ? [...new Set(
             quizData.questions
@@ -1618,7 +1627,7 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       preparedQuizEdit = prepareQuizQuestions(quizData.questions, {
         validTopicIds,
         existingRowIds,
-        takenRowIds: new Set(collisions.map((r) => r.id)),
+        takenRowIds: new Set<string>(collisions.map((r) => r.id)),
         preserveIncomingIds: true,
       });
 

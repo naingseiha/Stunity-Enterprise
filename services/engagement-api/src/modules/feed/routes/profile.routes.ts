@@ -122,7 +122,15 @@ async function getRecentProfileVisitors(
     return { visitors: [], nextCursor: null as string | null };
   }
 
-  const users = await prismaRead.user.findMany({
+  const users: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    profilePictureUrl: string | null;
+    role: string;
+    headline: string | null;
+    professionalTitle: string | null;
+  }> = await prismaRead.user.findMany({
     where: { id: { in: viewerIds }, isActive: true },
     select: {
       id: true,
