@@ -36,7 +36,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
     setLoading(true);
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`${AUTH_SERVICE_URL}/notifications?limit=10`, {
+      const response = await fetch(`${AUTH_SERVICE_URL}/auth/notifications?limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -55,7 +55,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
   const markAsRead = async (id: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${AUTH_SERVICE_URL}/notifications/${id}/read`, {
+      await fetch(`${AUTH_SERVICE_URL}/auth/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -72,7 +72,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
   const markAllAsRead = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${AUTH_SERVICE_URL}/notifications/read-all`, {
+      await fetch(`${AUTH_SERVICE_URL}/auth/notifications/read-all`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -87,7 +87,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
   const deleteNotification = async (id: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${AUTH_SERVICE_URL}/notifications/${id}`, {
+      await fetch(`${AUTH_SERVICE_URL}/auth/notifications/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

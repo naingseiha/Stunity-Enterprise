@@ -64,7 +64,7 @@ export default function NotificationsPage(
     setLoading(true);
     try {
       const token = TokenManager.getAccessToken();
-      const url = `${AUTH_SERVICE_URL}/notifications?page=${page}&limit=20${filter === 'unread' ? '&unreadOnly=true' : ''}`;
+      const url = `${AUTH_SERVICE_URL}/auth/notifications?page=${page}&limit=20${filter === 'unread' ? '&unreadOnly=true' : ''}`;
       
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -89,7 +89,7 @@ export default function NotificationsPage(
   const markAsRead = async (id: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${AUTH_SERVICE_URL}/notifications/${id}/read`, {
+      await fetch(`${AUTH_SERVICE_URL}/auth/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -105,7 +105,7 @@ export default function NotificationsPage(
   const markAllAsRead = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${AUTH_SERVICE_URL}/notifications/read-all`, {
+      await fetch(`${AUTH_SERVICE_URL}/auth/notifications/read-all`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -119,7 +119,7 @@ export default function NotificationsPage(
   const deleteNotification = async (id: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${AUTH_SERVICE_URL}/notifications/${id}`, {
+      await fetch(`${AUTH_SERVICE_URL}/auth/notifications/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

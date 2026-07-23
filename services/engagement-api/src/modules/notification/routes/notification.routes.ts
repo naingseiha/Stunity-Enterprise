@@ -1,0 +1,163 @@
+
+import { Router, Request, Response } from 'express';
+import { registerDeviceToken, sendNotification, unregisterDeviceToken } from '../controllers/notification.controller';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { requireServiceAuth } from '../middleware/serviceAuth';
+import { prisma } from '../lib/prisma';
+import { runStreakAtRiskPushJob } from '../jobs/streakAtRiskJob';
+import { runWeeklyProgressDigestJob } from '../jobs/weeklyProgressDigestJob';
+
+const router = Router();
+
+// Existing routes
+router.post('/device-token', authenticateToken, registerDeviceToken);
+router.delete('/device-token', authenticateToken, unregisterDeviceToken);
+router.post('/send', requireServiceAuth, sendNotification);
+
+/** Cron / Cloud Scheduler: evening streak-at-risk push for active learners */
+router.post('/jobs/streak-at-risk', requireServiceAuth, async (_req: Request, res: Response) => {
+  try {
+    const result = await runStreakAtRiskPushJob();
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Streak at-risk job error:', error);
+    res.status(500).json({ success: false, error: 'Failed to run streak reminder job' });
+  }
+});
+
+/** Cron / Cloud Scheduler: Sunday weekly progress digest push */
+router.post('/jobs/weekly-progress-digest', requireServiceAuth, async (_req: Request, res: Response) => {
+  try {
+    const result = await runWeeklyProgressDigestJob();
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Weekly progress digest job error:', error);
+    res.status(500).json({ success: false, error: 'Failed to run weekly progress digest job' });
+  }
+});
+
+function getAuthenticatedUser(req: Request) {
+    return (req as AuthRequest).user;
+}
+
+// GET /notifications - Get notifications for authenticated user
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
+
+        const notifications = await prisma.notification.findMany({
+            where: { recipientId: userId },
+            include: {
+                actor: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+        });
+
+        const formatted = notifications.map(n => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            body: n.message,
+            data: { link: n.link, postId: n.postId, commentId: n.commentId },
+            isRead: n.isRead,
+            actor: n.actor ? {
+                id: n.actor.id,
+                firstName: n.actor.firstName,
+                lastName: n.actor.lastName,
+                profilePictureUrl: n.actor.profilePictureUrl,
+            } : undefined,
+            createdAt: n.createdAt.toISOString(),
+        }));
+
+        res.json({ success: true, data: formatted });
+    } catch (error: any) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch notifications' });
+    }
+});
+
+// PATCH /notifications/:id/read - Mark notification as read
+router.patch('/:id/read', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
+
+        await prisma.notification.updateMany({
+            where: { id, recipientId: userId },
+            data: { isRead: true, readAt: new Date() },
+        });
+
+        res.json({ success: true });
+    } catch (error: any) {
+        console.error('Error marking notification as read:', error);
+        res.status(500).json({ success: false, error: 'Failed to mark as read' });
+    }
+});
+
+// POST /notifications/read-all - Mark all notifications as read
+router.post('/read-all', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
+
+        await prisma.notification.updateMany({
+            where: { recipientId: userId, isRead: false },
+            data: { isRead: true, readAt: new Date() },
+        });
+
+        res.json({ success: true });
+    } catch (error: any) {
+        console.error('Error marking all notifications as read:', error);
+        res.status(500).json({ success: false, error: 'Failed to mark all as read' });
+    }
+});
+
+// DELETE /notifications/:id - Delete a notification
+router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
+
+        await prisma.notification.deleteMany({
+            where: { id, recipientId: userId },
+        });
+
+        res.json({ success: true });
+    } catch (error: any) {
+        console.error('Error deleting notification:', error);
+        res.status(500).json({ success: false, error: 'Failed to delete notification' });
+    }
+});
+
+export default router;
