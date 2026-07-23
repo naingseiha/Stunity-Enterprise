@@ -2,6 +2,10 @@
 
 # Stunity Enterprise Cloud Run Deployment Script
 # Optimized for cost-friendly Cloud Run defaults (scale-to-zero, bounded DB pools)
+#
+# Phase 0 consolidation (docs/ARCHITECTURE_REVIEW_2026-07.md): 16 services ->
+# academic-api + engagement-api + ai-service. See docs/GCP_NEW_ACCOUNT_MIGRATION.md
+# for the accompanying move to a new GCP project.
 
 set -e # Exit on any error
 
@@ -32,8 +36,8 @@ load_env_file() {
   done < "$file"
 }
 
-# Required in root .env: DATABASE_URL, JWT_SECRET, Supabase, R2, GEMINI_API_KEY (see script body).
-# For notification-service Cloud Run deploys, also set NOTIFICATION_SERVICE_AUTH_TOKEN (see services/notification-service/src/index.ts).
+# Required in root .env: DATABASE_URL, JWT_SECRET, Supabase, R2, GEMINI_API_KEY,
+# ANTHROPIC_API_KEY (see script body).
 if [ -f .env ]; then
   echo "📄 Loading environment variables from .env..."
   # Shell-safe dotenv loading: preserves URLs with &, comma-separated origins, and wrapper env overrides.
@@ -43,41 +47,28 @@ else
   exit 1
 fi
 
-PROJECT_ID="${PROJECT_ID:-stunity-enterprise}"
-REGION="${REGION:-us-central1}"
-# Defaults align with docs/DEPLOYMENT_GUIDE.md (scale-to-zero free tier). Set in .env for prod:
-# CLOUD_RUN_MIN_INSTANCES=1, CLOUD_RUN_CPU_THROTTLING=false, CORS_ORIGIN=https://your-domain.com
+PROJECT_ID="${PROJECT_ID:-stunity-prod}"
+REGION="${REGION:-asia-southeast1}"
+# Cost-friendly defaults everywhere (scale-to-zero). The old per-service
+# min-instances=1 override for auth/feed caused the original billing overage
+# (docs/ARCHITECTURE_REVIEW_2026-07.md §2.5) — do not reintroduce it without
+# a measured cold-start reason. Override CLOUD_RUN_MIN_INSTANCES_ENGAGEMENT in
+# .env if engagement-api specifically needs to stay warm later.
 CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-0}"
+CLOUD_RUN_MIN_INSTANCES_ENGAGEMENT="${CLOUD_RUN_MIN_INSTANCES_ENGAGEMENT:-}"
 CLOUD_RUN_MAX_INSTANCES="${CLOUD_RUN_MAX_INSTANCES:-3}"
 CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-true}"
 CORS_ORIGIN="${CORS_ORIGIN:-*}"
 # Cap Prisma pool slots per Cloud Run instance (Supabase Micro cannot sustain 20×N services).
 PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-3}"
 PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-10}"
-# core = auth, feed, notification, learn (see scripts/deploy-production-core.sh)
-DEPLOY_PROFILE="${DEPLOY_PROFILE:-}"
-
-# Per-service warm instances (overrides CLOUD_RUN_MIN_INSTANCES when > 0)
-CLOUD_RUN_MIN_INSTANCES_AUTH="${CLOUD_RUN_MIN_INSTANCES_AUTH:-}"
-CLOUD_RUN_MIN_INSTANCES_FEED="${CLOUD_RUN_MIN_INSTANCES_FEED:-}"
-CLOUD_RUN_MIN_INSTANCES_NOTIFICATION="${CLOUD_RUN_MIN_INSTANCES_NOTIFICATION:-}"
-CLOUD_RUN_MIN_INSTANCES_LEARN="${CLOUD_RUN_MIN_INSTANCES_LEARN:-}"
 
 resolve_min_instances() {
   local service="$1"
   local default_min="${CLOUD_RUN_MIN_INSTANCES:-0}"
   case "$service" in
-    auth-service)
-      echo "${CLOUD_RUN_MIN_INSTANCES_AUTH:-$default_min}"
-      ;;
-    feed-service)
-      echo "${CLOUD_RUN_MIN_INSTANCES_FEED:-$default_min}"
-      ;;
-    notification-service)
-      echo "${CLOUD_RUN_MIN_INSTANCES_NOTIFICATION:-$default_min}"
-      ;;
-    learn-service)
-      echo "${CLOUD_RUN_MIN_INSTANCES_LEARN:-$default_min}"
+    engagement-api)
+      echo "${CLOUD_RUN_MIN_INSTANCES_ENGAGEMENT:-$default_min}"
       ;;
     *)
       echo "$default_min"
@@ -96,54 +87,31 @@ if [ "$CORS_ORIGIN" = "*" ]; then
   echo "⚠️  CORS_ORIGIN is * (allows any browser origin). Set CORS_ORIGIN in .env to your web origin for production."
 fi
 
-echo "🚀 Deploying Stunity Enterprise to Cloud Run in project: $PROJECT_ID (min-instances=$CLOUD_RUN_MIN_INSTANCES, cpu-throttling=$CLOUD_RUN_CPU_THROTTLING)"
+echo "🚀 Deploying Stunity Enterprise to Cloud Run in project: $PROJECT_ID region: $REGION (min-instances=$CLOUD_RUN_MIN_INSTANCES, cpu-throttling=$CLOUD_RUN_CPU_THROTTLING)"
 
-# Default all services if no arguments provided
+# Default all services if no arguments provided.
+# Order matters: engagement-api must deploy before academic-api, since
+# academic-api's grade/attendance modules call engagement-api's
+# /auth/notifications/* routes cross-service (AUTH_SERVICE_URL) — its live
+# URL is captured after deploy and injected into academic-api's env vars below.
 if [ $# -gt 0 ]; then
   SERVICES=("$@")
   echo "🎯 Deploying target services: ${SERVICES[*]}"
-elif [ "$DEPLOY_PROFILE" = "core" ]; then
-  SERVICES=(
-    "auth-service"
-    "feed-service"
-    "notification-service"
-    "learn-service"
-  )
-  CLOUD_RUN_MIN_INSTANCES_AUTH="${CLOUD_RUN_MIN_INSTANCES_AUTH:-1}"
-  CLOUD_RUN_MIN_INSTANCES_FEED="${CLOUD_RUN_MIN_INSTANCES_FEED:-1}"
-  CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-false}"
-  echo "🎯 DEPLOY_PROFILE=core — auth+feed warm (min 1), notification+learn, max-instances=$CLOUD_RUN_MAX_INSTANCES"
 else
   SERVICES=(
-    "auth-service"
-    "feed-service"
-    "learn-service"
-    "school-service"
-    "student-service"
-    "teacher-service"
-    "attendance-service"
-    "class-service"
-    "subject-service"
-    "grade-service"
-    "analytics-service"
-    "club-service"
-    "messaging-service"
-    "notification-service"
+    "engagement-api"
+    "academic-api"
     "ai-service"
-    "timetable-service"
   )
-  echo "🚀 Deploying ALL services to Cloud Run..."
-  read -p "Are you sure you want to deploy all ${#SERVICES[@]} services? (y/n) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
+  echo "🎯 Deploying all 3 services: ${SERVICES[*]}"
 fi
+
+ENGAGEMENT_API_URL="${ENGAGEMENT_API_URL:-}"
 
 # Build and Push Images
 for SERVICE in "${SERVICES[@]}"; do
   echo "📦 Building $SERVICE..."
-  
+
   # Create a temporary cloudbuild.yaml for this service
   cat <<EOF > cloudbuild.tmp.yaml
 steps:
@@ -155,7 +123,7 @@ EOF
 
   gcloud builds submit --config cloudbuild.tmp.yaml --project "$PROJECT_ID" .
   rm cloudbuild.tmp.yaml
-  
+
   SERVICE_MIN_INSTANCES="$(resolve_min_instances "$SERVICE")"
   echo "🚀 Deploying $SERVICE to Cloud Run (min-instances=$SERVICE_MIN_INSTANCES)..."
 
@@ -163,13 +131,28 @@ EOF
     echo "❌ Refusing deploy: DATABASE_URL looks like dev Supabase. Use production .env for Cloud Run."
     exit 1
   fi
-  
-  ENV_VARS="NODE_ENV=production|DATABASE_URL=$DATABASE_URL|JWT_SECRET=$JWT_SECRET|SUPABASE_URL=${SUPABASE_URL:-}|SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}|GEMINI_API_KEY=${GEMINI_API_KEY:-}|R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}|R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}|R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}|R2_BUCKET_NAME=${R2_BUCKET_NAME:-}|R2_PUBLIC_URL=${R2_PUBLIC_URL:-}|CORS_ORIGIN=$CORS_ORIGIN"
-  # auth-service only: passkeys/WebAuthn (Phase 4). Harmless no-op on other
-  # services (they don't read these), but scoped here anyway since only
-  # auth-service serves /auth/passkeys/*.
-  if [ "$SERVICE" = "auth-service" ]; then
+
+  ENV_VARS="NODE_ENV=production|DATABASE_URL=$DATABASE_URL|JWT_SECRET=$JWT_SECRET|SUPABASE_URL=${SUPABASE_URL:-}|SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}|GEMINI_API_KEY=${GEMINI_API_KEY:-}|ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}|R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}|R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}|R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}|R2_BUCKET_NAME=${R2_BUCKET_NAME:-}|R2_PUBLIC_URL=${R2_PUBLIC_URL:-}|CORS_ORIGIN=$CORS_ORIGIN"
+  if [ -n "${SENTRY_DSN:-}" ]; then
+    ENV_VARS="$ENV_VARS|SENTRY_DSN=$SENTRY_DSN"
+  fi
+
+  # engagement-api only: passkeys/WebAuthn (auth module lives here now).
+  # Harmless no-op on academic-api/ai-service (they don't read these).
+  if [ "$SERVICE" = "engagement-api" ]; then
     ENV_VARS="$ENV_VARS|AUTH_PASSKEYS_ENABLED=${AUTH_PASSKEYS_ENABLED:-false}|WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}|WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-}|WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-}"
+  fi
+  # academic-api's grade/attendance modules call engagement-api's
+  # /auth/notifications/* routes cross-service. Requires engagement-api to
+  # have been deployed first in this same run (or ENGAGEMENT_API_URL set
+  # manually in .env for a targeted single-service redeploy).
+  if [ "$SERVICE" = "academic-api" ]; then
+    if [ -z "$ENGAGEMENT_API_URL" ]; then
+      echo "⚠️  ENGAGEMENT_API_URL is not set. academic-api's grade/attendance"
+      echo "    notification calls (AUTH_SERVICE_URL) will fail until it is."
+      echo "    Deploy engagement-api first, or set ENGAGEMENT_API_URL in .env."
+    fi
+    ENV_VARS="$ENV_VARS|AUTH_SERVICE_URL=${ENGAGEMENT_API_URL:-}"
   fi
   if [ -n "${DATABASE_READ_URL:-}" ]; then
     ENV_VARS="$ENV_VARS|DATABASE_READ_URL=$DATABASE_READ_URL"
@@ -197,12 +180,15 @@ EOF
   ENV_VARS="$ENV_VARS|PRISMA_CONNECTION_LIMIT=$PRISMA_CONNECTION_LIMIT|PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT|DISABLE_DB_KEEPALIVE=${DISABLE_DB_KEEPALIVE:-$DEFAULT_DISABLE_KEEPALIVE}|DISABLE_DB_STARTUP_WARMUP=${DISABLE_DB_STARTUP_WARMUP:-$DEFAULT_DISABLE_KEEPALIVE}"
 
   # Background cron (feed ranker, school audit) runs per instance — disable by default in prod.
-  if [ "$SERVICE" = "feed-service" ] && [ "${FEED_ENABLE_BACKGROUND_JOBS:-0}" = "1" ]; then
+  # feed's job scheduling now lives inside engagement-api.
+  if [ "$SERVICE" = "engagement-api" ] && [ "${FEED_ENABLE_BACKGROUND_JOBS:-0}" = "1" ]; then
     ENV_VARS="$ENV_VARS|DISABLE_BACKGROUND_JOBS=false"
   else
     ENV_VARS="$ENV_VARS|DISABLE_BACKGROUND_JOBS=true"
   fi
-  # Club and other services call notification with x-service-token; align with notification-service default.
+  # notification module (inside engagement-api) validates x-service-token on
+  # its /send, /jobs/* endpoints; academic-api's grade/attendance modules and
+  # Cloud Scheduler use the same shared token.
   NOTIF_TOKEN="${NOTIFICATION_SERVICE_AUTH_TOKEN:-$JWT_SECRET}"
   ENV_VARS="$ENV_VARS|NOTIFICATION_SERVICE_AUTH_TOKEN=$NOTIF_TOKEN"
 
@@ -212,7 +198,6 @@ EOF
   fi
 
   # Deploy to Cloud Run. Defaults: min 0 + cpu throttling (cost-friendly).
-  # For low-latency production: set CLOUD_RUN_MIN_INSTANCES=1 and CLOUD_RUN_CPU_THROTTLING=false in .env.
   # NOTE: PORT is automatically set by Cloud Run and mapped to process.env.PORT
   gcloud run deploy "stunity-$SERVICE" \
     --image "gcr.io/$PROJECT_ID/stunity-$SERVICE" \
@@ -226,6 +211,11 @@ EOF
     --cpu 1 \
     --project "$PROJECT_ID" \
     --set-env-vars "^|^$ENV_VARS"
+
+  if [ "$SERVICE" = "engagement-api" ]; then
+    ENGAGEMENT_API_URL="$(gcloud run services describe "stunity-$SERVICE" --region "$REGION" --project "$PROJECT_ID" --format='value(status.url)')"
+    echo "📎 Captured engagement-api URL for downstream services: $ENGAGEMENT_API_URL"
+  fi
 done
 
 echo "✅ All services deployed!"
