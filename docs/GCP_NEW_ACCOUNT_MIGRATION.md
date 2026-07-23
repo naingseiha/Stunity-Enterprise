@@ -37,34 +37,41 @@
 
 ---
 
-## Phase A — Account & project foundation
+## Phase A — Account & project foundation ✅ done 2026-07-23
 
-- [ ] Create the new Gmail account. Enable 2FA/passkey on it. **Never share its password** — future developers get IAM roles on their own Google accounts (e.g. `roles/run.developer`), this account is billing + break-glass owner only.
-- [ ] Accept the $300 free-trial credit; create the billing account.
-- [ ] **Set a budget alert immediately** (e.g. $5 threshold with email notification) — this is the guard that was missing when `min-instances=1` caused the surprise bill.
-- [ ] Create project `stunity-prod`.
-- [ ] Enable APIs: Cloud Run, Cloud Build, Artifact Registry, Secret Manager, Cloud Scheduler.
-- [ ] Locally: `gcloud auth login` with the new account; keep configurations separated with `gcloud config configurations create stunity-prod`.
-- [ ] Pick **one region for everything**: `asia-southeast1` (Singapore — closest to Cambodia). Note: the old project mixed `us-central1` and `asia-southeast1`; do not repeat that.
-  - Before committing, confirm the region supports Cloud Run **domain mappings** (`gcloud beta run domain-mappings` — `asia-southeast1` was on the supported list at last check). If it isn't, keep `run.app` URLs until launch and revisit.
+- [x] Create the new Gmail account (`seihaczn@gmail.com`). **Never share its password** — future developers get IAM roles on their own Google accounts (e.g. `roles/run.developer`), this account is billing + break-glass owner only.
+- [x] Billing account linked. No $300 free-trial credit (this Google account had prior GCP billing history) — cost discipline via `min-instances=0` matters even more here, not less.
+- [x] Budget alert created via CLI: $5/month, thresholds at 50/90/100%.
+- [x] Project `stunity-prod` created under org `seihaczn-org`.
+- [x] APIs enabled: Cloud Run, Cloud Build, Artifact Registry, Secret Manager, Cloud Scheduler.
+- [x] Local `gcloud` configuration `stunity-prod` created and authenticated as the new account.
+- [x] Region: `asia-southeast1` confirmed to support Cloud Run domain mappings (`gcloud beta run domain-mappings list` returned cleanly, no region error).
 
-## Phase B — Phase 0 consolidation (do BEFORE first deploy)
+Known local gotcha: this machine's system Python (3.9) crashes `gcloud`'s newer commands (`gcloud beta run domain-mappings`, budget commands). Fix: `export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3.11` (added to `~/.zshrc`).
 
-Per [ARCHITECTURE_REVIEW_2026-07.md §5](./ARCHITECTURE_REVIEW_2026-07.md): merge 16 services into
+**Old project `stunity-enterprise`:** not yet decommissioned. Full env-var dump of all 20 old Cloud Run deployments backed up to `~/stunity-old-cloudrun-env-backup.txt` before any shutdown decision — needed for Phase C secrets below. Confirm current status before assuming it's gone or still billing.
+
+## Phase B — Phase 0 consolidation ✅ done 2026-07-23 (merged to `main`)
+
+Per [ARCHITECTURE_REVIEW_2026-07.md §5](./ARCHITECTURE_REVIEW_2026-07.md): merged 16 services into
 
 1. **Academic API** — school, student, teacher, class, subject, grade, attendance, timetable, club
 2. **Engagement API** — auth, feed, messaging, notification, learn, analytics
 3. **AI API** — ai-service as-is
 
-Also: delete `search-service` / `storage-service` / `user-service` stubs, and introduce the shared `getJwtSecret()` helper (§7 of the review) so the new project never contains a hardcoded JWT fallback.
+Also done: deleted `search-service` / `storage-service` / `user-service` stubs, and introduced the shared `getJwtSecret()` helper (§7 of the review) so the new project never contains a hardcoded JWT fallback — every merged module uses it now, closing the 3 previously-unguarded route files.
 
-Pure code/router move, same DB, testable locally before anything is deployed.
+Found and fixed during the merge: auth-service and notification-service each had their own `/notifications/*` routes (different verbs, different clients — web-parent UI vs mobile) — invisible as a conflict while they were separate deployables. Renamed auth's to `/auth/notifications/*` and updated the 3 real call sites (web parent-notification page + dropdown, academic-api's grade/attendance cross-service calls).
+
+Pure code/router move, same DB — verified via tsc + live boot test of both services against the dev DB before merging to `main`.
 
 ## Phase C — First deploy to the new project
 
-- [ ] Update `scripts/deploy-cloud-run.sh`: `PROJECT_ID=stunity-prod`, `REGION=asia-southeast1`, service list = the 3 new services.
-- [ ] Remove the `core`-profile overrides: `min-instances` must default to **0** and CPU throttling to **true** everywhere (free tier requires scale-to-zero; revisit only after launch with measured cold-start complaints).
-- [ ] Set env vars/secrets on each service (prefer Secret Manager over plain env for secrets):
+- [x] `scripts/deploy-cloud-run.sh` updated: `PROJECT_ID=stunity-prod`, `REGION=asia-southeast1`, service list = `engagement-api`, `academic-api`, `ai-service` (in that order — academic-api's cross-service notification calls need engagement-api's URL, captured automatically after its deploy and injected as `AUTH_SERVICE_URL`).
+- [x] Removed the `core`-profile overrides entirely (the per-service min-instances for auth/feed/notification/learn no longer apply — those were separate deployables that don't exist anymore). `min-instances` defaults to **0**, CPU throttling to **true** everywhere.
+- [x] Dockerfiles added for `services/academic-api` and `services/engagement-api` (same multi-stage pattern as the other services).
+- [ ] **Not yet run** — no local Docker to test-build the new Dockerfiles; running the script performs a real deploy. Needs a real Cloud Build run to confirm they build before first production use.
+- [ ] Set env vars/secrets on each service (prefer Secret Manager over plain env for secrets) — the deploy script now passes these through automatically from `.env`, but `.env` itself still needs the production values set:
 
 | Variable | Value/source |
 |---|---|
