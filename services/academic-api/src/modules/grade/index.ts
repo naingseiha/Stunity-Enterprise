@@ -354,7 +354,7 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001'
 // Send notification to parent(s) of a student
 const notifyParents = async (studentId: string, type: string, title: string, message: string, link?: string) => {
   try {
-    const response = await fetch(`${AUTH_SERVICE_URL}/notifications/parent`, {
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/notifications/parent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentId, type, title, message, link }),
@@ -373,7 +373,7 @@ const notifyParents = async (studentId: string, type: string, title: string, mes
 // Send notification to student directly
 const notifyStudent = async (studentId: string, type: string, title: string, message: string, link?: string) => {
   try {
-    await fetch(`${AUTH_SERVICE_URL}/notifications/student`, {
+    await fetch(`${AUTH_SERVICE_URL}/auth/notifications/student`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentId, type, title, message, link }),

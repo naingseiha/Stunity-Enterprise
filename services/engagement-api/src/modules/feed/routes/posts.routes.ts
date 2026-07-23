@@ -1,0 +1,1037 @@
+/**
+ * Posts & Feed Routes
+ * 
+ * Extracted from index.ts monolith for maintainability.
+ */
+
+import { Router, Response } from 'express';
+import { prisma, prismaRead, feedRanker, upload } from '../context';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
+import { feedCache, EventPublisher } from '../redis';
+import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
+import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../utils/feedCursor';
+import { getLatestQuizAttemptsByQuizIds } from '../utils/quizAttempts';
+import { fetchReactionCounts } from '../utils/reactionCounts';
+
+const router = Router();
+const inFlightFeedResponses = new Map<string, Promise<{ payload: any; etag: string; hasMore: boolean }>>();
+const FEED_RESPONSE_CACHE_TTL_PAGE1_SECONDS = 90;
+const FEED_RESPONSE_CACHE_TTL_PAGED_SECONDS = 300;
+
+function feedResponseCacheTtlSeconds(page: number): number {
+  return page > 1 ? FEED_RESPONSE_CACHE_TTL_PAGED_SECONDS : FEED_RESPONSE_CACHE_TTL_PAGE1_SECONDS;
+}
+const FEED_PERSONALIZATION_TIMEOUT_MS = Number(process.env.FEED_PERSONALIZATION_TIMEOUT_MS || 900);
+const SEARCH_POST_TYPES = [
+  'ARTICLE',
+  'QUESTION',
+  'ANNOUNCEMENT',
+  'POLL',
+  'ACHIEVEMENT',
+  'PROJECT',
+  'COURSE',
+  'EVENT_CREATED',
+  'QUIZ',
+  'EXAM',
+  'ASSIGNMENT',
+  'RESOURCE',
+  'TUTORIAL',
+  'RESEARCH',
+  'CLUB_CREATED',
+  'REFLECTION',
+  'COLLABORATION',
+] as const;
+const POST_TYPE_SEARCH_ALIASES: Record<string, typeof SEARCH_POST_TYPES[number]> = {
+  ARTICLES: 'ARTICLE',
+  QUESTIONS: 'QUESTION',
+  ANNOUNCEMENTS: 'ANNOUNCEMENT',
+  POLLS: 'POLL',
+  ACHIEVEMENTS: 'ACHIEVEMENT',
+  PROJECTS: 'PROJECT',
+  COURSES: 'COURSE',
+  EVENTS: 'EVENT_CREATED',
+  QUIZZES: 'QUIZ',
+  EXAMS: 'EXAM',
+  ASSIGNMENTS: 'ASSIGNMENT',
+  RESOURCES: 'RESOURCE',
+  TUTORIALS: 'TUTORIAL',
+  RESEARCHES: 'RESEARCH',
+  CLUBS: 'CLUB_CREATED',
+  REFLECTIONS: 'REFLECTION',
+  COLLABORATIONS: 'COLLABORATION',
+};
+
+function normalizePostTypeSearchTerm(term: string): typeof SEARCH_POST_TYPES[number] | null {
+  const normalized = term.toUpperCase().trim().replace(/\s+/g, '_');
+  const candidate = POST_TYPE_SEARCH_ALIASES[normalized] || normalized;
+  return SEARCH_POST_TYPES.includes(candidate as typeof SEARCH_POST_TYPES[number])
+    ? candidate as typeof SEARCH_POST_TYPES[number]
+    : null;
+}
+
+// Resolve relative media URLs (e.g. /uploads/...) to absolute URLs using request host
+function resolveMediaUrls(urls: string[], req: AuthRequest): string[] {
+  if (!urls || urls.length === 0) return [];
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  return urls.map(url => {
+    if (url.startsWith('/')) return `${baseUrl}${url}`;
+    return url;
+  });
+}
+
+function resolveUserMediaUrl(url: string | null | undefined, req: AuthRequest): string | null | undefined {
+  if (!url) return url;
+  return resolveMediaUrls([url], req)[0] || url;
+}
+
+function resolvePostUserMedia(post: any, req: AuthRequest): void {
+  if (post.author?.profilePictureUrl) {
+    post.author.profilePictureUrl = resolveUserMediaUrl(post.author.profilePictureUrl, req);
+  }
+  if (post.repostOf?.author?.profilePictureUrl) {
+    post.repostOf.author.profilePictureUrl = resolveUserMediaUrl(post.repostOf.author.profilePictureUrl, req);
+  }
+}
+
+// ========================================
+// POSTS ENDPOINTS
+// ========================================
+
+// Helper: strip posts to minimal fields for feed cards (76% smaller payload)
+function stripToMinimal(post: any): any {
+  return {
+    id: post.id,
+    title: post.title,
+    content: post.content?.slice(0, 300) || '',
+    postType: post.postType,
+    visibility: post.visibility,
+    mediaUrls: post.mediaUrls || [],  // Keep ALL URLs — needed for image carousel
+    mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
+    mediaMetadata: post.mediaMetadata || [],
+    mediaAspectRatio: post.mediaAspectRatio,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    isPinned: post.isPinned,
+    isEdited: post.isEdited,
+    likesCount: post.likesCount ?? post._count?.likes ?? 0,
+    commentsCount: post.commentsCount ?? post._count?.comments ?? 0,
+    sharesCount: post.sharesCount ?? 0,
+    viewsCount: post.viewsCount ?? post._count?.views ?? post.views ?? 0,
+    isLikedByMe: post.isLikedByMe,
+    isBookmarked: post.isBookmarked || false,
+    isFollowingAuthor: post.isFollowingAuthor || false,
+    author: post.author ? {
+      id: post.author.id,
+      firstName: post.author.firstName,
+      lastName: post.author.lastName,
+      profilePictureUrl: post.author.profilePictureUrl,
+      role: post.author.role,
+      isVerified: post.author.isVerified,
+    } : undefined,
+    // Keep type-specific data compact
+    ...(post.postType === 'POLL' && { pollOptions: post.pollOptions, userVotedOptionId: post.userVotedOptionId }),
+    ...(post.postType === 'QUIZ' && post.quiz && { quiz: post.quiz }),
+    ...(post.postType === 'QUIZ' && post.quizData && { quizData: post.quizData }),
+    // Repost data
+    ...(post.repostOfId && {
+      repostOfId: post.repostOfId,
+      repostComment: post.repostComment,
+      repostOf: post.repostOf,
+    }),
+    // Smart Scroll quality signals — must survive the minimal strip
+    // because the mobile always requests ?fields=minimal and the
+    // EdScoreBadge + TeacherVerifiedBadge need these to render real data.
+    edScore:          post.edScore    ?? null,
+    edScoreCount:     post.edScoreCount ?? 0,
+    teacherVerified:  post.teacherVerified ?? false,
+    verifiedByTeacherId: post.verifiedByTeacherId ?? null,
+    topicTags:        post.topicTags  || [],
+    _score:           post._score,
+    _scoreBreakdown:  post._scoreBreakdown,
+  };
+}
+
+// Helper: generate ETag from post IDs for 304 Not Modified
+function createETag(posts: any[]): string {
+  const hash = posts.map(p => [
+    p.id,
+    p.updatedAt,
+    p.likesCount,
+    p.commentsCount,
+    p.sharesCount,
+    p.viewsCount,
+    p.isEdited,
+    p.isPinned,
+  ].join(':')).join(',');
+  // Simple but effective: hash of IDs + mutable feed-card fields
+  let h = 0;
+  for (let i = 0; i < hash.length; i++) {
+    h = ((h << 5) - h + hash.charCodeAt(i)) | 0;
+  }
+  return `"feed-${Math.abs(h).toString(36)}"`;
+}
+
+const estimatedViewIncrement = (sampleRate?: number): number => {
+  const rate = Number(sampleRate);
+  if (!Number.isFinite(rate) || rate <= 0 || rate >= 1) return 1;
+  return Math.min(Math.max(Math.round(1 / rate), 1), 100);
+};
+
+function normalizeFeedExcludeIds(value: unknown): string[] {
+  if (!value) return [];
+  return [...new Set(String(value).split(',').map((id) => id.trim()).filter(Boolean))].sort();
+}
+
+function hashFeedKeyPart(value: string): string {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+async function withFeedSoftTimeout<T>(
+  label: string,
+  promise: Promise<T>,
+  timeoutMs: number,
+  fallback: T,
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const guarded = promise.catch((error) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[Feed] ${label} failed:`, error?.message || error);
+    }
+    return fallback;
+  });
+
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timeout = setTimeout(() => {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Feed] ${label} timed out after ${timeoutMs}ms; returning fallback`);
+      }
+      resolve(fallback);
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([guarded, timeoutPromise]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+type PersonalizedFeedParams = {
+  userId: string;
+  mode: string;
+  page: number;
+  limit: number;
+  subject?: string;
+  excludeIds: string[];
+  fields: 'minimal' | 'full';
+  cursor?: string | null;
+};
+
+function buildFeedCacheKey(params: PersonalizedFeedParams): string {
+  const excludeKey = params.excludeIds.length > 0
+    ? hashFeedKeyPart(params.excludeIds.join(','))
+    : 'NONE';
+  const cursorKey = params.cursor ? hashFeedKeyPart(params.cursor) : 'NONE';
+  return `${params.userId}:${params.mode}:${params.page}:${params.limit}:${params.subject || 'ALL'}:${params.fields}:${excludeKey}:${cursorKey}`;
+}
+
+async function buildPersonalizedFeedResponse(
+  params: PersonalizedFeedParams,
+  req: AuthRequest,
+  mark?: (label: string, fromMs: number) => void,
+): Promise<{ payload: any; etag: string; hasMore: boolean }> {
+  const minimal = params.fields === 'minimal';
+  const rankerStart = performance.now();
+  const result = await feedRanker.generateFeed(params.userId, {
+    mode: params.mode as 'FOR_YOU' | 'FOLLOWING' | 'RECENT' | 'BRAIN_MODE',
+    page: params.page,
+    limit: params.limit,
+    subject: params.subject,
+    excludeIds: params.excludeIds,
+    cursor: params.cursor || undefined,
+  });
+  mark?.('ranker', rankerStart);
+
+  const feedPosts = result.items.filter(i => i.type === 'POST').map(i => i.data as any);
+  const postIds = feedPosts.map((sp: any) => sp.post.id);
+  const feedAuthorIds = [...new Set(feedPosts.map((sp: any) => sp.post.authorId).filter((id: string) => id !== params.userId))];
+  const pollPostIds = feedPosts.filter((sp: any) => sp.post.postType === 'POLL').map((sp: any) => sp.post.id);
+  const quizPostIds = feedPosts
+    .filter((sp: any) => sp.post.postType === 'QUIZ' && sp.post.quiz)
+    .map((sp: any) => sp.post.quiz?.id)
+    .filter(Boolean) as string[];
+
+  const personalize = <T,>(label: string, promise: Promise<T>, fallback: T) =>
+    minimal
+      ? withFeedSoftTimeout(label, promise, FEED_PERSONALIZATION_TIMEOUT_MS, fallback)
+      : promise.catch(() => fallback);
+
+  const personalizeStart = performance.now();
+  const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts, reactionCountsMap] = await Promise.all([
+    postIds.length > 0
+      ? personalize('liked-state lookup', prismaRead.like.findMany({ where: { userId: params.userId, postId: { in: postIds } }, select: { postId: true, reactionType: true } }), [] as any[])
+      : Promise.resolve([]),
+    postIds.length > 0
+      ? personalize('bookmark-state lookup', prismaRead.bookmark.findMany({ where: { userId: params.userId, postId: { in: postIds } }, select: { postId: true } }), [] as any[])
+      : Promise.resolve([]),
+    feedAuthorIds.length > 0
+      ? personalize('follow-state lookup', prismaRead.follow.findMany({ where: { followerId: params.userId, followingId: { in: feedAuthorIds } }, select: { followingId: true } }), [] as any[])
+      : Promise.resolve([]),
+    pollPostIds.length > 0
+      ? personalize('poll-vote lookup', prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId: params.userId }, select: { postId: true, optionId: true } }), [] as any[])
+      : Promise.resolve([]),
+    quizPostIds.length > 0
+      ? personalize(
+        'quiz-attempt lookup',
+        getLatestQuizAttemptsByQuizIds(prisma, params.userId, quizPostIds),
+        new Map(),
+      )
+      : Promise.resolve(new Map()),
+    postIds.length > 0
+      ? personalize('reaction-counts lookup', fetchReactionCounts(prismaRead, postIds), new Map())
+      : Promise.resolve(new Map()),
+  ]);
+  mark?.('personalize', personalizeStart);
+
+  const formatStart = performance.now();
+  const likedSet = new Set(userLikes.map(l => l.postId));
+  const reactionMap = new Map(userLikes.map((l: any) => [l.postId, l.reactionType]));
+  const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
+  const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
+  const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
+  const quizAttempts = userQuizAttempts;
+
+  const formattedFeed = result.items.map(item => {
+    if (item.type !== 'POST') return item;
+
+    const sp = item.data as any;
+    return {
+      type: 'POST',
+      data: {
+        id: sp.post.id,
+        content: sp.post.content,
+        title: sp.post.title,
+        postType: sp.post.postType,
+        visibility: sp.post.visibility,
+        mediaUrls: sp.post.mediaUrls,
+        mediaKeys: sp.post.mediaKeys,
+        mediaDisplayMode: sp.post.mediaDisplayMode,
+        mediaMetadata: sp.post.mediaMetadata,
+        mediaAspectRatio: sp.post.mediaAspectRatio,
+        likesCount: sp.post.likesCount,
+        commentsCount: sp.post.commentsCount,
+        sharesCount: sp.post.sharesCount,
+        viewsCount: sp.post.viewsCount ?? sp.post._count?.views ?? 0,
+        isPinned: sp.post.isPinned,
+        isEdited: sp.post.isEdited,
+        createdAt: sp.post.createdAt,
+        updatedAt: sp.post.updatedAt,
+        topicTags: sp.post.topicTags || [],
+        repostOfId: sp.post.repostOfId,
+        repostComment: sp.post.repostComment,
+        repostOf: sp.post.repostOf,
+        author: sp.post.author,
+        _count: sp.post._count,
+        isLikedByMe: likedSet.has(sp.post.id),
+        myReaction: reactionMap.get(sp.post.id) ?? null,
+        reactionCounts: reactionCountsMap.get(sp.post.id) ?? {},
+        isBookmarked: bookmarkedSet.has(sp.post.id),
+        isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
+        pollOptions: sp.post.pollOptions,
+        ...(sp.post.postType === 'POLL' && {
+          userVotedOptionId: votedOptions.get(sp.post.id) || null,
+        }),
+        ...(sp.post.postType === 'QUIZ' && sp.post.quiz && {
+          quiz: {
+            ...sp.post.quiz,
+            userAttempt: quizAttempts.get(sp.post.quiz.id) || null,
+          },
+        }),
+        _score: sp.score,
+        _scoreBreakdown: sp.breakdown,
+        edScore: sp.post.edScore ?? null,
+        edScoreCount: sp.post.edScoreCount ?? 0,
+        teacherVerified: sp.post.teacherVerified ?? false,
+        verifiedByTeacherId: sp.post.verifiedByTeacherId ?? null,
+        questionBounty: sp.post.questionBounty ?? 0,
+      },
+    };
+  });
+
+  const outputPosts = minimal ? formattedFeed.map(f => f.type === 'POST' ? { type: 'POST', data: stripToMinimal(f.data) } : f) : formattedFeed;
+  mark?.('format', formatStart);
+
+  const mediaStart = performance.now();
+  outputPosts.forEach((p: any) => {
+    if (p.type === 'POST') {
+      if (p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req);
+      resolvePostUserMedia(p.data, req);
+    }
+    if (p.type === 'SUGGESTED_USERS' && p.data) {
+      p.data.forEach((u: any) => {
+        if (u.profilePictureUrl) {
+          const resolved = resolveMediaUrls([u.profilePictureUrl], req);
+          u.profilePictureUrl = resolved.length > 0 ? resolved[0] : u.profilePictureUrl;
+        }
+      });
+    }
+    if (p.type === 'SUGGESTED_COURSES' && p.data) {
+      p.data.forEach((c: any) => {
+        if (c.thumbnailUrl) {
+          const resolved = resolveMediaUrls([c.thumbnailUrl], req);
+          c.thumbnailUrl = resolved.length > 0 ? resolved[0] : c.thumbnailUrl;
+        }
+      });
+    }
+  });
+  mark?.('media', mediaStart);
+
+  const etagStart = performance.now();
+  const etag = createETag(outputPosts.filter(p => p.type === 'POST').map(p => p.data));
+  const payload = {
+    success: true,
+    data: outputPosts,
+    ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
+    pagination: {
+      page: params.page,
+      limit: params.limit,
+      hasMore: result.hasMore,
+      ...(typeof result.total === 'number'
+        ? {
+          total: result.total,
+          totalPages: Math.ceil(result.total / params.limit),
+        }
+        : {}),
+      ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
+    },
+    meta: {
+      mode: params.mode,
+      algorithm: 'v2',
+    },
+  };
+
+  const cacheKey = buildFeedCacheKey(params);
+  const cacheTtl = feedResponseCacheTtlSeconds(params.page);
+  feedCache.set(cacheKey, { payload, etag }, cacheTtl).catch(() => { });
+  mark?.('etag', etagStart);
+  return { payload, etag, hasMore: result.hasMore };
+}
+
+function scheduleFeedPagePrefetch(
+  current: PersonalizedFeedParams,
+  hasMore: boolean,
+  req: AuthRequest,
+  nextCursor?: string | null,
+): void {
+  if (!hasMore) return;
+
+  const nextParams: PersonalizedFeedParams = {
+    ...current,
+    page: current.page + 1,
+    cursor: nextCursor || null,
+  };
+  const nextCacheKey = buildFeedCacheKey(nextParams);
+
+  setImmediate(() => {
+    void (async () => {
+      try {
+        const existing = await feedCache.get(nextCacheKey);
+        if (existing) return;
+        if (inFlightFeedResponses.has(nextCacheKey)) return;
+
+        const prefetchPromise = buildPersonalizedFeedResponse(nextParams, req)
+          .finally(() => {
+            inFlightFeedResponses.delete(nextCacheKey);
+          });
+        inFlightFeedResponses.set(nextCacheKey, prefetchPromise);
+        await prefetchPromise;
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`🔮 [Feed] Prefetched page ${nextParams.page} for ${current.userId}`);
+        }
+      } catch {
+        // Best-effort — user request is unaffected
+      }
+    })();
+  });
+}
+
+// GET /posts - Get feed posts
+router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 20, type, subject, cursor, fields, search } = req.query;
+    const minimal = fields === 'minimal';
+    const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const normalizedPage = Math.max(Number(page) || 1, 1);
+    const rawCursor = typeof cursor === 'string' ? cursor : null;
+    const useCursor = Boolean(rawCursor);
+
+    const visibilityWhere = await resolveFeedVisibilityWhere(prismaRead, {
+      userId: req.user!.id,
+      schoolId: req.user!.schoolId,
+    });
+
+    const where: any = {
+      AND: [visibilityWhere],
+    };
+
+    // Search filter — search in content, title, tags, and post type
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTerm = search.trim();
+      const searchOR: any[] = [
+        { content: { contains: searchTerm, mode: 'insensitive' } },
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { topicTags: { hasSome: [searchTerm.toLowerCase()] } },
+      ];
+      // Also match post type labels, including common plurals like "courses" and "quizzes".
+      const matchingPostType = normalizePostTypeSearchTerm(searchTerm);
+      if (matchingPostType) {
+        searchOR.push({ postType: matchingPostType });
+      }
+      where.AND.push({ OR: searchOR });
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📋 [GET /posts] Query filters:', {
+        userId: req.user!.id,
+        userSchoolId: req.user!.schoolId,
+        type,
+        subject,
+        search,
+      });
+    }
+
+    if (type) {
+      where.AND.push({ postType: type });
+    }
+
+    // Subject filter support
+    if (subject && subject !== 'ALL') {
+      where.AND.push({
+        topicTags: {
+          hasSome: [String(subject).toLowerCase()],
+        },
+      });
+    }
+
+    if (rawCursor) {
+      let cursorState = decodeFeedCursor(rawCursor);
+
+      if (!cursorState) {
+        const cursorPost = await prisma.post.findUnique({
+          where: { id: rawCursor },
+          select: {
+            id: true,
+            createdAt: true,
+            isPinned: true,
+          },
+        });
+
+        if (cursorPost) {
+          cursorState = {
+            id: cursorPost.id,
+            createdAt: cursorPost.createdAt.toISOString(),
+            isPinned: cursorPost.isPinned,
+          };
+        }
+      }
+
+      const cursorWhere = cursorState ? buildFeedCursorWhere(cursorState) : null;
+      if (cursorWhere) {
+        where.AND.push(cursorWhere);
+      }
+    }
+
+    // Phase 1: page through a lightweight row set so the sort can stay index-friendly.
+    const postPageRows = await prisma.post.findMany({
+      where,
+      select: {
+        id: true,
+        authorId: true,
+        postType: true,
+        createdAt: true,
+        isPinned: true,
+      },
+      orderBy: [
+        { isPinned: 'desc' },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+      ...(!useCursor ? {
+        skip: (normalizedPage - 1) * normalizedLimit,
+      } : {}),
+      take: normalizedLimit + 1,
+    });
+
+    const hasMore = postPageRows.length > normalizedLimit;
+    const pagePostRows = hasMore ? postPageRows.slice(0, normalizedLimit) : postPageRows;
+    const postIds = pagePostRows.map((post) => post.id);
+
+    // Phase 2: hydrate only the visible posts for the response payload.
+    const hydratedPosts = postIds.length > 0 ? await prisma.post.findMany({
+      where: { id: { in: postIds } },
+      select: {
+        id: true,
+        authorId: true,
+        content: true,
+        mediaUrls: true,
+        mediaKeys: true,
+        mediaMetadata: true,
+        mediaAspectRatio: true,
+        postType: true,
+        visibility: true,
+        likesCount: true,
+        commentsCount: true,
+        sharesCount: true,
+        viewsCount: true,
+        isEdited: true,
+        isPinned: true,
+        createdAt: true,
+        updatedAt: true,
+        pollExpiresAt: true,
+        pollAllowMultiple: true,
+        pollMaxChoices: true,
+        pollIsAnonymous: true,
+        assignmentDueDate: true,
+        assignmentPoints: true,
+        assignmentSubmissionType: true,
+        courseCode: true,
+        courseLevel: true,
+        courseDuration: true,
+        announcementUrgency: true,
+        announcementExpiryDate: true,
+        tutorialDifficulty: true,
+        tutorialEstimatedTime: true,
+        tutorialPrerequisites: true,
+        examDate: true,
+        examDuration: true,
+        examTotalPoints: true,
+        examPassingScore: true,
+        resourceType: true,
+        resourceUrl: true,
+        researchField: true,
+        researchCollaborators: true,
+        projectStatus: true,
+        projectDeadline: true,
+        projectTeamSize: true,
+        mediaDisplayMode: true,
+        studyClubId: true,
+        difficultyLevel: true,
+        questionBounty: true,
+        repostComment: true,
+        repostOfId: true,
+        title: true,
+        topicTags: true,
+        trendingScore: true,
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            role: true,
+            isVerified: true,
+            professionalTitle: true,
+            level: true,
+          },
+        },
+        pollOptions: {
+          select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+        },
+        quiz: {
+          select: {
+            id: true,
+            questions: true,
+            timeLimit: true,
+            passingScore: true,
+            totalPoints: true,
+            resultsVisibility: true,
+          },
+        },
+        repostOf: {
+          select: {
+            id: true,
+            authorId: true,
+            content: true,
+            title: true,
+            postType: true,
+            mediaUrls: true,
+            mediaMetadata: true,
+            mediaAspectRatio: true,
+            createdAt: true,
+            likesCount: true,
+            commentsCount: true,
+            sharesCount: true,
+            isPinned: true,
+            repostOfId: true,
+            repostComment: true,
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                role: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
+      },
+    }) : [];
+    const postsById = new Map(hydratedPosts.map((post) => [post.id, post]));
+    const pagePosts = pagePostRows
+      .map((post) => postsById.get(post.id))
+      .filter((post): post is NonNullable<typeof post> => Boolean(post));
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📊 [GET /posts] Query results:', {
+        postsFound: pagePosts.length,
+        quizPosts: pagePosts.filter(p => p.postType === 'QUIZ').length,
+        postTypes: pagePosts.map(p => p.postType),
+      });
+    }
+
+    // B1 FIX: All 4 user-state lookups run in PARALLEL (was sequential)
+    const authorIds = [...new Set(pagePostRows.map(p => p.authorId).filter(id => id !== req.user!.id))];
+    const pollPostIds = pagePostRows.filter(p => p.postType === 'POLL').map(p => p.id);
+    const quizPostIds = pagePosts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean) as string[];
+
+    const [userLikes, userFollows, userVotes, userQuizAttempts, reactionCountsMap] = await Promise.all([
+      prismaRead.like.findMany({ where: { postId: { in: postIds }, userId: req.user!.id }, select: { postId: true, reactionType: true } }),
+      authorIds.length > 0
+        ? prismaRead.follow.findMany({ where: { followerId: req.user!.id, followingId: { in: authorIds } }, select: { followingId: true } })
+        : Promise.resolve([]),
+      pollPostIds.length > 0
+        ? prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId: req.user!.id }, select: { postId: true, optionId: true } })
+        : Promise.resolve([]),
+      quizPostIds.length > 0
+        ? getLatestQuizAttemptsByQuizIds(prisma, req.user!.id, quizPostIds)
+        : Promise.resolve(new Map()),
+      fetchReactionCounts(prismaRead, postIds),
+    ]);
+
+    const likedPostIds = new Set(userLikes.map(l => l.postId));
+    const reactionByPostId = new Map(userLikes.map((l: any) => [l.postId, l.reactionType]));
+    const followingSet = new Set(userFollows.map(f => f.followingId));
+    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
+    const quizAttempts = userQuizAttempts;
+
+    const formattedPosts = pagePosts.map(post => ({
+      ...post,
+      isLikedByMe: likedPostIds.has(post.id),
+      myReaction: reactionByPostId.get(post.id) ?? null,
+      reactionCounts: reactionCountsMap.get(post.id) ?? {},
+      isFollowingAuthor: followingSet.has(post.authorId),
+      likesCount: post.likesCount ?? 0,
+      commentsCount: post.commentsCount ?? 0,
+      viewsCount: post.viewsCount ?? 0,
+      ...(post.postType === 'POLL' && {
+        userVotedOptionId: votedOptions.get(post.id) || null,
+      }),
+      ...(post.postType === 'QUIZ' && post.quiz && {
+        quiz: {
+          ...post.quiz,
+          userAttempt: quizAttempts.get(post.quiz.id) || null,
+        },
+      }),
+    }));
+
+    const outputPosts = minimal ? formattedPosts.map(stripToMinimal) : formattedPosts;
+
+    // Resolve relative media URLs to absolute
+    outputPosts.forEach((p: any) => {
+      if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
+      resolvePostUserMedia(p, req as AuthRequest);
+    });
+    const lastVisiblePost = pagePostRows[pagePostRows.length - 1];
+    const nextCursor = hasMore && lastVisiblePost
+      ? encodeFeedCursor({
+        id: lastVisiblePost.id,
+        createdAt: lastVisiblePost.createdAt.toISOString(),
+        isPinned: lastVisiblePost.isPinned,
+      })
+      : null;
+
+    // ETag for 304 Not Modified
+    const etag = createETag(outputPosts);
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    res.json({
+      success: true,
+      data: outputPosts,
+      ...(nextCursor ? { nextCursor } : {}),
+      pagination: {
+        page: normalizedPage,
+        limit: normalizedLimit,
+        hasMore,
+        ...(nextCursor ? { nextCursor } : {}),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get posts error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get posts', details: error.message });
+  }
+});
+
+// GET /posts/:postId/difficulty - Get post difficulty score (Gamification Phase 4 API)
+router.get('/posts/:postId/difficulty', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { difficultyLevel: true, postType: true }
+    });
+
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    res.json({
+      success: true,
+      difficultyLevel: post.difficultyLevel ?? 2.5,
+      postType: post.postType
+    });
+  } catch (error: any) {
+    console.error('Get post difficulty error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get post difficulty' });
+  }
+});
+
+// ========================================
+// PERSONALIZED FEED (ranked)
+// ========================================
+
+// GET /posts/feed - Personalized ranked feed
+router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      mode = 'FOR_YOU',
+      page = 1,
+      limit = 20,
+      subject,
+      excludeIds,
+      fields,
+      cursor,
+    } = req.query;
+    const normalizedFields = fields === 'minimal' ? 'minimal' : 'full';
+    const normalizedPage = Math.max(Number(page) || 1, 1);
+    const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const rawCursor = typeof cursor === 'string' ? cursor : null;
+    const normalizedExcludeIds = normalizeFeedExcludeIds(excludeIds);
+
+    const userId = req.user!.id;
+    const feedParams: PersonalizedFeedParams = {
+      userId,
+      mode: String(mode),
+      page: normalizedPage,
+      limit: normalizedLimit,
+      subject: subject ? String(subject) : undefined,
+      excludeIds: normalizedExcludeIds,
+      fields: normalizedFields,
+      cursor: rawCursor,
+    };
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🧠 [Feed] Personalized feed request:', {
+        userId,
+        mode,
+        page,
+        subject,
+      });
+    }
+
+    // Per-request timing tape. Cheap (Node performance.now ~100ns) and gives
+    // us a single line per request showing where the time went. Logged only
+    // outside production so prod logs stay clean.
+    const requestStartedAt = performance.now();
+    const timings: Record<string, number> = {};
+    const mark = (label: string, fromMs: number) => {
+      timings[label] = Math.round(performance.now() - fromMs);
+    };
+    const buildServerTimingHeader = (cacheHit: boolean): string => {
+      const total = Math.round(performance.now() - requestStartedAt);
+      const parts: string[] = [`total;dur=${total}`, `cache;desc="${cacheHit ? 'HIT' : 'MISS'}"`];
+      for (const [k, v] of Object.entries(timings)) parts.push(`${k};dur=${v}`);
+      return parts.join(', ');
+    };
+    const logTimings = (cacheHit: boolean) => {
+      const total = Math.round(performance.now() - requestStartedAt);
+      const parts = Object.entries(timings).map(([k, v]) => `${k}=${v}ms`).join(' ');
+      // Always log misses + any request > 3s so prod can be diagnosed; dev
+      // still gets the full firehose for cache-hit paths.
+      if (!cacheHit || total > 3000 || process.env.NODE_ENV !== 'production') {
+        const tag = total > 5000 ? '[Feed SLOW]' : '⏱️  [Feed]';
+        console.log(`${tag} /posts/feed page=${normalizedPage} mode=${mode} cache=${cacheHit ? 'HIT' : 'MISS'} total=${total}ms ${parts}`);
+      }
+    };
+
+    const cacheKey = buildFeedCacheKey(feedParams);
+    const responseCacheTtl = feedResponseCacheTtlSeconds(normalizedPage);
+
+    const cacheLookupStart = performance.now();
+    const cached = await feedCache.get(cacheKey);
+    mark('cacheLookup', cacheLookupStart);
+    if (cached) {
+      const cachedPayload = cached.payload || cached;
+      const cachedEtag = cached.etag;
+      if (cachedEtag) {
+        res.setHeader('ETag', cachedEtag);
+      }
+      res.setHeader('Cache-Control', `private, max-age=${responseCacheTtl}, stale-while-revalidate=300`);
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('Server-Timing', buildServerTimingHeader(true));
+      logTimings(true);
+      if (cachedEtag && req.headers['if-none-match'] === cachedEtag) {
+        return res.status(304).end();
+      }
+      const cachedHasMore = cachedPayload?.pagination?.hasMore ?? true;
+      const cachedNextCursor = cachedPayload?.nextCursor || cachedPayload?.pagination?.nextCursor || null;
+      scheduleFeedPagePrefetch(feedParams, cachedHasMore, req, cachedNextCursor);
+      return res.json(cachedPayload);
+    }
+
+    let responsePromise = inFlightFeedResponses.get(cacheKey);
+    let coalesced = false;
+    if (!responsePromise) {
+      responsePromise = buildPersonalizedFeedResponse(feedParams, req, mark)
+        .finally(() => {
+          inFlightFeedResponses.delete(cacheKey);
+        });
+      inFlightFeedResponses.set(cacheKey, responsePromise);
+    } else {
+      coalesced = true;
+    }
+
+    const { payload, etag, hasMore } = await responsePromise;
+    if (coalesced) timings.coalesced = 1;
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', `private, max-age=${responseCacheTtl}, stale-while-revalidate=300`);
+    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('Server-Timing', buildServerTimingHeader(false));
+    logTimings(false);
+
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    const nextCursor = payload?.nextCursor || payload?.pagination?.nextCursor || null;
+    scheduleFeedPagePrefetch(feedParams, hasMore, req, nextCursor);
+    res.json(payload);
+  } catch (error: any) {
+    console.error('Get personalized feed error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get personalized feed', details: error.message });
+  }
+});
+
+// POST /feed/track-action - Track user engagement signal
+router.post('/feed/track-action', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { action, postId, duration, source } = req.body;
+    const userId = req.user!.id;
+
+    if (!action || !postId) {
+      return res.status(400).json({ success: false, error: 'action and postId are required' });
+    }
+
+    const validActions = ['VIEW', 'LIKE', 'COMMENT', 'SHARE', 'BOOKMARK'];
+    if (!validActions.includes(action)) {
+      return res.status(400).json({ success: false, error: `Invalid action. Must be one of: ${validActions.join(', ')}` });
+    }
+
+    await feedRanker.trackAction(userId, postId, action, duration, source);
+
+    res.json({ success: true, message: 'Action tracked' });
+  } catch (error: any) {
+    console.error('Track action error:', error);
+    res.status(500).json({ success: false, error: 'Failed to track action' });
+  }
+});
+
+// POST /feed/track-views - Bulk view tracking (batched from mobile client)
+// Replaces per-post individual view requests. At 10K users × 20 posts = 400K → ~40K batched requests.
+router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { views } = req.body;
+    const userId = req.user!.id;
+
+    if (!Array.isArray(views) || views.length === 0) {
+      return res.status(400).json({ success: false, error: 'views array is required' });
+    }
+
+    const batch = (views.slice(0, 50) as { postId: string; duration?: number; source?: string; sampleRate?: number }[])
+      .filter(v => v.postId);
+
+    const existingPosts = await prisma.post.findMany({
+      where: { id: { in: Array.from(new Set(batch.map(v => v.postId))) } },
+      select: { id: true, topicTags: true, postType: true },
+    });
+    const existingPostIds = new Set(existingPosts.map(post => post.id));
+    const validBatch = Array.from(
+      new Map(batch.filter(v => existingPostIds.has(v.postId)).map(v => [v.postId, v])).values()
+    );
+
+    const recentViews = validBatch.length > 0 ? await prisma.postView.findMany({
+      where: {
+        postId: { in: validBatch.map(v => v.postId) },
+        userId,
+        viewedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      },
+      select: { postId: true },
+    }) : [];
+    const recentPostIds = new Set(recentViews.map(view => view.postId));
+    const newViews = validBatch.filter(v => !recentPostIds.has(v.postId));
+
+    // Bulk insert all sampled views in one query. The mobile client buffers by
+    // postId, so this avoids per-card writes during fast scrolling.
+    if (newViews.length > 0) {
+      await prisma.postView.createMany({
+        data: newViews.map(v => ({
+          postId: v.postId,
+          userId,
+          duration: v.duration || 3,
+          source: v.source || 'feed',
+        })),
+        skipDuplicates: true,
+      }).catch(() => { }); // Non-critical — analytics, not user-facing
+
+      const viewIncrements = new Map<string, number>();
+      for (const view of newViews) {
+        viewIncrements.set(
+          view.postId,
+          (viewIncrements.get(view.postId) || 0) + estimatedViewIncrement(view.sampleRate)
+        );
+      }
+
+      await prisma.$transaction(
+        Array.from(viewIncrements.entries()).map(([postId, increment]) =>
+          prisma.post.update({
+            where: { id: postId },
+            data: { viewsCount: { increment } },
+          })
+        )
+      ).catch(() => { }); // Counter cache is non-critical; post_views remains the source of truth.
+    }
+
+    // Track feed ranker signals in one batched signal update (fire-and-forget).
+    feedRanker.trackViewSignalsBatch(userId, newViews, existingPosts).catch(() => { });
+
+    res.json({ success: true, message: `${newViews.length} views tracked` });
+  } catch (error: any) {
+    console.error('Bulk view tracking error:', error);
+    res.status(500).json({ success: false, error: 'Failed to track views' });
+  }
+});
+
+export default router;
