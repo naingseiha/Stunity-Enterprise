@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import MarkdownIt from 'markdown-it';
-// @ts-ignore
+// @ts-expect-error - markdown-it-texmath has no type declarations
 import texmath from 'markdown-it-texmath';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
