@@ -201,7 +201,7 @@ const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
     // is unreliable — Gemini billing has been suspended there before) but can
     // be overridden to a local ai-service, e.g. for AI Tutor development:
     //   EXPO_PUBLIC_AI_URL=http://<host>:3020 npx expo start
-    aiUrl: process.env.EXPO_PUBLIC_AI_URL || 'https://stunity-ai-service-mc7wnjp2kq-uc.a.run.app',
+    aiUrl: process.env.EXPO_PUBLIC_AI_URL || 'https://ai.stunity.app',
     wsUrl: `ws://${host}:3011`,
     messagingUrl: `http://${host}:3011`,
     studentUrl: `http://${host}:3003`,
@@ -244,30 +244,32 @@ const staging: EnvironmentConfig = {
   playStoreUrl: '',
 };
 const production: EnvironmentConfig = {
-  // ── Hot-path services: deployed to asia-southeast1 (Singapore) for low
-  // latency from APAC users. Closer to Supabase Sydney than us-central1,
-  // and within Cloud Run's same datacenter as Memorystore (if added later).
-  apiBaseUrl: 'https://stunity-auth-service-mc7wnjp2kq-as.a.run.app',
-  authUrl: 'https://stunity-auth-service-mc7wnjp2kq-as.a.run.app',
-  feedUrl: 'https://stunity-feed-service-mc7wnjp2kq-as.a.run.app',
-  mediaUrl: 'https://stunity-feed-service-mc7wnjp2kq-as.a.run.app',
-  notificationUrl: 'https://stunity-notification-service-mc7wnjp2kq-as.a.run.app',
-  quizUrl: 'https://stunity-feed-service-mc7wnjp2kq-as.a.run.app',
-  learnUrl: 'https://stunity-learn-service-mc7wnjp2kq-as.a.run.app',
-  // ── Cold-path / admin services: still in us-central1. Not worth the
-  // ~95ms transit cost difference until they show up in real-user metrics.
-  // To migrate, deploy with REGION=asia-southeast1 and flip the -uc → -as suffix.
-  clubUrl: 'https://stunity-club-service-mc7wnjp2kq-uc.a.run.app',
-  classUrl: 'https://stunity-class-service-mc7wnjp2kq-uc.a.run.app',
-  teacherUrl: 'https://stunity-teacher-service-mc7wnjp2kq-uc.a.run.app',
-  timetableUrl: 'https://stunity-timetable-service-mc7wnjp2kq-uc.a.run.app',
-  analyticsUrl: 'https://stunity-analytics-service-mc7wnjp2kq-uc.a.run.app',
-  aiUrl: 'https://stunity-ai-service-mc7wnjp2kq-uc.a.run.app',
-  wsUrl: 'wss://stunity-messaging-service-mc7wnjp2kq-uc.a.run.app',
-  messagingUrl: 'https://stunity-messaging-service-mc7wnjp2kq-uc.a.run.app',
-  studentUrl: 'https://stunity-student-service-mc7wnjp2kq-uc.a.run.app',
-  gradeUrl: 'https://stunity-grade-service-mc7wnjp2kq-uc.a.run.app',
-  attendanceUrl: 'https://stunity-attendance-service-mc7wnjp2kq-uc.a.run.app',
+  // ── engagement-api (auth/feed/learn/messaging/notification/analytics),
+  // consolidated Phase 0, mapped to api.stunity.app in Phase D.
+  apiBaseUrl: 'https://api.stunity.app',
+  authUrl: 'https://api.stunity.app',
+  feedUrl: 'https://api.stunity.app',
+  mediaUrl: 'https://api.stunity.app',
+  notificationUrl: 'https://api.stunity.app',
+  quizUrl: 'https://api.stunity.app',
+  learnUrl: 'https://api.stunity.app',
+  analyticsUrl: 'https://api.stunity.app',
+  wsUrl: 'wss://api.stunity.app',
+  messagingUrl: 'https://api.stunity.app',
+  // ── academic-api (school/student/teacher/class/subject/grade/attendance/
+  // timetable/club), consolidated Phase 0, mapped to academic.stunity.app in
+  // Phase D. club-service's routes were unprefixed internally and collided
+  // with the dedicated modules, so it's mounted under /club — bake that
+  // prefix into the base URL here rather than touching every call site.
+  clubUrl: 'https://academic.stunity.app/club',
+  classUrl: 'https://academic.stunity.app',
+  teacherUrl: 'https://academic.stunity.app',
+  timetableUrl: 'https://academic.stunity.app',
+  studentUrl: 'https://academic.stunity.app',
+  gradeUrl: 'https://academic.stunity.app',
+  attendanceUrl: 'https://academic.stunity.app',
+  // ── ai-service, unchanged by Phase 0, mapped to ai.stunity.app in Phase D.
+  aiUrl: 'https://ai.stunity.app',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
   analyticsKey: process.env.EXPO_PUBLIC_ANALYTICS_KEY || '',
   enableDebugMode: false,
