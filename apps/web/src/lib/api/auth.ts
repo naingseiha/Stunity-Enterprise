@@ -211,6 +211,18 @@ export const TokenManager = {
     return null;
   },
 
+  accessTokenExpiresWithin(seconds: number): boolean {
+    const token = this.getAccessToken();
+    if (!token) return true;
+    try {
+      const encoded = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, '=')));
+      return typeof payload.exp !== 'number' || payload.exp * 1000 - Date.now() <= seconds * 1000;
+    } catch {
+      return true;
+    }
+  },
+
   /** Refresh tokens via /auth/refresh. Returns true if successful. */
   async refreshTokens(): Promise<boolean> {
     if (typeof window === 'undefined') return false;
@@ -219,12 +231,12 @@ export const TokenManager = {
 
     if (_refreshPromise) return _refreshPromise;
 
-    _refreshPromise = (async () => {
+    const performRefresh = async (credential: string): Promise<boolean> => {
       try {
         const res = await fetch(`${AUTH_SERVICE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({ refreshToken: credential }),
         });
         const data = await res.json();
         if (res.ok && data.success && data.data?.accessToken && data.data?.refreshToken) {
@@ -235,6 +247,24 @@ export const TokenManager = {
         return false;
       } catch {
         return false;
+      }
+    };
+
+    _refreshPromise = (async () => {
+      try {
+        const lockManager = (navigator as Navigator & {
+          locks?: { request<T>(name: string, callback: () => Promise<T>): Promise<T> };
+        }).locks;
+        if (lockManager) {
+          return lockManager.request('stunity-auth-refresh', async () => {
+            const latestCredential = localStorage.getItem('refreshToken');
+            if (!latestCredential) return false;
+            // Another tab completed rotation while this tab waited for the lock.
+            if (latestCredential !== refreshToken) return true;
+            return performRefresh(latestCredential);
+          });
+        }
+        return performRefresh(refreshToken);
       } finally {
         _refreshPromise = null;
       }

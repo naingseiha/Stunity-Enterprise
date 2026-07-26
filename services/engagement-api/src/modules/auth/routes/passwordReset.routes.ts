@@ -86,15 +86,12 @@ async function sendResetEmail(email: string, token: string): Promise<void> {
       html: emailHtml,
     });
     console.log(`📧 Reset email sent to ${email}`);
+  } else if (process.env.NODE_ENV === 'production') {
+    throw new Error('Password reset email provider is not configured');
   } else {
-    console.log('');
-    console.log('═══════════════════════════════════════════════');
-    console.log('📧 PASSWORD RESET EMAIL (dev mode)');
-    console.log(`   To: ${email}`);
-    console.log(`   Deep Link: ${deepLink}`);
-    console.log(`   Web URL:   ${webUrl}`);
-    console.log('═══════════════════════════════════════════════');
-    console.log('');
+    // Never print reset tokens or URLs. Local development can use a mail
+    // catcher or inspect the generated token in a debugger when needed.
+    console.log(`📧 Password reset email is not configured (development only): ${email}`);
   }
 }
 
@@ -125,6 +122,10 @@ export default function passwordResetRoutes(prisma: PrismaClient) {
           success: true,
           message: 'If that email exists, a reset link has been sent.',
         });
+      }
+
+      if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) {
+        return res.status(503).json({ success: false, error: 'Password reset is temporarily unavailable' });
       }
 
       // Generate secure token

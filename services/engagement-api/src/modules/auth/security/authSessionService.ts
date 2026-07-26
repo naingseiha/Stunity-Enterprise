@@ -18,8 +18,11 @@ export type AuthSessionRecord = {
   ipAddress?: string | null;
   userAgent?: string | null;
   schoolAccessVersion: number;
+  createdAt: Date;
   expiresAt: Date;
   revokedAt?: Date | null;
+  revokeReason?: string | null;
+  lastUsedAt?: Date | null;
 };
 
 export class AuthSessionError extends Error {
@@ -58,13 +61,15 @@ export async function createAuthSession(
       refreshTokenHash: hashRefreshToken(refreshToken),
       schoolAccessVersion: input.schoolAccessVersion,
       expiresAt: input.expiresAt,
-      deviceId: input.deviceId ?? null,
+      // This identifier also acts as the refresh-token family key. Generate a
+      // server value when the client does not provide a stable device id.
+      deviceId: input.deviceId ?? crypto.randomUUID(),
       deviceName: input.deviceName ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
     },
   });
-  return { sessionId: session.id, refreshToken, expiresAt: session.expiresAt };
+  return { sessionId: session.id, userId: input.userId, refreshToken, expiresAt: session.expiresAt };
 }
 
 export async function rotateAuthSession(
@@ -81,6 +86,23 @@ export async function rotateAuthSession(
 
   if (!current) throw new AuthSessionError("Invalid refresh session", "SESSION_INVALID");
   if (current.revokedAt) {
+    const rotationAgeMs = current.lastUsedAt ? now.getTime() - current.lastUsedAt.getTime() : Number.POSITIVE_INFINITY;
+    if (current.revokeReason === "ROTATED" && rotationAgeMs < 10_000) {
+      // A near-simultaneous request is usually another browser tab using the
+      // same pre-rotation token. Reject it without killing the newly issued
+      // family; the shared client store can pick up the winner's credential.
+      throw new AuthSessionError("Refresh session changed while rotating", "SESSION_CONFLICT");
+    }
+    // A rotated token was presented again. Revoke the active token family so
+    // a stolen predecessor cannot race the legitimate device indefinitely.
+    await db.authSession.updateMany({
+      where: {
+        userId: current.userId,
+        revokedAt: null,
+        ...(current.deviceId ? { deviceId: current.deviceId } : {}),
+      },
+      data: { revokedAt: now, revokeReason: "TOKEN_REUSE_DETECTED", lastUsedAt: now },
+    });
     throw new AuthSessionError("Refresh session reuse detected", "SESSION_REUSE_DETECTED");
   }
   if (current.expiresAt <= now) {
@@ -100,7 +122,7 @@ export async function rotateAuthSession(
     if (revoked.count !== 1) {
       throw new AuthSessionError("Refresh session changed while rotating", "SESSION_CONFLICT");
     }
-    return createAuthSession(tx, {
+    const next = await createAuthSession(tx, {
       userId: current.userId,
       schoolAccessVersion: current.schoolAccessVersion,
       expiresAt: input.expiresAt,
@@ -109,6 +131,11 @@ export async function rotateAuthSession(
       ipAddress: current.ipAddress,
       userAgent: current.userAgent,
     });
+    return {
+      ...next,
+      previousCreatedAt: current.createdAt,
+      schoolAccessVersion: current.schoolAccessVersion,
+    };
   };
 
   return db.$transaction ? db.$transaction(operation) : operation(db);

@@ -23,6 +23,7 @@ import {
   createStructuredAuthMetrics,
   type AuthOperationalMetrics,
 } from "../observability/authOperationalMetrics";
+import { issueRefreshCredential } from "../security/refreshCredential";
 
 const REGISTRATION_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const AUTHENTICATION_CHALLENGE_TTL_MS = 2 * 60 * 1000;
@@ -60,14 +61,14 @@ function requestId(): string {
   return `req_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-function issueTokens(user: {
+async function issueTokens(user: {
   id: string;
   email: string | null;
   role: string;
   schoolId: string | null;
   accountType: string;
   schoolAccessVersion: number;
-}, options: PasskeyRouteOptions) {
+}, options: PasskeyRouteOptions, prisma: PrismaClient, req: Request) {
   const accessToken = jwt.sign({
     userId: user.id,
     email: user.email,
@@ -76,11 +77,14 @@ function issueTokens(user: {
     accountType: user.accountType,
     schoolAccessVersion: user.schoolAccessVersion,
   }, options.jwtSecret, { expiresIn: options.accessTokenExpiration } as jwt.SignOptions);
-  const refreshToken = jwt.sign(
-    { userId: user.id },
-    options.jwtSecret,
-    { expiresIn: options.refreshTokenExpiration } as jwt.SignOptions,
-  );
+  const refreshToken = await issueRefreshCredential({
+    prisma,
+    userId: user.id,
+    schoolAccessVersion: user.schoolAccessVersion,
+    jwtSecret: options.jwtSecret,
+    refreshTokenExpiration: options.refreshTokenExpiration,
+    req,
+  });
   return { accessToken, refreshToken, expiresIn: options.accessTokenExpiration };
 }
 
@@ -320,7 +324,7 @@ export default function passkeyRoutes(
 
       metrics.increment("auth_passkey_login_total", { result: "SUCCESS" });
       metrics.increment("auth_login_completed_total", { method: "PASSKEY", new_or_returning: "RETURNING" });
-      const tokens = issueTokens(user, options);
+      const tokens = await issueTokens(user, options, prisma, req);
       return res.json({ success: true, data: { user: publicUser(user), tokens }, error: null, requestId: apiRequestId });
     } catch (error: any) {
       metrics.increment("auth_passkey_login_total", { result: "FAILURE" });

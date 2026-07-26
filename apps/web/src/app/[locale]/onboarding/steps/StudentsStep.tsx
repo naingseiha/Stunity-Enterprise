@@ -7,6 +7,7 @@ import { GraduationCap, Sparkles, Upload, X } from 'lucide-react';
 import StepContainer from '@/components/onboarding/StepContainer';
 import QuickSetupCard from '@/components/onboarding/QuickSetupCard';
 import { generateSampleStudents, generateStudentsCSVTemplate, downloadCSV } from '../utils/dataGenerators';
+import { TokenManager } from '@/lib/api/auth';
 
 interface StudentsStepProps {
   onNext: () => void;
@@ -48,7 +49,10 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
       if (students.length > 0) {
         const response = await fetch(`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}/students/batch`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
+          },
           body: JSON.stringify({
             schoolId,
             students,

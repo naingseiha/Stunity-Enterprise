@@ -9,10 +9,15 @@ import { geminiService } from './services/gemini.service';
 import { claudeService } from './services/claude.service';
 import generateRoutes from './routes/generate.routes';
 import tutorRoutes from './routes/tutor.routes';
+import { requestIdMiddleware } from './middleware/requestId';
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = parseInt(process.env.PORT || process.env.AI_SERVICE_PORT || '3020', 10);
+
+if (process.env.NODE_ENV === 'production' && process.env.CORS_ORIGIN === '*') {
+    throw new Error('Refusing to start ai-service with wildcard CORS_ORIGIN in production');
+}
 
 // ─── CORS ──────────────────────────────────────────────────────────
 const defaultOrigins = [
@@ -22,8 +27,9 @@ const defaultOrigins = [
     'http://localhost:3020',
     `http://${process.env.EXPO_PUBLIC_API_HOST || 'localhost'}:3020`
 ];
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+const configuredOrigins = process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS;
+const allowedOrigins = configuredOrigins
+    ? configuredOrigins.split(',').map(o => o.trim())
     : defaultOrigins;
 
 app.use(cors({
@@ -39,7 +45,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-Client-Version'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-Client-Version', 'X-Request-ID'],
 }));
 
 // ─── Middleware ────────────────────────────────────────────────────
@@ -51,6 +57,7 @@ app.use(hpp());
 app.use(compression());
 app.use(express.json({ limit: '1mb' })); // AI prompts shouldn't be huge
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
+app.use(requestIdMiddleware);
 
 // ─── Health Check ──────────────────────────────────────────────────
 app.get('/health', async (_req: Request, res: Response) => {
@@ -69,12 +76,13 @@ app.use('/ai', tutorRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────
 app.use((err: any, req: Request, res: Response, next: any) => {
-    console.error('❌ [Global Error Handler]:', err);
+    const requestId = res.locals.requestId;
+    console.error(JSON.stringify({ level: 'ERROR', requestId, method: req.method, path: req.path, message: err?.message || 'Unhandled error', stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined }));
 
     const status = err.status || 500;
 
     // User-friendly messages for common errors
-    let errorMessage = err.message || 'Internal Server Error';
+    let errorMessage = 'Internal Server Error';
     if (status === 429) {
         errorMessage = 'AI service is busy (too many requests). Please wait about 30-60 seconds and try again.';
     }
@@ -82,7 +90,8 @@ app.use((err: any, req: Request, res: Response, next: any) => {
     res.status(status).json({
         success: false,
         error: errorMessage,
-        code: status === 429 ? 'RATE_LIMITED' : 'SERVER_ERROR'
+        code: status === 429 ? 'RATE_LIMITED' : 'SERVER_ERROR',
+        requestId,
     });
 });
 

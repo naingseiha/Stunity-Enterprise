@@ -6,11 +6,12 @@ import { generateUniqueUsername } from '../utils/username';
 import { normalizeEmail } from '../security/identifiers';
 import { resolveUnlinkedSocialAccount } from '../security/authPolicy';
 import { SchoolLinkError, submitSchoolLinkRequest } from '../domain/schoolLinkService';
+import { issueRefreshCredential } from '../security/refreshCredential';
 
 const router = Router();
 
 const JWT_SECRET = getJwtSecret();
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 // ─── Provider Token Verification ─────────────────────────────────────
@@ -147,6 +148,7 @@ export async function handleSocialLogin(
   prisma: PrismaClient,
   providerData: ProviderProfile,
   claimCode?: string,
+  req?: Request,
 ) {
   // 1. Check if social account already linked (returning user)
   let socialAccount = await prisma.socialAccount.findUnique({
@@ -257,11 +259,10 @@ export async function handleSocialLogin(
     { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
   );
 
-  const refreshToken = jwt.sign(
-    { userId: user.id },
-    JWT_SECRET,
-    { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-  );
+  const refreshToken = await issueRefreshCredential({
+    prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+    jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+  });
 
   // 6. Update login metadata
   await prisma.user.update({
@@ -307,7 +308,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       }
 
       const profile = await verifyGoogleToken(idToken);
-      const result = await handleSocialLogin(prisma, profile, claimCode);
+      const result = await handleSocialLogin(prisma, profile, claimCode, req);
 
       res.json({ success: true, data: result });
     } catch (error: any) {
@@ -328,7 +329,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       }
 
       const profile = await verifyAppleToken(identityToken, fullName);
-      const result = await handleSocialLogin(prisma, profile, claimCode);
+      const result = await handleSocialLogin(prisma, profile, claimCode, req);
 
       res.json({ success: true, data: result });
     } catch (error: any) {
@@ -349,7 +350,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       }
 
       const profile = await verifyFacebookToken(accessToken);
-      const result = await handleSocialLogin(prisma, profile, claimCode);
+      const result = await handleSocialLogin(prisma, profile, claimCode, req);
 
       res.json({ success: true, data: result });
     } catch (error: any) {
@@ -370,7 +371,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       }
 
       const profile = await verifyLinkedInCode(authorizationCode, redirectUri);
-      const result = await handleSocialLogin(prisma, profile, claimCode);
+      const result = await handleSocialLogin(prisma, profile, claimCode, req);
 
       res.json({ success: true, data: result });
     } catch (error: any) {

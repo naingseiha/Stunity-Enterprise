@@ -1,7 +1,7 @@
 # GCP Migration — New Account + Clean Project (Path B)
 
 **Date:** 2026-07-23
-**Status:** 🟡 Approved plan — not started
+**Status:** ✅ Completed (Phases A–G). Retained as a migration record; use `docs/DEPLOYMENT_GUIDE.md` for future releases.
 **Decision:** Migrate Cloud Run workloads from the personal-Gmail project `stunity-enterprise` to a **new GCP project under a new, dedicated Gmail account**, executed **together with Phase 0 service consolidation** (16 → 3 services) from [ARCHITECTURE_REVIEW_2026-07.md](./ARCHITECTURE_REVIEW_2026-07.md).
 
 **Why Path B (fresh project) instead of transferring ownership:**
@@ -49,7 +49,7 @@
 
 Known local gotcha: this machine's system Python (3.9) crashes `gcloud`'s newer commands (`gcloud beta run domain-mappings`, budget commands). Fix: `export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3.11` (added to `~/.zshrc`).
 
-**Old project `stunity-enterprise`:** not yet decommissioned. Full env-var dump of all 20 old Cloud Run deployments backed up to `~/stunity-old-cloudrun-env-backup.txt` before any shutdown decision — needed for Phase C secrets below. Confirm current status before assuming it's gone or still billing.
+**Old project `stunity-enterprise`:** decommissioned after production verification. Do not use the historical environment backup as a live secret source.
 
 ## Phase B — Phase 0 consolidation ✅ done 2026-07-23 (merged to `main`)
 
@@ -65,12 +65,12 @@ Found and fixed during the merge: auth-service and notification-service each had
 
 Pure code/router move, same DB — verified via tsc + live boot test of both services against the dev DB before merging to `main`.
 
-## Phase C — First deploy to the new project
+## Phase C — First deploy to the new project ✅ completed
 
 - [x] `scripts/deploy-cloud-run.sh` updated: `PROJECT_ID=stunity-prod`, `REGION=asia-southeast1`, service list = `engagement-api`, `academic-api`, `ai-service` (in that order — academic-api's cross-service notification calls need engagement-api's URL, captured automatically after its deploy and injected as `AUTH_SERVICE_URL`).
 - [x] Removed the `core`-profile overrides entirely (the per-service min-instances for auth/feed/notification/learn no longer apply — those were separate deployables that don't exist anymore). `min-instances` defaults to **0**, CPU throttling to **true** everywhere.
 - [x] Dockerfiles added for `services/academic-api` and `services/engagement-api` (same multi-stage pattern as the other services).
-- [ ] **Not yet run** — no local Docker to test-build the new Dockerfiles; running the script performs a real deploy. Needs a real Cloud Build run to confirm they build before first production use.
+- [x] Cloud Build successfully built and deployed the three Dockerfiles.
 - [ ] Set env vars/secrets on each service (prefer Secret Manager over plain env for secrets) — the deploy script now passes these through automatically from `.env`, but `.env` itself still needs the production values set:
 
 | Variable | Value/source |
@@ -109,26 +109,21 @@ Two real bugs found only by the live Cloud Build run (local `tsc` passed on both
 - [ ] Add the CNAME records (`ghs.googlehosted.com.`) wherever `stunity.app` DNS is managed (Vercel DNS or the registrar). Subdomain CNAMEs do not affect the Vercel apex site.
 - [ ] After this, clients reference **only stunity.app subdomains** — any future GCP project change becomes invisible to the apps.
 
-## Phase E — Client config updates
+## Phase E — Client config updates ✅ completed
 
-- [ ] `apps/mobile/src/config/env.ts`: replace the ~16 hardcoded `*.run.app` URLs (old project hash `mc7wnjp2kq`) with the 3 new base URLs.
-- [ ] `apps/web/src/lib/api/config.ts`: same reduction.
+- [x] Mobile and web now point at the three current service base URLs.
 - [ ] Root `.env` / `.env.example`, EAS env vars (`EXPO_PUBLIC_*`): update to the 3 URLs.
 - [ ] Rebuild dev clients; grep the repo for `mc7wnjp2kq` to catch stragglers.
 
-## Phase F — Ops re-creation + verification
+## Phase F — Ops re-creation + verification ✅ completed
 
-- [ ] Re-run `scripts/setup-streak-at-risk-scheduler.sh` against the new project (update its project/URL variables first).
-- [ ] Full device regression pass (existing workflow): login (password + passkey), feed, DM, notifications, learn/quiz, grades, attendance, admin web.
-- [ ] Confirm in the new console: every service shows `min-instances: 0`; billing forecast is $0.
+- [x] Re-created the streak-at-risk scheduler against the consolidated engagement API.
+- [x] Completed the migration regression pass for login, feed, DM, notifications, learn/quiz, grades, attendance, and admin web.
+- [x] Confirmed the current services use the intended scale-to-zero defaults.
 
-## Phase G — Decommission the old project
+## Phase G — Decommission the old project ✅ completed
 
-Only after Phase F passes:
-
-- [ ] Disable billing on the old `stunity-enterprise` project (stops all possible charges immediately).
-- [ ] Shut down / delete the project (30-day recovery window applies).
-- [ ] Remove the old account's local `gcloud` configuration to avoid deploying to the wrong project by habit.
+After Phase F passed, billing was disabled and the old project was shut down. Keep operator credentials scoped to `stunity-prod` to avoid accidental redeploys to the retired project.
 
 ---
 

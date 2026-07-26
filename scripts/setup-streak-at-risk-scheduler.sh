@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Creates (or updates) a Cloud Scheduler job that triggers the streak-at-risk push job
-# on notification-service every day at 19:00 in the given timezone.
+# on the notification module inside engagement-api every day at 19:00 in the given timezone.
 #
 # Usage:
 #   export GCP_PROJECT_ID="your-project"
 #   export GCP_REGION="asia-southeast1"
-#   export NOTIFICATION_SERVICE_URL="https://stunity-notification-xxxxx.run.app"
+#   export NOTIFICATION_SERVICE_URL="https://stunity-engagement-api-xxxxx.run.app"
 #   export NOTIFICATION_SERVICE_AUTH_TOKEN="same-token-as-service-env"
 #   ./scripts/setup-streak-at-risk-scheduler.sh
 #

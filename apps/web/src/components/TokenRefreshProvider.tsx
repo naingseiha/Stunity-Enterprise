@@ -4,22 +4,31 @@ import { useEffect } from 'react';
 import { TokenManager } from '@/lib/api/auth';
 
 /**
- * Proactive token refresh - keeps session alive (remember-me style).
- * Refreshes tokens every 12h when user is logged in.
+ * Proactive token refresh keeps the one-hour access token fresh while the
+ * long-lived rotating device session preserves remember-me UX.
  */
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const refreshIfLoggedIn = async () => {
       if (typeof window === 'undefined') return;
       const tokens = TokenManager.getTokens();
-      if (tokens?.refreshToken) {
+      const isLegacyRefreshToken = tokens?.refreshToken?.includes('.') === true;
+      if (tokens?.refreshToken && (isLegacyRefreshToken || TokenManager.accessTokenExpiresWithin(10 * 60))) {
         await TokenManager.refreshTokens();
       }
     };
 
-    refreshIfLoggedIn();
-    const interval = setInterval(refreshIfLoggedIn, 12 * 60 * 60 * 1000); // Every 12 hours
-    return () => clearInterval(interval);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refreshIfLoggedIn();
+    };
+
+    void refreshIfLoggedIn();
+    const interval = setInterval(refreshIfLoggedIn, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
 
   return <>{children}</>;

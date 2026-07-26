@@ -5,14 +5,10 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import path from 'path';
 
-// Load environment variables from root .env
-// Cloud Run deploy script always sets JWT_SECRET; use it as the service token when the
-// dedicated notification token is omitted so the container can bind to PORT without extra env wiring.
-if (!process.env.NOTIFICATION_SERVICE_AUTH_TOKEN && process.env.JWT_SECRET) {
-  process.env.NOTIFICATION_SERVICE_AUTH_TOKEN = process.env.JWT_SECRET;
-}
+// Load environment variables from root .env. Production must use a dedicated
+// service token; JWT_SECRET is intentionally never accepted as a fallback.
 if (process.env.NODE_ENV === 'production' && !process.env.NOTIFICATION_SERVICE_AUTH_TOKEN) {
-  throw new Error('FATAL: NOTIFICATION_SERVICE_AUTH_TOKEN or JWT_SECRET must be set in production.');
+  throw new Error('FATAL: NOTIFICATION_SERVICE_AUTH_TOKEN must be set in production.');
 }
 // Import routes after env is loaded so Prisma gets the correct DATABASE_URL.
 // eslint-disable-next-line @typescript-eslint/no-var-requires

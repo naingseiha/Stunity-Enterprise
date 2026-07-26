@@ -21,9 +21,17 @@ import {
 } from '../validators/quizWar.validator';
 import { feedCache } from '../redis';
 import { publishQuizWarUpdate } from '../websocket';
+import { isQuizWarEnabled } from '../featureFlags';
 
 
 const router = Router();
+
+router.use('/quiz-wars', (_req, res, next) => {
+  if (!isQuizWarEnabled()) {
+    return res.status(404).json({ success: false, error: 'Quiz War is temporarily unavailable' });
+  }
+  next();
+});
 
 /**
  * Time remaining helper — matches the mobile QuizWar.timeRemainingSec

@@ -16,6 +16,8 @@ import { networkService } from '@/services/network';
 import { eventEmitter } from '@/utils/eventEmitter';
 import { finishApiTiming, startApiTiming } from '@/utils/apiTiming';
 import { ApiResponse, ApiError } from '@/types';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
 
 // Create axios instance
 export const createApiClient = (baseURL: string): AxiosInstance => {
@@ -26,6 +28,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
       'Content-Type': 'application/json',
       'X-Client-Version': APP_CONFIG.APP_VERSION,
       'X-Platform': 'mobile',
+      'X-Device-Name': Device.modelName || Platform.OS,
     },
   });
 

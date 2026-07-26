@@ -58,7 +58,7 @@ CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-0}"
 CLOUD_RUN_MIN_INSTANCES_ENGAGEMENT="${CLOUD_RUN_MIN_INSTANCES_ENGAGEMENT:-}"
 CLOUD_RUN_MAX_INSTANCES="${CLOUD_RUN_MAX_INSTANCES:-3}"
 CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-true}"
-CORS_ORIGIN="${CORS_ORIGIN:-*}"
+CORS_ORIGIN="${CORS_ORIGIN:-}"
 # Cap Prisma pool slots per Cloud Run instance (Supabase Micro cannot sustain 20×N services).
 PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-3}"
 PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-10}"
@@ -76,7 +76,7 @@ resolve_min_instances() {
   esac
 }
 
-for required_var in DATABASE_URL JWT_SECRET; do
+for required_var in DATABASE_URL JWT_SECRET CORS_ORIGIN; do
   if [ -z "${!required_var:-}" ]; then
     echo "❌ Missing required env var: $required_var"
     exit 1
@@ -84,7 +84,8 @@ for required_var in DATABASE_URL JWT_SECRET; do
 done
 
 if [ "$CORS_ORIGIN" = "*" ]; then
-  echo "⚠️  CORS_ORIGIN is * (allows any browser origin). Set CORS_ORIGIN in .env to your web origin for production."
+  echo "❌ Refusing production deploy with wildcard CORS_ORIGIN. Set an explicit origin allowlist."
+  exit 1
 fi
 
 echo "🚀 Deploying Stunity Enterprise to Cloud Run in project: $PROJECT_ID region: $REGION (min-instances=$CLOUD_RUN_MIN_INSTANCES, cpu-throttling=$CLOUD_RUN_CPU_THROTTLING)"
@@ -105,6 +106,30 @@ else
   )
   echo "🎯 Deploying all 3 services: ${SERVICES[*]}"
 fi
+
+for SERVICE in "${SERVICES[@]}"; do
+  case "$SERVICE" in
+    academic-api|engagement-api|ai-service) ;;
+    *)
+      echo "❌ Unsupported service '$SERVICE'. Only academic-api, engagement-api, and ai-service are deployable."
+      exit 1
+      ;;
+  esac
+done
+
+for SERVICE in "${SERVICES[@]}"; do
+  if [ "$SERVICE" = "academic-api" ] || [ "$SERVICE" = "engagement-api" ]; then
+    if [ -z "${NOTIFICATION_SERVICE_AUTH_TOKEN:-}" ]; then
+      echo "❌ Missing required env var: NOTIFICATION_SERVICE_AUTH_TOKEN"
+      exit 1
+    fi
+    if [ "$NOTIFICATION_SERVICE_AUTH_TOKEN" = "$JWT_SECRET" ]; then
+      echo "❌ Refusing deploy: notification service token must not reuse JWT_SECRET."
+      exit 1
+    fi
+    break
+  fi
+done
 
 ENGAGEMENT_API_URL="${ENGAGEMENT_API_URL:-}"
 
@@ -140,7 +165,7 @@ EOF
   # engagement-api only: passkeys/WebAuthn (auth module lives here now).
   # Harmless no-op on academic-api/ai-service (they don't read these).
   if [ "$SERVICE" = "engagement-api" ]; then
-    ENV_VARS="$ENV_VARS|AUTH_PASSKEYS_ENABLED=${AUTH_PASSKEYS_ENABLED:-false}|WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}|WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-}|WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-}"
+    ENV_VARS="$ENV_VARS|AUTH_PASSKEYS_ENABLED=${AUTH_PASSKEYS_ENABLED:-false}|AUTH_DB_SESSIONS_ENABLED=${AUTH_DB_SESSIONS_ENABLED:-true}|JWT_EXPIRATION=${JWT_EXPIRATION:-1h}|REFRESH_TOKEN_EXPIRATION=${REFRESH_TOKEN_EXPIRATION:-365d}|WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}|WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-}|WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-}|QUIZ_WAR_ENABLED=${QUIZ_WAR_ENABLED:-false}"
   fi
   # academic-api's grade/attendance modules call engagement-api's
   # /auth/notifications/* routes cross-service. Requires engagement-api to
@@ -148,11 +173,11 @@ EOF
   # manually in .env for a targeted single-service redeploy).
   if [ "$SERVICE" = "academic-api" ]; then
     if [ -z "$ENGAGEMENT_API_URL" ]; then
-      echo "⚠️  ENGAGEMENT_API_URL is not set. academic-api's grade/attendance"
-      echo "    notification calls (AUTH_SERVICE_URL) will fail until it is."
-      echo "    Deploy engagement-api first, or set ENGAGEMENT_API_URL in .env."
+      echo "❌ ENGAGEMENT_API_URL is required when deploying academic-api."
+      echo "   Deploy engagement-api in the same run, or set its canonical Cloud Run URL in .env."
+      exit 1
     fi
-    ENV_VARS="$ENV_VARS|AUTH_SERVICE_URL=${ENGAGEMENT_API_URL:-}"
+    ENV_VARS="$ENV_VARS|AUTH_SERVICE_URL=${ENGAGEMENT_API_URL:-}|ENGAGEMENT_API_URL=${ENGAGEMENT_API_URL:-}"
   fi
   if [ -n "${DATABASE_READ_URL:-}" ]; then
     ENV_VARS="$ENV_VARS|DATABASE_READ_URL=$DATABASE_READ_URL"
@@ -189,7 +214,7 @@ EOF
   # notification module (inside engagement-api) validates x-service-token on
   # its /send, /jobs/* endpoints; academic-api's grade/attendance modules and
   # Cloud Scheduler use the same shared token.
-  NOTIF_TOKEN="${NOTIFICATION_SERVICE_AUTH_TOKEN:-$JWT_SECRET}"
+  NOTIF_TOKEN="$NOTIFICATION_SERVICE_AUTH_TOKEN"
   ENV_VARS="$ENV_VARS|NOTIFICATION_SERVICE_AUTH_TOKEN=$NOTIF_TOKEN"
 
   CPU_THROTTLING_FLAG="--no-cpu-throttling"

@@ -63,6 +63,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { StreakWidget } from '@/components/streak';
 import { useFeatureFlag } from '@/config/featureFlags';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
@@ -290,6 +291,7 @@ export default function FeedScreen() {
   const user = useAuthStore(s => s.user);
   const streakRingEnabled = useFeatureFlag('streak_ring');
   const skillGapNudgeEnabled = useFeatureFlag('skill_gap_nudge');
+  const quizWarEnabled = FEATURE_FLAGS.QUIZ_WAR_ENABLED;
   const { openSidebar } = useNavigationContext();
 
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
@@ -369,8 +371,8 @@ export default function FeedScreen() {
   const CACHE_KEYS = useMemo(() => ({
     recallCards: user?.id ? `ss_recall_${user.id}` : '',
     bounties:    user?.id ? `ss_bounties_${user.id}` : '',
-    quizWar:     user?.id ? `ss_war_${user.id}` : '',
-  }), [user?.id]);
+    quizWar:     quizWarEnabled && user?.id ? `ss_war_${user.id}` : '',
+  }), [quizWarEnabled, user?.id]);
   const CACHE_TTL = { recallCards: 60_000, bounties: 30_000, quizWar: 15_000 };
 
   const [serverRecallCards, setServerRecallCards] = useState<RecallCard[] | null>(null);
@@ -439,7 +441,7 @@ export default function FeedScreen() {
       const [cards, bounties, war] = await Promise.allSettled([
         fetchDueCards({ limit: 10 }),
         fetchActiveBounties({ limit: 10 }),
-        fetchActiveQuizWar(),
+        quizWarEnabled ? fetchActiveQuizWar() : Promise.resolve(null),
       ]);
       if (cancelled) return;
 
@@ -455,7 +457,7 @@ export default function FeedScreen() {
       } else if (bounties.status === 'rejected' && __DEV__) {
         console.warn('[FeedScreen] fetchActiveBounties failed:', bounties.reason?.message);
       }
-      if (war.status === 'fulfilled' && war.value) {
+      if (quizWarEnabled && war.status === 'fulfilled' && war.value) {
         setServerQuizWar(war.value);
         saveCache(CACHE_KEYS.quizWar, war.value);
       } else if (war.status === 'rejected' && __DEV__) {
@@ -470,7 +472,7 @@ export default function FeedScreen() {
       clearTimeout(networkRefreshTimer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // deliberately [] — only runs once on mount
+  }, [quizWarEnabled]);
 
   // Grade handler — after grade, refetch + refresh cache
   const handleRecallGrade = useCallback(async (cardId: string, grade: RecallGrade) => {
@@ -603,7 +605,7 @@ export default function FeedScreen() {
       : getMockFeynmanBounties();
 
     // Step 5: quiz war + all injections in one pass
-    const activeWar = serverQuizWar ?? getMockQuizWar();
+    const activeWar = quizWarEnabled ? serverQuizWar ?? getMockQuizWar() : null;
     return injectQuizWar(
       injectFeynmanBounties(
         injectRecallCards(sorted, activeRecallCards, 5),
@@ -617,6 +619,7 @@ export default function FeedScreen() {
     serverRecallCards, // async: recall card data
     serverBounties,    // async: bounty data
     serverQuizWar,     // async: quiz war data
+    quizWarEnabled,
     deferredCardIds,   // session-deferred cards
   ]);
 
@@ -1091,9 +1094,10 @@ export default function FeedScreen() {
         />
       );
     }
-    if (item.type === 'QUIZ_WAR') {
+    if (item.type === 'QUIZ_WAR' && quizWarEnabled) {
       return <QuizWarBanner war={item.data} onJoin={handleQuizWarJoin} />;
     }
+    if (item.type === 'QUIZ_WAR') return null;
 
     if (item.type === 'POST' && !item.data) return null;
 
@@ -1111,7 +1115,7 @@ export default function FeedScreen() {
   // now stable — they close over refs not state — so they're excluded
   // from deps. renderPost only recreates when valuedPostIds changes
   // (user rates a post), which is intentional.
-  }, [valuedPostIds, handleRecallGrade, handleRecallDefer, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin, skillNudge, handleNudgeShown]);
+  }, [valuedPostIds, handleRecallGrade, handleRecallDefer, handleBountySeeAnswers, handleBountyExplain, handleQuizWarJoin, skillNudge, handleNudgeShown, quizWarEnabled]);
 
   const getItemType = useCallback((item: FeedItem) => {
     if (!item) return 'unknown';

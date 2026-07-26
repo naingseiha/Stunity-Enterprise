@@ -33,6 +33,8 @@ import messagingRouter from './modules/messaging';
 import notificationRouter from './modules/notification';
 import analyticsRouter from './modules/analytics';
 import { initWebSocketServer } from './modules/feed/websocket';
+import { isQuizWarEnabled } from './modules/feed/featureFlags';
+import { requestIdMiddleware } from './core/requestId';
 
 const app = express();
 app.set('trust proxy', 1); // Cloud Run / proxy X-Forwarded-For
@@ -61,6 +63,10 @@ if (shouldRunDbKeepalive()) {
 
 const PORT = process.env.PORT || process.env.ENGAGEMENT_API_PORT || 3022;
 
+if (process.env.NODE_ENV === 'production' && process.env.CORS_ORIGIN === '*') {
+  throw new Error('Refusing to start engagement-api with wildcard CORS_ORIGIN in production');
+}
+
 // ── Shared middleware (was duplicated per service before consolidation) ──
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
@@ -76,8 +82,9 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Device-ID', 'X-Device-Name'],
 }));
+app.use(requestIdMiddleware);
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 // 6 merged services each budgeted ~200/15min; keep that combined ceiling.
 // Auth/feed keep their own tighter per-route limiters (globalLimiter,
@@ -105,12 +112,27 @@ app.use(notificationRouter);
 app.use(analyticsRouter);
 app.use(feedRouter); // mounted last: many feed routes have no path prefix (/posts, /users, …)
 
+app.use((err: any, req: Request, res: Response, _next: express.NextFunction) => {
+  const requestId = res.locals.requestId;
+  console.error(JSON.stringify({
+    level: 'ERROR', requestId, method: req.method, path: req.path,
+    message: err?.message || 'Unhandled error', stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined,
+  }));
+  res.status(Number(err?.statusCode || err?.status) || 500).json({
+    success: false, error: 'An error occurred', requestId,
+  });
+});
+
 const server = app.listen(PORT, () => {
   console.log(`💬 Engagement API running on port ${PORT}`);
   console.log('   modules: auth, feed, learn, messaging, notification, analytics');
 });
 
-initWebSocketServer(server);
+if (isQuizWarEnabled()) {
+  initWebSocketServer(server);
+} else {
+  console.log('🎮 Quiz War disabled by QUIZ_WAR_ENABLED (default: false)');
+}
 
 // Cloud Run: keep-alive timeout must exceed the load balancer's 600s timeout
 // (carried over from feed-service — this prevented "connection reset" on

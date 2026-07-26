@@ -1,0 +1,67 @@
+name: Production quality checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/**'
+      - 'services/academic-api/**'
+      - 'services/engagement-api/**'
+      - 'services/ai-service/**'
+      - 'services/lib/**'
+      - 'packages/database/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/production-quality.yml'
+  push:
+    branches: [main]
+
+jobs:
+  validate-current-topology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Typecheck deployed services and clients
+        run: |
+          npx tsc --noEmit --incremental false -p services/academic-api/tsconfig.json
+          npx tsc --noEmit --incremental false -p services/engagement-api/tsconfig.json
+          npx tsc --noEmit --incremental false -p services/ai-service/tsconfig.json
+          npx tsc --noEmit --incremental false -p apps/web/tsconfig.json
+
+      - name: Run web, mobile, and AI regression suites
+        run: |
+          npm test --workspace @stunity/web -- --runInBand
+          npm test --workspace stunity-mobile -- --runInBand
+          npm test --workspace ai-service -- --runInBand
+
+      - name: Run internal service-auth regression test
+        run: npx tsx --test services/engagement-api/src/modules/auth/security/internalServiceAuth.test.ts
+
+      - name: Run rotating auth-session regression tests
+        run: |
+          npx tsx --test services/engagement-api/src/modules/auth/security/authSessionService.test.ts services/engagement-api/src/modules/auth/security/refreshCredential.test.ts
+          npx tsx --test services/engagement-api/src/modules/auth/domain/authSessionManagement.test.ts
+
+      - name: Verify Quiz War is disabled by default
+        run: npx tsx --test services/engagement-api/src/modules/feed/featureFlags.test.ts
+
+      - name: Run Markdown sanitizer security smoke test
+        run: npx tsx scripts/testing/markdown-sanitizer-smoke.ts
+
+      - name: Validate deployment script
+        run: bash -n scripts/deploy-cloud-run.sh

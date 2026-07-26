@@ -1,7 +1,7 @@
 # Architecture Review — Service Consolidation Decision (2026-07)
 
 **Date:** 2026-07-23
-**Status:** 🔵 Analysis only — **no implementation started**. This is the pre-work requested before touching any code.
+**Status:** ✅ Historical decision record — Phase 0 consolidation is complete. Keep the findings and decision rationale below; use `docs/DEPLOYMENT_GUIDE.md` for the current operational runbook.
 **Audience:** Solo founder/engineer (Stunity Enterprise), future collaborators
 **Trigger:** Manual Cloud Run billing exceeded free tier; open question of whether the 16-service split is correct for a pre-revenue, pre-production, solo-maintained project.
 
@@ -9,7 +9,7 @@ Related docs (read alongside this one — this document reconciles with, not rep
 
 | Document | Relationship to this review |
 |---|---|
-| [PRODUCTION_ARCHITECTURE_LONG_TERM.md](./PRODUCTION_ARCHITECTURE_LONG_TERM.md) | Already recommends consolidating ~15 services → 3–5 domain APIs on **one** Supabase project ("Phase 2", written May 2026). This review confirms that direction with fresh evidence and gives the concrete merge map + migration mechanics. **That phase was never executed** — still 16 services in production deploy list today. |
+| [PRODUCTION_ARCHITECTURE_LONG_TERM.md](./PRODUCTION_ARCHITECTURE_LONG_TERM.md) | Recommended consolidating ~15 services → 3–5 domain APIs. Phase 0 has now implemented the three-service target; the database split remains deliberately deferred. |
 | [MICROSERVICES_CONNECTION_AUDIT.md](./MICROSERVICES_CONNECTION_AUDIT.md) | Operational connection-pool audit (Prisma clients, pool slots). This review is about **service/data boundaries**, not connection tuning — complementary, not overlapping. |
 | [POLYGLOT_ARCHITECTURE_PLAN.md](./POLYGLOT_ARCHITECTURE_PLAN.md) | Already concluded "PostgreSQL is the only correct choice" for the school-management domain (ACID, complex joins). This review agrees and treats that domain as one undividable data boundary. |
 | [SECURITY_IMPROVEMENTS.md](./SECURITY_IMPROVEMENTS.md) | Claims JWT_SECRET hardcoded-fallback issue is fixed. §6 of this review found the fix is **partial** — see correction below. |
@@ -18,12 +18,12 @@ Related docs (read alongside this one — this document reconciles with, not rep
 
 ## 1. Executive summary
 
-**Question asked:** Is the current 16-microservice split correct for this project, or should it change — and does changing it put the working app at risk?
+**Question asked:** Was the former 16-microservice split correct for this project, or should it change?
 
 **Answer:**
 - The 16-way split is **not** correct. It is a "distributed monolith": 16 independently deployed processes that all share **one** Postgres database (one 4,724-line / 176-model Prisma schema). This gives you the operational cost of microservices (16 Dockerfiles, 16 CI paths, 16 copies of auth/CORS/rate-limit boilerplate) without the main benefit (independent data ownership, independent scaling, fault isolation at the data layer).
 - **Full "true" microservices (one database per service, for all 16)** would be a step in the *wrong* direction — most of the 16 services are not independent bounded contexts, they are slices of one relational domain (school/student/teacher/class/grade/attendance/timetable). Splitting their databases would force distributed transactions for routine operations (e.g. transferring a student between classes) and reduce correctness, not improve it.
-- The **correct target** is a **modular consolidation**: reduce 16 deployables to 3–4 domain services, and split the database along the *one* real seam the schema evidence supports (Identity/Social vs. Academic), not along all 16 current service lines. This matches (and sharpens) what [PRODUCTION_ARCHITECTURE_LONG_TERM.md](./PRODUCTION_ARCHITECTURE_LONG_TERM.md) already proposed and never executed.
+- The **correct target** is a **modular consolidation**: reduce 16 deployables to 3–4 domain services, and split the database along the *one* real seam the schema evidence supports (Identity/Social vs. Academic), not along all 16 former service lines. Phase 0 delivered the three deployables; the database split remains a future, traffic-driven decision.
 - Because the project is **pre-production** (real-device tested, not yet released to real users), this consolidation is **low-risk right now** and becomes significantly more expensive and risky after launch. This is the cheapest window that will ever exist to fix it.
 
 ---
@@ -34,7 +34,7 @@ All figures below were confirmed directly against the repository on 2026-07-23 (
 
 ### 2.1 Deployables
 
-- **16 services** actually deployed to Cloud Run (`scripts/deploy-cloud-run.sh:117-134`): auth, feed, learn, school, student, teacher, attendance, class, subject, grade, analytics, club, messaging, notification, ai, timetable.
+- **Former topology:** 16 services were deployed to Cloud Run before Phase 0. The current deployment script supports only `academic-api`, `engagement-api`, and `ai-service`.
 - **3 dead stub directories**, never deployed, 0 lines of code: `search-service`, `storage-service`, `user-service` (also `services/lib`, which is a shared library, not a service).
 
 ### 2.2 Data layer
@@ -220,8 +220,8 @@ These are only safe today because `index.ts`'s module-level guard happens to exe
 - [x] Phase 0: delete `search-service`, `storage-service`, `user-service` stub directories
 - [x] Independent, low-effort: introduce shared `getJwtSecret()` helper (`services/lib/jwt-secret.js`) and remove all hardcoded fallback occurrences, including the 3 unguarded route files (§7)
 - [x] Found and fixed during Phase 0: a real route collision invisible while auth-service and notification-service were separate deployables — both implemented `/notifications/*` with different verbs, used by different clients (web-parent UI vs mobile). Renamed auth's 9 routes to `/auth/notifications/*`; updated the 3 real call sites (web parent-notifications page + dropdown, academic-api's grade/attendance cross-service notification calls)
-- [ ] Set `CLOUD_RUN_MIN_INSTANCES_AUTH` / `_FEED` to `0` — moot once Phase 0 branch deploys (services are renamed/merged; new deploy script needed regardless, see `docs/GCP_NEW_ACCOUNT_MIGRATION.md` Phase C)
-- [ ] Merge `feat/phase0-service-consolidation` and cut deploy script / client `*_SERVICE_URL` config over to the 2 new services (tracked in `docs/GCP_NEW_ACCOUNT_MIGRATION.md` Phase B–E, done together with the new-GCP-account migration)
+- [x] Set former auth/feed always-on instances to `0` via the consolidated deployment defaults
+- [x] Merge the Phase 0 consolidation and cut deploy/client configuration over to the three current services
 - [ ] Phase 1: split Prisma schema into `database-academic` / `database-engagement`, provision 2nd Supabase project, run one-off backfill, cut over, full device regression pass
 - [ ] Update `docs/PRODUCTION_ARCHITECTURE_LONG_TERM.md` §13 decision log once Phase 0/1 ship
 - [ ] Phase 2/3: revisit only once there is real revenue/traffic to justify additional Supabase projects

@@ -24,11 +24,9 @@ const buildClubServerTiming = (parts: Record<string, number>): string =>
     .map(([k, v]) => `${k};dur=${v}`)
     .join(', ');
 
-// Feed service URL
-const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
-const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3013';
-const NOTIFICATION_SERVICE_AUTH_TOKEN =
-  process.env.NOTIFICATION_SERVICE_AUTH_TOKEN || 'stunity-notification-dev-service-token';
+// Engagement API owns feed and notification routes after Phase 0 consolidation.
+const ENGAGEMENT_API_URL = process.env.ENGAGEMENT_API_URL || process.env.AUTH_SERVICE_URL || 'http://localhost:3022';
+const NOTIFICATION_SERVICE_AUTH_TOKEN = process.env.NOTIFICATION_SERVICE_AUTH_TOKEN;
 const PENDING_JOIN_REASON = 'PENDING_APPROVAL';
 const PENDING_INVITE_REASON = 'INVITED_PENDING';
 const CLUB_MANAGER_ROLES = ['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'] as const;
@@ -46,8 +44,12 @@ const sendUserNotification = async (payload: {
   link?: string;
 }) => {
   try {
+    if (!NOTIFICATION_SERVICE_AUTH_TOKEN) {
+      console.warn('⚠️ Club notification skipped: NOTIFICATION_SERVICE_AUTH_TOKEN is not configured');
+      return;
+    }
     await axios.post(
-      `${NOTIFICATION_SERVICE_URL}/notifications/send`,
+      `${ENGAGEMENT_API_URL}/notifications/send`,
       {
         userId: payload.userId,
         title: payload.title,
@@ -183,7 +185,7 @@ export const createClub = async (req: AuthRequest, res: Response) => {
         const feedVisibility = schoolId ? 'SCHOOL' : 'PUBLIC';
 
         await axios.post(
-          `${FEED_SERVICE_URL}/posts`,
+          `${ENGAGEMENT_API_URL}/posts`,
           {
             content: postContent,
             postType: 'CLUB_CREATED',

@@ -32,6 +32,7 @@ import { buildSessionMonitor, SESSION_MONITOR_LATE_GRACE_MINUTES } from './sessi
 import { assertProductionEnv, getJwtSecret } from './env';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { getSharedPrisma } from '../../core/prisma';
+import { NOTIFICATION_SERVICE_AUTH_TOKEN } from '../../core/internalServiceAuth';
 
 
 assertProductionEnv();
@@ -372,7 +373,10 @@ const notifyParents = async (studentId: string, type: string, title: string, mes
   try {
     const response = await fetch(`${AUTH_SERVICE_URL}/auth/notifications/parent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-service-token': NOTIFICATION_SERVICE_AUTH_TOKEN,
+      },
       body: JSON.stringify({ studentId, type, title, message, link }),
     });
     if (response.ok) {
@@ -388,7 +392,10 @@ const notifyStudent = async (studentId: string, type: string, title: string, mes
   try {
     await fetch(`${AUTH_SERVICE_URL}/auth/notifications/student`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-service-token': NOTIFICATION_SERVICE_AUTH_TOKEN,
+      },
       body: JSON.stringify({ studentId, type, title, message, link }),
     });
   } catch (error) {

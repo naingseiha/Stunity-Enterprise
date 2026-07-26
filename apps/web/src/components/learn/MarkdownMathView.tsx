@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import MarkdownIt from 'markdown-it';
+import { sanitizeMarkdownHtml } from './markdownSanitizer';
 // @ts-expect-error - markdown-it-texmath has no type declarations
 import texmath from 'markdown-it-texmath';
 import katex from 'katex';
@@ -22,7 +23,7 @@ export function MarkdownMathView({ text, className = '' }: MarkdownMathViewProps
   const htmlContent = useMemo(() => {
     if (!text) return '';
     try {
-      return md.render(text);
+      return sanitizeMarkdownHtml(md.render(text));
     } catch (e) {
       return text;
     }

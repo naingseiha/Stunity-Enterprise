@@ -42,11 +42,11 @@ interface AuthRequest extends Request {
   };
 }
 
-const authMiddleware = async (
+async function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+) {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
@@ -106,6 +106,18 @@ const authMiddleware = async (
       message: 'Invalid or expired token',
     });
   }
+}
+
+const requireOnboardingAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const role = req.user?.role || '';
+  const schoolId = String(req.body?.schoolId || '');
+  if (!CLASS_ADMIN_ROLES.has(role)) {
+    return res.status(403).json({ success: false, message: 'School administrator access required' });
+  }
+  if (role !== 'SUPER_ADMIN' && (!schoolId || req.user?.schoolId !== schoolId)) {
+    return res.status(403).json({ success: false, message: 'You can only manage your own school' });
+  }
+  next();
 };
 
 // ===========================
@@ -123,9 +135,9 @@ app.get('/health', (req: Request, res: Response) => {
 
 // ===========================
 // POST /classes/batch
-// Batch create classes (for onboarding - no auth required)
+// Batch create classes for onboarding (school-admin auth required)
 // ===========================
-app.post('/classes/batch', async (req: Request, res: Response) => {
+app.post('/classes/batch', authMiddleware, requireOnboardingAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId, academicYearId, classes } = req.body;
 
@@ -238,6 +250,13 @@ app.use('/classes', authMiddleware);
 
 const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
 const CLASS_WRITE_ROLES = new Set(['TEACHER', 'ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+
+const requireClassAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!CLASS_ADMIN_ROLES.has(req.user?.role || '')) {
+    return res.status(403).json({ success: false, message: 'School administrator access required' });
+  }
+  next();
+};
 
 type ScopedUserRecord = {
   id: string;
@@ -1639,7 +1658,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
 // POST /classes
 // Create new class
 // ===========================
-app.post('/classes', async (req: AuthRequest, res: Response) => {
+app.post('/classes', requireClassAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     console.log(`➕ [School ${schoolId}] Creating new class...`);
@@ -1810,7 +1829,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
 // PUT /classes/:id
 // Update class
 // ===========================
-app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
+app.put('/classes/:id', requireClassAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -1984,7 +2003,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
 // DELETE /classes/:id
 // Delete class
 // ===========================
-app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
+app.delete('/classes/:id', requireClassAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -2046,7 +2065,7 @@ app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
 // POST /classes/:id/assign-students
 // Assign students to class
 // ===========================
-app.post('/classes/:id/assign-students', async (req: AuthRequest, res: Response) => {
+app.post('/classes/:id/assign-students', requireClassAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { studentIds } = req.body;

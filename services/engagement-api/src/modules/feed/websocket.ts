@@ -7,6 +7,7 @@ import { createSubscriber, isRedisConnected, publisher } from './redis';
 import { inMemorySubscribe } from './redis';
 
 import { REDIS_CHANNELS, SSEEvent } from './events';
+import { isQuizWarEnabled } from './featureFlags';
 
 const JWT_SECRET = getJwtSecret();
 
@@ -14,6 +15,11 @@ const JWT_SECRET = getJwtSecret();
 const activeConnections = new Map<string, Set<WebSocket>>();
 
 export function initWebSocketServer(server: Server) {
+  if (!isQuizWarEnabled()) {
+    console.log('📡 WS: Quiz War WebSocket disabled by QUIZ_WAR_ENABLED');
+    return;
+  }
+
   const wss = new WebSocketServer({ noServer: true });
 
   console.log('📡 WS: Initializing Quiz War WebSocket Server');
@@ -149,6 +155,8 @@ function broadcastToWar(warId: string, event: any) {
  * Publish update to both Redis and local pub-sub fallback
  */
 export async function publishQuizWarUpdate(warId: string, event: any): Promise<void> {
+  if (!isQuizWarEnabled()) return;
+
   const messagePayload = {
     warId,
     event,

@@ -125,7 +125,7 @@ interface AuthRequest extends Request {
   };
 }
 
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -183,6 +183,18 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       message: 'Invalid or expired token',
     });
   }
+}
+
+const requireOnboardingAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const role = req.user?.role || '';
+  const schoolId = String(req.body?.schoolId || '');
+  if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
+    return res.status(403).json({ success: false, message: 'School administrator access required' });
+  }
+  if (role !== 'SUPER_ADMIN' && (!schoolId || req.user?.schoolId !== schoolId)) {
+    return res.status(403).json({ success: false, message: 'You can only manage your own school' });
+  }
+  next();
 };
 
 const ensureStudentClassEnrollment = async (
@@ -252,9 +264,9 @@ const STUDENT_TOP_LEVEL_KEYS = [
 
 // ===========================
 // POST /students/batch
-// Batch create students (for onboarding - no auth required)
+// Batch create students for onboarding (school-admin auth required)
 // ===========================
-app.post('/students/batch', async (req: Request, res: Response) => {
+app.post('/students/batch', authenticateToken, requireOnboardingAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId, students } = req.body;
 

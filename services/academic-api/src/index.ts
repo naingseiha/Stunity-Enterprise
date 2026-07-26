@@ -31,6 +31,7 @@ import gradeRouter from './modules/grade';
 import attendanceRouter from './modules/attendance';
 import timetableRouter from './modules/timetable';
 import clubRouter from './modules/club';
+import { requestIdMiddleware } from './core/requestId';
 
 const app = express();
 app.set('trust proxy', 1); // Cloud Run / proxy X-Forwarded-For
@@ -59,6 +60,10 @@ if (shouldRunDbKeepalive()) {
 
 const PORT = process.env.PORT || process.env.ACADEMIC_API_PORT || 3021;
 
+if (process.env.NODE_ENV === 'production' && process.env.CORS_ORIGIN === '*') {
+  throw new Error('Refusing to start academic-api with wildcard CORS_ORIGIN in production');
+}
+
 // ── Shared middleware (was duplicated per service before consolidation) ──
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
@@ -74,8 +79,9 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
 }));
+app.use(requestIdMiddleware);
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 // 200/15min per service × 9 merged services → keep the same effective budget
 app.use(rateLimit({
@@ -105,6 +111,17 @@ app.use(gradeRouter);
 app.use(attendanceRouter);
 app.use(timetableRouter);
 app.use('/club', clubRouter);
+
+app.use((err: any, req: Request, res: Response, _next: express.NextFunction) => {
+  const requestId = res.locals.requestId;
+  console.error(JSON.stringify({
+    level: 'ERROR', requestId, method: req.method, path: req.path,
+    message: err?.message || 'Unhandled error', stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined,
+  }));
+  res.status(Number(err?.statusCode || err?.status) || 500).json({
+    success: false, error: 'An error occurred', requestId,
+  });
+});
 
 const server = app.listen(PORT, () => {
   console.log(`🏫 Academic API running on port ${PORT}`);

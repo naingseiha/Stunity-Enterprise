@@ -5,12 +5,13 @@ import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-g
 import { OIDCStrategy } from 'passport-azure-ad';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { issueRefreshCredential } from '../security/refreshCredential';
 import * as ssoCodeStore from '../utils/ssoCodeStore';
 
 const router = Router();
 
 const JWT_SECRET = getJwtSecret();
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 export default function ssoRoutes(prisma: PrismaClient) {
@@ -96,11 +97,10 @@ export default function ssoRoutes(prisma: PrismaClient) {
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+      });
 
       // 3. Update login metadata
       await prisma.user.update({

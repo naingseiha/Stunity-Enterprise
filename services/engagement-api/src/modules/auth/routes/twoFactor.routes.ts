@@ -2,6 +2,7 @@ import { getJwtSecret } from '../../../../../lib/jwt-secret';
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { issueRefreshCredential } from '../security/refreshCredential';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
@@ -9,7 +10,7 @@ import rateLimit from 'express-rate-limit';
 const router = Router();
 
 const JWT_SECRET = getJwtSecret();
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 const twoFactorLimiter = rateLimit({
@@ -207,11 +208,10 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+      });
 
       await prisma.user.update({
         where: { id: user.id },

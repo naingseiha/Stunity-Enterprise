@@ -7,6 +7,7 @@ import { School, Sparkles, Plus } from 'lucide-react';
 import StepContainer from '@/components/onboarding/StepContainer';
 import QuickSetupCard from '@/components/onboarding/QuickSetupCard';
 import { generateClasses } from '../utils/dataGenerators';
+import { TokenManager } from '@/lib/api/auth';
 
 interface ClassesStepProps {
   onNext: () => void;
@@ -42,7 +43,10 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/batch`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
+        },
         body: JSON.stringify({
           schoolId,
           academicYearId,

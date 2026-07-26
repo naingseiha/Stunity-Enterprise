@@ -30,6 +30,17 @@ import { createStructuredAuthMetrics } from './observability/authOperationalMetr
 import { requireNormalizedSchoolLinkRequestId } from './domain/legacySchoolLinkAdapter';
 import { publicPendingLinkData } from './security/publicAuthResponse';
 import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
+import { requireInternalServiceToken } from './security/internalServiceAuth';
+import {
+  authDbSessionsEnabled,
+  durationToMilliseconds,
+  issueRefreshCredential,
+} from './security/refreshCredential';
+import {
+  AuthSessionError,
+  rotateAuthSession,
+  revokeAuthSession,
+} from './security/authSessionService';
 import {
   AuthSessionManagementError,
   listActiveAuthSessions,
@@ -57,8 +68,9 @@ for (const warning of passwordlessConfig.warnings) {
   console.warn(`Passwordless configuration warning: ${warning}`);
 }
 const JWT_SECRET = getJwtSecret();
-// Remember-me style: long-lived tokens until explicit logout
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '30d';       // Access token: 30d (reduces refresh calls)
+// Remember-me UX comes from the rotating device session, not a long-lived
+// bearer token. Short access tokens limit exposure without logging users out.
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 const parentDirectoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -1032,11 +1044,10 @@ app.post(
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+      });
 
       // Calculate trial days remaining if applicable
       let trialDaysRemaining = null;
@@ -1214,11 +1225,10 @@ app.post(
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+      });
 
       res.status(201).json({
         success: true,
@@ -1263,6 +1273,9 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
     if (refreshToken && typeof refreshToken === 'string') {
+      if (authDbSessionsEnabled()) {
+        await revokeAuthSession(prisma, refreshToken, 'USER_LOGOUT');
+      }
       const maxAgeMs = 365 * 24 * 60 * 60 * 1000; // 1 year
       tokenBlacklist.revokeRefreshToken(refreshToken, maxAgeMs);
     }
@@ -1340,7 +1353,11 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       });
     }
 
-    // Check if token was revoked (logout)
+    if (typeof refreshToken !== 'string' || refreshToken.length > 4096) {
+      return res.status(401).json({ success: false, error: 'Invalid refresh token' });
+    }
+
+    // Check legacy/in-memory revocation (logout during the compatibility window).
     if (tokenBlacklist.isRevoked(refreshToken)) {
       return res.status(401).json({
         success: false,
@@ -1348,20 +1365,43 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       });
     }
 
-    // Verify token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(refreshToken, JWT_SECRET);
-    } catch (err: any) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid or expired refresh token',
-      });
+    let decoded: any = null;
+    let rotatedSession: Awaited<ReturnType<typeof rotateAuthSession>> | null = null;
+    let refreshUserId: string;
+
+    if (authDbSessionsEnabled() && !refreshToken.includes('.')) {
+      try {
+        rotatedSession = await rotateAuthSession(prisma, refreshToken, {
+          expiresAt: new Date(Date.now() + durationToMilliseconds(REFRESH_TOKEN_EXPIRATION)),
+        });
+        refreshUserId = rotatedSession.userId;
+      } catch (error) {
+        if (error instanceof AuthSessionError) {
+          const status = error.code === 'SESSION_CONFLICT' ? 409 : 401;
+          return res.status(status).json({ success: false, code: error.code, error: error.message });
+        }
+        throw error;
+      }
+    } else {
+      // Compatibility path: existing JWT refresh tokens are accepted once and
+      // upgraded to an opaque database session without logging the user out.
+      try {
+        decoded = jwt.verify(refreshToken, JWT_SECRET);
+        if (!decoded || typeof decoded.userId !== 'string') {
+          return res.status(401).json({ success: false, error: 'Invalid refresh token' });
+        }
+        refreshUserId = decoded.userId;
+      } catch {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid or expired refresh token',
+        });
+      }
     }
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: refreshUserId },
       include: {
         school: {
           select: {
@@ -1380,6 +1420,9 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     });
 
     if (!user || !user.isActive) {
+      if (rotatedSession) {
+        await revokeAuthSession(prisma, rotatedSession.refreshToken, 'USER_INACTIVE');
+      }
       return res.status(401).json({
         success: false,
         error: 'User not found or inactive',
@@ -1387,9 +1430,14 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     }
 
     // Check password change invalidation
-    if (user.passwordChangedAt && decoded.iat) {
+    const credentialIssuedAt = rotatedSession?.previousCreatedAt
+      || (decoded?.iat ? new Date(decoded.iat * 1000) : null);
+    if (user.passwordChangedAt && credentialIssuedAt) {
       const changedTimestamp = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
-      if (decoded.iat < changedTimestamp) {
+      if (Math.floor(credentialIssuedAt.getTime() / 1000) < changedTimestamp) {
+        if (rotatedSession) {
+          await revokeAuthSession(prisma, rotatedSession.refreshToken, 'PASSWORD_CHANGED');
+        }
         return res.status(401).json({
           success: false,
           error: 'Password changed. Please log in again.',
@@ -1399,10 +1447,22 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
 
     const schoolAccess = resolveSchoolAccessContext(user.school, user.role === 'SUPER_ADMIN');
     if (!schoolAccess.allowed) {
+      if (rotatedSession) {
+        await revokeAuthSession(prisma, rotatedSession.refreshToken, 'SCHOOL_ACCESS_DENIED');
+      }
       return res.status(schoolAccess.statusCode || 403).json({
         success: false,
         error: schoolAccess.error || 'Access denied',
         ...(schoolAccess.details ? { details: schoolAccess.details } : {}),
+      });
+    }
+
+    if (rotatedSession && rotatedSession.schoolAccessVersion !== user.schoolAccessVersion) {
+      await revokeAuthSession(prisma, rotatedSession.refreshToken, 'SCHOOL_ACCESS_CHANGED');
+      return res.status(401).json({
+        success: false,
+        code: 'SCHOOL_ACCESS_CHANGED',
+        error: 'School access changed. Please sign in again.',
       });
     }
 
@@ -1438,11 +1498,13 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
     );
 
-    const newRefreshToken = jwt.sign(
-      { userId: user.id },
-      JWT_SECRET,
-      { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-    );
+    const newRefreshToken = rotatedSession?.refreshToken || await issueRefreshCredential({
+      prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+      jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+    });
+    if (authDbSessionsEnabled() && decoded) {
+      tokenBlacklist.revokeRefreshToken(refreshToken, durationToMilliseconds(REFRESH_TOKEN_EXPIRATION));
+    }
 
     console.log('🔄 Token refreshed successfully for:', user.email);
 
@@ -1844,11 +1906,10 @@ app.post(
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma, userId: user.id, schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+      });
 
       res.json({
         success: true,
@@ -1999,7 +2060,7 @@ app.delete('/auth/notifications/:id', authenticateToken, async (req: AuthRequest
 });
 
 // Create notification (internal API for other services)
-app.post('/auth/notifications', async (req: Request, res: Response) => {
+app.post('/auth/notifications', requireInternalServiceToken, async (req: Request, res: Response) => {
   try {
     const { recipientId, actorId, type, title, message, link, postId, commentId } = req.body;
 
@@ -2035,7 +2096,7 @@ app.post('/auth/notifications', async (req: Request, res: Response) => {
 });
 
 // Send notification to parent(s) of a student (helper endpoint)
-app.post('/auth/notifications/parent', async (req: Request, res: Response) => {
+app.post('/auth/notifications/parent', requireInternalServiceToken, async (req: Request, res: Response) => {
   try {
     const { studentId, type, title, message, link } = req.body;
 
@@ -2098,7 +2159,7 @@ app.post('/auth/notifications/parent', async (req: Request, res: Response) => {
 });
 
 // School→Feed Notification Bridge: notify students directly
-app.post('/auth/notifications/student', async (req: Request, res: Response) => {
+app.post('/auth/notifications/student', requireInternalServiceToken, async (req: Request, res: Response) => {
   try {
     const { studentId, type, title, message, link } = req.body;
 
@@ -2137,7 +2198,7 @@ app.post('/auth/notifications/student', async (req: Request, res: Response) => {
 });
 
 // School→Feed Notification Bridge: batch notify (e.g., class-wide announcements)
-app.post('/auth/notifications/batch', async (req: Request, res: Response) => {
+app.post('/auth/notifications/batch', requireInternalServiceToken, async (req: Request, res: Response) => {
   try {
     const { userIds, type, title, message, link, actorId } = req.body;
 
@@ -3681,11 +3742,10 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       JWT_SECRET,
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
     );
-    const refreshToken = jwt.sign(
-      { userId: result.id },
-      JWT_SECRET,
-      { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
-    );
+    const refreshToken = await issueRefreshCredential({
+      prisma, userId: result.id, schoolAccessVersion: result.schoolAccessVersion,
+      jwtSecret: JWT_SECRET, refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION, req,
+    });
 
     // Return success with token
     res.status(201).json({

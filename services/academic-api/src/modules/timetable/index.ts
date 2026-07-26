@@ -368,6 +368,14 @@ const authenticate = (req: express.Request, res: express.Response, next: express
   }
 };
 
+const requireTimetableAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const role = (req as any).user?.role;
+  if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
+    return res.status(403).json({ error: 'School scheduling administrator access required' });
+  }
+  next();
+};
+
 // Days of week helper
 const DAYS_ORDER: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const WORKING_DAY_MAP: Record<number, DayOfWeek> = {
@@ -710,7 +718,7 @@ app.get('/timetable/teacher/:teacherId', authenticate, async (req, res) => {
 });
 
 // POST /timetable/entry - Create timetable entry
-app.post('/timetable/entry', authenticate, async (req, res) => {
+app.post('/timetable/entry', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { classId, subjectId, teacherId, periodId, dayOfWeek, room, academicYearId } = req.body;
@@ -771,7 +779,7 @@ app.post('/timetable/entry', authenticate, async (req, res) => {
 });
 
 // PUT /timetable/entry/:id - Update timetable entry
-app.put('/timetable/entry/:id', authenticate, async (req, res) => {
+app.put('/timetable/entry/:id', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { schoolId } = (req as any).user;
@@ -829,7 +837,7 @@ app.put('/timetable/entry/:id', authenticate, async (req, res) => {
 });
 
 // DELETE /timetable/entry/:id - Delete timetable entry
-app.delete('/timetable/entry/:id', authenticate, async (req, res) => {
+app.delete('/timetable/entry/:id', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { schoolId } = (req as any).user;
@@ -942,7 +950,7 @@ async function checkConflicts(
 }
 
 // POST /timetable/bulk-create - Bulk create entries
-app.post('/timetable/bulk-create', authenticate, async (req, res) => {
+app.post('/timetable/bulk-create', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { entries, academicYearId, clearExisting } = req.body;
@@ -1361,7 +1369,7 @@ interface AutoAssignOptions {
 }
 
 // POST /timetable/auto-assign - Auto-assign teachers to class timetable
-app.post('/timetable/auto-assign', authenticate, async (req, res) => {
+app.post('/timetable/auto-assign', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { classId, academicYearId, options } = req.body as { classId: string; academicYearId: string; options?: Partial<AutoAssignOptions> };
@@ -1782,7 +1790,7 @@ app.get('/timetable/available-teachers', authenticate, async (req, res) => {
 // ========================================
 
 // POST /timetable/move - Move entry to new slot
-app.post('/timetable/move', authenticate, async (req, res) => {
+app.post('/timetable/move', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { entryId, newPeriodId, newDayOfWeek } = req.body;
@@ -1831,7 +1839,7 @@ app.post('/timetable/move', authenticate, async (req, res) => {
 });
 
 // POST /timetable/swap - Swap two entries
-app.post('/timetable/swap', authenticate, async (req, res) => {
+app.post('/timetable/swap', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { entryId1, entryId2 } = req.body;
@@ -1949,7 +1957,7 @@ app.get('/timetable/validation', authenticate, async (req, res) => {
 });
 
 // POST /timetable/publish - Publish timetable
-app.post('/timetable/publish', authenticate, async (req, res) => {
+app.post('/timetable/publish', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId, userId } = (req as any).user;
     const { academicYearId, notifyTeachers, notifyClasses, notes } = req.body;
@@ -1995,7 +2003,7 @@ app.post('/timetable/publish', authenticate, async (req, res) => {
 });
 
 // POST /timetable/unpublish - Return an official timetable to draft mode
-app.post('/timetable/unpublish', authenticate, async (req, res) => {
+app.post('/timetable/unpublish', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId, userId } = (req as any).user;
     const { academicYearId, notes } = req.body;
@@ -2055,7 +2063,7 @@ app.get('/timetable/conflict-exceptions', authenticate, async (req, res) => {
 });
 
 // POST /timetable/conflict-exceptions - Approve a known timetable conflict
-app.post('/timetable/conflict-exceptions', authenticate, async (req, res) => {
+app.post('/timetable/conflict-exceptions', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId, userId } = (req as any).user;
     const { academicYearId, type, entryIds, reason } = req.body as {
@@ -2168,7 +2176,7 @@ app.post('/timetable/conflict-exceptions', authenticate, async (req, res) => {
 });
 
 // DELETE /timetable/conflict-exceptions/:id - Revoke an approved exception
-app.delete('/timetable/conflict-exceptions/:id', authenticate, async (req, res) => {
+app.delete('/timetable/conflict-exceptions/:id', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId, userId } = (req as any).user;
     const { id } = req.params;
@@ -2347,7 +2355,7 @@ app.get('/timetable/teacher-availability', authenticate, async (req, res) => {
 });
 
 // POST /timetable/entry-by-period - Create entry using period number instead of periodId
-app.post('/timetable/entry-by-period', authenticate, async (req, res) => {
+app.post('/timetable/entry-by-period', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { classId, subjectId, teacherId, periodNumber, dayOfWeek, room, academicYearId } = req.body;
@@ -2421,7 +2429,7 @@ app.post('/timetable/entry-by-period', authenticate, async (req, res) => {
 });
 
 // POST /timetable/move-entry - Move entry to a new slot
-app.post('/timetable/move-entry', authenticate, async (req, res) => {
+app.post('/timetable/move-entry', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { entryId, newDayOfWeek, newPeriodNumber } = req.body;
@@ -2870,7 +2878,7 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
 // ========================================
 
 // DELETE /timetable/clear-class/:classId - Clear all entries for a class
-app.delete('/timetable/clear-class/:classId', authenticate, async (req, res) => {
+app.delete('/timetable/clear-class/:classId', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { classId } = req.params;
@@ -2927,7 +2935,7 @@ app.delete('/timetable/clear-class/:classId', authenticate, async (req, res) => 
 // ========================================
 
 // POST /timetable/copy-class - Copy timetable from one class to another
-app.post('/timetable/copy-class', authenticate, async (req, res) => {
+app.post('/timetable/copy-class', authenticate, requireTimetableAdmin, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const { sourceClassId, targetClassId, academicYearId, clearTarget } = req.body;

@@ -11,6 +11,7 @@ import TeachersStep from './steps/TeachersStep';
 import ClassesStep from './steps/ClassesStep';
 import StudentsStep from './steps/StudentsStep';
 import CompleteStep from './steps/CompleteStep';
+import { TokenManager } from '@/lib/api/auth';
 
 import { useTranslations } from 'next-intl';
 const STEP_TITLES = [
@@ -137,7 +138,10 @@ export default function OnboardingPage() {
       
       await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/step`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
+        },
         body: JSON.stringify({
           step: stepNames[step - 1],
           completed,
@@ -156,6 +160,9 @@ export default function OnboardingPage() {
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/complete`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
+        },
       });
 
       if (response.ok) {

@@ -9,12 +9,12 @@ This guide covers Google Cloud Run (backend microservices), Vercel (web), Supaba
 | Component | Target platform | Notes |
 |-----------|-----------------|-------|
 | **Database** | Supabase | Pooler for runtime; direct URL for migrations |
-| **Backend** | Google Cloud Run | Sixteen active microservices in `scripts/deploy-cloud-run.sh` |
+| **Backend** | Google Cloud Run | Three consolidated services: `academic-api`, `engagement-api`, `ai-service` |
 | **Frontend** | Vercel | Root directory `apps/web` |
 | **Media** | Cloudflare R2 | S3-compatible; public URL in `NEXT_PUBLIC_R2_PUBLIC_URL` |
 | **Mobile** | App Store / Play Store | EAS `production` profile |
 
-Placeholder service folders (not deployed by the default script): `search-service`, `storage-service`, `user-service`.
+Historical service folders may remain in the monorepo for reference, but they are not part of the production topology or deployment path.
 
 ---
 
@@ -57,13 +57,15 @@ Complete this in the Supabase dashboard before treating the environment as produ
 
 ## 2. Backend (Google Cloud Run)
 
-The script [scripts/deploy-cloud-run.sh](scripts/deploy-cloud-run.sh) builds and deploys these sixteen services:
+The script [scripts/deploy-cloud-run.sh](scripts/deploy-cloud-run.sh) builds and deploys the three supported services:
 
-`auth-service`, `feed-service`, `learn-service`, `school-service`, `student-service`, `teacher-service`, `attendance-service`, `class-service`, `subject-service`, `grade-service`, `analytics-service`, `club-service`, `notification-service`, `messaging-service`, `ai-service`, `timetable-service`.
+`engagement-api`, `academic-api`, and `ai-service`.
 
 ### Root `.env` (not committed)
 
-Required for deploy (see script): `DATABASE_URL`, `JWT_SECRET`, Supabase and R2 variables, `GEMINI_API_KEY`, etc.
+Required for deploy (see script): `DATABASE_URL`, `JWT_SECRET`, an explicit `CORS_ORIGIN`, `NOTIFICATION_SERVICE_AUTH_TOKEN` for academic/engagement deployments, Supabase and R2 variables, `GEMINI_API_KEY`, etc. `QUIZ_WAR_ENABLED` is passed to engagement-api and defaults to `false` while the feature is being redesigned.
+
+Authentication defaults to a one-hour access token and a rotating, database-backed 365-day device session (`AUTH_DB_SESSIONS_ENABLED=true`). Existing signed JWT refresh tokens are upgraded to opaque sessions on their next successful refresh, so rollout does not force active users to sign in again.
 
 **Scaling and CORS** (optional overrides in the same `.env`):
 
@@ -71,9 +73,9 @@ Required for deploy (see script): `DATABASE_URL`, `JWT_SECRET`, Supabase and R2 
 |----------|---------|---------|
 | `CLOUD_RUN_MIN_INSTANCES` | `0` | Set to `1` to reduce cold starts (higher cost). |
 | `CLOUD_RUN_CPU_THROTTLING` | `true` | Set to `false` for steadier CPU when instances are idle (higher cost). |
-| `CORS_ORIGIN` | `*` | Set to your real web origin (e.g. `https://stunity.com`). Avoid `*` in production. |
+| `CORS_ORIGIN` | required | Set to your real web origin(s), e.g. `https://stunity.com`. Wildcard CORS is rejected in production. |
 
-The script prints a warning when `CORS_ORIGIN` is `*`.
+The script rejects `CORS_ORIGIN=*` rather than deploying a credentialed wildcard policy.
 
 ### Deploy commands
 
@@ -87,7 +89,7 @@ The script prints a warning when `CORS_ORIGIN` is `*`.
 3. **Selective deploy**:
 
    ```bash
-   ./scripts/deploy-cloud-run.sh auth-service feed-service
+   ./scripts/deploy-cloud-run.sh engagement-api academic-api
    ```
 
 4. **List services touched by git** (since `origin/main`, or pass another ref range):
@@ -111,17 +113,17 @@ The script prints a warning when `CORS_ORIGIN` is `*`.
 
 ### Streak-at-risk push (Cloud Scheduler)
 
-The notification-service exposes a service-auth endpoint for evening streak reminders:
+The notification module inside `engagement-api` exposes a service-auth endpoint for evening streak reminders:
 
 - `POST /notifications/jobs/streak-at-risk` with header `x-service-token: $NOTIFICATION_SERVICE_AUTH_TOKEN`
-- Deploy script sets `NOTIFICATION_SERVICE_AUTH_TOKEN` from `NOTIFICATION_SERVICE_AUTH_TOKEN` or `JWT_SECRET` in root `.env`.
+- The deploy script requires a dedicated `NOTIFICATION_SERVICE_AUTH_TOKEN`; it must not reuse `JWT_SECRET`.
 
-One-time scheduler setup (project `stunity-enterprise`, region `us-central1`):
+One-time scheduler setup (project `stunity-prod`, region `asia-southeast1`):
 
 ```bash
-export GCP_PROJECT_ID="stunity-enterprise"
-export GCP_REGION="us-central1"
-export NOTIFICATION_SERVICE_URL="https://stunity-notification-service-mc7wnjp2kq-uc.a.run.app"
+export GCP_PROJECT_ID="stunity-prod"
+export GCP_REGION="asia-southeast1"
+export NOTIFICATION_SERVICE_URL="https://<engagement-api-cloud-run-url>"
 export NOTIFICATION_SERVICE_AUTH_TOKEN="<your production service token>"
 ./scripts/setup-streak-at-risk-scheduler.sh
 ```
@@ -136,11 +138,11 @@ Each service needs at least: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `NODE_
 
 ## 3. Continuous integration (GitHub Actions)
 
-[.github/workflows/deploy-feed.yml](.github/workflows/deploy-feed.yml) deploys **feed-service** on pushes to `main` that touch `services/feed-service/**` or the shared Prisma schema.
+The consolidated backend is validated by [.github/workflows/production-quality.yml](../.github/workflows/production-quality.yml). Cloud Run deployment remains an explicit operator action through `scripts/deploy-cloud-run.sh`, so a bad build cannot silently deploy an obsolete service.
 
 **Repository Variables** (Settings → Secrets and variables → Actions → Variables), optional — defaults match `deploy-cloud-run.sh`:
 
-- `CORS_ORIGIN` — if unset, deploy step uses `*`.
+- `CORS_ORIGIN` — required; wildcard `*` is rejected.
 - `CLOUD_RUN_MIN_INSTANCES` — if unset, `0`.
 - `CLOUD_RUN_CPU_THROTTLING` — if unset, `true` (`--cpu-throttling`).
 
@@ -151,8 +153,8 @@ Broader automation (Cloud Build triggers per service) is described in the origin
 ### Google Cloud Build triggers (optional)
 
 1. Connect the GitHub repo in GCP → Cloud Build → Triggers.
-2. One trigger per service (e.g. `deploy-auth`) with path filter `services/auth-service/**`.
-3. Event: push to `main`; build using the service `Dockerfile`.
+2. Use the three current service paths (`services/academic-api/**`, `services/engagement-api/**`, `services/ai-service/**`) or keep deployment manual through the script above.
+3. Never point a trigger at retired service directories.
 
 ---
 
@@ -210,4 +212,4 @@ eas build --platform android --profile production
 
 ---
 
-*Last updated: May 12, 2026*
+*Last updated: July 26, 2026*

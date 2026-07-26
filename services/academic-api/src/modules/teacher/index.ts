@@ -123,11 +123,11 @@ interface AuthRequest extends Request {
   };
 }
 
-const authMiddleware = async (
+async function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+) {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
@@ -186,6 +186,25 @@ const authMiddleware = async (
       message: 'Invalid or expired token',
     });
   }
+}
+
+const requireOnboardingAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const role = req.user?.role || '';
+  const schoolId = String(req.body?.schoolId || '');
+  if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
+    return res.status(403).json({ success: false, message: 'School administrator access required' });
+  }
+  if (role !== 'SUPER_ADMIN' && (!schoolId || req.user?.schoolId !== schoolId)) {
+    return res.status(403).json({ success: false, message: 'You can only manage your own school' });
+  }
+  next();
+};
+
+const requireTeacherAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(req.user?.role || '')) {
+    return res.status(403).json({ success: false, message: 'School administrator access required' });
+  }
+  next();
 };
 
 // ===========================
@@ -203,9 +222,9 @@ app.get('/health', (req: Request, res: Response) => {
 
 // ===========================
 // POST /teachers/batch
-// Batch create teachers (for onboarding - no auth required)
+// Batch create teachers for onboarding (school-admin auth required)
 // ===========================
-app.post('/teachers/batch', async (req: Request, res: Response) => {
+app.post('/teachers/batch', authMiddleware, requireOnboardingAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId, teachers } = req.body;
 
@@ -952,7 +971,7 @@ app.get('/teachers/:id', async (req: AuthRequest, res: Response) => {
 // POST /teachers
 // Create new teacher
 // ===========================
-app.post('/teachers', async (req: AuthRequest, res: Response) => {
+app.post('/teachers', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const school = req.user!.school;
@@ -1244,7 +1263,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
 // POST /teachers/bulk
 // Bulk create teachers
 // ===========================
-app.post('/teachers/bulk', async (req: AuthRequest, res: Response) => {
+app.post('/teachers/bulk', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const school = req.user!.school;
@@ -1390,7 +1409,7 @@ app.post('/teachers/bulk', async (req: AuthRequest, res: Response) => {
 // PUT /teachers/:id
 // Update teacher
 // ===========================
-app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
+app.put('/teachers/:id', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -1565,7 +1584,7 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
 // PUT /teachers/:id/lock
 // Toggle profile lock for a teacher
 // ===========================
-app.put('/teachers/:id/lock', async (req: AuthRequest, res: Response) => {
+app.put('/teachers/:id/lock', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1622,7 +1641,7 @@ app.put('/teachers/:id/lock', async (req: AuthRequest, res: Response) => {
 // DELETE /teachers/:id
 // Delete teacher
 // ===========================
-app.delete('/teachers/:id', async (req: AuthRequest, res: Response) => {
+app.delete('/teachers/:id', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -1676,7 +1695,7 @@ app.delete('/teachers/:id', async (req: AuthRequest, res: Response) => {
 // ===========================
 // PHOTO UPLOAD ENDPOINT
 // ===========================
-app.post('/teachers/:id/photo', upload.single('photo'), async (req: AuthRequest, res: Response) => {
+app.post('/teachers/:id/photo', requireTeacherAdmin, upload.single('photo'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -1946,7 +1965,7 @@ app.get('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
 // POST /teachers/:id/subjects
 // Assign subjects to a teacher
 // ===========================
-app.post('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
+app.post('/teachers/:id/subjects', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { subjectIds } = req.body;
@@ -2035,7 +2054,7 @@ app.post('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
 // DELETE /teachers/:id/subjects/:subjectId
 // Remove a subject assignment from teacher
 // ===========================
-app.delete('/teachers/:id/subjects/:subjectId', async (req: AuthRequest, res: Response) => {
+app.delete('/teachers/:id/subjects/:subjectId', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id, subjectId } = req.params;
     const schoolId = req.user!.schoolId;
@@ -2086,7 +2105,7 @@ app.delete('/teachers/:id/subjects/:subjectId', async (req: AuthRequest, res: Re
 // PUT /teachers/:id/subjects
 // Replace all subject assignments (bulk update)
 // ===========================
-app.put('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
+app.put('/teachers/:id/subjects', requireTeacherAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { subjectIds } = req.body;

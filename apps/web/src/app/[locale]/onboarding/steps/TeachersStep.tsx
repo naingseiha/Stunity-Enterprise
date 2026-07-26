@@ -7,6 +7,7 @@ import { Users, Sparkles, Upload, Plus, X } from 'lucide-react';
 import StepContainer from '@/components/onboarding/StepContainer';
 import QuickSetupCard from '@/components/onboarding/QuickSetupCard';
 import { generateSampleTeachers, generateTeachersCSVTemplate, downloadCSV } from '../utils/dataGenerators';
+import { TokenManager } from '@/lib/api/auth';
 
 interface TeachersStepProps {
   onNext: () => void;
@@ -47,7 +48,10 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}/teachers/batch`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
+        },
         body: JSON.stringify({
           schoolId,
           teachers,

@@ -69,6 +69,13 @@ const authenticateToken = (req: AuthRequest, res: Response, next: Function) => {
   }
 };
 
+const requireSubjectAdmin = (req: AuthRequest, res: Response, next: Function) => {
+  if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(req.user?.role || '')) {
+    return res.status(403).json({ message: 'Curriculum administrator access required' });
+  }
+  next();
+};
+
 // ========================================
 // Health Check (No Auth Required)
 // ========================================
@@ -443,7 +450,7 @@ app.get('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
 /**
  * POST /subjects - Create new subject
  */
-app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/subjects', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const {
       name,
@@ -517,7 +524,7 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
 /**
  * PUT /subjects/:id - Update subject
  */
-app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.put('/subjects/:id', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const {
@@ -601,7 +608,7 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
 /**
  * DELETE /subjects/:id - Delete subject
  */
-app.delete('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.delete('/subjects/:id', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -654,7 +661,7 @@ app.delete('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Res
 /**
  * PATCH /subjects/:id/toggle-status - Toggle active status
  */
-app.patch('/subjects/:id/toggle-status', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.patch('/subjects/:id/toggle-status', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -693,7 +700,7 @@ app.patch('/subjects/:id/toggle-status', authenticateToken, async (req: AuthRequ
 /**
  * POST /subjects/:id/teachers - Assign teacher to subject
  */
-app.post('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/subjects/:id/teachers', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id: subjectId } = req.params;
     const { teacherId } = req.body;
@@ -773,7 +780,7 @@ app.post('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, r
 /**
  * DELETE /subjects/:id/teachers/:teacherId - Remove teacher assignment
  */
-app.delete('/subjects/:id/teachers/:teacherId', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.delete('/subjects/:id/teachers/:teacherId', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id: subjectId, teacherId } = req.params;
 
@@ -870,7 +877,7 @@ app.get('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, re
 /**
  * POST /subjects/bulk-create - Create multiple subjects
  */
-app.post('/subjects/bulk-create', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/subjects/bulk-create', authenticateToken, requireSubjectAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { subjects } = req.body;
 

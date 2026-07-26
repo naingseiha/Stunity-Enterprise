@@ -1,12 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 
-const DEFAULT_DEV_SERVICE_TOKEN = 'stunity-notification-dev-service-token';
-const SERVICE_TOKEN =
-  process.env.ANALYTICS_SERVICE_AUTH_TOKEN ||
-  process.env.NOTIFICATION_SERVICE_AUTH_TOKEN ||
-  process.env.JWT_SECRET ||
-  DEFAULT_DEV_SERVICE_TOKEN;
+const SERVICE_TOKEN = process.env.ANALYTICS_SERVICE_AUTH_TOKEN;
 
 const safeEqual = (a: string, b: string) => {
   const ab = Buffer.from(a, 'utf8');
@@ -16,6 +11,9 @@ const safeEqual = (a: string, b: string) => {
 };
 
 export const requireServiceAuth = (req: Request, res: Response, next: NextFunction) => {
+  if (!SERVICE_TOKEN) {
+    return res.status(503).json({ success: false, error: 'Analytics service authentication is not configured' });
+  }
   const headerToken = req.headers['x-service-token'];
   const token = typeof headerToken === 'string' ? headerToken.trim() : '';
 

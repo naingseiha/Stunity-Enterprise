@@ -170,7 +170,8 @@ const generateSessionCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
+// Quiz routes live in this same consolidated service after Phase 0.
+const ENGAGEMENT_API_URL = process.env.ENGAGEMENT_API_URL || `http://127.0.0.1:${process.env.PORT || 3022}`;
 
 // POST /live/create - Host creates a live quiz session
 app.post('/live/create', authenticateToken, jsonBody, async (req: Request, res: Response) => {
@@ -182,8 +183,9 @@ app.post('/live/create', authenticateToken, jsonBody, async (req: Request, res: 
     let quiz: any = { id: quizId };
     const authHeader = req.headers.authorization;
     try {
-      const feedRes = await fetch(`${FEED_SERVICE_URL}/quizzes/${quizId}`, {
+      const feedRes = await fetch(`${ENGAGEMENT_API_URL}/quizzes/${quizId}`, {
         headers: authHeader ? { Authorization: authHeader } : {},
+        signal: AbortSignal.timeout(5000),
       });
       if (feedRes.ok) {
         const feedData = await feedRes.json() as any;

@@ -59,7 +59,8 @@ router.get('/stream', async (req: AuthRequest, res: Response) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // The consolidated app-level CORS middleware owns the allow-list. Do not
+  // overwrite it with a wildcard on this authenticated stream.
   res.flushHeaders();
 
   activeConnections++;

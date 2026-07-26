@@ -32,6 +32,28 @@ const app = express.Router();
 const PORT = process.env.PORT || process.env.SCHOOL_SERVICE_PORT || 3002;
 const databaseUrl = process.env.DATABASE_URL;
 
+const requireSchoolAdminMutation = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '').trim();
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as { role?: string; schoolId?: string };
+    const role = decoded.role || '';
+    const schoolId = req.params.schoolId;
+    if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
+      return res.status(403).json({ success: false, error: 'School administrator access required' });
+    }
+    if (role !== 'SUPER_ADMIN' && (!schoolId || decoded.schoolId !== schoolId)) {
+      return res.status(403).json({ success: false, error: 'You can only manage your own school' });
+    }
+    next();
+  } catch {
+    return res.status(403).json({ success: false, error: 'Invalid or expired token' });
+  }
+};
+
 if (!databaseUrl) {
   throw new Error('FATAL: DATABASE_URL is not set. Set it in environment variables or in repository root .env');
 }
@@ -902,7 +924,7 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
 // --- School Profile Endpoints ---
 
 // GET /schools/:schoolId/profile - Get school profile with extended metadata
-app.get('/schools/:schoolId/profile', async (req: Request, res: Response) => {
+app.get('/schools/:schoolId/profile', requireSchoolAdminMutation, async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
 
@@ -947,7 +969,7 @@ app.get('/schools/:schoolId/profile', async (req: Request, res: Response) => {
 });
 
 // PUT /schools/:schoolId/profile - Update school profile and base metadata
-app.put('/schools/:schoolId/profile', async (req: Request, res: Response) => {
+app.put('/schools/:schoolId/profile', requireSchoolAdminMutation, async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
     const data = req.body;
@@ -1164,7 +1186,7 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
 });
 
 // Update onboarding step
-app.put('/schools/:schoolId/onboarding/step', async (req: Request, res: Response) => {
+app.put('/schools/:schoolId/onboarding/step', requireSchoolAdminMutation, async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
     const { step, completed, skipped } = req.body;
@@ -1247,7 +1269,7 @@ app.put('/schools/:schoolId/onboarding/step', async (req: Request, res: Response
 });
 
 // Complete onboarding
-app.post('/schools/:schoolId/onboarding/complete', async (req: Request, res: Response) => {
+app.post('/schools/:schoolId/onboarding/complete', requireSchoolAdminMutation, async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
 

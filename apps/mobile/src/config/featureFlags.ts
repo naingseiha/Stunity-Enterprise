@@ -1,7 +1,7 @@
 /**
  * Feature flags — static build flags + remote (server-resolved) rollout flags.
  *
- * Remote flags come from analytics-service `GET /feature-flags`, which resolves
+ * Remote flags come from the analytics module in `engagement-api` (`GET /feature-flags`), which resolves
  * each flag per-user with deterministic %-rollout. We fetch them on launch,
  * cache to AsyncStorage (so launch is instant + offline-safe), and expose
  * `isFeatureEnabled` / `useFeatureFlag`. Swapping the server resolver for
@@ -17,21 +17,24 @@ import { statsAPI } from '@/services/stats';
 // Static build flags (not user-rolled).
 export const FEATURE_FLAGS = {
   MESSAGING_ENABLED: false,
+  // Quiz War is hidden until its scoring/realtime redesign is complete.
+  // Re-enable only alongside the backend QUIZ_WAR_ENABLED flag.
+  QUIZ_WAR_ENABLED: process.env.EXPO_PUBLIC_QUIZ_WAR_ENABLED === 'true',
 } as const;
 
 // Remote flags that actually gate client UI. Each key below has a verified
 // consumer (useFeatureFlag/isFeatureEnabled) AND a working backend endpoint:
-//   reactions          → POST /posts/:id/react            (feed-service)
-//   repost_quote       → repost/quote composer + POST /posts/:id/repost (feed-service)
-//   endorsements       → /users/:id/skills, /skills/:id/endorse (feed-service)
-//   mastery_tree       → GET /recall/mastery              (feed-service)
-//   streak_leaderboard → GET /streak/leaderboard          (analytics-service)
-//   streak_ring        → feed-header streak chip (data from analytics-service)
+//   reactions          → POST /posts/:id/react            (engagement-api/feed)
+//   repost_quote       → repost/quote composer + POST /posts/:id/repost (engagement-api/feed)
+//   endorsements       → /users/:id/skills, /skills/:id/endorse (engagement-api/feed)
+//   mastery_tree       → GET /recall/mastery              (engagement-api/learn)
+//   streak_leaderboard → GET /streak/leaderboard          (engagement-api/analytics)
+//   streak_ring        → feed-header streak chip (data from engagement-api/analytics)
 //   profile_strength   → strength meter; backend exists (GET profile strength,
-//                        feed-service) but client UI is not wired yet — kept so
+//                        engagement-api/feed) but client UI is not wired yet — kept so
 //                        the flag is ready when the meter ships. Audit: 2026-06.
 // Removed (were default-ON but gated nothing): `weekly_digest` is a backend-only
-// notification cron now gated by WEEKLY_DIGEST_ENABLED in notification-service;
+// notification cron now gated by WEEKLY_DIGEST_ENABLED in engagement-api;
 // `public_profile` had no implementation on either side.
 export type RemoteFlagKey =
   | 'reactions'

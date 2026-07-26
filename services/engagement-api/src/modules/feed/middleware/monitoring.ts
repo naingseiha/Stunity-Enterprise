@@ -13,6 +13,7 @@ interface PerformanceMetrics {
   duration: number;
   userAgent?: string;
   userId?: string;
+  requestId?: string;
   cacheHit?: boolean;
   dbQueries?: number;
   memoryUsage?: number;
@@ -40,6 +41,7 @@ export const performanceMonitoring = (req: Request, res: Response, next: NextFun
       duration,
       userAgent: req.get('user-agent'),
       userId: (req as any).user?.id,
+      requestId: res.locals.requestId,
       cacheHit: res.getHeader('X-Cache-Hit') === 'true',
       memoryUsage: Math.round(memoryUsed / 1024), // KB
     };
@@ -76,6 +78,7 @@ export const errorLogger = (err: any, req: Request, res: Response, next: NextFun
     method: req.method,
     path: req.path,
     userId: (req as any).user?.id,
+    requestId: res.locals.requestId,
     userAgent: req.get('user-agent'),
     body: process.env.LOG_LEVEL === 'debug' ? req.body : undefined,
   };
@@ -96,6 +99,7 @@ export const errorLogger = (err: any, req: Request, res: Response, next: NextFun
   res.status(statusCode).json({
     success: false,
     error: message,
+    requestId: res.locals.requestId,
   });
 };
 
