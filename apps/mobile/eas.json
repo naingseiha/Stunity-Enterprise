@@ -59,6 +59,16 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./credentials/play-store-service-account.json"
+      },
+      "ios": {
+        "ascAppId": "6764892166",
+        "ascApiKeyPath": "./credentials/AuthKey_FGLMJVJZ5P.p8",
+        "ascApiKeyId": "FGLMJVJZ5P",
+        "ascApiKeyIssuerId": "4ec4d493-2113-4951-8b68-6104fa0cdaba"
+      }
+    }
   }
 }

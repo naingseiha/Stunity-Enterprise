@@ -44,6 +44,7 @@ coverage/
 # EAS / Play upload keystore (never commit real credentials.json)
 credentials.json
 .easignore
+credentials/
 
 # IDE
 .idea/
