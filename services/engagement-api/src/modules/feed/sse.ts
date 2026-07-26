@@ -76,6 +76,21 @@ router.get('/stream', async (req: AuthRequest, res: Response) => {
   // Track cleanup functions
   const cleanupFns: (() => void)[] = [];
 
+  // Idempotent cleanup: Cloud Run's front end can silently kill a long-lived
+  // text/event-stream response over HTTP/2 without ever delivering a 'close'
+  // or 'error' event to this request — the connection then leaks forever
+  // (activeConnections only climbs). Guard so it can safely run from
+  // req.on('close'), req.on('error'), AND the max-lifetime timer below,
+  // whichever fires first, exactly once.
+  let cleaned = false;
+  const runCleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    activeConnections--;
+    console.log(`📡 SSE: User ${userId} disconnected (${activeConnections} active)`);
+    cleanupFns.forEach(fn => fn());
+  };
+
   // Subscribe to user's personal channel
   if (isRedisConnected) {
     // Use Redis PubSub
@@ -121,17 +136,33 @@ router.get('/stream', async (req: AuthRequest, res: Response) => {
   }, 30000);
   cleanupFns.push(() => clearInterval(heartbeatInterval));
 
+  // Proactively end + clean up every connection after a bounded lifetime,
+  // rather than relying on detecting a client disconnect that Cloud Run's
+  // HTTP/2 front end may never actually deliver to this request. Tells the
+  // client it's a deliberate, expected reconnect (not an error) so it can
+  // reconnect immediately instead of treating it as a failure.
+  const MAX_CONNECTION_MS = 4 * 60 * 1000;
+  const maxLifetimeTimer = setTimeout(() => {
+    if (!res.writableEnded) {
+      sendEvent(res, {
+        id: 'reconnect',
+        type: 'RECONNECT',
+        timestamp: new Date().toISOString(),
+        data: { message: 'Reconnecting to refresh the stream' }
+      });
+      res.end();
+    }
+    runCleanup();
+  }, MAX_CONNECTION_MS);
+  cleanupFns.push(() => clearTimeout(maxLifetimeTimer));
+
   // Cleanup on client disconnect
-  req.on('close', () => {
-    activeConnections--;
-    console.log(`📡 SSE: User ${userId} disconnected (${activeConnections} active)`);
-    cleanupFns.forEach(fn => fn());
-  });
+  req.on('close', runCleanup);
 
   // Handle errors
   req.on('error', (err) => {
     console.error('SSE request error:', err);
-    cleanupFns.forEach(fn => fn());
+    runCleanup();
   });
 });
 

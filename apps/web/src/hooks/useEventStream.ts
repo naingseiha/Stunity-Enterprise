@@ -170,10 +170,20 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
 
       // Listen for all event types
       eventSource.onmessage = handleEvent;
-      
+
       // Also listen for named events
       ['NEW_LIKE', 'NEW_COMMENT', 'NEW_FOLLOWER', 'NEW_DM', 'NEW_POST', 'NOTIFICATION'].forEach(type => {
         eventSource.addEventListener(type, handleEvent);
+      });
+
+      // Server-initiated, expected reconnect (bounded connection lifetime) —
+      // reconnect immediately with a fresh ticket, not through the error/
+      // backoff path, since this isn't a failure.
+      eventSource.addEventListener('RECONNECT', () => {
+        console.log('📡 SSE: Server requested reconnect');
+        eventSource.close();
+        reconnectAttempts.current = 0;
+        connect();
       });
 
       eventSource.onerror = (error) => {
