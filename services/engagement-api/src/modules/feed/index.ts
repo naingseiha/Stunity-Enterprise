@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import { prisma, prismaRead, feedRanker } from './context';
 import { initRedis } from './redis';
 import sseRouter from './sse';
+import { consumeSseTicket } from './sseTicket';
 import { initWebSocketServer } from './websocket';
 import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
@@ -385,10 +386,19 @@ app.use('/', achievementsRouter);
 app.use('/reels', reelsRouter);
 
 // ─── Feature Modules (existing routers) ────────────────────────────
-// SSE: EventSource can't send headers, so accept token via query param
-app.use('/api/events', (req, res, next) => {
-  if (!req.headers['authorization'] && req.query.token) {
-    req.headers['authorization'] = `Bearer ${req.query.token}`;
+// SSE: EventSource can't send headers. /ticket is called with a real
+// Authorization header and returns a short-lived, single-use ticket; /stream
+// is opened with that ticket instead of the raw JWT so the token never
+// appears in the URL (and therefore never lands in Cloud Run access logs).
+app.use('/api/events', async (req, res, next) => {
+  if (req.headers['authorization']) return next();
+
+  const ticket = typeof req.query.ticket === 'string' ? req.query.ticket : undefined;
+  if (ticket) {
+    const jwtToken = await consumeSseTicket(ticket);
+    if (jwtToken) {
+      req.headers['authorization'] = `Bearer ${jwtToken}`;
+    }
   }
   next();
 }, authenticateToken as any, sseRouter);

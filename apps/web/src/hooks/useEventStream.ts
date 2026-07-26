@@ -99,17 +99,31 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
   }, []);
 
   // Connect to SSE stream
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!userId || !enabled) return;
-    
+
     // Close existing connection
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
 
     try {
+      // EventSource can't set an Authorization header, and putting the raw
+      // JWT in the URL means it ends up in plaintext access logs. Exchange
+      // it for a short-lived, single-use ticket via a normal authenticated
+      // request first, then open the stream with that ticket instead.
       const token = TokenManager.getAccessToken();
-      const url = `${FEED_API}/api/events/stream?userId=${userId}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+      if (!token) return;
+
+      const ticketRes = await fetch(`${FEED_API}/api/events/ticket`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!ticketRes.ok) {
+        throw new Error(`Failed to obtain SSE ticket: ${ticketRes.status}`);
+      }
+      const { ticket } = await ticketRes.json();
+
+      const url = `${FEED_API}/api/events/stream?userId=${userId}&ticket=${encodeURIComponent(ticket)}`;
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
 

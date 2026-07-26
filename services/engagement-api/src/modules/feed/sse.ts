@@ -7,8 +7,27 @@ import { Request, Response, Router } from 'express';
 import { createSubscriber, inMemorySubscribe, isRedisConnected } from './redis';
 import { SSEEvent, REDIS_CHANNELS } from './events';
 import { AuthRequest } from './middleware/auth';
+import { mintSseTicket } from './sseTicket';
 
 const router = Router();
+
+/**
+ * Mint a short-lived, single-use ticket for opening the SSE stream.
+ * Called via normal fetch with a real Authorization header, so the JWT
+ * never has to travel in a URL (and therefore never lands in access logs).
+ * GET /api/events/ticket
+ */
+router.get('/ticket', async (req: AuthRequest, res: Response) => {
+  const authHeader = req.headers['authorization'];
+  const jwtToken = authHeader && authHeader.split(' ')[1];
+
+  if (!req.user || !jwtToken) {
+    return res.status(401).json({ error: 'Authenticated user is required' });
+  }
+
+  const ticket = await mintSseTicket(jwtToken);
+  res.json({ ticket, expiresInSeconds: 30 });
+});
 
 // Track active connections for metrics
 let activeConnections = 0;
