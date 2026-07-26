@@ -417,6 +417,16 @@
     "forParents": "សម្រាប់មាតាបិតា",
     "termsOfService": "លក្ខខណ្ឌប្រើប្រាស់",
     "privacyPolicy": "គោលការណ៍ឯកជនភាព",
+    "welcome": {
+      "title": "សូមស្វាគមន៍មកកាន់ Stunity",
+      "connectAll": "ការតភ្ជាប់សិស្ស គ្រូ និងមាតាបិតាក្នុងវេទិកាសហគ្រាសតែមួយ។",
+      "chooseHowToContinue": "ជ្រើសរើសរបៀបដែលអ្នកចង់បន្ត",
+      "oneWorkspace": "វេទិកាតែមួយសម្រាប់សាលារបស់អ្នក",
+      "startHere": "ចាប់ផ្តើមទីនេះ",
+      "builtForSchools": "រចនាឡើងសម្រាប់សាលារៀន",
+      "secureAccess": "ការចូលប្រើប្រាស់ដោយសុវត្ថិភាព",
+      "operationalInsights": "ព័ត៌មានវិភាគប្រតិបត្តិការ"
+    },
     "passwordless": {
       "signInTitle": "បន្តទៅ Stunity",
       "createTitle": "បង្កើតគណនី Stunity របស់អ្នក",

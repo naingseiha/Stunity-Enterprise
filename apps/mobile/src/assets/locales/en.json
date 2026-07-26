@@ -417,6 +417,16 @@
     "forParents": "FOR PARENTS",
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
+    "welcome": {
+      "title": "Welcome to Stunity",
+      "connectAll": "Connecting students, teachers, and parents in one seamless enterprise platform.",
+      "chooseHowToContinue": "Choose how you'd like to continue",
+      "oneWorkspace": "One Workspace for Your Whole School",
+      "startHere": "Start Here",
+      "builtForSchools": "Built for Schools",
+      "secureAccess": "Secure Access",
+      "operationalInsights": "Operational Insights"
+    },
     "passwordless": {
       "signInTitle": "Continue to Stunity",
       "createTitle": "Create your Stunity account",
