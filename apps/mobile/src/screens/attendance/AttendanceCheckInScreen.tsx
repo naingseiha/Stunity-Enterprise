@@ -23,34 +23,30 @@ import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/stores';
-import { Shadows } from '@/config';
+import { Colors, Shadows } from '@/config';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { Haptics } from '@/services/haptics';
 import { attendanceService, NOT_ON_TIMETABLE_CODE, REQUEST_TIMEOUT_CODE } from '@/services/attendance';
+import { useThemeContext } from '@/contexts';
 
-/** Enterprise-friendly palette: teal accent, slate neutrals (avoids neon cyan). */
-const BRAND_TEAL = '#0F766E';
-const BRAND_TEAL_DARK = '#0D9488';
-const BRAND_TEAL_SOFT = '#F0FDFA';
+/** Enterprise-friendly palette: teal accent (brand). Neutral surfaces come from theme tokens. */
+const BRAND_TEAL = Colors.brand;
+const BRAND_TEAL_DARK = '#00B8DB';
+const BRAND_TEAL_SOFT = '#E0FFFE';
 const BRAND_TEAL_MUTED = '#99F6E4';
-const PAGE_BG = '#F1F5F9';
-const SURFACE = '#FFFFFF';
-const BORDER_DEFAULT = '#E2E8F0';
-const TEXT_PRIMARY = '#0F172A';
-const TEXT_MUTED = '#64748B';
-const INDIGO_SURFACE = '#EEF2FF';
-const INDIGO_TEXT = '#3730A3';
 
 const WEEKLY_ENUM_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
 const WeeklyStrip = ({
     weeklyPattern,
+    styles,
 }: {
     weeklyPattern?: Record<
         string,
         { morning: boolean; afternoon: boolean } | undefined
     >;
+    styles: ReturnType<typeof createStyles>;
 }) => {
     const { t } = useTranslation();
     const days = [
@@ -125,6 +121,9 @@ const SessionCard = ({
     availability,
     timetableBlocked,
     timetableBlockedHint,
+    styles,
+    colors,
+    isDark,
 }: {
     session: 'MORNING' | 'AFTERNOON';
     data: any;
@@ -134,6 +133,9 @@ const SessionCard = ({
     availability: 'past' | 'current' | 'upcoming';
     timetableBlocked?: boolean;
     timetableBlockedHint?: string;
+    styles: ReturnType<typeof createStyles>;
+    colors: ReturnType<typeof useThemeContext>['colors'];
+    isDark: boolean;
 }) => {
     const { t } = useTranslation();
     const isPermission = data?.status === 'PERMISSION';
@@ -159,11 +161,11 @@ const SessionCard = ({
             ]}
         >
             <View style={styles.sessionHeader}>
-                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? BRAND_TEAL_SOFT : '#F1F5F9' }]}>
+                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? (isDark ? 'rgba(15,118,110,0.22)' : BRAND_TEAL_SOFT) : colors.surfaceVariant }]}>
                     <Ionicons
                         name={session === 'MORNING' ? "sunny" : "partly-sunny"}
                         size={22}
-                        color={isCurrent ? BRAND_TEAL : TEXT_MUTED}
+                        color={isCurrent ? BRAND_TEAL : colors.textSecondary}
                     />
                 </View>
                 <View style={{ flex: 1, marginLeft: 16 }}>
@@ -197,7 +199,7 @@ const SessionCard = ({
                         <Ionicons
                             name={isPermission ? 'time-outline' : 'log-in-outline'}
                             size={14}
-                            color="#64748B"
+                            color={colors.textSecondary}
                         />
                         <Text style={styles.timeLabel}>{isPermission ? t('attendance.requestedAt') : t('attendance.checkIn')}</Text>
                     </View>
@@ -206,14 +208,14 @@ const SessionCard = ({
                     </Text>
                 </View>
                 <View style={styles.timeSeparatorWrapper}>
-                    <Ionicons name="arrow-forward" size={16} color="#CBD5E1" />
+                    <Ionicons name="arrow-forward" size={16} color={colors.border} />
                 </View>
                 <View style={styles.timeBox}>
                     <View style={styles.timeLabelRow}>
                         <Ionicons
                             name={isPermission ? 'globe-outline' : 'log-out-outline'}
                             size={14}
-                            color="#64748B"
+                            color={colors.textSecondary}
                         />
                         <Text style={styles.timeLabel}>{isPermission ? t('attendance.mode') : t('attendance.checkOut')}</Text>
                     </View>
@@ -231,7 +233,7 @@ const SessionCard = ({
 
             {showTimetableHint && (
                 <View style={styles.timetableSessionHint}>
-                    <Ionicons name="calendar-outline" size={16} color="#B45309" />
+                    <Ionicons name="calendar-outline" size={16} color={isDark ? "#FBBF24" : "#B45309"} />
                     <Text style={styles.timetableSessionHintText}>
                         {timetableBlockedHint ||
                             t('attendance.timetable.sessionNotOnYourSchedule')}
@@ -244,7 +246,7 @@ const SessionCard = ({
                     <Ionicons
                         name={availability === 'past' && !timetableBlocked ? 'time-outline' : 'lock-closed-outline'}
                         size={18}
-                        color="#94A3B8"
+                        color={colors.textSecondary}
                     />
                     <Text style={styles.sessionUnavailableText}>
                         {timetableBlocked
@@ -291,6 +293,8 @@ export const AttendanceCheckInScreen = () => {
     const { t, i18n } = useTranslation();
     const navigation = useNavigation();
     const user = useAuthStore(s => s.user);
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const isLinkedToSchool = !!user?.schoolId;
 
     const [loading, setLoading] = useState(true);
@@ -803,7 +807,7 @@ export const AttendanceCheckInScreen = () => {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: PAGE_BG }]} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
                 <ActivityIndicator size="large" color={BRAND_TEAL} />
                 <Text style={[styles.loadingText, { color: BRAND_TEAL }]}>{t('attendance.syncing')}</Text>
             </View>
@@ -813,7 +817,7 @@ export const AttendanceCheckInScreen = () => {
     if (!isLinkedToSchool) {
         return (
             <View style={styles.container}>
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: PAGE_BG }]} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
                 <SafeAreaView style={styles.safeArea} edges={['top']}>
                     <View style={styles.navHeader}>
                         <TouchableOpacity style={styles.navIconButton} onPress={navigateToFeedTab}>
@@ -827,10 +831,10 @@ export const AttendanceCheckInScreen = () => {
                     </View>
                     <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
                         <View style={styles.sessionIconBg}>
-                            <Ionicons name="business-outline" size={64} color="#9CA3AF" />
+                            <Ionicons name="business-outline" size={64} color={colors.textSecondary} />
                         </View>
-                        <Text style={[{ fontSize: 24, fontWeight: '900' }, { marginTop: 20, textAlign: 'center', color: '#1F2937' }]}>{t('attendance.notLinked')}</Text>
-                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14, color: '#6B7280' }]}>
+                        <Text style={[{ fontSize: 20, fontWeight: '700' }, { marginTop: 20, textAlign: 'center', color: colors.text }]}>{t('attendance.notLinked')}</Text>
+                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14, color: colors.textSecondary }]}>
                             {t('attendance.notLinkedMsg')}
                         </Text>
                     </View>
@@ -867,7 +871,7 @@ export const AttendanceCheckInScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.navHeader}>
@@ -922,7 +926,7 @@ export const AttendanceCheckInScreen = () => {
                                     <Text style={styles.locationHeroSubtitle}>{gpsText}</Text>
                                 </View>
                                 <View style={styles.locationRefreshIconBg}>
-                                    <Ionicons name="refresh" size={20} color={TEXT_MUTED} />
+                                    <Ionicons name="refresh" size={20} color={colors.textSecondary} />
                                 </View>
                             </View>
                             
@@ -939,7 +943,7 @@ export const AttendanceCheckInScreen = () => {
 
                     {statusFetchError ? (
                         <View style={styles.syncErrorBanner}>
-                            <Ionicons name="cloud-offline-outline" size={20} color="#B91C1C" />
+                            <Ionicons name="cloud-offline-outline" size={20} color={isDark ? "#F87171" : "#B91C1C"} />
                             <Text style={styles.syncErrorBannerText}>{statusFetchError}</Text>
                             <TouchableOpacity
                                 style={styles.syncErrorRetryBtn}
@@ -953,7 +957,7 @@ export const AttendanceCheckInScreen = () => {
 
                     {bannerNoTeachingDay && (
                         <View style={styles.timetableBanner}>
-                            <Ionicons name="calendar-outline" size={18} color="#B45309" />
+                            <Ionicons name="calendar-outline" size={18} color={isDark ? "#FBBF24" : "#B45309"} />
                             <Text style={styles.timetableBannerText}>
                                 {t('attendance.timetable.nonTeachingDay')}
                             </Text>
@@ -961,7 +965,7 @@ export const AttendanceCheckInScreen = () => {
                     )}
 
                     <Animated.View>
-                        <WeeklyStrip weeklyPattern={sch?.weeklyPattern} />
+                        <WeeklyStrip weeklyPattern={sch?.weeklyPattern} styles={styles} />
                     </Animated.View>
 
                     <SessionCard
@@ -975,6 +979,9 @@ export const AttendanceCheckInScreen = () => {
                         timetableBlockedHint={t('attendance.timetable.sessionNotScheduledHint', {
                             session: t('attendance.morning'),
                         })}
+                        styles={styles}
+                        colors={colors}
+                        isDark={isDark}
                     />
 
                     <SessionCard
@@ -988,16 +995,19 @@ export const AttendanceCheckInScreen = () => {
                         timetableBlockedHint={t('attendance.timetable.sessionNotScheduledHint', {
                             session: t('attendance.afternoon'),
                         })}
+                        styles={styles}
+                        colors={colors}
+                        isDark={isDark}
                     />
 
                     <Animated.View style={styles.permissionRequestCard}>
                         <LinearGradient
-                            colors={['#F8FAFC', '#FFFFFF']}
+                            colors={isDark ? ['#16181C', '#0B0D0F'] : ['#F8FAFC', '#FFFFFF']}
                             style={styles.permissionHero}
                         >
                             <View style={styles.permissionRequestHeader}>
                                 <View style={styles.permissionRequestIconBg}>
-                                    <Ionicons name="document-text" size={24} color="#6366F1" />
+                                    <Ionicons name="document-text" size={24} color={isDark ? "#A5B4FC" : "#6366F1"} />
                                 </View>
                                 <View style={styles.permissionRequestTextWrap}>
                                     <Text style={styles.permissionRequestTitle}>{t('attendance.requestPermission.title')}</Text>
@@ -1013,15 +1023,15 @@ export const AttendanceCheckInScreen = () => {
                                 contentContainerStyle={styles.permissionFeatureRow}
                             >
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="globe-outline" size={14} color="#6366F1" />
+                                    <Ionicons name="globe-outline" size={14} color={isDark ? "#A5B4FC" : "#6366F1"} />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.anywhere')}</Text>
                                 </View>
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="location-outline" size={14} color="#6366F1" />
+                                    <Ionicons name="location-outline" size={14} color={isDark ? "#A5B4FC" : "#6366F1"} />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.noGps')}</Text>
                                 </View>
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="flash-outline" size={14} color="#6366F1" />
+                                    <Ionicons name="flash-outline" size={14} color={isDark ? "#A5B4FC" : "#6366F1"} />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.instant')}</Text>
                                 </View>
                             </ScrollView>
@@ -1051,7 +1061,7 @@ export const AttendanceCheckInScreen = () => {
                                                 {t('attendance.requestPermission.sessionHintTap')}
                                             </Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={16} color={TEXT_MUTED} />
+                                        <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                                     </>
                                 )}
                             </TouchableOpacity>
@@ -1079,7 +1089,7 @@ export const AttendanceCheckInScreen = () => {
                                                 {t('attendance.requestPermission.sessionHintTap')}
                                             </Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={16} color={TEXT_MUTED} />
+                                        <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                                     </>
                                 )}
                             </TouchableOpacity>
@@ -1124,7 +1134,7 @@ export const AttendanceCheckInScreen = () => {
                     <View style={styles.permissionModalCard}>
                         <View style={styles.permissionModalHeader}>
                             <View style={styles.permissionModalHeaderIcon}>
-                                <Ionicons name="document-text-outline" size={20} color={INDIGO_TEXT} />
+                                <Ionicons name="document-text-outline" size={20} color={isDark ? '#A5B4FC' : '#3730A3'} />
                             </View>
                             <View style={styles.permissionModalHeaderTextWrap}>
                                 <Text style={styles.permissionModalTitle}>{t('attendance.requestPermission.title')}</Text>
@@ -1149,7 +1159,7 @@ export const AttendanceCheckInScreen = () => {
                                     <Ionicons
                                         name={sessionOption === 'MORNING' ? 'sunny-outline' : 'partly-sunny-outline'}
                                         size={14}
-                                        color={permissionSession === sessionOption ? '#6D28D9' : '#64748B'}
+                                        color={permissionSession === sessionOption ? '#6D28D9' : colors.textSecondary}
                                     />
                                     <Text
                                         style={[
@@ -1172,7 +1182,7 @@ export const AttendanceCheckInScreen = () => {
                             value={permissionReason}
                             onChangeText={setPermissionReason}
                             placeholder={t('attendance.requestPermission.reasonPlaceholder')}
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textSecondary}
                             multiline
                             numberOfLines={4}
                             maxLength={500}
@@ -1204,7 +1214,7 @@ export const AttendanceCheckInScreen = () => {
                                 <LinearGradient
                                     colors={
                                         permissionProcessingSession !== null
-                                            ? ['#94A3B8', '#64748B']
+                                            ? [colors.buttonDisabled, colors.buttonDisabled]
                                             : [BRAND_TEAL, BRAND_TEAL_DARK]
                                     }
                                     start={{ x: 0, y: 0 }}
@@ -1229,8 +1239,8 @@ export const AttendanceCheckInScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: PAGE_BG },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
     safeArea: { flex: 1 },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
@@ -1246,21 +1256,21 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 14,
-        backgroundColor: SURFACE,
+        backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#0F172A',
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
         shadowRadius: 8,
         elevation: 2,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: colors.border,
     },
     headerTitle: {
         fontSize: 17,
         fontWeight: '700',
-        color: TEXT_PRIMARY,
+        color: colors.text,
         letterSpacing: 0.15,
         textAlign: 'center',
     },
@@ -1273,7 +1283,7 @@ const styles = StyleSheet.create({
     headerSubtitle: {
         marginTop: 2,
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: colors.textSecondary,
         fontWeight: '500',
         letterSpacing: 0.1,
     },
@@ -1281,14 +1291,14 @@ const styles = StyleSheet.create({
         marginTop: 4,
         marginBottom: 20,
         borderRadius: 20,
-        backgroundColor: SURFACE,
-        shadowColor: '#0F172A',
+        backgroundColor: colors.card,
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.05,
         shadowRadius: 20,
         elevation: 4,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: colors.border,
     },
     locationHeroContent: {
         padding: 20,
@@ -1301,12 +1311,12 @@ const styles = StyleSheet.create({
         width: 52,
         height: 52,
         borderRadius: 16,
-        backgroundColor: BRAND_TEAL_SOFT,
+        backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
         borderWidth: 1,
-        borderColor: BRAND_TEAL_MUTED,
+        borderColor: isDark ? 'rgba(153,246,228,0.35)' : BRAND_TEAL_MUTED,
     },
     locationStatusPulse: {
         position: 'absolute',
@@ -1316,7 +1326,7 @@ const styles = StyleSheet.create({
         height: 14,
         borderRadius: 7,
         borderWidth: 2,
-        borderColor: SURFACE,
+        borderColor: colors.card,
     },
     locationHeroTextWrap: {
         flex: 1,
@@ -1325,25 +1335,25 @@ const styles = StyleSheet.create({
     locationHeroTitle: {
         fontSize: 13,
         fontWeight: '700',
-        color: TEXT_MUTED,
+        color: colors.textSecondary,
         letterSpacing: 0.3,
         textTransform: 'uppercase',
     },
     locationHeroSubtitle: {
         fontSize: 17,
         fontWeight: '800',
-        color: TEXT_PRIMARY,
+        color: colors.text,
         marginTop: 2,
     },
     locationRefreshIconBg: {
         width: 40,
         height: 40,
         borderRadius: 12,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: colors.border,
     },
     locationCoordsRow: {
         flexDirection: 'row',
@@ -1351,13 +1361,13 @@ const styles = StyleSheet.create({
         marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
+        borderTopColor: colors.border,
         gap: 6,
     },
     locationCoordsText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#64748B',
+        color: colors.textSecondary,
         letterSpacing: 0.5,
     },
 
@@ -1373,26 +1383,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
         minWidth: 42,
         borderRadius: 14,
-        backgroundColor: SURFACE,
+        backgroundColor: colors.card,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: colors.border,
         gap: 6,
-        shadowColor: '#0F172A',
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.03,
         shadowRadius: 4,
         elevation: 1,
     },
     todayPill: {
-        backgroundColor: SURFACE,
+        backgroundColor: colors.card,
         borderWidth: 2,
         borderColor: BRAND_TEAL,
         shadowOpacity: 0,
         elevation: 0,
     },
     pastPill: {
-        backgroundColor: '#F1F5F9',
-        borderColor: '#E2E8F0',
+        backgroundColor: colors.surfaceVariant,
+        borderColor: colors.border,
         elevation: 0,
         shadowOpacity: 0,
     },
@@ -1400,35 +1410,35 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
     },
     todayDotInner: {
-        backgroundColor: BRAND_TEAL_SOFT,
+        backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
         borderWidth: 1,
-        borderColor: BRAND_TEAL_MUTED,
+        borderColor: isDark ? 'rgba(153,246,228,0.35)' : BRAND_TEAL_MUTED,
     },
     pastDotInner: {
         backgroundColor: '#10B981',
     },
     dayLabel: {
         fontSize: 11,
-        color: '#64748B',
+        color: colors.textSecondary,
         fontWeight: '700',
     },
     todayLabel: {
         color: BRAND_TEAL,
     },
     pastLabel: {
-        color: '#94A3B8',
+        color: colors.textSecondary,
     },
     teachingDayPill: {
-        borderColor: '#86EFAC',
-        backgroundColor: '#F0FDF4',
+        borderColor: isDark ? 'rgba(134,239,172,0.35)' : '#86EFAC',
+        backgroundColor: isDark ? 'rgba(5,150,105,0.16)' : '#F0FDF4',
     },
     teachingDayLabel: {
-        color: '#065F46',
+        color: isDark ? '#6EE7B7' : '#065F46',
     },
     teachingDayDot: {
         backgroundColor: '#10B981',
@@ -1441,29 +1451,29 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 14,
         borderRadius: 16,
-        backgroundColor: '#FEF2F2',
+        backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
         borderWidth: 1,
-        borderColor: '#FECACA',
+        borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FECACA',
     },
     syncErrorBannerText: {
         flex: 1,
         fontSize: 13,
         fontWeight: '600',
-        color: '#991B1B',
+        color: isDark ? '#F87171' : '#991B1B',
         lineHeight: 18,
     },
     syncErrorRetryBtn: {
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 12,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderWidth: 1,
-        borderColor: '#FCA5A5',
+        borderColor: isDark ? 'rgba(220,38,38,0.4)' : '#FCA5A5',
     },
     syncErrorRetryText: {
         fontSize: 12,
         fontWeight: '800',
-        color: '#B91C1C',
+        color: isDark ? '#F87171' : '#B91C1C',
     },
     timetableBanner: {
         flexDirection: 'row',
@@ -1473,15 +1483,15 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 14,
         borderRadius: 16,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB',
         borderWidth: 1,
-        borderColor: '#FDE68A',
+        borderColor: isDark ? 'rgba(253,230,138,0.3)' : '#FDE68A',
     },
     timetableBannerText: {
         flex: 1,
         fontSize: 13,
         fontWeight: '600',
-        color: '#92400E',
+        color: isDark ? '#FBBF24' : '#92400E',
         lineHeight: 24,
     },
     timetableSessionHint: {
@@ -1493,15 +1503,15 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 12,
         borderRadius: 14,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB',
         borderWidth: 1,
-        borderColor: '#FDE68A',
+        borderColor: isDark ? 'rgba(253,230,138,0.3)' : '#FDE68A',
     },
     timetableSessionHintText: {
         flex: 1,
         fontSize: 12.5,
         fontWeight: '600',
-        color: '#92400E',
+        color: isDark ? '#FBBF24' : '#92400E',
         lineHeight: 22,
     },
 
@@ -1509,13 +1519,13 @@ const styles = StyleSheet.create({
     scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
 
     sessionCard: {
-        backgroundColor: SURFACE,
+        backgroundColor: colors.card,
         borderRadius: 22,
         padding: 20,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
-        shadowColor: '#0F172A',
+        borderColor: colors.border,
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.04,
         shadowRadius: 16,
@@ -1523,13 +1533,13 @@ const styles = StyleSheet.create({
     },
     currentSessionCard: {
         borderWidth: 1.5,
-        borderColor: BRAND_TEAL_MUTED,
+        borderColor: isDark ? 'rgba(153,246,228,0.35)' : BRAND_TEAL_MUTED,
         shadowColor: BRAND_TEAL,
         shadowOpacity: 0.08,
     },
     completedSessionCard: {
         opacity: 0.85,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
     },
     sessionHeader: {
         flexDirection: 'row',
@@ -1542,20 +1552,20 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
     },
     sessionTitle: {
         fontSize: 16,
         fontWeight: '800',
-        color: TEXT_PRIMARY,
+        color: colors.text,
         letterSpacing: 0.2,
         textTransform: 'capitalize',
     },
     sessionTimeWindow: {
         fontSize: 12.5,
-        color: '#64748B',
+        color: colors.textSecondary,
         marginTop: 4,
         fontWeight: '600',
         letterSpacing: 0.3,
@@ -1563,7 +1573,7 @@ const styles = StyleSheet.create({
     completedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ECFDF5',
+        backgroundColor: isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5',
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 14,
@@ -1572,13 +1582,13 @@ const styles = StyleSheet.create({
     completedBadgeText: {
         fontSize: 10,
         fontWeight: '800',
-        color: '#047857',
+        color: isDark ? '#34D399' : '#047857',
         letterSpacing: 0.4,
     },
     permissionBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3E8FF',
+        backgroundColor: isDark ? 'rgba(124,58,237,0.2)' : '#F3E8FF',
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 14,
@@ -1587,16 +1597,16 @@ const styles = StyleSheet.create({
     permissionBadgeText: {
         fontSize: 11,
         fontWeight: '800',
-        color: '#6D28D9',
+        color: isDark ? '#C4B5FD' : '#6D28D9',
         letterSpacing: 0.5,
     },
     currentBadge: {
-        backgroundColor: BRAND_TEAL_SOFT,
+        backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: BRAND_TEAL_MUTED,
+        borderColor: isDark ? 'rgba(153,246,228,0.35)' : BRAND_TEAL_MUTED,
     },
     currentBadgeText: {
         fontSize: 10,
@@ -1610,20 +1620,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
         marginBottom: 20,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         padding: 6,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: colors.border,
     },
     timeBox: {
         flex: 1,
         alignItems: 'flex-start',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         paddingVertical: 14,
         paddingHorizontal: 16,
         borderRadius: 16,
-        shadowColor: '#0F172A',
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.02,
         shadowRadius: 4,
@@ -1637,7 +1647,7 @@ const styles = StyleSheet.create({
     },
     timeLabel: {
         fontSize: 11,
-        color: '#64748B',
+        color: colors.textSecondary,
         fontWeight: '700',
         letterSpacing: 0.3,
         textTransform: 'uppercase',
@@ -1645,11 +1655,11 @@ const styles = StyleSheet.create({
     timeValue: {
         fontSize: 22,
         fontWeight: '800',
-        color: '#CBD5E1',
+        color: colors.border,
         fontVariant: ['tabular-nums'],
     },
     activeTimeValue: {
-        color: '#1E293B',
+        color: colors.text,
     },
     timeSeparatorWrapper: {
         paddingHorizontal: 2,
@@ -1688,16 +1698,16 @@ const styles = StyleSheet.create({
     sessionUnavailableBox: {
         minHeight: 52,
         borderRadius: 16,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 10,
     },
     sessionUnavailableText: {
-        color: '#64748B',
+        color: colors.textSecondary,
         fontSize: 14,
         fontWeight: '800',
         letterSpacing: 0.2,
@@ -1714,12 +1724,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderRadius: 14,
-        backgroundColor: SURFACE,
+        backgroundColor: colors.card,
         marginTop: 4,
         gap: 14,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
-        shadowColor: '#0F172A',
+        borderColor: colors.border,
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.04,
         shadowRadius: 6,
@@ -1728,7 +1738,7 @@ const styles = StyleSheet.create({
     infoText: {
         flex: 1,
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: colors.textSecondary,
         lineHeight: 17,
         fontWeight: '500',
     },
@@ -1739,9 +1749,9 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 14,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
-        backgroundColor: SURFACE,
-        shadowColor: '#0F172A',
+        borderColor: colors.border,
+        backgroundColor: colors.card,
+        shadowColor: isDark ? 'transparent' : '#0F172A',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
         shadowRadius: 10,
@@ -1751,7 +1761,7 @@ const styles = StyleSheet.create({
         width: 46,
         height: 46,
         borderRadius: 12,
-        backgroundColor: BRAND_TEAL_SOFT,
+        backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -1762,11 +1772,11 @@ const styles = StyleSheet.create({
     reportTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: TEXT_PRIMARY,
+        color: colors.text,
     },
     reportSubtitle: {
         fontSize: 13,
-        color: TEXT_MUTED,
+        color: colors.textSecondary,
         marginTop: 4,
         fontWeight: '500',
     },
@@ -1788,7 +1798,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         borderWidth: 1,
         borderColor: 'rgba(99, 102, 241, 0.15)',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         overflow: 'hidden',
         shadowColor: '#4F46E5',
         shadowOffset: { width: 0, height: 8 },
@@ -1811,11 +1821,11 @@ const styles = StyleSheet.create({
         width: 52,
         height: 52,
         borderRadius: 16,
-        backgroundColor: '#EEF2FF',
+        backgroundColor: isDark ? 'rgba(99,102,241,0.18)' : '#EEF2FF',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#E0E7FF',
+        borderColor: isDark ? 'rgba(224,231,255,0.25)' : '#E0E7FF',
     },
     permissionRequestTextWrap: {
         flex: 1,
@@ -1825,13 +1835,13 @@ const styles = StyleSheet.create({
     permissionRequestTitle: {
         fontSize: 17,
         fontWeight: '800',
-        color: '#1E293B',
+        color: colors.text,
         letterSpacing: -0.3,
         lineHeight: 22,
     },
     permissionRequestSubtitle: {
         fontSize: 13,
-        color: '#64748B',
+        color: colors.textSecondary,
         marginTop: 6,
         fontWeight: '500',
         lineHeight: 20,
@@ -1845,12 +1855,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 999,
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.02,
@@ -1860,7 +1870,7 @@ const styles = StyleSheet.create({
     permissionFeatureText: {
         fontSize: 12,
         fontWeight: '700',
-        color: '#4F46E5',
+        color: isDark ? '#A5B4FC' : '#4F46E5',
     },
     permissionActionRow: {
         flexDirection: 'row',
@@ -1868,16 +1878,16 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         paddingTop: 20,
         gap: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
     },
     permissionActionButton: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 16,
         paddingHorizontal: 14,
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         flexDirection: 'row',
         alignItems: 'center',
         minHeight: 64,
@@ -1890,13 +1900,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     permissionActionButtonText: {
-        color: '#1E293B',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '700',
     },
     permissionActionButtonHint: {
         marginTop: 2,
-        color: '#64748B',
+        color: colors.textSecondary,
         fontSize: 11,
         fontWeight: '500',
     },
@@ -1907,11 +1917,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     permissionModalCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 20,
         padding: 16,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         ...Shadows.lg,
     },
     permissionModalHeader: {
@@ -1919,20 +1929,20 @@ const styles = StyleSheet.create({
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: INDIGO_SURFACE,
+        backgroundColor: isDark ? 'rgba(99,102,241,0.16)' : '#EEF2FF',
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: colors.border,
         marginBottom: 4,
     },
     permissionModalHeaderIcon: {
         width: 40,
         height: 40,
         borderRadius: 12,
-        backgroundColor: SURFACE,
+        backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: colors.border,
     },
     permissionModalHeaderTextWrap: {
         flex: 1,
@@ -1941,12 +1951,12 @@ const styles = StyleSheet.create({
     permissionModalTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: TEXT_PRIMARY,
+        color: colors.text,
     },
     permissionModalSubtitle: {
         marginTop: 4,
         fontSize: 12.5,
-        color: '#64748B',
+        color: colors.textSecondary,
         lineHeight: 17,
     },
     permissionSessionLabel: {
@@ -1954,7 +1964,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         fontSize: 12,
         fontWeight: '700',
-        color: '#475569',
+        color: colors.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 0.8,
     },
@@ -1966,8 +1976,8 @@ const styles = StyleSheet.create({
         flex: 1,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#CBD5E1',
-        backgroundColor: '#F8FAFC',
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceVariant,
         paddingVertical: 10,
         paddingHorizontal: 10,
         flexDirection: 'row',
@@ -1976,23 +1986,23 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     permissionSessionChipActive: {
-        borderColor: '#C4B5FD',
-        backgroundColor: '#F3E8FF',
+        borderColor: isDark ? 'rgba(196,181,253,0.4)' : '#C4B5FD',
+        backgroundColor: isDark ? 'rgba(124,58,237,0.2)' : '#F3E8FF',
     },
     permissionSessionChipText: {
         fontSize: 13,
-        color: '#475569',
+        color: colors.textSecondary,
         fontWeight: '700',
     },
     permissionSessionChipTextActive: {
-        color: '#6D28D9',
+        color: isDark ? '#C4B5FD' : '#6D28D9',
     },
     permissionModalHintRow: {
         marginTop: 10,
         borderRadius: 10,
-        backgroundColor: '#F5F3FF',
+        backgroundColor: isDark ? 'rgba(124,58,237,0.16)' : '#F5F3FF',
         borderWidth: 1,
-        borderColor: '#DDD6FE',
+        borderColor: isDark ? 'rgba(221,214,254,0.25)' : '#DDD6FE',
         paddingHorizontal: 10,
         paddingVertical: 8,
         flexDirection: 'row',
@@ -2002,20 +2012,20 @@ const styles = StyleSheet.create({
     permissionModalHintText: {
         flex: 1,
         fontSize: 11.5,
-        color: '#6D28D9',
+        color: isDark ? '#C4B5FD' : '#6D28D9',
         fontWeight: '600',
     },
     permissionReasonInput: {
         marginTop: 12,
         borderWidth: 1,
-        borderColor: '#CBD5E1',
+        borderColor: colors.border,
         borderRadius: 12,
         paddingHorizontal: 12,
         paddingVertical: 12,
         minHeight: 108,
         fontSize: 14,
-        color: '#0F172A',
-        backgroundColor: '#F8FAFC',
+        color: colors.text,
+        backgroundColor: colors.surfaceVariant,
     },
     permissionInputFooter: {
         marginTop: 8,
@@ -2027,7 +2037,7 @@ const styles = StyleSheet.create({
     permissionInputHelper: {
         flex: 1,
         fontSize: 11.5,
-        color: '#64748B',
+        color: colors.textSecondary,
         fontWeight: '500',
     },
     permissionReasonCount: {
@@ -2044,7 +2054,7 @@ const styles = StyleSheet.create({
         flex: 1,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#CBD5E1',
+        borderColor: colors.border,
         paddingVertical: 12,
         alignItems: 'center',
         justifyContent: 'center',
@@ -2052,7 +2062,7 @@ const styles = StyleSheet.create({
     permissionModalCancelText: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#475569',
+        color: colors.textSecondary,
     },
     permissionModalSubmitButton: {
         flex: 1,

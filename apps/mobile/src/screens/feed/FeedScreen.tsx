@@ -1017,7 +1017,7 @@ export default function FeedScreen() {
           contentContainerStyle={styles.quickActionsInCard}
         >
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="help-circle" size={22} color="#3B82F6" />
+            <Ionicons name="chatbubble-ellipses" size={22} color="#3B82F6" />
             <Text style={styles.inCardActionText}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
@@ -1033,7 +1033,7 @@ export default function FeedScreen() {
             <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="cash" size={22} color="#D97706" />
+            <Ionicons name="ribbon" size={22} color="#D97706" />
             <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -1195,22 +1195,49 @@ export default function FeedScreen() {
 
     const isStillWorking = initialLoadNotice === 'stillWorking';
 
+    const accentColor = isStillWorking ? '#F97316' : colors.primary;
+    const iconName = isStillWorking ? 'time-outline' : 'sparkles-outline';
+
     return (
       <View style={styles.initialLoadNotice}>
-        <View style={styles.initialLoadIconWrap}>
-          <ActivityIndicator size="small" color={colors.primary} />
-        </View>
-        <View style={styles.initialLoadTextWrap}>
-          <Text style={styles.initialLoadTitle}>
-            {isStillWorking ? t('feed.loadingStillWorking') : t('feed.loadingPreparing')}
-          </Text>
-          <Text style={styles.initialLoadMessage}>
-            {isStillWorking ? t('feed.loadingStillWorkingMessage') : t('feed.loadingPreparingMessage')}
-          </Text>
+        {/* Top accent stripe */}
+        <LinearGradient
+          colors={isStillWorking ? ['#F97316', '#FBBF24'] : [colors.primary, '#14B8A6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.initialLoadAccentBar}
+        />
+        <View style={styles.initialLoadInner}>
+          {/* Icon circle */}
+          <View style={[
+            styles.initialLoadIconWrap,
+            { backgroundColor: isStillWorking
+                ? (isDark ? 'rgba(249,115,22,0.18)' : '#FFF7ED')
+                : (isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE') }
+          ]}>
+            <Ionicons name={iconName} size={18} color={accentColor} />
+          </View>
+          {/* Text block */}
+          <View style={styles.initialLoadTextWrap}>
+            <View style={styles.initialLoadTitleRow}>
+              <Text style={[styles.initialLoadTitle, { color: colors.text }]}>
+                {isStillWorking ? t('feed.loadingStillWorking') : t('feed.loadingPreparing')}
+              </Text>
+              {/* Animated pulsing dot */}
+              <ActivityIndicator
+                size="small"
+                color={accentColor}
+                style={styles.initialLoadSpinner}
+              />
+            </View>
+            <Text style={styles.initialLoadMessage}>
+              {isStillWorking ? t('feed.loadingStillWorkingMessage') : t('feed.loadingPreparingMessage')}
+            </Text>
+          </View>
         </View>
       </View>
     );
-  }, [initialLoadNotice, t, colors.primary]);
+  }, [initialLoadNotice, t, colors.primary, colors.text, isDark]);
 
   const renderEmpty = useCallback(() => {
     if (isLoadingPosts) {
@@ -1278,7 +1305,7 @@ export default function FeedScreen() {
         <View style={styles.sideRailCard}>
           <Text style={styles.sideRailTitle}>{t('feed.shareLearning')}</Text>
           <TouchableOpacity style={styles.sideRailAction} onPress={handleAskQuestion} activeOpacity={0.75}>
-            <Ionicons name="help-circle-outline" size={20} color="#0EA5E9" />
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#0EA5E9" />
             <Text style={styles.sideRailActionText}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.sideRailAction} onPress={handleCreateQuiz} activeOpacity={0.75}>
@@ -1525,10 +1552,10 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     width: 110,
   },
   menuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1537,10 +1564,10 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     gap: 6,
   },
   headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1882,39 +1909,52 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     paddingTop: 0,
   },
   initialLoadNotice: {
+    backgroundColor: colors.card,
+    marginBottom: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.10)' : '#E5E7EB',
+    overflow: 'hidden',
+  },
+  initialLoadAccentBar: {
+    height: 3,
+    width: '100%',
+  },
+  initialLoadInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: isDark ? colors.border : '#BAE6FD',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   initialLoadIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: isDark ? colors.surfaceVariant : '#E0F2FE',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   initialLoadTextWrap: {
     flex: 1,
     minWidth: 0,
   },
+  initialLoadTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  initialLoadSpinner: {
+    marginLeft: 2,
+  },
   initialLoadTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.text,
   },
   initialLoadMessage: {
     fontSize: 12,
     lineHeight: 17,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 3,
   },
   emptyContainer: {
     alignItems: 'center',

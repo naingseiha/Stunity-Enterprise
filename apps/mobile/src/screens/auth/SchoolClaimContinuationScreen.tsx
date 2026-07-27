@@ -2,16 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import {
   clearPendingSchoolClaim,
@@ -33,6 +34,8 @@ type ClaimPreview = {
 
 export default function SchoolClaimContinuationScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = createStyles(colors, isDark);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -135,7 +138,7 @@ export default function SchoolClaimContinuationScreen() {
   if (!preview && !error) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color="#0284C7" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{t('auth.schoolClaim.preparing')}</Text>
       </SafeAreaView>
     );
@@ -145,7 +148,7 @@ export default function SchoolClaimContinuationScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.iconCircle, success && styles.successCircle]}>
-          <Ionicons name={success ? 'checkmark-circle-outline' : 'school-outline'} size={34} color={success ? '#047857' : '#0284C7'} />
+          <Ionicons name={success ? 'checkmark-circle-outline' : 'school-outline'} size={34} color={success ? colors.success : colors.primary} />
         </View>
 
         <Text style={styles.title}>{t(success ? 'auth.schoolClaim.successTitle' : 'auth.schoolClaim.title')}</Text>
@@ -162,10 +165,10 @@ export default function SchoolClaimContinuationScreen() {
           </View>
         ) : preview && !success ? (
           <View style={styles.previewCard}>
-            <PreviewRow label={t('auth.schoolClaim.school')} value={preview.school?.name || t('auth.schoolClaim.unknownSchool')} />
-            {roleLabel && <PreviewRow label={t('auth.schoolClaim.role')} value={roleLabel} />}
-            {maskedName && <PreviewRow label={t('auth.schoolClaim.profile')} value={maskedName} />}
-            {classLabel && <PreviewRow label={t('auth.schoolClaim.class')} value={classLabel} />}
+            <PreviewRow styles={styles} label={t('auth.schoolClaim.school')} value={preview.school?.name || t('auth.schoolClaim.unknownSchool')} />
+            {roleLabel && <PreviewRow styles={styles} label={t('auth.schoolClaim.role')} value={roleLabel} />}
+            {maskedName && <PreviewRow styles={styles} label={t('auth.schoolClaim.profile')} value={maskedName} />}
+            {classLabel && <PreviewRow styles={styles} label={t('auth.schoolClaim.class')} value={classLabel} />}
           </View>
         ) : null}
 
@@ -182,7 +185,7 @@ export default function SchoolClaimContinuationScreen() {
               accessibilityState={{ disabled: !preview || isLoading, busy: isLoading }}
               style={[styles.primaryButton, (!preview || isLoading) && styles.disabledButton]}
             >
-              {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{t('auth.schoolClaim.confirm')}</Text>}
+              {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>{t('auth.schoolClaim.confirm')}</Text>}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => void cancel()} accessibilityRole="button" style={styles.cancelButton}>
               <Text style={styles.cancelText}>{t('auth.schoolClaim.cancel')}</Text>
@@ -194,7 +197,7 @@ export default function SchoolClaimContinuationScreen() {
   );
 }
 
-function PreviewRow({ label, value }: { label: string; value: string }) {
+function PreviewRow({ styles, label, value }: { styles: ReturnType<typeof createStyles>; label: string; value: string }) {
   return (
     <View style={styles.previewRow}>
       <Text style={styles.previewLabel}>{label}</Text>
@@ -203,26 +206,26 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', padding: 28 },
-  loadingText: { marginTop: 16, color: '#475569', fontSize: 16, textAlign: 'center' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
+  loadingText: { marginTop: 16, color: colors.textSecondary, fontSize: 15, lineHeight: 22, fontWeight: '500', textAlign: 'center' },
   content: { flexGrow: 1, justifyContent: 'center', padding: 28 },
-  iconCircle: { width: 72, height: 72, borderRadius: 36, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', backgroundColor: '#E0F2FE' },
-  successCircle: { backgroundColor: '#D1FAE5' },
-  title: { marginTop: 24, color: '#0F172A', fontSize: 28, lineHeight: 34, fontWeight: '800', textAlign: 'center' },
-  subtitle: { marginTop: 12, color: '#475569', fontSize: 16, lineHeight: 24, textAlign: 'center' },
-  previewCard: { marginTop: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 20, backgroundColor: '#fff', padding: 20, gap: 16 },
+  iconCircle: { width: 72, height: 72, borderRadius: 36, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : '#E0F2FE' },
+  successCircle: { backgroundColor: isDark ? 'rgba(74,222,128,0.16)' : '#D1FAE5' },
+  title: { marginTop: 24, color: colors.text, fontSize: 28, lineHeight: 34, fontWeight: '700', textAlign: 'center' },
+  subtitle: { marginTop: 12, color: colors.textSecondary, fontSize: 15, lineHeight: 22, fontWeight: '500', textAlign: 'center' },
+  previewCard: { marginTop: 28, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.card, padding: 20, gap: 16 },
   previewRow: { gap: 4 },
-  previewLabel: { color: '#64748B', fontSize: 13, fontWeight: '700' },
-  previewValue: { color: '#0F172A', fontSize: 17, lineHeight: 24, fontWeight: '700' },
-  errorCard: { marginTop: 28, borderWidth: 1, borderColor: '#FECDD3', borderRadius: 20, backgroundColor: '#FFF1F2', padding: 18 },
-  errorText: { color: '#BE123C', fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  previewLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  previewValue: { color: colors.text, fontSize: 15, lineHeight: 22, fontWeight: '600' },
+  errorCard: { marginTop: 28, borderWidth: 1, borderColor: colors.error, borderRadius: 16, backgroundColor: isDark ? 'rgba(248,113,113,0.12)' : '#FFF1F2', padding: 18 },
+  errorText: { color: colors.error, fontSize: 15, lineHeight: 22, fontWeight: '500', textAlign: 'center' },
   retryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  retryText: { color: '#0369A1', fontWeight: '800' },
-  primaryButton: { minHeight: 58, marginTop: 28, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0284C7', paddingHorizontal: 20 },
-  disabledButton: { backgroundColor: '#94A3B8' },
-  primaryText: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
+  retryText: { color: colors.primary, fontWeight: '700' },
+  primaryButton: { minHeight: 56, marginTop: 28, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, paddingHorizontal: 20 },
+  disabledButton: { backgroundColor: colors.buttonDisabled },
+  primaryText: { color: '#FFFFFF', fontSize: 15, lineHeight: 22, fontWeight: '700', textAlign: 'center' },
   cancelButton: { minHeight: 52, marginTop: 10, alignItems: 'center', justifyContent: 'center' },
-  cancelText: { color: '#475569', fontSize: 15, fontWeight: '700' },
+  cancelText: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, fontWeight: '700' },
 });

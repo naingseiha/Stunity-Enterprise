@@ -7,7 +7,7 @@
 import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthStackParamList } from './types';
-import { Colors } from '@/config';
+import { useThemeContext } from '@/contexts';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { getTabletSceneStyle } from '@/utils/layout';
 
@@ -34,13 +34,14 @@ const RegisterEntryScreen = process.env.EXPO_PUBLIC_PASSWORDLESS_AUTH_ENABLED ==
 
 const AuthNavigator: React.FC = () => {
   const layout = useLayoutBreakpoint();
+  const { colors } = useThemeContext();
   const tabletScene = getTabletSceneStyle(layout);
   const contentStyle = useMemo(
     () => ({
-      backgroundColor: Colors.white,
+      backgroundColor: colors.background,
       ...(tabletScene || {}),
     }),
-    [tabletScene],
+    [colors.background, tabletScene],
   );
 
   return (

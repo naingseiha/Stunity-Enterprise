@@ -27,7 +27,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuthStore } from '@/stores';
 
-const BRAND_TEAL = '#09CFF7';
+import { Colors } from '@/config';
+const BRAND_TEAL = Colors.brand;
 
 // Role → readable label + gradient colours
 function roleStyle(role?: string): { label: string; colors: [string, string]; accent: string } {

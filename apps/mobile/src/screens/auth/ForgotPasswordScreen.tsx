@@ -27,7 +27,8 @@ import { authApi } from '@/api/client';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
 
-const BRAND_TEAL = '#09CFF7';
+import { Colors } from '@/config';
+const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 const INK = '#0F172A';
 const MUTED = '#64748B';

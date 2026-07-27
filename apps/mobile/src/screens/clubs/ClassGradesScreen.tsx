@@ -22,21 +22,10 @@ import { useAuthStore } from '@/stores';
 import { captureException } from '@/services/monitoring';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primary: '#09CFF7',
-  primaryDark: '#06A8CC',
-  success: '#10B981',
-  successBg: '#D1FAE5',
-  danger: '#EF4444',
-  inputBg: '#F8FAFC',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 const GRADE_ADMIN_MOBILE_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
 
@@ -236,6 +225,8 @@ export default function ClassGradesScreen() {
   const navigation = useNavigation<any>();
   const { classId, className, myRole, linkedTeacherId, linkedStudentId } = route.params || {};
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const accountTeacherId = user?.teacherId || user?.teacher?.id;
   /** Class hub passes linkedTeacherId for the roster teacher; admins who teach match this id. */
   const isTeacher =
@@ -785,8 +776,8 @@ export default function ClassGradesScreen() {
               recyclingKey={item.photoUrl}
             />
           ) : (
-            <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '20' }]}>
-              <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>
+            <View style={[styles.avatar, { backgroundColor: BRAND_ACCENT + '20' }]}>
+              <Text style={[styles.avatarText, { color: BRAND_ACCENT }]}>
                 {item.firstName?.[0] || 'S'}
               </Text>
             </View>
@@ -820,13 +811,13 @@ export default function ClassGradesScreen() {
               onChangeText={(val) => handleScoreChange(studentId, val)}
               keyboardType="decimal-pad"
               placeholder="-"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textSecondary}
               maxLength={5}
               editable={isTeacher && scoreEditingEnabled && !saving && !scoreRowsLoading}
               selectTextOnFocus
             />
             {isSaved && (
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={styles.saveIcon} />
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} style={styles.saveIcon} />
             )}
             {isModified && (
               <View style={styles.modifiedDot} />
@@ -842,13 +833,13 @@ export default function ClassGradesScreen() {
     const maxScore = Number(item.maxScore || item.subject?.maxScore || 100);
     const score = Number(item.score || 0);
     const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
-    const statusColor = percentage >= 50 ? COLORS.success : COLORS.danger;
+    const statusColor = percentage >= 50 ? colors.success : colors.error;
 
     return (
       <View style={styles.studentCard}>
         <View style={styles.studentInfo}>
-          <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '18' }]}>
-            <Ionicons name="book-outline" size={18} color={COLORS.primaryDark} />
+          <View style={[styles.avatar, { backgroundColor: BRAND_ACCENT + '18' }]}>
+            <Ionicons name="book-outline" size={18} color={BRAND_ACCENT} />
           </View>
           <View style={styles.studentNameContainer}>
             <Text style={styles.studentName} numberOfLines={1}>
@@ -912,7 +903,7 @@ export default function ClassGradesScreen() {
                   <Ionicons 
                     name={selectedSubject?.id === subject.id ? "book" : "book-outline"} 
                     size={14} 
-                    color={selectedSubject?.id === subject.id ? COLORS.surface : COLORS.textSecondary} 
+                    color={selectedSubject?.id === subject.id ? colors.card : colors.textSecondary} 
                     style={{ marginRight: 6 }} 
                   />
                   <Text style={[styles.chipText, selectedSubject?.id === subject.id && styles.chipTextActive]}>
@@ -929,7 +920,7 @@ export default function ClassGradesScreen() {
               <Text style={styles.sectionLabelInline}>{t('classScreens.grades.academicMonth')}</Text>
               {scoreRowsLoading ? (
                 <View style={styles.inlineLoadingBadge}>
-                  <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                  <ActivityIndicator size="small" color={BRAND_ACCENT} />
                 </View>
               ) : null}
             </View>
@@ -950,13 +941,13 @@ export default function ClassGradesScreen() {
             {selectedSubject ? (
               <View style={styles.sheetPanel}>
                 <View style={styles.sheetStatusRow}>
-                  <Ionicons name="layers-outline" size={16} color={COLORS.textMuted} />
+                  <Ionicons name="layers-outline" size={16} color={colors.textSecondary} />
                   <Text style={styles.sheetStatusText}>
                     {`${t('classScreens.grades.sheet.currentStatus')} `}
                     <Text style={styles.sheetStatusValue}>{t(sheetStatusLabelKey)}</Text>
                   </Text>
                   {sheetStatusLoading ? (
-                    <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                    <ActivityIndicator size="small" color={BRAND_ACCENT} />
                   ) : null}
                 </View>
 
@@ -972,7 +963,7 @@ export default function ClassGradesScreen() {
                       disabled={sheetBusy}
                       activeOpacity={0.85}
                     >
-                      <Ionicons name="checkmark-done-outline" size={16} color={COLORS.primaryDark} />
+                      <Ionicons name="checkmark-done-outline" size={16} color={BRAND_ACCENT} />
                       <Text style={styles.sheetGhostBtnText}>{t('classScreens.grades.sheet.submitAction')}</Text>
                     </TouchableOpacity>
                   ) : null}
@@ -994,7 +985,7 @@ export default function ClassGradesScreen() {
                         disabled={sheetBusy}
                         activeOpacity={0.85}
                       >
-                        <Ionicons name="lock-open-outline" size={16} color={COLORS.primaryDark} />
+                        <Ionicons name="lock-open-outline" size={16} color={BRAND_ACCENT} />
                         <Text style={styles.sheetGhostBtnText}>{t('classScreens.grades.sheet.reopenAction')}</Text>
                       </TouchableOpacity>
                     </>
@@ -1004,7 +995,7 @@ export default function ClassGradesScreen() {
                     <ActivityIndicator
                       style={{ marginLeft: 'auto' }}
                       size="small"
-                      color={COLORS.primaryDark}
+                      color={BRAND_ACCENT}
                     />
                   ) : null}
                 </View>
@@ -1017,7 +1008,7 @@ export default function ClassGradesScreen() {
               <Text style={styles.sectionLabelInline}>{t('classScreens.grades.academicMonth')}</Text>
               {studentScoreRowsLoading ? (
                 <View style={styles.inlineLoadingBadge}>
-                  <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                  <ActivityIndicator size="small" color={BRAND_ACCENT} />
                 </View>
               ) : null}
             </View>
@@ -1077,7 +1068,7 @@ export default function ClassGradesScreen() {
           </Text>
           <View style={styles.listHeaderStatus}>
             {scoreDataLoading ? (
-              <ActivityIndicator size="small" color={COLORS.primaryDark} />
+              <ActivityIndicator size="small" color={BRAND_ACCENT} />
             ) : null}
             <Text style={styles.listHeaderSubtitle}>
               {isTeacher 
@@ -1098,12 +1089,12 @@ export default function ClassGradesScreen() {
     >
       <View style={styles.bgOrbPrimary} />
       <View style={styles.bgOrbSecondary} />
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{isTeacher ? t('classScreens.grades.scoreImport') : (className ? t('classScreens.grades.classScoresWithName', { className }) : t('classScreens.grades.classScores'))}</Text>
           {isTeacher ? (
@@ -1126,12 +1117,12 @@ export default function ClassGradesScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={BRAND_ACCENT} />
           <Text style={styles.loadingText}>{t('classScreens.grades.loading')}</Text>
         </View>
       ) : isTeacher && subjects.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="book-outline" size={48} color={COLORS.border} />
+          <Ionicons name="book-outline" size={48} color={colors.border} />
           <Text style={styles.emptyText}>{t('classScreens.grades.noSubjects')}</Text>
         </View>
       ) : (
@@ -1149,9 +1140,9 @@ export default function ClassGradesScreen() {
             ListEmptyComponent={
               <View style={styles.center}>
                 {scoreDataLoading ? (
-                  <ActivityIndicator size="large" color={COLORS.primaryDark} />
+                  <ActivityIndicator size="large" color={BRAND_ACCENT} />
                 ) : (
-                  <Ionicons name={isTeacher ? "people-outline" : "bar-chart-outline"} size={48} color={COLORS.border} />
+                  <Ionicons name={isTeacher ? "people-outline" : "bar-chart-outline"} size={48} color={colors.border} />
                 )}
                 <Text style={styles.emptyText}>
                   {scoreDataLoading
@@ -1167,15 +1158,15 @@ export default function ClassGradesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   bgOrbPrimary: {
     position: 'absolute',
     width: 230,
     height: 230,
     borderRadius: 115,
-    backgroundColor: '#DFF7FF',
-    opacity: 0.78,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.12)' : '#DFF7FF',
+    opacity: isDark ? 1 : 0.78,
     top: 118,
     right: -120,
   },
@@ -1184,49 +1175,49 @@ const styles = StyleSheet.create({
     width: 170,
     height: 170,
     borderRadius: 85,
-    backgroundColor: '#EDE9FE',
-    opacity: 0.7,
+    backgroundColor: isDark ? 'rgba(139,92,246,0.12)' : '#EDE9FE',
+    opacity: isDark ? 1 : 0.7,
     top: 460,
     left: -100,
   },
-  header: { 
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderBottomWidth: 1, 
-    borderBottomColor: 'rgba(226,232,240,0.85)',
+  header: {
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     paddingBottom: 4,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
     zIndex: 10,
   },
-  topBar: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    paddingVertical: 12 
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.8)',
+    borderColor: colors.border,
     paddingLeft: 7,
   },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800', color: COLORS.textPrimary },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800', color: colors.text },
   saveBtn: { 
-    backgroundColor: COLORS.primaryDark, 
+    backgroundColor: BRAND_ACCENT, 
     paddingHorizontal: 20, 
     paddingVertical: 10, 
     borderRadius: 999,
     minWidth: 70,
     alignItems: 'center',
-    shadowColor: COLORS.primaryDark,
+    shadowColor: BRAND_ACCENT,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -1277,7 +1268,7 @@ const styles = StyleSheet.create({
   sectionLabel: { 
     fontSize: 13, 
     fontWeight: '700', 
-    color: COLORS.textSecondary, 
+    color: colors.textSecondary, 
     paddingHorizontal: 16, 
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -1293,7 +1284,7 @@ const styles = StyleSheet.create({
   sectionLabelInline: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1303,46 +1294,46 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E0F7FE',
+    backgroundColor: isDark ? 'rgba(6,168,204,0.18)' : '#E0F7FE',
     borderWidth: 1,
     borderColor: 'rgba(6,168,204,0.18)',
   },
   filterScroll: { paddingHorizontal: 16, gap: 10, paddingBottom: 12 },
-  noSubjectsText: { color: COLORS.textMuted, fontSize: 14, fontStyle: 'italic', alignSelf: 'center' },
-  chip: { 
+  noSubjectsText: { color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', alignSelf: 'center' },
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.95)',
+    borderColor: colors.border,
   },
   chipActive: { 
-    backgroundColor: COLORS.primaryDark, 
-    borderColor: COLORS.primaryDark,
-    shadowColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT, 
+    borderColor: BRAND_ACCENT,
+    shadowColor: BRAND_ACCENT,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
   },
-  chipText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '600' },
-  chipTextActive: { color: COLORS.surface, fontWeight: '700' },
-  monthChip: { 
-    paddingHorizontal: 16, 
-    paddingVertical: 8, 
-    borderRadius: 20, 
-    backgroundColor: '#FFFFFF',
+  chipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
+  chipTextActive: { color: colors.card, fontWeight: '700' },
+  monthChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   monthChipActive: { 
-    backgroundColor: COLORS.textPrimary,
-    borderColor: COLORS.textPrimary,
+    backgroundColor: colors.text,
+    borderColor: colors.text,
   },
-  monthChipText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
+  monthChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
   monthChipTextActive: { color: '#FFF', fontWeight: '700' },
   sheetPanel: {
     marginHorizontal: 16,
@@ -1350,15 +1341,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     padding: 14,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.95)',
+    borderColor: colors.border,
     gap: 10,
   },
   sheetStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sheetStatusText: { flex: 1, fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
-  sheetStatusValue: { color: COLORS.textPrimary, fontWeight: '800' },
-  sheetHint: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600', lineHeight: 17 },
+  sheetStatusText: { flex: 1, fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  sheetStatusValue: { color: colors.text, fontWeight: '800' },
+  sheetHint: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', lineHeight: 17 },
   sheetActionRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   sheetGhostBtn: {
     flexDirection: 'row',
@@ -1367,12 +1358,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 12,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? 'rgba(6,168,204,0.16)' : '#F0F9FF',
     borderWidth: 1,
     borderColor: 'rgba(6,168,204,0.35)',
   },
   sheetGhostBtnDisabled: { opacity: 0.55 },
-  sheetGhostBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primaryDark },
+  sheetGhostBtnText: { fontSize: 13, fontWeight: '700', color: BRAND_ACCENT },
   sheetDangerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1394,12 +1385,12 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 22,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.95)',
-    shadowColor: '#0F172A',
+    borderColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -1408,14 +1399,14 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   summaryValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   
   listHeader: {
@@ -1428,8 +1419,8 @@ const styles = StyleSheet.create({
   },
   screenBody: { flex: 1 },
   screenBodyRefreshing: { opacity: 0.92 },
-  listHeaderTitle: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
-  listHeaderSubtitle: { fontSize: 13, fontWeight: '600', color: COLORS.primaryDark },
+  listHeaderTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
+  listHeaderSubtitle: { fontSize: 13, fontWeight: '600', color: BRAND_ACCENT },
   listHeaderStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   
   list: { paddingTop: 4, gap: 12, paddingBottom: 40 },
@@ -1437,32 +1428,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     padding: 16,
     marginHorizontal: 16,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.95)',
-    shadowColor: '#0F172A',
+    borderColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 1,
   },
   studentCardHighlight: {
-    borderColor: COLORS.primaryDark,
-    backgroundColor: '#F0F9FF',
+    borderColor: BRAND_ACCENT,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.14)' : '#F0F9FF',
   },
   studentRankBadge: {
     width: 24,
     height: 24,
     borderRadius: 999,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
-  studentRankText: { fontSize: 12, fontWeight: '700', color: COLORS.textMuted },
+  studentRankText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
   
   studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   avatar: { 
@@ -1475,39 +1466,39 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 18, fontWeight: '700' },
   studentNameContainer: { flex: 1, paddingRight: 8 },
-  studentName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 1 },
-  englishName: { fontSize: 11, fontWeight: '600', color: COLORS.primaryDark, textTransform: 'uppercase', marginBottom: 2 },
-  studentId: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
+  studentName: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 1 },
+  englishName: { fontSize: 11, fontWeight: '600', color: BRAND_ACCENT, textTransform: 'uppercase', marginBottom: 2 },
+  studentId: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
   
   scoreSection: { flexDirection: 'row', alignItems: 'center' },
   scoreInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 16,
     height: 48,
     width: 70,
     paddingHorizontal: 4,
   },
   scoreInputWrapperModified: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#F0FBFF',
+    borderColor: BRAND_ACCENT,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.16)' : '#F0FBFF',
   },
   scoreInputWrapperSaved: {
-    borderColor: '#A7F3D0', // light emerald
-    backgroundColor: '#ECFDF5', // very light emerald
+    borderColor: isDark ? 'rgba(167,243,208,0.35)' : '#A7F3D0', // light emerald
+    backgroundColor: isDark ? 'rgba(5,150,105,0.16)' : '#ECFDF5', // very light emerald
   },
   scoreInput: { 
     flex: 1,
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
-  scoreInputSaved: { color: COLORS.success },
-  saveIcon: { position: 'absolute', right: -6, top: -6, backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden' },
+  scoreInputSaved: { color: colors.success },
+  saveIcon: { position: 'absolute', right: -6, top: -6, backgroundColor: colors.card, borderRadius: 8, overflow: 'hidden' },
   modifiedDot: { 
     position: 'absolute', 
     right: 4, 
@@ -1515,9 +1506,9 @@ const styles = StyleSheet.create({
     width: 6, 
     height: 6, 
     borderRadius: 3, 
-    backgroundColor: COLORS.primary 
+    backgroundColor: BRAND_ACCENT 
   },
-  maxScore: { fontSize: 13, color: COLORS.textMuted, marginLeft: 8, fontWeight: '700', width: 40 },
+  maxScore: { fontSize: 13, color: colors.textSecondary, marginLeft: 8, fontWeight: '700', width: 40 },
   readOnlyScoreWrap: {
     alignItems: 'flex-end',
     gap: 6,
@@ -1526,25 +1517,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: COLORS.primaryDark + '14',
+    backgroundColor: BRAND_ACCENT + '14',
   },
   rankPillText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.primaryDark,
+    color: BRAND_ACCENT,
   },
   averageText: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   gradeLevelText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText: { marginTop: 12, color: COLORS.textSecondary, fontWeight: '600' },
-  emptyText: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 16, fontSize: 15, fontWeight: '500' },
+  loadingText: { marginTop: 12, color: colors.textSecondary, fontWeight: '600' },
+  emptyText: { color: colors.textSecondary, textAlign: 'center', marginTop: 16, fontSize: 15, fontWeight: '500' },
 });

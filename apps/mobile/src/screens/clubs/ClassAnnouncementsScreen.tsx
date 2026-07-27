@@ -20,15 +20,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  primaryDark: '#06A8CC',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 export default function ClassAnnouncementsScreen() {
   const { t, i18n } = useTranslation();
@@ -36,6 +31,8 @@ export default function ClassAnnouncementsScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const classId = route.params?.classId;
   const isTeacher = user?.role === 'TEACHER';
 
@@ -117,12 +114,12 @@ export default function ClassAnnouncementsScreen() {
           style={styles.actionBtn} 
           onPress={() => setSelectedAnnouncement(item)}
         >
-          <Ionicons name="chatbubble-outline" size={18} color={COLORS.textSecondary} />
+          <Ionicons name="chatbubble-outline" size={18} color={colors.textSecondary} />
           <Text style={[styles.actionText, isKhmer && styles.khmerInlineText]}>{t('announcements.discuss')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.actionBtn}>
-          <Ionicons name="share-outline" size={18} color={COLORS.textSecondary} />
+          <Ionicons name="share-outline" size={18} color={colors.textSecondary} />
           <Text style={[styles.actionText, isKhmer && styles.khmerInlineText]}>{t('common.share')}</Text>
         </TouchableOpacity>
       </View>
@@ -134,7 +131,7 @@ export default function ClassAnnouncementsScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, isKhmer && styles.khmerInlineText]}>{t('announcements.title')}</Text>
           <View style={{ width: 40 }} />
@@ -142,7 +139,7 @@ export default function ClassAnnouncementsScreen() {
       </SafeAreaView>
 
       {isLoading && data.length === 0 ? (
-        <ActivityIndicator style={styles.loader} size="large" color={COLORS.primaryDark} />
+        <ActivityIndicator style={styles.loader} size="large" color={BRAND_ACCENT} />
       ) : errorMessage && data.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.error}>{errorMessage}</Text>
@@ -178,7 +175,7 @@ export default function ClassAnnouncementsScreen() {
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, isKhmer && styles.khmerInlineText]}>{t('announcements.discussion')}</Text>
               <TouchableOpacity onPress={() => setSelectedAnnouncement(null)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -189,7 +186,7 @@ export default function ClassAnnouncementsScreen() {
               </View>
               
               <View style={styles.commentPlaceholder}>
-                <Ionicons name="chatbubbles" size={48} color="#E2E8F0" />
+                <Ionicons name="chatbubbles" size={48} color={colors.border} />
                 <Text style={[styles.commentPlaceholderText, isKhmer && styles.khmerInlineText]}>{t('announcements.privateDiscussion')}</Text>
               </View>
             </ScrollView>
@@ -224,7 +221,7 @@ export default function ClassAnnouncementsScreen() {
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, isKhmer && styles.khmerInlineText]}>{t('announcements.new')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -242,7 +239,7 @@ export default function ClassAnnouncementsScreen() {
             </View>
 
             <View style={styles.tipsBox}>
-              <Ionicons name="bulb-outline" size={18} color="#0EA5E9" />
+              <Ionicons name="bulb-outline" size={18} color={colors.primary} />
               <Text style={[styles.tipsText, isKhmer && styles.khmerInlineText]}>{t('announcements.classTip')}</Text>
             </View>
             
@@ -264,30 +261,30 @@ export default function ClassAnnouncementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  title: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
   loader: { flex: 1, justifyContent: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  error: { color: 'red', textAlign: 'center' },
+  error: { color: colors.error, textAlign: 'center' },
   list: { padding: 16, paddingBottom: 100, gap: 16 },
-  card: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  avatarText: { fontSize: 16, fontWeight: '700', color: COLORS.textSecondary },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceVariant, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  avatarText: { fontSize: 16, fontWeight: '700', color: colors.textSecondary },
   authorInfo: { flex: 1 },
-  authorName: { fontSize: 15, fontWeight: '600', color: COLORS.textPrimary },
-  dateText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  content: { fontSize: 15, color: COLORS.textPrimary, lineHeight: 22 },
-  empty: { textAlign: 'center', marginTop: 40, color: COLORS.textSecondary },
+  authorName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  dateText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  content: { fontSize: 15, color: colors.text, lineHeight: 22 },
+  empty: { textAlign: 'center', marginTop: 40, color: colors.textSecondary },
   
   cardFooter: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: colors.border,
     marginTop: 12,
     paddingTop: 8,
     gap: 16,
@@ -301,7 +298,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   khmerInlineText: {
     includeFontPadding: false,
@@ -316,11 +313,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -328,11 +325,11 @@ const styles = StyleSheet.create({
   
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -348,23 +345,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
 
   originalPost: {
     padding: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     marginBottom: 20,
   },
   originalContent: {
     fontSize: 14,
-    color: COLORS.textPrimary,
+    color: colors.text,
     lineHeight: 20,
   },
   originalAuthor: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 8,
     fontWeight: '600',
     textAlign: 'right',
@@ -379,7 +376,7 @@ const styles = StyleSheet.create({
   commentPlaceholderText: {
     textAlign: 'center',
     marginTop: 16,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -389,22 +386,23 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: colors.border,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
+    color: colors.text,
     maxHeight: 100,
   },
   sendBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -416,17 +414,17 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.textPrimary,
+    color: colors.text,
     textAlignVertical: 'top',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   charCount: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: colors.textSecondary,
     textAlign: 'right',
     marginTop: 8,
   },
@@ -434,7 +432,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.16)' : '#F0F9FF',
     padding: 12,
     borderRadius: 12,
     marginBottom: 20,
@@ -442,15 +440,15 @@ const styles = StyleSheet.create({
   tipsText: {
     flex: 1,
     fontSize: 13,
-    color: '#0EA5E9',
+    color: colors.primary,
     lineHeight: 18,
   },
   postBtn: {
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: COLORS.primaryDark,
+    shadowColor: BRAND_ACCENT,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

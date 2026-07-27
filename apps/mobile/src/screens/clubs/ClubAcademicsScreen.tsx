@@ -20,29 +20,29 @@ import { clubAcademicsApi, clubsApi } from '@/api';
 import type { ClubMember } from '@/api/clubs';
 import type { ClubsStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/stores';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  bg: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  text: '#0F172A',
-  muted: '#64748B',
-  primary: '#09CFF7',
-  primaryDark: '#06A8CC',
-  success: '#16A34A',
-  warning: '#D97706',
-  danger: '#DC2626',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
-const ATTENDANCE_STATUS_META: Record<
-  clubAcademicsApi.ClubAttendanceStatus,
-  { color: string; bg: string }
-> = {
-  PRESENT: { color: '#166534', bg: '#DCFCE7' },
-  ABSENT: { color: '#991B1B', bg: '#FEE2E2' },
-  LATE: { color: '#9A3412', bg: '#FFEDD5' },
-  EXCUSED: { color: '#5B21B6', bg: '#EDE9FE' },
+const getAttendanceStatusMeta = (
+  status: clubAcademicsApi.ClubAttendanceStatus,
+  isDark: boolean
+): { color: string; bg: string } => {
+  switch (status) {
+    case 'PRESENT':
+      return isDark ? { color: '#4ADE80', bg: 'rgba(22,163,74,0.18)' } : { color: '#166534', bg: '#DCFCE7' };
+    case 'ABSENT':
+      return isDark ? { color: '#F87171', bg: 'rgba(220,38,38,0.18)' } : { color: '#991B1B', bg: '#FEE2E2' };
+    case 'LATE':
+      return isDark ? { color: '#FB923C', bg: 'rgba(154,52,18,0.22)' } : { color: '#9A3412', bg: '#FFEDD5' };
+    case 'EXCUSED':
+      return isDark ? { color: '#C4B5FD', bg: 'rgba(91,33,182,0.22)' } : { color: '#5B21B6', bg: '#EDE9FE' };
+    default:
+      return isDark ? { color: '#94A3B8', bg: 'rgba(100,116,139,0.2)' } : { color: '#475569', bg: '#F1F5F9' };
+  }
 };
+const ATTENDANCE_STATUSES: clubAcademicsApi.ClubAttendanceStatus[] = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
 
 const ASSESSMENT_TYPES = ['QUIZ', 'ASSIGNMENT', 'EXAM', 'PROJECT'] as const;
 
@@ -173,6 +173,8 @@ export default function ClubAcademicsScreen() {
   const route = useRoute<any>();
   const { clubId, clubName } = route.params as ClubsStackParamList['ClubAcademics'];
   const user = useAuthStore((state) => state.user);
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const initialCachedMembers = useMemo(() => clubsApi.getCachedClubMembers(clubId) || [], [clubId]);
   const initialCachedSubjects = useMemo(() => clubAcademicsApi.getCachedClubSubjects(clubId) || [], [clubId]);
   const initialCachedGrades = useMemo(() => clubAcademicsApi.getCachedClubGrades(clubId) || [], [clubId]);
@@ -595,18 +597,18 @@ export default function ClubAcademicsScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
         <SafeAreaView style={styles.topSafe}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color={COLORS.text} />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.topTitle}>{t('clubScreens.academics.header')}</Text>
             <View style={{ width: 38 }} />
           </View>
         </SafeAreaView>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={BRAND_ACCENT} />
           <Text style={styles.loadingText}>{t('clubScreens.academics.loadingTools')}</Text>
         </View>
       </View>
@@ -615,11 +617,11 @@ export default function ClubAcademicsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView style={styles.topSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color={COLORS.text} />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.topTitleWrap}>
             <Text style={styles.topTitle}>{t('clubScreens.academics.header')}</Text>
@@ -627,9 +629,9 @@ export default function ClubAcademicsScreen() {
           </View>
           <TouchableOpacity onPress={handleRefresh} style={styles.backBtn}>
             {backgroundLoading && !refreshing ? (
-              <ActivityIndicator size="small" color={COLORS.text} />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
-              <Ionicons name="refresh-outline" size={20} color={COLORS.text} />
+              <Ionicons name="refresh-outline" size={20} color={colors.text} />
             )}
           </TouchableOpacity>
         </View>
@@ -641,7 +643,7 @@ export default function ClubAcademicsScreen() {
       >
         {error ? (
           <View style={styles.errorCard}>
-            <Ionicons name="alert-circle-outline" size={16} color={COLORS.danger} />
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -951,8 +953,8 @@ export default function ClubAcademicsScreen() {
 
           {selectedSessionId ? (
             <View style={styles.sessionSummaryRow}>
-              {(Object.keys(ATTENDANCE_STATUS_META) as clubAcademicsApi.ClubAttendanceStatus[]).map((status) => {
-                const meta = ATTENDANCE_STATUS_META[status];
+              {ATTENDANCE_STATUSES.map((status) => {
+                const meta = getAttendanceStatusMeta(status, isDark);
                 const count = sessionAttendanceSummary[status] || 0;
                 return (
                   <View key={status} style={[styles.sessionSummaryChip, { backgroundColor: meta.bg, borderColor: meta.color + '55' }]}> 
@@ -973,9 +975,9 @@ export default function ClubAcademicsScreen() {
                       {getMemberDisplayName(member)}
                     </Text>
                     <View style={styles.statusActions}>
-                      {(Object.keys(ATTENDANCE_STATUS_META) as clubAcademicsApi.ClubAttendanceStatus[]).map((status) => {
+                      {ATTENDANCE_STATUSES.map((status) => {
                         const selected = currentStatus === status;
-                        const meta = ATTENDANCE_STATUS_META[status];
+                        const meta = getAttendanceStatusMeta(status, isDark);
                         return (
                           <TouchableOpacity
                             key={status}
@@ -983,13 +985,13 @@ export default function ClubAcademicsScreen() {
                             style={[
                               styles.statusBtn,
                               {
-                                backgroundColor: selected ? meta.bg : '#F8FAFC',
-                                borderColor: selected ? meta.color : COLORS.border,
+                                backgroundColor: selected ? meta.bg : colors.surfaceVariant,
+                                borderColor: selected ? meta.color : colors.border,
                               },
                             ]}
                             disabled={!canManageAcademic}
                           >
-                            <Text style={[styles.statusBtnText, { color: selected ? meta.color : COLORS.muted }]}>
+                            <Text style={[styles.statusBtnText, { color: selected ? meta.color : colors.textSecondary }]}>
                               {getAttendanceStatusLabel(status)}
                             </Text>
                           </TouchableOpacity>
@@ -1007,9 +1009,9 @@ export default function ClubAcademicsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
-  topSafe: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  topSafe: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1023,79 +1025,79 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topTitleWrap: { flex: 1 },
-  topTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text },
-  topSub: { fontSize: 12, color: COLORS.muted },
+  topTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
+  topSub: { fontSize: 12, color: colors.textSecondary },
   scrollContent: { padding: 14, gap: 12, paddingBottom: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  loadingText: { color: COLORS.muted, fontWeight: '600' },
+  loadingText: { color: colors.textSecondary, fontWeight: '600' },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
+    borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FCA5A5',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  errorText: { color: COLORS.danger, flex: 1, fontSize: 13, fontWeight: '600' },
+  errorText: { color: colors.error, flex: 1, fontSize: 13, fontWeight: '600' },
   statsRow: { flexDirection: 'row', gap: 8 },
   statCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  statValue: { fontSize: 18, fontWeight: '800', color: COLORS.primaryDark },
-  statLabel: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: '800', color: BRAND_ACCENT },
+  statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 12,
     gap: 10,
   },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: COLORS.text },
-  mutedSmall: { fontSize: 12, color: COLORS.muted, fontWeight: '600' },
-  cardBody: { fontSize: 13, color: COLORS.muted, lineHeight: 18 },
-  helperText: { fontSize: 11, color: COLORS.muted, fontWeight: '600' },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  mutedSmall: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+  cardBody: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+  helperText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
   reportBlock: { gap: 4 },
-  reportTitle: { fontSize: 12, fontWeight: '800', color: COLORS.text },
-  reportItem: { fontSize: 12, color: COLORS.muted, lineHeight: 17 },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: COLORS.muted, marginTop: 2 },
+  reportTitle: { fontSize: 12, fontWeight: '800', color: colors.text },
+  reportItem: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
+  fieldLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginTop: 2 },
   chipsRow: { gap: 8, paddingRight: 6 },
   chip: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
   },
-  chipActive: { borderColor: COLORS.primaryDark, backgroundColor: '#E0F9FD' },
-  chipText: { fontSize: 12, fontWeight: '700', color: COLORS.muted },
-  chipTextActive: { color: COLORS.primaryDark },
+  chipActive: { borderColor: BRAND_ACCENT, backgroundColor: isDark ? 'rgba(6,168,204,0.2)' : '#E0F9FD' },
+  chipText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  chipTextActive: { color: BRAND_ACCENT },
   inlineForm: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
     height: 42,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 10,
-    backgroundColor: '#F8FAFC',
-    color: COLORS.text,
+    backgroundColor: colors.surfaceVariant,
+    color: colors.text,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1107,17 +1109,17 @@ const styles = StyleSheet.create({
     height: 42,
     paddingHorizontal: 14,
     borderRadius: 10,
-    backgroundColor: '#ECFEFF',
+    backgroundColor: isDark ? 'rgba(6,168,204,0.16)' : '#ECFEFF',
     borderWidth: 1,
-    borderColor: '#A5F3FC',
+    borderColor: isDark ? 'rgba(165,243,252,0.3)' : '#A5F3FC',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionBtnText: { color: COLORS.primaryDark, fontWeight: '800', fontSize: 13 },
+  actionBtnText: { color: BRAND_ACCENT, fontWeight: '800', fontSize: 13 },
   primaryBtn: {
     height: 44,
     borderRadius: 12,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1126,42 +1128,42 @@ const styles = StyleSheet.create({
   subjectList: { gap: 8 },
   subjectRow: {
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 10,
-    backgroundColor: '#FAFCFF',
+    backgroundColor: colors.surfaceVariant,
   },
-  subjectName: { fontSize: 13, fontWeight: '700', color: COLORS.text },
-  subjectMeta: { marginTop: 2, fontSize: 12, color: COLORS.muted, fontWeight: '600' },
+  subjectName: { fontSize: 13, fontWeight: '700', color: colors.text },
+  subjectMeta: { marginTop: 2, fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   gradeList: { gap: 8, marginTop: 4 },
   gradeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 10,
   },
-  gradeTitle: { fontSize: 12, fontWeight: '700', color: COLORS.text },
-  gradeMeta: { marginTop: 2, fontSize: 11, fontWeight: '600', color: COLORS.muted },
-  gradeScore: { fontSize: 13, fontWeight: '800', color: COLORS.success },
+  gradeTitle: { fontSize: 12, fontWeight: '700', color: colors.text },
+  gradeMeta: { marginTop: 2, fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+  gradeScore: { fontSize: 13, fontWeight: '800', color: colors.success },
   breakdownRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  breakdownLabel: { fontSize: 12, color: COLORS.text, fontWeight: '700' },
-  breakdownValue: { fontSize: 12, color: COLORS.muted, fontWeight: '600' },
+  breakdownLabel: { fontSize: 12, color: colors.text, fontWeight: '700' },
+  breakdownValue: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   rankRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
     gap: 8,
   },
-  rankIndex: { width: 36, fontSize: 13, fontWeight: '800', color: COLORS.primaryDark },
-  rankName: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
-  rankMeta: { fontSize: 11, color: COLORS.muted, fontWeight: '600' },
-  rankScore: { fontSize: 13, fontWeight: '800', color: COLORS.success },
-  linkText: { color: COLORS.primaryDark, fontWeight: '800', fontSize: 12 },
+  rankIndex: { width: 36, fontSize: 13, fontWeight: '800', color: BRAND_ACCENT },
+  rankName: { fontSize: 13, color: colors.text, fontWeight: '600' },
+  rankMeta: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  rankScore: { fontSize: 13, fontWeight: '800', color: colors.success },
+  linkText: { color: BRAND_ACCENT, fontWeight: '800', fontSize: 12 },
   sessionSummaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sessionSummaryChip: {
     borderWidth: 1,
@@ -1173,12 +1175,12 @@ const styles = StyleSheet.create({
   attendanceList: { gap: 8 },
   attendanceRow: {
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 8,
     gap: 8,
   },
-  attendanceName: { fontSize: 13, fontWeight: '700', color: COLORS.text },
+  attendanceName: { fontSize: 13, fontWeight: '700', color: colors.text },
   statusActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   statusBtn: {
     borderWidth: 1,

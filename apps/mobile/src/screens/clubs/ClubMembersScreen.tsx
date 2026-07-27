@@ -18,19 +18,10 @@ import { clubsApi } from '@/api';
 import type { ClubJoinRequest, ClubMember } from '@/api/clubs';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primary: '#09CFF7',
-  primaryDark: '#06A8CC',
-  danger: '#DC2626',
-  success: '#16A34A',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 const MANAGER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'];
 const ROLE_OPTIONS: ClubMember['role'][] = ['INSTRUCTOR', 'TEACHING_ASSISTANT', 'STUDENT', 'OBSERVER'];
@@ -41,6 +32,8 @@ export default function ClubMembersScreen() {
   const route = useRoute<any>();
   const { user } = useAuthStore();
   const { clubId, clubName } = route.params || {};
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [requests, setRequests] = useState<ClubJoinRequest[]>([]);
@@ -200,14 +193,14 @@ export default function ClubMembersScreen() {
         <SafeAreaView edges={['top']} style={styles.header}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.title}>{t('clubScreens.members.header')}</Text>
             <View style={{ width: 40 }} />
           </View>
         </SafeAreaView>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={BRAND_ACCENT} />
         </View>
       </View>
     );
@@ -218,7 +211,7 @@ export default function ClubMembersScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.titleWrap}>
             <Text style={styles.title}>{t('clubScreens.members.header')}</Text>
@@ -343,9 +336,9 @@ export default function ClubMembersScreen() {
                         disabled={memberBusy}
                       >
                         {memberBusy ? (
-                          <ActivityIndicator size="small" color={COLORS.danger} />
+                          <ActivityIndicator size="small" color={colors.error} />
                         ) : (
-                          <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                          <Ionicons name="trash-outline" size={18} color={colors.error} />
                         )}
                       </TouchableOpacity>
                     ) : null}
@@ -360,9 +353,9 @@ export default function ClubMembersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,32 +365,32 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   titleWrap: { flex: 1, alignItems: 'center' },
-  title: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
-  subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  subtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12, paddingBottom: 28 },
   sectionCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     gap: 10,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  emptyText: { color: COLORS.textSecondary, fontSize: 13 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  emptyText: { color: colors.textSecondary, fontSize: 13 },
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FECACA',
     padding: 12,
   },
-  errorText: { color: COLORS.danger, fontSize: 13 },
+  errorText: { color: colors.error, fontSize: 13 },
   retryBtn: {
     marginTop: 8,
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -407,12 +400,12 @@ const styles = StyleSheet.create({
   inviteInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
     height: 42,
     paddingHorizontal: 12,
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   inviteBtn: {
     height: 42,
@@ -420,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     paddingHorizontal: 14,
   },
   inviteBtnDisabled: { opacity: 0.6 },
@@ -430,68 +423,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 10,
   },
   approveBtn: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#86EFAC',
+    backgroundColor: isDark ? 'rgba(22,163,74,0.18)' : '#DCFCE7',
+    borderColor: isDark ? 'rgba(134,239,172,0.35)' : '#86EFAC',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  approveBtnText: { color: COLORS.success, fontWeight: '700', fontSize: 12 },
+  approveBtnText: { color: colors.success, fontWeight: '700', fontSize: 12 },
   rejectBtn: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#FCA5A5',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.18)' : '#FEE2E2',
+    borderColor: isDark ? 'rgba(220,38,38,0.4)' : '#FCA5A5',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  rejectBtnText: { color: COLORS.danger, fontWeight: '700', fontSize: 12 },
+  rejectBtnText: { color: colors.error, fontWeight: '700', fontSize: 12 },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 10,
   },
-  memberName: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
-  memberMeta: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  memberName: { fontSize: 14, fontWeight: '700', color: colors.text },
+  memberMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   rolePill: {
     alignSelf: 'flex-start',
     marginTop: 6,
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF',
+    borderColor: isDark ? 'rgba(191,219,254,0.35)' : '#BFDBFE',
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  rolePillText: { fontSize: 11, color: '#1D4ED8', fontWeight: '700' },
+  rolePillText: { fontSize: 11, color: isDark ? '#93C5FD' : '#1D4ED8', fontWeight: '700' },
   memberActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   roleBtn: {
-    backgroundColor: '#F1F5F9',
-    borderColor: '#CBD5E1',
+    backgroundColor: colors.surfaceVariant,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  roleBtnText: { fontSize: 12, fontWeight: '700', color: COLORS.textPrimary },
+  roleBtnText: { fontSize: 12, fontWeight: '700', color: colors.text },
   removeBtn: {
     width: 36,
     height: 36,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: isDark ? 'rgba(220,38,38,0.4)' : '#FECACA',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
   },
 });

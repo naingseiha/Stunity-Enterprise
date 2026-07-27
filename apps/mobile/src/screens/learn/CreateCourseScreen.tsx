@@ -33,6 +33,7 @@ import {
 } from '@/lib/courseLocales';
 import { LearnStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 type NavigationProp = LearnStackScreenProps<'CreateCourse'>['navigation'];
 type SupportedLocaleKey = CourseLocale;
@@ -252,6 +253,8 @@ export default function CreateCourseScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useThemeContext();
+  const s = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -947,7 +950,7 @@ export default function CreateCourseScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <View style={s.header}>
@@ -956,7 +959,7 @@ export default function CreateCourseScreen() {
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <Text style={s.headerTitle}>{t('learn.createCourse.title')}</Text>
@@ -1332,7 +1335,7 @@ export default function CreateCourseScreen() {
                     <Switch
                       value={lesson.isFree}
                       onValueChange={(value) => updateLesson(lesson.id, 'isFree', value)}
-                      trackColor={{ false: '#E2E8F0', true: '#0EA5E9' }}
+                      trackColor={{ false: colors.border, true: colors.primary }}
                       thumbColor="#FFFFFF"
                     />
                   </View>
@@ -1771,7 +1774,7 @@ export default function CreateCourseScreen() {
                           <Ionicons
                             name={resource.isDefault ? 'checkmark-circle' : 'ellipse-outline'}
                             size={16}
-                            color={resource.isDefault ? '#0369A1' : '#64748B'}
+                            color={resource.isDefault ? (isDark ? '#7DD3FC' : '#0369A1') : colors.textSecondary}
                           />
                           <Text style={[s.defaultResourceText, resource.isDefault && s.defaultResourceTextActive]}>
                             {resource.isDefault ? t('learn.createCourse.defaultResource') : t('learn.createCourse.setAsDefault')}
@@ -1823,10 +1826,10 @@ export default function CreateCourseScreen() {
 
 // ── Styles: Profile-Edit Flat Design ─────────────────────────────────────────
 
-const s = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
 
   // ── Header ────────────────────────────────────────────────────
@@ -1836,9 +1839,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     paddingTop: 4,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8EDF2',
+    borderBottomColor: colors.border,
     gap: 8,
   },
   headerBackBtn: {
@@ -1851,7 +1854,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   headerActions: {
     flexDirection: 'row',
@@ -1862,14 +1865,14 @@ const s = StyleSheet.create({
     height: 36,
     paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
   draftBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   publishBtn: {
     height: 36,
@@ -1901,7 +1904,7 @@ const s = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6B7280',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginTop: 28,
@@ -1911,14 +1914,14 @@ const s = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 14,
     marginLeft: 4,
   },
   helperText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontWeight: '500',
     marginTop: 4,
     marginLeft: 4,
@@ -1931,10 +1934,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#E8EDF2',
+    borderColor: colors.border,
   },
   textAreaWrap: {
     height: 'auto',
@@ -1945,13 +1948,13 @@ const s = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#1F2937',
+    color: colors.text,
     height: '100%',
   },
   inputFlex: {
     flex: 1,
     fontSize: 15,
-    color: '#1F2937',
+    color: colors.text,
     height: '100%',
   },
   textArea: {
@@ -1983,13 +1986,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
-    backgroundColor: '#F0F9FF',
+    borderColor: isDark ? 'rgba(186,230,253,0.35)' : '#BAE6FD',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#F0F9FF',
   },
   thumbnailUploadBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   thumbnailClearBtn: {
     flexDirection: 'row',
@@ -2000,13 +2003,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   thumbnailClearBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
 
   // ── Category Chips ────────────────────────────────────────────
@@ -2019,17 +2022,17 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E8EDF2',
+    borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: isDark ? colors.primary : '#0F172A',
+    borderColor: isDark ? colors.primary : '#0F172A',
   },
   chipText: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   chipTextActive: {
@@ -2047,18 +2050,18 @@ const s = StyleSheet.create({
     width: '48%',
     paddingVertical: 14,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E8EDF2',
+    borderColor: colors.border,
     alignItems: 'center',
   },
   levelOptionActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: isDark ? colors.primary : '#0F172A',
+    borderColor: isDark ? colors.primary : '#0F172A',
   },
   levelOptionText: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   levelOptionTextActive: {
@@ -2068,9 +2071,9 @@ const s = StyleSheet.create({
 
   // ── Languages ───────────────────────────────────────────────
   languageCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 18,
     padding: 14,
     marginTop: 8,
@@ -2086,23 +2089,23 @@ const s = StyleSheet.create({
     width: '48%',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingVertical: 12,
     paddingHorizontal: 14,
     alignItems: 'center',
   },
   languageOptionActive: {
     borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   languageOptionText: {
-    color: '#475569',
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '700',
   },
   languageOptionTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   languageChipWrap: {
     flexDirection: 'row',
@@ -2113,26 +2116,26 @@ const s = StyleSheet.create({
   languageChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   languageChipActive: {
-    borderColor: '#10B981',
-    backgroundColor: '#ECFDF5',
+    borderColor: isDark ? 'rgba(16,185,129,0.4)' : '#10B981',
+    backgroundColor: isDark ? 'rgba(16,185,129,0.18)' : '#ECFDF5',
   },
   languageChipRequired: {
     borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   languageChipText: {
-    color: '#475569',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
   },
   languageChipTextActive: {
-    color: '#065F46',
+    color: isDark ? '#6EE7B7' : '#065F46',
   },
   customLocaleRow: {
     marginTop: 12,
@@ -2148,7 +2151,7 @@ const s = StyleSheet.create({
     minHeight: 50,
     paddingHorizontal: 14,
     borderRadius: 14,
-    backgroundColor: '#0F172A',
+    backgroundColor: isDark ? colors.primary : '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2168,7 +2171,7 @@ const s = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#0F172A',
+    backgroundColor: isDark ? colors.primary : '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2185,13 +2188,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   tagBadgeText: {
     fontSize: 13,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '600',
   },
 
@@ -2210,7 +2213,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#EFF6FF',
   },
   addLessonText: {
     color: '#0EA5E9',
@@ -2219,11 +2222,11 @@ const s = StyleSheet.create({
   },
   lessonCard: {
     marginTop: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E8EDF2',
+    borderColor: colors.border,
   },
   lessonCardHeader: {
     flexDirection: 'row',
@@ -2235,20 +2238,20 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lessonNumText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   lessonCardTitle: {
     flex: 1,
     fontSize: 16,
     fontWeight: '800',
-    color: '#1F2937',
+    color: colors.text,
   },
   lessonHeaderActions: {
     flexDirection: 'row',
@@ -2261,9 +2264,9 @@ const s = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   lessonTypeGrid: {
     flexDirection: 'row',
@@ -2274,37 +2277,37 @@ const s = StyleSheet.create({
   lessonTypeChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   lessonTypeChipActive: {
     borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   lessonTypeChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   lessonTypeChipTextActive: {
-    color: '#075985',
+    color: isDark ? '#7DD3FC' : '#075985',
   },
   lessonTypeHelper: {
     marginTop: 8,
     marginLeft: 4,
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   localizedEditorBlock: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.card,
   },
   localizedEditorHeader: {
     marginBottom: 8,
@@ -2312,15 +2315,15 @@ const s = StyleSheet.create({
   localizedEditorTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.text,
   },
   subEditorBlock: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.card,
   },
   subEditorHeader: {
     flexDirection: 'row',
@@ -2336,7 +2339,7 @@ const s = StyleSheet.create({
   subEditorTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.text,
   },
   subEditorDeleteBtn: {
     width: 28,
@@ -2344,7 +2347,7 @@ const s = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
   },
   subEditorAddBtn: {
     marginTop: 10,
@@ -2355,13 +2358,13 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#7DD3FC',
-    backgroundColor: '#F0F9FF',
+    borderColor: isDark ? 'rgba(125,211,252,0.4)' : '#7DD3FC',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#F0F9FF',
   },
   subEditorAddText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   subEditorInlineAddBtn: {
     marginTop: 10,
@@ -2372,13 +2375,13 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
-    backgroundColor: '#F8FAFC',
+    borderColor: isDark ? 'rgba(186,230,253,0.35)' : '#BAE6FD',
+    backgroundColor: colors.card,
   },
   subEditorInlineAddText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   quizModeRow: {
     flexDirection: 'row',
@@ -2388,22 +2391,22 @@ const s = StyleSheet.create({
   quizModeChip: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   quizModeChipActive: {
     borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   quizModeChipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   quizModeChipTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   quizOptionRow: {
     marginTop: 8,
@@ -2416,22 +2419,22 @@ const s = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   quizCorrectToggleActive: {
     borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   quizCorrectToggleText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   quizCorrectToggleTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   quizOptionInputWrap: {
     flex: 1,
@@ -2445,10 +2448,10 @@ const s = StyleSheet.create({
   resourceBlock: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.card,
   },
   resourceHeader: {
     flexDirection: 'row',
@@ -2467,9 +2470,9 @@ const s = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   resourceUploadBtn: {
     minWidth: 78,
@@ -2480,19 +2483,19 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     paddingHorizontal: 8,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#F0F9FF',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: isDark ? 'rgba(186,230,253,0.35)' : '#BAE6FD',
   },
   resourceUploadBtnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   resourceTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.text,
   },
   resourceMetaRow: {
     marginTop: 10,
@@ -2504,7 +2507,7 @@ const s = StyleSheet.create({
   resourceMetaLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
   },
   resourceChipRow: {
@@ -2515,22 +2518,22 @@ const s = StyleSheet.create({
   resourceChip: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   resourceChipActive: {
     borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   resourceChipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   resourceChipTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   defaultResourceBtn: {
     marginTop: 10,
@@ -2540,28 +2543,28 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   defaultResourceBtnActive: {
     borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   defaultResourceText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   defaultResourceTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   deleteBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2592,22 +2595,22 @@ const s = StyleSheet.create({
   exerciseLanguageChip: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   exerciseLanguageChipActive: {
     borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   exerciseLanguageChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   exerciseLanguageChipTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
 
   // ── Disabled State ────────────────────────────────────────────

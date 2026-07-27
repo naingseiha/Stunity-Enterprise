@@ -7,6 +7,7 @@
 import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ParentStackParamList } from './types';
+import { useThemeContext } from '@/contexts';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { getTabletSceneStyle } from '@/utils/layout';
 
@@ -22,8 +23,15 @@ const Stack = createNativeStackNavigator<ParentStackParamList>();
 
 const ParentNavigator: React.FC = () => {
   const layout = useLayoutBreakpoint();
+  const { colors } = useThemeContext();
   const tabletScene = getTabletSceneStyle(layout);
-  const contentStyle = useMemo(() => ({ ...(tabletScene || {}) }), [tabletScene]);
+  const contentStyle = useMemo(
+    () => ({
+      backgroundColor: colors.background,
+      ...(tabletScene || {}),
+    }),
+    [colors.background, tabletScene],
+  );
 
   return (
     <Stack.Navigator

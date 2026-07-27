@@ -1188,7 +1188,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     backBtn: {
         width: 40,
         height: 40,
-        borderRadius: 14,
+        borderRadius: 16,
         backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1215,7 +1215,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.card,
 
 
-        borderRadius: 14,
+        borderRadius: 16,
         padding: 18,
         marginBottom: 14,
         shadowColor: '#000',
@@ -1341,7 +1341,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     },
     serverCard: {
         backgroundColor: colors.card,
-        borderRadius: 14,
+        borderRadius: 16,
         padding: 14,
         marginTop: 12,
         marginBottom: 4,
@@ -1455,7 +1455,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.card,
 
 
-        borderRadius: 14,
+        borderRadius: 16,
         paddingVertical: 14,
         alignItems: 'center',
         gap: 6,
@@ -1505,7 +1505,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     },
     sectionCard: {
         backgroundColor: colors.card,
-        borderRadius: 14,
+        borderRadius: 16,
         overflow: 'hidden',
         shadowOpacity: 0.04,
     },
@@ -1532,7 +1532,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 14,
-        paddingVertical: 13,
+        paddingVertical: 12,
         gap: 12,
     },
     settingIcon: {

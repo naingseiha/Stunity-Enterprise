@@ -28,6 +28,7 @@ import type { LearnCourseDetail, LearnLessonDetail } from '@/api/learn';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 import i18n from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 type RouteParams = RouteProp<LearnStackParamList, 'LessonViewer'>;
 type NavigationProp = LearnStackScreenProps<'LessonViewer'>['navigation'];
@@ -640,6 +641,8 @@ function MobileAssignmentWidget({
 
 export default function LessonViewerScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
   const { courseId, lessonId, contentLocale: routeContentLocale } = route.params;
@@ -1503,63 +1506,66 @@ export default function LessonViewerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   headerSafe: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
   header: {
     height: 52,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#DBEAFE',
+    borderBottomColor: colors.border,
   },
   headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: colors.border,
   },
   headerTitle: {
     flex: 1,
-    color: '#1F2937',
-    fontSize: 14,
-    fontWeight: '800',
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 12,
   },
   lessonCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: colors.card,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     padding: 12,
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1567,10 +1573,10 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     marginTop: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#F8FBFF',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     padding: 10,
   },
   progressHeader: {
@@ -1582,7 +1588,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#DBEAFE',
+    backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
@@ -1593,40 +1599,40 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   progressSubtitle: {
     marginTop: 1,
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   progressValue: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#1D4ED8',
+    fontWeight: '700',
+    color: colors.primary,
   },
   progressTrack: {
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#E0E7FF',
+    backgroundColor: isDark ? 'rgba(29,155,240,0.22)' : '#E0E7FF',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
   },
   progressHint: {
     marginTop: 6,
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   lessonTitle: {
     fontSize: 18,
-    color: '#111827',
-    fontWeight: '800',
+    color: colors.text,
+    fontWeight: '700',
   },
   lessonMetaRow: {
     marginTop: 8,
@@ -1641,19 +1647,19 @@ const styles = StyleSheet.create({
   },
   lessonMetaText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   localeSection: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
   },
   localeSectionLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   localeChipRow: {
@@ -1666,33 +1672,33 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   localeChipActive: {
-    borderColor: '#0284C7',
-    backgroundColor: '#E0F2FE',
+    borderColor: colors.primary,
+    backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : '#E0F2FE',
   },
   localeChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   localeChipTextActive: {
-    color: '#0369A1',
+    color: colors.primary,
   },
   lessonContent: {
     marginTop: 10,
     fontSize: 14,
-    color: '#374151',
+    color: colors.text,
     lineHeight: 22,
   },
   documentLessonCard: {
     marginVertical: 12,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#DDD6FE',
-    backgroundColor: '#F5F3FF',
+    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#DDD6FE',
+    backgroundColor: isDark ? 'rgba(139,92,246,0.16)' : '#F5F3FF',
     padding: 16,
   },
   documentHero: {
@@ -1702,10 +1708,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -1715,21 +1721,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 17,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
     textAlign: 'center',
   },
   documentHeroSubtitle: {
     marginTop: 4,
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   documentGuideCard: {
     marginTop: 14,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#E9D5FF',
     padding: 14,
   },
   documentGuideEyebrow: {
@@ -1742,14 +1748,14 @@ const styles = StyleSheet.create({
   documentGuideText: {
     fontSize: 13,
     lineHeight: 21,
-    color: '#475569',
+    color: colors.textSecondary,
   },
   inlinePreviewCard: {
     marginTop: 14,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#E9D5FF',
     padding: 14,
     gap: 10,
   },
@@ -1762,7 +1768,7 @@ const styles = StyleSheet.create({
   inlinePreviewTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
   },
   inlinePreviewHint: {
     fontSize: 11,
@@ -1772,20 +1778,20 @@ const styles = StyleSheet.create({
   inlinePreviewImage: {
     width: '100%',
     height: 220,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    backgroundColor: colors.surfaceVariant,
   },
   inlinePreviewText: {
     fontSize: 13,
     lineHeight: 21,
-    color: '#475569',
+    color: colors.textSecondary,
   },
   inlinePreviewButton: {
     minHeight: 42,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#DDD6FE',
-    backgroundColor: '#F5F3FF',
+    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#DDD6FE',
+    backgroundColor: isDark ? 'rgba(139,92,246,0.16)' : '#F5F3FF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1802,7 +1808,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#7C3AED',
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1816,7 +1822,7 @@ const styles = StyleSheet.create({
   documentFallbackText: {
     marginTop: 14,
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   documentActionGrid: {
@@ -1829,10 +1835,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 96,
     minHeight: 44,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#DDD6FE',
-    backgroundColor: '#FFFFFF',
+    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#DDD6FE',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -1851,10 +1857,10 @@ const styles = StyleSheet.create({
   },
   documentMetaCard: {
     flex: 1,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#E9D5FF',
     padding: 12,
   },
   documentMetaLabel: {
@@ -1867,25 +1873,25 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
   },
   resourcesSection: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
     paddingTop: 10,
     gap: 8,
   },
   resourcesTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   resourceCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     padding: 10,
     gap: 8,
   },
@@ -1903,7 +1909,7 @@ const styles = StyleSheet.create({
   resourceMetaInline: {
     marginTop: 2,
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   resourceActionRow: {
@@ -1914,8 +1920,8 @@ const styles = StyleSheet.create({
   resourceMiniAction: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 10,
     paddingVertical: 7,
     flexDirection: 'row',
@@ -1934,25 +1940,25 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6'
+    borderTopColor: colors.border
   },
   qaButtonText: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.text,
     fontWeight: '600'
   },
   playlistCard: {
     marginTop: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     padding: 12,
   },
   playlistTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 8,
   },
   sectionEntry: {
@@ -1961,13 +1967,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
     marginBottom: 8,
   },
   sectionHeaderText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: colors.textTertiary,
     letterSpacing: 1,
   },
   playlistItem: {
@@ -1978,12 +1984,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     marginBottom: 8,
   },
   playlistItemActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#EFF6FF',
+    borderColor: colors.primary,
   },
   playlistItemLocked: {
     opacity: 0.6,
@@ -1998,7 +2004,7 @@ const styles = StyleSheet.create({
   },
   playlistIndexText: {
     fontSize: 11,
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   playlistBody: {
@@ -2006,18 +2012,18 @@ const styles = StyleSheet.create({
   },
   playlistItemTitle: {
     fontSize: 13,
-    color: '#111827',
+    color: colors.text,
     fontWeight: '700',
   },
   playlistMetaText: {
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   bottomBar: {
     borderTopWidth: 1,
-    borderTopColor: '#DBEAFE',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: 'row',

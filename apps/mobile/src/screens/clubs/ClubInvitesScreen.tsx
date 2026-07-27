@@ -16,22 +16,16 @@ import { useNavigation } from '@react-navigation/native';
 import { clubsApi } from '@/api';
 import type { ClubInvite } from '@/api/clubs';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primaryDark: '#06A8CC',
-  success: '#16A34A',
-  danger: '#DC2626',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 export default function ClubInvitesScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [invites, setInvites] = useState<ClubInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,7 +119,7 @@ export default function ClubInvitesScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>{t('clubScreens.invites.header')}</Text>
           <View style={{ width: 40 }} />
@@ -134,7 +128,7 @@ export default function ClubInvitesScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={BRAND_ACCENT} />
         </View>
       ) : (
         <ScrollView
@@ -152,7 +146,7 @@ export default function ClubInvitesScreen() {
 
           {invites.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Ionicons name="mail-open-outline" size={38} color={COLORS.textMuted} />
+              <Ionicons name="mail-open-outline" size={38} color={colors.textSecondary} />
               <Text style={styles.emptyTitle}>{t('clubScreens.invites.noPending')}</Text>
               <Text style={styles.emptySubtitle}>{t('clubScreens.invites.emptySubtitle')}</Text>
             </View>
@@ -166,7 +160,7 @@ export default function ClubInvitesScreen() {
                 <View key={invite.id} style={styles.card}>
                   <View style={styles.cardHeader}>
                     <View style={styles.iconWrap}>
-                      <Ionicons name="mail-unread-outline" size={18} color={COLORS.primaryDark} />
+                      <Ionicons name="mail-unread-outline" size={18} color={BRAND_ACCENT} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.clubName}>{clubName}</Text>
@@ -202,7 +196,7 @@ export default function ClubInvitesScreen() {
                       onPress={() => handleDecline(invite)}
                       disabled={isBusy}
                     >
-                      <Ionicons name="close" size={16} color={COLORS.danger} />
+                      <Ionicons name="close" size={16} color={colors.error} />
                       <Text style={styles.declineText}>{t('clubScreens.invites.decline')}</Text>
                     </TouchableOpacity>
                   </View>
@@ -216,9 +210,9 @@ export default function ClubInvitesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -227,42 +221,42 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  title: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12, paddingBottom: 24 },
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FECACA',
     borderRadius: 12,
     padding: 12,
   },
-  errorText: { color: COLORS.danger, fontSize: 13 },
+  errorText: { color: colors.error, fontSize: 13 },
   retryBtn: {
     marginTop: 8,
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   retryText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   emptyCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 34,
     gap: 6,
   },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-  emptySubtitle: { fontSize: 13, color: COLORS.textSecondary },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  emptySubtitle: { fontSize: 13, color: colors.textSecondary },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 14,
     gap: 10,
@@ -274,26 +268,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E0F9FD',
+    backgroundColor: isDark ? 'rgba(6,168,204,0.2)' : '#E0F9FD',
   },
-  clubName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  metaText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  clubDescription: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
+  clubName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  metaText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  clubDescription: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
   viewBtn: {
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: isDark ? 'rgba(191,219,254,0.35)' : '#BFDBFE',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF',
   },
-  viewBtnText: { fontSize: 12, fontWeight: '700', color: '#1D4ED8' },
+  viewBtnText: { fontSize: 12, fontWeight: '700', color: isDark ? '#93C5FD' : '#1D4ED8' },
   actionsRow: { flexDirection: 'row', gap: 8 },
   acceptBtn: {
     flex: 1,
     height: 40,
     borderRadius: 10,
-    backgroundColor: COLORS.success,
+    backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -305,12 +299,12 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FEF2F2',
+    borderColor: isDark ? 'rgba(220,38,38,0.4)' : '#FCA5A5',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 6,
   },
-  declineText: { color: COLORS.danger, fontWeight: '700', fontSize: 13 },
+  declineText: { color: colors.error, fontWeight: '700', fontSize: 13 },
 });

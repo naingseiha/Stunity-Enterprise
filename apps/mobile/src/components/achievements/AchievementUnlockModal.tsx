@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Achievement } from '@/services/stats';
 import { CelebrationConfetti } from '@/components/common';
+import { useThemeContext } from '@/contexts';
 
 interface AchievementUnlockModalProps {
   visible: boolean;
@@ -34,7 +35,8 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
-  const styles = useMemo(() => createAchievementUnlockStyles(windowWidth), [windowWidth]);
+  const { colors } = useThemeContext();
+  const styles = useMemo(() => createAchievementUnlockStyles(windowWidth, colors), [windowWidth, colors]);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -158,11 +160,11 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
   );
 };
 
-function createAchievementUnlockStyles(w: number) {
+function createAchievementUnlockStyles(w: number, colors: ReturnType<typeof useThemeContext>['colors']) {
   return StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },

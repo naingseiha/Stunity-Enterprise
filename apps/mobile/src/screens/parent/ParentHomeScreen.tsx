@@ -19,7 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
-import { Colors, Spacing } from '@/config';
+import { Spacing } from '@/config';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 
 interface Child {
@@ -32,6 +33,8 @@ interface Child {
 
 export default function ParentHomeScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const { user, logout } = useAuthStore();
 
@@ -52,7 +55,7 @@ export default function ParentHomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <LinearGradient
-        colors={['#ECFDF5', '#D1FAE5', '#F0FDF4']}
+        colors={isDark ? [colors.background, colors.background] : ['#ECFDF5', '#D1FAE5', '#F0FDF4']}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -63,7 +66,7 @@ export default function ParentHomeScreen() {
         <View style={styles.headerLeft} />
         <Text style={styles.headerTitle}>{t('parent.portalTitle')}</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Ionicons name="log-out-outline" size={24} color={Colors.gray[700]} />
+          <Ionicons name="log-out-outline" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -82,7 +85,7 @@ export default function ParentHomeScreen() {
         <Text style={styles.sectionTitle}>{t('parent.myChildren')}</Text>
         {children.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Ionicons name="people-outline" size={48} color={Colors.gray[300]} />
+            <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
             <Text style={styles.emptyTitle}>{t('parent.noChildrenLinked')}</Text>
             <Text style={styles.emptyDesc}>{t('parent.linkChildHelp')}</Text>
           </View>
@@ -109,7 +112,7 @@ export default function ParentHomeScreen() {
                       {child.studentId ? ` • ${child.studentId}` : ''}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               );
             })}
@@ -165,8 +168,8 @@ export default function ParentHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0FDF4' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,19 +181,19 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: colors.text,
   },
-  logoutBtn: { padding: 8 },
+  logoutBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
   schoolCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -208,36 +211,36 @@ const styles = StyleSheet.create({
   schoolName: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: colors.text,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.gray[700],
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   emptyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.xl * 2,
     alignItems: 'center',
     marginBottom: Spacing.xl,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: Colors.gray[900], marginTop: Spacing.md },
-  emptyDesc: { fontSize: 14, color: Colors.gray[600], marginTop: 4, textAlign: 'center' },
+  emptyTitle: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text, marginTop: Spacing.md },
+  emptyDesc: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
   childrenList: { gap: 12, marginBottom: Spacing.xl },
   childCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.lg,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -252,21 +255,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: Spacing.md,
   },
-  avatarText: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  avatarText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
   childInfo: { flex: 1 },
-  childName: { fontSize: 17, fontWeight: '600', color: Colors.gray[900] },
-  childSub: { fontSize: 13, color: Colors.gray[600], marginTop: 2 },
+  childName: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
+  childSub: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 2 },
   quickActions: {
     flexDirection: 'row',
     gap: 12,
   },
   quickAction: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.lg,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -280,5 +283,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
-  quickTitle: { fontSize: 13, fontWeight: '600', color: Colors.gray[900] },
+  quickTitle: { fontSize: 12, lineHeight: 18, fontWeight: '700', color: colors.text, textAlign: 'center' },
 });

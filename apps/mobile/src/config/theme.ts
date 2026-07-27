@@ -106,6 +106,9 @@ export const Colors = {
   // Use ColorScale.primary[500] when you need the full palette scale.
   primary: '#0EA5E9' as const,
   secondary: '#6366F1' as const,
+  // Stunity logo mark color. Reserved for brand marks, logos, and secondary-screen accent
+  // constants (e.g. BRAND_TEAL/BRAND_ACCENT) — not for interactive UI, which uses `primary`.
+  brand: '#09CFF7' as const,
   background: '#F0F4F8' as const,
   card: '#FFFFFF' as const,
   text: '#374151' as const,
@@ -211,7 +214,7 @@ export const Typography = {
   fontSize: {
     xs: 12,
     sm: 14,
-    base: 16,
+    base: 15,
     lg: 18,
     xl: 20,
     '2xl': 24,
@@ -266,7 +269,7 @@ export const BorderRadius = {
   sm: 4,
   md: 8,
   lg: 12,
-  xl: 14,
+  xl: 16,
   '2xl': 24,
   full: 9999,
 } as const;

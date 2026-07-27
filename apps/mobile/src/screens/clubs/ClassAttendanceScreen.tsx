@@ -22,8 +22,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/stores';
 import { Colors, Shadows } from '@/config';
 import * as classesApi from '@/api/classes';
+import { useThemeContext } from '@/contexts';
 
-const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL = Colors.brand;
 const BRAND_YELLOW = '#FFA600';
 
 const formatName = (first?: string, last?: string) => {
@@ -64,6 +65,8 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     } = route.params || {};
     const { t, i18n } = useTranslation();
     const { user } = useAuthStore();
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const initialDate = useMemo(() => new Date(), []);
     const initialDateKey = useMemo(() => format(initialDate, 'yyyy-MM-dd'), [initialDate]);
     const initialCachedAttendance = useMemo(
@@ -294,51 +297,51 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     }, [excusedDraft, statusPicker.studentId, statusPicker.session, t, performUpdate, closeAllModals]);
 
     const statusLegend = useMemo(() => ([
-        { code: '✓', label: t('attendance.status.present'), color: '#059669', bg: '#ECFDF5' },
-        { code: 'A', label: t('attendance.status.absent'), color: '#EF4444', bg: '#FEF2F2' },
-        { code: 'P', label: t('attendance.status.permission'), color: '#7C3AED', bg: '#F5F3FF' },
-        { code: 'L', label: t('attendance.status.late'), color: '#F59E0B', bg: '#FFFBEB' },
-        { code: 'E', label: t('attendance.status.excused'), color: '#0F766E', bg: '#ECFEFF' },
-    ]), [t]);
+        { code: '✓', label: t('attendance.status.present'), color: isDark ? '#34D399' : '#059669', bg: isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5' },
+        { code: 'A', label: t('attendance.status.absent'), color: isDark ? '#F87171' : '#EF4444', bg: isDark ? 'rgba(220,38,38,0.18)' : '#FEF2F2' },
+        { code: 'P', label: t('attendance.status.permission'), color: isDark ? '#C4B5FD' : '#7C3AED', bg: isDark ? 'rgba(124,58,237,0.18)' : '#F5F3FF' },
+        { code: 'L', label: t('attendance.status.late'), color: isDark ? '#FBBF24' : '#F59E0B', bg: isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB' },
+        { code: 'E', label: t('attendance.status.excused'), color: isDark ? '#5EEAD4' : '#0F766E', bg: isDark ? 'rgba(15,118,110,0.2)' : '#ECFEFF' },
+    ]), [t, isDark]);
 
 
     const StatusBadge = ({ status, onPress }: { status?: string; onPress?: () => void }) => {
         if (!status) {
             return (
-                <TouchableOpacity 
-                    style={[styles.miniBadge, { backgroundColor: '#ECFDF5' }]} 
+                <TouchableOpacity
+                    style={[styles.miniBadge, { backgroundColor: isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5' }]}
                     onPress={onPress}
                     disabled={!onPress}
                 >
-                    <Ionicons name="checkmark" size={18} color="#059669" />
+                    <Ionicons name="checkmark" size={18} color={isDark ? '#34D399' : '#059669'} />
                 </TouchableOpacity>
             );
         }
-        
+
         let label = '✓';
-        let color = '#10B981';
-        let bg = '#ECFDF5';
+        let color = isDark ? '#34D399' : '#10B981';
+        let bg = isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5';
 
         if (status === 'PRESENT') {
             label = '✓';
-            color = '#059669';
-            bg = '#ECFDF5';
+            color = isDark ? '#34D399' : '#059669';
+            bg = isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5';
         } else if (status === 'ABSENT') {
             label = 'A';
-            color = '#EF4444';
-            bg = '#FEF2F2';
+            color = isDark ? '#F87171' : '#EF4444';
+            bg = isDark ? 'rgba(220,38,38,0.18)' : '#FEF2F2';
         } else if (status === 'PERMISSION') {
             label = 'P'; // Permission leave
-            color = '#7C3AED';
-            bg = '#F5F3FF';
+            color = isDark ? '#C4B5FD' : '#7C3AED';
+            bg = isDark ? 'rgba(124,58,237,0.18)' : '#F5F3FF';
         } else if (status === 'LATE') {
             label = 'L'; // Late
-            color = '#F59E0B';
-            bg = '#FFFBEB';
+            color = isDark ? '#FBBF24' : '#F59E0B';
+            bg = isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB';
         } else if (status === 'EXCUSED') {
             label = 'E';
-            color = '#0F766E';
-            bg = '#ECFEFF';
+            color = isDark ? '#5EEAD4' : '#0F766E';
+            bg = isDark ? 'rgba(15,118,110,0.2)' : '#ECFEFF';
         }
 
         return (
@@ -412,16 +415,16 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['#F0FDFA', '#F8FAFC', '#F1F5F9']}
+                colors={isDark ? ['#0B0D0F', '#0F1215', '#101418'] : ['#F0FDFA', '#F8FAFC', '#F1F5F9']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
             />
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
             <SafeAreaView edges={['top']} style={styles.headerSafe}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Ionicons name="chevron-back" size={24} color={Colors.text} />
+                        <Ionicons name="chevron-back" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <View style={styles.headerTitleWrap}>
                         <Text style={styles.headerTitle} numberOfLines={1}>{className || t('attendance.title')}</Text>
@@ -469,7 +472,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                 timetableContext?.patternSource === 'timetable' &&
                 timetableContext.teacherTeachingThisClassToday === false && (
                     <View style={styles.timetableInfoBanner}>
-                        <Ionicons name="information-circle-outline" size={18} color="#B45309" />
+                        <Ionicons name="information-circle-outline" size={18} color={isDark ? '#FBBF24' : '#B45309'} />
                         <Text style={styles.timetableInfoBannerText}>
                             {t('attendance.classDaily.notYourClassSlot')}
                         </Text>
@@ -490,7 +493,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     style={[styles.statItem, filter === 'ABSENT' && styles.statItemActive]}
                     onPress={() => setFilter('ABSENT')}
                 >
-                    <Text style={[styles.statVal, { color: '#EF4444' }]}>{stats.absent}</Text>
+                    <Text style={[styles.statVal, { color: colors.error }]}>{stats.absent}</Text>
                     <Text style={styles.statLab}>{t('attendance.status.absent')}</Text>
                 </TouchableOpacity>
                 <View style={styles.statDivider} />
@@ -498,7 +501,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     style={[styles.statItem, filter === 'PERMISSION' && styles.statItemActive]}
                     onPress={() => setFilter('PERMISSION')}
                 >
-                    <Text style={[styles.statVal, { color: '#7C3AED' }]}>{stats.permission}</Text>
+                    <Text style={[styles.statVal, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>{stats.permission}</Text>
                     <Text style={styles.statLab}>{t('attendance.status.permission')}</Text>
                 </TouchableOpacity>
             </View>
@@ -532,7 +535,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
                         <View style={styles.emptyWrap}>
-                            <Ionicons name="documents-outline" size={64} color="#CBD5E1" />
+                            <Ionicons name="documents-outline" size={64} color={colors.border} />
                             <Text style={styles.emptyTitle}>{t('common.noData')}</Text>
                             <Text style={styles.emptySubtitle}>{t('attendance.noRecordsForDate')}</Text>
                         </View>
@@ -608,13 +611,13 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
     container: { flex: 1, backgroundColor: 'transparent' },
-    headerSafe: { 
-        backgroundColor: '#FFF',
+    headerSafe: {
+        backgroundColor: colors.card,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        ...Shadows.sm,
+        ...(isDark ? {} : Shadows.sm),
         zIndex: 10,
     },
     header: {
@@ -627,10 +630,10 @@ const styles = StyleSheet.create({
     backBtn: {
         padding: 8,
         borderRadius: 12,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.surfaceVariant,
     },
     headerTitleWrap: { alignItems: 'center', flex: 1, marginHorizontal: 8 },
-    headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text, textAlign: 'center' },
     headerSubtitleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
     headerSubtitle: { fontSize: 14, fontWeight: '700', color: BRAND_TEAL },
     
@@ -645,19 +648,19 @@ const styles = StyleSheet.create({
     dateNavBtn: {
         padding: 8,
         borderRadius: 10,
-        backgroundColor: '#F0FDFA',
+        backgroundColor: isDark ? 'rgba(15,118,110,0.22)' : '#F0FDFA',
     },
     dateDisplay: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 10,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
     },
-    dateText: { fontSize: 14, fontWeight: '700', color: Colors.text },
+    dateText: { fontSize: 14, fontWeight: '700', color: colors.text },
     todayPill: {
         marginLeft: 8,
         paddingHorizontal: 6,
@@ -670,16 +673,16 @@ const styles = StyleSheet.create({
     statsBar: {
         flexDirection: 'row',
         margin: 20,
-        backgroundColor: '#FFF',
+        backgroundColor: colors.card,
         borderRadius: 20,
         padding: 12,
         ...Shadows.sm,
     },
     statItem: { flex: 1, alignItems: 'center', paddingVertical: 4, borderRadius: 12 },
-    statItemActive: { backgroundColor: '#F8FAFC' },
+    statItemActive: { backgroundColor: colors.surfaceVariant },
     statVal: { fontSize: 18, fontWeight: '800' },
-    statLab: { fontSize: 10, color: '#64748B', marginTop: 2, fontWeight: '600' },
-    statDivider: { width: 1, height: 24, backgroundColor: '#E2E8F0', alignSelf: 'center' },
+    statLab: { fontSize: 10, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
+    statDivider: { width: 1, height: 24, backgroundColor: colors.border, alignSelf: 'center' },
 
     timetableInfoBanner: {
         flexDirection: 'row',
@@ -691,23 +694,23 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 12,
         borderRadius: 14,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB',
         borderWidth: 1,
-        borderColor: '#FDE68A',
+        borderColor: isDark ? 'rgba(253,230,138,0.3)' : '#FDE68A',
     },
     timetableInfoBannerText: {
         flex: 1,
         fontSize: 12,
         fontWeight: '700',
-        color: '#92400E',
+        color: isDark ? '#FBBF24' : '#92400E',
         lineHeight: 18,
     },
     homeroomBanner: {
-        backgroundColor: '#ECFDF5',
+        backgroundColor: isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5',
         borderColor: '#10B981',
     },
     homeroomBannerText: {
-        color: '#065F46',
+        color: isDark ? '#34D399' : '#065F46',
     },
 
     legendRow: {
@@ -728,7 +731,7 @@ const styles = StyleSheet.create({
         marginRight: 6,
     },
     legendCodeText: { fontSize: 12, fontWeight: '900' },
-    legendLabel: { fontSize: 11, color: '#64748B', fontWeight: '700' },
+    legendLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '700' },
     daySwitchLoader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -740,7 +743,7 @@ const styles = StyleSheet.create({
     },
     daySwitchLoaderText: {
         fontSize: 12,
-        color: '#64748B',
+        color: colors.textSecondary,
         fontWeight: '700',
     },
 
@@ -749,79 +752,79 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#FFF',
+        backgroundColor: colors.card,
         padding: 16,
         borderRadius: 20,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         ...Shadows.sm,
     },
     studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
     avatarWrap: { marginRight: 12 },
     avatarImgWrap: { width: 44, height: 44, borderRadius: 15, backgroundColor: BRAND_TEAL, alignItems: 'center', justifyContent: 'center' },
-    avatarFallback: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
-    avatarInitial: { fontSize: 18, fontWeight: '700', color: '#64748B' },
+    avatarFallback: { width: 44, height: 44, borderRadius: 15, backgroundColor: colors.surfaceVariant, alignItems: 'center', justifyContent: 'center' },
+    avatarInitial: { fontSize: 18, fontWeight: '700', color: colors.textSecondary },
     avatarInitialOnTeal: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
     nameWrap: { flex: 1, paddingRight: 4 },
-    studentName: { fontSize: 15, fontWeight: '700', color: Colors.text },
+    studentName: { fontSize: 15, fontWeight: '700', color: colors.text },
     englishName: { fontSize: 10, fontWeight: '700', color: BRAND_TEAL, textTransform: 'uppercase', marginTop: 1, letterSpacing: 0.5 },
-    studentId: { fontSize: 10, color: '#94A3B8', marginTop: 2, fontWeight: '500' },
+    studentId: { fontSize: 10, color: colors.textSecondary, marginTop: 2, fontWeight: '500' },
 
     sessionWrap: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     sessionCol: { alignItems: 'center', minWidth: 32 },
-    sessionLabel: { fontSize: 9, fontWeight: '800', color: '#94A3B8', marginBottom: 4, textTransform: 'uppercase' },
-    sessionDivider: { width: 1, height: 28, backgroundColor: '#F1F5F9' },
-    
+    sessionLabel: { fontSize: 9, fontWeight: '800', color: colors.textSecondary, marginBottom: 4, textTransform: 'uppercase' },
+    sessionDivider: { width: 1, height: 28, backgroundColor: colors.border },
+
     miniBadge: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
     miniBadgeText: { fontSize: 16, fontWeight: '900' },
-    badgeEmpty: { backgroundColor: '#F1F5F9' },
-    miniBadgeEmpty: { color: '#94A3B8', fontWeight: '800', fontSize: 16 },
+    badgeEmpty: { backgroundColor: colors.surfaceVariant },
+    miniBadgeEmpty: { color: colors.textSecondary, fontWeight: '800', fontSize: 16 },
 
     modalBackdrop: {
         flex: 1,
-        backgroundColor: 'rgba(2, 6, 23, 0.35)',
+        backgroundColor: colors.overlay,
         justifyContent: 'center',
         padding: 20,
     },
     modalCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 20,
         padding: 18,
     },
-    modalTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
-    modalSubtitle: { fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 14, fontWeight: '600' },
+    modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+    modalSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 4, marginBottom: 14, fontWeight: '600' },
     modalOption: {
         height: 48,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
     },
     modalOptionActive: {
         borderColor: BRAND_TEAL,
-        backgroundColor: '#ECFEFF',
+        backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : '#ECFEFF',
     },
-    modalOptionText: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
-    modalOptionTextActive: { color: '#0E7490' },
+    modalOptionText: { fontSize: 16, fontWeight: '700', color: colors.text },
+    modalOptionTextActive: { color: isDark ? '#5EEAD4' : '#0E7490' },
     modalCancelBtn: {
         marginTop: 4,
         height: 44,
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.surfaceVariant,
     },
-    modalCancelText: { fontSize: 15, fontWeight: '700', color: '#475569' },
+    modalCancelText: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
     reasonInput: {
         minHeight: 88,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
-        backgroundColor: '#F8FAFC',
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceVariant,
         padding: 10,
         textAlignVertical: 'top',
         marginBottom: 12,
@@ -837,8 +840,8 @@ const styles = StyleSheet.create({
     modalPrimaryText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
 
     loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -50 },
-    loadingText: { marginTop: 12, color: Colors.textSecondary, fontSize: 14 },
+    loadingText: { marginTop: 12, color: colors.textSecondary, fontSize: 14 },
     emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
-    emptyTitle: { fontSize: 18, fontWeight: '700', color: '#475569', marginTop: 16 },
-    emptySubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
+    emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textSecondary, marginTop: 16 },
+    emptySubtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
 });

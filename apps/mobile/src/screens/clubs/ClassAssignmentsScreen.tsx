@@ -22,25 +22,18 @@ import { useClassHubStore } from '@/stores/classHubStore';
 import { ClassAssignment } from '@/api/classHub';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primaryDark: '#06A8CC',
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 export default function ClassAssignmentsScreen() {
   const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const classId = route.params?.classId;
   const viewerRole = route.params?.myRole || user?.role;
   const isTeacher = viewerRole === 'TEACHER';
@@ -118,20 +111,20 @@ export default function ClassAssignmentsScreen() {
 
   const renderItem = ({ item }: { item: any }) => {
     let statusText = isTeacher ? t('classScreens.assignments.active') : t('classScreens.assignments.pending');
-    let statusColor = isTeacher ? COLORS.primaryDark : COLORS.warning;
+    let statusColor: string = isTeacher ? BRAND_ACCENT : colors.warning;
 
     if (!isTeacher && studentId) {
       const mySubmission = item.submissions?.find((s: any) => s.studentId === studentId);
       if (mySubmission) {
         if (mySubmission.status === 'GRADED') {
           statusText = t('classScreens.assignments.gradedScore', { score: mySubmission.score, max: item.maxPoints });
-          statusColor = COLORS.success;
+          statusColor = colors.success;
         } else if (mySubmission.status === 'SUBMITTED') {
           statusText = t('classScreens.assignments.submitted');
-          statusColor = COLORS.primaryDark;
+          statusColor = BRAND_ACCENT;
         } else if (item.dueDate && new Date(item.dueDate) < new Date()) {
           statusText = t('classScreens.assignments.missing');
-          statusColor = COLORS.danger;
+          statusColor = colors.error;
         }
       }
     } else if (isTeacher) {
@@ -143,7 +136,7 @@ export default function ClassAssignmentsScreen() {
       <TouchableOpacity style={styles.card} onPress={() => openAssignment(item)}>
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
-            <Ionicons name="clipboard" size={20} color={COLORS.primaryDark} style={{ marginRight: 8 }} />
+            <Ionicons name="clipboard" size={20} color={BRAND_ACCENT} style={{ marginRight: 8 }} />
             <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
@@ -158,7 +151,7 @@ export default function ClassAssignmentsScreen() {
             <Text style={styles.meta}>{t('classScreens.assignments.dueLabel')} {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : t('classScreens.assignments.noDueDate')}</Text>
             {item.deepLinkUrl ? (
               <View style={styles.linkedBadge}>
-                <Ionicons name="link" size={12} color="#0EA5E9" />
+                <Ionicons name="link" size={12} color={colors.primary} />
                 <Text style={styles.linkedText}>{t('classScreens.assignments.linkedContent')}</Text>
               </View>
             ) : null}
@@ -174,7 +167,7 @@ export default function ClassAssignmentsScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.assignments.header')}</Text>
           <View style={{ width: 40 }} />
@@ -182,7 +175,7 @@ export default function ClassAssignmentsScreen() {
       </SafeAreaView>
 
       {isLoading && data.length === 0 ? (
-        <ActivityIndicator style={styles.loader} size="large" color={COLORS.primaryDark} />
+        <ActivityIndicator style={styles.loader} size="large" color={BRAND_ACCENT} />
       ) : errorMessage && data.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.error}>{errorMessage}</Text>
@@ -218,7 +211,7 @@ export default function ClassAssignmentsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('classScreens.assignments.newAssignment')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -290,29 +283,29 @@ export default function ClassAssignmentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   loader: { flex: 1, justifyContent: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  error: { color: 'red', textAlign: 'center' },
+  error: { color: colors.error, textAlign: 'center' },
   list: { padding: 16, paddingBottom: 100, gap: 12 },
-  card: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 },
   titleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
-  title: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, flex: 1 },
+  title: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 12, fontWeight: '700' },
-  desc: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 12, lineHeight: 20 },
+  desc: { fontSize: 14, color: colors.textSecondary, marginBottom: 12, lineHeight: 20 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  meta: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  meta: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   linkedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.16)' : '#F0F9FF',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -321,9 +314,9 @@ const styles = StyleSheet.create({
   linkedText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#0EA5E9',
+    color: colors.primary,
   },
-  empty: { textAlign: 'center', marginTop: 40, color: COLORS.textSecondary },
+  empty: { textAlign: 'center', marginTop: 40, color: colors.textSecondary },
   
   fab: {
     position: 'absolute',
@@ -332,7 +325,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
@@ -344,11 +337,11 @@ const styles = StyleSheet.create({
   
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -363,22 +356,22 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.text,
     marginBottom: 20,
   },
   row: {
@@ -386,7 +379,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postBtn: {
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

@@ -107,7 +107,8 @@ import * as ImagePicker from "expo-image-picker";
 
 const COVER_HEIGHT = 220;
 // Brand Colors — match WelcomeScreen exactly
-const BRAND_TEAL = "#09CFF7";
+import { Colors } from "@/config";
+const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = "#00B8DB";
 
 type RouteProp = ProfileStackScreenProps<"Profile">["route"];

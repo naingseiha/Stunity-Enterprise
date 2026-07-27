@@ -17,11 +17,14 @@ import { Colors } from '@/config';
 import { ClassAssignment } from '@/api/classHub';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 export default function ClassAssignmentDetailScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const {
     assignment,
     myRole,
@@ -62,11 +65,11 @@ export default function ClassAssignmentDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color="#0F172A" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.header')}</Text>
           <View style={{ width: 40 }} />
@@ -76,7 +79,7 @@ export default function ClassAssignmentDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <View style={styles.typeBadge}>
-            <Ionicons name="document-text" size={16} color={Colors.primary} />
+            <Ionicons name="document-text" size={16} color={colors.primary} />
             <Text style={styles.typeText}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
           </View>
           
@@ -90,7 +93,7 @@ export default function ClassAssignmentDetailScreen() {
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={18} color="#64748B" />
+              <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
               <View>
                 <Text style={styles.metaLabel}>{t('classScreens.assignmentDetail.dueDate')}</Text>
                 <Text style={[styles.metaValue, isOverdue && !mySubmission && styles.overdueText]}>
@@ -100,7 +103,7 @@ export default function ClassAssignmentDetailScreen() {
             </View>
 
             <View style={styles.metaItem}>
-              <Ionicons name="trophy-outline" size={18} color="#64748B" />
+              <Ionicons name="trophy-outline" size={18} color={colors.textSecondary} />
               <View>
                 <Text style={styles.metaLabel}>{t('classScreens.assignmentDetail.maxPoints')}</Text>
                 <Text style={styles.metaValue}>{t('classScreens.assignmentDetail.maxPointsValue', { points: assignment.maxPoints || 100 })}</Text>
@@ -150,15 +153,15 @@ export default function ClassAssignmentDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFF',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
   },
   topBar: {
     flexDirection: 'row',
@@ -175,19 +178,19 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   scrollContent: {
     padding: 16,
   },
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
+    borderColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -196,7 +199,7 @@ const styles = StyleSheet.create({
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -207,23 +210,23 @@ const styles = StyleSheet.create({
   typeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0EA5E9',
+    color: colors.primary,
   },
   title: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 12,
   },
   description: {
     fontSize: 15,
-    color: '#475569',
+    color: colors.textSecondary,
     lineHeight: 22,
     marginBottom: 24,
   },
   noDescription: {
     fontSize: 15,
-    color: '#94A3B8',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 24,
   },
@@ -231,7 +234,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 24,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: colors.border,
     paddingTop: 20,
   },
   metaItem: {
@@ -242,20 +245,20 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   metaValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   overdueText: {
     color: '#EF4444',
   },
   statusCard: {
-    borderColor: '#0EA5E9',
-    backgroundColor: '#F0F9FF',
+    borderColor: colors.primary,
+    backgroundColor: isDark ? 'rgba(14,165,233,0.12)' : '#F0F9FF',
   },
   statusHeader: {
     flexDirection: 'row',
@@ -271,11 +274,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0F2FE',
+    borderTopColor: colors.border,
   },
   scoreText: {
     fontSize: 16,
-    color: '#475569',
+    color: colors.textSecondary,
   },
   scoreValue: {
     fontWeight: '800',
@@ -283,9 +286,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: colors.border,
   },
   submitBtn: {
     backgroundColor: '#0EA5E9',

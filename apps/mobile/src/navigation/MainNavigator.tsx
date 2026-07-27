@@ -27,7 +27,6 @@ import {
   ClubsStackParamList,
   ReelsStackParamList,
 } from "./types";
-import { Colors, Typography, Shadows } from "@/config";
 import { Sidebar } from "@/components/navigation";
 import TabletTabRail from "@/components/navigation/TabletTabRail";
 import { withSwipeableTab } from "@/components/navigation/SwipeableTabContainer";
@@ -179,14 +178,18 @@ const ReelsStack = createNativeStackNavigator<ReelsStackParamList>();
 // Clubs Stack
 const ClubsStack = createNativeStackNavigator<ClubsStackParamList>();
 
-const ClubsStackNavigator = () => (
-  <ClubsStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: "slide_from_right",
-      gestureEnabled: true,
-    }}
-  >
+const ClubsStackNavigator = () => {
+  const { colors } = useThemeContext();
+
+  return (
+    <ClubsStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
     <ClubsStack.Screen name="ClubAcademics" component={ClubAcademicsScreen} />
@@ -248,18 +251,23 @@ const ClubsStackNavigator = () => (
       name="GradeSubmission"
       component={GradeSubmissionScreen}
     />
-  </ClubsStack.Navigator>
-);
+    </ClubsStack.Navigator>
+  );
+};
 
 // Feed Stack Navigator
-const FeedStackNavigator = () => (
-  <FeedStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: "slide_from_right",
-      gestureEnabled: true,
-    }}
-  >
+const FeedStackNavigator = () => {
+  const { colors } = useThemeContext();
+
+  return (
+    <FeedStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
     <FeedStack.Screen name="Feed" component={FeedScreen} />
     <FeedStack.Screen name="CreatePost" component={CreatePostScreen} />
     <FeedStack.Screen name="EditPost" component={EditPostScreen} />
@@ -290,8 +298,9 @@ const FeedStackNavigator = () => (
       options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'modal' }}
     />
     <FeedStack.Screen name="FocusReels" component={FocusReelsScreen} />
-  </FeedStack.Navigator>
-);
+    </FeedStack.Navigator>
+  );
+};
 
 // Reels Stack Navigator
 //
@@ -308,6 +317,7 @@ const ReelsStackNavigator = () => (
       headerShown: false,
       animation: "slide_from_right",
       gestureEnabled: true,
+      contentStyle: { backgroundColor: "#000000" },
     }}
   >
     <ReelsStack.Screen name="FocusReels" component={FocusReelsScreen} />
@@ -322,14 +332,18 @@ const ReelsStackNavigator = () => (
 );
 
 // Learn Stack Navigator
-const LearnStackNavigator = () => (
-  <LearnStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: "slide_from_right",
-      gestureEnabled: true,
-    }}
-  >
+const LearnStackNavigator = () => {
+  const { colors } = useThemeContext();
+
+  return (
+    <LearnStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
     <LearnStack.Screen name="LearnHome" component={LearnHomeScreen} />
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
@@ -344,24 +358,32 @@ const LearnStackNavigator = () => (
       name="InstructorDashboard"
       component={InstructorDashboardScreen}
     />
-  </LearnStack.Navigator>
-);
+    </LearnStack.Navigator>
+  );
+};
 
 // Quiz Stack Navigator
-const QuizStackNavigator = () => (
-  <QuizStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: "slide_from_right",
-      gestureEnabled: true,
-    }}
-  >
-    <QuizStack.Screen name="QuizDashboard" component={QuizDashboardScreen} />
-  </QuizStack.Navigator>
-);
+const QuizStackNavigator = () => {
+  const { colors } = useThemeContext();
+
+  return (
+    <QuizStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <QuizStack.Screen name="QuizDashboard" component={QuizDashboardScreen} />
+    </QuizStack.Navigator>
+  );
+};
 
 // Messages Stack Navigator (archived until Enterprise — see config/featureFlags.ts)
 const MessagesStackNavigator = () => {
+  const { colors } = useThemeContext();
+
   if (!FEATURE_FLAGS.MESSAGING_ENABLED) {
     return <MessagingArchivedScreen />;
   }
@@ -371,6 +393,7 @@ const MessagesStackNavigator = () => {
         headerShown: false,
         animation: "slide_from_right",
         gestureEnabled: true,
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <MessagesStack.Screen
@@ -384,14 +407,18 @@ const MessagesStackNavigator = () => {
 };
 
 // Profile Stack Navigator
-const ProfileStackNavigator = () => (
-  <ProfileStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      animation: "slide_from_right",
-      gestureEnabled: true,
-    }}
-  >
+const ProfileStackNavigator = () => {
+  const { colors } = useThemeContext();
+
+  return (
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     <ProfileStack.Screen name="UserCard" component={UserCardScreen} />
@@ -425,8 +452,9 @@ const ProfileStackNavigator = () => (
       name="AttendanceReport"
       component={AttendanceReportScreen as any}
     />
-  </ProfileStack.Navigator>
-);
+    </ProfileStack.Navigator>
+  );
+};
 
 // Tab Navigator
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -834,8 +862,9 @@ const MainNavigatorContent = () => {
 
 function MainTabsScreenWrapper() {
   const layout = useLayoutBreakpoint();
+  const { colors } = useThemeContext();
   return (
-    <View style={{ flex: 1, flexDirection: "row" }}>
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: colors.background }}>
       {layout.isTablet ? <TabletTabRail /> : null}
       <View style={{ flex: 1, minWidth: 0 }}>
         <MainNavigatorContent />
@@ -845,13 +874,15 @@ function MainTabsScreenWrapper() {
 }
 
 function MainStackNavigatorTabletAware() {
+  const { colors } = useThemeContext();
+
   return (
     <MainStack.Navigator
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
         gestureEnabled: true,
-        contentStyle: { flex: 1 },
+        contentStyle: { flex: 1, backgroundColor: colors.background },
       }}
     >
         <MainStack.Screen name="MainTabs" component={MainTabsScreenWrapper} />

@@ -34,6 +34,7 @@ import type { ClubAssignment } from '@/api/assignments';
 import type { ClubMember } from '@/api/clubs';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useAuthStore } from '@/stores/authStore';
+import { useThemeContext } from '@/contexts';
 
 type Tab = 'all' | 'active' | 'submitted' | 'graded' | 'published' | 'draft' | 'review';
 
@@ -73,9 +74,11 @@ interface AssignmentCardProps {
   clubId: string;
   isManager: boolean;
   onPress: (assignmentId: string, clubId: string) => void;
+  styles: ReturnType<typeof createStyles>;
+  colors: ReturnType<typeof useThemeContext>['colors'];
 }
 
-const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isManager, onPress }: AssignmentCardProps) {
+const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isManager, onPress, styles, colors }: AssignmentCardProps) {
   const dueDate = new Date(item.dueDate);
   const isOverdue = isPast(dueDate) && !item.userSubmission;
   const isSubmitted = item.userSubmission != null;
@@ -123,18 +126,18 @@ const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isMana
 
           <View style={styles.cardMeta}>
             <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={14} color={Colors.gray[500]} />
+              <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
               <Text style={[styles.metaText, isOverdue && !isManager && styles.overdueText]}>
                 {format(dueDate, 'MMM d, h:mm a')}
               </Text>
             </View>
             <View style={styles.metaItem}>
-              <Ionicons name="trophy-outline" size={14} color={Colors.gray[500]} />
+              <Ionicons name="trophy-outline" size={14} color={colors.textSecondary} />
               <Text style={styles.metaText}>{item.maxPoints} <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_c5927f9f" /></Text>
             </View>
             {isManager ? (
               <View style={styles.metaItem}>
-                <Ionicons name="documents-outline" size={14} color={Colors.gray[500]} />
+                <Ionicons name="documents-outline" size={14} color={colors.textSecondary} />
                 <Text style={styles.metaText}>{item.submissionCount || 0} <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_50f71067" /></Text>
               </View>
             ) : null}
@@ -192,6 +195,8 @@ export default function AssignmentsListScreen() {
   const route = useRoute<ClubsStackScreenProps<'AssignmentsList'>['route']>();
   const { clubId } = route.params;
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [selectedTab, setSelectedTab] = useState<Tab>('all');
   const [assignments, setAssignments] = useState<ClubAssignment[]>([]);
@@ -310,9 +315,9 @@ export default function AssignmentsListScreen() {
 
   const renderAssignmentCard = useCallback(
     ({ item }: { item: ClubAssignment }) => (
-      <AssignmentCard item={item} clubId={clubId} isManager={canManageAssignments} onPress={handleCardPress} />
+      <AssignmentCard item={item} clubId={clubId} isManager={canManageAssignments} onPress={handleCardPress} styles={styles} colors={colors} />
     ),
-    [clubId, canManageAssignments, handleCardPress]
+    [clubId, canManageAssignments, handleCardPress, styles, colors]
   );
 
   const keyExtractor = useCallback((item: ClubAssignment) => item.id, []);
@@ -374,13 +379,13 @@ export default function AssignmentsListScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('assignments.list.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -390,18 +395,18 @@ export default function AssignmentsListScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('assignments.list.title')}</Text>
         {canManageAssignments ? (
           <TouchableOpacity style={styles.addButton} onPress={() => setShowCreateModal(true)}>
-            <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
+            <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
         ) : <View style={{ width: 40 }} />}
       </View>
 
       <View style={styles.roleStrip}>
-        <Ionicons name={canManageAssignments ? 'shield-checkmark-outline' : 'school-outline'} size={14} color={canManageAssignments ? '#0369A1' : '#6B7280'} />
+        <Ionicons name={canManageAssignments ? 'shield-checkmark-outline' : 'school-outline'} size={14} color={canManageAssignments ? (isDark ? '#67E8F9' : '#0369A1') : colors.textSecondary} />
         <Text style={styles.roleStripText}>
           <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_f9f4ddf2" /> {getRoleLabel(myMembership?.role)}
           {canManageAssignments ? ' · manager tools enabled' : ' · learner view'}
@@ -447,12 +452,12 @@ export default function AssignmentsListScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.primary}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="document-outline" size={64} color={Colors.gray[300]} />
+            <Ionicons name="document-outline" size={64} color={colors.textSecondary} />
             <Text style={styles.emptyTitle}>{t('assignments.list.empty.title')}</Text>
             <Text style={styles.emptySubtitle}>
               {canManageAssignments
@@ -474,7 +479,7 @@ export default function AssignmentsListScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_cc6cd2a8" /></Text>
               <TouchableOpacity onPress={() => { setShowCreateModal(false); resetCreateForm(); }}>
-                <Ionicons name="close" size={24} color={Colors.gray[600]} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -545,7 +550,7 @@ export default function AssignmentsListScreen() {
               style={styles.switchRow}
               onPress={() => setPublishNow((prev) => !prev)}
             >
-              <Ionicons name={publishNow ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={publishNow ? '#10B981' : '#64748B'} />
+              <Ionicons name={publishNow ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={publishNow ? '#10B981' : colors.textSecondary} />
               <Text style={styles.switchLabel}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_70eea436" /></Text>
             </TouchableOpacity>
 
@@ -567,10 +572,10 @@ export default function AssignmentsListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -578,9 +583,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -591,7 +596,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   addButton: {
     width: 40,
@@ -605,14 +610,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
   },
   roleStripText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   errorInline: {
     paddingHorizontal: 16,
@@ -624,11 +629,11 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   tab: {
     paddingVertical: 8,
@@ -638,15 +643,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.2)' : '#E0F2FE',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   activeTabText: {
-    color: '#0EA5E9',
+    color: isDark ? '#7DD3FC' : '#0EA5E9',
     fontWeight: '600',
   },
   listContainer: {
@@ -654,10 +659,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   assignmentCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOpacity: 0.05,
     shadowRadius: 4,
   },
@@ -666,7 +671,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   typeIcon: {
     width: 40,
@@ -683,12 +688,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 2,
   },
   subjectLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   managerStatusPill: {
     paddingHorizontal: 10,
@@ -696,23 +701,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   managerStatusDraft: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: isDark ? 'rgba(194,65,12,0.18)' : '#FFF7ED',
   },
   managerStatusPublished: {
-    backgroundColor: '#ECFEFF',
+    backgroundColor: isDark ? 'rgba(3,105,161,0.18)' : '#ECFEFF',
   },
   managerStatusPillText: {
     fontSize: 11,
     fontWeight: '700',
   },
   managerStatusDraftText: {
-    color: '#C2410C',
+    color: isDark ? '#FDBA74' : '#C2410C',
   },
   managerStatusPublishedText: {
-    color: '#0369A1',
+    color: isDark ? '#67E8F9' : '#0369A1',
   },
   scoreContainer: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -727,7 +732,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -743,7 +748,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   overdueText: {
     color: '#EF4444',
@@ -753,7 +758,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
     gap: 8,
   },
   statusBadge: {
@@ -793,23 +798,23 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginTop: 16,
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -824,23 +829,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#111827',
-    backgroundColor: '#F8FAFC',
+    color: colors.text,
+    backgroundColor: colors.surfaceVariant,
   },
   textArea: {
     minHeight: 74,
@@ -854,11 +859,11 @@ const styles = StyleSheet.create({
   },
   typeBtn: {
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.border,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   typeBtnActive: {
     backgroundColor: '#06B6D4',
@@ -867,7 +872,7 @@ const styles = StyleSheet.create({
   typeBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: colors.textSecondary,
   },
   typeBtnTextActive: {
     color: '#FFFFFF',
@@ -891,7 +896,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 13,
-    color: '#334155',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   postBtn: {

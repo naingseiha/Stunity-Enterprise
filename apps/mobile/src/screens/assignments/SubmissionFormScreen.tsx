@@ -29,12 +29,15 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Colors } from '@/config';
 import { assignmentsApi } from '@/api';
 import type { ClubsStackScreenProps } from '@/navigation/types';
+import { useThemeContext } from '@/contexts';
 
 export default function SubmissionFormScreen() {
     const { t: autoT } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<ClubsStackScreenProps<'SubmissionForm'>['route']>();
   const { assignmentId, clubId } = route.params;
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Array<{
@@ -197,7 +200,7 @@ export default function SubmissionFormScreen() {
     if (type.includes('pdf')) return '#EF4444';
     if (type.includes('word') || type.includes('document')) return '#3B82F6';
     if (type.includes('text')) return '#6B7280';
-    return Colors.primary;
+    return colors.primary;
   };
 
   // Format file size
@@ -216,7 +219,7 @@ export default function SubmissionFormScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="close" size={24} color="#000" />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_0721d4f6" /></Text>
           <TouchableOpacity
@@ -225,7 +228,7 @@ export default function SubmissionFormScreen() {
             style={styles.submitHeaderButton}
           >
             {submitting ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Text style={styles.submitHeaderButtonText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_6883aa4c" /></Text>
             )}
@@ -239,7 +242,7 @@ export default function SubmissionFormScreen() {
         >
           {/* Instructions */}
           <Animated.View style={styles.instructionCard}>
-            <Ionicons name="information-circle" size={20} color={Colors.primary} />
+            <Ionicons name="information-circle" size={20} color={colors.primary} />
             <Text style={styles.instructionText}>
               <AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_eeafc075" />
             </Text>
@@ -251,7 +254,7 @@ export default function SubmissionFormScreen() {
             <TextInput
               style={styles.contentInput}
               placeholder={autoT("auto.mobile.screens_assignments_SubmissionFormScreen.k_88030adc")}
-              placeholderTextColor={Colors.gray[400]}
+              placeholderTextColor={colors.textSecondary}
               value={content}
               onChangeText={setContent}
               multiline
@@ -271,10 +274,10 @@ export default function SubmissionFormScreen() {
                 disabled={uploading}
               >
                 {uploading ? (
-                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <Ionicons name="add-circle" size={20} color={Colors.primary} />
+                    <Ionicons name="add-circle" size={20} color={colors.primary} />
                     <Text style={styles.addFileButtonText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_2df18502" /></Text>
                   </>
                 )}
@@ -283,7 +286,7 @@ export default function SubmissionFormScreen() {
 
             {attachments.length === 0 ? (
               <View style={styles.emptyAttachments}>
-                <Ionicons name="cloud-upload-outline" size={48} color={Colors.gray[300]} />
+                <Ionicons name="cloud-upload-outline" size={48} color={colors.textSecondary} />
                 <Text style={styles.emptyAttachmentsText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_06e0cb7c" /></Text>
                 <Text style={styles.emptyAttachmentsHint}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_fdee6ed1" /></Text>
               </View>
@@ -310,7 +313,7 @@ export default function SubmissionFormScreen() {
                         onPress={() => handleRemoveAttachment(index)}
                         style={styles.removeButton}
                       >
-                        <Ionicons name="close-circle" size={24} color={Colors.error} />
+                        <Ionicons name="close-circle" size={24} color={colors.error} />
                       </TouchableOpacity>
                     </View>
                   );
@@ -368,10 +371,10 @@ export default function SubmissionFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -382,9 +385,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   submitHeaderButton: {
     paddingHorizontal: 16,
@@ -404,7 +407,7 @@ const styles = StyleSheet.create({
   submitHeaderButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0EA5E9',
+    color: colors.primary,
   },
   scrollView: {
     flex: 1,
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
   instructionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.16)' : '#E0F2FE',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -424,7 +427,7 @@ const styles = StyleSheet.create({
   instructionText: {
     flex: 1,
     fontSize: 14,
-    color: '#0C4A6E',
+    color: isDark ? '#7DD3FC' : '#0C4A6E',
     lineHeight: 20,
   },
   contentSection: {
@@ -433,19 +436,19 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 12,
   },
   contentInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#111827',
+    color: colors.text,
     minHeight: 200,
     
     
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'right',
   },
@@ -476,26 +479,26 @@ const styles = StyleSheet.create({
   addFileButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0EA5E9',
+    color: colors.primary,
   },
   emptyAttachments: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 40,
     alignItems: 'center',
     borderWidth: 2,
     borderStyle: 'dashed',
-    
+    borderColor: colors.border,
   },
   emptyAttachmentsText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 12,
   },
   emptyAttachmentsHint: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   attachmentsList: {
@@ -504,13 +507,13 @@ const styles = StyleSheet.create({
   attachmentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     
     
     borderRadius: 12,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -529,23 +532,23 @@ const styles = StyleSheet.create({
   attachmentName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 2,
   },
   attachmentSize: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   removeButton: {
     padding: 4,
   },
   guidelinesCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     
     
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -554,7 +557,7 @@ const styles = StyleSheet.create({
   guidelinesTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 12,
   },
   guidelineItem: {
@@ -566,15 +569,15 @@ const styles = StyleSheet.create({
   guidelineText: {
     flex: 1,
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   bottomActions: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderTopColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     

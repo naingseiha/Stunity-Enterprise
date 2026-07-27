@@ -28,6 +28,7 @@ import { assignmentsApi } from '@/api';
 import type { ClubAssignmentSubmission, AssignmentStatistics } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 type FilterTab = 'all' | 'submitted' | 'graded' | 'pending';
 
@@ -36,6 +37,8 @@ export default function SubmissionsListScreen() {
   const navigation = useNavigation<ClubsStackScreenProps<'SubmissionsList'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'SubmissionsList'>['route']>();
   const { assignmentId, clubId } = route.params;
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [submissions, setSubmissions] = useState<ClubAssignmentSubmission[]>([]);
   const [statistics, setStatistics] = useState<AssignmentStatistics | null>(null);
@@ -91,7 +94,7 @@ export default function SubmissionsListScreen() {
   const renderHeader = () => (
     <View style={styles.header}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Ionicons name="chevron-back" size={24} color="#000" />
+        <Ionicons name="chevron-back" size={24} color={colors.text} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{t('assignments.submissions.header')}</Text>
       <View style={{ width: 40 }} />
@@ -195,9 +198,9 @@ export default function SubmissionsListScreen() {
   };
 
   const getStatusColor = (status: string, isLate: boolean): string => {
-    if (status === 'GRADED') return Colors.success.main;
-    if (isLate) return Colors.error;
-    return Colors.warning.main;
+    if (status === 'GRADED') return colors.success;
+    if (isLate) return colors.error;
+    return colors.warning;
   };
 
   const getStatusText = (status: string, isLate: boolean) => {
@@ -255,7 +258,7 @@ export default function SubmissionsListScreen() {
 
             {submission.status !== 'GRADED' && (
               <View style={styles.gradeBadge}>
-                <Ionicons name="create-outline" size={16} color={Colors.primary} />
+                <Ionicons name="create-outline" size={16} color={colors.primary} />
                 <Text style={styles.gradeText}>{t('assignments.submissions.grade')}</Text>
               </View>
             )}
@@ -264,7 +267,7 @@ export default function SubmissionsListScreen() {
           {/* Attempt Number */}
           {submission.attemptNumber > 1 && (
             <View style={styles.attemptBadge}>
-              <Ionicons name="refresh-outline" size={12} color={Colors.gray[600]} />
+              <Ionicons name="refresh-outline" size={12} color={colors.textSecondary} />
               <Text style={styles.attemptText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionsListScreen.k_a72973d6" /> {submission.attemptNumber}</Text>
             </View>
           )}
@@ -275,7 +278,7 @@ export default function SubmissionsListScreen() {
 
   const renderEmptyState = () => (
     <Animated.View style={styles.emptyState}>
-      <Ionicons name="document-text-outline" size={64} color={Colors.gray[300]} />
+      <Ionicons name="document-text-outline" size={64} color={colors.textSecondary} />
       <Text style={styles.emptyTitle}>{t('assignments.submissions.empty')}</Text>
       <Text style={styles.emptyMessage}>
         {activeTab === 'all' 
@@ -290,7 +293,7 @@ export default function SubmissionsListScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         {renderHeader()}
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -301,7 +304,7 @@ export default function SubmissionsListScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         {renderHeader()}
         <View style={styles.centered}>
-          <Ionicons name="alert-circle-outline" size={64} color={Colors.gray[300]} />
+          <Ionicons name="alert-circle-outline" size={64} color={colors.textSecondary} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
             <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
@@ -341,10 +344,10 @@ export default function SubmissionsListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -352,9 +355,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -365,7 +368,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -377,13 +380,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   statsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     
     
     margin: 16,
     padding: 20,
     borderRadius: 14,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     
@@ -401,18 +404,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: Colors.gray[200],
+    backgroundColor: colors.border,
   },
   filterContainer: {
     marginBottom: 16,
@@ -427,23 +430,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     marginRight: 10,
     gap: 8,
   },
   filterTabActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   filterTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.gray[600],
+    color: colors.textSecondary,
   },
   filterTabTextActive: {
     color: '#fff',
   },
   filterBadge: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -456,7 +459,7 @@ const styles = StyleSheet.create({
   filterBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.gray[600],
+    color: colors.textSecondary,
   },
   filterBadgeTextActive: {
     color: '#fff',
@@ -465,13 +468,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   submissionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     
     
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     
@@ -486,7 +489,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: `${colors.primary}20`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -494,7 +497,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.primary,
+    color: colors.primary,
   },
   studentDetails: {
     flex: 1,
@@ -502,12 +505,12 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
     marginBottom: 2,
   },
   submittedTime: {
     fontSize: 13,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
   },
   submissionMeta: {
     flexDirection: 'row',
@@ -530,12 +533,12 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.primary,
+    color: colors.primary,
   },
   scoreMax: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.gray[400],
+    color: colors.textSecondary,
     marginLeft: 2,
   },
   gradeBadge: {
@@ -544,13 +547,13 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: `${colors.primary}15`,
     borderRadius: 12,
   },
   gradeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
+    color: colors.primary,
   },
   attemptBadge: {
     flexDirection: 'row',
@@ -559,11 +562,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: colors.border,
   },
   attemptText: {
     fontSize: 12,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   emptyState: {
@@ -574,24 +577,24 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyMessage: {
     fontSize: 14,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 16,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,

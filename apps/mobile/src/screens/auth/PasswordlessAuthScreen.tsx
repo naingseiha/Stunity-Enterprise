@@ -31,7 +31,7 @@ import type { OtpChallengeResponse } from '@/types';
 import { normalizePhonePreview } from '@/utils/passwordlessPhone';
 import { Colors } from '@/config';
 
-const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 const INK = '#0F172A';
 const MUTED = '#64748B';

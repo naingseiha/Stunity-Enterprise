@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
  * Single-line star rows, inline difficulty chips, and a recommend toggle.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,10 +18,12 @@ import {
   Easing,
   PanResponder,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Haptics } from '@/services/haptics';
+import { useThemeContext } from '@/contexts';
 
 export interface EducationalValue {
   accuracy: number;
@@ -69,14 +71,18 @@ function StarRow({
   icon,
   label,
   color,
+  mutedColor,
   rating,
   onRate,
+  styles,
 }: {
   icon: string;
   label: string;
   color: string;
+  mutedColor: string;
   rating: number;
   onRate: (n: number) => void;
+  styles: ReturnType<typeof createStyles>;
 }) {
   return (
     <View style={styles.starRow}>
@@ -100,7 +106,7 @@ function StarRow({
             <Ionicons
               name={star <= rating ? 'star' : 'star-outline'}
               size={22}
-              color={star <= rating ? color : '#D1D5DB'}
+              color={star <= rating ? color : mutedColor}
             />
           </TouchableOpacity>
         ))}
@@ -119,6 +125,9 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
   isSubmitting = false,
 }) => {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [value, setValue] = useState<EducationalValue>(INITIAL_VALUE);
   const slideAnim = React.useRef(new Animated.Value(600)).current;
 
@@ -213,7 +222,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               </View>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#9CA3AF" />
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -225,8 +234,10 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 icon={dim.icon}
                 label={t(`feed.educationalValue.${dim.key}`, dim.label)}
                 color={dim.color}
+                mutedColor={colors.border}
                 rating={value[dim.key] as number}
                 onRate={(n) => handleRate(dim.key, n)}
+                styles={styles}
               />
             ))}
           </View>
@@ -249,7 +260,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                     <Ionicons
                       name={opt.icon}
                       size={18}
-                      color={active ? opt.color : '#9CA3AF'}
+                      color={active ? opt.color : colors.textSecondary}
                     />
                     <Text
                       style={[
@@ -275,7 +286,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               <Ionicons
                 name={value.recommend ? 'checkmark-circle' : 'checkmark-circle-outline'}
                 size={22}
-                color={value.recommend ? '#6366F1' : '#D1D5DB'}
+                color={value.recommend ? '#6366F1' : colors.border}
               />
               <Text style={[styles.recommendText, value.recommend && styles.recommendTextActive]}>
                 {t('feed.educationalValue.recommend', 'I recommend this to others')}
@@ -284,7 +295,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
           </View>
 
           {/* ── Summary + Submit ──────────────────────────── */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             {isComplete && (
               <Animated.View style={styles.summaryRow}>
                 <Ionicons name="analytics" size={18} color="#8B5CF6" />
@@ -301,7 +312,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={isComplete && !isSubmitting ? ['#6366F1', '#8B5CF6'] : ['#E5E7EB', '#D1D5DB']}
+                colors={isComplete && !isSubmitting ? ['#6366F1', '#8B5CF6'] : [colors.buttonDisabled, colors.buttonDisabled]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitGradient}
@@ -313,7 +324,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                     <Ionicons
                       name="diamond"
                       size={18}
-                      color={isComplete ? '#fff' : '#9CA3AF'}
+                      color={isComplete ? '#fff' : colors.textSecondary}
                     />
                     <Text style={[styles.submitText, !isComplete && styles.submitTextDisabled]}>
                       {t('feed.educationalValue.submit', 'Submit Rating')}
@@ -331,27 +342,26 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
 
 // ── Styles ──────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
   },
   modal: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: 34, // Safe area padding
     minHeight: 520,    // Always tall enough to cover tab bar
   },
   handleBar: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 4,
@@ -365,7 +375,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -376,25 +386,26 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: isDark ? 'rgba(139,92,246,0.18)' : '#EDE9FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   subtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
+    fontWeight: '500',
+    color: colors.textSecondary,
     marginTop: 1,
   },
   closeBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -410,7 +421,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
+    borderBottomColor: colors.border,
   },
   starRowLeft: {
     flexDirection: 'row',
@@ -425,9 +436,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   starRowLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#374151',
+    lineHeight: 22,
+    color: colors.text,
   },
   starsGroup: {
     flexDirection: 'row',
@@ -439,9 +451,9 @@ const styles = StyleSheet.create({
 
   // ── Difficulty
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -458,14 +470,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    
-    backgroundColor: '#FAFAFA',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     gap: 5,
   },
   difficultyLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
   },
 
   // ── Recommend
@@ -479,21 +491,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    
-    backgroundColor: '#FAFAFA',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
   },
   recommendRowActive: {
     borderColor: '#6366F1',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: isDark ? 'rgba(99,102,241,0.16)' : '#EEF2FF',
   },
   recommendText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+    color: colors.textSecondary,
   },
   recommendTextActive: {
     color: '#6366F1',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   // ── Footer
@@ -509,15 +522,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   summaryText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
   summaryBold: {
     fontWeight: '700',
     color: '#8B5CF6',
   },
   submitBtn: {
-    borderRadius: 14,
+    borderRadius: 999,
     overflow: 'hidden',
   },
   submitBtnDisabled: {
@@ -533,9 +547,10 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: 15,
     fontWeight: '600',
+    lineHeight: 22,
     color: '#FFFFFF',
   },
   submitTextDisabled: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
   },
 });

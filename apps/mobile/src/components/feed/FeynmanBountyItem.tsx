@@ -288,7 +288,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     name: {
       fontSize: 15,
-      fontWeight: '700',
+      fontWeight: '600',
       color: colors.text,
       flexShrink: 1,
     },
@@ -346,8 +346,8 @@ const createStyles = (colors: any, isDark: boolean) =>
 
     // ── Question ──
     question: {
-      fontSize: 17,
-      lineHeight: 25,
+      fontSize: 15,
+      lineHeight: 22,
       fontWeight: '600',
       color: colors.text,
       letterSpacing: -0.1,
@@ -436,7 +436,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     secondaryCtaText: {
       fontSize: 13,
-      fontWeight: '800',
+      fontWeight: '700',
       letterSpacing: 0.1,
     },
     primaryCtaWrap: {
@@ -453,7 +453,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     primaryCtaText: {
       fontSize: 13,
-      fontWeight: '800',
+      fontWeight: '700',
       color: '#FFFFFF',
       letterSpacing: 0.1,
     },

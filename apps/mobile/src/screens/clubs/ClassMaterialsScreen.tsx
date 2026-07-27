@@ -21,16 +21,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primaryDark: '#06A8CC',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 const getIconForType = (type: string) => {
   switch (type) {
@@ -48,6 +42,8 @@ export default function ClassMaterialsScreen() {
   const { user } = useAuthStore();
   const classId = route.params?.classId;
   const isTeacher = user?.role === 'TEACHER';
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   // Granular Zustand selectors — each only re-renders when its slice changes.
   const materials = useClassHubStore(s => s.materials);
@@ -117,14 +113,14 @@ export default function ClassMaterialsScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.card} onPress={() => openLink(item.fileUrl || item.linkUrl)}>
       <View style={styles.iconWrap}>
-        <Ionicons name={getIconForType(item.type)} size={24} color={COLORS.primaryDark} />
+        <Ionicons name={getIconForType(item.type)} size={24} color={BRAND_ACCENT} />
       </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
         {item.description ? <Text style={styles.desc} numberOfLines={2}>{item.description}</Text> : null}
         <Text style={styles.meta}>{t('classScreens.materials.addedBy', { name: item.uploader?.lastName || t('classScreens.materials.teacher') })} • {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
-      <Ionicons name="download-outline" size={20} color={COLORS.textSecondary} />
+      <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -133,7 +129,7 @@ export default function ClassMaterialsScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.materials.header')}</Text>
           <View style={{ width: 40 }} />
@@ -141,7 +137,7 @@ export default function ClassMaterialsScreen() {
       </SafeAreaView>
 
       {isLoading && data.length === 0 ? (
-        <ActivityIndicator style={styles.loader} size="large" color={COLORS.primaryDark} />
+        <ActivityIndicator style={styles.loader} size="large" color={BRAND_ACCENT} />
       ) : errorMessage && data.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.error}>{errorMessage}</Text>
@@ -177,7 +173,7 @@ export default function ClassMaterialsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('classScreens.materials.shareMaterial')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -201,7 +197,7 @@ export default function ClassMaterialsScreen() {
                     <Ionicons 
                       name={t.icon as any} 
                       size={20} 
-                      color={type === t.value ? '#FFF' : COLORS.textSecondary} 
+                      color={type === t.value ? '#FFF' : colors.textSecondary} 
                     />
                     <Text style={[styles.typeBtnText, type === t.value && styles.typeBtnTextActive]}>
                       {t.label}
@@ -247,23 +243,23 @@ export default function ClassMaterialsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   loader: { flex: 1, justifyContent: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  error: { color: 'red', textAlign: 'center' },
+  error: { color: colors.error, textAlign: 'center' },
   list: { padding: 16, paddingBottom: 100, gap: 12 },
-  card: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center' },
-  iconWrap: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#E0F2FE', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center' },
+  iconWrap: { width: 48, height: 48, borderRadius: 12, backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   info: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-  desc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 4 },
-  meta: { fontSize: 12, color: COLORS.textMuted, marginTop: 6 },
-  empty: { textAlign: 'center', marginTop: 40, color: COLORS.textSecondary },
+  title: { fontSize: 16, fontWeight: '700', color: colors.text },
+  desc: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
+  meta: { fontSize: 12, color: colors.textSecondary, marginTop: 6 },
+  empty: { textAlign: 'center', marginTop: 40, color: colors.textSecondary },
   
   fab: {
     position: 'absolute',
@@ -272,7 +268,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
@@ -284,11 +280,11 @@ const styles = StyleSheet.create({
   
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -303,22 +299,22 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.text,
     marginBottom: 20,
   },
   typeContainer: {
@@ -330,18 +326,18 @@ const styles = StyleSheet.create({
   typeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
   },
   typeBtnActive: {
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
   },
   typeBtnText: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   typeBtnTextActive: {
@@ -349,7 +345,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   postBtn: {
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

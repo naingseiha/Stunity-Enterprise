@@ -20,24 +20,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 import { classesApi, gradeApi } from '@/api';
+import { useThemeContext } from '@/contexts';
 
 const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
   primary: '#06A8CC',
-  primaryLight: '#E0F7FF',
   success: '#10B981',
-  successLight: '#ECFDF5',
   warning: '#F59E0B',
-  warningLight: '#FFFBEB',
   danger: '#EF4444',
-  dangerLight: '#FEF2F2',
   violet: '#8B5CF6',
-  violetLight: '#F5F3FF',
 };
 
 type RouteParams = {
@@ -235,6 +225,13 @@ export default function ClassReportScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { classId, className, myRole, linkedStudentId } = (route.params || {}) as RouteParams;
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const primaryLight = isDark ? 'rgba(6,168,204,0.18)' : '#E0F7FF';
+  const successLight = isDark ? 'rgba(16,185,129,0.18)' : '#ECFDF5';
+  const warningLight = isDark ? 'rgba(245,158,11,0.18)' : '#FFFBEB';
+  const dangerLight = isDark ? 'rgba(239,68,68,0.18)' : '#FEF2F2';
+  const violetLight = isDark ? 'rgba(139,92,246,0.18)' : '#F5F3FF';
   const calendarMonthEnglish = CALENDAR_MONTHS_ENGLISH[new Date().getMonth()];
   const initialMonthChip = MONTHS.includes(calendarMonthEnglish) ? calendarMonthEnglish : MONTHS[0];
   const [selectedMonth, setSelectedMonth] = useState(initialMonthChip);
@@ -778,18 +775,18 @@ export default function ClassReportScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.report.header')}</Text>
           <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
             {refreshing || isPeriodUpdating ? (
               <ActivityIndicator size="small" color={COLORS.primary} />
             ) : (
-              <Ionicons name="refresh-outline" size={20} color={COLORS.textPrimary} />
+              <Ionicons name="refresh-outline" size={20} color={colors.text} />
             )}
           </TouchableOpacity>
         </View>
@@ -983,7 +980,7 @@ export default function ClassReportScreen() {
                   <Ionicons
                     name={item.ready ? 'checkmark-circle' : 'ellipse-outline'}
                     size={16}
-                    color={item.ready ? COLORS.success : COLORS.textMuted}
+                    color={item.ready ? COLORS.success : colors.textSecondary}
                   />
                   <Text style={styles.readinessItemLabel}>{item.label}</Text>
                   <Text style={styles.readinessItemValue}>{item.value}</Text>
@@ -1000,7 +997,7 @@ export default function ClassReportScreen() {
                   <ActivityIndicator size="small" color={COLORS.primary} />
                 </View>
               ) : (
-                <Ionicons name="calendar-clear-outline" size={20} color={COLORS.textMuted} />
+                <Ionicons name="calendar-clear-outline" size={20} color={colors.textSecondary} />
               )}
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.monthScroll}>
@@ -1020,7 +1017,7 @@ export default function ClassReportScreen() {
 
           <View style={styles.metricsGrid}>
             <View style={[styles.metricCard, styles.metricCardAttendance]}>
-              <View style={[styles.metricIconCompact, { backgroundColor: COLORS.primaryLight }]}>
+              <View style={[styles.metricIconCompact, { backgroundColor: primaryLight }]}>
                 <Ionicons name="checkmark-done-outline" size={15} color={COLORS.primary} />
               </View>
               <View style={styles.metricCardCopy}>
@@ -1030,7 +1027,7 @@ export default function ClassReportScreen() {
             </View>
 
             <View style={[styles.metricCard, styles.metricCardDanger]}>
-              <View style={[styles.metricIconCompact, { backgroundColor: COLORS.dangerLight }]}>
+              <View style={[styles.metricIconCompact, { backgroundColor: dangerLight }]}>
                 <Ionicons name="person-remove-outline" size={15} color={COLORS.danger} />
               </View>
               <View style={styles.metricCardCopy}>
@@ -1047,7 +1044,7 @@ export default function ClassReportScreen() {
             </View>
 
             <View style={[styles.metricCard, styles.metricCardSuccess]}>
-              <View style={[styles.metricIconCompact, { backgroundColor: COLORS.successLight }]}>
+              <View style={[styles.metricIconCompact, { backgroundColor: successLight }]}>
                 <Ionicons name="ribbon-outline" size={15} color={COLORS.success} />
               </View>
               <View style={styles.metricCardCopy}>
@@ -1068,7 +1065,7 @@ export default function ClassReportScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>{t('classScreens.report.studentSnapshot')}</Text>
-                <Ionicons name="person-circle-outline" size={20} color={COLORS.textMuted} />
+                <Ionicons name="person-circle-outline" size={20} color={colors.textSecondary} />
               </View>
               <View style={styles.studentSnapshotRow}>
                 <View style={styles.snapshotCard}>
@@ -1116,7 +1113,7 @@ export default function ClassReportScreen() {
                     <Text style={styles.subjectInsightTitle}>
                       {t('classScreens.report.subjectSignals', { defaultValue: 'Subject signals' })}
                     </Text>
-                    <Ionicons name="pulse-outline" size={18} color={COLORS.textMuted} />
+                    <Ionicons name="pulse-outline" size={18} color={colors.textSecondary} />
                   </View>
                   {studentSubjectInsights.slice(0, 3).map((subject) => (
                     <View key={subject.id} style={styles.subjectSignalRow}>
@@ -1150,7 +1147,7 @@ export default function ClassReportScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('classScreens.report.attendanceBreakdown')}</Text>
-              <Ionicons name="calendar-outline" size={20} color={COLORS.textMuted} />
+              <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={styles.listCard}>
               {[
@@ -1181,7 +1178,7 @@ export default function ClassReportScreen() {
                   })}
                 </Text>
               </View>
-              <Ionicons name="podium-outline" size={20} color={COLORS.textMuted} />
+              <Ionicons name="podium-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={styles.rankingPanel}>
               {classRankingStudents.length === 0 ? (
@@ -1249,7 +1246,7 @@ export default function ClassReportScreen() {
                         })}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </>
               )}
@@ -1259,7 +1256,7 @@ export default function ClassReportScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('classScreens.report.gradeDistribution')}</Text>
-              <Ionicons name="stats-chart-outline" size={20} color={COLORS.textMuted} />
+              <Ionicons name="stats-chart-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={styles.listCard}>
               {Object.entries(gradeDistribution).map(([level, count]) => (
@@ -1277,7 +1274,7 @@ export default function ClassReportScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('classScreens.report.interventionQueue')}</Text>
-              <Ionicons name="medkit-outline" size={20} color={COLORS.textMuted} />
+              <Ionicons name="medkit-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={styles.listCard}>
               {atRiskStudents.length === 0 ? (
@@ -1290,7 +1287,7 @@ export default function ClassReportScreen() {
                     activeOpacity={0.82}
                     onPress={() => handleOpenStudentProfile(getStudentUserId(student.student))}
                   >
-                    <View style={[styles.rankBadge, { backgroundColor: COLORS.dangerLight }]}>
+                    <View style={[styles.rankBadge, { backgroundColor: dangerLight }]}>
                       <Ionicons name="alert-circle-outline" size={14} color={COLORS.danger} />
                     </View>
                     <View style={styles.rankInfo}>
@@ -1300,7 +1297,7 @@ export default function ClassReportScreen() {
                       <Text style={styles.rankMeta}>{student.student.studentId || t('classScreens.report.noId')}</Text>
                     </View>
                     <Text style={[styles.rankScore, { color: COLORS.danger }]}>{metricValue(student.average)}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
                 ))
               )}
@@ -1312,15 +1309,21 @@ export default function ClassReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => {
+  const primaryLight = isDark ? 'rgba(6,168,204,0.18)' : '#E0F7FF';
+  const successLight = isDark ? 'rgba(16,185,129,0.18)' : '#ECFDF5';
+  const warningLight = isDark ? 'rgba(245,158,11,0.18)' : '#FFFBEB';
+  const dangerLight = isDark ? 'rgba(239,68,68,0.18)' : '#FEF2F2';
+  const violetLight = isDark ? 'rgba(139,92,246,0.18)' : '#F5F3FF';
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   headerSafe: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   topBar: {
     flexDirection: 'row',
@@ -1335,12 +1338,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   scroll: {
     flex: 1,
@@ -1359,17 +1362,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   monthChipActive: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: primaryLight,
   },
   monthChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   monthChipTextActive: {
     color: COLORS.primary,
@@ -1384,8 +1387,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1397,10 +1400,10 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   enterprisePanel: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     gap: 14,
   },
@@ -1413,7 +1416,7 @@ const styles = StyleSheet.create({
   enterpriseEyebrow: {
     fontSize: 11,
     fontWeight: '800',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.7,
   },
@@ -1421,7 +1424,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   riskBadge: {
     minHeight: 32,
@@ -1449,31 +1452,31 @@ const styles = StyleSheet.create({
   insightTile: {
     flex: 1,
     borderRadius: 14,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#EEF2F7',
+    borderColor: colors.border,
     padding: 12,
   },
   insightValue: {
     fontSize: 20,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   insightLabel: {
     marginTop: 5,
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   profileBridgeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderRadius: 16,
-    backgroundColor: '#F8FCFF',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: isDark ? 'rgba(219,234,254,0.25)' : '#DBEAFE',
     padding: 12,
   },
   profileBridgeIcon: {
@@ -1482,7 +1485,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: primaryLight,
   },
   profileBridgeCopy: {
     flex: 1,
@@ -1491,14 +1494,14 @@ const styles = StyleSheet.create({
   profileBridgeTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   profileBridgeMeta: {
     marginTop: 3,
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   profileBridgeButton: {
     width: 34,
@@ -1506,15 +1509,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   readinessCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     gap: 12,
   },
@@ -1527,13 +1530,13 @@ const styles = StyleSheet.create({
   readinessTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   readinessMeta: {
     marginTop: 3,
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   readinessScore: {
     fontSize: 24,
@@ -1543,7 +1546,7 @@ const styles = StyleSheet.create({
   readinessTrack: {
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     overflow: 'hidden',
   },
   readinessFill: {
@@ -1563,16 +1566,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   readinessItemValue: {
     fontSize: 13,
     fontWeight: '800',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   heroCardWrap: {
     borderRadius: 24,
-    shadowColor: '#0f172a',
+    shadowColor: isDark ? 'transparent' : '#0f172a',
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.22,
     shadowRadius: 28,
@@ -1686,19 +1689,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.85)',
+    borderColor: colors.border,
     paddingVertical: 10,
     paddingHorizontal: 10,
     minHeight: 0,
   },
   metricCardAttendance: {
-    backgroundColor: '#F8FCFF',
+    backgroundColor: colors.surfaceVariant,
   },
   metricCardDanger: {
-    backgroundColor: '#FFFBFB',
+    backgroundColor: dangerLight,
   },
   metricCardSuccess: {
-    backgroundColor: '#FAFFFC',
+    backgroundColor: successLight,
   },
   metricIconCompact: {
     width: 30,
@@ -1722,25 +1725,25 @@ const styles = StyleSheet.create({
   metricValueCompact: {
     fontSize: 17,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
     letterSpacing: -0.4,
   },
   metricPctCompact: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: -0.2,
   },
   metricPctCompactMuted: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
   },
   metricLabelCompact: {
     marginTop: 3,
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
     lineHeight: 14,
     letterSpacing: 0.15,
   },
@@ -1758,19 +1761,19 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: primaryLight,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   sectionCaption: {
     marginTop: 3,
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   studentSnapshotRow: {
     flexDirection: 'row',
@@ -1778,37 +1781,37 @@ const styles = StyleSheet.create({
   },
   snapshotCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 16,
     alignItems: 'center',
   },
   snapshotValue: {
     fontSize: 22,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   snapshotLabel: {
     marginTop: 6,
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
     textTransform: 'uppercase',
   },
   listCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 8,
   },
   rankingPanel: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 10,
     gap: 12,
   },
@@ -1822,13 +1825,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
     borderRadius: 18,
     borderWidth: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },
   podiumCardFirst: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: warningLight,
     transform: [{ translateY: -3 }],
   },
   podiumMedal: {
@@ -1865,14 +1868,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 13,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
     textAlign: 'center',
   },
   podiumMeta: {
     marginTop: 4,
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   fullRankingList: {
@@ -1881,9 +1884,9 @@ const styles = StyleSheet.create({
   viewFullLeaderboardButton: {
     minHeight: 72,
     borderRadius: 18,
-    backgroundColor: '#F8FCFF',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: isDark ? 'rgba(219,234,254,0.25)' : '#DBEAFE',
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -1896,7 +1899,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: primaryLight,
   },
   viewFullLeaderboardCopy: {
     flex: 1,
@@ -1905,21 +1908,21 @@ const styles = StyleSheet.create({
   viewFullLeaderboardTitle: {
     fontSize: 15,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   viewFullLeaderboardMeta: {
     marginTop: 3,
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   leaderboardRow: {
     minHeight: 76,
     borderRadius: 18,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#EEF2F7',
+    borderColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -1927,8 +1930,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   leaderboardRowActive: {
-    backgroundColor: COLORS.primaryLight,
-    borderColor: '#7DD3FC',
+    backgroundColor: primaryLight,
+    borderColor: isDark ? 'rgba(125,211,252,0.4)' : '#7DD3FC',
   },
   leaderboardRank: {
     minWidth: 42,
@@ -1937,7 +1940,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
   },
   leaderboardRankText: {
     fontSize: 13,
@@ -1967,13 +1970,13 @@ const styles = StyleSheet.create({
   leaderboardName: {
     fontSize: 15,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   leaderboardMeta: {
     marginTop: 3,
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   leaderboardScoreBlock: {
     alignItems: 'flex-end',
@@ -1987,14 +1990,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
     textTransform: 'uppercase',
   },
   subjectInsightCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 12,
     gap: 12,
   },
@@ -2006,7 +2009,7 @@ const styles = StyleSheet.create({
   subjectInsightTitle: {
     fontSize: 15,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   subjectSignalRow: {
     flexDirection: 'row',
@@ -2020,13 +2023,13 @@ const styles = StyleSheet.create({
   subjectSignalName: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   subjectSignalMeta: {
     marginTop: 2,
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
   },
   subjectSignalMeter: {
     width: 112,
@@ -2038,7 +2041,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 7,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     overflow: 'hidden',
   },
   subjectSignalFill: {
@@ -2071,12 +2074,12 @@ const styles = StyleSheet.create({
   listLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   listValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   rankRow: {
     flexDirection: 'row',
@@ -2089,7 +2092,7 @@ const styles = StyleSheet.create({
     minWidth: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2104,17 +2107,17 @@ const styles = StyleSheet.create({
   rankName: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   rankMeta: {
     marginTop: 2,
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   rankScore: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   center: {
     flex: 1,
@@ -2126,14 +2129,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   errorText: {
     marginTop: 14,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   retryButton: {
     marginTop: 16,
@@ -2150,7 +2153,8 @@ const styles = StyleSheet.create({
   emptyText: {
     padding: 16,
     textAlign: 'center',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
   },
-});
+  });
+};

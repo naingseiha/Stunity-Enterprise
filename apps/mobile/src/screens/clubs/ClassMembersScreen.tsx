@@ -19,23 +19,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { classesApi } from '@/api';
 import { useAuthStore, useMessagingStore } from '@/stores';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primary: '#09CFF7',
-  primaryDark: '#06A8CC',
-  maleBg: '#E0F2FE',
-  maleText: '#0284C7',
-  femaleBg: '#FCE7F3',
-  femaleText: '#DB2777',
-  totalBg: '#F3E8FF',
-  totalText: '#9333EA',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
 
@@ -44,7 +31,20 @@ export default function ClassMembersScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
-  
+  const { colors, isDark } = useThemeContext();
+  const genderColors = useMemo(() => ({
+    maleBg: isDark ? 'rgba(2,132,199,0.2)' : '#E0F2FE',
+    maleText: isDark ? '#7DD3FC' : '#0284C7',
+    maleBorder: isDark ? 'rgba(125,211,252,0.35)' : '#BAE6FD',
+    femaleBg: isDark ? 'rgba(219,39,119,0.2)' : '#FCE7F3',
+    femaleText: isDark ? '#F9A8D4' : '#DB2777',
+    femaleBorder: isDark ? 'rgba(249,168,212,0.35)' : '#FBCFE8',
+    totalBg: isDark ? 'rgba(147,51,234,0.2)' : '#F3E8FF',
+    totalText: isDark ? '#D8B4FE' : '#9333EA',
+    totalBorder: isDark ? 'rgba(216,180,254,0.35)' : '#E9D5FF',
+  }), [isDark]);
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   const classId = route.params?.classId;
   const homeroomTeacherId = route.params?.homeroomTeacherId;
   const myRole = String(route.params?.myRole || '').toUpperCase();
@@ -193,37 +193,37 @@ export default function ClassMembersScreen() {
 
       {/* Statistics Cards */}
       <View style={styles.statsRow}>
-        <View style={[styles.statBox, { backgroundColor: COLORS.totalBg, borderColor: '#E9D5FF' }]}>
-          <Ionicons name="people" size={20} color={COLORS.totalText} />
-          <Text style={[styles.statValue, { color: COLORS.totalText }]}>{stats.total}</Text>
-          <Text style={[styles.statLabel, { color: COLORS.totalText }]}>{t('classScreens.members.total')}</Text>
+        <View style={[styles.statBox, { backgroundColor: genderColors.totalBg, borderColor: genderColors.totalBorder }]}>
+          <Ionicons name="people" size={20} color={genderColors.totalText} />
+          <Text style={[styles.statValue, { color: genderColors.totalText }]}>{stats.total}</Text>
+          <Text style={[styles.statLabel, { color: genderColors.totalText }]}>{t('classScreens.members.total')}</Text>
         </View>
-        <View style={[styles.statBox, { backgroundColor: COLORS.maleBg, borderColor: '#BAE6FD' }]}>
-          <Ionicons name="man" size={20} color={COLORS.maleText} />
-          <Text style={[styles.statValue, { color: COLORS.maleText }]}>{stats.male}</Text>
-          <Text style={[styles.statLabel, { color: COLORS.maleText }]}>{t('classScreens.members.male')}</Text>
+        <View style={[styles.statBox, { backgroundColor: genderColors.maleBg, borderColor: genderColors.maleBorder }]}>
+          <Ionicons name="man" size={20} color={genderColors.maleText} />
+          <Text style={[styles.statValue, { color: genderColors.maleText }]}>{stats.male}</Text>
+          <Text style={[styles.statLabel, { color: genderColors.maleText }]}>{t('classScreens.members.male')}</Text>
         </View>
-        <View style={[styles.statBox, { backgroundColor: COLORS.femaleBg, borderColor: '#FBCFE8' }]}>
-          <Ionicons name="woman" size={20} color={COLORS.femaleText} />
-          <Text style={[styles.statValue, { color: COLORS.femaleText }]}>{stats.female}</Text>
-          <Text style={[styles.statLabel, { color: COLORS.femaleText }]}>{t('classScreens.members.female')}</Text>
+        <View style={[styles.statBox, { backgroundColor: genderColors.femaleBg, borderColor: genderColors.femaleBorder }]}>
+          <Ionicons name="woman" size={20} color={genderColors.femaleText} />
+          <Text style={[styles.statValue, { color: genderColors.femaleText }]}>{stats.female}</Text>
+          <Text style={[styles.statLabel, { color: genderColors.femaleText }]}>{t('classScreens.members.female')}</Text>
         </View>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color={COLORS.textMuted} />
+        <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder={t('classScreens.members.searchPlaceholder')}
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCorrect={false}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -246,8 +246,8 @@ export default function ClassMembersScreen() {
             recyclingKey={item.photoUrl}
           />
         ) : (
-          <View style={[styles.avatarFallback, { backgroundColor: isFemale ? COLORS.femaleBg : COLORS.primary + '20' }]}>
-            <Text style={[styles.avatarText, { color: isFemale ? COLORS.femaleText : COLORS.primaryDark }]}>
+          <View style={[styles.avatarFallback, { backgroundColor: isFemale ? genderColors.femaleBg : `${BRAND_ACCENT}20` }]}>
+            <Text style={[styles.avatarText, { color: isFemale ? genderColors.femaleText : BRAND_ACCENT }]}>
               {item.firstName?.[0] || 'S'}
             </Text>
           </View>
@@ -272,8 +272,8 @@ export default function ClassMembersScreen() {
                  <Text style={styles.badgeText}>{t('classScreens.members.idValue', { id: item.studentId })}</Text>
                </View>
             ) : null}
-            <View style={[styles.badge, { backgroundColor: isFemale ? COLORS.femaleBg : COLORS.maleBg }]}>
-               <Text style={[styles.badgeText, { color: isFemale ? COLORS.femaleText : COLORS.maleText }]}>
+            <View style={[styles.badge, { backgroundColor: isFemale ? genderColors.femaleBg : genderColors.maleBg }]}>
+               <Text style={[styles.badgeText, { color: isFemale ? genderColors.femaleText : genderColors.maleText }]}>
                  {isFemale ? 'F' : 'M'}
                </Text>
             </View>
@@ -286,7 +286,7 @@ export default function ClassMembersScreen() {
             onPress={() => handleEditStudent(item.id)}
             activeOpacity={0.8}
           >
-            <Ionicons name="create-outline" size={18} color={COLORS.primaryDark} />
+            <Ionicons name="create-outline" size={18} color={BRAND_ACCENT} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -298,7 +298,7 @@ export default function ClassMembersScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.members.header')}</Text>
           <View style={{ width: 40 }} />
@@ -307,7 +307,7 @@ export default function ClassMembersScreen() {
 
       {loading && !refreshing ? (
         <View style={styles.loader}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={BRAND_ACCENT} />
         </View>
       ) : (
         <View style={{ flex: 1 }}>
@@ -318,10 +318,10 @@ export default function ClassMembersScreen() {
             estimatedItemSize={76}
             ListHeaderComponent={renderHeader}
             contentContainerStyle={styles.list}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primaryDark} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_ACCENT} />}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="people-outline" size={48} color={COLORS.border} />
+                <Ionicons name="people-outline" size={48} color={colors.border} />
                 <Text style={styles.emptyText}>
                   {searchQuery ? t('classScreens.members.emptySearch') : t('classScreens.members.emptyClass')}
                 </Text>
@@ -334,13 +334,13 @@ export default function ClassMembersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { 
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderBottomWidth: 1, 
-    borderBottomColor: 'rgba(226,232,240,0.85)',
-    shadowColor: '#000',
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: {
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -353,12 +353,12 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.8)',
+    borderColor: colors.border,
     paddingLeft: 7,
   },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
   list: { padding: 16, paddingBottom: 48 },
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.04,
     shadowRadius: 14,
@@ -462,13 +462,13 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.95)',
+    borderColor: colors.border,
     borderRadius: 18,
     paddingHorizontal: 14,
     height: 52,
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.04,
     shadowRadius: 14,
@@ -478,19 +478,19 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
 
   card: { 
-    backgroundColor: COLORS.surface, 
+    backgroundColor: colors.card, 
     borderRadius: 22,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1, 
-    borderColor: COLORS.border, 
+    borderColor: colors.border, 
     flexDirection: 'row', 
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.055,
     shadowRadius: 14,
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 18, fontWeight: '800' },
   info: { flex: 1, justifyContent: 'center' },
-  name: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
+  name: { fontSize: 16, fontWeight: '800', color: colors.text },
   
   metaRow: {
     flexDirection: 'row',
@@ -523,19 +523,19 @@ const styles = StyleSheet.create({
   },
   khmerName: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontFamily: 'System',
     marginRight: 4,
   },
   englishName: {
     fontSize: 12,
-    color: COLORS.primaryDark,
+    color: BRAND_ACCENT,
     fontWeight: '600',
     marginTop: 2,
     textTransform: 'uppercase',
   },
   badge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 999,
@@ -543,17 +543,17 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   
-  actionBtn: { 
-    width: 40, 
-    height: 40, 
+  actionBtn: {
+    width: 40,
+    height: 40,
     borderRadius: 18,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(2,132,199,0.2)' : '#E0F2FE',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
-    justifyContent: 'center', 
+    borderColor: isDark ? 'rgba(125,211,252,0.35)' : '#BAE6FD',
+    justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
   },
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   emptyText: { 
     textAlign: 'center', 
     marginTop: 16, 
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 15,
     fontWeight: '500'
   },

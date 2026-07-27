@@ -23,17 +23,10 @@ import { clubCommunityApi, clubsApi } from '@/api';
 import type { ClubMember } from '@/api/clubs';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  primaryDark: '#06A8CC',
-  danger: '#DC2626',
-};
+import { Colors } from '@/config';
+const BRAND_ACCENT = Colors.brand;
 
 const MATERIAL_TYPES: Array<{ value: clubCommunityApi.ClubMaterial['type']; labelKey: string; icon: string }> = [
   { value: 'DOCUMENT', labelKey: 'clubScreens.materials.types.document', icon: 'document-text-outline' },
@@ -53,6 +46,8 @@ export default function ClubMaterialsScreen() {
   const route = useRoute<any>();
   const { user } = useAuthStore();
   const { clubId, clubName } = route.params || {};
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [items, setItems] = useState<clubCommunityApi.ClubMaterial[]>([]);
   const [members, setMembers] = useState<ClubMember[]>([]);
@@ -169,7 +164,7 @@ export default function ClubMaterialsScreen() {
     return (
       <TouchableOpacity style={styles.card} onPress={() => openLink(item.url)} activeOpacity={0.8}>
         <View style={styles.iconWrap}>
-          <Ionicons name={getIconForType(item.type) as any} size={22} color={COLORS.primaryDark} />
+          <Ionicons name={getIconForType(item.type) as any} size={22} color={BRAND_ACCENT} />
         </View>
         <View style={styles.info}>
           <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
@@ -180,7 +175,7 @@ export default function ClubMaterialsScreen() {
         </View>
         {canDelete ? (
           <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
-            <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
           </TouchableOpacity>
         ) : null}
       </TouchableOpacity>
@@ -192,7 +187,7 @@ export default function ClubMaterialsScreen() {
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.titleWrap}>
             <Text style={styles.title}>{t('clubScreens.materials.header')}</Text>
@@ -204,7 +199,7 @@ export default function ClubMaterialsScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={BRAND_ACCENT} />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -242,7 +237,7 @@ export default function ClubMaterialsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('clubScreens.materials.shareMaterial')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -266,7 +261,7 @@ export default function ClubMaterialsScreen() {
                     <Ionicons
                       name={entry.icon as any}
                       size={16}
-                      color={type === entry.value ? '#FFF' : COLORS.textSecondary}
+                      color={type === entry.value ? '#FFF' : colors.textSecondary}
                     />
                     <Text style={[styles.typeText, type === entry.value && styles.typeTextActive]}>
                       {t(entry.labelKey)}
@@ -308,26 +303,26 @@ export default function ClubMaterialsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   titleWrap: { flex: 1, alignItems: 'center' },
-  title: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
-  subtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  subtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: COLORS.danger, textAlign: 'center' },
-  retryBtn: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: COLORS.primaryDark },
+  errorText: { color: colors.error, textAlign: 'center' },
+  retryBtn: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: BRAND_ACCENT },
   retryText: { color: '#FFF', fontWeight: '700' },
   list: { padding: 16, paddingBottom: 100, gap: 12 },
-  emptyText: { textAlign: 'center', color: COLORS.textSecondary, marginTop: 30 },
-  card: { backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, padding: 14, flexDirection: 'row', alignItems: 'center' },
-  iconWrap: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 30 },
+  card: { backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14, flexDirection: 'row', alignItems: 'center' },
+  iconWrap: { width: 42, height: 42, borderRadius: 12, backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   info: { flex: 1 },
-  itemTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  desc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  meta: { fontSize: 12, color: COLORS.textMuted, marginTop: 4 },
+  itemTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  desc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  meta: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
   deleteBtn: { padding: 6 },
   fab: {
     position: 'absolute',
@@ -336,29 +331,29 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   modalContent: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 20,
     maxHeight: '90%',
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
-  label: { fontSize: 13, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 8 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  label: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     padding: 12,
     marginBottom: 14,
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   descriptionInput: { minHeight: 80, textAlignVertical: 'top' },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
@@ -370,17 +365,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
   },
-  typeBtnActive: { backgroundColor: COLORS.primaryDark, borderColor: COLORS.primaryDark },
-  typeText: { color: COLORS.textSecondary, fontWeight: '600', fontSize: 12 },
+  typeBtnActive: { backgroundColor: BRAND_ACCENT, borderColor: BRAND_ACCENT },
+  typeText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   typeTextActive: { color: '#FFF' },
   postBtn: {
     marginTop: 6,
     height: 46,
     borderRadius: 12,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: BRAND_ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,

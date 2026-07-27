@@ -6,7 +6,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * Enter score, provide feedback, and save
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -29,12 +29,15 @@ import { assignmentsApi } from '@/api';
 import type { ClubAssignmentSubmission } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 export default function GradeSubmissionScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<ClubsStackScreenProps<'GradeSubmission'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'GradeSubmission'>['route']>();
   const { submissionId, assignmentId, clubId } = route.params;
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [submission, setSubmission] = useState<ClubAssignmentSubmission | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +130,7 @@ export default function GradeSubmissionScreen() {
         style={styles.backButton}
         disabled={saving}
       >
-        <Ionicons name="chevron-back" size={24} color="#000" />
+        <Ionicons name="chevron-back" size={24} color={colors.text} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{t('assignments.grade.header')}</Text>
       <TouchableOpacity 
@@ -136,7 +139,7 @@ export default function GradeSubmissionScreen() {
         disabled={saving || !score.trim()}
       >
         {saving ? (
-          <ActivityIndicator size="small" color={Colors.primary} />
+          <ActivityIndicator size="small" color={colors.primary} />
         ) : (
           <Text style={[
             styles.saveButtonText,
@@ -150,9 +153,9 @@ export default function GradeSubmissionScreen() {
   );
 
   const getStatusColor = (status: string, isLate: boolean): string => {
-    if (status === 'GRADED') return Colors.success.main;
-    if (isLate) return Colors.error;
-    return Colors.warning.main;
+    if (status === 'GRADED') return colors.success;
+    if (isLate) return colors.error;
+    return colors.warning;
   };
 
   const getStatusText = (status: string, isLate: boolean) => {
@@ -166,7 +169,7 @@ export default function GradeSubmissionScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         {renderHeader()}
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -177,7 +180,7 @@ export default function GradeSubmissionScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         {renderHeader()}
         <View style={styles.centered}>
-          <Ionicons name="alert-circle-outline" size={64} color={Colors.gray[300]} />
+          <Ionicons name="alert-circle-outline" size={64} color={colors.textSecondary} />
           <Text style={styles.errorText}>{error || t('assignments.grade.submissionNotFound')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchSubmission}>
             <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
@@ -231,7 +234,7 @@ export default function GradeSubmissionScreen() {
 
             {submission.attemptNumber > 1 && (
               <View style={styles.attemptBadge}>
-                <Ionicons name="refresh-outline" size={14} color={Colors.gray[600]} />
+                <Ionicons name="refresh-outline" size={14} color={colors.textSecondary} />
                 <Text style={styles.attemptText}>
                   {t('assignments.grade.attemptNumber', { count: submission.attemptNumber })}
                 </Text>
@@ -255,7 +258,7 @@ export default function GradeSubmissionScreen() {
               </View>
             ) : (
               <View style={styles.emptyContent}>
-                <Ionicons name="document-outline" size={32} color={Colors.gray[300]} />
+                <Ionicons name="document-outline" size={32} color={colors.textSecondary} />
                 <Text style={styles.emptyContentText}>{t('assignments.grade.noTextContent')}</Text>
               </View>
             )}
@@ -268,7 +271,7 @@ export default function GradeSubmissionScreen() {
                 </Text>
                 {submission.attachments.map((attachment, index) => (
                   <View key={index} style={styles.attachmentItem}>
-                    <Ionicons name="document-attach" size={20} color={Colors.primary} />
+                    <Ionicons name="document-attach" size={20} color={colors.primary} />
                     <View style={styles.attachmentInfo}>
                       <Text style={styles.attachmentName} numberOfLines={1}>
                         {attachment.name}
@@ -322,7 +325,7 @@ export default function GradeSubmissionScreen() {
                 value={feedback}
                 onChangeText={setFeedback}
                 placeholder={t('assignments.grade.feedbackPlaceholder')}
-                placeholderTextColor={Colors.gray[400]}
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
@@ -337,7 +340,7 @@ export default function GradeSubmissionScreen() {
           {/* Previously Graded Info */}
           {submission.status === 'GRADED' && submission.gradedBy && (
             <Animated.View style={styles.previousGradeCard}>
-              <Ionicons name="information-circle-outline" size={20} color={Colors.info.main} />
+              <Ionicons name="information-circle-outline" size={20} color={colors.info} />
               <View style={styles.previousGradeInfo}>
                 <Text style={styles.previousGradeText}>
                   <AutoI18nText i18nKey="auto.mobile.screens_assignments_GradeSubmissionScreen.k_abc8ee41" />{' '}
@@ -384,10 +387,10 @@ export default function GradeSubmissionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -398,9 +401,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -411,7 +414,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   saveButton: {
     paddingHorizontal: 12,
@@ -420,10 +423,10 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.primary,
+    color: colors.primary,
   },
   saveButtonTextDisabled: {
-    color: Colors.gray[400],
+    color: colors.textSecondary,
   },
   content: {
     flex: 1,
@@ -435,14 +438,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   studentCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     
     
     margin: 16,
     marginBottom: 8,
     padding: 16,
     borderRadius: 14,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     
@@ -456,7 +459,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: `${colors.primary}20`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -464,7 +467,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary,
+    color: colors.primary,
   },
   studentInfo: {
     flex: 1,
@@ -472,12 +475,12 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
     marginBottom: 2,
   },
   submittedTime: {
     fontSize: 13,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -495,22 +498,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: colors.border,
   },
   attemptText: {
     fontSize: 13,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   assignmentCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     
     
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
     borderRadius: 14,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     
@@ -518,7 +521,7 @@ const styles = StyleSheet.create({
   },
   assignmentLabel: {
     fontSize: 12,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     fontWeight: '500',
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -527,17 +530,17 @@ const styles = StyleSheet.create({
   assignmentTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   submissionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     
     
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
     borderRadius: 14,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     
@@ -546,20 +549,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
     marginBottom: 12,
   },
   contentBox: {
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.surfaceVariant,
     padding: 16,
     borderRadius: 12,
     
-    borderColor: Colors.gray[200],
+    borderColor: colors.border,
   },
   contentText: {
     fontSize: 15,
     lineHeight: 22,
-    color: Colors.gray[900],
+    color: colors.text,
   },
   emptyContent: {
     alignItems: 'center',
@@ -568,26 +571,26 @@ const styles = StyleSheet.create({
   },
   emptyContentText: {
     fontSize: 14,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
     marginTop: 8,
   },
   attachmentsSection: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: colors.border,
   },
   attachmentsLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.gray[700],
+    color: colors.text,
     marginBottom: 8,
   },
   attachmentItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -598,33 +601,33 @@ const styles = StyleSheet.create({
   attachmentName: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.gray[900],
+    color: colors.text,
     marginBottom: 2,
   },
   attachmentSize: {
     fontSize: 12,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
   },
   viewButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: `${colors.primary}15`,
     borderRadius: 8,
   },
   viewButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
+    color: colors.primary,
   },
   gradingCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     
     
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
     borderRadius: 14,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     
     shadowOpacity: 0.05,
     
@@ -636,7 +639,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.gray[700],
+    color: colors.text,
     marginBottom: 8,
   },
   scoreInputRow: {
@@ -648,47 +651,47 @@ const styles = StyleSheet.create({
     minWidth: 100,
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.primary,
+    color: colors.primary,
     padding: 12,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.primary + '30',
+    borderColor: `${colors.primary}30`,
     textAlign: 'center',
   },
   maxPointsText: {
     fontSize: 24,
     fontWeight: '600',
-    color: Colors.gray[400],
+    color: colors.textSecondary,
     marginLeft: 8,
   },
   percentageText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.success.main,
+    color: colors.success,
     marginTop: 8,
   },
   feedbackInput: {
     fontSize: 15,
     lineHeight: 22,
-    color: Colors.gray[900],
+    color: colors.text,
     padding: 16,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     
-    borderColor: Colors.gray[200],
+    borderColor: colors.border,
     minHeight: 140,
   },
   characterCount: {
     fontSize: 12,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
     marginTop: 6,
     textAlign: 'right',
   },
   previousGradeCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: `${Colors.info.main}10`,
+    backgroundColor: `${colors.info}10`,
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
@@ -700,16 +703,16 @@ const styles = StyleSheet.create({
   },
   previousGradeText: {
     fontSize: 14,
-    color: Colors.gray[700],
+    color: colors.text,
     lineHeight: 20,
   },
   previousGraderName: {
     fontWeight: '600',
-    color: Colors.info.main,
+    color: colors.info,
   },
   previousGradeTime: {
     fontSize: 12,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     marginTop: 4,
   },
   saveButtonContainer: {
@@ -720,13 +723,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 16,
     gap: 8,
   },
   saveButtonDisabled: {
-    backgroundColor: Colors.gray[300],
+    backgroundColor: colors.buttonDisabled,
   },
   saveButtonMobileText: {
     fontSize: 17,
@@ -735,13 +738,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,

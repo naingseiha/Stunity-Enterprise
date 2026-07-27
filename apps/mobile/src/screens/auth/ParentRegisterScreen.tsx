@@ -35,7 +35,7 @@ import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 
 type NavigationProp = AuthStackScreenProps<'ParentRegister'>['navigation'];
 
-const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 
 export default function ParentRegisterScreen() {

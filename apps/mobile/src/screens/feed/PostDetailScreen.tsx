@@ -605,7 +605,7 @@ export default function PostDetailScreen() {
 
           {/* Post type badge in header */}
           <View style={styles.headerCenter}>
-            <View style={[styles.headerTypeBadge, { backgroundColor: typeConfig.bgColor }]}>
+            <View style={[styles.headerTypeBadge, { backgroundColor: isDark ? `${typeConfig.color}26` : typeConfig.bgColor }]}>
               <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
               <Text style={[styles.headerTypeText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
             </View>
@@ -836,12 +836,12 @@ export default function PostDetailScreen() {
 
             {/* ── Learning Info Bar ── */}
             <View style={styles.infoBar}>
-              <View style={[styles.typeChip, { backgroundColor: typeConfig.bgColor }]}>
+              <View style={[styles.typeChip, { backgroundColor: isDark ? `${typeConfig.color}26` : typeConfig.bgColor }]}>
                 <Ionicons name={typeConfig.icon as any} size={13} color={typeConfig.color} />
                 <Text style={[styles.typeChipText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
               </View>
               {learningMeta?.difficulty && (
-                <View style={[styles.difficultyBadge, { backgroundColor: DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor }]}>
+                <View style={[styles.difficultyBadge, { backgroundColor: isDark ? `${DIFFICULTY_CONFIG[learningMeta.difficulty].color}26` : DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor }]}>
                   <Ionicons
                     name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any}
                     size={11}
@@ -1125,10 +1125,10 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   authorMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 },
   roleBadge: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#DBEAFE', paddingHorizontal: 6, paddingVertical: 2,
+    backgroundColor: isDark ? 'rgba(59,130,246,0.2)' : '#DBEAFE', paddingHorizontal: 6, paddingVertical: 2,
     borderRadius: 6, gap: 3,
   },
-  roleBadgeText: { fontSize: 10, fontWeight: '700', color: '#3B82F6' },
+  roleBadgeText: { fontSize: 10, fontWeight: '700', color: isDark ? '#93C5FD' : '#3B82F6' },
   timeText: { fontSize: 13, color: colors.textTertiary },
   followBtn: {
     minWidth: 82,

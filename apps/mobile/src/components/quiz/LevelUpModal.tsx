@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { CelebrationConfetti } from '@/components/common';
+import { useThemeContext } from '@/contexts';
 
 interface LevelUpModalProps {
   visible: boolean;
@@ -32,7 +33,8 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   onClose,
 }) => {
   const { width: windowWidth } = useWindowDimensions();
-  const styles = useMemo(() => createLevelUpStyles(windowWidth), [windowWidth]);
+  const { colors } = useThemeContext();
+  const styles = useMemo(() => createLevelUpStyles(windowWidth, colors), [windowWidth, colors]);
   const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -149,11 +151,11 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   );
 };
 
-function createLevelUpStyles(w: number) {
+function createLevelUpStyles(w: number, colors: ReturnType<typeof useThemeContext>['colors']) {
   return StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },

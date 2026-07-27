@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useId, useMemo } from 'react';
 import {
     View,
     Text,
@@ -19,15 +19,16 @@ import { useTranslation } from 'react-i18next';
 import { Haptics } from '@/services/haptics';
 import { attendanceService, REQUEST_TIMEOUT_CODE } from '@/services/attendance';
 import { useAuthStore } from '@/stores';
-import { Shadows } from '@/config';
+import { Colors, Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
 import { canUseTeacherAttendance, getTeacherAttendanceLookupId } from '@/utils/attendanceAccess';
+import { useThemeContext } from '@/contexts';
 
-const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 const BRAND_YELLOW = '#FFA600';
 
-const StatCard = ({ label, value, color, icon, helper }: any) => {
+const StatCard = ({ label, value, color, icon, helper, styles, colors }: any) => {
     const gradientColors = [`${color}08`, `${color}15`] as const;
     return (
         <Animated.View style={[styles.statCard, { borderColor: `${color}25` }]}>
@@ -41,7 +42,7 @@ const StatCard = ({ label, value, color, icon, helper }: any) => {
                 <View style={[styles.statIconBg, { backgroundColor: `${color}1A`, shadowColor: color }]}>
                     <Ionicons name={icon} size={22} color={color} />
                 </View>
-                <Text style={[styles.statValue, { color: '#1E293B' }]}>{value}</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
                 <Text style={styles.statLabel} numberOfLines={2}>{label}</Text>
                 {!!helper && <Text style={styles.statHelper} numberOfLines={2}>{helper}</Text>}
             </View>
@@ -152,20 +153,20 @@ const getDayStatus = (day: any) => {
 
 type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
-const getStatusStyle = (status: string, t: TranslateFn) => {
+const getStatusStyle = (status: string, t: TranslateFn, isDark: boolean) => {
     switch (status) {
         case 'PERMISSION':
-            return { label: t('attendance.status.permission'), bg: '#EDE9FE', fg: '#7C3AED' };
+            return { label: t('attendance.status.permission'), bg: isDark ? 'rgba(124,58,237,0.22)' : '#EDE9FE', fg: isDark ? '#A78BFA' : '#7C3AED' };
         case 'PRESENT':
-            return { label: t('attendance.status.present'), bg: '#D1FAE5', fg: '#059669' };
+            return { label: t('attendance.status.present'), bg: isDark ? 'rgba(5,150,105,0.22)' : '#D1FAE5', fg: isDark ? '#34D399' : '#059669' };
         case 'LATE':
-            return { label: t('attendance.status.late'), bg: '#FEF3C7', fg: '#B45309' };
+            return { label: t('attendance.status.late'), bg: isDark ? 'rgba(180,83,9,0.24)' : '#FEF3C7', fg: isDark ? '#FBBF24' : '#B45309' };
         case 'EXCUSED':
-            return { label: t('attendance.status.excused'), bg: '#E5E7EB', fg: '#4B5563' };
+            return { label: t('attendance.status.excused'), bg: isDark ? 'rgba(75,85,99,0.32)' : '#E5E7EB', fg: isDark ? '#D1D5DB' : '#4B5563' };
         case 'ABSENT':
-            return { label: t('attendance.status.absent'), bg: '#FEE2E2', fg: '#DC2626' };
+            return { label: t('attendance.status.absent'), bg: isDark ? 'rgba(220,38,38,0.22)' : '#FEE2E2', fg: isDark ? '#F87171' : '#DC2626' };
         default:
-            return { label: t('attendance.status.na'), bg: '#F1F5F9', fg: '#64748B' };
+            return { label: t('attendance.status.na'), bg: isDark ? 'rgba(100,116,139,0.24)' : '#F1F5F9', fg: isDark ? '#94A3B8' : '#64748B' };
     }
 };
 
@@ -173,6 +174,8 @@ export const AttendanceReportScreen = () => {
     const { t, i18n } = useTranslation();
     const navigation = useNavigation();
     const user = useAuthStore(s => s.user);
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const chartGradientId = useId().replace(/[^a-zA-Z0-9_-]/g, '_');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -295,7 +298,7 @@ export const AttendanceReportScreen = () => {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#0EA5E9" />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
@@ -353,7 +356,21 @@ export const AttendanceReportScreen = () => {
         : t('attendance.report.metrics.totalSessions');
 
     const overviewTheme = isTeacher
-        ? {
+        ? isDark
+            ? {
+                  gradientColors: ['#2A2410', '#0F2A22', '#0C2233'] as const,
+                  cardBorder: 'rgba(253,230,138,0.28)',
+                  textPrimary: 'rgba(255,255,255,0.92)',
+                  textSecondary: 'rgba(255,255,255,0.68)',
+                  miniBg: 'rgba(255,255,255,0.08)',
+                  miniBorder: 'rgba(253,230,138,0.22)',
+                  miniDivider: 'rgba(255,255,255,0.18)',
+                  ringStart: '#F59E0B',
+                  ringEnd: '#14B8A6',
+                  ringTrack: 'rgba(245, 158, 11, 0.22)',
+                  ringText: '#FDE68A',
+              }
+            : {
               gradientColors: ['#FFF4D6', '#ECFDF5', '#E0F2FE'] as const,
               cardBorder: '#FDE68A',
               textPrimary: '#1F2937',
@@ -382,7 +399,7 @@ export const AttendanceReportScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.header}>
                     <TouchableOpacity
@@ -408,7 +425,7 @@ export const AttendanceReportScreen = () => {
                 >
                     {summaryError ? (
                         <View style={styles.summaryErrorBanner}>
-                            <Ionicons name="alert-circle-outline" size={22} color="#B91C1C" />
+                            <Ionicons name="alert-circle-outline" size={22} color={colors.error} />
                             <Text style={styles.summaryErrorText}>{summaryError}</Text>
                         </View>
                     ) : null}
@@ -492,6 +509,8 @@ export const AttendanceReportScreen = () => {
                             color="#10B981"
                             icon="checkmark-circle"
                             helper={isTeacher ? t('attendance.report.metrics.daysWithCheckIn') : undefined}
+                            styles={styles}
+                            colors={colors}
                         />
                         <StatCard
                             label={isTeacher ? t('attendance.report.metrics.recordedSessions') : t('attendance.status.late')}
@@ -499,6 +518,8 @@ export const AttendanceReportScreen = () => {
                             color="#F59E0B"
                             icon="reader"
                             helper={isTeacher ? t('attendance.report.metrics.outOfSessions', { total: teacherExpectedSessions }) : undefined}
+                            styles={styles}
+                            colors={colors}
                         />
                         <StatCard
                             label={isTeacher
@@ -510,6 +531,8 @@ export const AttendanceReportScreen = () => {
                             color="#F43F5E"
                             icon="calendar-clear"
                             helper={isTeacher ? t('attendance.report.metrics.noCheckInYet') : undefined}
+                            styles={styles}
+                            colors={colors}
                         />
                         <StatCard
                             label={t('attendance.status.permission')}
@@ -517,6 +540,8 @@ export const AttendanceReportScreen = () => {
                             color="#7C3AED"
                             icon="document-text"
                             helper={isTeacher ? t('attendance.report.metrics.onlineRequests') : undefined}
+                            styles={styles}
+                            colors={colors}
                         />
                     </View>
 
@@ -528,7 +553,7 @@ export const AttendanceReportScreen = () => {
                                 <View key={item.id} style={[styles.infoCard, { marginBottom: 12 }]}>
                                     <View style={styles.breakdownHeader}>
                                         <Text style={styles.className}>{item.name}</Text>
-                                        <Text style={[styles.classRate, { color: item.rate >= 90 ? '#10B981' : '#F59E0B' }]}>
+                                        <Text style={[styles.classRate, { color: item.rate >= 90 ? colors.success : colors.warning }]}>
                                             {Math.round(item.rate)}%
                                         </Text>
                                     </View>
@@ -547,7 +572,7 @@ export const AttendanceReportScreen = () => {
                                                 styles.progressBarFill,
                                                 {
                                                     width: `${item.rate}%`,
-                                                    backgroundColor: item.rate >= 90 ? '#10B981' : '#F59E0B'
+                                                    backgroundColor: item.rate >= 90 ? colors.success : colors.warning
                                                 }
                                             ]}
                                         />
@@ -563,9 +588,9 @@ export const AttendanceReportScreen = () => {
                             <Text style={styles.sectionTitle}>{t('attendance.report.recentCheckIns')}</Text>
                             {groupLogsByDate(summary.checkInHistory).slice(0, 7).map((day: any, index: number) => {
                                 const dayStatus = getDayStatus(day);
-                                const statusUi = getStatusStyle(dayStatus, t);
-                                const morningStatusUi = getStatusStyle(day.morning?.status || 'UNKNOWN', t);
-                                const afternoonStatusUi = getStatusStyle(day.afternoon?.status || 'UNKNOWN', t);
+                                const statusUi = getStatusStyle(dayStatus, t, isDark);
+                                const morningStatusUi = getStatusStyle(day.morning?.status || 'UNKNOWN', t, isDark);
+                                const afternoonStatusUi = getStatusStyle(day.afternoon?.status || 'UNKNOWN', t, isDark);
 
                                 return (
                                     <View key={day.date || index} style={[styles.infoCard, { marginBottom: 12 }]}>
@@ -590,7 +615,7 @@ export const AttendanceReportScreen = () => {
                                             <View style={[styles.sessionBox, styles.sessionBoxMorning]}>
                                                 <View style={styles.sessionBoxHeader}>
                                                     <View style={[styles.sessionHeaderIconBadge, styles.sessionHeaderIconMorning]}>
-                                                        <Ionicons name="sunny-outline" size={14} color="#D97706" />
+                                                        <Ionicons name="sunny-outline" size={14} color={isDark ? '#FBBF24' : '#D97706'} />
                                                     </View>
                                                     <Text style={styles.sessionBoxTitle}>{t('attendance.morning')}</Text>
                                                 </View>
@@ -618,7 +643,7 @@ export const AttendanceReportScreen = () => {
                                             <View style={[styles.sessionBox, styles.sessionBoxAfternoon]}>
                                                 <View style={styles.sessionBoxHeader}>
                                                     <View style={[styles.sessionHeaderIconBadge, styles.sessionHeaderIconAfternoon]}>
-                                                        <Ionicons name="partly-sunny-outline" size={14} color="#4338CA" />
+                                                        <Ionicons name="partly-sunny-outline" size={14} color={isDark ? '#818CF8' : '#4338CA'} />
                                                     </View>
                                                     <Text style={styles.sessionBoxTitle}>{t('attendance.afternoon')}</Text>
                                                 </View>
@@ -654,7 +679,7 @@ export const AttendanceReportScreen = () => {
                             <Text style={styles.sectionTitle}>{t('attendance.report.performanceSummaryTitle')}</Text>
                             <View style={styles.infoCard}>
                                 <View style={styles.infoRow}>
-                                    <Ionicons name="information-circle-outline" size={20} color="#6B7280" />
+                                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                                     <Text style={styles.infoText}>
                                         {t('attendance.report.performanceSummaryDescription')}
                                     </Text>
@@ -670,10 +695,10 @@ export const AttendanceReportScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8FAFC' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
     safeArea: { flex: 1 },
-    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -685,15 +710,15 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 14,
-        backgroundColor: '#EFF6FF',
+        backgroundColor: isDark ? 'rgba(9,207,247,0.16)' : '#EFF6FF',
         alignItems: 'center',
         justifyContent: 'center',
-        ...Shadows.sm,
+        ...(isDark ? {} : Shadows.sm),
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
     scrollContent: { padding: 20 },
     summaryErrorBanner: {
@@ -703,15 +728,15 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         padding: 16,
         borderRadius: 20,
-        backgroundColor: '#FEF2F2',
+        backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
         borderWidth: 1,
-        borderColor: '#FECACA',
+        borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FECACA',
     },
     summaryErrorText: {
         flex: 1,
         fontSize: 14,
         fontWeight: '600',
-        color: '#991B1B',
+        color: isDark ? '#F87171' : '#991B1B',
         lineHeight: 20,
     },
     overviewCard: {
@@ -800,12 +825,12 @@ const styles = StyleSheet.create({
     },
     statCard: {
         width: '48%',
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 24,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#E2E8F0',
-        shadowColor: '#000',
+        borderColor: colors.border,
+        shadowColor: isDark ? 'transparent' : '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.04,
         shadowRadius: 16,
@@ -834,7 +859,7 @@ const styles = StyleSheet.create({
     },
     statLabel: {
         fontSize: 13,
-        color: '#475569',
+        color: colors.textSecondary,
         fontWeight: '700',
         marginTop: 6,
         textAlign: 'center',
@@ -844,7 +869,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
         fontSize: 11,
         lineHeight: 15,
-        color: '#94A3B8',
+        color: colors.textSecondary,
         fontWeight: '600',
         textAlign: 'center',
     },
@@ -854,16 +879,16 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         marginBottom: 16,
     },
     infoCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
-        shadowColor: '#000',
+        borderColor: colors.border,
+        shadowColor: isDark ? 'transparent' : '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.03,
         shadowRadius: 8,
@@ -877,7 +902,7 @@ const styles = StyleSheet.create({
     infoText: {
         flex: 1,
         fontSize: 14,
-        color: '#4B5563',
+        color: colors.text,
         lineHeight: 20,
     },
     checkInLogHeader: {
@@ -886,7 +911,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingBottom: 14,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#E2E8F0',
+        borderBottomColor: colors.border,
         marginBottom: 16,
     },
     checkInLogDate: {
@@ -904,7 +929,7 @@ const styles = StyleSheet.create({
     dateText: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#1E293B',
+        color: colors.text,
     },
     statusBadge: {
         paddingHorizontal: 10,
@@ -919,30 +944,30 @@ const styles = StyleSheet.create({
     dailySessionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 16,
         padding: 12,
         gap: 12,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: colors.border,
     },
     sessionBox: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        shadowColor: '#000',
+        shadowColor: isDark ? 'transparent' : '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.02,
         shadowRadius: 2,
         elevation: 1,
     },
     sessionBoxMorning: {
-        borderColor: '#FEF3C7',
+        borderColor: isDark ? 'rgba(217,119,6,0.3)' : '#FEF3C7',
     },
     sessionBoxAfternoon: {
-        borderColor: '#E0E7FF',
+        borderColor: isDark ? 'rgba(67,56,202,0.32)' : '#E0E7FF',
     },
     sessionBoxHeader: {
         flexDirection: 'row',
@@ -951,7 +976,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         paddingBottom: 8,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#F1F5F9',
+        borderBottomColor: colors.border,
     },
     sessionHeaderIconBadge: {
         width: 26,
@@ -961,15 +986,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     sessionHeaderIconMorning: {
-        backgroundColor: '#FFFBEB',
+        backgroundColor: isDark ? 'rgba(217,119,6,0.18)' : '#FFFBEB',
     },
     sessionHeaderIconAfternoon: {
-        backgroundColor: '#EEF2FF',
+        backgroundColor: isDark ? 'rgba(67,56,202,0.2)' : '#EEF2FF',
     },
     sessionBoxTitle: {
         fontSize: 12,
         fontWeight: '800',
-        color: '#475569',
+        color: colors.textSecondary,
         letterSpacing: 0.3,
     },
     timeRow: {
@@ -979,20 +1004,20 @@ const styles = StyleSheet.create({
     },
     timeLabelSmall: {
         fontSize: 11,
-        color: '#64748B',
+        color: colors.textSecondary,
         fontWeight: '500',
     },
     timeValueSmall: {
         fontSize: 12,
         fontWeight: '700',
-        color: '#1E293B',
+        color: colors.text,
     },
     sessionStatusRow: {
         marginTop: 10,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         paddingHorizontal: 8,
         paddingVertical: 6,
         borderRadius: 8,
@@ -1000,7 +1025,7 @@ const styles = StyleSheet.create({
     sessionStatusLabel: {
         fontSize: 10,
         fontWeight: '600',
-        color: '#64748B',
+        color: colors.textSecondary,
     },
     sessionStatusValue: {
         fontSize: 11,
@@ -1016,7 +1041,7 @@ const styles = StyleSheet.create({
     className: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
     classRate: {
         fontSize: 14,
@@ -1027,11 +1052,11 @@ const styles = StyleSheet.create({
     },
     breakdownText: {
         fontSize: 12,
-        color: '#6B7280',
+        color: colors.textSecondary,
     },
     progressBarBg: {
         height: 6,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 3,
         overflow: 'hidden',
     },

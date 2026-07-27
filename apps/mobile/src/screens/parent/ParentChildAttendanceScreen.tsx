@@ -18,8 +18,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { Colors, Spacing } from '@/config';
+import { Spacing } from '@/config';
 import { Config } from '@/config';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { tokenService } from '@/services/token';
 
@@ -35,6 +36,8 @@ interface AttendanceRecord {
 
 export default function ParentChildAttendanceScreen() {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ params: { studentId: string } }, 'params'>>();
   const { user } = useAuthStore();
@@ -112,7 +115,7 @@ export default function ParentChildAttendanceScreen() {
       case 'LATE': return '#D97706';
       case 'EXCUSED':
       case 'SICK': return '#6B7280';
-      default: return Colors.gray[600];
+      default: return colors.textSecondary;
     }
   };
 
@@ -151,7 +154,7 @@ export default function ParentChildAttendanceScreen() {
   if (loading || !child) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </SafeAreaView>
     );
@@ -164,7 +167,7 @@ export default function ParentChildAttendanceScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('parent.attendance.title')}</Text>
         <View style={{ width: 40 }} />
@@ -176,11 +179,11 @@ export default function ParentChildAttendanceScreen() {
         {/* Month navigation */}
         <View style={styles.monthNav}>
           <TouchableOpacity onPress={goPrevMonth} style={styles.monthBtn}>
-            <Ionicons name="chevron-back" size={24} color={Colors.gray[700]} />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.monthLabel}>{monthYearLabel}</Text>
           <TouchableOpacity onPress={goNextMonth} style={styles.monthBtn}>
-            <Ionicons name="chevron-forward" size={24} color={Colors.gray[700]} />
+            <Ionicons name="chevron-forward" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -209,7 +212,7 @@ export default function ParentChildAttendanceScreen() {
         {/* Records list */}
         {records.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="calendar-outline" size={48} color={Colors.gray[300]} />
+            <Ionicons name="calendar-outline" size={48} color={colors.textTertiary} />
             <Text style={styles.emptyTitle}>{t('parent.attendance.emptyTitle')}</Text>
             <Text style={styles.emptyDesc}>
               {t('parent.attendance.emptyDescription', { monthYear: monthYearLabel })}
@@ -243,46 +246,46 @@ export default function ParentChildAttendanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0FDF4' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.background,
   },
-  loadingText: { marginTop: 12, fontSize: 14, color: Colors.gray[600] },
+  loadingText: { marginTop: 12, fontSize: 15, lineHeight: 22, fontWeight: '500', color: colors.textSecondary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
+    borderBottomColor: colors.border,
   },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: Colors.gray[900] },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
-  subtitle: { fontSize: 14, color: Colors.gray[600], marginBottom: Spacing.md },
+  subtitle: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginBottom: Spacing.md },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.xl,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.md,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  monthBtn: { padding: 8 },
-  monthLabel: { fontSize: 17, fontWeight: '600', color: Colors.gray[900] },
+  monthBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  monthLabel: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
   statsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -290,30 +293,30 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: Spacing.md,
     alignItems: 'center',
   },
   statValue: { fontSize: 20, fontWeight: '700' },
-  statLabel: { fontSize: 11, color: Colors.gray[600], marginTop: 2 },
+  statLabel: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 2 },
   empty: {
     padding: Spacing.xl * 2,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: Colors.gray[900], marginTop: Spacing.md },
-  emptyDesc: { fontSize: 14, color: Colors.gray[600], marginTop: 4, textAlign: 'center' },
+  emptyTitle: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text, marginTop: Spacing.md },
+  emptyDesc: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
   recordsList: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -326,11 +329,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.border,
   },
   recordLeft: {},
-  recordDate: { fontSize: 15, fontWeight: '600', color: Colors.gray[900] },
-  recordSession: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
+  recordDate: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
+  recordSession: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 2 },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,

@@ -19,7 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
-import { Colors, Typography, Spacing } from '@/config';
+import { Spacing } from '@/config';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { Config } from '@/config';
 import { tokenService } from '@/services/token';
@@ -34,6 +35,8 @@ interface Child {
 
 export default function ParentChildScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ params: { studentId: string } }, 'params'>>();
   const { user } = useAuthStore();
@@ -69,7 +72,7 @@ export default function ParentChildScreen() {
   if (loading || !childFromList) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </SafeAreaView>
     );
@@ -81,7 +84,7 @@ export default function ParentChildScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <LinearGradient
-        colors={['#ECFDF5', '#D1FAE5', '#F0FDF4']}
+        colors={isDark ? [colors.background, colors.background] : ['#ECFDF5', '#D1FAE5', '#F0FDF4']}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -90,7 +93,7 @@ export default function ParentChildScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('parent.childOverview')}</Text>
         <View style={{ width: 40 }} />
@@ -128,7 +131,7 @@ export default function ParentChildScreen() {
             </View>
             <Text style={styles.actionTitle}>{t('parent.actions.gradesTitle')}</Text>
             <Text style={styles.actionDesc}>{t('parent.actions.gradesDesc')}</Text>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} style={styles.chevron} />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -140,7 +143,7 @@ export default function ParentChildScreen() {
             </View>
             <Text style={styles.actionTitle}>{t('parent.actions.attendanceTitle')}</Text>
             <Text style={styles.actionDesc}>{t('parent.actions.attendanceDesc')}</Text>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} style={styles.chevron} />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -152,7 +155,7 @@ export default function ParentChildScreen() {
             </View>
             <Text style={styles.actionTitle}>{t('parent.actions.reportCardTitle')}</Text>
             <Text style={styles.actionDesc}>{t('parent.actions.reportCardDesc')}</Text>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} style={styles.chevron} />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={styles.chevron} />
           </TouchableOpacity>
         </View>
 
@@ -162,18 +165,20 @@ export default function ParentChildScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0FDF4' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
-    color: Colors.gray[600],
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -182,21 +187,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
   },
-  backBtn: { padding: 8 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: colors.text,
   },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
   profileCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderRadius: 16,
     padding: Spacing.xl,
     alignItems: 'center',
     marginBottom: Spacing.xl,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -214,17 +219,19 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   name: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.gray[900],
+    color: colors.text,
     textAlign: 'center',
   },
   subName: {
-    fontSize: 14,
-    color: Colors.gray[600],
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
+    color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -247,10 +254,10 @@ const styles = StyleSheet.create({
   actionTile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.lg,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -266,16 +273,19 @@ const styles = StyleSheet.create({
   },
   actionTitle: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: colors.text,
   },
   actionDesc: {
     position: 'absolute',
     left: 84,
     top: 42,
-    fontSize: 13,
-    color: Colors.gray[500],
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
   chevron: { marginLeft: 8 },
 });

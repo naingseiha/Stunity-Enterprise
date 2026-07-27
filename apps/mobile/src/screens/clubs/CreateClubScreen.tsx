@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 
 import { clubsApi } from '@/api';
 import type { CreateClubData } from '@/api/clubs';
+import { useThemeContext } from '@/contexts';
 
 // ── Brand colours ────────────────────────────────────────────────
 const TEAL       = '#09CFF7'; // Stunity Brand Teal
@@ -103,6 +104,9 @@ const CLUB_MODES: Array<{
 export default function CreateClubScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useThemeContext();
+  const s = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const tealLight = isDark ? 'rgba(6,168,204,0.2)' : TEAL_LIGHT;
   const getTypeName = (typeId: CreateClubData['type']) => {
     if (typeId === 'CASUAL_STUDY_GROUP') return t('clubs.types.studyGroup');
     if (typeId === 'STRUCTURED_CLASS') return t('clubs.types.class');
@@ -249,7 +253,7 @@ export default function CreateClubScreen() {
           {/* ── Club Name ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+              <View style={[s.labelIcon, { backgroundColor: tealLight }]}>
                 <Ionicons name="text" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>{t('clubScreens.create.clubName')} <Text style={s.required}>*</Text></Text>
@@ -257,7 +261,7 @@ export default function CreateClubScreen() {
             <TextInput
               style={[s.input, nameFocused && s.inputFocused, showNameError && s.inputError]}
               placeholder={t('clubScreens.create.clubNamePlaceholder')}
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={setName}
               onFocus={() => setNameFocused(true)}
@@ -276,7 +280,7 @@ export default function CreateClubScreen() {
           {/* ── Description ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+              <View style={[s.labelIcon, { backgroundColor: tealLight }]}>
                 <Ionicons name="document-text" size={14} color={TEAL} />
               </View>
               <Text style={s.labelText}>{t('common.description')} <Text style={s.required}>*</Text></Text>
@@ -284,7 +288,7 @@ export default function CreateClubScreen() {
             <TextInput
               style={[s.input, s.textArea, descFocused && s.inputFocused, showDescError && s.inputError]}
               placeholder={t('clubScreens.create.descriptionPlaceholder')}
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textSecondary}
               value={description}
               onChangeText={setDescription}
               onFocus={() => setDescFocused(true)}
@@ -306,7 +310,7 @@ export default function CreateClubScreen() {
           {/* ── Club Type ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+              <View style={[s.labelIcon, { backgroundColor: tealLight }]}>
                 <Ionicons name="apps" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>{t('clubScreens.create.clubType')} <Text style={s.required}>*</Text></Text>
@@ -318,7 +322,7 @@ export default function CreateClubScreen() {
                 return (
                   <TouchableOpacity
                     key={type.id}
-                    style={[s.typeCard, sel && { borderColor: type.accent, backgroundColor: type.soft }]}
+                    style={[s.typeCard, sel && { borderColor: type.accent, backgroundColor: isDark ? `${type.accent}33` : type.soft }]}
                     onPress={() => setSelectedType(type.id)}
                     activeOpacity={0.85}
                   >
@@ -350,7 +354,7 @@ export default function CreateClubScreen() {
           {selectedType === 'STRUCTURED_CLASS' ? (
             <View style={s.card}>
               <View style={s.fieldLabel}>
-                <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                <View style={[s.labelIcon, { backgroundColor: tealLight }]}>
                   <Ionicons name="school-outline" size={14} color={TEAL_DARK} />
                 </View>
                 <Text style={s.labelText}>{t('clubScreens.create.classSettings')}</Text>
@@ -359,7 +363,7 @@ export default function CreateClubScreen() {
               <TextInput
                 style={s.input}
                 placeholder={t('clubScreens.create.subjectPlaceholder')}
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textSecondary}
                 value={subject}
                 onChangeText={setSubject}
               />
@@ -367,7 +371,7 @@ export default function CreateClubScreen() {
               <TextInput
                 style={s.input}
                 placeholder={t('clubScreens.create.levelPlaceholder')}
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textSecondary}
                 value={level}
                 onChangeText={setLevel}
               />
@@ -375,7 +379,7 @@ export default function CreateClubScreen() {
               <TextInput
                 style={[s.input, capacityError && s.inputError]}
                 placeholder={t('clubScreens.create.capacityPlaceholder')}
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
                 value={capacityInput}
                 onChangeText={setCapacityInput}
@@ -386,7 +390,7 @@ export default function CreateClubScreen() {
                 <TextInput
                   style={[s.input, s.splitInput]}
                   placeholder={t('clubScreens.create.startDatePlaceholder')}
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={colors.textSecondary}
                   value={startDate}
                   onChangeText={setStartDate}
                   autoCapitalize="none"
@@ -394,7 +398,7 @@ export default function CreateClubScreen() {
                 <TextInput
                   style={[s.input, s.splitInput]}
                   placeholder={t('clubScreens.create.endDatePlaceholder')}
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={colors.textSecondary}
                   value={endDate}
                   onChangeText={setEndDate}
                   autoCapitalize="none"
@@ -407,7 +411,7 @@ export default function CreateClubScreen() {
           {/* ── Privacy ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+              <View style={[s.labelIcon, { backgroundColor: tealLight }]}>
                 <Ionicons name="shield-checkmark" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>{t('clubScreens.create.privacy')} <Text style={s.required}>*</Text></Text>
@@ -424,7 +428,7 @@ export default function CreateClubScreen() {
                     activeOpacity={0.85}
                   >
                     <View style={[s.modeIconCircle, sel && s.modeIconCircleSel]}>
-                      <Ionicons name={mode.icon} size={17} color={sel ? TEAL : COLORS.textSecondary} />
+                      <Ionicons name={mode.icon} size={17} color={sel ? TEAL : colors.textSecondary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[s.modeName, sel && s.modeNameSel]}>{getModeName(mode.id)}</Text>
@@ -442,7 +446,7 @@ export default function CreateClubScreen() {
           {/* ── Tags ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+              <View style={[s.labelIcon, { backgroundColor: tealLight }]}>
                 <Ionicons name="pricetag" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>{t('clubScreens.create.tags')} <Text style={s.optional}>({t('common.optional')})</Text></Text>
@@ -450,7 +454,7 @@ export default function CreateClubScreen() {
             <TextInput
               style={s.input}
               placeholder={t('clubScreens.create.tagsPlaceholder')}
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textSecondary}
               value={tags}
               onChangeText={setTags}
             />
@@ -461,7 +465,7 @@ export default function CreateClubScreen() {
             {parsedTags.length > 0 && (
               <View style={s.tagPills}>
                 {parsedTags.slice(0, 5).map(tag => (
-                  <View key={tag} style={[s.tagPill, { backgroundColor: selectedTypeConfig.soft }]}>
+                  <View key={tag} style={[s.tagPill, { backgroundColor: isDark ? `${selectedTypeConfig.accent}33` : selectedTypeConfig.soft }]}>
                     <Text style={[s.tagPillText, { color: selectedTypeConfig.accent }]}>#{tag}</Text>
                   </View>
                 ))}
@@ -472,7 +476,7 @@ export default function CreateClubScreen() {
           {/* ── Live Preview ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: '#F0FDF4' }]}>
+              <View style={[s.labelIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.18)' : '#F0FDF4' }]}>
                 <Ionicons name="eye" size={14} color="#10B981" />
               </View>
               <Text style={s.labelText}>{t('clubScreens.create.livePreview')}</Text>
@@ -555,8 +559,8 @@ export default function CreateClubScreen() {
 }
 
 // ── Styles ───────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
 
   // Top bar (gradient)
   topGradient: {},
@@ -595,10 +599,10 @@ const s = StyleSheet.create({
 
   // White cards
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 16,
     gap: 12,
   },
@@ -610,28 +614,28 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
   },
-  labelText: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  labelText: { fontSize: 15, fontWeight: '700', color: colors.text },
   required:  { color: '#EF4444' },
-  optional:  { fontSize: 13, fontWeight: '500', color: COLORS.textMuted },
+  optional:  { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
 
   // Text inputs
   input: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   inputFocused: {
     borderColor: TEAL,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? 'rgba(15,118,110,0.16)' : '#F0FDFA',
   },
   inputError: {
     borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
   },
   textArea: {
     minHeight: 110,
@@ -643,9 +647,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginTop: -4,
   },
-  footerHint:     { fontSize: 12, color: COLORS.textMuted },
+  footerHint:     { fontSize: 12, color: colors.textSecondary },
   errorText:      { fontSize: 12, fontWeight: '600', color: '#EF4444' },
-  charCount:      { fontSize: 12, color: COLORS.textMuted },
+  charCount:      { fontSize: 12, color: colors.textSecondary },
   charCountWarn:  { color: '#F59E0B' },
   warnText:       { fontSize: 12, fontWeight: '600', color: '#B45309' },
   splitRow: {
@@ -665,10 +669,10 @@ const s = StyleSheet.create({
   },
   typeCard: {
     width: '48.5%',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     position: 'relative',
     gap: 6,
@@ -686,8 +690,8 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 4,
   },
-  typeName: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
-  typeDesc: { fontSize: 12, lineHeight: 16, color: COLORS.textSecondary },
+  typeName: { fontSize: 14, fontWeight: '800', color: colors.text },
+  typeDesc: { fontSize: 12, lineHeight: 16, color: colors.textSecondary },
 
   // Privacy mode list
   modeList: { gap: 8 },
@@ -698,30 +702,30 @@ const s = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
   },
   modeRowSelected: {
     borderColor: TEAL,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? 'rgba(15,118,110,0.16)' : '#F0FDFA',
   },
   modeIconCircle: {
     width: 36, height: 36,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center', justifyContent: 'center',
   },
   modeIconCircleSel: {
-    backgroundColor: TEAL_LIGHT,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.2)' : TEAL_LIGHT,
   },
-  modeName:    { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  modeName:    { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 2 },
   modeNameSel: { color: TEAL_DARK },
-  modeDesc:    { fontSize: 12, color: COLORS.textSecondary, lineHeight: 16 },
+  modeDesc:    { fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
   modeRadio: {
     width: 20, height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
   modeRadioSel: { borderColor: TEAL },
@@ -741,12 +745,12 @@ const s = StyleSheet.create({
 
   // Live preview card (mirrors the club list card style)
   previewCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 10,
@@ -760,7 +764,7 @@ const s = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    borderBottomColor: colors.border,
   },
   previewIconBox: {
     width: 40,
@@ -773,13 +777,13 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   previewViewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: TEAL_LIGHT,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.2)' : TEAL_LIGHT,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
@@ -795,7 +799,7 @@ const s = StyleSheet.create({
     paddingBottom: 12,
     fontSize: 14,
     lineHeight: 20,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   previewFooter: {
@@ -813,8 +817,8 @@ const s = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
-    backgroundColor: '#F1F5F9',
+    borderColor: colors.card,
+    backgroundColor: colors.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -822,7 +826,7 @@ const s = StyleSheet.create({
     marginLeft: 8,
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
   },
   previewJoinPill: {
     paddingHorizontal: 16,
@@ -841,7 +845,7 @@ const s = StyleSheet.create({
   },
   previewBar: {
     height: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     marginHorizontal: 16,
     marginBottom: 20,
     borderRadius: 3,
@@ -854,9 +858,9 @@ const s = StyleSheet.create({
 
   // Sticky bottom bar
   stickyBar: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: colors.border,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 6 : 14,

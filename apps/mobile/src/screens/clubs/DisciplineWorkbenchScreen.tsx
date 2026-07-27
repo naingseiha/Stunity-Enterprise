@@ -27,7 +27,7 @@ import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { Colors, Shadows } from '@/config';
 
-const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL = Colors.brand;
 
 type Props = NativeStackScreenProps<ClubsStackParamList, 'DisciplineWorkbench'>;
 

@@ -796,14 +796,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   backButtonPlaceholder: {
     marginTop: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 999,
     backgroundColor: '#0F172A',
   },
   backButtonText: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 14,
   },
   headerSafe: {
@@ -819,10 +819,10 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingVertical: 12,
   },
   navIconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.card,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -846,14 +846,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   levelPillText: {
     color: isDark ? '#7DD3FC' : '#0284C7',
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   courseTitle: {
     fontSize: 24,
-    fontWeight: '900',
+    fontWeight: '700',
     color: colors.text,
     letterSpacing: -0.5,
     lineHeight: 40,
@@ -880,8 +880,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 99,
   },
   heroMetaTextPill: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
   },
   instructorText: {
     marginTop: 20,
@@ -891,7 +891,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   languageCard: {
     marginTop: 18,
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: isDark ? colors.surfaceVariant : '#F8FBFF',
@@ -913,7 +913,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   languageCardTitle: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.text,
   },
   languageCardSubtitle: {
@@ -951,13 +951,13 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
   },
   contentScrollBox: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 130, // Extremely crucial for overlapping action bar
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceVariant,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 4,
     marginBottom: 24,
   },
@@ -983,7 +983,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   tabLabelActive: {
     color: colors.text,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   sectionCanvas: {
     flex: 1,
@@ -1005,14 +1005,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   announcementComposerIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 16,
     backgroundColor: isDark ? 'rgba(234,88,12,0.2)' : '#FFEDD5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   announcementComposerTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.text,
   },
   announcementComposerSubtitle: {
@@ -1055,11 +1055,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   announcementSubmitButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   announcementErrorCard: {
     backgroundColor: isDark ? 'rgba(190,24,93,0.16)' : '#FFF1F2',
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: isDark ? 'rgba(251,113,133,0.35)' : '#FECDD3',
     padding: 14,
@@ -1073,7 +1073,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   announcementEmptyCard: {
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderColor: colors.border,
     paddingVertical: 28,
@@ -1104,14 +1104,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   announcementBadge: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: isDark ? 'rgba(234,88,12,0.18)' : '#FFF7ED',
     alignItems: 'center',
     justifyContent: 'center',
   },
   announcementCardTitle: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.text,
   },
   announcementMetaText: {
@@ -1144,7 +1144,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   sectionHeaderText: {
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '700',
     color: colors.textTertiary,
     letterSpacing: 1.2,
   },
@@ -1156,7 +1156,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   progressIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: isDark ? 'rgba(20,184,166,0.18)' : '#F0F9FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1167,7 +1167,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   progressTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.text,
     letterSpacing: -0.2,
   },
@@ -1185,7 +1185,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   progressValue: {
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: '700',
     color: colors.primary,
     letterSpacing: -0.5,
   },
@@ -1209,7 +1209,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   statWidget: {
     width: '48%',
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -1229,7 +1229,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   statValuePro: {
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '700',
     letterSpacing: -0.5,
   },
   statLabelPro: {
@@ -1265,7 +1265,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4, // The only accent border
@@ -1282,7 +1282,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   islandIndex: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -1290,7 +1290,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   islandIndexText: {
     color: '#0284C7',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   islandBody: {
     flex: 1,
@@ -1298,7 +1298,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   islandTitle: {
     fontSize: 15,
     color: colors.text,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
   islandMetaRow: {
@@ -1354,7 +1354,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     right: 0,
     backgroundColor: colors.background,
     paddingTop: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -1373,7 +1373,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   primaryActionPillText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
 });

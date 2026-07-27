@@ -7,9 +7,9 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     RefreshControl,
-    SafeAreaView,
     StatusBar
 , Animated} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';

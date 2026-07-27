@@ -32,7 +32,7 @@ import { useTranslation } from 'react-i18next';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 
-const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 
 type NavigationProp = AuthStackScreenProps<'ParentLogin'>['navigation'];

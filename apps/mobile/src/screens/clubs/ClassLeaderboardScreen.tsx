@@ -19,25 +19,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { classesApi } from '@/api';
+import { useThemeContext } from '@/contexts';
 
-const COLORS = {
-  blue: '#2F8FF0',
-  pink: '#F75C8F',
-  coral: '#FF7A59',
-  teal: '#14B8A6',
-  ink: '#0F172A',
-  white: '#FFFFFF',
-  background: '#F7FAFC',
-  textPrimary: '#111827',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  surfaceSoft: '#F0FDFA',
-  border: '#E5E7EB',
-  borderSoft: '#EEF2F7',
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-};
+const BRAND_BLUE = '#2F8FF0';
+const BRAND_PINK = '#F75C8F';
 
 type RouteParams = {
   classId: string;
@@ -118,17 +103,19 @@ const getRankColor = (rank?: number) => {
   if (rank === 1) return '#F7B801';
   if (rank === 2) return '#AEB8C4';
   if (rank === 3) return '#B8863B';
-  return COLORS.blue;
+  return BRAND_BLUE;
 };
 
 const RankingAvatar = React.memo(({
   student,
   size,
   textSize,
+  styles,
 }: {
   student: RankingStudent['student'];
   size: number;
   textSize: number;
+  styles: ReturnType<typeof createStyles>;
 }) => (
   <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: getAvatarColor(student.id) }]}>
     {student.photoUrl ? (
@@ -151,14 +138,18 @@ const LeaderboardRow = React.memo(({
   index,
   linkedStudentId,
   onOpenProfile,
+  styles,
+  colors,
 }: {
   item: RankingStudent;
   index: number;
   linkedStudentId?: string;
   onOpenProfile: (userId?: string | null) => void;
+  styles: ReturnType<typeof createStyles>;
+  colors: ReturnType<typeof useThemeContext>['colors'];
 }) => {
   const trendIcon = index % 3 === 0 ? 'triangle' : index % 3 === 1 ? 'triangle' : 'remove';
-  const trendColor = index % 3 === 0 ? '#FFC107' : index % 3 === 1 ? '#FF7A59' : COLORS.textMuted;
+  const trendColor = index % 3 === 0 ? '#FFC107' : index % 3 === 1 ? '#FF7A59' : colors.textSecondary;
   const average = Number(item.average || 0);
   const isActive = linkedStudentId === item.student.id;
 
@@ -177,7 +168,7 @@ const LeaderboardRow = React.memo(({
           style={trendColor === '#FF7A59' ? styles.trendDown : undefined}
         />
       </View>
-      <RankingAvatar student={item.student} size={50} textSize={16} />
+      <RankingAvatar student={item.student} size={50} textSize={16} styles={styles} />
       <View style={styles.rowCopy}>
         <Text style={styles.rowName} numberOfLines={1}>
           {formatMoeysName(item.student)}
@@ -195,6 +186,8 @@ export default function ClassLeaderboardScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { classId, className, selectedMonth: routeMonth, linkedStudentId } = (route.params || {}) as RouteParams;
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const calendarMonthEnglish = CALENDAR_MONTHS_ENGLISH[new Date().getMonth()];
   const initialMonth = routeMonth && MONTHS.includes(routeMonth)
     ? routeMonth
@@ -397,7 +390,7 @@ export default function ClassLeaderboardScreen() {
 
       {periodLoading && (
         <View style={styles.updatingRow}>
-          <ActivityIndicator size="small" color={COLORS.pink} />
+          <ActivityIndicator size="small" color={BRAND_PINK} />
           <Text style={styles.updatingText}>{t('classScreens.report.updatingRanking', { defaultValue: 'Updating ranking...' })}</Text>
         </View>
       )}
@@ -420,7 +413,7 @@ export default function ClassLeaderboardScreen() {
                   isFirst && styles.podiumPhotoRingFirst,
                   { borderColor: getRankColor(rank) },
                 ]}>
-                  <RankingAvatar student={row.student} size={isFirst ? 108 : 78} textSize={isFirst ? 30 : 23} />
+                  <RankingAvatar student={row.student} size={isFirst ? 108 : 78} textSize={isFirst ? 30 : 23} styles={styles} />
                   <View style={[styles.podiumRankBadge, { backgroundColor: getRankColor(rank) }]}>
                     <Text style={styles.podiumRankBadgeText}>{rank}</Text>
                   </View>
@@ -445,7 +438,7 @@ export default function ClassLeaderboardScreen() {
             <Text style={styles.currentRankNumber}>{currentStudent.rank}</Text>
             <Ionicons name="triangle" size={12} color="#FFC107" />
           </View>
-          <RankingAvatar student={currentStudent.student} size={48} textSize={15} />
+          <RankingAvatar student={currentStudent.student} size={48} textSize={15} styles={styles} />
           <Text style={styles.currentRankText} numberOfLines={1}>
             {t('classScreens.report.youCurrentlyRank', { defaultValue: 'You Currently Rank' })}
           </Text>
@@ -474,20 +467,22 @@ export default function ClassLeaderboardScreen() {
         index={index}
         linkedStudentId={linkedStudentId}
         onOpenProfile={openProfile}
+        styles={styles}
+        colors={colors}
       />
     ),
-    [linkedStudentId, openProfile, t]
+    [linkedStudentId, openProfile, t, styles, colors]
   );
 
   const keyExtractor = useCallback((item: RankingStudent) => item.student.id, []);
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.84}>
-            <Ionicons name="chevron-back" size={25} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={25} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.titleButton}
@@ -495,13 +490,13 @@ export default function ClassLeaderboardScreen() {
             onPress={() => setMonthPickerVisible(true)}
           >
             <Text style={styles.topTitle} numberOfLines={1}>{selectedMonth} {monthContext.academicYear}</Text>
-            <Ionicons name="chevron-down" size={16} color={COLORS.textMuted} />
+            <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.backButton} onPress={onRefresh} activeOpacity={0.84}>
             {refreshing || periodLoading ? (
-              <ActivityIndicator size="small" color={COLORS.blue} />
+              <ActivityIndicator size="small" color={BRAND_BLUE} />
             ) : (
-              <Ionicons name="refresh-outline" size={20} color={COLORS.textPrimary} />
+              <Ionicons name="refresh-outline" size={20} color={colors.text} />
             )}
           </TouchableOpacity>
         </View>
@@ -510,12 +505,12 @@ export default function ClassLeaderboardScreen() {
       <View style={styles.contentPanel}>
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.pink} />
+            <ActivityIndicator size="large" color={BRAND_PINK} />
             <Text style={styles.centerText}>{t('classScreens.report.loading')}</Text>
           </View>
         ) : error && rankingStudents.length === 0 ? (
           <View style={styles.center}>
-            <Ionicons name="alert-circle-outline" size={44} color={COLORS.danger} />
+            <Ionicons name="alert-circle-outline" size={44} color={colors.error} />
             <Text style={styles.centerText}>{error}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
               <Text style={styles.retryButtonText}>{t('classScreens.report.retry')}</Text>
@@ -537,7 +532,7 @@ export default function ClassLeaderboardScreen() {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.pink} colors={[COLORS.pink]} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_PINK} colors={[BRAND_PINK]} />
             }
             removeClippedSubviews={false}
           />
@@ -555,7 +550,7 @@ export default function ClassLeaderboardScreen() {
             <View style={styles.monthModalHeader}>
               <Text style={styles.monthModalTitle}>{t('classScreens.grades.academicMonth')}</Text>
               <TouchableOpacity style={styles.monthModalClose} onPress={() => setMonthPickerVisible(false)}>
-                <Ionicons name="close" size={20} color={COLORS.textPrimary} />
+                <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
             <View style={styles.monthGrid}>
@@ -586,14 +581,14 @@ export default function ClassLeaderboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   safeArea: {
     paddingHorizontal: 18,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   topBar: {
     height: 58,
@@ -621,13 +616,13 @@ const styles = StyleSheet.create({
   topTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: 0.2,
   },
   contentPanel: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   listContent: {
     paddingHorizontal: 20,
@@ -650,14 +645,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: COLORS.borderSoft,
+    borderColor: colors.border,
   },
   scopeTabActive: {
-    backgroundColor: COLORS.pink,
-    borderColor: COLORS.pink,
-    shadowColor: COLORS.pink,
+    backgroundColor: BRAND_PINK,
+    borderColor: BRAND_PINK,
+    shadowColor: BRAND_PINK,
     shadowOpacity: 0.16,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
@@ -666,10 +661,10 @@ const styles = StyleSheet.create({
   scopeTabText: {
     fontSize: 13,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
   },
   scopeTabTextActive: {
-    color: COLORS.white,
+    color: colors.card,
   },
   updatingRow: {
     height: 32,
@@ -678,12 +673,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: '#FFF1F6',
+    backgroundColor: isDark ? 'rgba(247,92,143,0.16)' : '#FFF1F6',
   },
   updatingText: {
     fontSize: 12,
     fontWeight: '700',
-    color: COLORS.pink,
+    color: BRAND_PINK,
   },
   podiumWrap: {
     minHeight: 198,
@@ -713,8 +708,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: COLORS.white,
-    shadowColor: '#0F172A',
+    backgroundColor: colors.card,
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
@@ -736,25 +731,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: COLORS.background,
+    borderColor: colors.background,
   },
   podiumRankBadgeText: {
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.white,
+    color: colors.card,
   },
   podiumName: {
     marginTop: 16,
     fontSize: 15,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
     lineHeight: 22,
   },
   podiumScore: {
     marginTop: 2,
     fontSize: 13,
     fontWeight: '800',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   avatar: {
     alignItems: 'center',
@@ -767,19 +762,19 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontWeight: '900',
-    color: COLORS.white,
+    color: colors.card,
   },
   currentRankCard: {
     minHeight: 74,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#FBCFE8',
-    backgroundColor: COLORS.white,
+    borderColor: isDark ? 'rgba(247,92,143,0.35)' : '#FBCFE8',
+    backgroundColor: colors.card,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 14,
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? 'transparent' : '#0F172A',
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -793,21 +788,21 @@ const styles = StyleSheet.create({
   currentRankNumber: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
   },
   currentRankText: {
     flex: 1,
     minWidth: 0,
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
   },
   leaderboardRow: {
     minHeight: 78,
     borderRadius: 20,
     borderWidth: 1.2,
-    borderColor: '#CFF3EE',
-    backgroundColor: '#EFFFFB',
+    borderColor: isDark ? 'rgba(20,184,166,0.3)' : '#CFF3EE',
+    backgroundColor: isDark ? 'rgba(20,184,166,0.1)' : '#EFFFFB',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -816,8 +811,8 @@ const styles = StyleSheet.create({
   },
   leaderboardRowActive: {
     borderWidth: 1.5,
-    borderColor: '#F75C8F',
-    backgroundColor: '#FFF6FA',
+    borderColor: BRAND_PINK,
+    backgroundColor: isDark ? 'rgba(247,92,143,0.14)' : '#FFF6FA',
   },
   rowRankGroup: {
     width: 28,
@@ -827,7 +822,7 @@ const styles = StyleSheet.create({
   rowRank: {
     fontSize: 18,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
   },
   trendDown: {
     transform: [{ rotate: '180deg' }],
@@ -839,7 +834,7 @@ const styles = StyleSheet.create({
   rowName: {
     fontSize: 17,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
     lineHeight: 25,
   },
   scoreChip: {
@@ -847,16 +842,16 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: '#D7E3E6',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E4EFF1',
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 12,
   },
   scoreChipText: {
     fontSize: 16,
     fontWeight: '900',
-    color: COLORS.ink,
+    color: colors.text,
   },
   center: {
     flex: 1,
@@ -869,34 +864,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   retryButton: {
     marginTop: 16,
     borderRadius: 999,
-    backgroundColor: COLORS.pink,
+    backgroundColor: BRAND_PINK,
     paddingHorizontal: 18,
     paddingVertical: 10,
   },
   retryButtonText: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.white,
+    color: colors.card,
   },
   emptyText: {
     padding: 18,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   monthModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.22)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   monthModalCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
@@ -912,7 +907,7 @@ const styles = StyleSheet.create({
   monthModalTitle: {
     fontSize: 17,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   monthModalClose: {
     width: 38,
@@ -920,7 +915,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   monthGrid: {
     flexDirection: 'row',
@@ -933,28 +928,28 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.card,
     paddingHorizontal: 6,
   },
   monthOptionActive: {
-    borderColor: COLORS.pink,
-    backgroundColor: COLORS.pink,
+    borderColor: BRAND_PINK,
+    backgroundColor: BRAND_PINK,
   },
   monthOptionText: {
     fontSize: 13,
     fontWeight: '900',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   monthOptionYear: {
     marginTop: 3,
     fontSize: 11,
     fontWeight: '800',
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
   },
   monthOptionTextActive: {
-    color: COLORS.white,
+    color: colors.card,
   },
 });

@@ -23,7 +23,8 @@ import { authApi } from '@/api/client';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores';
 
-const BRAND_TEAL = '#09CFF7';
+import { Colors } from '@/config';
+const BRAND_TEAL = Colors.brand;
 
 function parseClaimCodeFromScan(rawData: string): string | null {
   const trimmed = rawData?.trim();

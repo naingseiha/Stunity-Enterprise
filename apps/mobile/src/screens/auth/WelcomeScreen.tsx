@@ -24,7 +24,8 @@ import { AuthStackScreenProps } from '@/navigation/types';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 
 // Brand Colors (Exact SVG Matches)
-const BRAND_TEAL = '#09CFF7';
+import { Colors } from '@/config';
+const BRAND_TEAL = Colors.brand;
 const BRAND_YELLOW = '#FFA600';
 const INK = '#0F172A';
 const MUTED = '#64748B';

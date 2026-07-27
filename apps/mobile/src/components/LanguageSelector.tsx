@@ -6,12 +6,13 @@ import {
   StyleSheet,
   Modal,
   FlatList,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { getAvailableTranslationLocales, syncTranslations } from '@/lib/i18n';
+import { useThemeContext } from '@/contexts';
 
 interface Language {
   code: string;
@@ -58,6 +59,8 @@ interface LanguageSelectorProps {
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onClose }) => {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [languages, setLanguages] = useState<Language[]>(FALLBACK_LANGUAGES);
 
   useEffect(() => {
@@ -115,9 +118,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
             <Text style={styles.languageSubName}>{item.name}</Text>
           </View>
         </View>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={24} color="#00A99D" />
-        )}
+        {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
       </TouchableOpacity>
     );
   };
@@ -127,10 +128,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={28} color="#333" />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>{t('common.language')}</Text>
-          <View style={{ width: 44 }} />
+          <View style={styles.headerSpacer} />
         </View>
 
         <FlatList
@@ -144,10 +145,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -156,16 +157,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-    backgroundColor: '#FFF',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   closeButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+  },
+  headerSpacer: {
+    width: 40,
+    height: 40,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   listContent: {
     padding: 16,
@@ -174,21 +183,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#EEE',
-    shadowColor: '#000',
+    borderColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   languageItemActive: {
-    borderColor: '#00A99D',
-    backgroundColor: '#F0FFFE',
+    borderColor: colors.primary,
+    backgroundColor: isDark ? 'rgba(29,155,240,0.14)' : '#F0F9FF',
   },
   languageInfo: {
     flexDirection: 'row',
@@ -201,16 +210,19 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   languageName: {
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   languageTextActive: {
-    color: '#00A99D',
+    color: colors.primary,
   },
   languageSubName: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
+    color: colors.textSecondary,
     marginTop: 2,
   },
 });

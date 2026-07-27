@@ -19,7 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors, Spacing } from '@/config';
+import { Spacing } from '@/config';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { Config } from '@/config';
 import { tokenService } from '@/services/token';
@@ -33,6 +34,8 @@ interface GradeSummary {
 }
 
 export default function ParentChildReportCardScreen() {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuthStore();
@@ -114,7 +117,7 @@ export default function ParentChildReportCardScreen() {
   if (loading || !child) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_023e817f" /></Text>
       </SafeAreaView>
     );
@@ -126,11 +129,11 @@ export default function ParentChildReportCardScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_39a31991" /></Text>
         <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
-          <Ionicons name="share-outline" size={22} color={Colors.gray[700]} />
+          <Ionicons name="share-outline" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -184,7 +187,7 @@ export default function ParentChildReportCardScreen() {
 
           {summary.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="document-text-outline" size={48} color={Colors.gray[300]} />
+              <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_ce45b21c" /></Text>
               <Text style={styles.emptyDesc}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_5cef7c01" /></Text>
             </View>
@@ -224,36 +227,36 @@ export default function ParentChildReportCardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0FDF4' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.background,
   },
-  loadingText: { marginTop: 12, fontSize: 14, color: Colors.gray[600] },
+  loadingText: { marginTop: 12, fontSize: 15, lineHeight: 22, fontWeight: '500', color: colors.textSecondary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
+    borderBottomColor: colors.border,
   },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: Colors.gray[900] },
-  shareBtn: { padding: 8 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  shareBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
-  subtitle: { fontSize: 14, color: Colors.gray[600], marginBottom: Spacing.md },
+  subtitle: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginBottom: Spacing.md },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -267,7 +270,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   cardSchool: {
     fontSize: 14,
@@ -278,41 +281,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: Spacing.lg,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.surfaceVariant,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
+    borderBottomColor: colors.border,
   },
   infoItem: { width: '50%', marginBottom: Spacing.sm },
-  infoLabel: { fontSize: 11, color: Colors.gray[500], textTransform: 'uppercase' },
-  infoValue: { fontSize: 14, fontWeight: '600', color: Colors.gray[900] },
+  infoLabel: { fontSize: 12, lineHeight: 18, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
+  infoValue: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
   statsRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
+    borderBottomColor: colors.border,
   },
   statCard: {
     flex: 1,
     padding: Spacing.lg,
     alignItems: 'center',
   },
-  statValue: { fontSize: 20, fontWeight: '700', color: Colors.gray[900] },
-  statLabel: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
+  statValue: { fontSize: 20, fontWeight: '700', color: colors.text },
+  statLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, marginTop: 2 },
   empty: {
     padding: Spacing.xl * 2,
     alignItems: 'center',
   },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: Colors.gray[900], marginTop: Spacing.md },
-  emptyDesc: { fontSize: 14, color: Colors.gray[600], marginTop: 4, textAlign: 'center' },
+  emptyTitle: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text, marginTop: Spacing.md },
+  emptyDesc: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
   table: { padding: Spacing.md },
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.border,
   },
-  tableSubject: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.gray[900] },
-  tableAvg: { width: 56, fontSize: 14, fontWeight: '600', color: Colors.gray[900], textAlign: 'right' },
+  tableSubject: { flex: 1, fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
+  tableAvg: { width: 56, fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text, textAlign: 'right' },
   tableGrade: {
     width: 32,
     height: 32,
@@ -333,7 +336,7 @@ const styles = StyleSheet.create({
   fail: { color: '#DC2626' },
   footer: {
     fontSize: 11,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
     padding: Spacing.lg,
     textAlign: 'center',
   },

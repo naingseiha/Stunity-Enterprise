@@ -17,16 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
 import { classesApi, teachersApi } from '@/api';
-
-const COLORS = {
-  bg: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#E2E8F0',
-  text: '#0F172A',
-  textMuted: '#64748B',
-  primaryDark: '#0284C7',
-  danger: '#EF4444',
-};
+import { useThemeContext } from '@/contexts';
 
 type RouteParams = {
   teacherId: string;
@@ -73,6 +64,8 @@ export default function EditTeacherScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const params = (route.params || {}) as RouteParams;
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -167,7 +160,7 @@ export default function EditTeacherScreen() {
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('classScreens.editTeacher.header')}</Text>
         <TouchableOpacity disabled={saving} onPress={handleSave} style={styles.saveBtn}>
@@ -177,7 +170,7 @@ export default function EditTeacherScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -299,15 +292,15 @@ export default function EditTeacherScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -318,14 +311,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
   },
   saveBtn: {
     minWidth: 64,
@@ -333,7 +326,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
   },
   saveText: {
@@ -352,17 +345,17 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     gap: 10,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: 4,
   },
   row: {
@@ -370,13 +363,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 10,
     height: 44,
     paddingHorizontal: 12,
-    color: COLORS.text,
+    color: colors.text,
     flex: 1,
   },
   half: {
@@ -390,27 +383,27 @@ const styles = StyleSheet.create({
   choicePill: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.border,
     borderRadius: 10,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
   },
   choicePillActive: {
-    borderColor: COLORS.primaryDark,
-    backgroundColor: '#E0F2FE',
+    borderColor: colors.primary,
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
   },
   choiceText: {
-    color: COLORS.textMuted,
+    color: colors.textSecondary,
     fontWeight: '600',
     fontSize: 13,
   },
   choiceTextActive: {
-    color: COLORS.primaryDark,
+    color: colors.primary,
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.error,
     fontSize: 13,
     fontWeight: '600',
     paddingHorizontal: 2,

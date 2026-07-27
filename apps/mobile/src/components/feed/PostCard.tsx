@@ -238,7 +238,7 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
   activeColor,
   onPress,
   onLongPress,
-  size = 24,
+  size = 20,
   styles,
   accessibilityLabel,
 }) => {
@@ -333,7 +333,7 @@ const ViewStatsIndicator = React.memo<{
       style={styles.viewStatPressable}
     >
     <View style={styles.viewStatInner}>
-      <Ionicons name="stats-chart" size={18} color="#0D9488" />
+      <Ionicons name="stats-chart" size={14} color="#0D9488" />
       <Text style={[styles.viewStatText, { color: colors.textSecondary }]}>
         {formatNumber(count)}
       </Text>
@@ -377,7 +377,7 @@ const ActionBar = React.memo<ActionBarProps>(({
                   accessibilityRole="button"
                   accessibilityLabel={r.label}
                 >
-                  <Ionicons name={r.icon} size={24} color={r.color} />
+                  <Ionicons name={r.icon} size={20} color={r.color} />
                 </Pressable>
               ))}
             </View>
@@ -412,7 +412,7 @@ const ActionBar = React.memo<ActionBarProps>(({
           color={colors.text}
           activeColor="#00BA7C"
           onPress={onRepost}
-          size={26}
+          size={22}
           styles={styles}
           accessibilityLabel={t('feed.repost')}
         />
@@ -422,7 +422,7 @@ const ActionBar = React.memo<ActionBarProps>(({
         color={colors.text}
         activeColor="#1D9BF0"
         onPress={onShare}
-        size={23}
+        size={19}
         styles={styles}
         accessibilityLabel={t('common.share')}
       />
@@ -1538,7 +1538,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingVertical: 5,
   },
   actionText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -1557,7 +1557,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingVertical: 5,
   },
   viewStatText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
   },
   pollSection: {

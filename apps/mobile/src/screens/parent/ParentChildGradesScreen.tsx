@@ -18,8 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors, Spacing } from '@/config';
+import { Spacing } from '@/config';
 import { Config } from '@/config';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import { tokenService } from '@/services/token';
 
@@ -36,6 +37,8 @@ interface Grade {
 }
 
 export default function ParentChildGradesScreen() {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ params: { studentId: string } }, 'params'>>();
   const { user } = useAuthStore();
@@ -113,7 +116,7 @@ export default function ParentChildGradesScreen() {
   if (loading || !child) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_f7894d74" /></Text>
       </SafeAreaView>
     );
@@ -126,7 +129,7 @@ export default function ParentChildGradesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_1305df96" /></Text>
         <View style={{ width: 40 }} />
@@ -186,7 +189,7 @@ export default function ParentChildGradesScreen() {
         {/* Grades list */}
         {filteredGrades.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="bar-chart-outline" size={48} color={Colors.gray[300]} />
+            <Ionicons name="bar-chart-outline" size={48} color={colors.textTertiary} />
             <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_6344c2b5" /></Text>
             <Text style={styles.emptyDesc}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_fbd9a408" /></Text>
           </View>
@@ -218,80 +221,80 @@ export default function ParentChildGradesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0FDF4' },
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.background,
   },
-  loadingText: { marginTop: 12, fontSize: 14, color: Colors.gray[600] },
+  loadingText: { marginTop: 12, fontSize: 15, lineHeight: 22, fontWeight: '500', color: colors.textSecondary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
+    borderBottomColor: colors.border,
   },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: Colors.gray[900] },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
-  subtitle: { fontSize: 14, color: Colors.gray[600], marginBottom: Spacing.md },
+  subtitle: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginBottom: Spacing.md },
   monthScroll: { marginBottom: Spacing.lg, maxHeight: 44 },
   monthScrollContent: { flexDirection: 'row', gap: 8, paddingRight: Spacing.lg },
   monthChip: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    borderRadius: 999,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.border,
   },
   monthChipActive: { backgroundColor: '#059669', borderColor: '#059669' },
-  monthChipText: { fontSize: 14, fontWeight: '600', color: Colors.gray[700] },
-  monthChipTextActive: { color: '#fff' },
+  monthChipText: { fontSize: 12, lineHeight: 18, fontWeight: '700', color: colors.textSecondary },
+  monthChipTextActive: { color: '#FFFFFF' },
   statsRow: {
     flexDirection: 'row',
     marginBottom: Spacing.xl,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.lg,
     alignItems: 'center',
     marginHorizontal: 4,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  statValue: { fontSize: 20, fontWeight: '700', color: Colors.gray[900] },
-  statLabel: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
+  statValue: { fontSize: 20, fontWeight: '700', color: colors.text },
+  statLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, marginTop: 2 },
   empty: {
     padding: Spacing.xl * 2,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: Colors.gray[900], marginTop: Spacing.md },
-  emptyDesc: { fontSize: 14, color: Colors.gray[600], marginTop: 4, textAlign: 'center' },
+  emptyTitle: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text, marginTop: Spacing.md },
+  emptyDesc: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
   gradesList: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -303,11 +306,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.border,
   },
-  subjectName: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.gray[900] },
-  score: { width: 60, fontSize: 14, color: Colors.gray[700], textAlign: 'right' },
-  percentage: { width: 48, fontSize: 14, fontWeight: '600', color: Colors.gray[900], textAlign: 'right', marginLeft: Spacing.sm },
+  subjectName: { flex: 1, fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
+  score: { width: 60, fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, textAlign: 'right' },
+  percentage: { width: 48, fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text, textAlign: 'right', marginLeft: Spacing.sm },
   gradeBadge: {
     width: 32,
     height: 32,

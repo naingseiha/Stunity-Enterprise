@@ -21,13 +21,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format, isPast, isFuture, differenceInDays } from 'date-fns';
 
-import { Colors } from '@/config';
 import { assignmentsApi, clubsApi } from '@/api';
 import type { ClubAssignment } from '@/api/assignments';
 import type { ClubMember } from '@/api/clubs';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useAuthStore } from '@/stores/authStore';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 const MANAGER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'];
 const PUBLISHER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR'];
@@ -38,6 +38,8 @@ export default function AssignmentDetailScreen() {
   const route = useRoute<ClubsStackScreenProps<'AssignmentDetail'>['route']>();
   const { assignmentId, clubId } = route.params;
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [assignment, setAssignment] = useState<ClubAssignment | null>(null);
   const [members, setMembers] = useState<ClubMember[]>([]);
@@ -175,13 +177,13 @@ export default function AssignmentDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -192,13 +194,13 @@ export default function AssignmentDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centered}>
-          <Ionicons name="alert-circle-outline" size={64} color={Colors.gray[300]} />
+          <Ionicons name="alert-circle-outline" size={64} color={colors.textSecondary} />
           <Text style={styles.errorText}>{error || t('classScreens.assignmentDetail.alertTitle')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchAssignment}>
             <Text style={styles.retryButtonText}>{t('classScreens.report.retry')}</Text>
@@ -238,7 +240,7 @@ export default function AssignmentDetailScreen() {
       case 'QUIZ': return '#8B5CF6';
       case 'EXAM': return '#EF4444';
       case 'PROJECT': return '#10B981';
-      default: return Colors.primary;
+      default: return colors.primary;
     }
   };
 
@@ -253,12 +255,12 @@ export default function AssignmentDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
         {isManager ? (
           <TouchableOpacity style={styles.moreButton} onPress={handleMoreActions}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
+            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 40 }} />
@@ -270,7 +272,7 @@ export default function AssignmentDetailScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.primary}
+            tintColor={colors.primary}
           />
         }
         contentContainerStyle={styles.scrollContent}
@@ -289,7 +291,7 @@ export default function AssignmentDetailScreen() {
 
           {assignment.subject && (
             <View style={styles.subjectBadge}>
-              <Ionicons name="bookmark" size={14} color={Colors.primary} />
+              <Ionicons name="bookmark" size={14} color={colors.primary} />
               <Text style={styles.subjectText}>{assignment.subject.name}</Text>
             </View>
           )}
@@ -299,7 +301,7 @@ export default function AssignmentDetailScreen() {
               <Ionicons
                 name={isManager ? 'shield-checkmark-outline' : 'school-outline'}
                 size={14}
-                color={isManager ? '#0369A1' : '#475569'}
+                color={isManager ? (isDark ? '#67E8F9' : '#0369A1') : colors.textSecondary}
               />
               <Text style={styles.roleInfoText}>
                 {isManager ? `Manager view (${myMembership.role})` : `Learner view (${myMembership.role})`}
@@ -312,7 +314,7 @@ export default function AssignmentDetailScreen() {
               <Ionicons
                 name={assignmentIsDraft ? 'eye-off-outline' : 'globe-outline'}
                 size={14}
-                color={assignmentIsDraft ? '#C2410C' : '#0369A1'}
+                color={assignmentIsDraft ? (isDark ? '#FDBA74' : '#C2410C') : (isDark ? '#67E8F9' : '#0369A1')}
               />
               <Text style={[styles.publishStateText, assignmentIsDraft ? styles.publishStateTextDraft : styles.publishStateTextPublished]}>
                 {assignmentIsDraft ? t('assignments.detail.draftOnlyManagers') : t('assignments.detail.publishedStudentsSubmit')}
@@ -409,7 +411,7 @@ export default function AssignmentDetailScreen() {
           
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Ionicons name="trophy-outline" size={18} color={Colors.gray[500]} />
+              <Ionicons name="trophy-outline" size={18} color={colors.textSecondary} />
               <View>
                 <Text style={styles.infoLabel}>{t('assignments.detail.points')}</Text>
                 <Text style={styles.infoValue}>{assignment.maxPoints} <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentDetailScreen.k_1b30bf0a" /></Text>
@@ -417,7 +419,7 @@ export default function AssignmentDetailScreen() {
             </View>
             
             <View style={styles.infoItem}>
-              <Ionicons name="scale-outline" size={18} color={Colors.gray[500]} />
+              <Ionicons name="scale-outline" size={18} color={colors.textSecondary} />
               <View>
                 <Text style={styles.infoLabel}>{t('assignments.detail.weight')}</Text>
                 <Text style={styles.infoValue}>{(assignment.weight * 100).toFixed(0)}%</Text>
@@ -426,7 +428,7 @@ export default function AssignmentDetailScreen() {
             
             {assignment.requireFile && (
               <View style={styles.infoItem}>
-                <Ionicons name="attach-outline" size={18} color={Colors.gray[500]} />
+                <Ionicons name="attach-outline" size={18} color={colors.textSecondary} />
                 <View>
                   <Text style={styles.infoLabel}>{t('assignments.detail.attachment')}</Text>
                   <Text style={styles.infoValue}>{t('assignments.detail.required')}</Text>
@@ -458,11 +460,11 @@ export default function AssignmentDetailScreen() {
             <Text style={styles.sectionTitle}>{t('learn.lessonViewer.attachments')}</Text>
             {assignment.attachments.map((attachment, index) => (
               <TouchableOpacity key={index} style={styles.attachmentItem}>
-                <Ionicons name="document-attach" size={20} color={Colors.primary} />
+                <Ionicons name="document-attach" size={20} color={colors.primary} />
                 <Text style={styles.attachmentName} numberOfLines={1}>
                   {attachment.name}
                 </Text>
-                <Ionicons name="download-outline" size={20} color={Colors.gray[400]} />
+                <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             ))}
           </Animated.View>
@@ -509,7 +511,7 @@ export default function AssignmentDetailScreen() {
         
         {!isManager && isSubmitted && !isGraded && (
           <TouchableOpacity style={styles.viewSubmissionButton} onPress={handleSubmit}>
-            <Ionicons name="eye-outline" size={20} color={Colors.primary} />
+            <Ionicons name="eye-outline" size={20} color={colors.primary} />
             <Text style={styles.viewSubmissionButtonText}>{t('assignments.detail.viewMySubmission')}</Text>
           </TouchableOpacity>
         )}
@@ -518,10 +520,10 @@ export default function AssignmentDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -529,9 +531,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -542,7 +544,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   moreButton: {
     width: 40,
@@ -554,11 +556,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   titleSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -582,13 +584,13 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   subjectBadge: {
     flexDirection: 'row',
@@ -596,14 +598,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
     borderRadius: 12,
     gap: 6,
   },
   subjectText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#0EA5E9',
+    color: isDark ? '#7DD3FC' : '#0EA5E9',
   },
   roleInfoPill: {
     marginTop: 12,
@@ -611,16 +613,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   roleInfoText: {
     fontSize: 12,
-    color: '#334155',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   publishStatePill: {
@@ -635,29 +637,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   publishStateDraft: {
-    backgroundColor: '#FFF7ED',
-    borderColor: '#FDBA74',
+    backgroundColor: isDark ? 'rgba(194,65,12,0.18)' : '#FFF7ED',
+    borderColor: isDark ? 'rgba(253,186,116,0.35)' : '#FDBA74',
   },
   publishStatePublished: {
-    backgroundColor: '#ECFEFF',
-    borderColor: '#67E8F9',
+    backgroundColor: isDark ? 'rgba(3,105,161,0.18)' : '#ECFEFF',
+    borderColor: isDark ? 'rgba(103,232,249,0.35)' : '#67E8F9',
   },
   publishStateText: {
     fontSize: 12,
     fontWeight: '600',
   },
   publishStateTextDraft: {
-    color: '#C2410C',
+    color: isDark ? '#FDBA74' : '#C2410C',
   },
   publishStateTextPublished: {
-    color: '#0369A1',
+    color: isDark ? '#67E8F9' : '#0369A1',
   },
   statusCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -688,23 +690,23 @@ const styles = StyleSheet.create({
   scoreLabel: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   feedbackSection: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
   },
   feedbackLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 8,
   },
   feedbackText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   lateWarning: {
@@ -714,43 +716,43 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0F2FE',
+    borderTopColor: colors.border,
   },
   lateWarningText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#0EA5E9',
+    color: colors.primary,
   },
   statusDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   dueDateCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   dueDateCardOverdue: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FCA5A5',
   },
   dueDateCardSoon: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#7DD3FC',
+    borderColor: isDark ? 'rgba(125,211,252,0.35)' : '#7DD3FC',
   },
   dueDateContent: {
     flex: 1,
@@ -758,7 +760,7 @@ const styles = StyleSheet.create({
   dueDateText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 4,
   },
   dueDateTextOverdue: {
@@ -769,15 +771,15 @@ const styles = StyleSheet.create({
   },
   lateAllowedText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -786,7 +788,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 16,
   },
   infoGrid: {
@@ -802,20 +804,20 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   infoValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
   },
   descriptionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -823,15 +825,15 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 15,
-    color: '#374151',
+    color: colors.text,
     lineHeight: 22,
   },
   instructionsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -839,15 +841,15 @@ const styles = StyleSheet.create({
   },
   instructionsText: {
     fontSize: 15,
-    color: '#374151',
+    color: colors.text,
     lineHeight: 22,
   },
   attachmentsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -858,7 +860,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 8,
     marginBottom: 8,
     gap: 12,
@@ -867,7 +869,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.text,
   },
   bottomActions: {
     position: 'absolute',
@@ -875,10 +877,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderTopColor: colors.border,
+    shadowColor: isDark ? 'transparent' : '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -931,7 +933,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#0EA5E9',
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 14,
   },
   managerSecondaryButtonText: {
@@ -943,7 +945,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 2,
@@ -963,7 +965,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 16,
     marginBottom: 24,
     textAlign: 'center',

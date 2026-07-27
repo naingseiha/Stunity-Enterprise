@@ -24,6 +24,7 @@ import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
 import { SchoolClassCard } from '@/components/clubs/SchoolClassCard';
 import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
+import { Colors } from '@/config';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -33,11 +34,11 @@ const COLORS = {
   textSecondary: '#475569',
   textMuted: '#94A3B8',
   primary: '#09CFF7',
-  primaryDark: '#06A8CC',
+  primaryDark: Colors.brand,
 };
 
 const CLASS_THEMES = [
-  { accent: '#06A8CC', soft: '#E0F9FD', icon: 'school-outline'      as const }, // Brand Teal
+  { accent: Colors.brand, soft: '#E0F9FD', icon: 'school-outline'      as const }, // Brand Teal
   { accent: '#6366F1', soft: '#EEF2FF', icon: 'library-outline'     as const }, // Indigo
   { accent: '#F59E0B', soft: '#FEF3C7', icon: 'ribbon-outline'      as const }, // Amber
   { accent: '#22C55E', soft: '#F0FDF4', icon: 'school-outline'      as const }, // Green
