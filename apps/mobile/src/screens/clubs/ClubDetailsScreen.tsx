@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   },
   heroModePill: {
     height: 32,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
   },
   heroMetaPill: {
     height: 30,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
     minWidth: 110,
     height: 30,
     paddingHorizontal: 12,
-    borderRadius: 999,
+    borderRadius: 9999,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

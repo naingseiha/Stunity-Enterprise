@@ -187,7 +187,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
   },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 9999 },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',

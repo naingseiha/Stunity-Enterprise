@@ -531,7 +531,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     color: '#8B5CF6',
   },
   submitBtn: {
-    borderRadius: 999,
+    borderRadius: 9999,
     overflow: 'hidden',
   },
   submitBtnDisabled: {

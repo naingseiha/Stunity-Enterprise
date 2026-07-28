@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@/components/common';
 import { useNavigationContext, useThemeContext } from '@/contexts';
+import { BorderRadius, Colors, ColorScale, Shadows, Spacing, Typography } from '@/config';
 import { fetchProfile } from '@/api/profileApi';
 import { useAuthStore } from '@/stores';
 import { ProfileStackScreenProps } from '@/navigation/types';
@@ -192,7 +193,7 @@ export default function UserCardScreen({ navigation }: Props) {
     () => USER_CARD_ROLE_ICONS[currentProfile?.role ?? 'STUDENT'],
     [currentProfile?.role]
   );
-  const roleChipForeground = '#0F172A';
+  const roleChipForeground = ColorScale.gray[900];
 
   const isPrimaryCardTemplate = selectedStyleId === DEFAULT_USER_CARD_STYLE_ID;
   const isWaveDesign = selectedDesignId === 'wave';
@@ -423,7 +424,7 @@ export default function UserCardScreen({ navigation }: Props) {
   const renderFrontVertical = () => (
     <View style={styles.verticalPremiumBase}>
       <LinearGradient
-        colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+        colors={[Colors.white, '#F5F0FF', '#EEF7FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.prismCanvas}
@@ -698,7 +699,7 @@ export default function UserCardScreen({ navigation }: Props) {
   const renderFrontHorizontalLuxe = () => (
     <View style={[styles.horizontalCardBase, { aspectRatio: CARD_ASPECT_RATIO }]}>
       <LinearGradient
-        colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+        colors={[Colors.white, '#F5F0FF', '#EEF7FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.prismCanvas}
@@ -740,7 +741,7 @@ export default function UserCardScreen({ navigation }: Props) {
   const renderBackHorizontalLuxe = () => (
     <View style={[styles.horizontalCardBase, { aspectRatio: CARD_ASPECT_RATIO }]}>
       <LinearGradient
-        colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+        colors={[Colors.white, '#F5F0FF', '#EEF7FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.prismCanvas}
@@ -794,7 +795,7 @@ export default function UserCardScreen({ navigation }: Props) {
   const renderBackVertical = () => (
     <View style={styles.verticalPremiumBase}>
       <LinearGradient
-        colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+        colors={[Colors.white, '#F5F0FF', '#EEF7FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.prismCanvas}
@@ -1011,7 +1012,7 @@ export default function UserCardScreen({ navigation }: Props) {
                     <LinearGradient colors={styleOption.gradient} style={styles.styleOptionDot} />
                     {isSelected ? (
                       <View style={[styles.styleOptionCheck, { backgroundColor: styleOption.outline }]}>
-                        <Ionicons name="checkmark" size={10} color="#FFFFFF" />
+                        <Ionicons name="checkmark" size={10} color={Colors.white} />
                       </View>
                     ) : null}
                   </TouchableOpacity>
@@ -1068,7 +1069,7 @@ export default function UserCardScreen({ navigation }: Props) {
 
         <View style={styles.actionsGrid}>
           <TouchableOpacity style={styles.actionCard} onPress={handleShare} activeOpacity={0.8}>
-            <Ionicons name="share-social-outline" size={20} color="#2563EB" />
+            <Ionicons name="share-social-outline" size={20} color={Colors.info.dark} />
             <Text style={styles.actionTitle}>{t('profile.userCard.share', 'Share Card')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
@@ -1076,11 +1077,11 @@ export default function UserCardScreen({ navigation }: Props) {
             <Text style={styles.actionTitle}>{t('profile.userCard.edit', 'Edit Details')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Settings')} activeOpacity={0.8}>
-            <Ionicons name="shield-checkmark-outline" size={20} color="#059669" />
+            <Ionicons name="shield-checkmark-outline" size={20} color={Colors.success.dark} />
             <Text style={styles.actionTitle}>{t('profile.userCard.security', 'Security')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionCard} onPress={handleRefresh} activeOpacity={0.8}>
-            <Ionicons name="refresh-outline" size={20} color="#D97706" />
+            <Ionicons name="refresh-outline" size={20} color={Colors.warning.dark} />
             <Text style={styles.actionTitle}>{t('profile.userCard.refresh', 'Refresh')}</Text>
           </TouchableOpacity>
         </View>
@@ -1101,21 +1102,21 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: Typography.fontSize[14],
     color: colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: Spacing[3],
   },
   headerIconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1123,8 +1124,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[18],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
     letterSpacing: -0.3,
   },
@@ -1137,45 +1138,45 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing[3],
   },
   greetingTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[24],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
   },
   greetingSub: {
-    marginTop: 2,
-    fontSize: 13,
-    fontWeight: '500',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.medium,
     color: colors.textSecondary,
   },
   roleChip: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: Spacing.xs,
   },
   roleChipText: {
     color: colors.text,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
   },
   controlsSection: {
     marginBottom: 12,
   },
   controlsTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
     marginBottom: 8,
   },
   switchRow: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceVariant,
-    borderRadius: 14,
+    borderRadius: BorderRadius.xl,
     padding: 4,
     marginBottom: 12,
   },
@@ -1183,15 +1184,15 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 9,
-    borderRadius: 10,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
   },
   switchButtonActive: {
     backgroundColor: colors.card,
   },
   switchButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   switchButtonTextActive: {
@@ -1199,39 +1200,39 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   orientationRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 2,
+    gap: Spacing[3],
+    marginBottom: Spacing.xs,
   },
   orientationOption: {
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     backgroundColor: colors.card,
-    paddingVertical: 10,
+    paddingVertical: Spacing[3],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   orientationOptionActive: {
     borderColor: colors.text,
-    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[50],
   },
   orientationOptionText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   orientationOptionTextActive: {
     color: colors.text,
   },
   styleSelectorSection: {
-    marginBottom: 10,
+    marginBottom: Spacing[3],
   },
   styleSelectorTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
     marginBottom: 8,
   },
@@ -1241,25 +1242,25 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     gap: 8,
   },
   designOption: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing[3],
   },
   designOptionActive: {
     borderColor: colors.text,
-    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[50],
   },
   designOptionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   designOptionText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   designOptionTextActive: {
@@ -1274,11 +1275,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   styleOption: {
     width: 34,
     height: 34,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1.6,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    padding: 2,
+    padding: Spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1289,7 +1290,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   styleOptionDot: {
     width: '100%',
     height: '100%',
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: 'rgba(148,163,184,0.24)',
   },
@@ -1299,42 +1300,39 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: -1,
     width: 14,
     height: 14,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#FFFFFF',
+    borderColor: Colors.white,
   },
   flipButton: {
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    paddingVertical: 10,
+    paddingVertical: Spacing[3],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginBottom: 10,
+    gap: Spacing.sm,
+    marginBottom: Spacing[3],
   },
   flipButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   cardViewport: {
-    marginBottom: 14,
+    marginBottom: Spacing.md,
   },
   cardViewportVertical: {
     alignItems: 'center',
   },
   cardViewportGlow: {
-    borderRadius: 24,
+    borderRadius: BorderRadius['2xl'],
     padding: 1.2,
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    ...Shadows.xl,
   },
   cardViewportGlowHorizontal: {
     width: '100%',
@@ -1343,12 +1341,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignSelf: 'center',
   },
   cardSurface: {
-    borderRadius: 24,
+    borderRadius: BorderRadius['2xl'],
     overflow: 'hidden',
   },
   cardSurfaceHorizontal: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -1359,7 +1357,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingVertical: 0,
   },
   verticalCardSurface: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -1367,7 +1365,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     position: 'absolute',
     width: 210,
     height: 210,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     top: -96,
     left: -80,
   },
@@ -1375,7 +1373,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     position: 'absolute',
     width: 180,
     height: 180,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     bottom: -96,
     right: -78,
   },
@@ -1385,7 +1383,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   verticalPremiumBase: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: BorderRadius[20],
     overflow: 'hidden',
   },
   verticalPremiumCornerWrap: {
@@ -1401,7 +1399,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 10,
     width: 150,
     height: 42,
-    borderRadius: 40,
+    borderRadius: BorderRadius.full,
     opacity: 0.62,
     transform: [{ rotate: '-35deg' }],
   },
@@ -1411,7 +1409,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 30,
     width: 128,
     height: 34,
-    borderRadius: 40,
+    borderRadius: BorderRadius.full,
     opacity: 0.72,
     transform: [{ rotate: '-35deg' }],
   },
@@ -1421,14 +1419,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 50,
     width: 106,
     height: 28,
-    borderRadius: 40,
+    borderRadius: BorderRadius.full,
     opacity: 0.78,
     transform: [{ rotate: '-35deg' }],
   },
   verticalFrontContent: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   verticalFrontHeaderRow: {
     flexDirection: 'row',
@@ -1438,7 +1436,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   verticalFrontHeaderSub: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: '#64748B',
@@ -1450,40 +1448,40 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   verticalFrontAvatarFrame: {
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: BorderRadius.full,
     borderWidth: 2.2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     padding: 1.5,
   },
   verticalFrontName: {
-    marginTop: 10,
-    fontSize: 18,
-    fontWeight: '800',
+    marginTop: Spacing[3],
+    fontSize: Typography.fontSize[18],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.3,
     color: '#0F172A',
   },
   verticalFrontNameEnglish: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.semibold,
     color: '#64748B',
     marginTop: -2,
     letterSpacing: 0.2,
   },
   verticalFrontRole: {
-    marginTop: 3,
-    fontSize: 11,
-    fontWeight: '700',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     color: '#475569',
   },
   verticalFrontProgramLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.45,
-    marginBottom: 3,
+    marginBottom: Spacing.xs,
     color: '#64748B',
   },
   verticalFrontFooter: {
@@ -1492,16 +1490,16 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingBottom: 4,
   },
   verticalFrontCardNumber: {
-    marginTop: 10,
-    fontSize: 17,
-    fontWeight: '600',
+    marginTop: Spacing[3],
+    fontSize: Typography.fontSize[17],
+    fontWeight: Typography.fontWeight.semibold,
     letterSpacing: 0.65,
     color: '#0F172A',
   },
   verticalBackContent: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   verticalBackHeaderRow: {
     flexDirection: 'row',
@@ -1510,7 +1508,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   verticalBackCode: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.45,
     color: '#334155',
   },
@@ -1518,8 +1516,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginTop: 12,
     fontSize: 10,
     lineHeight: 15,
-    fontWeight: '500',
-    paddingRight: 2,
+    fontWeight: Typography.fontWeight.medium,
+    paddingRight: Spacing.xs,
     color: '#475569',
   },
   verticalBackMetaWrap: {
@@ -1528,7 +1526,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   verticalBackMetaText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: '#334155',
   },
   verticalBackBottomPanel: {
@@ -1537,14 +1535,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     paddingHorizontal: 0,
     paddingVertical: 0,
   },
   verticalBackQrFrame: {
     width: 72,
     height: 72,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1.5,
     backgroundColor: 'transparent',
     alignItems: 'center',
@@ -1556,7 +1554,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   verticalBackSignHint: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     marginBottom: 4,
     color: '#64748B',
   },
@@ -1567,7 +1565,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   verticalBackSignLabel: {
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     color: '#0F172A',
   },
   topRow: {
@@ -1577,14 +1575,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   metricLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   metricValue: {
     marginTop: 4,
     fontSize: 33,
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
     lineHeight: 36,
   },
   brandMarkWrap: {
@@ -1594,14 +1592,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   brandDotLeft: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EF4444',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.error,
     opacity: 0.95,
   },
   brandDotRight: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     backgroundColor: '#F59E0B',
     marginLeft: -8,
     opacity: 0.95,
@@ -1615,55 +1613,55 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 10,
+    marginTop: Spacing[3],
   },
   cardNumberText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[18],
+    fontWeight: Typography.fontWeight.bold,
     letterSpacing: 1.1,
   },
   verticalCardNumberText: {
     textAlign: 'center',
-    fontSize: 15,
+    fontSize: Typography.fontSize[15],
     letterSpacing: 1,
   },
   nameText: {
     marginTop: 8,
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.6,
   },
   roleText: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
   },
   verticalCenter: {
     alignItems: 'center',
     gap: 8,
-    marginTop: 6,
+    marginTop: Spacing.sm,
   },
   verticalNameText: {
-    marginTop: 2,
-    fontSize: 18,
-    fontWeight: '800',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[18],
+    fontWeight: Typography.fontWeight.extrabold,
   },
   verticalRoleText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.semibold,
   },
   programPill: {
     marginTop: 4,
-    borderRadius: 12,
-    paddingHorizontal: 10,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing[3],
     paddingVertical: 8,
     minHeight: 42,
     justifyContent: 'center',
     width: '100%',
   },
   programPillText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     lineHeight: 14,
     textAlign: 'center',
   },
@@ -1675,8 +1673,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   bottomLine: {
     flex: 1,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
   },
   verticalBottomRow: {
     marginTop: 8,
@@ -1685,28 +1683,28 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     gap: 8,
   },
   codeChip: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.xs,
   },
   codeChipText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.4,
   },
   backStrip: {
     height: 30,
-    borderRadius: 8,
+    borderRadius: BorderRadius.md,
   },
   backHorizontalBody: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing[3],
     flex: 1,
-    marginTop: 10,
+    marginTop: Spacing[3],
   },
   backVerticalBody: {
     flex: 1,
-    marginTop: 10,
+    marginTop: Spacing[3],
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -1716,21 +1714,21 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   backInfoRow: {
     borderBottomWidth: 1,
-    paddingVertical: 6,
-    gap: 2,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
   },
   backInfoRowLast: {
     borderBottomWidth: 0,
   },
   backInfoLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   backInfoValue: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
   },
   backRightColumn: {
     width: 84,
@@ -1743,8 +1741,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   qrGrid: {
     borderWidth: 1,
-    padding: 7,
-    borderRadius: 10,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.lg,
   },
   qrRow: {
     flexDirection: 'row',
@@ -1756,44 +1754,44 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 1,
   },
   qrLabel: {
-    marginTop: 6,
+    marginTop: Spacing.sm,
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     letterSpacing: 0.2,
   },
   backFooterLine: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     textAlign: 'right',
   },
   actionsGrid: {
-    marginTop: 2,
+    marginTop: Spacing.xs,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing[3],
   },
   actionCard: {
     width: '48.5%',
-    borderRadius: 14,
+    borderRadius: BorderRadius.xl,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
     paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 7,
+    gap: Spacing.sm,
   },
   actionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   horizontalCardBase: {
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius['2xl'],
+    backgroundColor: Colors.white,
   },
   horizontalFrontEdgeAccent: {
     position: 'absolute',
@@ -1809,12 +1807,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 46,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: ColorScale.gray[200],
     borderTopWidth: 1,
     borderTopColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: Spacing[5],
   },
   barcodeColumn: {
     alignItems: 'center',
@@ -1830,14 +1828,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   horizontalIdText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
     marginTop: 4,
     letterSpacing: 0.5,
   },
   horizontalMainContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 52,
+    paddingBottom: Spacing[12],
     flex: 1,
   },
   horizontalHeader: {
@@ -1847,18 +1845,18 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   classicBrandBadge: {
     height: 32,
-    borderRadius: 9,
+    borderRadius: BorderRadius.md,
     borderWidth: 1.2,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 7,
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
+    marginRight: Spacing.sm,
   },
   horizontalLogoPlaceholder: {
     width: 46,
     height: 46,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1866,7 +1864,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   horizontalLogoTextSmall: {
     fontSize: 5,
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.5,
     marginTop: 1,
   },
@@ -1875,26 +1873,26 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'center',
   },
   horizontalTitleText: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.3,
     lineHeight: 15,
   },
   classicTitleText: {
-    fontSize: 12,
+    fontSize: Typography.fontSize[12],
     lineHeight: 13,
     letterSpacing: 0.2,
-    paddingRight: 3,
+    paddingRight: Spacing.xs,
   },
   horizontalTitleUnderline: {
     height: 2,
     width: '100%',
-    marginTop: 2,
+    marginTop: Spacing.xs,
   },
   classicTitleUnderline: {
     width: '88%',
-    borderRadius: 999,
-    marginTop: 3,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.xs,
   },
   horizontalBody: {
     flexDirection: 'row',
@@ -1902,7 +1900,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   horizontalInfoRowWrapper: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.xs,
   },
   horizontalInfoRow: {
     flexDirection: 'row',
@@ -1911,26 +1909,26 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   horizontalLabelText: {
     width: 54,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: '#0F172A',
   },
   horizontalLabelColonText: {
     width: 10,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: '#0F172A',
     textAlign: 'center',
   },
   horizontalValueText: {
     flex: 1,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     color: '#334155',
     lineHeight: 13,
   },
   horizontalValueTextEnglish: {
     fontSize: 8,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     color: '#64748B',
     marginTop: -1,
   },
@@ -1945,7 +1943,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   horizontalAvatarFrame: {
     borderWidth: 0,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
     backgroundColor: 'transparent',
     padding: 0,
@@ -1963,35 +1961,35 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   backHorizontalContent: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: Spacing[5],
     paddingBottom: 16,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   backHorizontalHeader: {
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   backHorizontalInstituteText: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[20],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.5,
     textAlign: 'center',
   },
   backHorizontalDesc: {
-    fontSize: 11,
+    fontSize: Typography.fontSize[11],
     color: '#334155',
     textAlign: 'center',
     lineHeight: 16,
     paddingHorizontal: 12,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   backHorizontalBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     width: '100%',
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.sm,
   },
   qrFramedWrap: {
     width: 58,
@@ -2015,12 +2013,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     height: 1,
     backgroundColor: '#94A3B8',
     width: '100%',
-    marginBottom: 5,
+    marginBottom: Spacing.xs,
   },
   signatureLabel: {
     fontSize: 9,
     color: '#64748B',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   waveFrontGradientPanel: {
     position: 'absolute',
@@ -2042,15 +2040,15 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   waveFrontDot: {
     width: 3,
     height: 3,
-    borderRadius: 99,
+    borderRadius: BorderRadius.full,
     backgroundColor: 'rgba(255,255,255,0.55)',
   },
   waveFrontWhiteSweepTop: {
     position: 'absolute',
     width: 340,
     height: 190,
-    borderRadius: 190,
-    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.white,
     top: -136,
     left: 88,
     transform: [{ rotate: '-8deg' }],
@@ -2059,8 +2057,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     position: 'absolute',
     width: 330,
     height: 180,
-    borderRadius: 180,
-    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.white,
     bottom: -138,
     left: 58,
     transform: [{ rotate: '8deg' }],
@@ -2092,15 +2090,15 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   waveFrontLogoBadge: {
     backgroundColor: 'rgba(255,255,255,0.94)',
-    borderRadius: 10,
-    paddingHorizontal: 6,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
   },
   waveFrontLogoSubtitle: {
     marginTop: 4,
     color: 'rgba(255,255,255,0.86)',
     fontSize: 8,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     letterSpacing: 0.3,
   },
   waveFrontAvatarFrame: {
@@ -2110,9 +2108,9 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginLeft: -42,
     width: 84,
     height: 84,
-    borderRadius: 42,
+    borderRadius: BorderRadius.full,
     borderWidth: 2.6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2131,27 +2129,27 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   waveFrontNameText: {
     color: '#1E293B',
     fontSize: 21,
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.3,
   },
   waveFrontRoleText: {
-    marginTop: 3,
-    fontSize: 12,
-    fontWeight: '700',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
   },
   waveFrontDateRow: {
-    marginTop: 10,
+    marginTop: Spacing[3],
     gap: 4,
     alignSelf: 'stretch',
   },
   waveFrontDateText: {
     color: '#334155',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     textAlign: 'left',
   },
   waveFrontDateLabel: {
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
   },
   waveFrontBarcodeCard: {
     position: 'absolute',
@@ -2160,9 +2158,9 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: 112,
     borderRadius: 2,
     borderWidth: 1.2,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   waveFrontBarcodeWrap: {
     flexDirection: 'row',
@@ -2179,7 +2177,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     left: -28,
     width: 220,
     height: 120,
-    borderRadius: 120,
+    borderRadius: BorderRadius.full,
     opacity: 0.1,
   },
   waveBackEdgeAccent: {
@@ -2192,19 +2190,19 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   waveBackCleanContent: {
     flex: 1,
-    paddingHorizontal: 18,
+    paddingHorizontal: Spacing[5],
     paddingTop: 16,
-    paddingBottom: 14,
+    paddingBottom: Spacing.md,
   },
   waveBackCleanHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing[3],
   },
   waveBackLogoBadge: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1.4,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2214,29 +2212,29 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   waveBackHeaderTitle: {
     color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.3,
   },
   waveBackHeaderSubtitle: {
     marginTop: 1,
     color: '#64748B',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   waveBackCleanStatement: {
     marginTop: 8,
     color: '#334155',
     fontSize: 10,
     lineHeight: 13,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
     paddingRight: 8,
   },
   waveBackCleanBottom: {
     marginTop: 12,
   },
   waveBackCleanInfo: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   waveBackCleanInfoRow: {
     flexDirection: 'row',
@@ -2245,20 +2243,20 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   waveBackCleanInfoLabel: {
     width: 58,
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: Typography.fontWeight.extrabold,
     color: '#1E293B',
   },
   waveBackCleanInfoColon: {
     width: 8,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: '#475569',
     textAlign: 'center',
   },
   waveBackCleanInfoValue: {
     flex: 1,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
     color: '#334155',
   },
   waveBackSignRow: {
@@ -2266,12 +2264,12 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingTop: 6,
+    paddingTop: Spacing.sm,
   },
   waveBackCleanQrFrame: {
     width: 64,
     height: 64,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2283,7 +2281,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   waveBackSignHint: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: '#64748B',
     marginBottom: 4,
   },
@@ -2296,7 +2294,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   waveBackSignLabel: {
     fontSize: 9,
     color: '#475569',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   wavePremiumCornerWrap: {
     position: 'absolute',
@@ -2351,13 +2349,13 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     top: 44,
     width: 74,
     height: 74,
-    borderRadius: 37,
+    borderRadius: BorderRadius.full,
     borderWidth: 2.2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    padding: 2,
+    padding: Spacing.xs,
   },
   luxeTopGlow: {
     position: 'absolute',
@@ -2365,7 +2363,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     left: -46,
     width: 230,
     height: 138,
-    borderRadius: 138,
+    borderRadius: BorderRadius.full,
     backgroundColor: 'rgba(139,92,246,0.06)',
   },
   luxeBottomGlow: {
@@ -2374,7 +2372,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: -74,
     width: 220,
     height: 154,
-    borderRadius: 154,
+    borderRadius: BorderRadius.full,
     backgroundColor: 'rgba(59,130,246,0.06)',
   },
   luxeCornerWrap: {
@@ -2390,7 +2388,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 2,
     width: 186,
     height: 56,
-    borderRadius: 42,
+    borderRadius: BorderRadius.full,
     opacity: 0.56,
     transform: [{ rotate: '-34deg' }],
   },
@@ -2400,7 +2398,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 24,
     width: 166,
     height: 46,
-    borderRadius: 42,
+    borderRadius: BorderRadius.full,
     opacity: 0.64,
     transform: [{ rotate: '-34deg' }],
   },
@@ -2410,7 +2408,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 46,
     width: 146,
     height: 38,
-    borderRadius: 42,
+    borderRadius: BorderRadius.full,
     opacity: 0.72,
     transform: [{ rotate: '-34deg' }],
   },
@@ -2420,7 +2418,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 68,
     width: 114,
     height: 30,
-    borderRadius: 42,
+    borderRadius: BorderRadius.full,
     opacity: 0.78,
     transform: [{ rotate: '-34deg' }],
   },
@@ -2434,7 +2432,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   luxeBackQrFrame: {
     width: 64,
     height: 64,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1.4,
     backgroundColor: 'rgba(255,255,255,0.88)',
     alignItems: 'center',
@@ -2465,7 +2463,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: -2,
     width: 136,
     height: 96,
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     transform: [{ rotate: '-18deg' }],
     opacity: 0.86,
   },
@@ -2475,7 +2473,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: -18,
     width: 118,
     height: 82,
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     transform: [{ rotate: '-24deg' }],
     opacity: 0.92,
   },
@@ -2485,7 +2483,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: -32,
     width: 96,
     height: 70,
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     transform: [{ rotate: '-22deg' }],
     opacity: 0.9,
   },
@@ -2495,7 +2493,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     bottom: 30,
     width: 120,
     height: 84,
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     transform: [{ rotate: '-16deg' }],
     opacity: 0.74,
   },
@@ -2509,8 +2507,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
   },
   prismFrontTopRight: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     letterSpacing: 0.3,
     color: '#94A3B8',
   },
@@ -2522,22 +2520,22 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   prismFrontHolderLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     color: '#64748B',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   prismFrontHolderName: {
-    marginTop: 3,
-    fontSize: 15,
-    fontWeight: '800',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[15],
+    fontWeight: Typography.fontWeight.extrabold,
     color: '#0F172A',
     letterSpacing: 0.3,
   },
   prismFrontCardDigits: {
-    marginTop: 10,
-    fontSize: 17,
-    fontWeight: '600',
+    marginTop: Spacing[3],
+    fontSize: Typography.fontSize[17],
+    fontWeight: Typography.fontWeight.semibold,
     color: '#1E293B',
     letterSpacing: 0.6,
   },
@@ -2554,16 +2552,16 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   prismBackCode: {
     fontSize: 9,
     color: '#64748B',
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     letterSpacing: 0.4,
   },
   prismBackStatement: {
-    marginTop: 14,
+    marginTop: Spacing.md,
     maxWidth: '72%',
     fontSize: 10,
     lineHeight: 14,
     color: '#334155',
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   prismBackMetaRow: {
     marginTop: 16,
@@ -2573,7 +2571,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   prismBackMetaText: {
     fontSize: 10,
     color: '#1E293B',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   prismBackSignWrap: {
     marginTop: 'auto',
@@ -2582,7 +2580,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   prismBackSignHint: {
     fontSize: 9,
     color: '#64748B',
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
     marginBottom: 4,
   },
   prismBackSignLine: {
@@ -2593,6 +2591,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   prismBackSignLabel: {
     fontSize: 9,
     color: '#475569',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
 });

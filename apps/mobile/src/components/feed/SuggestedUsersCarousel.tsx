@@ -209,7 +209,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         position: 'absolute',
         top: 24,
         alignSelf: 'center',
-        borderRadius: 999,
+        borderRadius: 9999,
         borderWidth: 2,
         borderColor: colors.card,
         backgroundColor: colors.card,

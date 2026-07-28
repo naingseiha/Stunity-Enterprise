@@ -616,7 +616,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },

@@ -223,7 +223,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   errorText: { color: colors.error, fontSize: 15, lineHeight: 22, fontWeight: '500', textAlign: 'center' },
   retryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   retryText: { color: colors.primary, fontWeight: '700' },
-  primaryButton: { minHeight: 56, marginTop: 28, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, paddingHorizontal: 20 },
+  primaryButton: { minHeight: 56, marginTop: 28, borderRadius: 9999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, paddingHorizontal: 20 },
   disabledButton: { backgroundColor: colors.buttonDisabled },
   primaryText: { color: '#FFFFFF', fontSize: 15, lineHeight: 22, fontWeight: '700', textAlign: 'center' },
   cancelButton: { minHeight: 52, marginTop: 10, alignItems: 'center', justifyContent: 'center' },

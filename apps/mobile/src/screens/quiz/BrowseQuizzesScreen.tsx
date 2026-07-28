@@ -426,7 +426,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 12,
     minHeight: 48,
     backgroundColor: colors.card,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 16,

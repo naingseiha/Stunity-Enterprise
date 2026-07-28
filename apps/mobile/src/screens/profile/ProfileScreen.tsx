@@ -2726,7 +2726,7 @@ const styles = StyleSheet.create({
   coverDecorCircle: {
     position: "absolute",
     backgroundColor: "#ffffff",
-    borderRadius: 999,
+    borderRadius: 9999,
   },
   coverPatternOverlay: {
     position: "absolute",
@@ -3236,7 +3236,7 @@ const styles = StyleSheet.create({
   },
   heroDecor: {
     position: "absolute",
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: "rgba(255,255,255,0.1)",
   },
   heroHeader: {

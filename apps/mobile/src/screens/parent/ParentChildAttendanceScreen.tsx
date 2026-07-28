@@ -265,7 +265,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 9999 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
@@ -284,7 +284,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     shadowRadius: 8,
     elevation: 2,
   },
-  monthBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  monthBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 9999 },
   monthLabel: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: colors.text },
   statsRow: {
     flexDirection: 'row',

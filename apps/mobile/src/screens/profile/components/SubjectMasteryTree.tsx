@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   subjectTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   subjectLabel: { fontSize: 14, fontWeight: '700', flex: 1 },
   subjectRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  duePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FEF3C7', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 },
+  duePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FEF3C7', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 9999 },
   dueText: { fontSize: 10, fontWeight: '700', color: '#B45309' },
   pct: { fontSize: 14, fontWeight: '800' },
   track: { height: 7, borderRadius: 4, overflow: 'hidden' },

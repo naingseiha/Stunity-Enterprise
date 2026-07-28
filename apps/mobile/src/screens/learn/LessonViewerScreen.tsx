@@ -29,6 +29,7 @@ import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 import i18n from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
+import { Colors, ColorScale, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 
 type RouteParams = RouteProp<LearnStackParamList, 'LessonViewer'>;
 type NavigationProp = LearnStackScreenProps<'LessonViewer'>['navigation'];
@@ -201,38 +202,38 @@ function MobileQuizWidget({
 
   if (!quiz || !quiz.questions || quiz.questions.length === 0) {
     return (
-      <View style={{ backgroundColor: '#F0F9FF', padding: 20, borderRadius: 16, marginVertical: 12, alignItems: 'center' }}>
-        <Ionicons name="help-circle" size={36} color="#0284C7" />
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#0F172A', marginTop: 8 }}>{t('learn.lessonViewer.quizComingSoon')}</Text>
-        <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4, textAlign: 'center' }}>{t('learn.lessonViewer.quizBuilding')}</Text>
+      <View style={{ backgroundColor: ColorScale.primary[50], padding: Spacing[5], borderRadius: BorderRadius.xl, marginVertical: Spacing[3], alignItems: 'center' }}>
+        <Ionicons name="help-circle" size={36} color={ColorScale.primary[600]} />
+        <Text style={{ fontSize: Typography.fontSize[15], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[900], marginTop: Spacing.sm }}>{t('learn.lessonViewer.quizComingSoon')}</Text>
+        <Text style={{ fontSize: Typography.fontSize[12], color: Colors.textSecondary, marginTop: Spacing.xs, textAlign: 'center' }}>{t('learn.lessonViewer.quizBuilding')}</Text>
       </View>
     );
   }
 
   if (!started) {
     return (
-      <View style={{ backgroundColor: '#EFF6FF', borderRadius: 20, padding: 24, marginVertical: 12, borderWidth: 1.5, borderColor: '#BFDBFE', alignItems: 'center' }}>
-        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-          <Ionicons name="help-circle-outline" size={34} color="#fff" />
+      <View style={{ backgroundColor: ColorScale.primary[50], borderRadius: BorderRadius[20], padding: Spacing.lg, marginVertical: Spacing[3], borderWidth: 1.5, borderColor: ColorScale.primary[200], alignItems: 'center' }}>
+        <View style={{ width: 64, height: 64, borderRadius: BorderRadius.full, backgroundColor: ColorScale.primary[600], alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md }}>
+          <Ionicons name="help-circle-outline" size={34} color={Colors.white} />
         </View>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E3A8A', marginBottom: 8, textAlign: 'center' }}>{lessonTitle}</Text>
-        <View style={{ flexDirection: 'row', gap: 16, marginBottom: 20 }}>
+        <Text style={{ fontSize: Typography.fontSize[18], fontWeight: Typography.fontWeight.extrabold, color: ColorScale.primary[900], marginBottom: Spacing.sm, textAlign: 'center' }}>{lessonTitle}</Text>
+        <View style={{ flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing[5] }}>
           <View style={{ alignItems: 'center' }}>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: '#2563EB' }}>{quiz.questions.length}</Text>
-            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{t('learn.lessonViewer.questions')}</Text>
+            <Text style={{ fontSize: Typography.fontSize[20], fontWeight: Typography.fontWeight.black, color: ColorScale.primary[600] }}>{quiz.questions.length}</Text>
+            <Text style={{ fontSize: Typography.fontSize[11], color: Colors.textSecondary, fontWeight: Typography.fontWeight.semibold }}>{t('learn.lessonViewer.questions')}</Text>
           </View>
-          <View style={{ width: 1, backgroundColor: '#BFDBFE' }} />
+          <View style={{ width: 1, backgroundColor: ColorScale.primary[200] }} />
           <View style={{ alignItems: 'center' }}>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: '#10B981' }}>{quiz.passingScore}%</Text>
-            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{t('learn.lessonViewer.toPass')}</Text>
+            <Text style={{ fontSize: Typography.fontSize[20], fontWeight: Typography.fontWeight.black, color: Colors.success.main }}>{quiz.passingScore}%</Text>
+            <Text style={{ fontSize: Typography.fontSize[11], color: Colors.textSecondary, fontWeight: Typography.fontWeight.semibold }}>{t('learn.lessonViewer.toPass')}</Text>
           </View>
         </View>
         <TouchableOpacity
           onPress={() => setStarted(true)}
-          style={{ backgroundColor: '#2563EB', paddingHorizontal: 40, paddingVertical: 14, borderRadius: 16 }}
+          style={{ backgroundColor: ColorScale.primary[600], paddingHorizontal: Spacing[10], paddingVertical: Spacing.md, borderRadius: BorderRadius.xl }}
           activeOpacity={0.85}
         >
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t('learn.lessonViewer.startQuiz')}</Text>
+          <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.extrabold, fontSize: Typography.fontSize[16] }}>{t('learn.lessonViewer.startQuiz')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -242,26 +243,26 @@ function MobileQuizWidget({
     const passed = score >= quiz.passingScore;
     const correct = Math.round((score / 100) * quiz.questions.length);
     return (
-      <View style={{ backgroundColor: passed ? '#F0FDF4' : '#FEF2F2', borderRadius: 20, padding: 24, marginVertical: 12, borderWidth: 1.5, borderColor: passed ? '#BBF7D0' : '#FECACA', alignItems: 'center' }}>
-        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: passed ? '#22C55E' : '#EF4444', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-          <Ionicons name={passed ? 'trophy' : 'refresh'} size={36} color="#fff" />
+      <View style={{ backgroundColor: passed ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', borderRadius: BorderRadius[20], padding: Spacing.lg, marginVertical: Spacing[3], borderWidth: 1.5, borderColor: passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)', alignItems: 'center' }}>
+        <View style={{ width: 72, height: 72, borderRadius: BorderRadius.full, backgroundColor: passed ? Colors.success.main : Colors.error, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing[3] }}>
+          <Ionicons name={passed ? 'trophy' : 'refresh'} size={36} color={Colors.white} />
         </View>
-        <Text style={{ fontSize: 40, fontWeight: '900', color: passed ? '#15803D' : '#DC2626' }}>{score}%</Text>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', marginTop: 4 }}>{passed ? t('learn.lessonViewer.youPassed') : t('learn.lessonViewer.needToPass', { score: quiz.passingScore })}</Text>
-        <View style={{ flexDirection: 'row', gap: 20, marginVertical: 16 }}>
-          {[{ label: t('quiz.results.correct'), val: correct, color: '#16A34A' }, { label: t('quiz.results.incorrect'), val: quiz.questions.length - correct, color: '#DC2626' }].map(({ label, val, color }) => (
+        <Text style={{ fontSize: Typography.fontSize[36], fontWeight: Typography.fontWeight.black, color: passed ? Colors.success.dark : Colors.error }}>{score}%</Text>
+        <Text style={{ fontSize: Typography.fontSize[16], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[800], marginTop: Spacing.xs }}>{passed ? t('learn.lessonViewer.youPassed') : t('learn.lessonViewer.needToPass', { score: quiz.passingScore })}</Text>
+        <View style={{ flexDirection: 'row', gap: Spacing[5], marginVertical: Spacing.md }}>
+          {[{ label: t('quiz.results.correct'), val: correct, color: Colors.success.dark }, { label: t('quiz.results.incorrect'), val: quiz.questions.length - correct, color: Colors.error }].map(({ label, val, color }) => (
             <View key={label} style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 24, fontWeight: '900', color }}>{val}</Text>
-              <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{label}</Text>
+              <Text style={{ fontSize: Typography.fontSize[24], fontWeight: Typography.fontWeight.black, color }}>{val}</Text>
+              <Text style={{ fontSize: Typography.fontSize[11], color: Colors.textSecondary, fontWeight: Typography.fontWeight.semibold }}>{label}</Text>
             </View>
           ))}
         </View>
         <TouchableOpacity
           onPress={() => { setStarted(false); setCurrentIdx(0); setAnswers({}); setRevealed({}); setFinished(false); setScore(0); }}
-          style={{ backgroundColor: '#1E293B', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          style={{ backgroundColor: ColorScale.gray[800], paddingHorizontal: Spacing.xl, paddingVertical: Spacing[3], borderRadius: BorderRadius.xl, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}
         >
-          <Ionicons name="refresh" size={16} color="#fff" />
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{t('quiz.dashboard.retake')}</Text>
+          <Ionicons name="refresh" size={16} color={Colors.white} />
+          <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.extrabold, fontSize: Typography.fontSize[14] }}>{t('quiz.dashboard.retake')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -273,36 +274,36 @@ function MobileQuizWidget({
   const qKey = question.id ?? currentIdx;
 
   return (
-    <View style={{ backgroundColor: '#fff', borderRadius: 20, borderWidth: 1.5, borderColor: '#E2E8F0', marginVertical: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 }}>
+    <View style={{ backgroundColor: Colors.white, borderRadius: BorderRadius[20], borderWidth: 1.5, borderColor: ColorScale.gray[200], marginVertical: Spacing[3], overflow: 'hidden', ...Shadows.lg }}>
       {/* Progress */}
-      <View style={{ backgroundColor: '#F8FAFC', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B' }}>{t('quiz.takeQuiz.questionOf', { current: currentIdx + 1, total: quiz.questions.length })}</Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>{t('learn.lessonViewer.percentDone', { percent: Math.round((currentIdx / quiz.questions.length) * 100) })}</Text>
+      <View style={{ backgroundColor: ColorScale.gray[50], padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: ColorScale.gray[100] }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
+          <Text style={{ fontSize: Typography.fontSize[12], fontWeight: Typography.fontWeight.bold, color: Colors.textSecondary }}>{t('quiz.takeQuiz.questionOf', { current: currentIdx + 1, total: quiz.questions.length })}</Text>
+          <Text style={{ fontSize: Typography.fontSize[12], fontWeight: Typography.fontWeight.bold, color: ColorScale.primary[600] }}>{t('learn.lessonViewer.percentDone', { percent: Math.round((currentIdx / quiz.questions.length) * 100) })}</Text>
         </View>
-        <View style={{ height: 4, backgroundColor: '#E2E8F0', borderRadius: 4 }}>
-          <View style={{ height: 4, backgroundColor: '#2563EB', borderRadius: 4, width: `${((currentIdx + 1) / quiz.questions.length) * 100}%` as any }} />
+        <View style={{ height: 4, backgroundColor: ColorScale.gray[200], borderRadius: BorderRadius.sm }}>
+          <View style={{ height: 4, backgroundColor: ColorScale.primary[600], borderRadius: BorderRadius.sm, width: `${((currentIdx + 1) / quiz.questions.length) * 100}%` as any }} />
         </View>
       </View>
 
       {/* Question */}
-      <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A', lineHeight: 24, marginBottom: 20 }}>{question.question}</Text>
+      <View style={{ padding: Spacing[5] }}>
+        <Text style={{ fontSize: Typography.fontSize[16], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[900], lineHeight: 24, marginBottom: Spacing[5] }}>{question.question}</Text>
 
         {/* Options */}
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: Spacing[3] }}>
           {question.options?.map((opt: any, oIdx: number) => {
             const isSelected = selectedId === (opt.id ?? oIdx);
             const optKey = opt.id ?? oIdx;
-            let bg = '#F8FAFC';
-            let border = '#E2E8F0';
-            let textColor = '#374151';
+            let bg: string = ColorScale.gray[50];
+            let border: string = ColorScale.gray[200];
+            let textColor: string = Colors.text;
             if (isRevealed) {
-              if (opt.isCorrect) { bg = '#F0FDF4'; border = '#22C55E'; textColor = '#15803D'; }
-              else if (isSelected && !opt.isCorrect) { bg = '#FEF2F2'; border = '#EF4444'; textColor = '#DC2626'; }
-              else { bg = '#F8FAFC'; border = '#E2E8F0'; textColor = '#9CA3AF'; }
+              if (opt.isCorrect) { bg = 'rgba(34,197,94,0.08)'; border = Colors.success.main; textColor = Colors.success.dark; }
+              else if (isSelected && !opt.isCorrect) { bg = 'rgba(239,68,68,0.08)'; border = Colors.error; textColor = Colors.error; }
+              else { bg = ColorScale.gray[50]; border = ColorScale.gray[200]; textColor = Colors.textTertiary; }
             } else if (isSelected) {
-              bg = '#EFF6FF'; border = '#2563EB'; textColor = '#1D4ED8';
+              bg = ColorScale.primary[50]; border = ColorScale.primary[600]; textColor = ColorScale.primary[600];
             }
             return (
               <TouchableOpacity
@@ -313,14 +314,14 @@ function MobileQuizWidget({
                   setTimeout(() => setRevealed(prev => ({ ...prev, [qKey]: true })), 300);
                 }}
                 activeOpacity={isRevealed ? 1 : 0.8}
-                style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: bg, borderWidth: 1.5, borderColor: border, gap: 12 }}
+                style={{ flexDirection: 'row', alignItems: 'center', padding: Spacing.md, borderRadius: BorderRadius.xl, backgroundColor: bg, borderWidth: 1.5, borderColor: border, gap: Spacing[3] }}
               >
-                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: isRevealed && opt.isCorrect ? '#22C55E' : isRevealed && isSelected && !opt.isCorrect ? '#EF4444' : isSelected ? '#2563EB' : '#E2E8F0', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 11, fontWeight: '900', color: (isSelected || (isRevealed && opt.isCorrect)) ? '#fff' : '#64748B' }}>
+                <View style={{ width: 28, height: 28, borderRadius: BorderRadius.full, backgroundColor: isRevealed && opt.isCorrect ? Colors.success.main : isRevealed && isSelected && !opt.isCorrect ? Colors.error : isSelected ? ColorScale.primary[600] : ColorScale.gray[200], alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.black, color: (isSelected || (isRevealed && opt.isCorrect)) ? Colors.white : Colors.textSecondary }}>
                     {isRevealed && opt.isCorrect ? '✓' : isRevealed && isSelected && !opt.isCorrect ? '✗' : ['A','B','C','D','E'][oIdx]}
                   </Text>
                 </View>
-                <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: textColor, lineHeight: 20 }}>{opt.text}</Text>
+                <Text style={{ flex: 1, fontSize: Typography.fontSize[14], fontWeight: Typography.fontWeight.semibold, color: textColor, lineHeight: 20 }}>{opt.text}</Text>
               </TouchableOpacity>
             );
           })}
@@ -328,16 +329,16 @@ function MobileQuizWidget({
 
         {/* Explanation */}
         {isRevealed && question.explanation && (
-          <View style={{ marginTop: 16, backgroundColor: '#EFF6FF', padding: 14, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#2563EB' }}>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: '#1D4ED8', marginBottom: 4, textTransform: 'uppercase' }}>{t('quiz.results.explanation')}</Text>
-            <Text style={{ fontSize: 13, color: '#1D4ED8', lineHeight: 20 }}>{question.explanation}</Text>
+          <View style={{ marginTop: Spacing.md, backgroundColor: ColorScale.primary[50], padding: Spacing.md, borderRadius: BorderRadius.lg, borderLeftWidth: 3, borderLeftColor: ColorScale.primary[600] }}>
+            <Text style={{ fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.extrabold, color: ColorScale.primary[600], marginBottom: Spacing.xs, textTransform: 'uppercase' }}>{t('quiz.results.explanation')}</Text>
+            <Text style={{ fontSize: Typography.fontSize[13], color: ColorScale.primary[600], lineHeight: 20 }}>{question.explanation}</Text>
           </View>
         )}
       </View>
 
       {/* Navigation */}
       {isRevealed && (
-        <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+        <View style={{ padding: Spacing.md, borderTopWidth: 1, borderTopColor: ColorScale.gray[100] }}>
           <TouchableOpacity
             onPress={() => {
               if (currentIdx < quiz.questions.length - 1) {
@@ -361,10 +362,10 @@ function MobileQuizWidget({
                 }
               }
             }}
-            style={{ backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 14, alignItems: 'center' }}
+            style={{ backgroundColor: ColorScale.primary[600], paddingVertical: Spacing.md, borderRadius: BorderRadius.xl, alignItems: 'center' }}
             activeOpacity={0.85}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
+            <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.extrabold, fontSize: Typography.fontSize[15] }}>
               {currentIdx < quiz.questions.length - 1 ? t('learn.lessonViewer.nextQuestion') : t('learn.lessonViewer.finishSeeResults')}
             </Text>
           </TouchableOpacity>
@@ -484,48 +485,48 @@ function MobileAssignmentWidget({
   };
 
   return (
-    <View style={{ gap: 16, marginVertical: 12 }}>
+    <View style={{ gap: Spacing.md, marginVertical: Spacing[3] }}>
       {/* Instructions Card */}
-      <View style={{ backgroundColor: '#EEF2FF', padding: 18, borderRadius: 20, borderWidth: 1, borderColor: '#C7D2FE' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="document-text" size={20} color="#fff" />
+      <View style={{ backgroundColor: 'rgba(99,102,241,0.08)', padding: Spacing[5], borderRadius: BorderRadius[20], borderWidth: 1, borderColor: 'rgba(99,102,241,0.22)' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing[3], gap: Spacing.sm }}>
+          <View style={{ width: 36, height: 36, borderRadius: BorderRadius.full, backgroundColor: Colors.secondary, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="document-text" size={20} color={Colors.white} />
           </View>
           <View>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E1B4B' }}>{t('learn.lessonViewer.assignmentTask')}</Text>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6366F1', textTransform: 'uppercase' }}><AutoI18nText i18nKey="auto.mobile.screens_learn_LessonViewerScreen.k_1fe2023e" /> {assignment.maxScore} <AutoI18nText i18nKey="auto.mobile.screens_learn_LessonViewerScreen.k_79b28c3f" /></Text>
+            <Text style={{ fontSize: Typography.fontSize[16], fontWeight: Typography.fontWeight.extrabold, color: Colors.secondary }}>{t('learn.lessonViewer.assignmentTask')}</Text>
+            <Text style={{ fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.semibold, color: Colors.secondary, textTransform: 'uppercase' }}><AutoI18nText i18nKey="auto.mobile.screens_learn_LessonViewerScreen.k_1fe2023e" /> {assignment.maxScore} <AutoI18nText i18nKey="auto.mobile.screens_learn_LessonViewerScreen.k_79b28c3f" /></Text>
           </View>
         </View>
-        <Text style={{ fontSize: 14, color: '#3730A3', lineHeight: 22 }}>{assignment.instructions}</Text>
+        <Text style={{ fontSize: Typography.fontSize[14], color: Colors.secondary, lineHeight: 22 }}>{assignment.instructions}</Text>
       </View>
 
       {/* Submission Card */}
-      <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 22, borderWidth: 1.5, borderColor: hasExistingSubmission ? '#E2E8F0' : '#4F46E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>{t('learn.lessonViewer.yourSubmission')}</Text>
-          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isGraded ? '#DCFCE7' : hasExistingSubmission ? '#F1F5F9' : '#EEF2FF' }}>
-            <Text style={{ fontSize: 10, fontWeight: '900', color: isGraded ? '#166534' : hasExistingSubmission ? '#475569' : '#4F46E5' }}>
+      <View style={{ backgroundColor: Colors.white, padding: Spacing[5], borderRadius: BorderRadius['2xl'], borderWidth: 1.5, borderColor: hasExistingSubmission ? ColorScale.gray[200] : Colors.secondary, ...Shadows.lg }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
+          <Text style={{ fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.extrabold, color: Colors.textSecondary, textTransform: 'uppercase' }}>{t('learn.lessonViewer.yourSubmission')}</Text>
+          <View style={{ paddingHorizontal: Spacing[3], paddingVertical: Spacing.xs, borderRadius: BorderRadius.md, backgroundColor: isGraded ? 'rgba(34,197,94,0.15)' : hasExistingSubmission ? ColorScale.gray[100] : 'rgba(99,102,241,0.08)' }}>
+            <Text style={{ fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.black, color: isGraded ? Colors.success.dark : hasExistingSubmission ? ColorScale.gray[600] : Colors.secondary }}>
               {status.replace('_', ' ')}
             </Text>
           </View>
         </View>
 
         {isGraded && lesson.assignmentSubmission && (
-          <View style={{ marginBottom: 20, padding: 16, backgroundColor: '#F0FDF4', borderRadius: 16, borderWidth: 1, borderColor: '#BBF7D0' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#166534' }}>{t('learn.lessonViewer.graded', { score: lesson.assignmentSubmission.score, maxScore: assignment.maxScore })}</Text>
+          <View style={{ marginBottom: Spacing[5], padding: Spacing.md, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs }}>
+              <Ionicons name="checkmark-circle" size={18} color={Colors.success.dark} />
+              <Text style={{ fontSize: Typography.fontSize[15], fontWeight: Typography.fontWeight.extrabold, color: Colors.success.dark }}>{t('learn.lessonViewer.graded', { score: lesson.assignmentSubmission.score, maxScore: assignment.maxScore })}</Text>
             </View>
             {lesson.assignmentSubmission.feedback && (
-              <Text style={{ fontSize: 13, color: '#15803D', fontStyle: 'italic', marginTop: 4 }}>"{lesson.assignmentSubmission.feedback}"</Text>
+              <Text style={{ fontSize: Typography.fontSize[13], color: Colors.success.dark, fontStyle: 'italic', marginTop: Spacing.xs }}>"{lesson.assignmentSubmission.feedback}"</Text>
             )}
             {lesson.assignmentSubmission.fileUrl && (
               <TouchableOpacity
                 onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
-                style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                style={{ marginTop: Spacing[3], flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}
               >
-                <Ionicons name="attach" size={16} color="#15803D" />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>
+                <Ionicons name="attach" size={16} color={Colors.success.dark} />
+                <Text style={{ fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: Colors.success.dark }}>
                   {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                 </Text>
               </TouchableOpacity>
@@ -534,22 +535,22 @@ function MobileAssignmentWidget({
         )}
 
         {isAwaitingReview ? (
-          <View style={{ padding: 16, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+          <View style={{ padding: Spacing.md, backgroundColor: ColorScale.gray[50], borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: ColorScale.gray[200] }}>
              {!!lesson.assignmentSubmission?.submissionText && (
-               <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+               <Text style={{ fontSize: Typography.fontSize[14], color: Colors.text, lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
              )}
              {lesson.assignmentSubmission?.fileUrl && (
                <TouchableOpacity
                  onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
-                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? 12 : 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? Spacing[3] : Spacing[0], flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}
                >
-                 <Ionicons name="attach" size={16} color="#475569" />
-                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+                 <Ionicons name="attach" size={16} color={ColorScale.gray[600]} />
+                 <Text style={{ fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[600] }}>
                    {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                  </Text>
                </TouchableOpacity>
              )}
-             <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 12, textAlign: 'center', fontWeight: '600' }}>{t('learn.lessonViewer.waitingInstructor')}</Text>
+             <Text style={{ fontSize: Typography.fontSize[11], color: Colors.textTertiary, marginTop: Spacing[3], textAlign: 'center', fontWeight: Typography.fontWeight.semibold }}>{t('learn.lessonViewer.waitingInstructor')}</Text>
           </View>
         ) : canResubmit ? (
           <>
@@ -558,32 +559,32 @@ function MobileAssignmentWidget({
               placeholder={t('learn.lessonViewer.submissionPlaceholder')}
               value={submissionText}
               onChangeText={setSubmissionText}
-              style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 16, fontSize: 14, color: '#1E293B', minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}
-              placeholderTextColor="#94A3B8"
+              style={{ backgroundColor: ColorScale.gray[50], borderRadius: BorderRadius.xl, padding: Spacing.md, fontSize: Typography.fontSize[14], color: ColorScale.gray[800], minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: ColorScale.gray[200], marginBottom: Spacing.md }}
+              placeholderTextColor={Colors.textTertiary}
             />
-            <View style={{ marginBottom: 16, gap: 10 }}>
+            <View style={{ marginBottom: Spacing.md, gap: Spacing[3] }}>
               <TouchableOpacity
                 onPress={handleAddAttachment}
                 disabled={isSubmitting}
-                style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
+                style={{ borderRadius: BorderRadius.xl, paddingVertical: Spacing.md, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, backgroundColor: 'rgba(99,102,241,0.08)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.22)' }}
               >
-                <Ionicons name="attach" size={18} color="#4338CA" />
-                <Text style={{ color: '#4338CA', fontWeight: '800', fontSize: 15 }}>
+                <Ionicons name="attach" size={18} color={Colors.secondary} />
+                <Text style={{ color: Colors.secondary, fontWeight: Typography.fontWeight.extrabold, fontSize: Typography.fontSize[15] }}>
                   {attachment ? t('learn.lessonViewer.replaceAttachment') : t('learn.lessonViewer.attachFile')}
                 </Text>
               </TouchableOpacity>
 
               {attachment && (
-                <View style={{ backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="document" size={18} color="#4338CA" />
+                <View style={{ backgroundColor: ColorScale.gray[50], borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: ColorScale.gray[200], padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing[3] }}>
+                  <View style={{ width: 36, height: 36, borderRadius: BorderRadius.full, backgroundColor: 'rgba(99,102,241,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="document" size={18} color={Colors.secondary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>{attachment.name}</Text>
-                    <Text style={{ fontSize: 12, color: '#64748B' }}>{formatFileSize(attachment.size)}</Text>
+                    <Text style={{ fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[800] }} numberOfLines={1}>{attachment.name}</Text>
+                    <Text style={{ fontSize: Typography.fontSize[12], color: Colors.textSecondary }}>{formatFileSize(attachment.size)}</Text>
                   </View>
                   <TouchableOpacity onPress={() => setAttachment(null)}>
-                    <Ionicons name="close-circle" size={22} color="#94A3B8" />
+                    <Ionicons name="close-circle" size={22} color={Colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -591,43 +592,43 @@ function MobileAssignmentWidget({
               {lesson.assignmentSubmission?.fileUrl && (
                 <TouchableOpacity
                   onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
-                  style={{ backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  style={{ backgroundColor: ColorScale.gray[50], borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: ColorScale.gray[200], padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}
                 >
-                  <Ionicons name="document-text" size={18} color="#475569" />
-                  <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
+                  <Ionicons name="document-text" size={18} color={ColorScale.gray[600]} />
+                  <Text style={{ flex: 1, fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[600] }} numberOfLines={1}>
                     {t('learn.lessonViewer.currentAttachment')}: {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                   </Text>
-                  <Ionicons name="open-outline" size={16} color="#475569" />
+                  <Ionicons name="open-outline" size={16} color={ColorScale.gray[600]} />
                 </TouchableOpacity>
               )}
             </View>
             <TouchableOpacity 
               onPress={handleSubmit}
               disabled={isSubmitting}
-              style={{ backgroundColor: '#4F46E5', borderRadius: 14, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, opacity: isSubmitting ? 0.7 : 1 }}
+              style={{ backgroundColor: Colors.secondary, borderRadius: BorderRadius.xl, paddingVertical: Spacing.md, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, opacity: isSubmitting ? 0.7 : 1 }}
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={Colors.white} />
               ) : (
                 <>
-                  <Ionicons name="cloud-upload" size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{t('learn.lessonViewer.submitAssignment')}</Text>
+                  <Ionicons name="cloud-upload" size={18} color={Colors.white} />
+                  <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.extrabold, fontSize: Typography.fontSize[15] }}>{t('learn.lessonViewer.submitAssignment')}</Text>
                 </>
               )}
             </TouchableOpacity>
           </>
         ) : (
-           <View style={{ padding: 16, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+           <View style={{ padding: Spacing.md, backgroundColor: ColorScale.gray[50], borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: ColorScale.gray[200] }}>
              {!!lesson.assignmentSubmission?.submissionText && (
-               <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+               <Text style={{ fontSize: Typography.fontSize[14], color: Colors.text, lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
              )}
              {lesson.assignmentSubmission?.fileUrl && (
                <TouchableOpacity
                  onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
-                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? 12 : 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? Spacing[3] : Spacing[0], flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}
                >
-                 <Ionicons name="attach" size={16} color="#475569" />
-                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+                 <Ionicons name="attach" size={16} color={ColorScale.gray[600]} />
+                 <Text style={{ fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[600] }}>
                    {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                  </Text>
                </TouchableOpacity>
@@ -899,7 +900,7 @@ export default function LessonViewerScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator size="large" color="#1A73E8" />
+        <ActivityIndicator size="large" color={ColorScale.primary[600]} />
         <Text style={styles.loadingText}>{t('learn.lessonViewer.loadingLesson')}</Text>
       </SafeAreaView>
     );
@@ -908,7 +909,7 @@ export default function LessonViewerScreen() {
   if (!lesson) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <Ionicons name="alert-circle-outline" size={36} color="#9CA3AF" />
+        <Ionicons name="alert-circle-outline" size={36} color={Colors.textTertiary} />
         <Text style={styles.loadingText}>{t('learn.lessonViewer.lessonNotAvailable')}</Text>
       </SafeAreaView>
     );
@@ -950,13 +951,13 @@ export default function LessonViewerScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={22} color="#334155" />
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {course?.title || t('learn.lessonViewer.lesson')}
           </Text>
           <TouchableOpacity style={styles.headerButton} onPress={onRefresh}>
-            <Ionicons name="refresh-outline" size={20} color="#334155" />
+            <Ionicons name="refresh-outline" size={20} color={Colors.text} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -964,17 +965,17 @@ export default function LessonViewerScreen() {
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A73E8" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ColorScale.primary[600]} />}
       >
         <View style={styles.lessonCard}>
           <Text style={styles.lessonTitle}>{lesson.title}</Text>
           <View style={styles.lessonMetaRow}>
             <View style={styles.lessonMetaItem}>
-              <Ionicons name="time-outline" size={13} color="#6B7280" />
+              <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
               <Text style={styles.lessonMetaText}>{formatDuration(lesson.duration)}</Text>
             </View>
             <View style={styles.lessonMetaItem}>
-              <Ionicons name={lesson.isCompleted ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={lesson.isCompleted ? '#10B981' : '#6B7280'} />
+              <Ionicons name={lesson.isCompleted ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={lesson.isCompleted ? Colors.success.main : Colors.textSecondary} />
               <Text style={styles.lessonMetaText}>{lesson.isCompleted ? t('learn.courseDetail.doneTag') : t('learn.lessonViewer.inProgress')}</Text>
             </View>
           </View>
@@ -1023,20 +1024,20 @@ export default function LessonViewerScreen() {
           )}
 
           {lesson.type === 'EXERCISE' && (
-            <View style={{ backgroundColor: '#ECFDF5', padding: 16, borderRadius: 12, marginVertical: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="code-slash" size={24} color="#059669" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A' }}>{t('learn.lessonViewer.codingExercise')}</Text>
+            <View style={{ backgroundColor: 'rgba(34,197,94,0.08)', padding: Spacing.md, borderRadius: BorderRadius.lg, marginVertical: Spacing[3] }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
+                <Ionicons name="code-slash" size={24} color={Colors.success.dark} style={{ marginRight: Spacing.sm }} />
+                <Text style={{ fontSize: Typography.fontSize[16], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[900] }}>{t('learn.lessonViewer.codingExercise')}</Text>
               </View>
-              <Text style={{ fontSize: 13, color: '#475569', marginBottom: 12 }}>{t('learn.lessonViewer.openOnWebIde')}</Text>
-              <View style={{ backgroundColor: '#D1FAE5', padding: 8, borderRadius: 8 }}>
-                <Text style={{ color: '#065F46', textAlign: 'center', fontWeight: '600', fontSize: 12 }}>{t('learn.lessonViewer.desktopRecommended')}</Text>
+              <Text style={{ fontSize: Typography.fontSize[13], color: ColorScale.gray[600], marginBottom: Spacing[3] }}>{t('learn.lessonViewer.openOnWebIde')}</Text>
+              <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', padding: Spacing.sm, borderRadius: BorderRadius.md }}>
+                <Text style={{ color: Colors.success.dark, textAlign: 'center', fontWeight: Typography.fontWeight.semibold, fontSize: Typography.fontSize[12] }}>{t('learn.lessonViewer.desktopRecommended')}</Text>
               </View>
             </View>
           )}
 
           {lesson.type === 'IMAGE' && (
-            <View style={{ marginVertical: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: '#F1F5F9' }}>
+            <View style={{ marginVertical: Spacing[3], borderRadius: BorderRadius.lg, overflow: 'hidden', backgroundColor: ColorScale.gray[100] }}>
                <Image
                  source={{ uri: lesson.content || '' }}
                  style={{ width: '100%', aspectRatio: 16/9 }}
@@ -1045,11 +1046,11 @@ export default function LessonViewerScreen() {
                  transition={150}
                  recyclingKey={lesson.content || undefined}
                />
-               <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
-                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B' }}>{lesson.title}</Text>
-                 <TouchableOpacity style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }} onPress={() => Linking.openURL(lesson.content || '')}>
-                   <Ionicons name="download-outline" size={14} color="#1A73E8" />
-                   <Text style={{ fontSize: 12, color: '#1A73E8', fontWeight: '600' }}>{t('learn.lessonViewer.fullResolution')}</Text>
+               <View style={{ padding: Spacing[3], backgroundColor: Colors.white, borderTopWidth: 1, borderTopColor: ColorScale.gray[200] }}>
+                 <Text style={{ fontSize: Typography.fontSize[14], fontWeight: Typography.fontWeight.bold, color: ColorScale.gray[800] }}>{lesson.title}</Text>
+                 <TouchableOpacity style={{ marginTop: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }} onPress={() => Linking.openURL(lesson.content || '')}>
+                   <Ionicons name="download-outline" size={14} color={ColorScale.primary[600]} />
+                   <Text style={{ fontSize: Typography.fontSize[12], color: ColorScale.primary[600], fontWeight: Typography.fontWeight.semibold }}>{t('learn.lessonViewer.fullResolution')}</Text>
                  </TouchableOpacity>
                </View>
             </View>
@@ -1059,7 +1060,7 @@ export default function LessonViewerScreen() {
             <View style={styles.documentLessonCard}>
               <View style={styles.documentHero}>
                 <View style={styles.documentHeroIcon}>
-                  <Ionicons name="document-text-outline" size={28} color="#7C3AED" />
+                  <Ionicons name="document-text-outline" size={28} color={Colors.secondary} />
                 </View>
                 <Text style={styles.documentHeroTitle}>{lesson.title}</Text>
                 <Text style={styles.documentHeroSubtitle}>
@@ -1104,10 +1105,10 @@ export default function LessonViewerScreen() {
                       disabled={inlineTextLoadingResourceId === primaryVisibleResource.id}
                     >
                       {inlineTextLoadingResourceId === primaryVisibleResource.id ? (
-                        <ActivityIndicator size="small" color="#7C3AED" />
+                        <ActivityIndicator size="small" color={Colors.secondary} />
                       ) : (
                         <>
-                          <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+                          <Ionicons name="document-text-outline" size={16} color={Colors.secondary} />
                           <Text style={styles.inlinePreviewButtonText}>{t('learn.lessonViewer.loadTextPreview')}</Text>
                         </>
                       )}
@@ -1136,10 +1137,10 @@ export default function LessonViewerScreen() {
                     disabled={resourceActionState[primaryVisibleResource.id] === 'opening'}
                   >
                     {resourceActionState[primaryVisibleResource.id] === 'opening' ? (
-                      <ActivityIndicator size="small" color="#7C3AED" />
+                      <ActivityIndicator size="small" color={Colors.secondary} />
                     ) : (
                       <>
-                        <Ionicons name="open-outline" size={16} color="#7C3AED" />
+                        <Ionicons name="open-outline" size={16} color={Colors.secondary} />
                         <Text style={styles.documentActionText}>{t('common.open')}</Text>
                       </>
                     )}
@@ -1150,10 +1151,10 @@ export default function LessonViewerScreen() {
                     disabled={resourceActionState[primaryVisibleResource.id] === 'saving'}
                   >
                     {resourceActionState[primaryVisibleResource.id] === 'saving' ? (
-                      <ActivityIndicator size="small" color="#7C3AED" />
+                      <ActivityIndicator size="small" color={Colors.secondary} />
                     ) : (
                       <>
-                        <Ionicons name="download-outline" size={16} color="#7C3AED" />
+                        <Ionicons name="download-outline" size={16} color={Colors.secondary} />
                         <Text style={styles.documentActionText}>{t('learn.lessonViewer.saveCopy')}</Text>
                       </>
                     )}
@@ -1164,10 +1165,10 @@ export default function LessonViewerScreen() {
                     disabled={resourceActionState[primaryVisibleResource.id] === 'sharing'}
                   >
                     {resourceActionState[primaryVisibleResource.id] === 'sharing' ? (
-                      <ActivityIndicator size="small" color="#7C3AED" />
+                      <ActivityIndicator size="small" color={Colors.secondary} />
                     ) : (
                       <>
-                        <Ionicons name="share-social-outline" size={16} color="#7C3AED" />
+                        <Ionicons name="share-social-outline" size={16} color={Colors.secondary} />
                         <Text style={styles.documentActionText}>{t('common.share')}</Text>
                       </>
                     )}
@@ -1178,7 +1179,7 @@ export default function LessonViewerScreen() {
                   style={styles.documentPrimaryButton}
                   onPress={() => openResourceUrl(primaryLessonResourceUrl)}
                 >
-                  <Ionicons name="open-outline" size={18} color="#fff" />
+                  <Ionicons name="open-outline" size={18} color={Colors.white} />
                   <Text style={styles.documentPrimaryButtonText}>{t('learn.lessonViewer.openPrimaryResource')}</Text>
                 </TouchableOpacity>
               ) : (
@@ -1199,11 +1200,11 @@ export default function LessonViewerScreen() {
           )}
 
           {(lesson.type === 'ARTICLE' || lesson.type === 'PRACTICE') && (
-            <View style={{ marginBottom: 16 }}>
-              <View style={{ alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 12 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>{lesson.type === 'PRACTICE' ? t('learn.lessonViewer.practiceLesson') : t('learn.lessonViewer.readingLesson')}</Text>
+            <View style={{ marginBottom: Spacing.md }}>
+              <View style={{ alignSelf: 'flex-start', backgroundColor: ColorScale.gray[100], paddingHorizontal: Spacing[3], paddingVertical: Spacing.xs, borderRadius: BorderRadius.md, marginBottom: Spacing[3] }}>
+                <Text style={{ fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.extrabold, color: ColorScale.gray[600], textTransform: 'uppercase' }}>{lesson.type === 'PRACTICE' ? t('learn.lessonViewer.practiceLesson') : t('learn.lessonViewer.readingLesson')}</Text>
               </View>
-              <Text style={[styles.lessonContent, { fontSize: 16, lineHeight: 26, color: '#1F2937' }]}>{contentText}</Text>
+              <Text style={[styles.lessonContent, { fontSize: Typography.fontSize[16], lineHeight: 26, color: ColorScale.gray[800] }]}>{contentText}</Text>
             </View>
           )}
 
@@ -1217,7 +1218,7 @@ export default function LessonViewerScreen() {
               onPress={() => Linking.openURL(lesson.videoUrl!)}
               activeOpacity={0.8}
             >
-              <Ionicons name="play-circle-outline" size={16} color="#1A73E8" />
+              <Ionicons name="play-circle-outline" size={16} color={ColorScale.primary[600]} />
               <Text style={styles.resourceText}>{t('learn.lessonViewer.openLessonMedia')}</Text>
             </TouchableOpacity>
           )}
@@ -1229,19 +1230,19 @@ export default function LessonViewerScreen() {
               onPress={() => track.url && Linking.openURL(track.url)}
               activeOpacity={0.8}
             >
-              <Ionicons name="text-outline" size={16} color="#1A73E8" />
+              <Ionicons name="text-outline" size={16} color={ColorScale.primary[600]} />
               <Text style={styles.resourceText}>{t('learn.lessonViewer.captionsForLanguage', { language: track.label || getLocaleLabel(track.locale) })}</Text>
             </TouchableOpacity>
           ))}
 
           {activeTranscriptTrack?.content && (
-            <View style={{ backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginTop: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="reader-outline" size={18} color="#475569" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155', textTransform: 'uppercase' }}>{t('learn.lessonViewer.transcript')}</Text>
+            <View style={{ backgroundColor: ColorScale.gray[50], borderWidth: 1, borderColor: ColorScale.gray[200], borderRadius: BorderRadius.xl, padding: Spacing.md, marginTop: Spacing[3] }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
+                <Ionicons name="reader-outline" size={18} color={ColorScale.gray[600]} style={{ marginRight: Spacing.sm }} />
+                <Text style={{ fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.extrabold, color: Colors.text, textTransform: 'uppercase' }}>{t('learn.lessonViewer.transcript')}</Text>
               </View>
               {transcriptTracks.length > 1 && (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing[3] }}>
                   {transcriptTracks.map((track) => {
                     const isActive = activeTranscriptTrack.id === track.id;
                     return (
@@ -1249,15 +1250,15 @@ export default function LessonViewerScreen() {
                         key={track.id}
                         onPress={() => setTranscriptLocalePreference(track.locale)}
                         style={{
-                          paddingHorizontal: 10,
-                          paddingVertical: 5,
-                          borderRadius: 999,
+                          paddingHorizontal: Spacing[3],
+                          paddingVertical: Spacing.xs,
+                          borderRadius: BorderRadius.full,
                           borderWidth: 1,
-                          borderColor: isActive ? '#0284C7' : '#CBD5E1',
-                          backgroundColor: isActive ? '#E0F2FE' : '#FFFFFF',
+                          borderColor: isActive ? ColorScale.primary[600] : ColorScale.gray[300],
+                          backgroundColor: isActive ? ColorScale.primary[100] : Colors.white,
                         }}
                       >
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: isActive ? '#0369A1' : '#64748B' }}>
+                        <Text style={{ fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.bold, color: isActive ? ColorScale.primary[700] : Colors.textSecondary }}>
                           {track.label || getLocaleLabel(track.locale)}
                         </Text>
                       </TouchableOpacity>
@@ -1265,7 +1266,7 @@ export default function LessonViewerScreen() {
                   })}
                 </View>
               )}
-              <Text style={{ fontSize: 14, lineHeight: 22, color: '#334155' }}>
+              <Text style={{ fontSize: Typography.fontSize[14], lineHeight: 22, color: Colors.text }}>
                 {activeTranscriptTrack.content}
               </Text>
             </View>
@@ -1277,7 +1278,7 @@ export default function LessonViewerScreen() {
               {visibleResources.map(resource => (
                 <View key={resource.id} style={styles.resourceCard}>
                   <View style={styles.resourceRow}>
-                    <Ionicons name={getResourceIcon(getResolvedResourceType(resource))} size={16} color="#1A73E8" />
+                    <Ionicons name={getResourceIcon(getResolvedResourceType(resource))} size={16} color={ColorScale.primary[600]} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.resourceText} numberOfLines={1}>
                         {resource.title}
@@ -1294,7 +1295,7 @@ export default function LessonViewerScreen() {
                       activeOpacity={0.8}
                       onPress={() => handleOpenResource(resource)}
                     >
-                      <Ionicons name="open-outline" size={14} color="#1A73E8" />
+                      <Ionicons name="open-outline" size={14} color={ColorScale.primary[600]} />
                       <Text style={styles.resourceMiniActionText}>{t('common.open')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1302,7 +1303,7 @@ export default function LessonViewerScreen() {
                       activeOpacity={0.8}
                       onPress={() => handleSaveCopy(resource)}
                     >
-                      <Ionicons name="download-outline" size={14} color="#1A73E8" />
+                      <Ionicons name="download-outline" size={14} color={ColorScale.primary[600]} />
                       <Text style={styles.resourceMiniActionText}>{t('common.save')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1310,7 +1311,7 @@ export default function LessonViewerScreen() {
                       activeOpacity={0.8}
                       onPress={() => handleShareResourceLink(resource)}
                     >
-                      <Ionicons name="share-social-outline" size={14} color="#1A73E8" />
+                      <Ionicons name="share-social-outline" size={14} color={ColorScale.primary[600]} />
                       <Text style={styles.resourceMiniActionText}>{t('common.share')}</Text>
                     </TouchableOpacity>
                   </View>
@@ -1319,40 +1320,40 @@ export default function LessonViewerScreen() {
             </View>
           )}
 
-          <View style={[styles.resourcesSection, { marginTop: 14 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <View style={[styles.resourcesSection, { marginTop: Spacing.md }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing[3] }}>
               <Text style={styles.resourcesTitle}>{t('learn.lessonViewer.myNotes')}</Text>
-              <Text style={{ fontSize: 11, color: '#64748B' }}>
+              <Text style={{ fontSize: Typography.fontSize[11], color: Colors.textSecondary }}>
                 {noteSavedAt ? t('learn.lessonViewer.savedAt', { time: new Date(noteSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('learn.lessonViewer.notSavedYet')}
               </Text>
             </View>
-            <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 12 }}>
+            <View style={{ backgroundColor: Colors.white, borderWidth: 1, borderColor: ColorScale.gray[200], borderRadius: BorderRadius.xl, padding: Spacing[3] }}>
               <TextInput
                 value={noteDraft}
                 onChangeText={setNoteDraft}
                 placeholder={t('learn.lessonViewer.notesPlaceholder')}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={Colors.textTertiary}
                 multiline
                 textAlignVertical="top"
-                style={{ minHeight: 130, fontSize: 14, lineHeight: 22, color: '#0F172A' }}
+                style={{ minHeight: 130, fontSize: Typography.fontSize[14], lineHeight: 22, color: ColorScale.gray[900] }}
               />
-              <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+              <View style={{ marginTop: Spacing[3], flexDirection: 'row', justifyContent: 'space-between', gap: Spacing[3] }}>
                 <TouchableOpacity
-                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F1F5F9' }}
+                  style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing[3], borderRadius: BorderRadius.lg, backgroundColor: ColorScale.gray[100] }}
                   onPress={() => setNoteDraft('')}
                   disabled={noteSaving}
                 >
-                  <Text style={{ color: '#475569', fontWeight: '700' }}>{t('common.clear')}</Text>
+                  <Text style={{ color: ColorScale.gray[600], fontWeight: Typography.fontWeight.bold }}>{t('common.clear')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#1A73E8', minWidth: 104, alignItems: 'center' }}
+                  style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing[3], borderRadius: BorderRadius.lg, backgroundColor: ColorScale.primary[600], minWidth: 104, alignItems: 'center' }}
                   onPress={handleSaveNote}
                   disabled={noteSaving}
                 >
                   {noteSaving ? (
-                    <ActivityIndicator size="small" color="#fff" />
+                    <ActivityIndicator size="small" color={Colors.white} />
                   ) : (
-                    <Text style={{ color: '#fff', fontWeight: '800' }}>{t('learn.lessonViewer.saveNote')}</Text>
+                    <Text style={{ color: Colors.white, fontWeight: Typography.fontWeight.extrabold }}>{t('learn.lessonViewer.saveNote')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1364,9 +1365,9 @@ export default function LessonViewerScreen() {
             activeOpacity={0.8}
             onPress={() => (navigation as any).navigate('CourseQA', { courseId, lessonId })}
           >
-            <Ionicons name="chatbubbles-outline" size={18} color="#F59E0B" />
+            <Ionicons name="chatbubbles-outline" size={18} color={Colors.warning.main} />
             <Text style={styles.qaButtonText}>{t('learn.lessonViewer.joinDiscussion')}</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+            <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
         </View>
 
@@ -1374,7 +1375,7 @@ export default function LessonViewerScreen() {
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <View style={styles.progressIconWrap}>
-                <Ionicons name="trending-up" size={16} color="#1D4ED8" />
+                <Ionicons name="trending-up" size={16} color={ColorScale.primary[600]} />
               </View>
               <View style={styles.progressTextWrap}>
                 <Text style={styles.progressTitle}>{t('learn.lessonViewer.courseProgress')}</Text>
@@ -1415,17 +1416,17 @@ export default function LessonViewerScreen() {
                       if (!isLocked) openLesson(courseLesson.id);
                     }}
                   >
-                    <View style={[styles.playlistIndex, isActive && { backgroundColor: '#1A73E8' }, courseLesson.isCompleted && { backgroundColor: '#10B981' }]}>
+                    <View style={[styles.playlistIndex, isActive && { backgroundColor: ColorScale.primary[600] }, courseLesson.isCompleted && { backgroundColor: Colors.success.main }]}>
                       {courseLesson.isCompleted ? (
-                        <Ionicons name="checkmark" size={12} color="#fff" />
+                        <Ionicons name="checkmark" size={12} color={Colors.white} />
                       ) : isLocked ? (
-                        <Ionicons name="lock-closed" size={11} color="#fff" />
+                        <Ionicons name="lock-closed" size={11} color={Colors.white} />
                       ) : (
                         <Text style={styles.playlistIndexText}>{courseLesson.order + 1}</Text>
                       )}
                     </View>
                     <View style={styles.playlistBody}>
-                      <Text style={[styles.playlistItemTitle, isActive && { color: '#1A73E8' }]} numberOfLines={1}>{courseLesson.title}</Text>
+                      <Text style={[styles.playlistItemTitle, isActive && { color: ColorScale.primary[600] }]} numberOfLines={1}>{courseLesson.title}</Text>
                       <Text style={styles.playlistMetaText}>{formatDuration(courseLesson.duration)}</Text>
                     </View>
                   </TouchableOpacity>
@@ -1448,9 +1449,9 @@ export default function LessonViewerScreen() {
             >
               <View style={styles.playlistIndex}>
                 {courseLesson.isCompleted ? (
-                  <Ionicons name="checkmark" size={12} color="#fff" />
+                  <Ionicons name="checkmark" size={12} color={Colors.white} />
                 ) : courseLesson.isLocked ? (
-                  <Ionicons name="lock-closed" size={11} color="#fff" />
+                  <Ionicons name="lock-closed" size={11} color={Colors.white} />
                 ) : (
                   <Text style={styles.playlistIndexText}>{index + 1}</Text>
                 )}
@@ -1474,7 +1475,7 @@ export default function LessonViewerScreen() {
           onPress={() => previousLesson && openLesson(previousLesson.id)}
           disabled={!previousLesson}
         >
-          <Ionicons name="chevron-back" size={16} color="#fff" />
+          <Ionicons name="chevron-back" size={16} color={Colors.white} />
           <Text style={styles.secondaryButtonText}>{t('learn.lessonViewer.previous')}</Text>
         </TouchableOpacity>
 
@@ -1484,10 +1485,10 @@ export default function LessonViewerScreen() {
           disabled={lesson.isCompleted || completing}
         >
           {completing ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={Colors.white} />
           ) : (
             <>
-              <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+              <Ionicons name="checkmark-circle-outline" size={16} color={Colors.white} />
               <Text style={styles.primaryButtonText}>{lesson.isCompleted ? t('learn.courseDetail.doneTag') : t('learn.lessonViewer.complete')}</Text>
             </>
           )}
@@ -1499,7 +1500,7 @@ export default function LessonViewerScreen() {
           disabled={!nextLesson}
         >
           <Text style={styles.secondaryButtonText}>{t('learn.lessonViewer.next')}</Text>
-          <Ionicons name="chevron-forward" size={16} color="#fff" />
+          <Ionicons name="chevron-forward" size={16} color={Colors.white} />
         </TouchableOpacity>
       </View>
     </View>
@@ -1521,26 +1522,26 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     backgroundColor: colors.background,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 15,
+    marginTop: Spacing[3],
+    fontSize: Typography.fontSize[15],
     lineHeight: 22,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
     color: colors.textSecondary,
   },
   header: {
     height: 52,
     backgroundColor: colors.card,
-    paddingHorizontal: 12,
+    paddingHorizontal: Spacing[3],
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   headerButton: {
     width: 40,
     height: 40,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceVariant,
@@ -1550,156 +1551,153 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   headerTitle: {
     flex: 1,
     color: colors.text,
-    fontSize: 15,
+    fontSize: Typography.fontSize[15],
     lineHeight: 22,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing[3],
   },
   lessonCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
-    shadowColor: isDark ? 'transparent' : '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    padding: Spacing[3],
+    ...Shadows.lg,
+    shadowColor: isDark ? 'transparent' : ColorScale.gray[900],
   },
   progressCard: {
-    marginTop: 12,
-    borderRadius: 16,
+    marginTop: Spacing[3],
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceVariant,
-    padding: 10,
+    padding: Spacing[3],
   },
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   progressIconWrap: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : '#DBEAFE',
+    borderRadius: BorderRadius.xl,
+    backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : ColorScale.primary[100],
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   progressTextWrap: {
     flex: 1,
   },
   progressTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   progressSubtitle: {
-    marginTop: 1,
-    fontSize: 11,
+    marginTop: Spacing[0],
+    fontSize: Typography.fontSize[11],
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   progressValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[18],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.primary,
   },
   progressTrack: {
     height: 8,
-    borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(29,155,240,0.22)' : '#E0E7FF',
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? 'rgba(29,155,240,0.22)' : ColorScale.primary[100],
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.primary,
   },
   progressHint: {
-    marginTop: 6,
-    fontSize: 11,
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize[11],
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   lessonTitle: {
-    fontSize: 18,
+    fontSize: Typography.fontSize[18],
     color: colors.text,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
   },
   lessonMetaRow: {
-    marginTop: 8,
+    marginTop: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing[3],
   },
   lessonMetaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   lessonMetaText: {
-    fontSize: 12,
+    fontSize: Typography.fontSize[12],
     color: colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   localeSection: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: Spacing[3],
+    paddingTop: Spacing[3],
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   localeSectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   localeChipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: Spacing.sm,
   },
   localeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
   },
   localeChipActive: {
     borderColor: colors.primary,
-    backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(29,155,240,0.18)' : ColorScale.primary[100],
   },
   localeChipText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   localeChipTextActive: {
     color: colors.primary,
   },
   lessonContent: {
-    marginTop: 10,
-    fontSize: 14,
+    marginTop: Spacing[3],
+    fontSize: Typography.fontSize[14],
     color: colors.text,
     lineHeight: 22,
   },
   documentLessonCard: {
-    marginVertical: 12,
-    borderRadius: 18,
+    marginVertical: Spacing[3],
+    borderRadius: BorderRadius[20],
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#DDD6FE',
-    backgroundColor: isDark ? 'rgba(139,92,246,0.16)' : '#F5F3FF',
-    padding: 16,
+    borderColor: isDark ? 'rgba(99,102,241,0.34)' : 'rgba(99,102,241,0.2)',
+    backgroundColor: isDark ? 'rgba(99,102,241,0.16)' : 'rgba(99,102,241,0.06)',
+    padding: Spacing.md,
   },
   documentHero: {
     alignItems: 'center',
@@ -1707,288 +1705,285 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   documentHeroIcon: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: isDark ? 'transparent' : '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Shadows.lg,
+    shadowColor: isDark ? 'transparent' : Colors.black,
   },
   documentHeroTitle: {
-    marginTop: 12,
-    fontSize: 17,
-    fontWeight: '800',
+    marginTop: Spacing[3],
+    fontSize: Typography.fontSize[17],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
     textAlign: 'center',
   },
   documentHeroSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[12],
     color: colors.textSecondary,
     textAlign: 'center',
   },
   documentGuideCard: {
-    marginTop: 14,
-    borderRadius: 16,
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.xl,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#E9D5FF',
-    padding: 14,
+    borderColor: isDark ? 'rgba(99,102,241,0.34)' : 'rgba(99,102,241,0.16)',
+    padding: Spacing.md,
   },
   documentGuideEyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#7C3AED',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: Colors.secondary,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: Spacing.sm,
   },
   documentGuideText: {
-    fontSize: 13,
+    fontSize: Typography.fontSize[13],
     lineHeight: 21,
     color: colors.textSecondary,
   },
   inlinePreviewCard: {
-    marginTop: 14,
-    borderRadius: 16,
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.xl,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#E9D5FF',
-    padding: 14,
-    gap: 10,
+    borderColor: isDark ? 'rgba(99,102,241,0.34)' : 'rgba(99,102,241,0.16)',
+    padding: Spacing.md,
+    gap: Spacing[3],
   },
   inlinePreviewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: Spacing[3],
   },
   inlinePreviewTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
   },
   inlinePreviewHint: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#8B5CF6',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.secondary,
   },
   inlinePreviewImage: {
     width: '100%',
     height: 220,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     backgroundColor: colors.surfaceVariant,
   },
   inlinePreviewText: {
-    fontSize: 13,
+    fontSize: Typography.fontSize[13],
     lineHeight: 21,
     color: colors.textSecondary,
   },
   inlinePreviewButton: {
     minHeight: 42,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#DDD6FE',
-    backgroundColor: isDark ? 'rgba(139,92,246,0.16)' : '#F5F3FF',
+    borderColor: isDark ? 'rgba(99,102,241,0.34)' : 'rgba(99,102,241,0.2)',
+    backgroundColor: isDark ? 'rgba(99,102,241,0.16)' : 'rgba(99,102,241,0.06)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing[3],
   },
   inlinePreviewButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#7C3AED',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.secondary,
   },
   documentPrimaryButton: {
-    marginTop: 14,
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 999,
+    marginTop: Spacing.md,
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: Spacing[5],
+    paddingVertical: Spacing[3],
+    borderRadius: BorderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   documentPrimaryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 14,
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.extrabold,
+    fontSize: Typography.fontSize[14],
   },
   documentFallbackText: {
-    marginTop: 14,
-    fontSize: 12,
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize[12],
     color: colors.textSecondary,
     textAlign: 'center',
   },
   documentActionGrid: {
-    marginTop: 14,
+    marginTop: Spacing.md,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing[3],
   },
   documentActionButton: {
     flex: 1,
     minWidth: 96,
     minHeight: 44,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#DDD6FE',
+    borderColor: isDark ? 'rgba(99,102,241,0.34)' : 'rgba(99,102,241,0.2)',
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 12,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing[3],
   },
   documentActionText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#7C3AED',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: Colors.secondary,
   },
   documentMetaRow: {
-    marginTop: 14,
+    marginTop: Spacing.md,
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing[3],
   },
   documentMetaCard: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(139,92,246,0.34)' : '#E9D5FF',
-    padding: 12,
+    borderColor: isDark ? 'rgba(99,102,241,0.34)' : 'rgba(99,102,241,0.16)',
+    padding: Spacing[3],
   },
   documentMetaLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#8B5CF6',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.secondary,
     textTransform: 'uppercase',
   },
   documentMetaValue: {
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '800',
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
   },
   resourcesSection: {
-    marginTop: 12,
+    marginTop: Spacing[3],
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 10,
-    gap: 8,
+    paddingTop: Spacing[3],
+    gap: Spacing.sm,
   },
   resourcesTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   resourceCard: {
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    padding: 10,
-    gap: 8,
+    padding: Spacing[3],
+    gap: Spacing.sm,
   },
   resourceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   resourceText: {
-    fontSize: 13,
-    color: '#1A73E8',
-    fontWeight: '600',
+    fontSize: Typography.fontSize[13],
+    color: ColorScale.primary[600],
+    fontWeight: Typography.fontWeight.semibold,
   },
   resourceMetaInline: {
-    marginTop: 2,
-    fontSize: 11,
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize[11],
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   resourceActionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: Spacing.sm,
   },
   resourceMiniAction: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceVariant,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   resourceMiniActionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A73E8',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
+    color: ColorScale.primary[600],
   },
   qaButtonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 16,
-    paddingTop: 16,
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border
   },
   qaButtonText: {
-    fontSize: 14,
+    fontSize: Typography.fontSize[14],
     color: colors.text,
-    fontWeight: '600'
+    fontWeight: Typography.fontWeight.semibold
   },
   playlistCard: {
-    marginTop: 12,
+    marginTop: Spacing[3],
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
+    padding: Spacing[3],
   },
   playlistTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   sectionEntry: {
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   sectionHeader: {
-    paddingVertical: 6,
+    paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   sectionHeaderText: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.textTertiary,
     letterSpacing: 1,
   },
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    gap: Spacing[3],
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   playlistItemActive: {
-    backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#EFF6FF',
+    backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : ColorScale.primary[50],
     borderColor: colors.primary,
   },
   playlistItemLocked: {
@@ -1997,74 +1992,71 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   playlistIndex: {
     width: 24,
     height: 24,
-    borderRadius: 12,
-    backgroundColor: '#1A73E8',
+    borderRadius: BorderRadius.lg,
+    backgroundColor: ColorScale.primary[600],
     alignItems: 'center',
     justifyContent: 'center',
   },
   playlistIndexText: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold,
   },
   playlistBody: {
     flex: 1,
   },
   playlistItemTitle: {
-    fontSize: 13,
+    fontSize: Typography.fontSize[13],
     color: colors.text,
-    fontWeight: '700',
+    fontWeight: Typography.fontWeight.bold,
   },
   playlistMetaText: {
-    fontSize: 11,
+    fontSize: Typography.fontSize[11],
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: Spacing.xs,
   },
   bottomBar: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.card,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[3],
     flexDirection: 'row',
-    gap: 8,
+    gap: Spacing.sm,
   },
   primaryButton: {
     flex: 1.2,
     height: 42,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A73E8',
+    backgroundColor: ColorScale.primary[600],
     flexDirection: 'row',
-    gap: 6,
-    shadowColor: '#1A73E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    gap: Spacing.sm,
+    ...Shadows.lg,
+    shadowColor: ColorScale.primary[600],
   },
   secondaryButton: {
     flex: 1,
     height: 42,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#64748B',
+    backgroundColor: Colors.textSecondary,
     flexDirection: 'row',
-    gap: 4,
+    gap: Spacing.xs,
   },
   disabledButton: {
     opacity: 0.5,
   },
   primaryButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold,
+    fontSize: Typography.fontSize[13],
   },
   secondaryButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold,
+    fontSize: Typography.fontSize[12],
   },
 });

@@ -29,20 +29,20 @@ export const FEATURE_FLAGS = {
 //   endorsements       → /users/:id/skills, /skills/:id/endorse (engagement-api/feed)
 //   mastery_tree       → GET /recall/mastery              (engagement-api/learn)
 //   streak_leaderboard → GET /streak/leaderboard          (engagement-api/analytics)
-//   streak_ring        → feed-header streak chip (data from engagement-api/analytics)
 //   profile_strength   → strength meter; backend exists (GET profile strength,
 //                        engagement-api/feed) but client UI is not wired yet — kept so
 //                        the flag is ready when the meter ships. Audit: 2026-06.
 // Removed (were default-ON but gated nothing): `weekly_digest` is a backend-only
 // notification cron now gated by WEEKLY_DIGEST_ENABLED in engagement-api;
-// `public_profile` had no implementation on either side.
+// `public_profile` had no implementation on either side; `streak_ring` gated the
+// feed-header streak chip, which was removed in favor of the streak/XP stats
+// already shown in the feed's PerformanceCard (2026-07-28).
 export type RemoteFlagKey =
   | 'reactions'
   | 'repost_quote'
   | 'endorsements'
   | 'mastery_tree'
   | 'streak_leaderboard'
-  | 'streak_ring'
   | 'profile_strength'
   | 'skill_gap_nudge';
 
@@ -52,7 +52,6 @@ const DEFAULT_REMOTE_FLAGS: Record<RemoteFlagKey, boolean> = {
   endorsements: true,
   mastery_tree: true,
   streak_leaderboard: true,
-  streak_ring: true,
   profile_strength: true,
   // Experiment — default OFF so a cold launch (before server flags load) never
   // shows it; the server resolver is the authority and stays at rollout 0

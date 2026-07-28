@@ -183,7 +183,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     fontWeight: '600',
     color: colors.text,
   },
-  logoutBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  logoutBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 9999 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
   schoolCard: {

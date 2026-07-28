@@ -1081,7 +1081,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   chip: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 7,
     backgroundColor: colors.surfaceVariant,
@@ -1167,7 +1167,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   sessionSummaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sessionSummaryChip: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
@@ -1184,7 +1184,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   statusActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   statusBtn: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },

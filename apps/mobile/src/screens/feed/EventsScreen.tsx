@@ -517,7 +517,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 8,
   },
   typeBadge: {
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 4,
     flexDirection: 'row',
@@ -565,7 +565,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 32,

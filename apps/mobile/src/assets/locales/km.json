@@ -3072,7 +3072,9 @@
       "approve": "អនុម័ត",
       "activeMembersCount": "សមាជិកសកម្ម ({{count}})",
       "noActiveMembers": "មិនឃើញសមាជិកសកម្មទេ។",
-      "role": "តួនាទី"
+      "role": "តួនាទី",
+      "staff": "បុគ្គលិក",
+      "students": "សិស្ស"
     },
     "materials": {
       "header": "សម្ភារៈក្លឹប",

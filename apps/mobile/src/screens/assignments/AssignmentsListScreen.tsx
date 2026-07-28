@@ -860,7 +860,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   typeBtn: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 7,
     backgroundColor: colors.card,

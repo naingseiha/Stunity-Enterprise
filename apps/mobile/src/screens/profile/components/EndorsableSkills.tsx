@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     minWidth: 96,
     justifyContent: 'center',

@@ -177,7 +177,7 @@ const reactionPickerStyles = StyleSheet.create({
     left: -6,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 12,

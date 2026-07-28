@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   cancel: { fontSize: 15, fontWeight: '600' },
   title: { fontSize: 16, fontWeight: '800' },
-  repostBtn: { backgroundColor: '#00BA7C', paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999, minWidth: 76, alignItems: 'center' },
+  repostBtn: { backgroundColor: '#00BA7C', paddingHorizontal: 16, paddingVertical: 7, borderRadius: 9999, minWidth: 76, alignItems: 'center' },
   repostBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   input: { paddingHorizontal: 16, paddingTop: 14, fontSize: 16, minHeight: 90, textAlignVertical: 'top' },
   quote: { marginHorizontal: 16, marginTop: 8, borderWidth: 1, borderRadius: 14, padding: 12 },

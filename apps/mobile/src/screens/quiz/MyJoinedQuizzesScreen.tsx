@@ -438,7 +438,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginBottom: 10,
       minHeight: 48,
       backgroundColor: colors.card,
-      borderRadius: 999,
+      borderRadius: 9999,
       borderWidth: 1,
       borderColor: colors.border,
       paddingHorizontal: 16,
@@ -461,7 +461,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     filterChip: {
       paddingHorizontal: 16,
       paddingVertical: 9,
-      borderRadius: 999,
+      borderRadius: 9999,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,

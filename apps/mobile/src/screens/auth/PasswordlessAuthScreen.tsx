@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 60,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 60,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   // OTP Capsule
   otpCapsule: {
     height: 66,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 2,
     borderColor: '#09CFF7',
     backgroundColor: '#F8FAFC',
@@ -577,10 +577,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 14,
     elevation: 6,
-    borderRadius: 999,
+    borderRadius: 9999,
   },
   disabledButtonShadow: { shadowOpacity: 0, elevation: 0 },
-  primaryButton: { height: 64, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  primaryButton: { height: 64, borderRadius: 9999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
 
   // Creative Divider (`FOR PARENTS` style)
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   // Secondary Option Cards with Circular Icon Badges (`WelcomeScreen` outline card style)
   secondaryCapsuleCard: {
     height: 58,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
     backgroundColor: '#F8FAFC',

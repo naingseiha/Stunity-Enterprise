@@ -34,6 +34,7 @@ import {
 import { LearnStackScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
+import { Colors, ColorScale, Typography, Spacing, BorderRadius } from '@/config';
 
 type NavigationProp = LearnStackScreenProps<'CreateCourse'>['navigation'];
 type SupportedLocaleKey = CourseLocale;
@@ -971,7 +972,7 @@ export default function CreateCourseScreen() {
             disabled={savingDraft || publishing || !canSaveDraft}
           >
             {savingDraft ? (
-              <ActivityIndicator size="small" color="#475569" />
+              <ActivityIndicator size="small" color={colors.textSecondary} />
             ) : (
               <Text style={s.draftBtnText}>{t('learn.createCourse.draft')}</Text>
             )}
@@ -983,10 +984,10 @@ export default function CreateCourseScreen() {
             disabled={savingDraft || publishing || !canPublish}
           >
             {publishing ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={Colors.white} />
             ) : (
               <LinearGradient
-                colors={['#0EA5E9', '#0284C7']}
+                colors={[ColorScale.primary[500], ColorScale.primary[600]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={s.publishBtnGrad}
@@ -1016,7 +1017,7 @@ export default function CreateCourseScreen() {
               value={title}
               onChangeText={setTitle}
               placeholder={t('learn.createCourse.placeholders.courseTitle')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
               style={s.input}
               maxLength={100}
             />
@@ -1029,7 +1030,7 @@ export default function CreateCourseScreen() {
               value={description}
               onChangeText={setDescription}
               placeholder={t('learn.createCourse.placeholders.description')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
               style={[s.input, s.textArea]}
               multiline
               textAlignVertical="top"
@@ -1040,12 +1041,12 @@ export default function CreateCourseScreen() {
 
           <Text style={s.fieldLabel}>{t('learn.createCourse.thumbnailUrl')}</Text>
           <View style={s.inputWrap}>
-            <Ionicons name="image-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+            <Ionicons name="image-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
             <TextInput
               value={thumbnail}
               onChangeText={setThumbnail}
               placeholder={t('learn.createCourse.placeholders.thumbnailUrl')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
               style={s.inputFlex}
               autoCapitalize="none"
             />
@@ -1058,10 +1059,10 @@ export default function CreateCourseScreen() {
               activeOpacity={0.85}
             >
               {uploadingThumbnail ? (
-                <ActivityIndicator size="small" color="#0EA5E9" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <>
-                  <Ionicons name="cloud-upload-outline" size={16} color="#0EA5E9" />
+                  <Ionicons name="cloud-upload-outline" size={16} color={colors.primary} />
                   <Text style={s.thumbnailUploadBtnText}>{t('learn.createCourse.uploadImage')}</Text>
                 </>
               )}
@@ -1072,7 +1073,7 @@ export default function CreateCourseScreen() {
                 onPress={() => setThumbnail('')}
                 activeOpacity={0.85}
               >
-                <Ionicons name="close-circle-outline" size={16} color="#64748B" />
+                <Ionicons name="close-circle-outline" size={16} color={colors.textSecondary} />
                 <Text style={s.thumbnailClearBtnText}>{t('common.clear')}</Text>
               </TouchableOpacity>
             )}
@@ -1137,7 +1138,7 @@ export default function CreateCourseScreen() {
               })}
             </View>
 
-            <Text style={[s.fieldLabel, { marginTop: 14 }]}>{t('learn.createCourse.availableLanguages')}</Text>
+            <Text style={[s.fieldLabel, { marginTop: Spacing.md }]}>{t('learn.createCourse.availableLanguages')}</Text>
             <View style={s.languageChipWrap}>
               {availableLanguageOptions.map((item) => {
                 const active = supportedLocales.includes(item.key);
@@ -1158,12 +1159,12 @@ export default function CreateCourseScreen() {
             </View>
             <View style={s.customLocaleRow}>
               <View style={[s.inputWrap, s.customLocaleInputWrap]}>
-                <Ionicons name="language-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                <Ionicons name="language-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
                 <TextInput
                   value={customLocaleInput}
                   onChangeText={setCustomLocaleInput}
                   placeholder={t('learn.createCourse.placeholders.addLocale')}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   style={s.inputFlex}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -1184,12 +1185,12 @@ export default function CreateCourseScreen() {
           <Text style={s.sectionLabel}>{t('learn.createCourse.tags')}</Text>
           <View style={s.tagInputRow}>
             <View style={[s.inputWrap, { flex: 1, marginBottom: 0 }]}>
-              <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+              <Ionicons name="pricetag-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
               <TextInput
                 value={tagInput}
                 onChangeText={setTagInput}
                 placeholder={t('learn.createCourse.placeholders.addTag')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 style={s.inputFlex}
                 onSubmitEditing={addTag}
               />
@@ -1199,7 +1200,7 @@ export default function CreateCourseScreen() {
               onPress={addTag}
               disabled={!tagInput.trim()}
             >
-              <Ionicons name="add" size={20} color="#FFFFFF" />
+              <Ionicons name="add" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
           <View style={s.tagsWrap}>
@@ -1207,7 +1208,7 @@ export default function CreateCourseScreen() {
               <View key={tag} style={s.tagBadge}>
                 <Text style={s.tagBadgeText}>{tag}</Text>
                 <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Ionicons name="close-circle" size={16} color="#64748B" />
+                  <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -1223,7 +1224,7 @@ export default function CreateCourseScreen() {
               </Text>
             </View>
             <TouchableOpacity style={s.addLessonBtn} onPress={addLesson}>
-              <Ionicons name="add" size={16} color="#0EA5E9" />
+              <Ionicons name="add" size={16} color={colors.primary} />
               <Text style={s.addLessonText}>{t('common.add')}</Text>
             </TouchableOpacity>
           </View>
@@ -1251,20 +1252,20 @@ export default function CreateCourseScreen() {
                       onPress={() => moveLesson(lesson.id, 'up')}
                       disabled={index === 0}
                     >
-                      <Ionicons name="arrow-up-outline" size={14} color="#64748B" />
+                      <Ionicons name="arrow-up-outline" size={14} color={colors.textSecondary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[s.lessonActionBtn, index === lessons.length - 1 && s.btnDisabled]}
                       onPress={() => moveLesson(lesson.id, 'down')}
                       disabled={index === lessons.length - 1}
                     >
-                      <Ionicons name="arrow-down-outline" size={14} color="#64748B" />
+                      <Ionicons name="arrow-down-outline" size={14} color={colors.textSecondary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={s.deleteBtn}
                       onPress={() => removeLesson(lesson.id)}
                     >
-                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                      <Ionicons name="trash-outline" size={16} color={colors.error} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1275,7 +1276,7 @@ export default function CreateCourseScreen() {
                     value={lesson.title}
                     onChangeText={(value) => updateLesson(lesson.id, 'title', value)}
                     placeholder={t('learn.createCourse.placeholders.lessonTitle')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     style={s.input}
                   />
                 </View>
@@ -1304,7 +1305,7 @@ export default function CreateCourseScreen() {
                     value={lesson.description}
                     onChangeText={(value) => updateLesson(lesson.id, 'description', value)}
                     placeholder={t('learn.createCourse.placeholders.lessonDescription')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     style={[s.input, s.textAreaSmall]}
                     multiline
                     textAlignVertical="top"
@@ -1315,7 +1316,7 @@ export default function CreateCourseScreen() {
                   <View style={s.durationWrap}>
                     <Text style={s.fieldLabel}>{t('learn.createCourse.durationMin')}</Text>
                     <View style={s.inputWrap}>
-                      <Ionicons name="time-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                      <Ionicons name="time-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
                       <TextInput
                         value={String(lesson.duration)}
                         onChangeText={(value) => {
@@ -1323,7 +1324,7 @@ export default function CreateCourseScreen() {
                           updateLesson(lesson.id, 'duration', Number.isFinite(parsed) ? parsed : 0);
                         }}
                         placeholder="10"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={s.inputFlex}
                         keyboardType="numeric"
                       />
@@ -1336,7 +1337,7 @@ export default function CreateCourseScreen() {
                       value={lesson.isFree}
                       onValueChange={(value) => updateLesson(lesson.id, 'isFree', value)}
                       trackColor={{ false: colors.border, true: colors.primary }}
-                      thumbColor="#FFFFFF"
+                      thumbColor={Colors.white}
                     />
                   </View>
                 </View>
@@ -1348,14 +1349,14 @@ export default function CreateCourseScreen() {
                       <Ionicons
                         name={lesson.type === 'AUDIO' ? 'musical-notes-outline' : 'play-circle-outline'}
                         size={18}
-                        color="#9CA3AF"
-                        style={{ marginRight: 10 }}
+                        color={colors.textTertiary}
+                        style={{ marginRight: Spacing.sm }}
                       />
                       <TextInput
                         value={lesson.videoUrl}
                         onChangeText={(value) => updateLesson(lesson.id, 'videoUrl', value)}
                         placeholder={t('learn.createCourse.placeholders.lessonMediaUrl')}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={s.inputFlex}
                         autoCapitalize="none"
                       />
@@ -1373,12 +1374,12 @@ export default function CreateCourseScreen() {
                             </Text>
                           </View>
                           <View style={s.inputWrap}>
-                            <Ionicons name="chatbox-ellipses-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                            <Ionicons name="chatbox-ellipses-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
                             <TextInput
                               value={lesson.textTrackUrls[localeKey] || ''}
                               onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'textTrackUrls', localeKey, value)}
                               placeholder={t('learn.createCourse.subtitlePlaceholder', { language: languageLabel })}
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.textTertiary}
                               style={s.inputFlex}
                               autoCapitalize="none"
                             />
@@ -1388,7 +1389,7 @@ export default function CreateCourseScreen() {
                               value={lesson.transcriptTexts[localeKey] || ''}
                               onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'transcriptTexts', localeKey, value)}
                               placeholder={t('learn.createCourse.transcriptPlaceholder', { language: languageLabel })}
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.textTertiary}
                               style={[s.input, s.textAreaSmall]}
                               multiline
                               textAlignVertical="top"
@@ -1404,7 +1405,7 @@ export default function CreateCourseScreen() {
                   <>
                     <Text style={s.fieldLabel}>{t('learn.createCourse.passingScorePercent')}</Text>
                     <View style={s.inputWrap}>
-                      <Ionicons name="checkmark-done-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                      <Ionicons name="checkmark-done-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
                       <TextInput
                         value={String(lesson.quizPassingScore)}
                         onChangeText={(value) => {
@@ -1412,7 +1413,7 @@ export default function CreateCourseScreen() {
                           updateLesson(lesson.id, 'quizPassingScore', Number.isFinite(parsed) ? parsed : 80);
                         }}
                         placeholder="80"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={s.inputFlex}
                         keyboardType="numeric"
                       />
@@ -1428,21 +1429,21 @@ export default function CreateCourseScreen() {
                               onPress={() => moveQuizQuestion(lesson.id, question.id, 'up')}
                               disabled={questionIndex === 0}
                             >
-                              <Ionicons name="arrow-up-outline" size={14} color="#64748B" />
+                              <Ionicons name="arrow-up-outline" size={14} color={colors.textSecondary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[s.resourceActionBtn, questionIndex === lesson.quizQuestions.length - 1 && s.btnDisabled]}
                               onPress={() => moveQuizQuestion(lesson.id, question.id, 'down')}
                               disabled={questionIndex === lesson.quizQuestions.length - 1}
                             >
-                              <Ionicons name="arrow-down-outline" size={14} color="#64748B" />
+                              <Ionicons name="arrow-down-outline" size={14} color={colors.textSecondary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               disabled={lesson.quizQuestions.length <= 1}
                               onPress={() => removeQuizQuestion(lesson.id, question.id)}
                               style={[s.subEditorDeleteBtn, lesson.quizQuestions.length <= 1 && s.btnDisabled]}
                             >
-                              <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                              <Ionicons name="trash-outline" size={14} color={colors.error} />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -1467,7 +1468,7 @@ export default function CreateCourseScreen() {
                             value={question.question}
                             onChangeText={(value) => updateQuizQuestionField(lesson.id, question.id, 'question', value)}
                             placeholder={t('learn.createCourse.placeholders.quizQuestion')}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             style={[s.input, s.textAreaSmall]}
                             multiline
                             textAlignVertical="top"
@@ -1479,7 +1480,7 @@ export default function CreateCourseScreen() {
                             value={question.explanation}
                             onChangeText={(value) => updateQuizQuestionField(lesson.id, question.id, 'explanation', value)}
                             placeholder={t('learn.createCourse.placeholders.quizExplanation')}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             style={[s.input, s.textAreaSmall]}
                             multiline
                             textAlignVertical="top"
@@ -1502,7 +1503,7 @@ export default function CreateCourseScreen() {
                                   value={option.text}
                                   onChangeText={(value) => updateQuizOptionText(lesson.id, question.id, option.id, value)}
                                   placeholder={t('learn.createCourse.optionLabel', { option: optionLabel })}
-                                  placeholderTextColor="#9CA3AF"
+                                  placeholderTextColor={colors.textTertiary}
                                   style={s.inputFlex}
                                 />
                               </View>
@@ -1511,21 +1512,21 @@ export default function CreateCourseScreen() {
                                 onPress={() => removeQuizOption(lesson.id, question.id, option.id)}
                                 style={[s.quizOptionRemoveBtn, question.options.length <= 2 && s.btnDisabled]}
                               >
-                                <Ionicons name="remove-circle-outline" size={18} color="#EF4444" />
+                                <Ionicons name="remove-circle-outline" size={18} color={colors.error} />
                               </TouchableOpacity>
                             </View>
                           );
                         })}
 
                         <TouchableOpacity style={s.subEditorInlineAddBtn} onPress={() => addQuizOption(lesson.id, question.id)}>
-                          <Ionicons name="add" size={14} color="#0EA5E9" />
+                          <Ionicons name="add" size={14} color={colors.primary} />
                           <Text style={s.subEditorInlineAddText}>{t('learn.createCourse.addOption')}</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
 
                     <TouchableOpacity style={s.subEditorAddBtn} onPress={() => addQuizQuestion(lesson.id)}>
-                      <Ionicons name="add" size={16} color="#0EA5E9" />
+                      <Ionicons name="add" size={16} color={colors.primary} />
                       <Text style={s.subEditorAddText}>{t('learn.createCourse.addQuestion')}</Text>
                     </TouchableOpacity>
                   </>
@@ -1550,7 +1551,7 @@ export default function CreateCourseScreen() {
                               value={lesson.assignmentInstructionsTranslations[localeKey] || ''}
                               onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'assignmentInstructionsTranslations', localeKey, value)}
                               placeholder={isSourceLocale ? t('learn.createCourse.placeholders.assignmentInstructionsSource') : t('learn.createCourse.translationPlaceholder', { language: languageLabel })}
-                              placeholderTextColor="#9CA3AF"
+                              placeholderTextColor={colors.textTertiary}
                               style={[s.input, isSourceLocale ? s.textArea : s.textAreaSmall]}
                               multiline
                               textAlignVertical="top"
@@ -1571,7 +1572,7 @@ export default function CreateCourseScreen() {
                               updateLesson(lesson.id, 'assignmentMaxScore', Number.isFinite(parsed) ? parsed : 100);
                             }}
                             placeholder="100"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             style={s.inputFlex}
                             keyboardType="numeric"
                           />
@@ -1587,7 +1588,7 @@ export default function CreateCourseScreen() {
                               updateLesson(lesson.id, 'assignmentPassingScore', Number.isFinite(parsed) ? parsed : 80);
                             }}
                             placeholder="80"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             style={s.inputFlex}
                             keyboardType="numeric"
                           />
@@ -1601,7 +1602,7 @@ export default function CreateCourseScreen() {
                         value={lesson.assignmentRubric}
                         onChangeText={(value) => updateLesson(lesson.id, 'assignmentRubric', value)}
                         placeholder={t('learn.createCourse.placeholders.rubric')}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={[s.input, s.textAreaSmall]}
                         multiline
                         textAlignVertical="top"
@@ -1636,7 +1637,7 @@ export default function CreateCourseScreen() {
                         value={lesson.exerciseInitialCode}
                         onChangeText={(value) => updateLesson(lesson.id, 'exerciseInitialCode', value)}
                         placeholder={t('learn.createCourse.placeholders.starterCode')}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={[s.input, s.codeArea]}
                         multiline
                         textAlignVertical="top"
@@ -1650,7 +1651,7 @@ export default function CreateCourseScreen() {
                         value={lesson.exerciseSolutionCode}
                         onChangeText={(value) => updateLesson(lesson.id, 'exerciseSolutionCode', value)}
                         placeholder={t('learn.createCourse.placeholders.referenceSolution')}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={[s.input, s.codeArea]}
                         multiline
                         textAlignVertical="top"
@@ -1673,14 +1674,14 @@ export default function CreateCourseScreen() {
                               disabled={resourceIndex === 0}
                               style={[s.resourceActionBtn, resourceIndex === 0 && s.btnDisabled]}
                             >
-                              <Ionicons name="arrow-up-outline" size={14} color="#64748B" />
+                              <Ionicons name="arrow-up-outline" size={14} color={colors.textSecondary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               onPress={() => moveDocumentResource(lesson.id, resource.id, 'down')}
                               disabled={resourceIndex === lesson.resources.length - 1}
                               style={[s.resourceActionBtn, resourceIndex === lesson.resources.length - 1 && s.btnDisabled]}
                             >
-                              <Ionicons name="arrow-down-outline" size={14} color="#64748B" />
+                              <Ionicons name="arrow-down-outline" size={14} color={colors.textSecondary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               onPress={() => uploadDocumentResourceFile(lesson.id, resource.id)}
@@ -1688,10 +1689,10 @@ export default function CreateCourseScreen() {
                               disabled={Boolean(uploadingResourceById[resource.id])}
                             >
                               {uploadingResourceById[resource.id] ? (
-                                <ActivityIndicator size="small" color="#0EA5E9" />
+                                <ActivityIndicator size="small" color={colors.primary} />
                               ) : (
                                 <>
-                                  <Ionicons name="cloud-upload-outline" size={14} color="#0EA5E9" />
+                                  <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
                                   <Text style={s.resourceUploadBtnText}>{t('learn.createCourse.upload')}</Text>
                                 </>
                               )}
@@ -1701,29 +1702,29 @@ export default function CreateCourseScreen() {
                               onPress={() => removeDocumentResource(lesson.id, resource.id)}
                               style={[s.subEditorDeleteBtn, lesson.resources.length <= 1 && s.btnDisabled]}
                             >
-                              <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                              <Ionicons name="trash-outline" size={14} color={colors.error} />
                             </TouchableOpacity>
                           </View>
                         </View>
 
                         <View style={s.inputWrap}>
-                          <Ionicons name="document-attach-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                          <Ionicons name="document-attach-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
                           <TextInput
                             value={resource.title}
                             onChangeText={(value) => updateDocumentResourceField(lesson.id, resource.id, 'title', value)}
                             placeholder={t('learn.createCourse.placeholders.resourceTitle')}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             style={s.inputFlex}
                           />
                         </View>
 
                         <View style={[s.inputWrap, { marginTop: 8 }]}>
-                          <Ionicons name="link-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                          <Ionicons name="link-outline" size={18} color={colors.textTertiary} style={{ marginRight: Spacing.sm }} />
                           <TextInput
                             value={resource.url}
                             onChangeText={(value) => updateDocumentResourceField(lesson.id, resource.id, 'url', value)}
                             placeholder={t('learn.createCourse.placeholders.resourceUrl')}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             style={s.inputFlex}
                             autoCapitalize="none"
                           />
@@ -1774,7 +1775,7 @@ export default function CreateCourseScreen() {
                           <Ionicons
                             name={resource.isDefault ? 'checkmark-circle' : 'ellipse-outline'}
                             size={16}
-                            color={resource.isDefault ? (isDark ? '#7DD3FC' : '#0369A1') : colors.textSecondary}
+                            color={resource.isDefault ? (isDark ? ColorScale.primary[300] : ColorScale.primary[700]) : colors.textSecondary}
                           />
                           <Text style={[s.defaultResourceText, resource.isDefault && s.defaultResourceTextActive]}>
                             {resource.isDefault ? t('learn.createCourse.defaultResource') : t('learn.createCourse.setAsDefault')}
@@ -1784,7 +1785,7 @@ export default function CreateCourseScreen() {
                     ))}
 
                     <TouchableOpacity style={s.subEditorAddBtn} onPress={() => addDocumentResource(lesson.id)}>
-                      <Ionicons name="add" size={16} color="#0EA5E9" />
+                      <Ionicons name="add" size={16} color={colors.primary} />
                       <Text style={s.subEditorAddText}>{t('learn.createCourse.addResource')}</Text>
                     </TouchableOpacity>
                     <Text style={s.lessonTypeHelper}>{t('learn.createCourse.documentReadyHint')}</Text>
@@ -1807,7 +1808,7 @@ export default function CreateCourseScreen() {
                               ? 'Optional context shown with the document...'
                               : 'Lesson content notes...'
                         }
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textTertiary}
                         style={[s.input, s.textArea]}
                         multiline
                         textAlignVertical="top"
@@ -1852,44 +1853,44 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   headerTitle: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[17],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm,
   },
   draftBtn: {
     height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
   draftBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   publishBtn: {
     height: 36,
-    borderRadius: 18,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
   },
   publishBtnGrad: {
     height: 36,
-    paddingHorizontal: 18,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+    borderRadius: BorderRadius.full,
   },
   publishBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
   },
 
   // ── Scroll ────────────────────────────────────────────────────
@@ -1897,13 +1898,13 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 24,
-    gap: 2,
+    gap: Spacing.xs,
   },
 
   // ── Section Labels ────────────────────────────────────────────
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -1912,17 +1913,17 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     marginLeft: 4,
   },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.semibold,
     color: colors.textSecondary,
     marginBottom: 8,
-    marginTop: 14,
+    marginTop: Spacing.md,
     marginLeft: 4,
   },
   helperText: {
-    fontSize: 11,
+    fontSize: Typography.fontSize[11],
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.regular,
     marginTop: 4,
     marginLeft: 4,
     marginBottom: 4,
@@ -1933,7 +1934,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     flexDirection: 'row',
     alignItems: 'center',
     height: 50,
-    borderRadius: 25,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.card,
     paddingHorizontal: 16,
     borderWidth: 1,
@@ -1941,19 +1942,19 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   textAreaWrap: {
     height: 'auto',
-    borderRadius: 20,
+    borderRadius: BorderRadius[20],
     alignItems: 'flex-start',
-    paddingVertical: 14,
+    paddingVertical: Spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: Typography.fontSize[15],
     color: colors.text,
     height: '100%',
   },
   inputFlex: {
     flex: 1,
-    fontSize: 15,
+    fontSize: Typography.fontSize[15],
     color: colors.text,
     height: '100%',
   },
@@ -1981,92 +1982,92 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: Spacing.sm,
     minHeight: 34,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(186,230,253,0.35)' : '#BAE6FD',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#F0F9FF',
+    borderColor: isDark ? `${ColorScale.primary[200]}59` : ColorScale.primary[200],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}24` : ColorScale.primary[50],
   },
   thumbnailUploadBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   thumbnailClearBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: Spacing.sm,
     minHeight: 34,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
   },
   thumbnailClearBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
 
   // ── Category Chips ────────────────────────────────────────────
   chipRow: {
-    gap: 10,
+    gap: Spacing.sm,
     paddingVertical: 4,
-    paddingHorizontal: 2,
+    paddingHorizontal: Spacing.xs,
   },
   chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: isDark ? colors.primary : '#0F172A',
-    borderColor: isDark ? colors.primary : '#0F172A',
+    backgroundColor: isDark ? colors.primary : ColorScale.gray[900],
+    borderColor: isDark ? colors.primary : ColorScale.gray[900],
   },
   chipText: {
-    fontSize: 13,
+    fontSize: Typography.fontSize[13],
     color: colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   chipTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold,
   },
 
   // ── Level Grid ────────────────────────────────────────────────
   levelGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.sm,
   },
   levelOption: {
     width: '48%',
-    paddingVertical: 14,
-    borderRadius: 20,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius[20],
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
   },
   levelOptionActive: {
-    backgroundColor: isDark ? colors.primary : '#0F172A',
-    borderColor: isDark ? colors.primary : '#0F172A',
+    backgroundColor: isDark ? colors.primary : ColorScale.gray[900],
+    borderColor: isDark ? colors.primary : ColorScale.gray[900],
   },
   levelOptionText: {
-    fontSize: 14,
+    fontSize: Typography.fontSize[14],
     color: colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   levelOptionTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold,
   },
 
   // ── Languages ───────────────────────────────────────────────
@@ -2074,47 +2075,47 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: BorderRadius[20],
+    padding: Spacing.md,
     marginTop: 8,
-    marginBottom: 18,
+    marginBottom: Spacing.md,
   },
   languageOptionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 6,
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   languageOption: {
     width: '48%',
-    borderRadius: 14,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
   },
   languageOptionActive: {
-    borderColor: '#0EA5E9',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[500],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   languageOptionText: {
     color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
   },
   languageOptionTextActive: {
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   languageChipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: Spacing.sm,
     marginTop: 8,
   },
   languageChip: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -2122,26 +2123,26 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     paddingVertical: 8,
   },
   languageChipActive: {
-    borderColor: isDark ? 'rgba(16,185,129,0.4)' : '#10B981',
-    backgroundColor: isDark ? 'rgba(16,185,129,0.18)' : '#ECFDF5',
+    borderColor: isDark ? `${ColorScale.teal[500]}66` : ColorScale.teal[500],
+    backgroundColor: isDark ? `${ColorScale.teal[500]}2E` : ColorScale.teal[50],
   },
   languageChipRequired: {
-    borderColor: '#0EA5E9',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[500],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   languageChipText: {
     color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
   },
   languageChipTextActive: {
-    color: isDark ? '#6EE7B7' : '#065F46',
+    color: isDark ? ColorScale.teal[300] : ColorScale.teal[800],
   },
   customLocaleRow: {
     marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm,
   },
   customLocaleInputWrap: {
     flex: 1,
@@ -2149,29 +2150,29 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   addLocaleBtn: {
     minHeight: 50,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: isDark ? colors.primary : '#0F172A',
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: isDark ? colors.primary : ColorScale.gray[900],
     alignItems: 'center',
     justifyContent: 'center',
   },
   addLocaleBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
   },
 
   // ── Tags ──────────────────────────────────────────────────────
   tagInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm,
   },
   addTagBtn: {
     width: 50,
     height: 50,
-    borderRadius: 25,
-    backgroundColor: isDark ? colors.primary : '#0F172A',
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? colors.primary : ColorScale.gray[900],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2179,23 +2180,23 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 14,
+    marginTop: Spacing.md,
   },
   tagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
   },
   tagBadgeText: {
-    fontSize: 13,
+    fontSize: Typography.fontSize[13],
     color: colors.text,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
 
   // ── Lessons ───────────────────────────────────────────────────
@@ -2211,19 +2212,19 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#EFF6FF',
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? `${ColorScale.primary[500]}24` : ColorScale.primary[50],
   },
   addLessonText: {
-    color: '#0EA5E9',
-    fontSize: 14,
-    fontWeight: '700',
+    color: ColorScale.primary[500],
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.bold,
   },
   lessonCard: {
     marginTop: 16,
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: BorderRadius[20],
     padding: 20,
     borderWidth: 1,
     borderColor: colors.border,
@@ -2232,36 +2233,36 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
-    gap: 10,
+    gap: Spacing.sm,
   },
   lessonNumBadge: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lessonNumText: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.textSecondary,
   },
   lessonCardTitle: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.extrabold,
     color: colors.text,
   },
   lessonHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   lessonActionBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.card,
@@ -2272,10 +2273,10 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 2,
+    marginTop: Spacing.xs,
   },
   lessonTypeChip: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -2283,29 +2284,29 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     paddingVertical: 8,
   },
   lessonTypeChipActive: {
-    borderColor: '#0284C7',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[600],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   lessonTypeChipText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   lessonTypeChipTextActive: {
-    color: isDark ? '#7DD3FC' : '#075985',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[800],
   },
   lessonTypeHelper: {
     marginTop: 8,
     marginLeft: 4,
-    fontSize: 11,
+    fontSize: Typography.fontSize[11],
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.regular,
   },
   localizedEditorBlock: {
-    marginTop: 10,
+    marginTop: Spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: BorderRadius.xl,
     padding: 12,
     backgroundColor: colors.card,
   },
@@ -2313,15 +2314,15 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     marginBottom: 8,
   },
   localizedEditorTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   subEditorBlock: {
     marginTop: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     padding: 12,
     backgroundColor: colors.card,
   },
@@ -2334,54 +2335,54 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   subEditorHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   subEditorTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   subEditorDeleteBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
+    backgroundColor: isDark ? `${Colors.error}24` : `${Colors.error}14`,
   },
   subEditorAddBtn: {
-    marginTop: 10,
+    marginTop: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(125,211,252,0.4)' : '#7DD3FC',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#F0F9FF',
+    borderColor: isDark ? `${ColorScale.primary[300]}66` : ColorScale.primary[300],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}24` : ColorScale.primary[50],
   },
   subEditorAddText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   subEditorInlineAddBtn: {
-    marginTop: 10,
+    marginTop: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(186,230,253,0.35)' : '#BAE6FD',
+    borderColor: isDark ? `${ColorScale.primary[200]}59` : ColorScale.primary[200],
     backgroundColor: colors.card,
   },
   subEditorInlineAddText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   quizModeRow: {
     flexDirection: 'row',
@@ -2389,24 +2390,24 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     marginBottom: 8,
   },
   quizModeChip: {
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   quizModeChipActive: {
-    borderColor: '#0284C7',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[600],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   quizModeChipText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   quizModeChipTextActive: {
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   quizOptionRow: {
     marginTop: 8,
@@ -2417,7 +2418,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   quizCorrectToggle: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -2425,16 +2426,16 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     justifyContent: 'center',
   },
   quizCorrectToggleActive: {
-    borderColor: '#0284C7',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[600],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   quizCorrectToggleText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   quizCorrectToggleTextActive: {
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   quizOptionInputWrap: {
     flex: 1,
@@ -2449,7 +2450,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     marginTop: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: BorderRadius.xl,
     padding: 12,
     backgroundColor: colors.card,
   },
@@ -2462,12 +2463,12 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   resourceHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
   },
   resourceActionBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.card,
@@ -2477,94 +2478,94 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   resourceUploadBtn: {
     minWidth: 78,
     height: 28,
-    borderRadius: 14,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 4,
     paddingHorizontal: 8,
-    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#F0F9FF',
+    backgroundColor: isDark ? `${ColorScale.primary[500]}24` : ColorScale.primary[50],
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(186,230,253,0.35)' : '#BAE6FD',
+    borderColor: isDark ? `${ColorScale.primary[200]}59` : ColorScale.primary[200],
   },
   resourceUploadBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   resourceTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.text,
   },
   resourceMetaRow: {
-    marginTop: 10,
+    marginTop: Spacing.sm,
     gap: 8,
   },
   resourceSelectGroup: {
-    gap: 6,
+    gap: Spacing.sm,
   },
   resourceMetaLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
     textTransform: 'uppercase',
   },
   resourceChipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: Spacing.sm,
   },
   resourceChip: {
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   resourceChipActive: {
-    borderColor: '#0284C7',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[600],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   resourceChipText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   resourceChipTextActive: {
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   defaultResourceBtn: {
-    marginTop: 10,
+    marginTop: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.sm,
     alignSelf: 'flex-start',
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   defaultResourceBtnActive: {
-    borderColor: '#0EA5E9',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[500],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   defaultResourceText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   defaultResourceTextActive: {
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
   deleteBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? `${Colors.error}24` : `${Colors.error}14`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2579,13 +2580,13 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   scoreRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing.sm,
     marginTop: 4,
   },
   switchWrap: {
     alignItems: 'center',
-    paddingTop: 14,
-    gap: 10,
+    paddingTop: Spacing.md,
+    gap: Spacing.sm,
   },
   exerciseLanguageRow: {
     flexDirection: 'row',
@@ -2593,7 +2594,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     gap: 8,
   },
   exerciseLanguageChip: {
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -2601,16 +2602,16 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     paddingVertical: 8,
   },
   exerciseLanguageChipActive: {
-    borderColor: '#0EA5E9',
-    backgroundColor: isDark ? 'rgba(14,165,233,0.18)' : '#E0F2FE',
+    borderColor: ColorScale.primary[500],
+    backgroundColor: isDark ? `${ColorScale.primary[500]}2E` : ColorScale.primary[100],
   },
   exerciseLanguageChipText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.bold,
     color: colors.textSecondary,
   },
   exerciseLanguageChipTextActive: {
-    color: isDark ? '#7DD3FC' : '#0369A1',
+    color: isDark ? ColorScale.primary[300] : ColorScale.primary[700],
   },
 
   // ── Disabled State ────────────────────────────────────────────

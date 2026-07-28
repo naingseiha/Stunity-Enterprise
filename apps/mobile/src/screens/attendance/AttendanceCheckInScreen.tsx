@@ -23,7 +23,7 @@ import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/stores';
-import { Colors, Shadows } from '@/config';
+import { Colors, ColorScale, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { Haptics } from '@/services/haptics';
@@ -34,7 +34,8 @@ import { useThemeContext } from '@/contexts';
 const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 const BRAND_TEAL_SOFT = '#E0FFFE';
-const BRAND_TEAL_MUTED = '#99F6E4';
+// Duplicates ColorScale.teal[200] exactly — reuse the real token instead of a redundant local hex.
+const BRAND_TEAL_MUTED = ColorScale.teal[200];
 
 const WEEKLY_ENUM_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
@@ -100,9 +101,9 @@ const WeeklyStrip = ({
                             ]}
                         >
                             {isTeachingDay ? (
-                                <Ionicons name="school-outline" size={11} color="#fff" />
+                                <Ionicons name="school-outline" size={11} color={Colors.white} />
                             ) : isPast ? (
-                                <Ionicons name="checkmark" size={12} color="#fff" />
+                                <Ionicons name="checkmark" size={12} color={Colors.white} />
                             ) : null}
                         </View>
                     </View>
@@ -168,7 +169,7 @@ const SessionCard = ({
                         color={isCurrent ? BRAND_TEAL : colors.textSecondary}
                     />
                 </View>
-                <View style={{ flex: 1, marginLeft: 16 }}>
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
                     <Text style={[styles.sessionTitle, isCurrent && { color: BRAND_TEAL }]}>
                         {session === 'MORNING' ? t('attendance.morning') : t('attendance.afternoon')}
                     </Text>
@@ -183,7 +184,7 @@ const SessionCard = ({
                     </View>
                 ) : isCheckedOut ? (
                     <View style={styles.completedBadge}>
-                        <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
                         <Text style={styles.completedBadgeText}>{t('attendance.done')}</Text>
                     </View>
                 ) : isCurrent && (
@@ -273,10 +274,10 @@ const SessionCard = ({
                         style={styles.sessionBtn}
                     >
                         {processing ? (
-                            <ActivityIndicator color="#fff" size="small" />
+                            <ActivityIndicator color={Colors.white} size="small" />
                         ) : (
                             <>
-                                <Ionicons name={isOnDuty ? "log-out-outline" : "finger-print"} size={22} color="#fff" />
+                                <Ionicons name={isOnDuty ? "log-out-outline" : "finger-print"} size={22} color={Colors.white} />
                                 <Text style={styles.sessionBtnText}>
                                     {isOnDuty ? t('attendance.finishSession') : (session === 'MORNING' ? t('attendance.startMorning') : t('attendance.startAfternoon'))}
                                 </Text>
@@ -829,12 +830,12 @@ export const AttendanceCheckInScreen = () => {
                         </View>
                         <View style={{ width: 48 }} />
                     </View>
-                    <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
+                    <View style={[styles.centerContainer, { paddingHorizontal: Spacing.xl }]}>
                         <View style={styles.sessionIconBg}>
                             <Ionicons name="business-outline" size={64} color={colors.textSecondary} />
                         </View>
-                        <Text style={[{ fontSize: 20, fontWeight: '700' }, { marginTop: 20, textAlign: 'center', color: colors.text }]}>{t('attendance.notLinked')}</Text>
-                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14, color: colors.textSecondary }]}>
+                        <Text style={[{ fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold }, { marginTop: Spacing[5], textAlign: 'center', color: colors.text }]}>{t('attendance.notLinked')}</Text>
+                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: Spacing[3], fontSize: Typography.fontSize.sm, color: colors.textSecondary }]}>
                             {t('attendance.notLinkedMsg')}
                         </Text>
                     </View>
@@ -918,7 +919,7 @@ export const AttendanceCheckInScreen = () => {
                                     <Ionicons name="navigate" size={24} color={BRAND_TEAL} />
                                     <View style={[
                                         styles.locationStatusPulse, 
-                                        { backgroundColor: locationPermGranted ? '#10B981' : '#EF4444' }
+                                        { backgroundColor: locationPermGranted ? colors.success : colors.error }
                                     ]} />
                                 </View>
                                 <View style={styles.locationHeroTextWrap}>
@@ -943,7 +944,7 @@ export const AttendanceCheckInScreen = () => {
 
                     {statusFetchError ? (
                         <View style={styles.syncErrorBanner}>
-                            <Ionicons name="cloud-offline-outline" size={20} color={isDark ? "#F87171" : "#B91C1C"} />
+                            <Ionicons name="cloud-offline-outline" size={20} color={isDark ? colors.error : "#B91C1C"} />
                             <Text style={styles.syncErrorBannerText}>{statusFetchError}</Text>
                             <TouchableOpacity
                                 style={styles.syncErrorRetryBtn}
@@ -1007,7 +1008,7 @@ export const AttendanceCheckInScreen = () => {
                         >
                             <View style={styles.permissionRequestHeader}>
                                 <View style={styles.permissionRequestIconBg}>
-                                    <Ionicons name="document-text" size={24} color={isDark ? "#A5B4FC" : "#6366F1"} />
+                                    <Ionicons name="document-text" size={24} color={isDark ? "#A5B4FC" : Colors.secondary} />
                                 </View>
                                 <View style={styles.permissionRequestTextWrap}>
                                     <Text style={styles.permissionRequestTitle}>{t('attendance.requestPermission.title')}</Text>
@@ -1023,15 +1024,15 @@ export const AttendanceCheckInScreen = () => {
                                 contentContainerStyle={styles.permissionFeatureRow}
                             >
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="globe-outline" size={14} color={isDark ? "#A5B4FC" : "#6366F1"} />
+                                    <Ionicons name="globe-outline" size={14} color={isDark ? "#A5B4FC" : Colors.secondary} />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.anywhere')}</Text>
                                 </View>
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="location-outline" size={14} color={isDark ? "#A5B4FC" : "#6366F1"} />
+                                    <Ionicons name="location-outline" size={14} color={isDark ? "#A5B4FC" : Colors.secondary} />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.noGps')}</Text>
                                 </View>
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="flash-outline" size={14} color={isDark ? "#A5B4FC" : "#6366F1"} />
+                                    <Ionicons name="flash-outline" size={14} color={isDark ? "#A5B4FC" : Colors.secondary} />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.instant')}</Text>
                                 </View>
                             </ScrollView>
@@ -1222,10 +1223,10 @@ export const AttendanceCheckInScreen = () => {
                                     style={styles.permissionModalSubmitGradient}
                                 >
                                     {permissionProcessingSession !== null ? (
-                                        <ActivityIndicator color="#fff" size="small" />
+                                        <ActivityIndicator color={Colors.white} size="small" />
                                     ) : (
                                         <>
-                                            <Ionicons name="paper-plane-outline" size={16} color="#fff" />
+                                            <Ionicons name="paper-plane-outline" size={16} color={Colors.white} />
                                             <Text style={styles.permissionModalSubmitText}>{t('attendance.requestPermission.submit')}</Text>
                                         </>
                                     )}
@@ -1243,33 +1244,30 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     container: { flex: 1, backgroundColor: colors.background },
     safeArea: { flex: 1 },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
+    loadingText: { marginTop: Spacing.md, fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, letterSpacing: 0.5 },
 
     navHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 18,
-        paddingVertical: 14,
+        paddingHorizontal: Spacing[5],
+        paddingVertical: Spacing.md,
     },
     navIconButton: {
         width: 48,
         height: 48,
-        borderRadius: 14,
+        borderRadius: BorderRadius.xl,
         backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
+        ...Shadows.lg,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
         borderWidth: 1,
         borderColor: colors.border,
     },
     headerTitle: {
-        fontSize: 17,
-        fontWeight: '700',
+        fontSize: Typography.fontSize[17],
+        fontWeight: Typography.fontWeight.bold,
         color: colors.text,
         letterSpacing: 0.15,
         textAlign: 'center',
@@ -1278,30 +1276,27 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 8,
+        paddingHorizontal: Spacing.sm,
     },
     headerSubtitle: {
-        marginTop: 2,
-        fontSize: 12,
+        marginTop: Spacing.xs,
+        fontSize: Typography.fontSize.xs,
         color: colors.textSecondary,
-        fontWeight: '500',
+        fontWeight: Typography.fontWeight.medium,
         letterSpacing: 0.1,
     },
     locationHeroCard: {
-        marginTop: 4,
-        marginBottom: 20,
-        borderRadius: 20,
+        marginTop: Spacing.xs,
+        marginBottom: Spacing[5],
+        borderRadius: BorderRadius[20],
         backgroundColor: colors.card,
+        ...Shadows.xl,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.05,
-        shadowRadius: 20,
-        elevation: 4,
         borderWidth: 1,
         borderColor: colors.border,
     },
     locationHeroContent: {
-        padding: 20,
+        padding: Spacing[5],
     },
     locationHeroTopRow: {
         flexDirection: 'row',
@@ -1310,7 +1305,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     locationIconPulseWrapper: {
         width: 52,
         height: 52,
-        borderRadius: 16,
+        borderRadius: BorderRadius.xl,
         backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1324,31 +1319,31 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         right: -3,
         width: 14,
         height: 14,
-        borderRadius: 7,
+        borderRadius: BorderRadius.md,
         borderWidth: 2,
         borderColor: colors.card,
     },
     locationHeroTextWrap: {
         flex: 1,
-        marginLeft: 16,
+        marginLeft: Spacing.md,
     },
     locationHeroTitle: {
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.bold,
         color: colors.textSecondary,
         letterSpacing: 0.3,
         textTransform: 'uppercase',
     },
     locationHeroSubtitle: {
-        fontSize: 17,
-        fontWeight: '800',
+        fontSize: Typography.fontSize[17],
+        fontWeight: Typography.fontWeight.extrabold,
         color: colors.text,
-        marginTop: 2,
+        marginTop: Spacing.xs,
     },
     locationRefreshIconBg: {
         width: 40,
         height: 40,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1358,15 +1353,15 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     locationCoordsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 16,
-        paddingTop: 16,
+        marginTop: Spacing.md,
+        paddingTop: Spacing.md,
         borderTopWidth: 1,
         borderTopColor: colors.border,
-        gap: 6,
+        gap: Spacing.sm,
     },
     locationCoordsText: {
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.semibold,
         color: colors.textSecondary,
         letterSpacing: 0.5,
     },
@@ -1374,24 +1369,21 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     weeklyContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 22,
-        paddingHorizontal: 2,
+        marginBottom: Spacing.lg,
+        paddingHorizontal: Spacing.xs,
     },
     dayColPill: {
         alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 6,
+        paddingVertical: Spacing[3],
+        paddingHorizontal: Spacing.sm,
         minWidth: 42,
-        borderRadius: 14,
+        borderRadius: BorderRadius.xl,
         backgroundColor: colors.card,
         borderWidth: 1,
         borderColor: colors.border,
-        gap: 6,
+        gap: Spacing.sm,
+        ...Shadows.sm,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.03,
-        shadowRadius: 4,
-        elevation: 1,
     },
     todayPill: {
         backgroundColor: colors.card,
@@ -1409,7 +1401,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     dayDot: {
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1420,12 +1412,12 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         borderColor: isDark ? 'rgba(153,246,228,0.35)' : BRAND_TEAL_MUTED,
     },
     pastDotInner: {
-        backgroundColor: '#10B981',
+        backgroundColor: colors.success,
     },
     dayLabel: {
-        fontSize: 11,
+        fontSize: Typography.fontSize[11],
         color: colors.textSecondary,
-        fontWeight: '700',
+        fontWeight: Typography.fontWeight.bold,
     },
     todayLabel: {
         color: BRAND_TEAL,
@@ -1441,95 +1433,92 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         color: isDark ? '#6EE7B7' : '#065F46',
     },
     teachingDayDot: {
-        backgroundColor: '#10B981',
+        backgroundColor: colors.success,
     },
     syncErrorBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        marginBottom: 14,
-        paddingVertical: 12,
-        paddingHorizontal: 14,
-        borderRadius: 16,
+        gap: Spacing[3],
+        marginBottom: Spacing.md,
+        paddingVertical: Spacing[3],
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.xl,
         backgroundColor: isDark ? 'rgba(220,38,38,0.14)' : '#FEF2F2',
         borderWidth: 1,
         borderColor: isDark ? 'rgba(220,38,38,0.32)' : '#FECACA',
     },
     syncErrorBannerText: {
         flex: 1,
-        fontSize: 13,
-        fontWeight: '600',
-        color: isDark ? '#F87171' : '#991B1B',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.semibold,
+        color: isDark ? colors.error : '#991B1B',
         lineHeight: 18,
     },
     syncErrorRetryBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 12,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.lg,
         backgroundColor: colors.card,
         borderWidth: 1,
         borderColor: isDark ? 'rgba(220,38,38,0.4)' : '#FCA5A5',
     },
     syncErrorRetryText: {
-        fontSize: 12,
-        fontWeight: '800',
-        color: isDark ? '#F87171' : '#B91C1C',
+        fontSize: Typography.fontSize.xs,
+        fontWeight: Typography.fontWeight.extrabold,
+        color: isDark ? colors.error : '#B91C1C',
     },
     timetableBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        marginBottom: 14,
-        paddingVertical: 12,
-        paddingHorizontal: 14,
-        borderRadius: 16,
+        gap: Spacing[3],
+        marginBottom: Spacing.md,
+        paddingVertical: Spacing[3],
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.xl,
         backgroundColor: isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB',
         borderWidth: 1,
         borderColor: isDark ? 'rgba(253,230,138,0.3)' : '#FDE68A',
     },
     timetableBannerText: {
         flex: 1,
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.semibold,
         color: isDark ? '#FBBF24' : '#92400E',
         lineHeight: 24,
     },
     timetableSessionHint: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: 8,
-        marginTop: 8,
-        marginBottom: 14,
-        paddingVertical: 12,
-        paddingHorizontal: 12,
-        borderRadius: 14,
+        gap: Spacing.sm,
+        marginTop: Spacing.sm,
+        marginBottom: Spacing.md,
+        paddingVertical: Spacing[3],
+        paddingHorizontal: Spacing[3],
+        borderRadius: BorderRadius.xl,
         backgroundColor: isDark ? 'rgba(180,83,9,0.18)' : '#FFFBEB',
         borderWidth: 1,
         borderColor: isDark ? 'rgba(253,230,138,0.3)' : '#FDE68A',
     },
     timetableSessionHintText: {
         flex: 1,
-        fontSize: 12.5,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.semibold,
         color: isDark ? '#FBBF24' : '#92400E',
         lineHeight: 22,
     },
 
     content: { flex: 1 },
-    scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+    scrollContent: { paddingHorizontal: Spacing[5], paddingBottom: Spacing[10] },
 
     sessionCard: {
         backgroundColor: colors.card,
-        borderRadius: 22,
-        padding: 20,
-        marginBottom: 16,
+        borderRadius: BorderRadius['2xl'],
+        padding: Spacing[5],
+        marginBottom: Spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
+        ...Shadows.lg,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-        elevation: 3,
     },
     currentSessionCard: {
         borderWidth: 1.5,
@@ -1544,12 +1533,12 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     sessionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: Spacing[5],
     },
     sessionIconBg: {
         width: 52,
         height: 52,
-        borderRadius: 16,
+        borderRadius: BorderRadius.xl,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: colors.surfaceVariant,
@@ -1557,31 +1546,31 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         borderColor: colors.border,
     },
     sessionTitle: {
-        fontSize: 16,
-        fontWeight: '800',
+        fontSize: Typography.fontSize[16],
+        fontWeight: Typography.fontWeight.extrabold,
         color: colors.text,
         letterSpacing: 0.2,
         textTransform: 'capitalize',
     },
     sessionTimeWindow: {
-        fontSize: 12.5,
+        fontSize: Typography.fontSize[13],
         color: colors.textSecondary,
-        marginTop: 4,
-        fontWeight: '600',
+        marginTop: Spacing.xs,
+        fontWeight: Typography.fontWeight.semibold,
         letterSpacing: 0.3,
     },
     completedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: isDark ? 'rgba(5,150,105,0.18)' : '#ECFDF5',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 14,
-        gap: 6,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.xl,
+        gap: Spacing.sm,
     },
     completedBadgeText: {
-        fontSize: 10,
-        fontWeight: '800',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.extrabold,
         color: isDark ? '#34D399' : '#047857',
         letterSpacing: 0.4,
     },
@@ -1589,28 +1578,28 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: isDark ? 'rgba(124,58,237,0.2)' : '#F3E8FF',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 14,
-        gap: 6,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.xl,
+        gap: Spacing.sm,
     },
     permissionBadgeText: {
-        fontSize: 11,
-        fontWeight: '800',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.extrabold,
         color: isDark ? '#C4B5FD' : '#6D28D9',
         letterSpacing: 0.5,
     },
     currentBadge: {
         backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 999,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.full,
         borderWidth: 1,
         borderColor: isDark ? 'rgba(153,246,228,0.35)' : BRAND_TEAL_MUTED,
     },
     currentBadgeText: {
-        fontSize: 10,
-        fontWeight: '800',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.extrabold,
         color: BRAND_TEAL,
         letterSpacing: 0.6,
     },
@@ -1618,11 +1607,11 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     timeInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        marginBottom: 20,
+        gap: Spacing.sm,
+        marginBottom: Spacing[5],
         backgroundColor: colors.surfaceVariant,
-        padding: 6,
-        borderRadius: 20,
+        padding: Spacing.sm,
+        borderRadius: BorderRadius[20],
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -1630,31 +1619,28 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         flex: 1,
         alignItems: 'flex-start',
         backgroundColor: colors.card,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderRadius: 16,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.xl,
+        ...Shadows.sm,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.02,
-        shadowRadius: 4,
-        elevation: 1,
     },
     timeLabelRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        marginBottom: 8,
+        gap: Spacing.sm,
+        marginBottom: Spacing.sm,
     },
     timeLabel: {
-        fontSize: 11,
+        fontSize: Typography.fontSize[11],
         color: colors.textSecondary,
-        fontWeight: '700',
+        fontWeight: Typography.fontWeight.bold,
         letterSpacing: 0.3,
         textTransform: 'uppercase',
     },
     timeValue: {
-        fontSize: 22,
-        fontWeight: '800',
+        fontSize: Typography.fontSize.xl,
+        fontWeight: Typography.fontWeight.extrabold,
         color: colors.border,
         fontVariant: ['tabular-nums'],
     },
@@ -1662,32 +1648,30 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         color: colors.text,
     },
     timeSeparatorWrapper: {
-        paddingHorizontal: 2,
+        paddingHorizontal: Spacing.xs,
         alignItems: 'center',
         justifyContent: 'center',
     },
     permissionNote: {
-        fontSize: 12,
+        fontSize: Typography.fontSize.xs,
         color: '#7C3AED',
-        marginBottom: 16,
-        fontWeight: '600',
+        marginBottom: Spacing.md,
+        fontWeight: Typography.fontWeight.semibold,
     },
 
     sessionBtnContainer: {
-        borderRadius: 14,
+        borderRadius: BorderRadius.xl,
         overflow: 'hidden',
+        ...Shadows.lg,
         shadowColor: BRAND_TEAL,
-        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.12,
-        shadowRadius: 8,
-        elevation: 4,
     },
     sessionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 14,
-        gap: 10,
+        paddingVertical: Spacing.md,
+        gap: Spacing[3],
     },
     btnInactive: {
         opacity: 0.5,
@@ -1697,119 +1681,111 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     },
     sessionUnavailableBox: {
         minHeight: 52,
-        borderRadius: 16,
+        borderRadius: BorderRadius.xl,
         backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
         borderColor: colors.border,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10,
+        gap: Spacing[3],
     },
     sessionUnavailableText: {
         color: colors.textSecondary,
-        fontSize: 14,
-        fontWeight: '800',
+        fontSize: Typography.fontSize.sm,
+        fontWeight: Typography.fontWeight.extrabold,
         letterSpacing: 0.2,
     },
     sessionBtnText: {
-        color: '#fff',
-        fontSize: 15,
-        fontWeight: '800',
+        color: Colors.white,
+        fontSize: Typography.fontSize.base,
+        fontWeight: Typography.fontWeight.extrabold,
         letterSpacing: 0.3,
     },
 
     infoCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        borderRadius: 14,
+        padding: Spacing.md,
+        borderRadius: BorderRadius.xl,
         backgroundColor: colors.card,
-        marginTop: 4,
-        gap: 14,
+        marginTop: Spacing.xs,
+        gap: Spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
+        ...Shadows.sm,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 1,
     },
     infoText: {
         flex: 1,
-        fontSize: 12,
+        fontSize: Typography.fontSize.xs,
         color: colors.textSecondary,
         lineHeight: 17,
-        fontWeight: '500',
+        fontWeight: Typography.fontWeight.medium,
     },
     reportActionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 14,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.md,
+        marginBottom: Spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.card,
+        ...Shadows.lg,
         shadowColor: isDark ? 'transparent' : '#0F172A',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        elevation: 2,
     },
     reportIconBg: {
         width: 46,
         height: 46,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         backgroundColor: isDark ? 'rgba(15,118,110,0.2)' : BRAND_TEAL_SOFT,
         alignItems: 'center',
         justifyContent: 'center',
     },
     reportTextContainer: {
         flex: 1,
-        marginLeft: 16,
+        marginLeft: Spacing.md,
     },
     reportTitle: {
-        fontSize: 15,
-        fontWeight: '700',
+        fontSize: Typography.fontSize.base,
+        fontWeight: Typography.fontWeight.bold,
         color: colors.text,
     },
     reportSubtitle: {
-        fontSize: 13,
+        fontSize: Typography.fontSize[13],
         color: colors.textSecondary,
-        marginTop: 4,
-        fontWeight: '500',
+        marginTop: Spacing.xs,
+        fontWeight: Typography.fontWeight.medium,
     },
     viewReportButton: {
         backgroundColor: 'transparent',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing[3],
+        borderRadius: BorderRadius.lg,
         borderWidth: 1.5,
         borderColor: BRAND_TEAL,
     },
     viewReportText: {
         color: BRAND_TEAL,
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.bold,
     },
     permissionRequestCard: {
-        borderRadius: 24,
-        marginBottom: 16,
+        borderRadius: BorderRadius['2xl'],
+        marginBottom: Spacing.md,
         borderWidth: 1,
         borderColor: 'rgba(99, 102, 241, 0.15)',
         backgroundColor: colors.card,
         overflow: 'hidden',
+        ...Shadows.xl,
         shadowColor: '#4F46E5',
-        shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.06,
-        shadowRadius: 24,
-        elevation: 3,
     },
     permissionHero: {
-        paddingHorizontal: 20,
-        paddingTop: 20,
-        paddingBottom: 20,
+        paddingHorizontal: Spacing[5],
+        paddingTop: Spacing[5],
+        paddingBottom: Spacing[5],
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(226, 232, 240, 0.6)',
     },
@@ -1820,7 +1796,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     permissionRequestIconBg: {
         width: 52,
         height: 52,
-        borderRadius: 16,
+        borderRadius: BorderRadius.xl,
         backgroundColor: isDark ? 'rgba(99,102,241,0.18)' : '#EEF2FF',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1829,69 +1805,65 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     },
     permissionRequestTextWrap: {
         flex: 1,
-        marginLeft: 16,
+        marginLeft: Spacing.md,
         justifyContent: 'center',
     },
     permissionRequestTitle: {
-        fontSize: 17,
-        fontWeight: '800',
+        fontSize: Typography.fontSize[17],
+        fontWeight: Typography.fontWeight.extrabold,
         color: colors.text,
         letterSpacing: -0.3,
         lineHeight: 22,
     },
     permissionRequestSubtitle: {
-        fontSize: 13,
+        fontSize: Typography.fontSize[13],
         color: colors.textSecondary,
-        marginTop: 6,
-        fontWeight: '500',
+        marginTop: Spacing.sm,
+        fontWeight: Typography.fontWeight.medium,
         lineHeight: 20,
     },
     permissionFeatureRow: {
-        paddingTop: 18,
-        gap: 10,
-        paddingRight: 20,
+        paddingTop: Spacing[5],
+        gap: Spacing[3],
+        paddingRight: Spacing[5],
     },
     permissionFeaturePill: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: Spacing.sm,
         backgroundColor: colors.card,
-        borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        borderRadius: BorderRadius.full,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
         borderWidth: 1,
         borderColor: colors.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.02,
-        shadowRadius: 2,
-        elevation: 1,
+        ...Shadows.sm,
     },
     permissionFeatureText: {
-        fontSize: 12,
-        fontWeight: '700',
+        fontSize: Typography.fontSize.xs,
+        fontWeight: Typography.fontWeight.bold,
         color: isDark ? '#A5B4FC' : '#4F46E5',
     },
     permissionActionRow: {
         flexDirection: 'row',
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        paddingTop: 20,
-        gap: 12,
+        paddingHorizontal: Spacing[5],
+        paddingBottom: Spacing[5],
+        paddingTop: Spacing[5],
+        gap: Spacing[3],
         backgroundColor: colors.card,
     },
     permissionActionButton: {
         flex: 1,
         backgroundColor: colors.surfaceVariant,
-        borderRadius: 16,
-        paddingHorizontal: 14,
-        paddingVertical: 14,
+        borderRadius: BorderRadius.xl,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
         flexDirection: 'row',
         alignItems: 'center',
         minHeight: 64,
-        gap: 12,
+        gap: Spacing[3],
     },
     permissionActionButtonDisabled: {
         opacity: 0.55,
@@ -1901,43 +1873,43 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     },
     permissionActionButtonText: {
         color: colors.text,
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: Typography.fontSize.sm,
+        fontWeight: Typography.fontWeight.bold,
     },
     permissionActionButtonHint: {
-        marginTop: 2,
+        marginTop: Spacing.xs,
         color: colors.textSecondary,
-        fontSize: 11,
-        fontWeight: '500',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.medium,
     },
     permissionModalBackdrop: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+        backgroundColor: colors.overlay,
         justifyContent: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: Spacing[5],
     },
     permissionModalCard: {
         backgroundColor: colors.card,
-        borderRadius: 20,
-        padding: 16,
+        borderRadius: BorderRadius[20],
+        padding: Spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
         ...Shadows.lg,
     },
     permissionModalHeader: {
-        borderRadius: 14,
-        padding: 14,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: isDark ? 'rgba(99,102,241,0.16)' : '#EEF2FF',
         borderWidth: 1,
         borderColor: colors.border,
-        marginBottom: 4,
+        marginBottom: Spacing.xs,
     },
     permissionModalHeaderIcon: {
         width: 40,
         height: 40,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1946,127 +1918,127 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     },
     permissionModalHeaderTextWrap: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: Spacing[3],
     },
     permissionModalTitle: {
-        fontSize: 16,
-        fontWeight: '700',
+        fontSize: Typography.fontSize[16],
+        fontWeight: Typography.fontWeight.bold,
         color: colors.text,
     },
     permissionModalSubtitle: {
-        marginTop: 4,
-        fontSize: 12.5,
+        marginTop: Spacing.xs,
+        fontSize: Typography.fontSize[13],
         color: colors.textSecondary,
         lineHeight: 17,
     },
     permissionSessionLabel: {
-        marginTop: 14,
-        marginBottom: 8,
-        fontSize: 12,
-        fontWeight: '700',
+        marginTop: Spacing.md,
+        marginBottom: Spacing.sm,
+        fontSize: Typography.fontSize.xs,
+        fontWeight: Typography.fontWeight.bold,
         color: colors.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 0.8,
     },
     permissionSessionSelector: {
         flexDirection: 'row',
-        gap: 8,
+        gap: Spacing.sm,
     },
     permissionSessionChip: {
         flex: 1,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.surfaceVariant,
-        paddingVertical: 10,
-        paddingHorizontal: 10,
+        paddingVertical: Spacing[3],
+        paddingHorizontal: Spacing[3],
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
+        gap: Spacing.sm,
     },
     permissionSessionChipActive: {
         borderColor: isDark ? 'rgba(196,181,253,0.4)' : '#C4B5FD',
         backgroundColor: isDark ? 'rgba(124,58,237,0.2)' : '#F3E8FF',
     },
     permissionSessionChipText: {
-        fontSize: 13,
+        fontSize: Typography.fontSize[13],
         color: colors.textSecondary,
-        fontWeight: '700',
+        fontWeight: Typography.fontWeight.bold,
     },
     permissionSessionChipTextActive: {
         color: isDark ? '#C4B5FD' : '#6D28D9',
     },
     permissionModalHintRow: {
-        marginTop: 10,
-        borderRadius: 10,
+        marginTop: Spacing[3],
+        borderRadius: BorderRadius.lg,
         backgroundColor: isDark ? 'rgba(124,58,237,0.16)' : '#F5F3FF',
         borderWidth: 1,
         borderColor: isDark ? 'rgba(221,214,254,0.25)' : '#DDD6FE',
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: Spacing.sm,
     },
     permissionModalHintText: {
         flex: 1,
-        fontSize: 11.5,
+        fontSize: Typography.fontSize.xs,
         color: isDark ? '#C4B5FD' : '#6D28D9',
-        fontWeight: '600',
+        fontWeight: Typography.fontWeight.semibold,
     },
     permissionReasonInput: {
-        marginTop: 12,
+        marginTop: Spacing[3],
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
+        borderRadius: BorderRadius.lg,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing[3],
         minHeight: 108,
-        fontSize: 14,
+        fontSize: Typography.fontSize.sm,
         color: colors.text,
         backgroundColor: colors.surfaceVariant,
     },
     permissionInputFooter: {
-        marginTop: 8,
+        marginTop: Spacing.sm,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: Spacing.sm,
     },
     permissionInputHelper: {
         flex: 1,
-        fontSize: 11.5,
+        fontSize: Typography.fontSize.xs,
         color: colors.textSecondary,
-        fontWeight: '500',
+        fontWeight: Typography.fontWeight.medium,
     },
     permissionReasonCount: {
-        fontSize: 11.5,
+        fontSize: Typography.fontSize.xs,
         color: BRAND_TEAL,
-        fontWeight: '700',
+        fontWeight: Typography.fontWeight.bold,
     },
     permissionModalActions: {
-        marginTop: 14,
+        marginTop: Spacing.md,
         flexDirection: 'row',
-        gap: 10,
+        gap: Spacing[3],
     },
     permissionModalCancelButton: {
         flex: 1,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         borderWidth: 1,
         borderColor: colors.border,
-        paddingVertical: 12,
+        paddingVertical: Spacing[3],
         alignItems: 'center',
         justifyContent: 'center',
     },
     permissionModalCancelText: {
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: Typography.fontSize.sm,
+        fontWeight: Typography.fontWeight.bold,
         color: colors.textSecondary,
     },
     permissionModalSubmitButton: {
         flex: 1,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         overflow: 'hidden',
         minHeight: 46,
     },
@@ -2078,12 +2050,12 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
+        gap: Spacing.sm,
     },
     permissionModalSubmitText: {
-        fontSize: 14,
-        fontWeight: '800',
-        color: '#fff',
+        fontSize: Typography.fontSize.sm,
+        fontWeight: Typography.fontWeight.extrabold,
+        color: Colors.white,
     },
 });
 

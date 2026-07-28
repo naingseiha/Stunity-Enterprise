@@ -141,7 +141,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 999,
+    borderRadius: 9999,
   },
 
   // Sizes
@@ -192,7 +192,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: '100%',
   },
   gradient: {
-    borderRadius: 999,
+    borderRadius: 9999,
   },
 
   // Text

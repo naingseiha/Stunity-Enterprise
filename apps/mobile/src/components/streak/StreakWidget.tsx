@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF1E6',
     paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 999,
+    borderRadius: 9999,
     gap: 3,
   },
   compactNumber: {

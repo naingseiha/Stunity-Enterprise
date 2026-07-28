@@ -3126,7 +3126,9 @@
       "approve": "Approve",
       "activeMembersCount": "Active Members ({{count}})",
       "noActiveMembers": "No active members found.",
-      "role": "Role"
+      "role": "Role",
+      "staff": "Staff",
+      "students": "Students"
     },
     "materials": {
       "header": "Club Materials",

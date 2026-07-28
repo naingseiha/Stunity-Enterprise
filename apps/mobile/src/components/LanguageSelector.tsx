@@ -165,7 +165,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
+    borderRadius: 9999,
   },
   headerSpacer: {
     width: 40,

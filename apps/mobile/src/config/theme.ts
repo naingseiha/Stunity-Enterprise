@@ -210,8 +210,24 @@ export const Typography = {
     khmerQuote: 'Metal-Regular',
   },
 
-  // Font Sizes (following 8-point grid)
+  // Font Sizes — numeric scale (direct access, e.g. Typography.fontSize[16])
+  // plus named aliases below (backward compatible, e.g. Typography.fontSize.lg).
+  // 11/13/16/17 added to match real, heavily-used sizes found across the app.
   fontSize: {
+    11: 11,
+    12: 12,
+    13: 13,
+    14: 14,
+    15: 15,
+    16: 16,
+    17: 17,
+    18: 18,
+    20: 20,
+    24: 24,
+    30: 30,
+    36: 36,
+    48: 48,
+
     xs: 12,
     sm: 14,
     base: 15,
@@ -236,6 +252,9 @@ export const Typography = {
     medium: '500' as const,
     semibold: '600' as const,
     bold: '700' as const,
+    // Heavier emphasis — used in headings, streak badges, avatar initials.
+    extrabold: '800' as const,
+    black: '900' as const,
   },
 } as const;
 
@@ -270,6 +289,8 @@ export const BorderRadius = {
   md: 8,
   lg: 12,
   xl: 16,
+  // Intermediate step for rounded-card corner styles between xl and 2xl.
+  20: 20,
   '2xl': 24,
   full: 9999,
 } as const;

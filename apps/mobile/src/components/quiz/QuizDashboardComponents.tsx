@@ -11,6 +11,7 @@ import { formatNumber } from '@/utils';
 import { QuizItem } from '@/services/quiz';
 import { Avatar } from '@/components/common';
 import { useTranslation } from 'react-i18next';
+import { Colors, ColorScale, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 
 // --------------- Types -------------------
 interface ActionButtonProps {
@@ -105,7 +106,7 @@ export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number
                         return (
                             <View key={i} style={styles.streakDayWrap}>
                                 <View style={[styles.streakDot, isActive && styles.streakDotActive]}>
-                                    {!!isActive && <Ionicons name="checkmark" size={9} color="#FFF" />}
+                                    {!!isActive && <Ionicons name="checkmark" size={9} color={Colors.white} />}
                                 </View>
                                 <Text style={[styles.streakDayLabel, isActive && styles.streakDayLabelActive]}>{d}</Text>
                             </View>
@@ -209,7 +210,7 @@ export const KingBanner = ({
                     {/* Top row: label + live count */}
                     <View style={styles.kingTopRow}>
                         <View style={styles.kingTop}>
-                            <Ionicons name="flash" size={14} color="#FDE047" style={{ marginRight: 5 }} />
+                            <Ionicons name="flash" size={14} color={Colors.warning.light} style={{ marginRight: Spacing.xs }} />
                             <Text style={styles.kingLabel}>{t('quiz.dashboard.thisWeeksKing')}</Text>
                         </View>
                         {/* Live player count pill */}
@@ -227,14 +228,14 @@ export const KingBanner = ({
                                 <Avatar uri={playerAvatar} name={playerName} size="lg" />
                             </View>
                             <View style={styles.kingBadge}>
-                                <Ionicons name="trophy" size={12} color="#FFF" />
+                                <Ionicons name="trophy" size={12} color={Colors.white} />
                             </View>
                         </View>
 
                         <View style={styles.kingUserInfoWrap}>
                             <Text style={styles.kingName} numberOfLines={1}>{playerName}</Text>
                             <View style={styles.kingPointsRow}>
-                                <Ionicons name="diamond" size={13} color="#FDE047" style={{ marginRight: 4 }} />
+                                <Ionicons name="diamond" size={13} color={Colors.warning.light} style={{ marginRight: Spacing.xs }} />
                                 <Text style={styles.kingPoints}>{t('quiz.dashboard.diamondsFormatted', { countText: playerPoints })}</Text>
                             </View>
                             <TouchableOpacity style={styles.challengeBtn} onPress={onAvatarsPress}>
@@ -303,14 +304,14 @@ export const ActionGrid = ({
                     onPress={onMyJoined}
                 >
                     <LinearGradient
-                        colors={['#0F766E', '#0D9488']}
+                        colors={[ColorScale.teal[700], ColorScale.teal[600]]}
                         style={styles.manageBtnGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                     >
                         <View style={styles.manageBtnContent}>
                             <View style={styles.manageBtnIcon}>
-                                <Ionicons name="library" size={20} color="#99F6E4" />
+                                <Ionicons name="library" size={20} color={ColorScale.teal[200]} />
                             </View>
                             <View style={styles.manageBtnTextWrap}>
                                 <Text style={styles.manageBtnTitle}>{t('quiz.myJoined.title')}</Text>
@@ -330,14 +331,14 @@ export const ActionGrid = ({
                     onPress={onManage}
                 >
                     <LinearGradient
-                        colors={['#1E293B', '#0F172A']}
+                        colors={[ColorScale.gray[800], ColorScale.gray[900]]}
                         style={styles.manageBtnGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                     >
                         <View style={styles.manageBtnContent}>
                             <View style={styles.manageBtnIcon}>
-                                <Ionicons name="folder-open" size={20} color="#38BDF8" />
+                                <Ionicons name="folder-open" size={20} color={ColorScale.primary[400]} />
                             </View>
                             <View style={styles.manageBtnTextWrap}>
                                 <Text style={styles.manageBtnTitle}>{t('quiz.dashboard.manageQuizzes')}</Text>
@@ -367,7 +368,7 @@ const ActionButton = ({ title, icon, colors, onPress, delay = 0, badge }: Action
                 >
                     <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.actionBtnBg}>
                         <View style={styles.actionBtnIconWrap}>
-                            <Ionicons name={icon} size={32} color="#FFF" />
+                            <Ionicons name={icon} size={32} color={Colors.white} />
                             {badge != null && (
                                 <View style={styles.badgePill}>
                                     <Text style={styles.badgeText}>{badge}</Text>
@@ -434,7 +435,7 @@ export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {
 
                     <View style={styles.dailyContent}>
                         <View style={styles.dailyBadge}>
-                            <Ionicons name="flame" size={12} color="#FFF" style={{ marginRight: 4 }} />
+                            <Ionicons name="flame" size={12} color={Colors.white} style={{ marginRight: Spacing.xs }} />
                             <Text style={styles.dailyBadgeText}>{dailyQuiz ? t('quiz.dashboard.todaysPick') : t('quiz.dashboard.availableNow')}</Text>
                         </View>
                         <Text style={styles.dailyTitle}>{dailyQuiz?.title || t('quiz.dashboard.dailyQuiz')}</Text>
@@ -466,7 +467,7 @@ export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {
                         </View>
                         <View style={styles.qMarkMain}>
                             <Ionicons name="chatbubble" size={110} color="rgba(255,255,255,0.15)" style={{ position: 'absolute' }} />
-                            <Text style={[styles.qMark2, { fontSize: 54, color: '#10B981', marginTop: -5 }]}>?</Text>
+                            <Text style={[styles.qMark2, { fontSize: Typography.fontSize[48], color: '#10B981', marginTop: -Spacing.xs }]}>?</Text>
                         </View>
                     </View>
                 </LinearGradient>
@@ -481,7 +482,7 @@ const CATEGORIES = [
     { titleKey: 'quiz.dashboard.categories.math', rawTitle: 'Math', count: 23, icon: 'calculator' as const, colors: ['#92400E', '#FCD34D'] as [string, string] },
     { titleKey: 'quiz.dashboard.categories.history', rawTitle: 'History', count: 9, icon: 'earth' as const, colors: ['#065F46', '#34D399'] as [string, string] },
     { titleKey: 'quiz.dashboard.categories.music', rawTitle: 'Music', count: 31, icon: 'musical-notes' as const, colors: ['#86198F', '#E879F9'] as [string, string] },
-    { titleKey: 'quiz.dashboard.categories.tech', rawTitle: 'Tech', count: 17, icon: 'hardware-chip' as const, colors: ['#1E3A5F', '#38BDF8'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.tech', rawTitle: 'Tech', count: 17, icon: 'hardware-chip' as const, colors: ['#1E3A5F', ColorScale.primary[400]] as [string, string] },
     { titleKey: 'quiz.dashboard.categories.english', rawTitle: 'English', count: 8, icon: 'book' as const, colors: ['#7F1D1D', '#FCA5A5'] as [string, string] },
 ];
 
@@ -556,19 +557,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 6,
-        paddingBottom: 16,
+        paddingHorizontal: Spacing[5],
+        paddingTop: Spacing.sm,
+        paddingBottom: Spacing.md,
     },
     headerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: Spacing[3],
     },
     headerIconWrap: {
         width: 36,
         height: 36,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         backgroundColor: 'rgba(167,139,250,0.15)',
         borderWidth: 1,
         borderColor: 'rgba(167,139,250,0.25)',
@@ -576,32 +577,32 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     headerTitle: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: '#F8FAFC',
+        fontSize: Typography.fontSize[24],
+        fontWeight: Typography.fontWeight.extrabold,
+        color: ColorScale.gray[50],
         letterSpacing: -0.3,
     },
     pointsPill: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(139, 92, 246, 0.12)',
-        paddingLeft: 12,
-        paddingRight: 6,
-        paddingVertical: 7,
-        borderRadius: 20,
+        paddingLeft: Spacing[3],
+        paddingRight: Spacing.sm,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius[20],
         borderWidth: 1,
         borderColor: 'rgba(139, 92, 246, 0.28)',
-        gap: 5,
+        gap: Spacing.xs,
     },
     pointsText: {
-        color: '#F8FAFC',
-        fontWeight: '700',
-        fontSize: 14,
+        color: ColorScale.gray[50],
+        fontWeight: Typography.fontWeight.bold,
+        fontSize: Typography.fontSize[14],
     },
     addBtn: {
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: BorderRadius.full,
         backgroundColor: 'rgba(167,139,250,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
@@ -609,9 +610,9 @@ const styles = StyleSheet.create({
 
     // Streak Card
     streakCard: {
-        marginHorizontal: 16,
-        marginBottom: 14,
-        borderRadius: 20,
+        marginHorizontal: Spacing.md,
+        marginBottom: Spacing.md,
+        borderRadius: BorderRadius[20],
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(251,146,60,0.2)',
@@ -620,8 +621,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 18,
-        paddingVertical: 14,
+        paddingHorizontal: Spacing[5],
+        paddingVertical: Spacing.md,
     },
     streakGlowBg: {
         position: 'absolute',
@@ -629,14 +630,14 @@ const styles = StyleSheet.create({
         top: -20,
         width: 100,
         height: 100,
-        borderRadius: 50,
-        backgroundColor: '#FB923C',
+        borderRadius: BorderRadius.full,
+        backgroundColor: ColorScale.secondary[400],
         opacity: 0.08,
     },
     streakLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: Spacing[3],
     },
     streakFireWrap: {
         position: 'relative',
@@ -649,36 +650,36 @@ const styles = StyleSheet.create({
         position: 'absolute',
         width: 44,
         height: 44,
-        borderRadius: 22,
-        backgroundColor: '#FB923C',
+        borderRadius: BorderRadius.full,
+        backgroundColor: ColorScale.secondary[400],
         opacity: 0.25,
     },
     streakFireEmoji: {
-        fontSize: 28,
+        fontSize: Typography.fontSize[30],
     },
     streakCount: {
-        color: '#FFF',
-        fontSize: 15,
-        fontWeight: '700',
+        color: Colors.white,
+        fontSize: Typography.fontSize[15],
+        fontWeight: Typography.fontWeight.bold,
     },
     streakSub: {
         color: 'rgba(255,255,255,0.55)',
-        fontSize: 11,
-        marginTop: 1,
+        fontSize: Typography.fontSize[11],
+        marginTop: Spacing[0],
     },
     streakDots: {
         flexDirection: 'row',
-        gap: 4,
+        gap: Spacing.xs,
         alignItems: 'center',
     },
     streakDayWrap: {
         alignItems: 'center',
-        gap: 3,
+        gap: Spacing.xs,
     },
     streakDot: {
         width: 22,
         height: 22,
-        borderRadius: 11,
+        borderRadius: BorderRadius.full,
         backgroundColor: 'rgba(255,255,255,0.1)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.15)',
@@ -686,71 +687,68 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     streakDotActive: {
-        backgroundColor: '#F97316',
-        borderColor: '#FB923C',
+        backgroundColor: ColorScale.secondary[500],
+        borderColor: ColorScale.secondary[400],
     },
     streakDayLabel: {
         color: 'rgba(255,255,255,0.35)',
-        fontSize: 9,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.semibold,
     },
     streakDayLabelActive: {
-        color: '#FB923C',
+        color: ColorScale.secondary[400],
     },
 
     // Quick Stats Row
     statsRow: {
         flexDirection: 'row',
-        marginHorizontal: 16,
-        marginBottom: 18,
-        gap: 10,
+        marginHorizontal: Spacing.md,
+        marginBottom: Spacing[5],
+        gap: Spacing[3],
     },
     statPill: {
         flex: 1,
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 16,
-        paddingVertical: 12,
-        paddingHorizontal: 10,
+        borderRadius: BorderRadius.xl,
+        paddingVertical: Spacing[3],
+        paddingHorizontal: Spacing[3],
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
-        gap: 5,
+        gap: Spacing.xs,
     },
     statIcon: {
         width: 30,
         height: 30,
-        borderRadius: 10,
+        borderRadius: BorderRadius.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
     statValue: {
-        color: '#F8FAFC',
-        fontSize: 16,
-        fontWeight: '800',
+        color: ColorScale.gray[50],
+        fontSize: Typography.fontSize[16],
+        fontWeight: Typography.fontWeight.extrabold,
     },
     statLabel: {
         color: 'rgba(255,255,255,0.45)',
-        fontSize: 10,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.semibold,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
 
     // King Banner
     kingContainer: {
-        marginHorizontal: 16,
-        marginBottom: 18,
-        borderRadius: 24,
+        marginHorizontal: Spacing.md,
+        marginBottom: Spacing[5],
+        borderRadius: BorderRadius['2xl'],
         overflow: 'hidden',
-        elevation: 12,
+        ...Shadows.xl,
         shadowColor: '#8B5CF6',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.35,
-        shadowRadius: 18,
     },
     kingGradient: {
         minHeight: 185,
-        padding: 22,
+        padding: Spacing[6],
     },
     kingInnerContent: {
         flex: 1,
@@ -760,71 +758,71 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 18,
+        marginBottom: Spacing[5],
     },
     kingTop: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.18)',
         alignSelf: 'flex-start',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius[20],
     },
     kingLabel: {
-        color: '#FFF',
-        fontSize: 12,
-        fontWeight: '700',
+        color: Colors.white,
+        fontSize: Typography.fontSize[12],
+        fontWeight: Typography.fontWeight.bold,
     },
     liveCountPill: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(16, 185, 129, 0.2)',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 16,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.xl,
         borderWidth: 1,
         borderColor: 'rgba(16, 185, 129, 0.3)',
-        gap: 6,
+        gap: Spacing[2],
     },
     liveDot: {
         position: 'absolute',
         width: 10,
         height: 10,
-        borderRadius: 5,
+        borderRadius: BorderRadius.full,
         backgroundColor: '#10B981',
     },
     liveDotSolid: {
         width: 8,
         height: 8,
-        borderRadius: 4,
+        borderRadius: BorderRadius.full,
         backgroundColor: '#10B981',
     },
     liveCountText: {
         color: '#10B981',
-        fontSize: 11,
-        fontWeight: '700',
-        marginLeft: 4,
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.bold,
+        marginLeft: Spacing.xs,
     },
     kingCenterWrap: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     kingAvatarOuter: {
-        padding: 3,
+        padding: Spacing.xs,
         backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        borderRadius: 40,
-        marginRight: 14,
+        borderRadius: BorderRadius.full,
+        marginRight: Spacing.md,
     },
     kingAvatarInner: {
-        padding: 2,
-        backgroundColor: '#FFF',
-        borderRadius: 35,
+        padding: Spacing.xs,
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius.full,
     },
     kingAvatar: {
         width: 56,
         height: 56,
-        borderRadius: 28,
+        borderRadius: BorderRadius.full,
     },
     kingBadge: {
         position: 'absolute',
@@ -833,42 +831,42 @@ const styles = StyleSheet.create({
         backgroundColor: '#F59E0B',
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: BorderRadius.full,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#FFF',
+        borderColor: Colors.white,
     },
     kingUserInfoWrap: {
         flex: 1,
     },
     kingName: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: '800',
-        marginBottom: 4,
+        color: Colors.white,
+        fontSize: Typography.fontSize[20],
+        fontWeight: Typography.fontWeight.extrabold,
+        marginBottom: Spacing.xs,
     },
     kingPointsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: Spacing[3],
     },
     kingPoints: {
-        color: '#FDE047',
-        fontSize: 13,
-        fontWeight: '700',
+        color: Colors.warning.light,
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.bold,
     },
     challengeBtn: {
         backgroundColor: 'rgba(255,255,255,0.2)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.lg,
         alignSelf: 'flex-start',
     },
     challengeBtnText: {
-        color: '#FFF',
-        fontSize: 11,
-        fontWeight: '700',
+        color: Colors.white,
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.bold,
     },
     crownIconWrap: {
         position: 'absolute',
@@ -880,21 +878,21 @@ const styles = StyleSheet.create({
     // Action Grid
     actionGridContainer: {
         flexDirection: 'column',
-        paddingHorizontal: 12,
-        marginBottom: 4,
-        gap: 8,
+        paddingHorizontal: Spacing[3],
+        marginBottom: Spacing.xs,
+        gap: Spacing.sm,
     },
     actionGridRow: {
         flexDirection: 'row',
-        gap: 8,
+        gap: Spacing.sm,
     },
     actionBtnWrap: {
         flex: 1,
     },
     actionBtnBg: {
-        borderRadius: 22,
-        paddingVertical: 18,
-        paddingHorizontal: 8,
+        borderRadius: BorderRadius['2xl'],
+        paddingVertical: Spacing[5],
+        paddingHorizontal: Spacing.sm,
         alignItems: 'center',
         justifyContent: 'center',
         height: 120,
@@ -905,62 +903,59 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)',
         width: 52,
         height: 52,
-        borderRadius: 16,
+        borderRadius: BorderRadius.xl,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10,
+        marginBottom: Spacing[3],
         position: 'relative',
     },
     badgePill: {
         position: 'absolute',
         top: -5,
         right: -5,
-        backgroundColor: '#EF4444',
+        backgroundColor: Colors.error,
         width: 18,
         height: 18,
-        borderRadius: 9,
+        borderRadius: BorderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1.5,
         borderColor: '#1E1B4B',
     },
     badgeText: {
-        color: '#FFF',
-        fontSize: 9,
-        fontWeight: '800',
+        color: Colors.white,
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.extrabold,
     },
     actionBtnTitle: {
-        color: '#FFF',
-        fontSize: 12,
-        fontWeight: '800',
+        color: Colors.white,
+        fontSize: Typography.fontSize[12],
+        fontWeight: Typography.fontWeight.extrabold,
         textAlign: 'center',
     },
 
     // Daily Quiz Card
     dailyQuizContainer: {
-        marginHorizontal: 16,
-        marginTop: 18,
-        marginBottom: 6,
-        borderRadius: 24,
+        marginHorizontal: Spacing.md,
+        marginTop: Spacing[5],
+        marginBottom: Spacing.sm,
+        borderRadius: BorderRadius['2xl'],
         overflow: 'hidden',
+        ...Shadows.xl,
         shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 14,
-        elevation: 10,
     },
     dailyQuizGradient: {
         flexDirection: 'row',
-        paddingHorizontal: 24,
-        paddingVertical: 28,
+        paddingHorizontal: Spacing[6],
+        paddingVertical: Spacing[7],
         minHeight: 175,
         overflow: 'hidden',
     },
     shimmerOverlay: {
-        backgroundColor: '#FFF',
-        borderRadius: 60,
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius['2xl'],
         width: 200,
-        marginLeft: -100,
+        marginLeft: -Spacing[24],
     },
     dailyContent: {
         flex: 1,
@@ -972,61 +967,57 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.22)',
         alignSelf: 'flex-start',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 14,
-        marginBottom: 10,
+        paddingHorizontal: Spacing[3],
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.xl,
+        marginBottom: Spacing[3],
     },
     dailyBadgeText: {
-        color: '#FFF',
-        fontSize: 11,
-        fontWeight: '700',
+        color: Colors.white,
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.bold,
     },
     dailyTitle: {
-        fontSize: 30,
-        fontWeight: '900',
-        color: '#FFF',
-        marginBottom: 4,
+        fontSize: Typography.fontSize[30],
+        fontWeight: Typography.fontWeight.black,
+        color: Colors.white,
+        marginBottom: Spacing.xs,
         textShadowColor: 'rgba(0,0,0,0.1)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
     },
     dailySub: {
-        fontSize: 13,
+        fontSize: Typography.fontSize[13],
         color: 'rgba(255,255,255,0.9)',
-        marginBottom: 10,
-        fontWeight: '500',
+        marginBottom: Spacing[3],
+        fontWeight: Typography.fontWeight.medium,
     },
     countdownRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
-        marginBottom: 16,
+        gap: Spacing.xs,
+        marginBottom: Spacing.md,
     },
     countdownText: {
         color: 'rgba(255,255,255,0.75)',
-        fontSize: 11,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[11],
+        fontWeight: Typography.fontWeight.semibold,
     },
     dailyBtn: {
-        backgroundColor: '#FFF',
-        paddingHorizontal: 18,
-        paddingVertical: 8,
-        borderRadius: 20,
+        backgroundColor: Colors.white,
+        paddingHorizontal: Spacing[5],
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius[20],
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        gap: Spacing.xs,
+        ...Shadows.lg,
     },
     dailyBtnText: {
         color: '#D97706',
-        fontWeight: '800',
-        fontSize: 13,
+        fontWeight: Typography.fontWeight.extrabold,
+        fontSize: Typography.fontSize[13],
     },
     dailyGraphic: {
         position: 'absolute',
@@ -1051,7 +1042,7 @@ const styles = StyleSheet.create({
         top: 55,
         width: 32,
         height: 32,
-        borderRadius: 16,
+        borderRadius: BorderRadius.full,
         backgroundColor: 'rgba(255,255,255,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1062,64 +1053,64 @@ const styles = StyleSheet.create({
         top: 12,
         width: 26,
         height: 26,
-        borderRadius: 13,
+        borderRadius: BorderRadius.full,
         backgroundColor: 'rgba(255,255,255,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     qMark1: {
         color: 'rgba(255,255,255,0.7)',
-        fontWeight: '900',
-        fontSize: 16,
+        fontWeight: Typography.fontWeight.black,
+        fontSize: Typography.fontSize[16],
     },
     qMark2: {
         color: 'rgba(255,255,255,0.7)',
-        fontWeight: '900',
-        fontSize: 13,
+        fontWeight: Typography.fontWeight.black,
+        fontSize: Typography.fontSize[13],
     },
 
     // Category Grid
     categoryWrap: {
-        marginTop: 20,
-        paddingHorizontal: 16,
-        paddingBottom: 40,
+        marginTop: Spacing[5],
+        paddingHorizontal: Spacing.md,
+        paddingBottom: Spacing[10],
     },
     categoryWrapRail: {
-        marginTop: 0,
-        paddingHorizontal: 0,
-        paddingBottom: 0,
+        marginTop: Spacing[0],
+        paddingHorizontal: Spacing[0],
+        paddingBottom: Spacing[0],
     },
     categoryHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 14,
+        marginBottom: Spacing.md,
     },
     categoryTitle: {
-        color: '#F8FAFC',
-        fontSize: 17,
-        fontWeight: '700',
+        color: ColorScale.gray[50],
+        fontSize: Typography.fontSize[17],
+        fontWeight: Typography.fontWeight.bold,
     },
     seeAllBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 3,
+        gap: Spacing.xs,
     },
     seeAllText: {
         color: '#A78BFA',
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: Typography.fontSize[13],
+        fontWeight: Typography.fontWeight.semibold,
     },
     categoryGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: Spacing[3],
     },
     categoryGridRail: {
         flexDirection: 'column',
         flexWrap: 'nowrap',
-        gap: 10,
+        gap: Spacing[3],
     },
     catCardWrap: {
         width: '47.5%',
@@ -1128,8 +1119,8 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     catCardBg: {
-        borderRadius: 20,
-        padding: 14,
+        borderRadius: BorderRadius[20],
+        padding: Spacing.md,
         height: 95,
         overflow: 'hidden',
         justifyContent: 'flex-end',
@@ -1138,20 +1129,20 @@ const styles = StyleSheet.create({
     },
     catCardBgRail: {
         height: 78,
-        borderRadius: 18,
+        borderRadius: BorderRadius[20],
     },
     catCardContent: {
         zIndex: 2,
     },
     catTitle: {
-        color: '#FFF',
-        fontSize: 15,
-        fontWeight: '700',
-        marginBottom: 1,
+        color: Colors.white,
+        fontSize: Typography.fontSize[15],
+        fontWeight: Typography.fontWeight.bold,
+        marginBottom: Spacing[0],
     },
     catSub: {
         color: 'rgba(255,255,255,0.7)',
-        fontSize: 11,
+        fontSize: Typography.fontSize[11],
     },
     catIcon: {
         position: 'absolute',
@@ -1166,19 +1157,19 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.15)',
         width: 22,
         height: 22,
-        borderRadius: 11,
+        borderRadius: BorderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
     },
     manageBtnContainer: {
-        marginTop: 12,
-        borderRadius: 16,
+        marginTop: Spacing[3],
+        borderRadius: BorderRadius.xl,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
     },
     manageBtnGradient: {
-        padding: 16,
+        padding: Spacing.md,
     },
     manageBtnContent: {
         flexDirection: 'row',
@@ -1187,24 +1178,24 @@ const styles = StyleSheet.create({
     manageBtnIcon: {
         width: 40,
         height: 40,
-        borderRadius: 12,
+        borderRadius: BorderRadius.lg,
         backgroundColor: 'rgba(56, 189, 248, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: Spacing[3],
     },
     manageBtnTextWrap: {
         flex: 1,
     },
     manageBtnTitle: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#F8FAFC',
-        marginBottom: 2,
+        fontSize: Typography.fontSize[15],
+        fontWeight: Typography.fontWeight.semibold,
+        color: ColorScale.gray[50],
+        marginBottom: Spacing.xs,
     },
     manageBtnDesc: {
-        fontSize: 12,
-        color: '#94A3B8',
+        fontSize: Typography.fontSize[12],
+        color: ColorScale.gray[400],
     },
 });
 
@@ -1227,9 +1218,9 @@ interface RecommendedSectionProps {
 export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: RecommendedSectionProps) => {
     const { t } = useTranslation();
     return (
-        <View style={{ marginBottom: 8 }}>
+        <View style={{ marginBottom: Spacing.sm }}>
             <Animated.View>
-                <View style={[styles.categoryHeader, { paddingHorizontal: 20, marginBottom: 12 }]}>
+                <View style={[styles.categoryHeader, { paddingHorizontal: Spacing[5], marginBottom: Spacing[3] }]}>
                     <Text style={styles.categoryTitle}>{t('quiz.dashboard.recommendedForYou')}</Text>
                     <TouchableOpacity style={styles.seeAllBtn} onPress={onSeeAll}>
                         <Text style={styles.seeAllText}>{t('learn.viewAll')}</Text>
@@ -1241,7 +1232,7 @@ export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: Re
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 4, gap: 12 }}
+                contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs, gap: Spacing[3] }}
             >
                 {quizzes.slice(0, 8).map((quiz, i) => {
                     const qCount = quiz.questions?.length || 0;
@@ -1267,11 +1258,11 @@ export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: Re
 
                                     {/* Stats */}
                                     <View style={recStyles.statsRow}>
-                                        <Ionicons name="document-text-outline" size={12} color="#64748B" />
+                                        <Ionicons name="document-text-outline" size={12} color={ColorScale.gray[500]} />
                                         <Text style={recStyles.statText}>{t('quiz.dashboard.questionsShort', { count: qCount })}</Text>
                                         {quiz.timeLimit ? (
                                             <>
-                                                <Ionicons name="time-outline" size={12} color="#64748B" />
+                                                <Ionicons name="time-outline" size={12} color={ColorScale.gray[500]} />
                                                 <Text style={recStyles.statText}>{t('feed.sections.minutesShort', { count: quiz.timeLimit })}</Text>
                                             </>
                                         ) : null}
@@ -1299,51 +1290,51 @@ export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: Re
 const recStyles = StyleSheet.create({
     card: {
         width: 180,
-        borderRadius: 16,
+        borderRadius: BorderRadius.xl,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
     },
     gradient: {
-        padding: 14,
-        gap: 10,
+        padding: Spacing.md,
+        gap: Spacing[3],
     },
     iconCircle: {
         width: 34,
         height: 34,
-        borderRadius: 17,
+        borderRadius: BorderRadius.full,
         backgroundColor: 'rgba(167,139,250,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     title: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#F1F5F9',
+        fontSize: Typography.fontSize[14],
+        fontWeight: Typography.fontWeight.bold,
+        color: ColorScale.gray[100],
         lineHeight: 19,
     },
     statsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: Spacing.sm,
     },
     statText: {
-        fontSize: 11,
-        color: '#64748B',
-        fontWeight: '500',
+        fontSize: Typography.fontSize[11],
+        color: ColorScale.gray[500],
+        fontWeight: Typography.fontWeight.medium,
     },
     ctaBtn: {
         backgroundColor: '#8B5CF6',
-        paddingVertical: 8,
-        borderRadius: 10,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.lg,
         alignItems: 'center',
     },
     ctaBtnRetake: {
-        backgroundColor: '#6366F1',
+        backgroundColor: Colors.secondary,
     },
     ctaBtnText: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: '#fff',
+        fontSize: Typography.fontSize[12],
+        fontWeight: Typography.fontWeight.bold,
+        color: Colors.white,
     },
 });

@@ -757,7 +757,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
         gap: 6,
         paddingHorizontal: 10,
         paddingVertical: 6,
-        borderRadius: 999,
+        borderRadius: 9999,
         backgroundColor: 'rgba(255,255,255,0.72)',
         marginBottom: 18,
     },

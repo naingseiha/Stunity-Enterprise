@@ -128,7 +128,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 5,
       paddingHorizontal: 12,
       paddingVertical: 7,
-      borderRadius: 999,
+      borderRadius: 9999,
       ...Platform.select({
         ios: {
           shadowColor: '#000',

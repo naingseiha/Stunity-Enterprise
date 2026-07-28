@@ -738,7 +738,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   // Tags
   tagPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -4 },
   tagPill: {
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 10, paddingVertical: 4,
   },
   tagPillText: { fontSize: 12, fontWeight: '700' },

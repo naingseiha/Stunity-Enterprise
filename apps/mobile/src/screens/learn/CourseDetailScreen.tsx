@@ -798,7 +798,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: '#0F172A',
   },
   backButtonText: {
@@ -821,7 +821,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   navIconButton: {
     width: 40,
     height: 40,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -928,7 +928,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     gap: 8,
   },
   languageChip: {
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -1191,13 +1191,13 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   progressTrackPro: {
     height: 10,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: isDark ? 'rgba(20,184,166,0.26)' : '#CCFBF1',
     overflow: 'hidden',
   },
   progressFillPro: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: colors.primary,
   },
   statGridPro: {
@@ -1246,7 +1246,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   tagPro: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -1360,7 +1360,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   primaryActionPill: {
     height: 56,
-    borderRadius: 999,
+    borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',

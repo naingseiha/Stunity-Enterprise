@@ -369,7 +369,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   bottomSummary:  { flexDirection: 'row', gap: 8, marginBottom: 10 } as ViewStyle,
   bottomChip:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 } as ViewStyle,
   bottomChipText: { fontSize: 12, fontWeight: '800' } as TextStyle,
-  postBtn:        { borderRadius: 999, overflow: 'hidden' } as ViewStyle,
+  postBtn:        { borderRadius: 9999, overflow: 'hidden' } as ViewStyle,
   postGradient:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 } as ViewStyle,
   postText:       { fontSize: 15, fontWeight: '800', color: '#FFFFFF' } as TextStyle,
 });

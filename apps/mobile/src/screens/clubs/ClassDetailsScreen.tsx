@@ -27,20 +27,7 @@ import { useClassHubStore } from '@/stores/classHubStore';
 import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
-
-const Colors = {
-  background: '#F8FBFF',
-  surface: '#FFFFFF',
-  border: '#F1F5F9',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  primary: '#09CFF7',
-  primaryDark: '#0EA5E9',
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-};
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 
 const SCHEDULE_DAY_THEMES: Record<string, { tint: string; border: string; text: string; soft: string; deep: string }> = {
   MONDAY: { tint: '#E3F2FD', border: '#90CAF9', text: '#1E88E5', soft: '#F5FAFF', deep: '#1976D2' },
@@ -140,7 +127,8 @@ const EMPTY_CLASS_DETAIL_BUNDLE: classesApi.ClassDetailBundle = {
 
 export default function ClassDetailsScreen() {
   const { t, i18n } = useTranslation();
-  const { colors: themeColors, isDark } = useThemeContext();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -737,16 +725,16 @@ export default function ClassDetailsScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-            <Ionicons name="chevron-back" size={24} color={Colors.textSecondary} />
+            <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <StunityLogo width={108} height={30} />
 
           <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
             {refreshing || backgroundRefreshing ? (
-              <ActivityIndicator size="small" color={Colors.textSecondary} />
+              <ActivityIndicator size="small" color={colors.textSecondary} />
             ) : (
-              <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
+              <Ionicons name="refresh-outline" size={20} color={colors.textSecondary} />
             )}
           </TouchableOpacity>
         </View>
@@ -765,13 +753,13 @@ export default function ClassDetailsScreen() {
               },
             ]}
           >
-            <ActivityIndicator size="large" color={themeColors.primary} />
-            <Text style={[styles.loadingText, { color: themeColors.text }]}>{t('classDetails.loading')}</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.text }]}>{t('classDetails.loading')}</Text>
           </BlurView>
         </View>
       ) : error ? (
         <View style={styles.loadingWrap}>
-          <Ionicons name="alert-circle-outline" size={40} color={Colors.danger} />
+          <Ionicons name="alert-circle-outline" size={40} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => loadData({ force: true })}>
             <Text style={styles.retryText}>{t('classDetails.retry')}</Text>
@@ -785,8 +773,8 @@ export default function ClassDetailsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={Colors.primaryDark}
-              colors={[Colors.primaryDark]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
@@ -854,7 +842,7 @@ export default function ClassDetailsScreen() {
                   (user?.teacherId || user?.teacher?.id) === params.linkedTeacherId
               )) && (
             <View style={styles.viewOnlyHint}>
-              <Ionicons name="information-circle-outline" size={20} color={Colors.primaryDark} style={{ marginRight: 10 }} />
+              <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: Spacing[3] }} />
               <Text style={[styles.viewOnlyHintText, isKhmer && styles.khmerInlineText]}>
                 {t('classDetails.teacherLinkedClassHint')}
               </Text>
@@ -995,7 +983,7 @@ export default function ClassDetailsScreen() {
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
                  <Text style={styles.sectionHeader}>{t('classDetails.classSchedule')}</Text>
-                 <Ionicons name="calendar-outline" size={24} color={Colors.textPrimary} />
+                 <Ionicons name="calendar-outline" size={24} color={colors.text} />
               </View>
 
               {/* Day Selector */}
@@ -1024,10 +1012,10 @@ export default function ClassDetailsScreen() {
                     onPress={() => setSelectedDayIndex(ix)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.dayTextShort, isKhmer && styles.khmerInlineText, { color: isActive ? '#FFF' : dayTheme.text }, isActive && styles.dayTextActive]}>
+                    <Text style={[styles.dayTextShort, isKhmer && styles.khmerInlineText, { color: isActive ? Colors.white : dayTheme.text }, isActive && styles.dayTextActive]}>
                       {t(`classDetails.daysShort.${scheduleDayApiMap[ix] || 'monday'}`)}
                     </Text>
-                    {isActive && <View style={[styles.dayDot, { backgroundColor: '#FFF' }]} />}
+                    {isActive && <View style={[styles.dayDot, { backgroundColor: Colors.white }]} />}
                   </TouchableOpacity>
                     );
                   })()
@@ -1072,7 +1060,7 @@ export default function ClassDetailsScreen() {
                                 : t('classDetails.classSession')}
                             </Text>
                             <View style={styles.cardMetaRow}>
-                               <View style={[styles.cardMetaPill, { backgroundColor: '#FFFFFF' }]}>
+                               <View style={[styles.cardMetaPill, { backgroundColor: Colors.white }]}>
                                  <Ionicons name="book" size={12} color={slotTheme.text} />
                                  <Text style={styles.cardSubjectName} numberOfLines={1}>
                                    {entry.subject?.name || t('classDetails.subject')} • {entry.period?.name || t('classDetails.period', { index: i + 1 })}
@@ -1113,7 +1101,7 @@ export default function ClassDetailsScreen() {
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
                  <Text style={styles.sectionHeader}>{t('classDetails.classTeachers')}</Text>
-                 <Ionicons name="school-outline" size={20} color={Colors.textMuted} />
+                 <Ionicons name="school-outline" size={20} color={colors.textTertiary} />
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                 {uniqueTeachers.map((teacher: any, idx) => (
@@ -1144,7 +1132,7 @@ export default function ClassDetailsScreen() {
                     </Text>
                     {canManageRecords && teacher.id ? (
                       <View style={styles.teacherEditPill}>
-                        <Ionicons name="create-outline" size={12} color={Colors.primaryDark} />
+                        <Ionicons name="create-outline" size={12} color={colors.primary} />
                         <Text style={[styles.teacherEditText, isKhmer && styles.khmerInlineText]}>{t('common.edit')}</Text>
                       </View>
                     ) : null}
@@ -1156,7 +1144,7 @@ export default function ClassDetailsScreen() {
 
           {/* TEACHER QUICK IMPORTER */}
           {myRole === 'TEACHER' && teacherSubjects.length > 0 && (
-            <View style={[styles.sectionWrap, { paddingHorizontal: 4 }]}>
+            <View style={[styles.sectionWrap, { paddingHorizontal: Spacing.xs }]}>
                <View style={styles.sectionCard}>
                  <Text style={styles.sectionTitle}>{t('classDetails.quickImport.title')}</Text>
                  <Text style={styles.sectionHint}>
@@ -1175,7 +1163,7 @@ export default function ClassDetailsScreen() {
                          <Ionicons
                            name={active ? 'book' : 'book-outline'}
                            size={14}
-                           color={active ? '#FFFFFF' : Colors.textSecondary}
+                           color={active ? Colors.white : colors.textSecondary}
                          />
                          <Text style={[styles.quickSubjectChipText, active && styles.quickSubjectChipTextActive]}>
                            {subject.name}
@@ -1188,7 +1176,7 @@ export default function ClassDetailsScreen() {
                    value={studentSearch}
                    onChangeText={setStudentSearch}
                    placeholder={t('classDetails.quickImport.searchStudents')}
-                   placeholderTextColor={Colors.textMuted}
+                   placeholderTextColor={colors.textTertiary}
                    style={styles.input}
                  />
                  <View style={styles.scoreTable}>
@@ -1202,7 +1190,7 @@ export default function ClassDetailsScreen() {
                          onChangeText={(val) => handleScoreChange(student.id, val)}
                         placeholder={`0-${selectedQuickSubject?.maxScore || 100}`}
                          keyboardType="numeric"
-                         placeholderTextColor={Colors.textMuted}
+                         placeholderTextColor={colors.textTertiary}
                          style={styles.scoreInput}
                        />
                      </View>
@@ -1228,18 +1216,18 @@ export default function ClassDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   bgOrbPrimary: {
     position: 'absolute',
     width: 240,
     height: 240,
-    borderRadius: 120,
-    backgroundColor: '#DFF7FF',
-    opacity: 0.72,
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.12)' : '#DFF7FF',
+    opacity: isDark ? 1 : 0.72,
     top: 86,
     right: -120,
   },
@@ -1247,118 +1235,115 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 180,
     height: 180,
-    borderRadius: 90,
-    backgroundColor: '#F3E8FF',
-    opacity: 0.72,
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? 'rgba(139,92,246,0.12)' : '#F3E8FF',
+    opacity: isDark ? 1 : 0.72,
     top: 430,
     left: -110,
   },
   headerSafe: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.92)',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(226,232,240,0.75)',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(226,232,240,0.75)',
+    backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.92)',
   },
   iconButton: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.8)',
+    borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(226,232,240,0.8)',
   },
   loadingWrap: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingHorizontal: 24,
+    gap: Spacing[3],
+    paddingHorizontal: Spacing.lg,
   },
   loadingBlurCard: {
     minWidth: 220,
-    borderRadius: 18,
+    borderRadius: BorderRadius[20],
     borderWidth: 1,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
+    paddingHorizontal: Spacing[5],
+    paddingVertical: Spacing[5],
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: Spacing[3],
     overflow: 'hidden',
   },
   loadingText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
   errorText: {
-    color: Colors.danger,
-    fontSize: 14,
+    color: colors.error,
+    fontSize: Typography.fontSize.sm,
     textAlign: 'center',
   },
   retryBtn: {
-    marginTop: 8,
-    backgroundColor: Colors.primaryDark,
-    paddingHorizontal: 16,
+    marginTop: Spacing.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: Spacing.md,
     height: 40,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   retryText: {
-    color: '#FFF',
-    fontWeight: '700',
-    fontSize: 14,
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold,
+    fontSize: Typography.fontSize.sm,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    gap: 26,
-    paddingBottom: 44,
+    padding: Spacing.md,
+    gap: Spacing[7],
+    paddingBottom: Spacing[12],
   },
   viewOnlyHint: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF7ED',
+    backgroundColor: isDark ? 'rgba(234,179,8,0.14)' : '#FFF7ED',
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 16,
-    padding: 14,
+    borderColor: isDark ? 'rgba(234,179,8,0.35)' : '#FDE68A',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
   },
   viewOnlyHintText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.semibold,
+    color: colors.textSecondary,
     lineHeight: 19,
   },
   
   // ─── PREMIUM HERO CARD ───────────────────────────────────────
   heroCard: {
-    borderRadius: 32,
+    borderRadius: BorderRadius['2xl'],
     overflow: 'hidden',
+    ...Shadows.xl,
     shadowColor: '#0891B2',
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.26,
-    shadowRadius: 28,
-    elevation: 10,
   },
   heroGlowBlob: {
     position: 'absolute',
     width: 220,
     height: 220,
-    borderRadius: 110,
-    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.white,
     opacity: 0.08,
     top: -80,
     right: -60,
@@ -1367,55 +1352,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 36,
-    paddingHorizontal: 20,
+    paddingTop: Spacing[10],
+    paddingHorizontal: Spacing[5],
   },
   heroRolePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: Spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.22)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 99,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
   },
   heroRoleText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
+    color: Colors.white,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     letterSpacing: 0.3,
   },
   heroGradePill: {
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 99,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
   },
   heroGradePillText: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
   },
   heroBody: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingHorizontal: Spacing[5],
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
   },
   heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: Colors.white,
     letterSpacing: -0.5,
     lineHeight: 42,   // Generous line-height so top of Khmer chars never clips
   },
   heroTrack: {
-    marginTop: 6,
-    fontSize: 13,
-    fontWeight: '500',
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.medium,
     color: 'rgba(255,255,255,0.5)',
     letterSpacing: 0.2,
   },
@@ -1424,8 +1409,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.07)',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[5],
     backgroundColor: 'rgba(2,132,199,0.18)',
   },
   heroStatItem: {
@@ -1433,17 +1418,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroStatNum: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
+    color: Colors.white,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: -0.5,
   },
   heroStatLabel: {
     color: 'rgba(255,255,255,0.45)',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
-    marginTop: 2,
+    marginTop: Spacing.xs,
     letterSpacing: 0.5,
   },
   heroStatSep: {
@@ -1453,105 +1438,103 @@ const styles = StyleSheet.create({
   },
 
   sectionWrap: {
-    marginTop: 4,
+    marginTop: Spacing.xs,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingHorizontal: 4,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.xs,
   },
   sectionHeader: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.textPrimary,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.text,
     letterSpacing: -0.5,
   },
   sectionSubheader: {
-    marginTop: 4,
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: colors.textTertiary,
   },
 
   // -- BENTO GRID --
   bentoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 13,
-    paddingHorizontal: 4,
+    gap: Spacing[3],
+    paddingHorizontal: Spacing.xs,
   },
   bentoItem: {
     width: '22.25%',
     aspectRatio: 0.88,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderRadius: 24,
+    backgroundColor: isDark ? colors.surface : 'rgba(255,255,255,0.96)',
+    borderRadius: BorderRadius['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
+    padding: Spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.75)',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 3,
+    borderColor: isDark ? colors.border : 'rgba(226,232,240,0.75)',
+    ...Shadows.lg,
+    shadowColor: isDark ? 'transparent' : Shadows.lg.shadowColor,
   },
   bentoIconWrap: {
     width: 46,
     height: 46,
-    borderRadius: 18,
+    borderRadius: BorderRadius[20],
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   bentoLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: colors.text,
     textAlign: 'center',
   },
 
   // -- HYPER-CLEAN CALENDAR SCHEDULE --
   daySelectorScroll: {
-    paddingHorizontal: 4,
-    paddingBottom: 16,
-    gap: 12,
+    paddingHorizontal: Spacing.xs,
+    paddingBottom: Spacing.md,
+    gap: Spacing[3],
   },
   dayCircle: {
     width: 52,
     height: 64,
-    borderRadius: 26,
+    borderRadius: BorderRadius.full,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayCircleActive: {
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
+    // shadowColor intentionally omitted — overridden per-day via SCHEDULE_DAY_THEMES inline style
+    shadowOffset: Shadows.lg.shadowOffset,
+    shadowOpacity: Shadows.lg.shadowOpacity,
+    shadowRadius: Shadows.lg.shadowRadius,
+    elevation: Shadows.lg.elevation,
   },
   dayTextShort: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textSecondary,
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
+    color: colors.textSecondary,
   },
   dayTextActive: {
-    color: '#FFF',
+    color: Colors.white,
   },
   dayDot: {
     width: 5,
     height: 5,
-    borderRadius: 2.5,
+    borderRadius: BorderRadius.full,
     position: 'absolute',
     bottom: 12,
   },
   timelineWrapper: {
     position: 'relative',
-    marginTop: 8,
-    paddingBottom: 16,
+    marginTop: Spacing.sm,
+    paddingBottom: Spacing.md,
   },
   timelineVerticalLine: {
     position: 'absolute',
@@ -1559,12 +1542,12 @@ const styles = StyleSheet.create({
     top: 24,
     bottom: 24,
     width: 2,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.border,
     zIndex: 0,
   },
   timelineRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: Spacing.md,
     alignItems: 'stretch',
     minHeight: 80,
   },
@@ -1572,34 +1555,31 @@ const styles = StyleSheet.create({
     width: 70,
     alignItems: 'center',
     zIndex: 1,
-    paddingTop: 16, // Push the pill down slightly
+    paddingTop: Spacing.md, // Push the pill down slightly
   },
   timePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
   },
   timePillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: colors.textSecondary,
   },
   timelineCard: {
     flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: BorderRadius[20],
+    padding: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.035,
-    shadowRadius: 14,
-    elevation: 2,
-    marginLeft: 8,
-    marginRight: 4,
+    ...Shadows.lg,
+    shadowColor: isDark ? 'transparent' : Shadows.lg.shadowColor,
+    marginLeft: Spacing.sm,
+    marginRight: Spacing.xs,
     borderWidth: 1,
     zIndex: 1,
   },
@@ -1611,254 +1591,245 @@ const styles = StyleSheet.create({
   cardAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-    marginRight: 12,
+    borderRadius: BorderRadius.full,
+    backgroundColor: colors.surfaceVariant,
+    marginRight: Spacing[3],
   },
   cardAvatarFallback: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing[3],
   },
   cardAvatarText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.primaryDark,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.primary,
   },
   cardInfo: {
     flex: 1,
   },
   cardTeacherName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.text,
+    marginBottom: Spacing.xs,
   },
   cardMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
-    gap: 4,
+    marginBottom: Spacing.sm,
+    gap: Spacing.xs,
   },
   cardMetaPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
   },
   cardSubjectName: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
   },
   actionLink: {
-    marginTop: 4,
+    marginTop: Spacing.xs,
   },
   actionLinkText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: Colors.success,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.success,
   },
   emptyDayContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
-    paddingLeft: 40, // offset the timeline
+    paddingVertical: Spacing[10],
+    paddingLeft: Spacing[10], // offset the timeline
   },
   emptyDayText: {
-    fontSize: 14,
-    color: Colors.textMuted,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.sm,
+    color: colors.textTertiary,
+    fontWeight: Typography.fontWeight.semibold,
   },
 
   // -- BEAUTIFUL TEACHERS LIST --
   horizontalScroll: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    gap: 16,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    gap: Spacing.md,
   },
   teacherCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     width: 130,
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: BorderRadius['2xl'],
+    padding: Spacing[5],
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
+    borderColor: colors.border,
+    ...Shadows.lg,
+    shadowColor: isDark ? 'transparent' : Shadows.lg.shadowColor,
   },
   teacherAvatarFallback: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F0FBFF',
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? 'rgba(6,168,204,0.14)' : '#F0FBFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing[3],
     borderWidth: 2,
-    borderColor: '#E0F2FE',
+    borderColor: isDark ? 'rgba(6,168,204,0.3)' : '#E0F2FE',
   },
   teacherAvatarText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.primaryDark,
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.primary,
   },
   teacherName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.textPrimary,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: -0.2,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   teacherSubject: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textSecondary,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   teacherEditPill: {
-    marginTop: 10,
-    paddingHorizontal: 8,
+    marginTop: Spacing[3],
+    paddingHorizontal: Spacing.sm,
     height: 24,
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
-    backgroundColor: '#E0F2FE',
+    borderColor: isDark ? 'rgba(6,168,204,0.35)' : '#BAE6FD',
+    backgroundColor: isDark ? 'rgba(6,168,204,0.16)' : '#E0F2FE',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   teacherEditText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.primaryDark,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: colors.primary,
   },
 
   // -- QUICK INPUT --
   sectionCard: {
-    backgroundColor: 'rgba(255,255,255,0.98)',
+    backgroundColor: isDark ? colors.surface : 'rgba(255,255,255,0.98)',
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.9)',
-    borderRadius: 28,
-    padding: 22,
-    gap: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 4,
+    borderColor: isDark ? colors.border : 'rgba(226,232,240,0.9)',
+    borderRadius: BorderRadius['2xl'],
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    ...Shadows.lg,
+    shadowColor: isDark ? 'transparent' : Shadows.lg.shadowColor,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.textPrimary,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.extrabold,
+    color: colors.text,
     letterSpacing: -0.3,
   },
   sectionHint: {
-    fontSize: 13,
-    color: Colors.textSecondary,
+    fontSize: Typography.fontSize[13],
+    color: colors.textSecondary,
     lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium,
   },
   quickSubjectScroll: {
-    gap: 10,
-    paddingRight: 4,
+    gap: Spacing[3],
+    paddingRight: Spacing.xs,
   },
   quickSubjectChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     height: 40,
-    borderRadius: 999,
-    backgroundColor: '#F8FAFC',
+    borderRadius: BorderRadius.full,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   quickSubjectChipActive: {
-    backgroundColor: Colors.primaryDark,
-    borderColor: Colors.primaryDark,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   quickSubjectChipText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.textSecondary,
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.bold,
   },
   quickSubjectChipTextActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 16,
+    borderColor: colors.border,
+    borderRadius: BorderRadius.xl,
     height: 48,
-    paddingHorizontal: 16,
-    color: Colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '500',
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: Spacing.md,
+    color: colors.text,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   scoreTable: {
-    gap: 12,
-    marginTop: 4,
+    gap: Spacing[3],
+    marginTop: Spacing.xs,
   },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing[3],
     minHeight: 52,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: Spacing[3],
+    borderRadius: BorderRadius.xl,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   scoreName: {
     flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
+    color: colors.text,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
   },
   scoreInput: {
     width: 80,
     height: 44,
     borderWidth: 1,
-    borderColor: '#DCEAF3',
-    borderRadius: 14,
+    borderColor: isDark ? colors.border : '#DCEAF3',
+    borderRadius: BorderRadius.xl,
     textAlign: 'center',
-    color: Colors.textPrimary,
-    fontWeight: '800',
-    fontSize: 15,
-    backgroundColor: '#FFFFFF',
+    color: colors.text,
+    fontWeight: Typography.fontWeight.extrabold,
+    fontSize: Typography.fontSize.base,
+    backgroundColor: colors.surface,
   },
   submitBtn: {
-    marginTop: 8,
+    marginTop: Spacing.sm,
     height: 54,
-    borderRadius: 18,
+    borderRadius: BorderRadius[20],
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primaryDark,
-    shadowColor: Colors.primaryDark,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: colors.primary,
+    ...Shadows.xl,
+    shadowColor: colors.primary,
   },
   submitBtnDisabled: {
     opacity: 0.6,
   },
   submitText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
+    color: Colors.white,
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.5,
   },
   khmerInlineText: {

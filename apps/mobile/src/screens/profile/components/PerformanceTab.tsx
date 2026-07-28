@@ -40,7 +40,14 @@ import { LearningStreakCard } from "@/components/streak";
 import { SubjectMasteryTree } from "./SubjectMasteryTree";
 import { StreakLeaderboard } from "./StreakLeaderboard";
 import type { UserStats as ProfileUserStats } from "@/types";
-import { Shadows } from "@/config";
+import {
+  Colors,
+  ColorScale,
+  Typography,
+  Spacing,
+  BorderRadius,
+  Shadows,
+} from "@/config";
 import { useThemeContext } from "@/contexts";
 import { Avatar } from "@/components/common";
 
@@ -70,27 +77,29 @@ interface PerformanceTabProps {
 const STAT_CARDS = [
   {
     icon: "book-outline" as const,
-    bgStart: "#F0F9FF",
-    bgEnd: "#E0F2FE",
-    accent: "#0EA5E9",
-    tint: "#0C4A6E",
+    bgStart: ColorScale.primary[50],
+    bgEnd: ColorScale.primary[100],
+    accent: Colors.primary,
+    tint: ColorScale.primary[900],
   },
   {
     icon: "star-outline" as const,
-    bgStart: "#FFF7ED",
-    bgEnd: "#FFEDD5",
-    accent: "#F59E0B",
-    tint: "#92400E",
+    bgStart: ColorScale.secondary[50],
+    bgEnd: ColorScale.secondary[100],
+    accent: Colors.warning.main,
+    tint: Colors.warning.dark,
   },
   {
     icon: "time-outline" as const,
-    bgStart: "#F0FDF4",
-    bgEnd: "#DCFCE7",
-    accent: "#10B981",
-    tint: "#065F46",
+    bgStart: ColorScale.teal[50],
+    bgEnd: ColorScale.teal[100],
+    accent: Colors.success.main,
+    tint: Colors.success.dark,
   },
   {
     icon: "flame-outline" as const,
+    // No rose/pink scale exists in theme.ts — kept as literals to avoid
+    // collapsing this card's identity color onto another category's hue.
     bgStart: "#FFF1F2",
     bgEnd: "#FFE4E6",
     accent: "#F43F5E",
@@ -98,6 +107,8 @@ const STAT_CARDS = [
   },
   {
     icon: "trophy-outline" as const,
+    // No violet/purple scale exists in theme.ts — kept as literals for the
+    // same reason (see "flame" card above).
     bgStart: "#FAF5FF",
     bgEnd: "#F3E8FF",
     accent: "#8B5CF6",
@@ -105,16 +116,16 @@ const STAT_CARDS = [
   },
   {
     icon: "code-slash-outline" as const,
-    bgStart: "#EFF6FF",
-    bgEnd: "#DBEAFE",
-    accent: "#3B82F6",
-    tint: "#1E3A8A",
+    bgStart: ColorScale.primary[50],
+    bgEnd: ColorScale.primary[100],
+    accent: Colors.info.main,
+    tint: ColorScale.primary[900],
   },
 ];
 
-const GRID_GAP = 12;
-const GRID_PADDING = 16;
-const PARENT_PADDING = 16; // From ProfileScreen's tabContent
+const GRID_GAP = Spacing[3];
+const GRID_PADDING = Spacing[4];
+const PARENT_PADDING = Spacing[4]; // From ProfileScreen's tabContent
 
 function compactNumber(value: number | undefined) {
   const safeValue = value ?? 0;
@@ -205,7 +216,7 @@ function StatCard({
         ]}
       >
         <View style={[s.statGridIcon, { backgroundColor: cfg.accent }]}>
-          <Ionicons name={icon as any} size={18} color="#fff" />
+          <Ionicons name={icon as any} size={18} color={Colors.white} />
         </View>
         <Text
           style={[s.statGridValue, { color: isDark ? colors.text : cfg.tint }]}
@@ -253,9 +264,30 @@ function XPProgressRing({
   const scorePct = Math.min((avgScore ?? 0) / 100, 1);
 
   const rings = [
-    { r: 60, sw: 10, pct: xpPct, id: "xp", c1: "#38BDF8", c2: "#0284C7" },
-    { r: 46, sw: 8, pct: quizPct, id: "quiz", c1: "#34D399", c2: "#059669" },
-    { r: 34, sw: 7, pct: scorePct, id: "score", c1: "#FBBF24", c2: "#F97316" },
+    {
+      r: 60,
+      sw: 10,
+      pct: xpPct,
+      id: "xp",
+      c1: ColorScale.primary[400],
+      c2: ColorScale.primary[600],
+    },
+    {
+      r: 46,
+      sw: 8,
+      pct: quizPct,
+      id: "quiz",
+      c1: Colors.success.light,
+      c2: Colors.success.dark,
+    },
+    {
+      r: 34,
+      sw: 7,
+      pct: scorePct,
+      id: "score",
+      c1: Colors.warning.light,
+      c2: ColorScale.secondary[500],
+    },
   ];
 
   return (
@@ -265,8 +297,8 @@ function XPProgressRing({
           ringStyles.glow,
           {
             backgroundColor: isDark
-              ? "rgba(29,155,240,0.14)"
-              : "rgba(14,165,233,0.06)",
+              ? `${colors.primary}24`
+              : `${colors.primary}0F`,
           },
         ]}
       />
@@ -336,20 +368,20 @@ const ringStyles = StyleSheet.create({
     position: "absolute",
     width: 100,
     height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(14,165,233,0.06)",
+    borderRadius: BorderRadius.full,
+    backgroundColor: `${Colors.primary}0F`,
   },
   inner: { position: "absolute", alignItems: "center" },
   levelLabel: {
-    fontSize: 8,
-    fontWeight: "700",
-    color: "#9CA3AF",
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    color: ColorScale.gray[400],
     letterSpacing: 1.2,
   },
   levelValue: {
-    fontSize: 34,
-    fontWeight: "900",
-    color: "#1F2937",
+    fontSize: Typography.fontSize[36],
+    fontWeight: Typography.fontWeight.black,
+    color: ColorScale.gray[800],
     letterSpacing: -1,
   },
 });
@@ -395,11 +427,11 @@ function MiniLineChart({
 
   return (
     <Svg width={width} height={height}>
-      <Path d={areaD} fill="rgba(14, 165, 233, 0.08)" />
+      <Path d={areaD} fill={`${Colors.primary}14`} />
       <Path
         d={d}
         fill="none"
-        stroke="#0EA5E9"
+        stroke={Colors.primary}
         strokeWidth="2.5"
         strokeLinecap="round"
       />
@@ -409,8 +441,8 @@ function MiniLineChart({
           cx={p.x}
           cy={p.y}
           r="3.5"
-          fill="#fff"
-          stroke="#0EA5E9"
+          fill={Colors.white}
+          stroke={Colors.primary}
           strokeWidth="2"
         />
       ))}
@@ -492,7 +524,7 @@ export default function PerformanceTab({
           colors={
             isDark
               ? [colors.card, colors.surfaceVariant]
-              : ["#ffffff", "#F8FAFC"]
+              : [Colors.white, ColorScale.gray[50]]
           }
           style={s.cardGradient}
         >
@@ -512,11 +544,11 @@ export default function PerformanceTab({
                     {
                       backgroundColor: isDark
                         ? `${colors.primary}1F`
-                        : "#F0F4F8",
+                        : Colors.background,
                     },
                   ]}
                 >
-                  <Ionicons name="diamond" size={14} color="#3B82F6" />
+                  <Ionicons name="diamond" size={14} color={Colors.info.main} />
                 </View>
                 <View>
                   <Text style={[s.xpStatValue, { color: colors.text }]}>
@@ -533,10 +565,10 @@ export default function PerformanceTab({
                 <View
                   style={[
                     s.xpStatIcon,
-                    { backgroundColor: isDark ? "#063A2C" : "#ECFDF5" },
+                    { backgroundColor: isDark ? "#063A2C" : ColorScale.teal[50] },
                   ]}
                 >
-                  <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                  <Ionicons name="checkmark-circle" size={14} color={Colors.success.main} />
                 </View>
                 <View>
                   <Text style={[s.xpStatValue, { color: colors.text }]}>
@@ -553,10 +585,10 @@ export default function PerformanceTab({
                 <View
                   style={[
                     s.xpStatIcon,
-                    { backgroundColor: isDark ? "#3B2B09" : "#FFF7ED" },
+                    { backgroundColor: isDark ? "#3B2B09" : ColorScale.secondary[50] },
                   ]}
                 >
-                  <Ionicons name="flame" size={14} color="#F59E0B" />
+                  <Ionicons name="flame" size={14} color={Colors.warning.main} />
                 </View>
                 <View>
                   <Text style={[s.xpStatValue, { color: colors.text }]}>
@@ -584,7 +616,11 @@ export default function PerformanceTab({
               style={[s.xpBarBg, { backgroundColor: colors.surfaceVariant }]}
             >
               <LinearGradient
-                colors={["#38BDF8", "#0EA5E9", "#0284C7"]}
+                colors={[
+                  ColorScale.primary[400],
+                  Colors.primary,
+                  ColorScale.primary[600],
+                ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[
@@ -609,7 +645,7 @@ export default function PerformanceTab({
           colors={
             isDark
               ? [colors.card, colors.surfaceVariant]
-              : ["#F8FEFF", "#FFFFFF"]
+              : [ColorScale.gray[50], Colors.white]
           }
           style={s.discoveryGradient}
         >
@@ -617,10 +653,10 @@ export default function PerformanceTab({
             <View
               style={[
                 s.discoveryIcon,
-                { backgroundColor: isDark ? "#083344" : "#ECFEFF" },
+                { backgroundColor: isDark ? "#083344" : ColorScale.teal[50] },
               ]}
             >
-              <Ionicons name="eye" size={20} color="#0891B2" />
+              <Ionicons name="eye" size={20} color={ColorScale.primary[600]} />
             </View>
             <View style={s.discoveryTitleWrap}>
               <Text style={[s.cardTitle, { color: colors.text }]}>
@@ -643,7 +679,7 @@ export default function PerformanceTab({
             ]}
           >
             <LinearGradient
-              colors={["#06B6D4", "#10B981"]}
+              colors={[Colors.primary, Colors.success.main]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[s.momentumFill, { width: `${profileMomentum}%` }]}
@@ -693,20 +729,20 @@ export default function PerformanceTab({
             <View
               style={[
                 s.signalChip,
-                { backgroundColor: isDark ? "#063A2C" : "#ECFDF5" },
+                { backgroundColor: isDark ? "#063A2C" : ColorScale.teal[50] },
               ]}
             >
-              <Ionicons name="trending-up" size={13} color="#059669" />
+              <Ionicons name="trending-up" size={13} color={Colors.success.dark} />
               <Text style={s.signalText}>{trendingProfileScore} {t("profile.performance.trend")}</Text>
             </View>
             <View
               style={[
                 s.signalChip,
-                { backgroundColor: isDark ? "#172554" : "#EFF6FF" },
+                { backgroundColor: isDark ? ColorScale.primary[900] : ColorScale.primary[50] },
               ]}
             >
-              <Ionicons name="school" size={13} color="#2563EB" />
-              <Text style={[s.signalText, { color: "#2563EB" }]}>
+              <Ionicons name="school" size={13} color={Colors.info.dark} />
+              <Text style={[s.signalText, { color: Colors.info.dark }]}>
                 {t("profile.performance.learningCreator")}
               </Text>
             </View>
@@ -779,7 +815,7 @@ export default function PerformanceTab({
                   activeOpacity={0.76}
                 >
                   <Text style={s.visitorsViewAllText}>{t("common.viewAll")}</Text>
-                  <Ionicons name="chevron-forward" size={14} color="#0891B2" />
+                  <Ionicons name="chevron-forward" size={14} color={ColorScale.primary[600]} />
                 </TouchableOpacity>
               </View>
               {recentVisitors.slice(0, 3).map((visitor) => (
@@ -830,10 +866,10 @@ export default function PerformanceTab({
           <View
             style={[
               s.cardHeaderIcon,
-              { backgroundColor: isDark ? `${colors.primary}1F` : "#F0F4F8" },
+              { backgroundColor: isDark ? `${colors.primary}1F` : Colors.background },
             ]}
           >
-            <Ionicons name="analytics" size={18} color="#3B82F6" />
+            <Ionicons name="analytics" size={18} color={Colors.info.main} />
           </View>
           <Text style={[s.cardTitle, { color: colors.text }]}>
             {t("profile.performance.quizPerformance")}
@@ -842,14 +878,14 @@ export default function PerformanceTab({
             <Text style={s.viewAllText}>
               {t("profile.performance.details")}
             </Text>
-            <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
+            <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Stats Row */}
         <View style={s.quizStatsRow}>
           <View style={s.quizStat}>
-            <Text style={[s.quizStatValue, { color: "#10B981" }]}>
+            <Text style={[s.quizStatValue, { color: Colors.success.main }]}>
               {(quizStats?.winRate ?? 0).toFixed(0)}%
             </Text>
             <Text style={[s.quizStatLabel, { color: colors.textSecondary }]}>
@@ -860,7 +896,7 @@ export default function PerformanceTab({
             style={[s.quizStatDivider, { backgroundColor: colors.border }]}
           />
           <View style={s.quizStat}>
-            <Text style={[s.quizStatValue, { color: "#F59E0B" }]}>
+            <Text style={[s.quizStatValue, { color: Colors.warning.main }]}>
               {quizStats?.winStreak ?? 0}
             </Text>
             <Text style={[s.quizStatLabel, { color: colors.textSecondary }]}>
@@ -1003,6 +1039,7 @@ export default function PerformanceTab({
           <View
             style={[
               s.cardHeaderIcon,
+              // No violet/purple scale exists in theme.ts — kept as literals.
               { backgroundColor: isDark ? "#2A184E" : "#FAF5FF" },
             ]}
           >
@@ -1015,7 +1052,7 @@ export default function PerformanceTab({
             <Text style={s.viewAllText}>
               {achievements.length}/{totalAchievements}
             </Text>
-            <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
+            <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -1026,9 +1063,13 @@ export default function PerformanceTab({
             contentContainerStyle={s.badgeScroll}
           >
             {achievements.slice(0, 8).map((ua) => {
-              let color = "#8B5CF6";
-              if (ua.achievement?.category === "streak") color = "#F97316";
-              if (ua.achievement?.category === "performance") color = "#10B981";
+              // Default + "competition" stay literal: no violet/pink scale
+              // exists in theme.ts to map them to without changing the hue.
+              let color: string = "#8B5CF6";
+              if (ua.achievement?.category === "streak")
+                color = ColorScale.secondary[500];
+              if (ua.achievement?.category === "performance")
+                color = Colors.success.main;
               if (ua.achievement?.category === "competition") color = "#F472B6";
 
               return (
@@ -1074,6 +1115,8 @@ export default function PerformanceTab({
         onPress={onViewLeaderboard}
         activeOpacity={0.8}
       >
+        {/* No indigo/violet scale exists in theme.ts — this gradient is kept
+            literal to avoid changing the leaderboard card's brand hue. */}
         <LinearGradient
           colors={["#4F46E5", "#7C3AED", "#9333EA"]}
           start={{ x: 0, y: 0 }}
@@ -1098,7 +1141,7 @@ export default function PerformanceTab({
           <Ionicons
             name="chevron-forward"
             size={20}
-            color="rgba(255,255,255,0.7)"
+            color={`${Colors.white}B3`}
           />
         </LinearGradient>
       </TouchableOpacity>
@@ -1107,313 +1150,385 @@ export default function PerformanceTab({
 }
 
 const s = StyleSheet.create({
-  container: { gap: 12, paddingTop: 12 },
+  container: { gap: Spacing[3], paddingTop: Spacing[3] },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: ColorScale.gray[200],
     overflow: "hidden",
   },
-  cardGradient: { padding: 20 },
+  cardGradient: { padding: Spacing[5] },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
+    gap: Spacing[3],
+    paddingHorizontal: Spacing[5],
+    paddingTop: Spacing[5],
+    paddingBottom: Spacing[4],
   },
   cardHeaderIcon: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#1F2937", flex: 1 },
-  viewAllBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
-  viewAllText: { fontSize: 13, fontWeight: "600", color: "#0EA5E9" },
+  cardTitle: {
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.bold,
+    color: ColorScale.gray[800],
+    flex: 1,
+  },
+  viewAllBtn: { flexDirection: "row", alignItems: "center", gap: Spacing[1] },
+  viewAllText: {
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.primary,
+  },
 
   // XP Card
-  xpRow: { flexDirection: "row", alignItems: "center", gap: 20 },
-  xpInfo: { flex: 1, gap: 12 },
-  xpStatRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  xpRow: { flexDirection: "row", alignItems: "center", gap: Spacing[5] },
+  xpInfo: { flex: 1, gap: Spacing[3] },
+  xpStatRow: { flexDirection: "row", alignItems: "center", gap: Spacing[3] },
   xpStatIcon: {
     width: 30,
     height: 30,
-    borderRadius: 8,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  xpStatValue: { fontSize: 16, fontWeight: "800", color: "#1F2937" },
-  xpStatLabel: { fontSize: 11, color: "#9CA3AF", fontWeight: "500" },
-  xpBarSection: { marginTop: 18 },
+  xpStatValue: {
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: ColorScale.gray[800],
+  },
+  xpStatLabel: {
+    fontSize: Typography.fontSize[11],
+    color: ColorScale.gray[400],
+    fontWeight: Typography.fontWeight.medium,
+  },
+  xpBarSection: { marginTop: Spacing[5] },
   xpBarLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: Spacing[2],
   },
-  xpBarLeft: { fontSize: 11, fontWeight: "600", color: "#0EA5E9" },
-  xpBarRight: { fontSize: 11, fontWeight: "600", color: "#9CA3AF" },
+  xpBarLeft: {
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.primary,
+  },
+  xpBarRight: {
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
+    color: ColorScale.gray[400],
+  },
   xpBarBg: {
     height: 10,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 5,
+    backgroundColor: ColorScale.gray[100],
+    borderRadius: BorderRadius.sm,
     overflow: "hidden",
   },
-  xpBarFill: { height: "100%", borderRadius: 5 },
+  xpBarFill: { height: "100%", borderRadius: BorderRadius.sm },
   xpBarHint: {
-    fontSize: 11,
-    color: "#9CA3AF",
+    fontSize: Typography.fontSize[11],
+    color: ColorScale.gray[400],
     textAlign: "center",
-    marginTop: 6,
+    marginTop: Spacing[2],
   },
 
   // Profile Discovery
-  discoveryGradient: { padding: 18 },
-  discoveryHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  discoveryGradient: { padding: Spacing[5] },
+  discoveryHeader: { flexDirection: "row", alignItems: "center", gap: Spacing[3] },
   discoveryIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
   discoveryTitleWrap: { flex: 1 },
   discoverySub: {
-    fontSize: 12,
+    fontSize: Typography.fontSize[12],
     lineHeight: 17,
-    marginTop: 2,
-    fontWeight: "500",
+    marginTop: Spacing[1],
+    fontWeight: Typography.fontWeight.medium,
   },
   scorePill: {
     minWidth: 58,
     height: 58,
-    borderRadius: 16,
-    backgroundColor: "#0891B2",
+    borderRadius: BorderRadius.xl,
+    backgroundColor: ColorScale.primary[600],
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing[2],
   },
   scorePillValue: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#fff",
+    fontSize: Typography.fontSize[20],
+    fontWeight: Typography.fontWeight.black,
+    color: Colors.white,
     letterSpacing: -0.5,
   },
   scorePillLabel: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "rgba(255,255,255,0.78)",
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: `${Colors.white}C7`,
     textTransform: "uppercase",
   },
   momentumTrack: {
     height: 9,
-    borderRadius: 5,
+    borderRadius: BorderRadius.sm,
     overflow: "hidden",
-    marginTop: 16,
+    marginTop: Spacing[4],
   },
-  momentumFill: { height: "100%", borderRadius: 5 },
+  momentumFill: { height: "100%", borderRadius: BorderRadius.sm },
   discoveryStatsRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 16,
+    paddingTop: Spacing[4],
   },
   discoveryStat: { flex: 1, alignItems: "center" },
-  discoveryStatValue: { fontSize: 19, fontWeight: "900", letterSpacing: -0.4 },
+  discoveryStatValue: {
+    fontSize: Typography.fontSize[20],
+    fontWeight: Typography.fontWeight.black,
+    letterSpacing: -0.4,
+  },
   discoveryStatLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 3,
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    marginTop: Spacing[1],
     textTransform: "uppercase",
   },
   discoverySignalRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginTop: 16,
+    gap: Spacing[2],
+    marginTop: Spacing[4],
   },
   signalChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
+    gap: Spacing[2],
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[2],
+    borderRadius: BorderRadius.full,
   },
   signalText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#059669",
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: Colors.success.dark,
     textTransform: "uppercase",
   },
   visitorsPanel: {
-    marginTop: 16,
-    paddingTop: 14,
+    marginTop: Spacing[4],
+    paddingTop: Spacing[4],
     borderTopWidth: 1,
-    gap: 12,
+    gap: Spacing[3],
   },
   visitorsHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  visitorsTitle: { fontSize: 14, fontWeight: "800" },
-  visitorsMeta: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
+  visitorsTitle: {
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.extrabold,
+  },
+  visitorsMeta: {
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: "uppercase",
+  },
   visitorsViewAll: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: "rgba(8,145,178,0.10)",
+    gap: Spacing[1],
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[2],
+    borderRadius: BorderRadius.full,
+    backgroundColor: `${ColorScale.primary[600]}1A`,
   },
   visitorsViewAllText: {
-    color: "#0891B2",
-    fontSize: 12,
-    fontWeight: "900",
+    color: ColorScale.primary[600],
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.black,
   },
   visitorRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: Spacing[3],
     minHeight: 48,
   },
   visitorAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "#0891B2",
+    borderRadius: BorderRadius[20],
+    backgroundColor: ColorScale.primary[600],
     alignItems: "center",
     justifyContent: "center",
   },
   visitorInitials: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "900",
+    color: Colors.white,
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.black,
   },
   visitorInfo: { flex: 1, minWidth: 0 },
-  visitorName: { fontSize: 13, fontWeight: "800" },
-  visitorSub: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+  visitorName: {
+    fontSize: Typography.fontSize[13],
+    fontWeight: Typography.fontWeight.extrabold,
+  },
+  visitorSub: {
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
+    marginTop: Spacing[1],
+  },
   visitorStats: { alignItems: "flex-end", minWidth: 58 },
-  visitorTime: { fontSize: 12, fontWeight: "900" },
-  visitorViews: { fontSize: 10, fontWeight: "700", marginTop: 2 },
+  visitorTime: {
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.black,
+  },
+  visitorViews: {
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
+    marginTop: Spacing[1],
+  },
   visitorSkeletonAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BorderRadius[20],
   },
   visitorSkeletonLine: {
     height: 11,
-    borderRadius: 6,
+    borderRadius: BorderRadius.md,
   },
 
   // Quiz Stats
   quizStatsRow: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingHorizontal: Spacing[5],
+    paddingBottom: Spacing[4],
   },
   quizStat: { flex: 1, alignItems: "center" },
-  quizStatValue: { fontSize: 18, fontWeight: "800" },
+  quizStatValue: {
+    fontSize: Typography.fontSize[18],
+    fontWeight: Typography.fontWeight.extrabold,
+  },
   quizStatLabel: {
-    fontSize: 10,
-    color: "#9CA3AF",
-    fontWeight: "600",
-    marginTop: 2,
+    fontSize: Typography.fontSize[11],
+    color: ColorScale.gray[400],
+    fontWeight: Typography.fontWeight.semibold,
+    marginTop: Spacing[1],
   },
   quizStatDivider: {
     width: 1,
     height: 30,
-    backgroundColor: "#F0F4F8",
+    backgroundColor: Colors.background,
     alignSelf: "center",
   },
-  chartContainer: { paddingHorizontal: 16, paddingBottom: 16 },
+  chartContainer: { paddingHorizontal: Spacing[4], paddingBottom: Spacing[4] },
   chartTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    marginBottom: 4,
-    paddingLeft: 4,
+    fontSize: Typography.fontSize[12],
+    fontWeight: Typography.fontWeight.semibold,
+    color: ColorScale.gray[400],
+    marginBottom: Spacing[1],
+    paddingLeft: Spacing[1],
   },
   emptyChart: {
     alignItems: "center",
-    paddingVertical: 24,
-    paddingBottom: 20,
-    gap: 8,
+    paddingVertical: Spacing[6],
+    paddingBottom: Spacing[5],
+    gap: Spacing[2],
   },
-  emptyChartText: { fontSize: 13, color: "#D1D5DB" },
+  emptyChartText: {
+    fontSize: Typography.fontSize[13],
+    color: ColorScale.gray[300],
+  },
 
   // Streak
   streakRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 20,
+    paddingHorizontal: Spacing[5],
+    paddingBottom: Spacing[4],
+    gap: Spacing[5],
   },
-  streakMain: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  streakMain: { flexDirection: "row", alignItems: "baseline", gap: Spacing[1] },
   streakNumber: {
-    fontSize: 48,
-    fontWeight: "800",
-    color: "#F97316",
+    fontSize: Typography.fontSize[48],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: ColorScale.secondary[500],
     letterSpacing: -2,
   },
-  streakUnit: { fontSize: 16, fontWeight: "600", color: "#FDBA74" },
-  streakSide: { flex: 1, gap: 8 },
-  streakSideRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  streakSideText: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
+  streakUnit: {
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.semibold,
+    color: ColorScale.secondary[300],
+  },
+  streakSide: { flex: 1, gap: Spacing[2] },
+  streakSideRow: { flexDirection: "row", alignItems: "center", gap: Spacing[2] },
+  streakSideText: {
+    fontSize: Typography.fontSize[13],
+    color: ColorScale.gray[500],
+    fontWeight: Typography.fontWeight.medium,
+  },
 
   // Achievement badges
-  badgeScroll: { paddingHorizontal: 16, gap: 14, paddingBottom: 18 },
+  badgeScroll: {
+    paddingHorizontal: Spacing[4],
+    gap: Spacing[4],
+    paddingBottom: Spacing[5],
+  },
   badgeItem: { alignItems: "center", width: 64 },
   badgeCircle: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: BorderRadius["2xl"],
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    marginBottom: 6,
+    marginBottom: Spacing[2],
   },
-  badgeEmoji: { fontSize: 22 },
+  badgeEmoji: { fontSize: Typography.fontSize[24] },
   badgeName: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#6B7280",
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.semibold,
+    color: ColorScale.gray[500],
     textAlign: "center",
   },
 
   // Leaderboard
-  leaderboardCard: { borderRadius: 14, overflow: "hidden" },
+  leaderboardCard: { borderRadius: BorderRadius.xl, overflow: "hidden" },
   leaderboardGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 20,
+    padding: Spacing[5],
   },
-  leaderboardLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
+  leaderboardLeft: { flexDirection: "row", alignItems: "center", gap: Spacing[4] },
   leaderboardIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: BorderRadius.xl,
+    backgroundColor: `${Colors.white}E6`,
     alignItems: "center",
     justifyContent: "center",
   },
-  leaderboardTitle: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  leaderboardTitle: {
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
+  },
   leaderboardSub: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
-    marginTop: 2,
+    fontSize: Typography.fontSize[12],
+    color: `${Colors.white}B3`,
+    marginTop: Spacing[1],
   },
 
   // Core Stat Grid
   statGridWrapper: {
     paddingHorizontal: GRID_PADDING,
-    paddingBottom: 20,
+    paddingBottom: Spacing[5],
   },
   statGrid: {
     flexDirection: "row",
@@ -1421,128 +1536,120 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
   statGridCardWrapper: {
-    borderRadius: 18, // Match the inner card to fix Android corner glitch
-    ...Shadows.sm,
-    shadowOpacity: 0.08,
+    borderRadius: BorderRadius.xl, // Match the inner card to fix Android corner glitch
+    ...Shadows.lg,
   },
   statGridCard: {
     width: "100%",
     height: 120, // Increased height for more breathing room
-    borderRadius: 18,
-    paddingVertical: 18, // Increased padding as requested
-    paddingHorizontal: 12,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: Spacing[5], // Increased padding as requested
+    paddingHorizontal: Spacing[3],
     alignItems: "center",
     justifyContent: "center",
   },
   statGridIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    marginBottom: Spacing[3],
+    ...Shadows.md,
   },
   statGridValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 2,
+    fontSize: Typography.fontSize[20],
+    fontWeight: Typography.fontWeight.extrabold,
+    marginBottom: Spacing[1],
     letterSpacing: -0.5,
   },
   statGridLabel: {
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.bold,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     textAlign: "center",
   },
   // Attendance Card Styles
   attendanceGradient: {
-    padding: 20,
-    borderRadius: 24,
+    padding: Spacing[5],
+    borderRadius: BorderRadius["2xl"],
   },
   attHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
+    gap: Spacing[3],
+    marginBottom: Spacing[5],
   },
   attIconBg: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: "#fff",
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.white,
     alignItems: "center",
     justifyContent: "center",
   },
   attTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#fff",
+    fontSize: Typography.fontSize[16],
+    fontWeight: Typography.fontWeight.extrabold,
+    color: Colors.white,
   },
   attSub: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
-    fontWeight: "500",
+    fontSize: Typography.fontSize[12],
+    color: `${Colors.white}B3`,
+    fontWeight: Typography.fontWeight.medium,
   },
   attBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1],
+    borderRadius: BorderRadius.md,
   },
   attBadgeText: {
-    fontSize: 10,
-    fontWeight: "800",
+    fontSize: Typography.fontSize[11],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 0.5,
   },
   attTimeRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.15)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
+    backgroundColor: `${Colors.black}26`,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing[4],
+    marginBottom: Spacing[5],
   },
   attTimeBox: {
     flex: 1,
     alignItems: "center",
   },
   attTimeLabel: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.5)",
-    fontWeight: "700",
-    marginBottom: 4,
+    fontSize: Typography.fontSize[11],
+    color: `${Colors.white}80`,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing[1],
   },
   attTimeValue: {
-    fontSize: 18,
-    color: "#fff",
-    fontWeight: "800",
+    fontSize: Typography.fontSize[18],
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.extrabold,
   },
   attTimeDivider: {
     width: 1,
     height: "100%",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginHorizontal: 10,
+    backgroundColor: `${Colors.white}1A`,
+    marginHorizontal: Spacing[3],
   },
   attBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 16,
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingVertical: Spacing[4],
+    borderRadius: BorderRadius.xl,
+    gap: Spacing[2],
+    ...Shadows.xl,
   },
   attBtnText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "800",
+    color: Colors.white,
+    fontSize: Typography.fontSize[14],
+    fontWeight: Typography.fontWeight.extrabold,
     letterSpacing: 1,
   },
 });

@@ -701,7 +701,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       gap: 3,
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 999,
+      borderRadius: 9999,
       borderWidth: 1,
       backgroundColor: 'transparent',
     },
@@ -804,7 +804,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       justifyContent: 'center',
       gap: 8,
       paddingVertical: 14,
-      borderRadius: 999,
+      borderRadius: 9999,
       marginTop: 14,
     },
     ctaText: {
@@ -832,14 +832,14 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
     gradeBtnPrimary: {
       paddingVertical: 11,
       paddingHorizontal: 8,
-      borderRadius: 999,
+      borderRadius: 9999,
       alignItems: 'center',
       justifyContent: 'center',
     },
     gradeBtnGhost: {
       paddingVertical: 10,
       paddingHorizontal: 8,
-      borderRadius: 999,
+      borderRadius: 9999,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
@@ -886,7 +886,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       gap: 6,
       paddingHorizontal: 10,
       paddingVertical: 5,
-      borderRadius: 999,
+      borderRadius: 9999,
     },
     typeChipText: {
       fontSize: 12,

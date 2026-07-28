@@ -61,7 +61,6 @@ import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
 import { fetchActiveQuizWar, joinQuizWar } from '@/api/quizWars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
-import { StreakWidget } from '@/components/streak';
 import { useFeatureFlag } from '@/config/featureFlags';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
@@ -289,7 +288,6 @@ export default function FeedScreen() {
   // (login/logout/profile update). Previously `useAuthStore()` re-rendered the
   // entire FeedScreen on every auth-store action, including transient ones.
   const user = useAuthStore(s => s.user);
-  const streakRingEnabled = useFeatureFlag('streak_ring');
   const skillGapNudgeEnabled = useFeatureFlag('skill_gap_nudge');
   const quizWarEnabled = FEATURE_FLAGS.QUIZ_WAR_ENABLED;
   const { openSidebar } = useNavigationContext();
@@ -957,13 +955,6 @@ export default function FeedScreen() {
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
-            {user?.id && streakRingEnabled ? (
-              <StreakWidget
-                userId={user.id}
-                compact
-                onPress={() => navigation.navigate('Profile' as any)}
-              />
-            ) : null}
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}

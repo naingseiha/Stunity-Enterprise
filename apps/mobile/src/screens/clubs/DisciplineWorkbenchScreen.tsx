@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   classChip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     maxWidth: 280,
     flexShrink: 0,
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   currentBadge: {
     alignSelf: 'flex-start',
     marginTop: 6,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },

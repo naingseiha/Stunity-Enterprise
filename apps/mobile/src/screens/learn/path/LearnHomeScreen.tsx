@@ -34,6 +34,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useThemeContext } from '@/contexts';
+import { Colors, ColorScale, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 import { Haptics } from '@/services/haptics';
 import { useAuthStore } from '@/stores';
 import { statsAPI, PerformanceStatsSummary } from '@/services/stats';
@@ -57,16 +58,18 @@ const GRADES = ['7', '8', '9', '10', '11', '12'];
 /** Timeline dot accent colors, cycled per unit. */
 
 /** Bold accent colors, cycled along the path / tiles / cards. */
-const ACCENTS = ['#0EA5E9', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', '#F97316'];
+const ACCENTS = [Colors.primary, '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', ColorScale.secondary[500]];
 
 /** Vibrant 2-stop gradient per accent — the rich mockup look. */
+// Keyed by the literal accent hex above (object keys can't hold expressions),
+// so these stay as plain string keys even though some values reference tokens.
 const GRADIENTS: Record<string, [string, string]> = {
-  '#0EA5E9': ['#38BDF8', '#6366F1'], // sky → indigo
+  '#0EA5E9': [ColorScale.primary[400], Colors.secondary], // sky → indigo
   '#8B5CF6': ['#A78BFA', '#EC4899'], // violet → pink
-  '#F59E0B': ['#FBBF24', '#F97316'], // amber → orange
+  '#F59E0B': ['#FBBF24', ColorScale.secondary[500]], // amber → orange
   '#10B981': ['#34D399', '#06B6D4'], // emerald → cyan
   '#EC4899': ['#F472B6', '#8B5CF6'], // pink → violet
-  '#F97316': ['#FB923C', '#EF4444'], // orange → red
+  '#F97316': [ColorScale.secondary[400], Colors.error], // orange → red
 };
 const gradientFor = (accent: string): [string, string] =>
   GRADIENTS[accent] ?? [accent, accent];
@@ -417,7 +420,7 @@ export function LearnHomeScreen() {
               hasStreak && { transform: [{ scale: streakScale }], opacity: streakOpacity },
             ]}
           >
-            <Ionicons name="flame" size={15} color={hasStreak ? '#F97316' : colors.textTertiary} />
+            <Ionicons name="flame" size={15} color={hasStreak ? ColorScale.secondary[500] : colors.textTertiary} />
             <Text style={[styles.heroStreakText, hasStreak && styles.heroStreakTextActive]}>
               {stats?.currentStreak ?? 0}
             </Text>
@@ -440,7 +443,7 @@ export function LearnHomeScreen() {
               navigation.navigate('TutorChat', { grade: path?.subject?.grade });
             }}
           >
-            <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
+            <Ionicons name="chatbubble-ellipses" size={18} color={Colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -455,7 +458,7 @@ export function LearnHomeScreen() {
       <View style={styles.weekCardTop}>
         <Text style={styles.weekCardTitle}>{t('learn.path.thisWeek')}</Text>
         <View style={styles.streakBadge}>
-          <Ionicons name="flame" size={15} color="#F97316" />
+          <Ionicons name="flame" size={15} color={ColorScale.secondary[500]} />
           <Text style={styles.streakBadgeText}>{stats?.currentStreak ?? 0}</Text>
         </View>
       </View>
@@ -489,7 +492,7 @@ export function LearnHomeScreen() {
                 ]}
               >
                 {active ? (
-                  <Ionicons name="flame" size={12} color="#FFFFFF" />
+                  <Ionicons name="flame" size={12} color={Colors.white} />
                 ) : (
                   <View style={[styles.weekDotEmpty, isToday && styles.weekDotEmptyToday]} />
                 )}
@@ -508,13 +511,13 @@ export function LearnHomeScreen() {
     return (
       <TouchableOpacity activeOpacity={0.9} onPress={() => openUnit(activeUnit)}>
         <LinearGradient
-          colors={gradientFor('#F97316')}
+          colors={gradientFor(ColorScale.secondary[500])}
           start={GRAD_START}
           end={GRAD_END}
           style={[styles.nudgeCard, styles.nudgeShadow]}
         >
           <View style={styles.nudgeIcon}>
-            <Ionicons name="flame" size={22} color="#FFFFFF" />
+            <Ionicons name="flame" size={22} color={Colors.white} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.nudgeTitle}>
@@ -524,7 +527,7 @@ export function LearnHomeScreen() {
               {t('learn.path.nudgeBody', { unit: unitName(activeUnit) })}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={18} color={Colors.white} />
         </LinearGradient>
       </TouchableOpacity>
     );
@@ -555,20 +558,16 @@ export function LearnHomeScreen() {
                     ? {
                         backgroundColor: isDark ? `${accent}22` : `${accent}12`,
                         borderColor: accent,
+                        ...Shadows.xl,
                         shadowColor: accent,
-                        shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.22,
-                        shadowRadius: 10,
-                        elevation: 4,
                       }
                     : {
-                        backgroundColor: isDark ? colors.card : '#FFFFFF',
-                        borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
-                        shadowColor: '#0F172A',
-                        shadowOffset: { width: 0, height: 3 },
+                        backgroundColor: isDark ? colors.card : Colors.white,
+                        borderColor: isDark ? 'rgba(255,255,255,0.08)' : ColorScale.gray[200],
+                        ...Shadows.lg,
+                        shadowColor: ColorScale.gray[900],
                         shadowOpacity: isDark ? 0.2 : 0.04,
-                        shadowRadius: 8,
-                        elevation: 2,
                       },
                 ]}
                 activeOpacity={0.8}
@@ -584,7 +583,7 @@ export function LearnHomeScreen() {
                     styles.subjectSquircleCardLabel,
                     active
                       ? [styles.subjectSquircleCardLabelActive, { color: accent }]
-                      : { color: isDark ? colors.text : '#1E293B' },
+                      : { color: isDark ? colors.text : ColorScale.gray[800] },
                   ]}
                 >
                   {subjectName(s)}
@@ -594,11 +593,11 @@ export function LearnHomeScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginTop: 6,
-                    paddingHorizontal: 8,
+                    marginTop: Spacing.sm,
+                    paddingHorizontal: Spacing.sm,
                     paddingVertical: 3,
-                    borderRadius: 10,
-                    backgroundColor: active ? `${accent}20` : (isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9'),
+                    borderRadius: BorderRadius.lg,
+                    backgroundColor: active ? `${accent}20` : (isDark ? 'rgba(255,255,255,0.05)' : ColorScale.gray[100]),
                   }}
                 >
                   <View
@@ -606,14 +605,14 @@ export function LearnHomeScreen() {
                       width: 6,
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: active ? accent : (isDark ? colors.textSecondary : '#94A3B8'),
+                      backgroundColor: active ? accent : (isDark ? colors.textSecondary : ColorScale.gray[400]),
                       marginRight: 5,
                     }}
                   />
                   <Text
                     style={[
                       styles.subjectCardSubLabel,
-                      { color: active ? accent : (isDark ? colors.textSecondary : '#64748B') },
+                      { color: active ? accent : (isDark ? colors.textSecondary : ColorScale.gray[500]) },
                     ]}
                   >
                     {active ? t('learn.path.activeSubject', { defaultValue: 'កំពុងសិក្សា' }) : t('learn.path.tapToStudy', { defaultValue: 'ចុចដើម្បីរៀន' })}
@@ -626,7 +625,7 @@ export function LearnHomeScreen() {
             style={[
               styles.subjectSquircleCardAdd,
               {
-                borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#CBD5E1',
+                borderColor: isDark ? 'rgba(255,255,255,0.18)' : ColorScale.gray[300],
                 backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(248,250,252,0.6)',
               },
             ]}
@@ -643,33 +642,33 @@ export function LearnHomeScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1.5,
-                  borderColor: isDark ? '#38BDF8' : '#0EA5E9',
+                  borderColor: isDark ? ColorScale.primary[400] : Colors.primary,
                 }}
               >
-                <Ionicons name="add" size={36} color={isDark ? '#38BDF8' : '#0EA5E9'} />
+                <Ionicons name="add" size={36} color={isDark ? ColorScale.primary[400] : Colors.primary} />
               </View>
             </View>
             <Text
               style={[
                 styles.subjectSquircleCardLabel,
-                { color: isDark ? colors.text : '#334155', marginTop: 2 },
+                { color: isDark ? colors.text : ColorScale.gray[700], marginTop: 2 },
               ]}
             >
               {t('learn.path.addSubject')}
             </Text>
             <View
               style={{
-                marginTop: 6,
-                paddingHorizontal: 10,
+                marginTop: Spacing.sm,
+                paddingHorizontal: Spacing.sm,
                 paddingVertical: 3,
-                borderRadius: 10,
+                borderRadius: BorderRadius.lg,
                 backgroundColor: 'transparent',
               }}
             >
               <Text
                 style={[
                   styles.subjectCardSubLabel,
-                  { color: isDark ? colors.textSecondary : '#94A3B8', fontSize: 10 },
+                  { color: isDark ? colors.textSecondary : ColorScale.gray[400], fontSize: 10 },
                 ]}
               >
                 + ជ្រើសរើសបន្ថែម
@@ -693,7 +692,7 @@ export function LearnHomeScreen() {
     return (
       <View style={[styles.subjectCardWrap, styles.subjectCardShadow]}>
       <LinearGradient
-        colors={['#0EA5E9', '#4F46E5']}
+        colors={[Colors.primary, '#4F46E5']}
         start={GRAD_START}
         end={GRAD_END}
         style={styles.subjectCard}
@@ -703,16 +702,16 @@ export function LearnHomeScreen() {
         <View style={[styles.deco, { width: 80, height: 80, bottom: -30, right: 60 }]} />
         <View style={[styles.deco, { width: 44, height: 44, top: 20, left: -18, opacity: 0.5 }]} />
         <View style={[styles.floatIcon, { top: 8, right: 96, backgroundColor: '#F59E0B' }]}>
-          <Ionicons name="star" size={12} color="#FFFFFF" />
+          <Ionicons name="star" size={12} color={Colors.white} />
         </View>
         <View style={[styles.floatIcon, { bottom: 64, right: 4, backgroundColor: '#10B981', width: 28, height: 28 }]}>
-          <Ionicons name="rocket" size={14} color="#FFFFFF" />
+          <Ionicons name="rocket" size={14} color={Colors.white} />
         </View>
 
         <View style={styles.subjectCardRow}>
           <View style={{ flex: 1 }}>
             <View style={styles.subjectKickerPill}>
-              <Ionicons name={subjectIcon(code)} size={13} color="#FFFFFF" />
+              <Ionicons name={subjectIcon(code)} size={13} color={Colors.white} />
               <Text style={styles.subjectKickerText}>
                 {t('learn.path.gradeShort', { grade: path.subject.grade })}
               </Text>
@@ -729,7 +728,7 @@ export function LearnHomeScreen() {
                 cx={ring / 2}
                 cy={ring / 2}
                 r={(ring - 8) / 2}
-                stroke="#FFFFFF"
+                stroke={Colors.white}
                 strokeWidth={6}
                 strokeLinecap="round"
                 fill="none"
@@ -782,7 +781,7 @@ export function LearnHomeScreen() {
         <View style={styles.xpBarTrack}>
           <Animated.View style={[styles.xpBarFill, { width: barWidth }]}>
             <LinearGradient
-              colors={['#FBBF24', '#F97316']}
+              colors={['#FBBF24', ColorScale.secondary[500]]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.xpBarGradient}
@@ -806,7 +805,7 @@ export function LearnHomeScreen() {
           borderRadius: 32,
           overflow: 'hidden',
           position: 'relative',
-          shadowColor: '#000',
+          shadowColor: Colors.black,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.15,
           shadowRadius: 8,
@@ -830,19 +829,19 @@ export function LearnHomeScreen() {
             width: 34,
             height: 34,
             borderRadius: 17,
-            backgroundColor: isDark ? colors.card : '#FFFFFF',
+            backgroundColor: isDark ? colors.card : Colors.white,
             top: 15,
             left: 15,
             alignItems: 'center',
             justifyContent: 'center',
-            shadowColor: '#000',
+            shadowColor: Colors.black,
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: isDark ? 0.3 : 0.1,
             shadowRadius: 3,
             elevation: 2,
           }}
         >
-          <Text style={{ fontSize: 15, fontWeight: '900', color: '#5C6BC0' }}>%</Text>
+          <Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.black, color: '#5C6BC0' }}>%</Text>
         </View>
       </View>
     </View>
@@ -966,14 +965,14 @@ export function LearnHomeScreen() {
           right: 10,
           top: 10,
           zIndex: 1,
-          shadowColor: '#000',
+          shadowColor: Colors.black,
           shadowOffset: { width: 1, height: 2 },
           shadowOpacity: 0.12,
           shadowRadius: 3,
           elevation: 2,
         }}
       >
-        <Text style={{ fontSize: 18, fontWeight: '900', color: '#FFFFFF' }}>文</Text>
+        <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.black, color: Colors.white }}>文</Text>
       </View>
 
       {/* Front purple card (A) */}
@@ -991,14 +990,14 @@ export function LearnHomeScreen() {
           left: 10,
           top: 18,
           zIndex: 2,
-          shadowColor: '#000',
+          shadowColor: Colors.black,
           shadowOffset: { width: 1, height: 2 },
           shadowOpacity: 0.12,
           shadowRadius: 3,
           elevation: 3,
         }}
       >
-        <Text style={{ fontSize: 18, fontWeight: '900', color: '#29B6F6' }}>A</Text>
+        <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.black, color: '#29B6F6' }}>A</Text>
       </View>
 
       {/* Swap arrow icon on top */}
@@ -1041,8 +1040,8 @@ export function LearnHomeScreen() {
           style={styles.obWelcomeScreen}
         >
           {/* Ambient aura blobs */}
-          <View style={[styles.obAuraBlob, { top: -110, right: -90, backgroundColor: isDark ? '#09CFF7' : '#06A8CC' }]} />
-          <View style={[styles.obAuraBlob, { bottom: -80, left: -80, width: 260, height: 260, borderRadius: 130, backgroundColor: isDark ? '#3B82F6' : '#93C5FD' }]} />
+          <View style={[styles.obAuraBlob, { top: -110, right: -90, backgroundColor: isDark ? Colors.brand : '#06A8CC' }]} />
+          <View style={[styles.obAuraBlob, { bottom: -80, left: -80, width: 260, height: 260, borderRadius: 130, backgroundColor: isDark ? Colors.info.main : '#93C5FD' }]} />
 
           {/* Sphere Hero */}
           <View style={styles.obHero}>
@@ -1051,20 +1050,20 @@ export function LearnHomeScreen() {
             </View>
             <Animated.View style={[styles.obSphere, { transform: [{ translateY: sphereY }] }]}>
               <LinearGradient
-                colors={['#09CFF7', '#06A8CC', '#0284C7']}
+                colors={[Colors.brand, '#06A8CC', ColorScale.primary[600]]}
                 start={GRAD_START}
                 end={GRAD_END}
                 style={styles.obSphereBadge}
               >
-                <Ionicons name="school" size={52} color="#FFFFFF" />
+                <Ionicons name="school" size={52} color={Colors.white} />
                 <View style={styles.obSphereStarBadge}>
-                  <Ionicons name="star" size={13} color="#FDE047" />
+                  <Ionicons name="star" size={13} color={Colors.warning.light} />
                 </View>
               </LinearGradient>
             </Animated.View>
             <Animated.View style={[styles.obPill, styles.obPillTopLeft, { transform: [{ translateY: pillY1 }] }]}>
               <View style={[styles.obPillIcon, { backgroundColor: 'rgba(9,207,247,0.2)' }]}>
-                <Ionicons name="compass" size={13} color="#09CFF7" />
+                <Ionicons name="compass" size={13} color={Colors.brand} />
               </View>
               <Text style={styles.obPillText}>{t('learn.path.onboardPillSmartPath')}</Text>
             </Animated.View>
@@ -1097,13 +1096,13 @@ export function LearnHomeScreen() {
               }}
             >
               <LinearGradient
-                colors={['#09CFF7', '#06A8CC']}
+                colors={[Colors.brand, '#06A8CC']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.obStartNowGradient}
               >
                 <Text style={styles.obStartNowText}>{t('learn.path.startNow', { defaultValue: 'Start Now' })}</Text>
-                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                <Ionicons name="arrow-forward" size={18} color={Colors.white} />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -1113,7 +1112,7 @@ export function LearnHomeScreen() {
 
     // ── Phase 2: Grade & Subject Selection (Find Your Course Discovery Screen) ──
     return (
-      <View style={[styles.courseDiscoveryFullScreen, { backgroundColor: isDark ? colors.background : '#F8FAFC' }]}>
+      <View style={[styles.courseDiscoveryFullScreen, { backgroundColor: isDark ? colors.background : ColorScale.gray[50] }]}>
         {/* Mockup Top Header Row (Greeting + Search Button) */}
         <View style={styles.courseDiscoveryHeader}>
           <View>
@@ -1125,8 +1124,8 @@ export function LearnHomeScreen() {
             </Text>
           </View>
           <TouchableOpacity style={styles.searchIconButtonNeutral} activeOpacity={0.85}>
-            <View style={[styles.searchCircleNeutral, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF', borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#E2E8F0' }]}>
-              <Ionicons name="search" size={20} color={isDark ? '#E2E8F0' : '#1E293B'} />
+            <View style={[styles.searchCircleNeutral, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : Colors.white, borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : ColorScale.gray[200] }]}>
+              <Ionicons name="search" size={20} color={isDark ? ColorScale.gray[200] : ColorScale.gray[800]} />
             </View>
           </TouchableOpacity>
         </View>
@@ -1134,7 +1133,7 @@ export function LearnHomeScreen() {
         {/* World-Class Enterprise Hero Banner Card (Quiz Screen Inspired) */}
         <View style={styles.promoBannerWrap}>
           <LinearGradient
-            colors={['#09CFF7', '#06A8CC', '#0284C7']}
+            colors={[Colors.brand, '#06A8CC', ColorScale.primary[600]]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.promoBanner}
@@ -1154,7 +1153,7 @@ export function LearnHomeScreen() {
             <View style={styles.promoContentWrap}>
               <View style={styles.promoTopRow}>
                 <View style={styles.promoOfferBadge}>
-                  <Ionicons name="flash" size={13} color="#FDE047" style={{ marginRight: 5 }} />
+                  <Ionicons name="flash" size={13} color={Colors.warning.light} style={{ marginRight: Spacing.xs }} />
                   <Text style={styles.promoOfferBadgeText}>{t('learn.path.limitedTimeOffer')}</Text>
                 </View>
               </View>
@@ -1164,7 +1163,7 @@ export function LearnHomeScreen() {
               </Text>
 
               <View style={styles.promoDateRow}>
-                <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.9)" style={{ marginRight: 6 }} />
+                <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.9)" style={{ marginRight: Spacing.sm }} />
                 <Text style={styles.promoDate}>
                   {t('learn.path.promoDate', { defaultValue: 'Feb 14 - Mar 20' })}
                 </Text>
@@ -1172,7 +1171,7 @@ export function LearnHomeScreen() {
 
               <TouchableOpacity style={styles.promoJoinButtonWhite} activeOpacity={0.85}>
                 <Text style={styles.promoJoinTextWhite}>{t('learn.path.joinNow', { defaultValue: 'Claim Offer' })}</Text>
-                <Ionicons name="arrow-forward" size={15} color="#06A8CC" style={{ marginLeft: 6 }} />
+                <Ionicons name="arrow-forward" size={15} color="#06A8CC" style={{ marginLeft: Spacing.sm }} />
               </TouchableOpacity>
             </View>
           </LinearGradient>
@@ -1310,7 +1309,7 @@ export function LearnHomeScreen() {
             onPress={completeOnboarding}
           >
             <LinearGradient
-              colors={['#09CFF7', '#06A8CC']}
+              colors={[Colors.brand, '#06A8CC']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.obStartNowGradient}
@@ -1318,7 +1317,7 @@ export function LearnHomeScreen() {
               <Text style={styles.obStartNowText}>
                 {obSaving ? t('learn.path.saving') : t('learn.path.startLearning')}
               </Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+              <Ionicons name="arrow-forward" size={18} color={Colors.white} />
             </LinearGradient>
           </TouchableOpacity>
 
@@ -1458,7 +1457,7 @@ export function LearnHomeScreen() {
     const circleRadius = 32; // diameter 64
 
     // Screen background color to mask out background lines behind elements
-    const screenBg = isDark ? colors.background : '#F1F5F9';
+    const screenBg = isDark ? colors.background : ColorScale.gray[100];
 
     // Generate step positions
     const positions = subSteps.map((_, sIdx) => {
@@ -1494,7 +1493,7 @@ export function LearnHomeScreen() {
                   key={`seg-${idx}`}
                   d={segPath}
                   fill="none"
-                  stroke={isSegActive ? accent : (isDark ? 'rgba(255,255,255,0.15)' : '#E2E8F0')}
+                  stroke={isSegActive ? accent : (isDark ? 'rgba(255,255,255,0.15)' : ColorScale.gray[200])}
                   strokeWidth={8}
                   strokeLinecap="round"
                   strokeDasharray="6,12"
@@ -1542,7 +1541,7 @@ export function LearnHomeScreen() {
                 {/* Speech Bubble sits perfectly relative to the circle (140px width prevents vertical letter wrapping!) */}
                 {sIdx === activeStepIdx && (
                   <View style={[styles.subStepBubble, { width: 140, left: -38, bottom: 68, zIndex: 20 }]}>
-                    <View style={[styles.subStepBubbleInner, { backgroundColor: '#FFFFFF', borderColor: accent, borderWidth: 2.5 }]}>
+                    <View style={[styles.subStepBubbleInner, { backgroundColor: Colors.white, borderColor: accent, borderWidth: 2.5 }]}>
                       <Text style={[styles.subStepBubbleText, { color: accent }]}>
                         {isLesson ? (isKh ? 'អាន' : 'READ') : (isKh ? 'ចាប់ផ្ដើម' : 'START')}
                       </Text>
@@ -1556,7 +1555,7 @@ export function LearnHomeScreen() {
                     cx={32}
                     cy={32}
                     r={30}
-                    stroke={isLocked ? (isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0') : isCompleted ? '#10B981' : '#E2E8F0'}
+                    stroke={isLocked ? (isDark ? 'rgba(255,255,255,0.06)' : ColorScale.gray[200]) : isCompleted ? '#10B981' : ColorScale.gray[200]}
                     strokeWidth={3}
                     fill="none"
                   />
@@ -1604,24 +1603,23 @@ export function LearnHomeScreen() {
                     overflow: 'hidden',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
+                    ...Shadows.lg,
+                    shadowColor: Colors.black,
                     shadowOpacity: isLocked ? 0 : 0.12,
-                    shadowRadius: 5,
                     elevation: isLocked ? 0 : 3,
                     zIndex: 2,
                   }}
                 >
                   <LinearGradient
-                    colors={isLocked ? (isDark ? ['#334155', '#1E293B'] : ['#E2E8F0', '#CBD5E1']) : ['#A855F7', '#EC4899']}
+                    colors={isLocked ? (isDark ? [ColorScale.gray[700], ColorScale.gray[800]] : [ColorScale.gray[200], ColorScale.gray[300]]) : ['#A855F7', '#EC4899']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
                   {isLocked ? (
-                    <Ionicons name="lock-closed" size={18} color={isDark ? '#64748B' : '#94A3B8'} />
+                    <Ionicons name="lock-closed" size={18} color={isDark ? ColorScale.gray[500] : ColorScale.gray[400]} />
                   ) : (
-                    <Ionicons name={step.icon} size={22} color="#FFFFFF" />
+                    <Ionicons name={step.icon} size={22} color={Colors.white} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -1635,11 +1633,11 @@ export function LearnHomeScreen() {
                     marginTop: 12,
                     textAlign: 'center',
                     color: isLocked ? colors.textTertiary : colors.text,
-                    fontWeight: isCompleted || step.state === 'unlocked' ? '700' : '500',
+                    fontWeight: isCompleted || step.state === 'unlocked' ? Typography.fontWeight.bold : Typography.fontWeight.medium,
                     maxWidth: 140,
                     backgroundColor: screenBg, // MASK the line passing behind text!
                     paddingHorizontal: 8,
-                    borderRadius: 6,
+                    borderRadius: BorderRadius.sm,
                     overflow: 'hidden',
                   },
                 ]}
@@ -1734,9 +1732,9 @@ export function LearnHomeScreen() {
             {/* Right: Chevron or Lock */}
             <View style={styles.unitCardRight}>
               {locked || comingSoon ? (
-                <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+                <Ionicons name="lock-closed" size={18} color={Colors.white} />
               ) : (
-                <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#FFFFFF" />
+                <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={Colors.white} />
               )}
             </View>
           </TouchableOpacity>
@@ -1786,7 +1784,7 @@ export function LearnHomeScreen() {
             <Text
               style={[
                 styles.trophyLabel,
-                allDone ? { color: '#FFFFFF' } : { color: colors.textSecondary },
+                allDone ? { color: Colors.white } : { color: colors.textSecondary },
               ]}
             >
               {t('learn.path.finishTrophy')}
@@ -1794,7 +1792,7 @@ export function LearnHomeScreen() {
           </View>
 
           {allDone && (
-            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+            <Ionicons name="checkmark-circle" size={20} color={Colors.white} />
           )}
         </TouchableOpacity>
       </View>
@@ -1908,7 +1906,7 @@ export function LearnHomeScreen() {
             onPress={() => navigation.navigate('LearnHub', undefined)}
           >
             <Text style={styles.seeAllText}>{t('learn.path.seeAll')}</Text>
-            <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
+            <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
           </TouchableOpacity>
         </View>
         <View style={styles.coursesGrid}>
@@ -1932,7 +1930,7 @@ export function LearnHomeScreen() {
                   <Text style={styles.courseCardMetaText}>
                     {(course.rating ?? 0).toFixed(1)}
                   </Text>
-                  <Ionicons name="people" size={12} color={colors.textTertiary} style={{ marginLeft: 6 }} />
+                  <Ionicons name="people" size={12} color={colors.textTertiary} style={{ marginLeft: Spacing.sm }} />
                   <Text style={styles.courseCardMetaText}>{course.enrolledCount ?? 0}</Text>
                 </View>
               </TouchableOpacity>
@@ -1993,10 +1991,10 @@ export function LearnHomeScreen() {
   );
 }
 
-const createStyles = (colors: any, isDark: boolean) =>
+const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDark: boolean) =>
   StyleSheet.create({
     // Subtle tint in light mode so white/gradient cards visibly float.
-    safe: { flex: 1, backgroundColor: isDark ? colors.background : '#F1F5F9' },
+    safe: { flex: 1, backgroundColor: isDark ? colors.background : ColorScale.gray[100] },
     scrollContent: { paddingBottom: 48 },
 
     // Flat design style without box shadow
@@ -2005,11 +2003,11 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     subjectCardShadow: {
       borderWidth: 1,
-      borderColor: isDark ? colors.border : '#E2E8F0',
+      borderColor: isDark ? colors.border : ColorScale.gray[200],
     },
     nudgeShadow: {
       borderWidth: 1,
-      borderColor: isDark ? '#C2410C' : '#FFEDD5',
+      borderColor: isDark ? ColorScale.secondary[700] : ColorScale.secondary[100],
     },
 
     // Hero
@@ -2024,41 +2022,41 @@ const createStyles = (colors: any, isDark: boolean) =>
     heroActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: Spacing.sm,
     },
     heroStreakPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.sm,
       borderRadius: 20,
-      backgroundColor: isDark ? 'rgba(249,115,22,0.15)' : '#FFF7ED',
+      backgroundColor: isDark ? 'rgba(249,115,22,0.15)' : ColorScale.secondary[50],
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(249,115,22,0.3)' : '#FFEDD5',
+      borderColor: isDark ? 'rgba(249,115,22,0.3)' : ColorScale.secondary[100],
     },
     heroStreakText: {
-      fontSize: 13,
-      fontWeight: '800',
+      fontSize: Typography.fontSize[13],
+      fontWeight: Typography.fontWeight.extrabold,
       color: colors.textTertiary,
     },
     heroStreakTextActive: {
-      color: '#F97316',
+      color: ColorScale.secondary[500],
     },
     heroXpBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 3,
       paddingHorizontal: 8,
-      paddingVertical: 6,
+      paddingVertical: Spacing.sm,
       borderRadius: 20,
       backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FFFBEB',
       borderWidth: 1,
       borderColor: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A',
     },
     heroXpText: {
-      fontSize: 11,
-      fontWeight: '800',
+      fontSize: Typography.fontSize[11],
+      fontWeight: Typography.fontWeight.extrabold,
       color: '#D97706',
     },
     tutorFabHero: {
@@ -2069,14 +2067,14 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'center',
       backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: isDark ? colors.border : '#E2E8F0',
+      borderColor: isDark ? colors.border : ColorScale.gray[200],
     },
     avatarContainer: {
       position: 'relative',
     },
     avatar: { width: 38, height: 38, borderRadius: 19 },
     avatarFallback: { backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center' },
-    avatarInitial: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
+    avatarInitial: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.extrabold, color: Colors.white },
     levelBadge: {
       position: 'absolute',
       bottom: -2,
@@ -2089,9 +2087,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1.5,
-      borderColor: isDark ? colors.background : '#F1F5F9', // Matches screen background perfectly!
+      borderColor: isDark ? colors.background : ColorScale.gray[100], // Matches screen background perfectly!
     },
-    levelBadgeText: { fontSize: 8, fontWeight: '900', color: '#FFFFFF', lineHeight: 10 },
+    levelBadgeText: { fontSize: 8, fontWeight: Typography.fontWeight.black, color: Colors.white, lineHeight: 10 },
 
     // XP Level Progress Bar
     xpBarWrap: {
@@ -2115,19 +2113,19 @@ const createStyles = (colors: any, isDark: boolean) =>
       backgroundColor: isDark ? 'rgba(245,158,11,0.14)' : '#FEF3C7',
     },
     xpLevelPillText: {
-      fontSize: 11,
-      fontWeight: '800',
+      fontSize: Typography.fontSize[11],
+      fontWeight: Typography.fontWeight.extrabold,
       color: '#D97706',
     },
     xpBarCaption: {
-      fontSize: 11,
-      fontWeight: '600',
+      fontSize: Typography.fontSize[11],
+      fontWeight: Typography.fontWeight.semibold,
       color: colors.textSecondary,
     },
     xpBarTrack: {
       height: 10,
       borderRadius: 6,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : ColorScale.gray[200],
       overflow: 'hidden',
     },
     xpBarFill: {
@@ -2146,8 +2144,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: '#FFFFFF',
-      marginRight: 2,
+      backgroundColor: Colors.white,
+      marginRight: Spacing.xs,
       opacity: 0.9,
     },
 
@@ -2160,7 +2158,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 20,
       backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: isDark ? colors.border : '#E2E8F0',
+      borderColor: isDark ? colors.border : ColorScale.gray[200],
     },
     weekCardTop: {
       flexDirection: 'row',
@@ -2168,7 +2166,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'space-between',
       marginBottom: 16,
     },
-    weekCardTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
+    weekCardTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.extrabold, color: colors.text },
     streakBadge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -2176,11 +2174,11 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 12,
-      backgroundColor: isDark ? '#431407' : '#FFF7ED',
+      backgroundColor: isDark ? '#431407' : ColorScale.secondary[50],
       borderWidth: 1,
-      borderColor: isDark ? '#F97316' : '#FFEDD5',
+      borderColor: isDark ? ColorScale.secondary[500] : ColorScale.secondary[100],
     },
-    streakBadgeText: { fontSize: 14, fontWeight: '900', color: '#F97316' },
+    streakBadgeText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.black, color: ColorScale.secondary[500] },
     weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
     weekDayCapsule: {
       width: 40,
@@ -2188,32 +2186,32 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 6,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+      gap: Spacing.sm,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : ColorScale.gray[50],
       borderWidth: 1,
       borderColor: 'transparent',
     },
     weekDayCapsuleActive: {
-      backgroundColor: isDark ? '#431407' : '#FFF7ED',
-      borderColor: isDark ? '#F97316' : '#FFEDD5',
+      backgroundColor: isDark ? '#431407' : ColorScale.secondary[50],
+      borderColor: isDark ? ColorScale.secondary[500] : ColorScale.secondary[100],
     },
     weekDayCapsuleToday: {
-      borderColor: '#F97316',
+      borderColor: ColorScale.secondary[500],
       backgroundColor: isDark ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.05)',
     },
-    weekDayLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
-    weekDayLabelActive: { color: '#F97316', fontWeight: '800' },
-    weekDayLabelToday: { color: '#F97316', fontWeight: '800' },
+    weekDayLabel: { fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.semibold, color: colors.textSecondary },
+    weekDayLabelActive: { color: ColorScale.secondary[500], fontWeight: Typography.fontWeight.extrabold },
+    weekDayLabelToday: { color: ColorScale.secondary[500], fontWeight: Typography.fontWeight.extrabold },
     weekDot: {
       width: 24,
       height: 24,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#E2E8F0',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : ColorScale.gray[200],
     },
-    weekDotActive: { backgroundColor: '#F97316' },
-    weekDotToday: { borderWidth: 1.5, borderColor: '#F97316' },
+    weekDotActive: { backgroundColor: ColorScale.secondary[500] },
+    weekDotToday: { borderWidth: 1.5, borderColor: ColorScale.secondary[500] },
     weekDotEmpty: {
       width: 6,
       height: 6,
@@ -2221,7 +2219,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       backgroundColor: colors.border,
     },
     weekDotEmptyToday: {
-      backgroundColor: '#F97316',
+      backgroundColor: ColorScale.secondary[500],
     },
 
     // Nudge
@@ -2231,74 +2229,74 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 12,
       marginHorizontal: 20,
       marginTop: 12,
-      padding: 14,
-      borderRadius: 18,
-      backgroundColor: '#F97316',
+      padding: Spacing.md,
+      borderRadius: BorderRadius[20],
+      backgroundColor: ColorScale.secondary[500],
     },
     nudgeIcon: {
       width: 42,
       height: 42,
-      borderRadius: 14,
+      borderRadius: BorderRadius.xl,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(255,255,255,0.25)',
     },
-    nudgeTitle: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', lineHeight: 22 },
-    nudgeBody: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.9)', marginTop: 2, lineHeight: 18 },
+    nudgeTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.extrabold, color: Colors.white, lineHeight: 22 },
+    nudgeBody: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: 'rgba(255,255,255,0.9)', marginTop: Spacing.xs, lineHeight: 18 },
 
     // Subject card — shadow lives on the wrapper (a gradient with
     // overflow:hidden can't cast a shadow on iOS).
     subjectCardWrap: {
       marginHorizontal: 20,
       marginTop: 12,
-      borderRadius: 22,
+      borderRadius: BorderRadius['2xl'],
     },
     subjectCard: {
-      padding: 18,
-      borderRadius: 22,
+      padding: Spacing[5],
+      borderRadius: BorderRadius['2xl'],
       overflow: 'hidden',
     },
     deco: {
       position: 'absolute',
-      borderRadius: 999,
+      borderRadius: 9999,
       backgroundColor: 'rgba(255,255,255,0.12)',
     },
     floatIcon: {
       position: 'absolute',
       width: 24,
       height: 24,
-      borderRadius: 999,
+      borderRadius: 9999,
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 2,
     },
-    subjectCardRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    subjectCardRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     subjectKickerPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
+      gap: Spacing.xs,
       alignSelf: 'flex-start',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 10,
+      paddingHorizontal: Spacing[3],
+      paddingVertical: Spacing.xs,
+      borderRadius: BorderRadius.lg,
       backgroundColor: 'rgba(255,255,255,0.22)',
     },
-    subjectKickerText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.4 },
+    subjectKickerText: { fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.extrabold, color: Colors.white, letterSpacing: 0.4 },
     subjectTitle: {
       fontFamily: 'Koulen-Regular',
-      fontSize: 24,
-      color: '#FFFFFF',
+      fontSize: Typography.fontSize['2xl'],
+      color: Colors.white,
       marginTop: 8,
-      paddingTop: 6,
+      paddingTop: Spacing.sm,
       lineHeight: 38,
     },
-    subjectMeta: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
+    subjectMeta: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 18 },
     subjectRing: { alignItems: 'center', justifyContent: 'center' },
     subjectRingText: {
       position: 'absolute',
-      fontSize: 13,
-      fontWeight: '900',
-      color: '#FFFFFF',
+      fontSize: Typography.fontSize[13],
+      fontWeight: Typography.fontWeight.black,
+      color: Colors.white,
     },
     continueButton: {
       flexDirection: 'row',
@@ -2307,24 +2305,24 @@ const createStyles = (colors: any, isDark: boolean) =>
       gap: 8,
       marginTop: 16,
       paddingVertical: 12,
-      borderRadius: 18,
-      backgroundColor: '#FFFFFF',
+      borderRadius: BorderRadius[20],
+      backgroundColor: Colors.white,
     },
-    continueButtonText: { fontSize: 15, fontWeight: '800', color: '#4F46E5' },
+    continueButtonText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.extrabold, color: '#4F46E5' },
     editPathLink: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 5,
-      marginTop: 10,
+      gap: Spacing.xs,
+      marginTop: Spacing[3],
     },
-    editPathLinkText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+    editPathLinkText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: colors.textSecondary },
 
     // Load-error + retry (full-screen and inline-within-path variants)
     fullLoadErrorBox: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 60,
+      paddingVertical: Spacing[16],
       paddingHorizontal: 32,
       gap: 12,
     },
@@ -2333,10 +2331,10 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'center',
       paddingVertical: 32,
       paddingHorizontal: 24,
-      gap: 10,
+      gap: Spacing[3],
     },
     loadErrorText: {
-      fontSize: 15,
+      fontSize: Typography.fontSize.base,
       color: colors.textSecondary,
       textAlign: 'center',
       lineHeight: 22,
@@ -2344,17 +2342,17 @@ const createStyles = (colors: any, isDark: boolean) =>
     loadErrorRetryButton: {
       marginTop: 4,
       paddingHorizontal: 20,
-      paddingVertical: 10,
+      paddingVertical: Spacing[3],
       borderRadius: 12,
-      backgroundColor: '#0EA5E9',
+      backgroundColor: Colors.primary,
     },
-    loadErrorRetryText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+    loadErrorRetryText: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, color: Colors.white },
 
     // Subject rail
-    railWrap: { marginTop: 6 },
+    railWrap: { marginTop: Spacing.sm },
     railTitle: {
-      fontSize: 15,
-      fontWeight: '800',
+      fontSize: Typography.fontSize.base,
+      fontWeight: Typography.fontWeight.extrabold,
       color: colors.text,
       paddingHorizontal: 20,
       marginBottom: 12,
@@ -2365,8 +2363,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingVertical: 16,
-      paddingHorizontal: 18,
-      borderRadius: 26,
+      paddingHorizontal: Spacing[5],
+      borderRadius: BorderRadius['2xl'],
       borderWidth: 1.5,
       minWidth: 155,
       height: 174,
@@ -2376,8 +2374,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingVertical: 16,
-      paddingHorizontal: 18,
-      borderRadius: 26,
+      paddingHorizontal: Spacing[5],
+      borderRadius: BorderRadius['2xl'],
       borderWidth: 1.5,
       borderColor: colors.border,
       borderStyle: 'dashed',
@@ -2389,7 +2387,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       height: 70,
       alignItems: 'center',
       justifyContent: 'center',
-      marginVertical: 2,
+      marginVertical: Spacing.xs,
     },
     graphicScale: {
       width: 70,
@@ -2399,22 +2397,22 @@ const createStyles = (colors: any, isDark: boolean) =>
       transform: [{ scale: 0.86 }],
     },
     subjectSquircleCardLabel: {
-      fontSize: 14,
+      fontSize: Typography.fontSize.sm,
       lineHeight: 24,
-      fontWeight: '800',
+      fontWeight: Typography.fontWeight.extrabold,
       textAlign: 'center',
       letterSpacing: 0.2,
       paddingVertical: 4,
     },
     subjectSquircleCardLabelActive: {
-      fontWeight: '800',
+      fontWeight: Typography.fontWeight.extrabold,
     },
     subjectCardSubLabel: {
-      fontSize: 11,
+      fontSize: Typography.fontSize[11],
       lineHeight: 18,
-      fontWeight: '600',
+      fontWeight: Typography.fontWeight.semibold,
       textAlign: 'center',
-      paddingTop: 2,
+      paddingTop: Spacing.xs,
     },
 
     // ── Vertical timeline path ──────────────────────────────────────
@@ -2434,15 +2432,15 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginBottom: 8,
     },
     activeStartBubbleInner: {
-      paddingHorizontal: 18,
-      paddingVertical: 6,
-      borderRadius: 15,
+      paddingHorizontal: Spacing[5],
+      paddingVertical: Spacing.sm,
+      borderRadius: BorderRadius.xl,
       borderWidth: 2.2,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: Colors.white,
     },
     activeStartBubbleText: {
-      fontSize: 13,
-      fontWeight: '900',
+      fontSize: Typography.fontSize[13],
+      fontWeight: Typography.fontWeight.black,
       letterSpacing: 1.2,
     },
     activeStartBubbleArrow: {
@@ -2470,7 +2468,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     activeUnitTitle: {
       fontFamily: 'Koulen-Regular',
-      fontSize: 20,
+      fontSize: Typography.fontSize.xl,
       color: colors.text,
       textAlign: 'center',
       marginTop: 12,
@@ -2478,8 +2476,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       lineHeight: 32,
     },
     activeUnitProgress: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.semibold,
       color: colors.textSecondary,
       textAlign: 'center',
       marginTop: 4,
@@ -2500,7 +2498,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       height: 16,
       borderRadius: 8,
       borderWidth: 3.5,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: Colors.white,
       zIndex: 2,
       marginTop: 24,
     },
@@ -2524,9 +2522,9 @@ const createStyles = (colors: any, isDark: boolean) =>
     unitCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: 32,
+      borderRadius: 32, // = height / 2 — keeps this a fully rounded pill, not a card-corner radius
       height: 64,
-      paddingHorizontal: 14,
+      paddingHorizontal: Spacing.md,
       overflow: 'hidden',
       gap: 12,
       borderWidth: 0,
@@ -2535,7 +2533,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: Colors.white,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -2544,16 +2542,16 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     unitCardTitleTextWhite: {
       fontFamily: 'Koulen-Regular',
-      fontSize: 17,
-      color: '#FFFFFF',
+      fontSize: Typography.fontSize[17],
+      color: Colors.white,
       paddingTop: 4,
       lineHeight: 28,
     },
     unitCardSubTextWhite: {
-      fontSize: 11.5,
-      fontWeight: '600',
+      fontSize: Typography.fontSize.xs,
+      fontWeight: Typography.fontWeight.semibold,
       color: 'rgba(255,255,255,0.75)',
-      marginTop: 1,
+      marginTop: 0,
       lineHeight: 18,
     },
     unitCardRight: {
@@ -2564,9 +2562,9 @@ const createStyles = (colors: any, isDark: boolean) =>
     trophyRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: 32,
+      borderRadius: 32, // = height / 2 — fully rounded pill, matches unitCard
       height: 64,
-      paddingHorizontal: 14,
+      paddingHorizontal: Spacing.md,
       overflow: 'hidden',
       gap: 12,
       borderWidth: 1,
@@ -2576,13 +2574,13 @@ const createStyles = (colors: any, isDark: boolean) =>
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: Colors.white,
       alignItems: 'center',
       justifyContent: 'center',
     },
     trophyLabel: {
-      fontSize: 15,
-      fontWeight: '800',
+      fontSize: Typography.fontSize.base,
+      fontWeight: Typography.fontWeight.extrabold,
     },
 
     // ── Onboarding (Premium Enterprise Redesign) ──────────────
@@ -2611,25 +2609,23 @@ const createStyles = (colors: any, isDark: boolean) =>
     obStartNowButton: {
       width: '100%',
       marginTop: 28,
-      borderRadius: 28,
+      borderRadius: BorderRadius['2xl'],
+      ...Shadows.xl,
       shadowColor: '#06A8CC',
-      shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.38,
-      shadowRadius: 16,
-      elevation: 8,
     },
     obStartNowGradient: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 18,
-      borderRadius: 28,
+      paddingVertical: Spacing[5],
+      borderRadius: BorderRadius['2xl'],
       gap: 8,
     },
     obStartNowText: {
-      fontSize: 17,
-      fontWeight: '800',
-      color: '#FFFFFF',
+      fontSize: Typography.fontSize[17],
+      fontWeight: Typography.fontWeight.extrabold,
+      color: Colors.white,
       letterSpacing: 0.3,
     },
 
@@ -2648,19 +2644,19 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingHorizontal: 4,
     },
     courseDiscoveryGreeting: {
-      fontSize: 14,
-      fontWeight: '600',
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.semibold,
       color: colors.textSecondary,
-      marginBottom: 2,
+      marginBottom: Spacing.xs,
     },
     courseDiscoveryTitle: {
-      fontSize: 24,
-      fontWeight: '800',
+      fontSize: Typography.fontSize['2xl'],
+      fontWeight: Typography.fontWeight.extrabold,
       color: colors.text,
       letterSpacing: -0.3,
     },
     searchIconButtonNeutral: {
-      borderRadius: 22,
+      borderRadius: 22, // = size / 2 (44x44 touch target) — keeps this circular
     },
     searchCircleNeutral: {
       width: 44,
@@ -2669,27 +2665,22 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 6,
-      elevation: 2,
+      ...Shadows.lg,
+      shadowColor: Colors.black,
     },
     promoBannerWrap: {
       marginBottom: 24,
-      borderRadius: 26,
+      borderRadius: BorderRadius['2xl'],
       overflow: 'hidden',
+      ...Shadows.xl,
       shadowColor: '#06A8CC',
-      shadowOffset: { width: 0, height: 12 },
       shadowOpacity: 0.28,
-      shadowRadius: 20,
-      elevation: 8,
     },
     promoBanner: {
       flexDirection: 'row',
       alignItems: 'center',
       padding: 24,
-      borderRadius: 26,
+      borderRadius: BorderRadius['2xl'],
       minHeight: 156,
       position: 'relative',
       overflow: 'hidden',
@@ -2711,10 +2702,10 @@ const createStyles = (colors: any, isDark: boolean) =>
     promoOfferBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
+      gap: Spacing.xs,
       alignSelf: 'flex-start',
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      paddingHorizontal: 10,
+      paddingHorizontal: Spacing[3],
       paddingVertical: 4,
       borderRadius: 12,
       marginBottom: 8,
@@ -2722,16 +2713,16 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderColor: 'rgba(255, 255, 255, 0.3)',
     },
     promoOfferBadgeText: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: '#FFFFFF',
+      fontSize: Typography.fontSize[11],
+      fontWeight: Typography.fontWeight.extrabold,
+      color: Colors.white,
       letterSpacing: 0.5,
     },
     promoDiscount: {
-      fontSize: 32,
-      fontWeight: '900',
-      color: '#FFFFFF',
-      marginBottom: 6,
+      fontSize: Typography.fontSize['3xl'],
+      fontWeight: Typography.fontWeight.black,
+      color: Colors.white,
+      marginBottom: Spacing.sm,
       letterSpacing: -0.5,
       textShadowColor: 'rgba(0,0,0,0.15)',
       textShadowOffset: { width: 0, height: 2 },
@@ -2740,36 +2731,33 @@ const createStyles = (colors: any, isDark: boolean) =>
     promoDateRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
+      gap: Spacing.xs,
       marginBottom: 16,
     },
     promoDate: {
-      fontSize: 13,
-      fontWeight: '600',
+      fontSize: Typography.fontSize[13],
+      fontWeight: Typography.fontWeight.semibold,
       color: 'rgba(255,255,255,0.85)',
     },
     promoJoinButtonWhite: {
-      paddingVertical: 10,
-      paddingHorizontal: 22,
+      paddingVertical: Spacing[3],
+      paddingHorizontal: Spacing.lg,
       borderRadius: 20,
-      backgroundColor: '#FFFFFF',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 4,
+      backgroundColor: Colors.white,
+      ...Shadows.lg,
+      shadowColor: Colors.black,
       flexDirection: 'row',
       alignItems: 'center',
       alignSelf: 'flex-start',
     },
     promoJoinTextWhite: {
-      fontSize: 14,
-      fontWeight: '800',
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.extrabold,
       color: '#06A8CC',
     },
     exploreTitle: {
-      fontSize: 18,
-      fontWeight: '800',
+      fontSize: Typography.fontSize.lg,
+      fontWeight: Typography.fontWeight.extrabold,
       color: colors.text,
       marginBottom: 12,
       marginTop: 8,
@@ -2781,31 +2769,29 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     gradeChip: {
       paddingHorizontal: 20,
-      paddingVertical: 10,
+      paddingVertical: Spacing[3],
       borderRadius: 20,
-      backgroundColor: isDark ? colors.card : '#F1F5F9',
+      backgroundColor: isDark ? colors.card : ColorScale.gray[100],
       borderWidth: 1.5,
-      borderColor: isDark ? colors.border : '#E2E8F0',
+      borderColor: isDark ? colors.border : ColorScale.gray[200],
       alignItems: 'center',
       justifyContent: 'center',
     },
     gradeChipSelected: {
       backgroundColor: '#06A8CC',
       borderColor: '#06A8CC',
+      ...Shadows.lg,
       shadowColor: '#06A8CC',
-      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 4,
     },
     gradeChipText: {
-      fontSize: 14,
-      fontWeight: '700',
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.bold,
       color: colors.textSecondary,
     },
     gradeChipTextSelected: {
-      color: '#FFFFFF',
-      fontWeight: '800',
+      color: Colors.white,
+      fontWeight: Typography.fontWeight.extrabold,
     },
     gradeReadyIndicator: {
       position: 'absolute',
@@ -2814,7 +2800,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       width: 7,
       height: 7,
       borderRadius: 4,
-      backgroundColor: '#38BDF8',
+      backgroundColor: ColorScale.primary[400],
     },
     subjectGrid: {
       flexDirection: 'row',
@@ -2827,13 +2813,13 @@ const createStyles = (colors: any, isDark: boolean) =>
       flexGrow: 1,
       width: 'auto',
       padding: 20,
-      borderRadius: 28,
+      borderRadius: BorderRadius['2xl'],
       backgroundColor: colors.card,
       alignItems: 'center',
       justifyContent: 'space-between',
       minHeight: 185,
       borderWidth: 1.5,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : ColorScale.gray[200],
       position: 'relative',
     },
     exploreGridCardSelected: {
@@ -2854,24 +2840,24 @@ const createStyles = (colors: any, isDark: boolean) =>
       width: '100%',
     },
     exploreCardNameBold: {
-      fontSize: 14,
+      fontSize: Typography.fontSize.sm,
       lineHeight: 24,
-      fontWeight: '800',
+      fontWeight: Typography.fontWeight.extrabold,
       color: colors.text,
       textAlign: 'center',
       marginBottom: 4,
       paddingVertical: 2,
     },
     exploreCardMetadata: {
-      fontSize: 11,
-      fontWeight: '500',
+      fontSize: Typography.fontSize[11],
+      fontWeight: Typography.fontWeight.medium,
       color: colors.textSecondary,
       textAlign: 'center',
     },
     subjectProgressBarBg: {
       width: '85%',
       height: 4,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : ColorScale.gray[200],
       borderRadius: 2,
       overflow: 'hidden',
       marginTop: 8,
@@ -2884,13 +2870,13 @@ const createStyles = (colors: any, isDark: boolean) =>
     bottomActionsWrap: {
       width: '100%',
       gap: 12,
-      marginTop: 18,
+      marginTop: Spacing[5],
       alignItems: 'center',
     },
     cancelEditButton: {
       paddingVertical: 12,
       paddingHorizontal: 28,
-      borderRadius: 22,
+      borderRadius: BorderRadius['2xl'],
       borderWidth: 1,
       borderColor: colors.border,
       alignItems: 'center',
@@ -2898,48 +2884,46 @@ const createStyles = (colors: any, isDark: boolean) =>
       width: '100%',
     },
     cancelEditButtonText: {
-      fontSize: 14,
-      fontWeight: '700',
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.bold,
     },
     obEmptyCard: {
       alignItems: 'center',
-      gap: 10,
+      gap: Spacing[3],
       padding: 20,
-      borderRadius: 18,
+      borderRadius: BorderRadius[20],
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
       marginBottom: 8,
     },
-    obEmptyText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', lineHeight: 19 },
+    obEmptyText: { fontSize: Typography.fontSize[13], color: colors.textSecondary, textAlign: 'center', lineHeight: 19 },
     readyRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-    readyLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+    readyLabel: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: colors.textSecondary },
     readyChip: {
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingVertical: Spacing.sm,
       borderRadius: 12,
       backgroundColor: '#06A8CC',
     },
-    readyChipText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
+    readyChipText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.extrabold, color: Colors.white },
     // Matches the onboarding flow's own cyan identity (#06A8CC/#09CFF7),
     // not the main app's ACCENTS[0] sky blue used by the shared
     // loadErrorRetryButton style — this card only ever appears mid-onboarding.
     obRetryButton: {
       marginTop: 4,
       paddingHorizontal: 20,
-      paddingVertical: 10,
+      paddingVertical: Spacing[3],
       borderRadius: 12,
       backgroundColor: '#06A8CC',
     },
     startButtonWrap: {
       width: '100%',
-      borderRadius: 26,
+      borderRadius: BorderRadius['2xl'],
       overflow: 'hidden',
+      ...Shadows.xl,
       shadowColor: '#06A8CC',
-      shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.38,
-      shadowRadius: 18,
-      elevation: 8,
     },
     startButtonDisabled: { opacity: 0.4 },
 
@@ -2980,11 +2964,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderColor: isDark ? 'rgba(9,207,247,0.45)' : 'rgba(6,168,204,0.35)',
       alignItems: 'center',
       justifyContent: 'center',
+      ...Shadows.xl,
       shadowColor: '#06A8CC',
-      shadowOffset: { width: 0, height: 12 },
       shadowOpacity: isDark ? 0.45 : 0.22,
-      shadowRadius: 24,
-      elevation: 10,
     },
     obSphereBadge: {
       width: 116,
@@ -3011,17 +2993,15 @@ const createStyles = (colors: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 12,
-      paddingVertical: 7,
+      paddingVertical: Spacing.sm,
       borderRadius: 20,
       backgroundColor: isDark ? 'rgba(15,23,42,0.88)' : 'rgba(255,255,255,0.97)',
       borderWidth: 1.2,
       borderColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.08)',
       gap: 6,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 6 },
+      ...Shadows.xl,
+      shadowColor: Colors.black,
       shadowOpacity: isDark ? 0.28 : 0.08,
-      shadowRadius: 10,
-      elevation: 6,
     },
     obPillTopLeft: { top: 14, left: 0 },
     obPillTopRight: { top: 42, right: 0 },
@@ -3034,24 +3014,24 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'center',
     },
     obPillText: {
-      fontSize: 12,
-      fontWeight: '800',
-      color: isDark ? '#FFFFFF' : '#0F172A',
+      fontSize: Typography.fontSize.xs,
+      fontWeight: Typography.fontWeight.extrabold,
+      color: isDark ? Colors.white : ColorScale.gray[900],
       letterSpacing: 0.3,
     },
 
     obTitle: {
-      fontSize: 26,
-      fontWeight: '900',
-      color: isDark ? '#FFFFFF' : '#0F172A',
+      fontSize: Typography.fontSize['2xl'],
+      fontWeight: Typography.fontWeight.black,
+      color: isDark ? Colors.white : ColorScale.gray[900],
       textAlign: 'center',
       letterSpacing: -0.5,
       marginBottom: 8,
     },
     obSubtitle: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: isDark ? '#94A3B8' : '#475569',
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.medium,
+      color: isDark ? ColorScale.gray[400] : ColorScale.gray[600],
       textAlign: 'center',
       lineHeight: 22,
       paddingHorizontal: 8,
@@ -3060,8 +3040,8 @@ const createStyles = (colors: any, isDark: boolean) =>
 
     // Courses
     coursesSection: {
-      marginTop: 18,
-      paddingTop: 18,
+      marginTop: Spacing[5],
+      paddingTop: Spacing[5],
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
@@ -3072,9 +3052,9 @@ const createStyles = (colors: any, isDark: boolean) =>
       paddingHorizontal: 20,
       marginBottom: 12,
     },
-    coursesTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-    seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    seeAllText: { fontSize: 13, fontWeight: '700', color: '#0EA5E9' },
+    coursesTitle: { fontSize: Typography.fontSize[17], fontWeight: Typography.fontWeight.extrabold, color: colors.text },
+    seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    seeAllText: { fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: Colors.primary },
     coursesGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -3083,23 +3063,23 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     courseCard: {
       width: '47.5%',
-      padding: 14,
-      borderRadius: 18,
-      gap: 9,
+      padding: Spacing.md,
+      borderRadius: BorderRadius[20],
+      gap: Spacing.sm,
       backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: isDark ? colors.border : '#E2E8F0',
+      borderColor: isDark ? colors.border : ColorScale.gray[200],
     },
     courseCardIcon: {
       width: 44,
       height: 44,
-      borderRadius: 14,
+      borderRadius: BorderRadius.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    courseCardTitle: { fontSize: 13, fontWeight: '700', color: colors.text, lineHeight: 18 },
+    courseCardTitle: { fontSize: Typography.fontSize[13], fontWeight: Typography.fontWeight.bold, color: colors.text, lineHeight: 18 },
     courseCardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    courseCardMetaText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+    courseCardMetaText: { fontSize: Typography.fontSize[11], fontWeight: Typography.fontWeight.semibold, color: colors.textSecondary },
 
     // Sub-timeline styles
     subTimelineContainer: {
@@ -3108,7 +3088,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       marginBottom: 16,
     },
     subStepLabel: {
-      fontSize: 12,
+      fontSize: Typography.fontSize.xs,
       lineHeight: 16,
       textAlign: 'center',
     },
@@ -3119,17 +3099,14 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     subStepBubbleInner: {
       paddingHorizontal: 16,
-      paddingVertical: 6,
-      borderRadius: 18,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.15,
-      shadowRadius: 5,
-      elevation: 4,
+      paddingVertical: Spacing.sm,
+      borderRadius: BorderRadius[20],
+      ...Shadows.lg,
+      shadowColor: Colors.black,
     },
     subStepBubbleText: {
-      fontSize: 13,
-      fontWeight: '800',
+      fontSize: Typography.fontSize[13],
+      fontWeight: Typography.fontWeight.extrabold,
       letterSpacing: 0.5,
       textAlign: 'center',
     },

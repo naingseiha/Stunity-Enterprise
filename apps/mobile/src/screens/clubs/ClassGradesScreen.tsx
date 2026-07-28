@@ -1214,7 +1214,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     backgroundColor: BRAND_ACCENT, 
     paddingHorizontal: 20, 
     paddingVertical: 10, 
-    borderRadius: 999,
+    borderRadius: 9999,
     minWidth: 70,
     alignItems: 'center',
     shadowColor: BRAND_ACCENT,
@@ -1291,7 +1291,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   inlineLoadingBadge: {
     minWidth: 24,
     minHeight: 24,
-    borderRadius: 999,
+    borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: isDark ? 'rgba(6,168,204,0.18)' : '#E0F7FE',
@@ -1305,7 +1305,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1447,7 +1447,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   studentRankBadge: {
     width: 24,
     height: 24,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1516,7 +1516,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   rankPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: BRAND_ACCENT + '14',
   },
   rankPillText: {

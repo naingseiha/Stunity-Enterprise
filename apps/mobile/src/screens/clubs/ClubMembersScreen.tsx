@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { clubsApi } from '@/api';
@@ -58,6 +59,11 @@ export default function ClubMembersScreen() {
 
   const canManage = Boolean(myMembership && MANAGER_ROLES.includes(myMembership.role));
   const canManageRoles = myMembership?.role === 'OWNER';
+
+  const memberSplit = useMemo(() => {
+    const students = members.filter((m) => m.role === 'STUDENT').length;
+    return { staff: members.length - students, students };
+  }, [members]);
 
   const loadData = useCallback(async (force = false) => {
     if (!clubId) return;
@@ -225,6 +231,27 @@ export default function ClubMembersScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        <View style={styles.membersHero}>
+          <LinearGradient
+            colors={['#0EA5E9', '#06B6D4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.heroBubble} />
+          <View style={styles.heroIconWrap}>
+            <Ionicons name="people" size={24} color="#FFFFFF" />
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroEyebrow}>{t('clubScreens.members.header')}</Text>
+            <Text style={styles.heroCount}>{members.length}</Text>
+          </View>
+          <View style={styles.heroSplit}>
+            <Text style={styles.heroSplitText}>{memberSplit.staff} {t('clubScreens.members.staff')}</Text>
+            <Text style={styles.heroSplitText}>{memberSplit.students} {t('clubScreens.members.students')}</Text>
+          </View>
+        </View>
+
         {error ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
@@ -369,6 +396,67 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   subtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12, paddingBottom: 28 },
+  membersHero: {
+    minHeight: 132,
+    borderRadius: 28,
+    overflow: 'hidden',
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  heroBubble: {
+    position: 'absolute',
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.12,
+    right: -48,
+    top: -58,
+  },
+  heroIconWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  heroCopy: { flex: 1 },
+  heroEyebrow: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  heroCount: {
+    marginTop: 4,
+    color: '#FFFFFF',
+    fontSize: 42,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+  },
+  heroSplit: { gap: 8 },
+  heroSplitText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    overflow: 'hidden',
+    textAlign: 'center',
+  },
   sectionCard: {
     backgroundColor: colors.card,
     borderRadius: 14,
@@ -462,7 +550,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     backgroundColor: isDark ? 'rgba(37,99,235,0.18)' : '#EFF6FF',
     borderColor: isDark ? 'rgba(191,219,254,0.35)' : '#BFDBFE',
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },

@@ -1360,7 +1360,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   monthChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
@@ -1428,7 +1428,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   riskBadge: {
     minHeight: 32,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -1545,13 +1545,13 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   readinessTrack: {
     height: 8,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: colors.border,
     overflow: 'hidden',
   },
   readinessFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: COLORS.primary,
   },
   readinessItems: {
@@ -1625,7 +1625,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     gap: 7,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: 'rgba(15,23,42,0.22)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.38)',
@@ -1644,7 +1644,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.28)',
@@ -1836,7 +1836,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   podiumMedal: {
     minHeight: 28,
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -2040,13 +2040,13 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   subjectSignalTrack: {
     flex: 1,
     height: 7,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: colors.border,
     overflow: 'hidden',
   },
   subjectSignalFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: 9999,
   },
   subjectSignalPercent: {
     width: 34,
@@ -2140,7 +2140,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   retryButton: {
     marginTop: 16,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: COLORS.primary,
     paddingHorizontal: 18,
     paddingVertical: 10,

@@ -255,7 +255,7 @@ function createStyles(width: number, height: number, isTablet: boolean) {
       gap: 8,
       paddingHorizontal: 14,
       paddingVertical: 9,
-      borderRadius: 999,
+      borderRadius: 9999,
       backgroundColor: '#F1F5F9',
       marginBottom: 22,
     },
@@ -382,7 +382,7 @@ function createStyles(width: number, height: number, isTablet: boolean) {
     },
     button: {
       height: isPortraitTablet ? 76 : isEnterpriseTablet ? 58 : 64,
-      borderRadius: 999,
+      borderRadius: 9999,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -435,7 +435,7 @@ function createStyles(width: number, height: number, isTablet: boolean) {
     portalButton: {
       width: '100%',
       height: isPortraitTablet ? 76 : isEnterpriseTablet ? 58 : 64,
-      borderRadius: 999,
+      borderRadius: 9999,
       overflow: 'hidden',
       borderWidth: 1.5,
       borderColor: '#FEF3C7',

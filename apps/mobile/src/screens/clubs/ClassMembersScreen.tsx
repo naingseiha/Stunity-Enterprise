@@ -424,7 +424,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     fontWeight: '800',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: 'rgba(255,255,255,0.16)',
     overflow: 'hidden',
     textAlign: 'center',
@@ -538,7 +538,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: 9999,
   },
   badgeText: {
     fontSize: 11,

@@ -868,7 +868,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   retryButton: {
     marginTop: 16,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: BRAND_PINK,
     paddingHorizontal: 18,
     paddingVertical: 10,

@@ -288,7 +288,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 12,
-        borderRadius: 999,
+        borderRadius: 9999,
         gap: 8,
     },
     eventActionButtonText: {
@@ -371,7 +371,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 12,
-        borderRadius: 999,
+        borderRadius: 9999,
         gap: 8,
     },
     clubActionBtnText: {

@@ -183,7 +183,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
   headerIcon: {
     width: 28,
     height: 28,
-    borderRadius: 999,
+    borderRadius: 9999,
     backgroundColor: isDark ? 'rgba(124,58,237,0.18)' : '#F3E8FF',
     alignItems: 'center',
     justifyContent: 'center',

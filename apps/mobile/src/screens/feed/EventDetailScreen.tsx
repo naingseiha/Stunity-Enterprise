@@ -359,7 +359,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 8,
   },
   typeBadge: {
-    borderRadius: 999,
+    borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 4,
     flexDirection: 'row',
@@ -446,7 +446,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   rsvpChip: {
     flex: 1,
     minHeight: 34,
-    borderRadius: 999,
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
