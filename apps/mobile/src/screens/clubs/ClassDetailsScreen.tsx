@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +24,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { useAuthStore, useMessagingStore } from '@/stores';
 import { classesApi, gradeApi } from '@/api';
 import type { ClubsStackParamList } from '@/navigation/types';
+import Svg, { Circle } from 'react-native-svg';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
@@ -125,15 +127,21 @@ const EMPTY_CLASS_DETAIL_BUNDLE: classesApi.ClassDetailBundle = {
   teacherInfo: null,
 };
 
-export default function ClassDetailsScreen() {
+export type ClassHubViewProps = RouteParams & {
+  hideBackButton?: boolean;
+  hideTopSafe?: boolean;
+  hideAppBar?: boolean;
+  classSelector?: React.ReactNode;
+};
+
+export function ClassHubView(props: ClassHubViewProps) {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
-  const route = useRoute<any>();
   const { user } = useAuthStore();
-  const params = (route.params || {}) as RouteParams;
+  const params = props;
 
   const classId = params.classId;
   const myRole = params.myRole || (
@@ -717,28 +725,62 @@ export default function ClassDetailsScreen() {
     };
   }, [classId]);
 
+  const attendanceRate = attendanceSummary?.summary?.averageAttendanceRate ?? 100;
+  const pct = attendanceRate > 1 ? attendanceRate / 100 : attendanceRate;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.bgOrbPrimary} />
-      <View style={styles.bgOrbSecondary} />
+    <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#FFFFFF' }]}>
+
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-            <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <StunityLogo width={108} height={30} />
-
-          <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-            {refreshing || backgroundRefreshing ? (
-              <ActivityIndicator size="small" color={colors.textSecondary} />
-            ) : (
-              <Ionicons name="refresh-outline" size={20} color={colors.textSecondary} />
-            )}
-          </TouchableOpacity>
+      {props.hideTopSafe ? (
+        <View style={styles.headerSafe}>
+          {!props.hideAppBar && (
+            <View style={styles.topBar}>
+              {!props.hideBackButton ? (
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+                  <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 44, height: 44 }} />
+              )}
+              <View style={styles.centerLogo}>
+                <StunityLogo width={108} height={30} />
+              </View>
+              <TouchableOpacity style={styles.iconButton} onPress={onRefresh}>
+                {refreshing || backgroundRefreshing ? (
+                  <ActivityIndicator size="small" color={colors.textSecondary} />
+                ) : (
+                  <Ionicons name="refresh-outline" size={20} color={colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-      </SafeAreaView>
+      ) : (
+        <SafeAreaView edges={['top']} style={styles.headerSafe}>
+          {!props.hideAppBar && (
+            <View style={styles.topBar}>
+              {!props.hideBackButton ? (
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+                  <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 44, height: 44 }} />
+              )}
+              <View style={styles.centerLogo}>
+                <StunityLogo width={108} height={30} />
+              </View>
+              <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
+                {refreshing || backgroundRefreshing ? (
+                  <ActivityIndicator size="small" color={colors.textSecondary} />
+                ) : (
+                  <Ionicons name="refresh-outline" size={20} color={colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </SafeAreaView>
+      )}
 
       {loading ? (
         <View style={styles.loadingWrap}>
@@ -760,7 +802,7 @@ export default function ClassDetailsScreen() {
       ) : error ? (
         <View style={styles.loadingWrap}>
           <Ionicons name="alert-circle-outline" size={40} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => loadData({ force: true })}>
             <Text style={styles.retryText}>{t('classDetails.retry')}</Text>
           </TouchableOpacity>
@@ -779,43 +821,53 @@ export default function ClassDetailsScreen() {
           }
         >
           {/* PREMIUM HERO CARD */}
-          <View style={styles.heroCard}>
-            <LinearGradient
-              colors={['#0891B2', '#06B6D4']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.heroGlowBlob} />
+          <LinearGradient
+            colors={isDark ? ['#115E59', '#0F766E'] : ['#0CA2C4', '#0CA2C4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            {/* Abstract Background Orbs — same illustration technique as LearnHomeScreen's hero */}
+            <View style={styles.bgOrbPrimary} />
+            <View style={styles.bgOrbSecondary} />
+            <View style={styles.heroFloatIcon}>
+              <Ionicons name="sparkles" size={12} color={Colors.white} />
+            </View>
 
-            {/* Top row: label pill + grade pill */}
-            <View style={styles.heroHeader}>
-              <View style={styles.heroRolePill}>
-                <Ionicons
-                  name={rolePresentation.icon}
-                  size={11}
-                  color="#fff"
-                />
-                <Text style={[styles.heroRoleText, isKhmer && styles.khmerInlineText]}>
-                  {rolePresentation.label}
-                </Text>
-              </View>
-              <View style={styles.heroGradePill}>
-                <Text style={[styles.heroGradePillText, isKhmer && styles.khmerInlineText]}>
-                  {t('classDetails.hero.grade', { grade: displayedGrade })}
-                </Text>
+            <View style={styles.heroCardContent}>
+              <View style={styles.heroTopRow}>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.heroKickerPill}>
+                    <Ionicons name={rolePresentation.icon} size={13} color="#FFFFFF" />
+                    <Text style={styles.heroKickerText}>{rolePresentation.label}</Text>
+                  </View>
+                  <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
+                  <Text style={[styles.heroMeta, isKhmer && styles.khmerInlineText]}>
+                    {t('classDetails.hero.grade', { grade: displayedGrade })}
+                    {displayedTrack ? ` · ${displayedTrack}` : ''}
+                  </Text>
+                </View>
+
+                {/* Attendance-rate ring — mirrors LearnHomeScreen's unit-completion ring */}
+                <View style={styles.heroRingWrap}>
+                  <Svg width={52} height={52}>
+                    <Circle cx={26} cy={26} r={22} stroke="rgba(255,255,255,0.3)" strokeWidth={5} fill="none" />
+                    <Circle
+                      cx={26} cy={26} r={22}
+                      stroke="#FFFFFF"
+                      strokeWidth={5}
+                      strokeLinecap="round"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 22 * pct} ${2 * Math.PI * 22}`}
+                      transform="rotate(-90 26 26)"
+                    />
+                  </Svg>
+                  <Text style={styles.heroRingText}>{Math.round(pct * 100)}%</Text>
+                </View>
               </View>
             </View>
 
-            {/* Main title */}
-            <View style={styles.heroBody}>
-              <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
-              {displayedTrack ? (
-                <Text style={styles.heroTrack}>{displayedTrack}</Text>
-              ) : null}
-            </View>
-
-            {/* Stats row */}
+            {/* Stats Row (Darker Background at the bottom) */}
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStatItem}>
                 <Text style={styles.heroStatNum}>{studentStats.total}</Text>
@@ -832,8 +884,9 @@ export default function ClassDetailsScreen() {
                 <Text style={[styles.heroStatLabel, isKhmer && styles.khmerInlineText]}>{t('classDetails.hero.female')}</Text>
               </View>
             </View>
-          </View>
+          </LinearGradient>
 
+          {props.classSelector}
           {params.teacherClassAccess === 'other' &&
             (myRole === 'TEACHER' ||
               Boolean(
@@ -850,13 +903,14 @@ export default function ClassDetailsScreen() {
           )}
 
           {/* BENTO-BOX SHORTCUT GRID */}
-          <View style={styles.sectionHeaderRow}>
-             <View>
-               <Text style={styles.sectionHeader}>{t('classDetails.classHubTools')}</Text>
-               <Text style={styles.sectionSubheader}>{t('classDetails.classHubSubtitle')}</Text>
-             </View>
-          </View>
-          <View style={styles.bentoGrid}>
+          <View style={styles.sectionWrap}>
+            <View style={styles.sectionHeaderRow}>
+               <View>
+                 <Text style={styles.sectionHeader}>{t('classDetails.classHubTools')}</Text>
+                 <Text style={styles.sectionSubheader}>{t('classDetails.classHubSubtitle')}</Text>
+               </View>
+            </View>
+            <View style={styles.bentoGrid}>
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={() => navigation.navigate('ClassReport', {
@@ -977,6 +1031,7 @@ export default function ClassDetailsScreen() {
               </TouchableOpacity>
             )}
           </View>
+        </View>
 
           {/* TIMETABLE PREVIEW - HYPER-CLEAN CALENDAR VIEW */}
           {(timetable?.entries && timetable.entries.length > 0) ? (
@@ -1223,28 +1278,37 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   bgOrbPrimary: {
     position: 'absolute',
-    width: 240,
-    height: 240,
+    width: 220,
+    height: 220,
     borderRadius: BorderRadius.full,
-    backgroundColor: isDark ? 'rgba(6,168,204,0.12)' : '#DFF7FF',
-    opacity: isDark ? 1 : 0.72,
-    top: 86,
-    right: -120,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    top: -60,
+    right: -60,
   },
   bgOrbSecondary: {
     position: 'absolute',
-    width: 180,
-    height: 180,
+    width: 130,
+    height: 130,
     borderRadius: BorderRadius.full,
-    backgroundColor: isDark ? 'rgba(139,92,246,0.12)' : '#F3E8FF',
-    opacity: isDark ? 1 : 0.72,
-    top: 430,
-    left: -110,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    bottom: -50,
+    left: -30,
   },
   headerSafe: {
     backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.92)',
   },
   topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  centerLogo: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  topBarInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1311,7 +1375,7 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   },
   scrollContent: {
     padding: Spacing.md,
-    gap: Spacing[7],
+    gap: Spacing.lg,
     paddingBottom: Spacing[12],
   },
   viewOnlyHint: {
@@ -1331,110 +1395,102 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     lineHeight: 19,
   },
   
-  // ─── PREMIUM HERO CARD ───────────────────────────────────────
+  // ─── PREMIUM HERO CARD (mirrors LearnHomeScreen's subjectCard treatment) ──
   heroCard: {
+    marginHorizontal: 4,
     borderRadius: BorderRadius['2xl'],
     overflow: 'hidden',
-    ...Shadows.xl,
-    shadowColor: '#0891B2',
+    borderWidth: 0,
   },
-  heroGlowBlob: {
+  heroFloatIcon: {
     position: 'absolute',
-    width: 220,
-    height: 220,
+    top: 14,
+    right: 64,
+    width: 22,
+    height: 22,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.white,
-    opacity: 0.08,
-    top: -80,
-    right: -60,
-  },
-  heroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Spacing[10],
-    paddingHorizontal: Spacing[5],
-  },
-  heroRolePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
+    justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    zIndex: 2,
+  },
+  heroCardContent: {
+    padding: Spacing[5],
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  heroKickerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
-  heroRoleText: {
-    color: Colors.white,
+  heroKickerText: {
+    color: '#FFFFFF',
     fontSize: Typography.fontSize[11],
-    fontWeight: Typography.fontWeight.bold,
-    letterSpacing: 0.3,
-  },
-  heroGradePill: {
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
-  heroGradePillText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: Typography.fontSize[11],
-    fontWeight: Typography.fontWeight.bold,
-  },
-  heroBody: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
+    fontWeight: Typography.fontWeight.extrabold,
+    letterSpacing: 0.4,
   },
   heroTitle: {
+    fontFamily: 'Koulen-Regular',
     fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.extrabold,
-    color: Colors.white,
-    letterSpacing: -0.5,
-    lineHeight: 42,   // Generous line-height so top of Khmer chars never clips
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+    lineHeight: 38,
+    marginTop: 8,
+    paddingTop: Spacing.sm,
   },
-  heroTrack: {
-    marginTop: Spacing.sm,
+  heroMeta: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
+  },
+  heroRingWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroRingText: {
+    position: 'absolute',
     fontSize: Typography.fontSize[13],
-    fontWeight: Typography.fontWeight.medium,
-    color: 'rgba(255,255,255,0.5)',
-    letterSpacing: 0.2,
+    fontWeight: Typography.fontWeight.black,
+    color: '#FFFFFF',
   },
   heroStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
-    paddingVertical: Spacing[3],
-    paddingHorizontal: Spacing[5],
-    backgroundColor: 'rgba(2,132,199,0.18)',
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
   },
   heroStatItem: {
     flex: 1,
     alignItems: 'center',
   },
   heroStatNum: {
-    color: Colors.white,
+    color: '#FFFFFF',
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.extrabold,
-    letterSpacing: -0.5,
   },
   heroStatLabel: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: Typography.fontSize[11],
-    fontWeight: Typography.fontWeight.semibold,
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontSize: 10,
+    fontWeight: Typography.fontWeight.bold,
     textTransform: 'uppercase',
-    marginTop: Spacing.xs,
-    letterSpacing: 0.5,
+    marginTop: 4,
+    letterSpacing: 0.8,
   },
   heroStatSep: {
     width: 1,
-    height: 28,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
 
   sectionWrap: {
@@ -1843,3 +1899,9 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     lineHeight: 22,
   },
 });
+
+export default function ClassDetailsScreen() {
+  const route = useRoute<any>();
+  const params = (route.params || {}) as RouteParams;
+  return <ClassHubView {...params} />;
+}

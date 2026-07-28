@@ -344,3 +344,37 @@ export const Animation = {
 } as const;
 
 export type ThemeType = typeof LightTheme | typeof DarkTheme;
+
+export interface TabColorPalette {
+  inactiveBackground: string;
+  inactiveBorder: string;
+  inactiveIcon: string;
+  inactiveText: string;
+  activeBackground: string;
+  activeBorder: string;
+}
+
+export const UNIFIED_TAB_PALETTE: TabColorPalette = {
+  inactiveBackground: '#FFFFFF',
+  inactiveBorder: '#E2E8F0',
+  inactiveIcon: '#64748B',
+  inactiveText: '#475569',
+  activeBackground: '#14B8A6',
+  activeBorder: '#14B8A6',
+};
+
+// Single accent used everywhere in the class experience (SchoolClassCard, tablet
+// rail icons, section badges) — the same teal as UNIFIED_TAB_PALETTE.activeBackground
+// and ClassDetailsScreen's hero role pill, so the list screen and detail screen
+// read as one consistent color, not a rainbow keyed off list index.
+export interface ClassCardTheme {
+  accent: string;
+  soft: string;
+  softDark: string;
+}
+
+export const CLASS_CARD_THEME: ClassCardTheme = {
+  accent: '#14B8A6',
+  soft: '#CCFBF1',
+  softDark: 'rgba(20,184,166,0.16)',
+};

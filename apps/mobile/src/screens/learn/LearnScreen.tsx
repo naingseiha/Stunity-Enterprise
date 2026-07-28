@@ -46,7 +46,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Haptics } from '@/services/haptics';
-import { Colors, Typography, Shadows } from '@/config';
+import { Colors, Typography, Shadows, UNIFIED_TAB_PALETTE } from '@/config';
+import type { TabColorPalette } from '@/config';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 import { learnApi } from '@/api';
@@ -70,29 +71,11 @@ const TABS: { id: TabType; labelKey: string; icon: keyof typeof Ionicons.glyphMa
   { id: 'paths',    labelKey: 'learn.tabs.paths',    icon: 'git-branch-outline' },
 ];
 
-interface TabColorPalette {
-  inactiveBackground: string;
-  inactiveBorder: string;
-  inactiveIcon: string;
-  inactiveText: string;
-  activeBackground: string;
-  activeBorder: string;
-}
-
-const UNIFIED_PALETTE: TabColorPalette = {
-  inactiveBackground: '#FFFFFF',
-  inactiveBorder: '#E2E8F0',
-  inactiveIcon: '#64748B',
-  inactiveText: '#475569',
-  activeBackground: '#0F172A',
-  activeBorder: '#0F172A',
-};
-
 const TAB_COLOR_PALETTES: Record<TabType, TabColorPalette> = {
-  explore:  { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
-  enrolled: { ...UNIFIED_PALETTE, activeBackground: '#2563EB', activeBorder: '#2563EB' },
-  created:  { ...UNIFIED_PALETTE, activeBackground: '#7C3AED', activeBorder: '#7C3AED' },
-  paths:    { ...UNIFIED_PALETTE, activeBackground: '#F59E0B', activeBorder: '#F59E0B' },
+  explore:  { ...UNIFIED_TAB_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
+  enrolled: { ...UNIFIED_TAB_PALETTE, activeBackground: '#2563EB', activeBorder: '#2563EB' },
+  created:  { ...UNIFIED_TAB_PALETTE, activeBackground: '#7C3AED', activeBorder: '#7C3AED' },
+  paths:    { ...UNIFIED_TAB_PALETTE, activeBackground: '#F59E0B', activeBorder: '#F59E0B' },
 };
 
 const FEATURED_CARD_GAP = 16;
@@ -601,39 +584,23 @@ export default function LearnScreen() {
 
     return (
       <View>
-        {/* ── Premium Hero Header ── */}
-        <LinearGradient
-          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
-        >
-          <View style={styles.headerSafe}>
-            <View style={styles.topBar}>
-              {/* Pushed from LearnHome (the Learn tab root) → back, not drawer */}
-              {navigation.canGoBack() ? (
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconButton}>
-                  <Ionicons name="chevron-back" size={24} color={colors.text} />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-                  <Ionicons name="menu-outline" size={24} color={colors.text} />
-                </TouchableOpacity>
-              )}
-              <View>
-                <StunityLogo width={108} height={30} />
-              </View>
-              <View style={styles.topBarActions}>
-                <TouchableOpacity onPress={handleCreateCourse} style={styles.headerIconButton}>
-                  <Ionicons name="add" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-                  <Ionicons name="refresh" size={22} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
+      <View style={[styles.heroHeaderBg, { backgroundColor: isDark ? colors.card : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: isDark ? colors.border : '#F1F5F9', marginTop: -1, paddingTop: 1 }]}>
+        <View style={styles.headerSafe}>
+          <View style={styles.topBar}>
+            {/* Pushed from LearnHome (the Learn tab root) → back, not drawer */}
+            {navigation.canGoBack() ? (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconButton}>
+                <Ionicons name="chevron-back" size={24} color={colors.text} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                <Ionicons name="menu-outline" size={24} color={colors.text} />
+              </TouchableOpacity>
+            )}
+            <View style={{ flex: 1 }} />
+          </View>
 
-            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+          <View style={[styles.searchContainer, { backgroundColor: isDark ? colors.surface : '#F8FAFC', borderColor: colors.border, borderWidth: 1 }]}>
               <Ionicons name="search" size={20} color={colors.textTertiary} />
               <TextInput
                 value={searchQuery}
@@ -649,7 +616,7 @@ export default function LearnScreen() {
               )}
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Tab bar — fixed outside list -> now inside header */}
         <ScrollView
@@ -1146,20 +1113,14 @@ export default function LearnScreen() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
-        <LinearGradient
-          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
+        <View
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: isDark ? colors.card : '#FFFFFF' }}
         />
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: colors.background }}>
-            {/* ─ Hero gradient header — identical to real screen ─ */}
-            <LinearGradient
-              colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
+            {/* ─ Hero header — identical to real screen ─ */}
+            <View
+              style={[styles.heroHeaderBg, { backgroundColor: isDark ? colors.card : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: isDark ? colors.border : '#F1F5F9', marginTop: -1, paddingTop: 1 }]}
             >
               <View style={styles.headerSafe}>
                 <View style={styles.topBar}>
@@ -1188,7 +1149,7 @@ export default function LearnScreen() {
                   <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton, borderRadius: 6 }} />
                 </View>
               </View>
-            </LinearGradient>
+            </View>
 
             {/* ─ Tab bar skeleton — same position and style as real tabs ─ */}
             <View style={[styles.tabsScroll, skeletonStyles.tabsRow]}>
@@ -1212,11 +1173,8 @@ export default function LearnScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
-      <LinearGradient
-        colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
+      <View
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: isDark ? colors.card : '#FFFFFF' }}
       />
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <View style={{ flex: 1, backgroundColor: colors.background }}>

@@ -2481,6 +2481,10 @@
       "teacherSectionOther": "ថ្នាក់ផ្សេងទៀតដែលភ្ជាប់",
       "teacherSectionClassCount": "ថ្នាក់ {{count}}",
       "myClassesSection": "ថ្នាក់របស់ខ្ញុំ",
+      "myClassesTitle": "ថ្នាក់រៀនរបស់ខ្ញុំ",
+      "notLinkedTitle": "មិនទាន់បានភ្ជាប់ជាមួយសាលា",
+      "notLinkedSubtitle": "អ្នកនឹងឃើញថ្នាក់រៀនរបស់អ្នកនៅទីនេះ នៅពេលដែលសាលារបស់អ្នកភ្ជាប់គណនីរបស់អ្នក។",
+      "tabletRailTitle": "ក្លឹប",
       "communityClubs": "ក្លឹបសិក្សា",
       "todaysClubs": "ក្លឹបថ្ងៃនេះ",
       "searchPlaceholder": "ស្វែងរកមេរៀន និងក្លឹប...",
@@ -2498,8 +2502,12 @@
     }
   },
   "classes": {
+    "noClassesTitle": "គ្មានថ្នាក់ត្រូវបានចាត់តាំង",
+    "noClassesDesc": "អ្នកមិនទាន់ចុះឈ្មោះក្នុងថ្នាក់ណាមួយសម្រាប់ឆ្នាំសិក្សានេះទេ។",
     "directory": {
       "title": "បញ្ជីថ្នាក់សាលា",
+      "viewDirectory": "មើលបញ្ជីថ្នាក់",
+      "classesLabel": "ថ្នាក់រៀន",
       "searchPlaceholder": "ស្វែងរកថ្នាក់ កម្រិត ឬផ្នែក...",
       "fetching": "កំពុងទាញយកបញ្ជី...",
       "loadFailed": "ផ្ទុកបញ្ជីថ្នាក់មិនបានសម្រេច",

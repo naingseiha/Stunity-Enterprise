@@ -1,24 +1,16 @@
 /**
- * ClubsScreen — Optimized for performance
+ * ClubsScreen — the "Classes" tab.
  *
- * Perf changes (mirrors FeedScreen patterns):
- * - FlatList → FlashList (cell recycling, 120fps capable)
- * - estimatedItemSize for immediate layout
- * - drawDistance pre-renders off-screen cells
- * - getItemType bucketed recycling by club type
- * - ClubCard extracted as React.memo — stable between renders
- * - All callbacks wrapped in useCallback with correct deps
- * - renderHeader wrapped in useCallback
- * - removeClippedSubviews on Android only
- * - Skeleton loading on initial load instead of full-page spinner
- * - Incremental paginated loading with FlashList onEndReached
+ * Renders ClassHubView (from ClassDetailsScreen.tsx) directly for the signed-in
+ * user's class, or the school directory for admin/staff with no class of their
+ * own. Club browsing/joining logic remains in this file, gated behind
+ * FEATURE_FLAGS.CLUBS_ENABLED, for a future re-enable.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
   Alert,
-  Platform,
   RefreshControl,
   InteractionManager,
   ScrollView,
@@ -32,7 +24,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -47,18 +38,20 @@ import {
 } from '@/screens/clubs/clubsCache';
 import type { Club } from '@/api/clubs';
 import type { MyClassSummary } from '@/api/classes';
+import { UNIFIED_TAB_PALETTE, CLASS_CARD_THEME } from '@/config';
 import { useNavigationContext, useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
-import StunityLogo from '../../../assets/Stunity.svg';
-import { ClubCard } from '@/components/clubs/ClubCard';
 import { SchoolClassCard } from '@/components/clubs/SchoolClassCard';
-import { BannerCarousel, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
-import { ClubsHeaderSkeleton, ClubCardSkeleton, SchoolClassCardSkeleton } from '@/components/clubs/ClubsSkeletons';
+import { COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
+import { SchoolClassCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 import { useTranslation } from 'react-i18next';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
 import { getClassGenderCounts, getSafeStudentCount } from '@/utils/classGenderCounts';
-
+import { FEATURE_FLAGS } from '@/config/featureFlags';
+import { ClassHubView } from './ClassDetailsScreen';
+import { Image } from 'expo-image';
+import { statsAPI, PerformanceStatsSummary } from '@/services/stats';
 type ClubFilter = 'all' | 'joined' | 'discover';
 
 // ── Filter tab bar — mirrors LearnScreen pill-tab visual language ─────────────
@@ -70,24 +63,7 @@ const CLUB_FILTER_TABS: { id: ClubFilter; labelKey: string; icon: keyof typeof I
 
 // Single accent palette — matches LearnScreen's unified teal accent. Light bg + dark text
 // when inactive; teal fill + white text when active.
-const CLUB_TAB_PALETTE = {
-  inactiveBackground: '#FFFFFF',
-  inactiveBorder: '#E2E8F0',
-  inactiveIcon: '#64748B',
-  inactiveText: '#475569',
-  activeBackground: '#14B8A6',
-  activeBorder: '#14B8A6',
-};
-
-// Matches the accent palette used in ClubCard — professional, consistent with the page
-const CLASS_THEMES = [
-  { accent: '#06A8CC', soft: '#E0F9FD', icon: 'school-outline'      as const }, // Brand Teal
-  { accent: '#6366F1', soft: '#EEF2FF', icon: 'library-outline'     as const }, // Indigo
-  { accent: '#F59E0B', soft: '#FEF3C7', icon: 'ribbon-outline'      as const }, // Amber
-  { accent: '#EC4899', soft: '#FDF2F8', icon: 'star-outline'        as const }, // Pink
-  { accent: '#10B981', soft: '#D1FAE5', icon: 'leaf-outline'        as const }, // Emerald
-  { accent: '#8B5CF6', soft: '#F3E8FF', icon: 'extension-puzzle-outline' as const }, // Violet
-];
+const CLUB_TAB_PALETTE = UNIFIED_TAB_PALETTE;
 
 // Derive a short class code (e.g. "10A") from the class name
 const getClassCode = (name: string): string => {
@@ -135,6 +111,7 @@ const getClassCacheScopeKey = (user: ReturnType<typeof useAuthStore.getState>['u
 
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
+
 export default function ClubsScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
@@ -210,10 +187,20 @@ export default function ClubsScreen() {
     : [];
   const hasInitialVisibleContent = Boolean(initialClubsPage || initialSchoolClasses.length > 0);
 
-  const [loading, setLoading]                   = useState(!hasInitialVisibleContent);
+  // This flag is resolved by loadClubs()'s finally block. When clubs are disabled
+  // that call never fires, so don't start "loading" on its account — the classes
+  // section below tracks its own loadingSchoolClasses/loadingAdminClasses state.
+  const [loading, setLoading]                   = useState(FEATURE_FLAGS.CLUBS_ENABLED && !hasInitialVisibleContent);
   const [refreshing, setRefreshing]             = useState(false);
   const [error, setError]                       = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter]     = useState<ClubFilter>('all');
+  const [stats, setStats]                       = useState<PerformanceStatsSummary | null>(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      statsAPI.getUserStatsSummary(user.id).then(setStats).catch(() => {});
+    }
+  }, [user?.id]);
 
   const tabContentProgress = useRef(new Animated.Value(1)).current;
 
@@ -263,6 +250,8 @@ export default function ClubsScreen() {
   const [loadingAdminClasses, setLoadingAdminClasses] = useState(false);
   const [inviteCount, setInviteCount]           = useState(0);
 
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
   const pageRef = useRef(1);
   const isLoadingMoreRef = useRef(false);
   const hasMoreClubsRef = useRef(true);
@@ -288,6 +277,7 @@ export default function ClubsScreen() {
   const isAdminOrStaff = Boolean(
     user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
   );
+  const shouldShowClassHub = true; // User requested to completely remove the old screen for everyone.
   const canUseDisciplineWorkbench = Boolean(isAdminOrStaff || user?.role === 'TEACHER');
   const clubListColumns = 1;
   const shortcutItems = useMemo(() => [
@@ -386,6 +376,20 @@ export default function ClubsScreen() {
   useEffect(() => {
     isLoadingMoreRef.current = isLoadingMore;
   }, [isLoadingMore]);
+
+  // ── Class Hub Routing Logic ────────────────────────────────────────────────
+
+  // Auto-select class for Class Hub
+  useEffect(() => {
+    if (shouldShowClassHub && !selectedClassId) {
+      const isTeacher = user?.role === 'TEACHER';
+      if (isTeacher) {
+        if (teacherClassSplit.teaching.length > 0) setSelectedClassId(teacherClassSplit.teaching[0].id);
+      } else {
+        if (schoolClasses.length > 0) setSelectedClassId(schoolClasses[0].id);
+      }
+    }
+  }, [shouldShowClassHub, schoolClasses, teacherClassSplit.teaching, selectedClassId, user?.role]);
 
   useEffect(() => {
     hasMoreClubsRef.current = hasMoreClubs;
@@ -589,6 +593,7 @@ export default function ClubsScreen() {
   }, []);
 
   useEffect(() => {
+    if (!FEATURE_FLAGS.CLUBS_ENABLED) return;
     setPage(1);
     setHasMoreClubs(true);
     loadClubs({
@@ -616,6 +621,7 @@ export default function ClubsScreen() {
   }, [loadAdminClasses, isAdminOrStaff]);
 
   useEffect(() => {
+    if (!FEATURE_FLAGS.CLUBS_ENABLED) return;
     loadInvites();
   }, [loadInvites]);
 
@@ -626,6 +632,7 @@ export default function ClubsScreen() {
         hasFocusedOnceRef.current = true;
         return;
       }
+      if (!FEATURE_FLAGS.CLUBS_ENABLED) return;
 
       loadClubs({
         silent: true,
@@ -698,19 +705,23 @@ export default function ClubsScreen() {
     setPage(1);
     setHasMoreClubs(true);
     setRefreshing(true);
-    clubsApi.invalidateClubsCache();
-    invalidateClubsLandingCache();
+    if (FEATURE_FLAGS.CLUBS_ENABLED) {
+      clubsApi.invalidateClubsCache();
+      invalidateClubsLandingCache();
+    }
     if (canViewSchoolClasses) {
       classesApi.invalidateMyClassesCache();
     }
 
     Promise.all([
-      loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current }),
+      FEATURE_FLAGS.CLUBS_ENABLED
+        ? loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current })
+        : Promise.resolve(),
       isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true),
       user?.role === 'TEACHER' || user?.teacher?.id || user?.teacherId
         ? loadAllSchoolClasses()
         : Promise.resolve(),
-      loadInvites(),
+      FEATURE_FLAGS.CLUBS_ENABLED ? loadInvites() : Promise.resolve(),
     ]).finally(() => setRefreshing(false));
   }, [
     adminSearchQuery,
@@ -875,729 +886,208 @@ export default function ClubsScreen() {
     return data;
   }, [clubs, joinedClubSet, selectedFilter, normalizedQuery]);
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  // Note: shortcuts row and search are rendered ABOVE the list (in the hero header
-  // + pill tab bar). This renderHeader only contains body-level sections.
-  const renderHeader = useCallback(() => {
-    return (
-      <>
-        {/* ── Premium Hero Header ── */}
-        <LinearGradient
-          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
-        >
-          <View style={styles.headerSafe}>
+
+  // ── Class Hub Render ───────────────────────────────────────────────────────
+  if (shouldShowClassHub) {
+    // Admin/staff with no teaching duties have no "own" class to land on — show
+    // the school-wide directory + Discipline Workbench instead of a dead end.
+    if (isAdminOrStaff && !hasLinkedTeacherProfile) {
+      return (
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <SafeAreaView edges={['top']} style={{ backgroundColor: isDark ? colors.card : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: isDark ? colors.border : '#F1F5F9' }}>
             <View style={styles.topBar}>
               <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
                 <Ionicons name="menu-outline" size={24} color={colors.text} />
               </TouchableOpacity>
-              <StunityLogo width={108} height={30} />
-              <View style={styles.topBarActions}>
-                <TouchableOpacity onPress={handleCreateClub} style={styles.headerIconButton}>
-                  <Ionicons name="add" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleOpenInvites} style={styles.headerIconButton}>
-                  <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-                  {inviteCount > 0 ? (
-                    <View style={styles.inviteBadge}>
-                      <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
-                    </View>
-                  ) : null}
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-                  <Ionicons name="refresh" size={22} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-              <Ionicons name="search" size={20} color={colors.textTertiary} />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder={t('clubs.screen.searchPlaceholder')}
-                placeholderTextColor={colors.textTertiary}
-                style={[styles.searchInput, { color: colors.text }]}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* Pill tab bar — fixed outside the list, matches LearnScreen */}
-        <ScrollView
-          horizontal
-          style={styles.tabsScroll}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsContainer}
-        >
-          {CLUB_FILTER_TABS.map((tab) => {
-            const isActive = selectedFilter === tab.id;
-            const palette = isDark ? {
-              ...CLUB_TAB_PALETTE,
-              inactiveBackground: colors.card,
-              inactiveBorder: colors.border,
-              inactiveIcon: colors.textSecondary,
-              inactiveText: colors.textSecondary,
-            } : CLUB_TAB_PALETTE;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                style={[
-                  styles.tabButton,
-                  { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
-                  isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
-                ]}
-                onPress={() => handleFilterChange(tab.id)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
-                <Text
-                  allowFontScaling={false}
-                  style={[
-                    styles.tabLabel,
-                    isKhmer && styles.khmerInlineText,
-                    { color: isActive ? '#FFFFFF' : palette.inactiveText },
-                    isActive && styles.tabLabelActive,
-                  ]}
-                >
-                  {t(tab.labelKey)}
+              <View style={styles.headerTitleWrap}>
+                <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+                  {t('classes.directory.title')}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        <View style={styles.listHeader}>
-
-        {/* School Classes Section */}
-        {(canViewSchoolClasses || isAdminOrStaff) && !isClubRailTablet && (
-          <View
-            style={styles.schoolClassesSection}
-            onLayout={(e) => {
-              const w = e.nativeEvent.layout.width;
-              if (w > 0) setSchoolClassesBandWidth((prev) => (Math.abs(prev - w) < 1 ? prev : w));
-            }}
-          >
-            <View style={styles.schoolClassesHeader}>
-              <View style={styles.schoolClassesHeaderInfo}>
-                <View style={styles.schoolClassesTitleRow}>
-                  <View
-                    style={[
-                      styles.schoolClassesTitleIcon,
-                      { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' }
-                    ]}
-                  >
-                    <MaterialCommunityIcons name="google-classroom" size={16} color="#6366F1" />
-                  </View>
-                  <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
-                    {isAdminOrStaff && !isTeacherClassLayout
-                      ? t('classes.directory.title')
-                      : t('clubs.screen.schoolClasses')}
-                  </Text>
-                </View>
               </View>
-
-              {/* Academic Year Selector — teachers & school admins who also teach need year scope */}
-              {(!isAdminOrStaff || hasLinkedTeacherProfile) && academicYears.length > 1 && (
-                <View style={styles.yearSelectorContainer}>
-                  <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.yearSelector}
-                  >
-                    {academicYears.map((year) => (
-                      <TouchableOpacity
-                        key={year.id}
-                        onPress={() => setSelectedYearId(year.id)}
-                        style={[
-                          styles.yearPill,
-                          { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
-                          selectedYearId === year.id && styles.yearPillActive
-                        ]}
-                      >
-                        {selectedYearId === year.id && (
-                          <Ionicons name="calendar" size={14} color="#FFF" style={{ marginRight: 6 }} />
-                        )}
-                        <Text style={[
-                          styles.yearPillText,
-                          { color: colors.textSecondary },
-                          selectedYearId === year.id && styles.yearPillTextActive
-                        ]}>
-                          {year.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+              <View style={{ width: 40 }} />
             </View>
+            <View style={styles.adminSearchWrap}>
+              <View style={[styles.adminSearchBar, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
+                <TextInput
+                  style={[styles.adminSearchInput, { color: colors.text }]}
+                  placeholderTextColor={colors.textTertiary}
+                  placeholder={t('clubs.screen.searchClassesPlaceholder')}
+                  value={adminSearchQuery}
+                  onChangeText={(text) => { setAdminSearchQuery(text); loadAdminClasses(text); }}
+                />
+              </View>
+            </View>
+          </SafeAreaView>
 
+          <ScrollView
+            contentContainerStyle={{ padding: 16 }}
+            refreshControl={
+              <RefreshControl refreshing={loadingAdminClasses} onRefresh={() => loadAdminClasses(adminSearchQuery)} tintColor={colors.primary} colors={[colors.primary]} />
+            }
+          >
             {canUseDisciplineWorkbench && (
               <TouchableOpacity
-                style={[
-                  styles.disciplineWorkbenchCard,
-                  { backgroundColor: isDark ? '#062B34' : '#ECFEFF', borderColor: isDark ? '#0E7490' : '#A5F3FC' },
-                ]}
-                onPress={() => navigation.navigate('DisciplineWorkbench', { classId: previewClasses[0]?.id })}
+                style={[styles.disciplineWorkbenchCard, { backgroundColor: isDark ? '#062B34' : '#ECFEFF', borderWidth: 1, borderColor: isDark ? '#0E7490' : '#A5F3FC', shadowOpacity: 0 }]}
+                onPress={() => navigation.navigate('DisciplineWorkbench')}
                 activeOpacity={0.9}
               >
-                <View style={[styles.disciplineWorkbenchIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#CFFAFE' }]}>
-                  <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? '#A5F3FC' : '#0E7490'} />
-                </View>
-                <View style={styles.disciplineWorkbenchBody}>
-                  <Text style={[styles.disciplineWorkbenchTitle, { color: isDark ? '#ECFEFF' : '#0F172A' }, isKhmer && styles.khmerHeadingText]}>
-                    {t('clubs.screen.disciplineWorkbench')}
-                  </Text>
-                  <Text style={[styles.disciplineWorkbenchSubtitle, { color: isDark ? '#67E8F9' : '#0E7490' }, isKhmer && styles.khmerInlineText]}>
-                    {t('clubs.screen.disciplineWorkbenchSubtitle')}
-                  </Text>
-                </View>
-                <View style={[styles.disciplineWorkbenchArrow, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : '#FFFFFF' }]}>
-                  <Ionicons name="chevron-forward" size={16} color={isDark ? '#A5F3FC' : '#0E7490'} />
+                <View style={styles.disciplineWorkbenchGradient}>
+                  <View style={[styles.disciplineWorkbenchIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#CFFAFE' }]}>
+                    <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? '#67E8F9' : '#0E7490'} />
+                  </View>
+                  <View style={styles.disciplineWorkbenchBody}>
+                    <Text style={[styles.disciplineWorkbenchTitle, { color: isDark ? '#ECFEFF' : '#0F172A' }, isKhmer && styles.khmerHeadingText]}>
+                      {t('clubs.screen.disciplineWorkbench')}
+                    </Text>
+                    <Text style={[styles.disciplineWorkbenchSubtitle, { color: isDark ? '#67E8F9' : '#0E7490' }, isKhmer && styles.khmerInlineText]}>
+                      {t('clubs.screen.disciplineWorkbenchSubtitle')}
+                    </Text>
+                  </View>
+                  <View style={[styles.disciplineWorkbenchArrow, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF' }]}>
+                    <Ionicons name="chevron-forward" size={16} color={isDark ? '#67E8F9' : '#0E7490'} />
+                  </View>
                 </View>
               </TouchableOpacity>
             )}
 
-            {isAdminOrStaff && !isTeacherClassLayout && (
-              <View style={styles.adminSearchWrap}>
-                <View style={[styles.adminSearchBar, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-                  <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
-                  <TextInput
-                    style={[styles.adminSearchInput, { color: colors.text }]}
-                    placeholderTextColor={colors.textTertiary}
-                    placeholder={t('clubs.screen.searchClassesPlaceholder')}
-                    value={adminSearchQuery}
-                    onChangeText={(text) => {
-                      setAdminSearchQuery(text);
-                      loadAdminClasses(text);
-                    }}
-                  />
-                </View>
-              </View>
-            )}
-
-            {loadingSchoolClasses || loadingAdminClasses || loadingAllSchoolClasses ? (
-              <View style={[styles.schoolClassesGridInCard, { paddingTop: 4 }]}>
-                {[1, 2, 3].map((i) => (
+            {loadingAdminClasses ? (
+              <View style={[styles.schoolClassesGrid, { flexDirection: 'row', flexWrap: 'wrap' }]}>
+                {[1, 2, 3, 4].map((i) => (
                   <View key={`skel-${i}`} style={styles.gridItemWrapper}>
                     <SchoolClassCardSkeleton />
                   </View>
                 ))}
               </View>
-            ) : schoolClassesError || allSchoolClassesError ? (
-              <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={styles.schoolClassesErrorText}>{schoolClassesError || allSchoolClassesError}</Text>
-                <TouchableOpacity
-                  style={styles.schoolRetryBtn}
-                  onPress={() => {
-                    if (isAdminOrStaff) {
-                      loadAdminClasses(adminSearchQuery);
-                      return;
-                    }
-                    loadSchoolClasses(true);
-                    loadAllSchoolClasses();
-                  }}
-                >
-                  <Text style={[styles.schoolRetryText, isKhmer && styles.khmerInlineText]}>{t('common.tryAgain')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : previewClasses.length === 0 ? (
+            ) : adminClasses.length === 0 ? (
               <View style={[styles.schoolClassesEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.schoolClassesEmptyIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF' }]}>
                   <Ionicons name="albums-outline" size={26} color={isDark ? '#A5B4FC' : '#6366F1'} />
                 </View>
                 <Text style={[styles.schoolClassesEmptyTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
-                  {isAdminOrStaff
-                    ? t('clubs.screen.noClassesDirectory')
-                    : user?.role === 'PARENT'
-                      ? t('clubs.screen.noLinkedChildClasses')
-                      : t('clubs.screen.noClassesYear')}
+                  {t('clubs.screen.noClassesDirectory')}
                 </Text>
                 <Text style={[styles.schoolClassesEmptySubtitle, { color: colors.textTertiary }]}>
                   {t('clubs.screen.noClassesHint')}
                 </Text>
               </View>
-            ) : isTeacherClassLayout ? (
-              <View style={styles.teacherTwoSectionWrap}>
-                {teacherClassSplit.teaching.length > 0 ? (
-                  <View style={styles.teacherSectionCard}>
-                    <View style={styles.teacherSectionCardHeader}>
-                      <View
-                        style={[
-                          styles.teacherSectionIconBubble,
-                          { backgroundColor: isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE' }
-                        ]}
-                      >
-                        <Ionicons name="ribbon-outline" size={20} color="#0EA5E9" />
-                      </View>
-                      <View style={styles.teacherSectionHeaderText}>
-                        <Text style={[styles.teacherSectionCardTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
-                          {t('clubs.screen.teacherSectionTeaching')}
-                        </Text>
-                        <Text style={[styles.teacherSectionCardMeta, { color: colors.textSecondary }]}>
-                          {t('clubs.screen.teacherSectionClassCount', { count: teacherClassSplit.teaching.length })}
-                        </Text>
-                      </View>
-                    </View>
-                    <View
-                      style={[
-                        styles.schoolClassesGridInCard,
-                        gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
-                      ]}
-                    >
-                      {teacherClassSplit.teaching.slice(0, gridConfig.teacherSectionCount).map((item, idx) => (
-                        <View
-                          key={`teach-${item.id}`}
-                          style={[
-                            styles.gridItemWrapper,
-                            { width: gridConfig.cols === 3 ? '31.5%' : gridConfig.cols === 2 ? '48.5%' : '100%' }
-                          ]}
-                        >
-                          <SchoolClassCard
-                            item={item}
-                            index={idx}
-                            orderNumber={idx + 1}
-                            onPress={(classItem) => handleClassPress(classItem, 'teaching')}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                    {teacherClassSplit.teaching.length > gridConfig.teacherSectionCount ? (
-                      <TouchableOpacity
-                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard]}
-                        onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'teaching' })}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.seeAllGridText, isKhmer && styles.khmerInlineText]}>
-                          {t('clubs.screen.seeAllTeachingCount', { count: teacherClassSplit.teaching.length })}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={16} color="#14B8A6" />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                ) : null}
-
-                {teacherOtherClasses.length > 0 ? (
-                  <View style={styles.teacherSectionCard}>
-                    <View style={styles.teacherSectionCardHeader}>
-                      <View
-                        style={[
-                          styles.teacherSectionIconBubble,
-                          { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' }
-                        ]}
-                      >
-                        <Ionicons name="layers-outline" size={20} color="#6366F1" />
-                      </View>
-                      <View style={styles.teacherSectionHeaderText}>
-                        <Text style={[styles.teacherSectionCardTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>
-                          {t('clubs.screen.teacherSectionOther')}
-                        </Text>
-                        <Text style={[styles.teacherSectionCardMeta, { color: colors.textSecondary }]}>
-                          {t('clubs.screen.teacherSectionClassCount', { count: teacherOtherClasses.length })}
-                        </Text>
-                      </View>
-                    </View>
-                    <View
-                      style={[
-                        styles.schoolClassesGridInCard,
-                        gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
-                      ]}
-                    >
-                      {teacherOtherClasses.slice(0, gridConfig.teacherSectionCount).map((item, idx) => (
-                        <View
-                          key={`oth-${item.id}`}
-                          style={[
-                            styles.gridItemWrapper,
-                            { width: gridConfig.cols === 3 ? '31.5%' : gridConfig.cols === 2 ? '48.5%' : '100%' }
-                          ]}
-                        >
-                          <SchoolClassCard
-                            item={item}
-                            index={idx}
-                            orderNumber={idx + 1}
-                            onPress={(classItem) => handleClassPress(classItem, 'other')}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                    {teacherOtherClasses.length > gridConfig.teacherSectionCount ? (
-                      <TouchableOpacity
-                        style={[styles.seeAllSectionRow, styles.teacherSeeAllInCard]}
-                        onPress={() => navigation.navigate('ClassDirectory', { teacherSectionFilter: 'other' })}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.seeAllGridText, isKhmer && styles.khmerInlineText]}>
-                          {t('clubs.screen.seeAllOtherCount', { count: teacherOtherClasses.length })}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={16} color="#14B8A6" />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                ) : null}
-              </View>
             ) : (
-              <View
-                style={[
-                  styles.schoolClassesGrid,
-                  gridConfig.cols > 1 && styles.schoolClassesGridMulticol,
-                ]}
-              >
-                {previewClasses.slice(0, gridConfig.classPreviewCount).map((item, idx) => (
-                  <View
-                    key={item.id}
-                    style={[
-                      styles.gridItemWrapper,
-                      { width: gridConfig.cols === 3 ? '31.5%' : gridConfig.cols === 2 ? '48.5%' : '100%' }
-                    ]}
-                  >
-                    <SchoolClassCard
-                      item={item}
-                      index={idx}
-                      orderNumber={idx + 1}
-                      onPress={handleClassPress}
-                    />
+              <View style={[styles.schoolClassesGrid, { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 0 }]}>
+                {adminClasses.map((item, idx) => (
+                  <View key={item.id} style={styles.gridItemWrapper}>
+                    <SchoolClassCard item={item} index={idx} variant="grid" onPress={handleClassPress} />
                   </View>
                 ))}
-
-                {previewClasses.length > gridConfig.classPreviewCount && (
-                  <TouchableOpacity
-                    style={styles.seeAllSectionRow}
-                    onPress={() => { navigation.navigate('ClassDirectory'); }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.seeAllGridText}>
-                      {isAdminOrStaff
-                        ? t('clubs.screen.seeAllCount', { count: previewClasses.length })
-                        : t('clubs.screen.seeAllMyClassesCount', { count: previewClasses.length })}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#14B8A6" />
-                  </TouchableOpacity>
-                )}
               </View>
             )}
-          </View>
-        )}
-
-        {/* Community Clubs section heading */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }, isKhmer && styles.khmerHeadingText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
-          <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
-            <Text style={[styles.viewAllText, isKhmer && styles.khmerInlineText]}>{t('learn.viewAll')}</Text>
-          </TouchableOpacity>
+          </ScrollView>
         </View>
-      </View>
-      </>
-    );
-  }, [
-    canViewSchoolClasses,
-    canUseDisciplineWorkbench,
-    hasLinkedTeacherProfile,
-    isAdminOrStaff,
-    isTeacherClassLayout,
-    academicYears,
-    selectedYearId,
-    previewClasses,
-    adminSearchQuery,
-    handleClassPress,
-    handleCreateClub,
-    handleFilterChange,
-    isClubRailTablet,
-    isThreeColumnTablet,
-    loadAdminClasses,
-    loadSchoolClasses,
-    loadingAdminClasses,
-    loadingSchoolClasses,
-    navigation,
-    schoolClasses,
-    schoolClassesError,
-    selectedFilter,
-    colors,
-    isDark,
-    isKhmer,
-    t,
-    user?.role,
-    teacherClassSplit,
-    teacherOtherClasses,
-    gridConfig,
-    openSidebar,
-    handleOpenInvites,
-    inviteCount,
-    onRefresh,
-    searchQuery,
-  ]);
+      );
+    }
 
-  const renderTabletLeftRail = useCallback(() => {
-    if (!isClubRailTablet) return null;
-    return (
-      <View style={styles.tabletLeftRail}>
-        <View style={[styles.tabletRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.tabletRailTitle, { color: colors.text }]}>Clubs</Text>
-          {shortcutItems.map((s) => {
-            const isActive = selectedFilter === s.id;
-            return (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.tabletShortcutRow, { backgroundColor: colors.surfaceVariant }, isActive && { backgroundColor: s.bgInner }]}
-                onPress={() => s.id === 'create' ? handleCreateClub() : handleFilterChange(s.id as ClubFilter)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name={s.icon as any} size={19} color={s.color} />
-                <Text style={[styles.tabletShortcutText, { color: isActive ? s.color : colors.text }]}>{s.label}</Text>
-              </TouchableOpacity>
-            );
+    if (selectedClassId) {
+      const isTeacher = user?.role === 'TEACHER';
+      const classesForSelector = isTeacher && teacherClassSplit.teaching.length > 0 ? teacherClassSplit.teaching : schoolClasses;
+      const classSelectorUi = classesForSelector.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14, gap: 10, alignItems: 'center' }}>
+          {classesForSelector.map(cls => {
+             const isActive = selectedClassId === cls.id;
+             return (
+               <TouchableOpacity 
+                  key={cls.id} 
+                  onPress={() => setSelectedClassId(cls.id)}
+                  style={{ 
+                    paddingHorizontal: 18, 
+                    paddingVertical: 10, 
+                    borderRadius: 9999, 
+                    borderWidth: 1.5,
+                    borderColor: isActive ? colors.primary : (isDark ? '#334155' : '#E2E8F0'),
+                    backgroundColor: isActive ? colors.primary : 'transparent',
+                    flexDirection: 'row',
+                    alignItems: 'center'
+                  }}
+               >
+                 <Text style={{ color: isActive ? '#FFFFFF' : colors.textSecondary, fontWeight: isActive ? '700' : '600', fontSize: 14 }}>{cls.name}</Text>
+               </TouchableOpacity>
+             );
           })}
-        </View>
-        {(canViewSchoolClasses || isAdminOrStaff) && (
-          <View style={[styles.tabletRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.tabletRailTitle, { color: colors.text }]}>{t('clubs.screen.schoolClasses')}</Text>
-            {previewClasses.slice(0, isPortraitTablet ? 5 : 3).map((classItem, index) => (
-              <TouchableOpacity
-                key={classItem.id}
-                style={[styles.tabletClassRow, { backgroundColor: colors.surfaceVariant }]}
-                onPress={() => handleClassPress(classItem)}
-                activeOpacity={0.85}
-              >
-                <View style={[styles.tabletClassIcon, { backgroundColor: CLASS_THEMES[index % CLASS_THEMES.length].soft }]}>
-                  <Ionicons name="school-outline" size={17} color={CLASS_THEMES[index % CLASS_THEMES.length].accent} />
-                </View>
-                <View style={styles.tabletClassText}>
-                  <Text numberOfLines={1} style={[styles.tabletClassName, { color: colors.text }]}>{classItem.name}</Text>
-                  <Text numberOfLines={1} style={[styles.tabletClassMeta, { color: colors.textSecondary }]}>
-                    {t('classes.directory.gradeShort', { grade: classItem.grade })} · {getSafeStudentCount(classItem)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={[styles.tabletRailButton, { backgroundColor: colors.surfaceVariant }]}
-              onPress={() => navigation.navigate('ClassDirectory')}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.tabletRailButtonText, { color: COLORS.primaryDark }]}>View directory</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    );
-  }, [canViewSchoolClasses, colors, handleClassPress, handleCreateClub, handleFilterChange, isAdminOrStaff, isClubRailTablet, isPortraitTablet, navigation, previewClasses, selectedFilter, shortcutItems, styles, t]);
+        </ScrollView>
+      ) : null;
 
-  const renderTabletRightRail = useCallback(() => {
-    if (!isThreeColumnTablet) return null;
-    return (
-      <View style={styles.tabletRightRail}>
-        <View style={[styles.tabletRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.tabletRailTitle, { color: colors.text }]}>{t('clubs.screen.schoolClasses')}</Text>
-          <View style={styles.tabletRailStatRow}>
-            <Text style={[styles.tabletRailStatValue, { color: colors.text }]}>{previewClasses.length}</Text>
-            <Text style={[styles.tabletRailStatLabel, { color: colors.textSecondary }]}>Classes</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.tabletRailButton, { backgroundColor: colors.surfaceVariant }]}
-            onPress={() => navigation.navigate('ClassDirectory')}
-          >
-            <Text style={[styles.tabletRailButtonText, { color: COLORS.primaryDark }]}>View directory</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDark} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }, [colors, isThreeColumnTablet, navigation, previewClasses.length, styles, t]);
+      const xp = stats?.xp ?? 0;
 
-  // ── Render item (memoized card) — padded cells when multi-column grid ───────
-  const renderClubCard = useCallback(
-    ({ item }: { item: Club }) => (
-      <View
-        style={
-          clubListColumns > 1
-            ? {
-                flex: 1,
-                paddingHorizontal: 6,
-                paddingBottom: 12,
-              }
-            : {
-                marginHorizontal: 12,
-                marginBottom: 16,
-              }
-        }
-      >
-        <ClubCard
-          item={item}
-          isJoined={Boolean(item.isJoined || joinedClubSet.has(item.id))}
-          isBusy={busyClubId === item.id}
-          onPress={handleClubPress}
-          onToggleMembership={handleToggleMembership}
-        />
-      </View>
-    ),
-    [clubListColumns, joinedClubSet, busyClubId, handleClubPress, handleToggleMembership]
-  );
+      return (
+        <View style={{ flex: 1, backgroundColor: isDark ? '#020617' : '#FFFFFF' }}>
+           <SafeAreaView edges={['top']} style={{ backgroundColor: isDark ? colors.card : '#FFFFFF', zIndex: 10, borderBottomWidth: 1, borderBottomColor: isDark ? colors.border : '#F1F5F9' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 }}>
+                 {/* Avatar */}
+                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {user?.profilePictureUrl ? (
+                      <Image source={{ uri: user.profilePictureUrl }} style={{ width: 38, height: 38, borderRadius: 19 }} />
+                    ) : (
+                      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFFFFF' }}>{(user?.firstName || 'S')[0]}</Text>
+                      </View>
+                    )}
+                    {!!stats?.level && (
+                      <View style={{ position: 'absolute', bottom: -2, right: -4, backgroundColor: '#F59E0B', paddingHorizontal: 4, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: isDark ? colors.card : '#FFFFFF' }}>
+                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#FFFFFF' }}>{stats.level}</Text>
+                      </View>
+                    )}
+                 </View>
 
-  // ── Empty state ───────────────────────────────────────────────────────────
-  const renderEmptyState = useCallback(
-    () => (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="search" size={48} color={colors.textTertiary} />
-        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
-          {selectedFilter === 'joined' && !searchQuery ? t('clubs.screen.noJoined') : t('clubs.screen.noFound')}
-        </Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-          {searchQuery ? t('learn.empty.noCoursesSubtitle') : t('clubs.screen.exploreMore')}
-        </Text>
-      </View>
-    ),
-    [selectedFilter, searchQuery, t, colors.textSecondary, colors.textTertiary]
-  );
-
-  const renderFooter = useCallback(
-    () =>
-      isLoadingMore ? (
-        <View style={styles.footerLoading}>
-          <ActivityIndicator size="small" color={COLORS.primaryDark} />
-          <Text style={[styles.footerLoadingText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.loadingMore')}</Text>
-        </View>
-      ) : null,
-    [isLoadingMore, isKhmer, t, colors.textSecondary]
-  );
-
-  // ── getItemType — bucket by club type for recycling ───────────────────────
-  const getItemType = useCallback(
-    (item: Club) => item.type ?? 'CASUAL_STUDY_GROUP',
-    []
-  );
-
-  const keyExtractor = useCallback((item: Club) => item.id, []);
-
-  // ── Skeleton loading ──────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
-        <LinearGradient
-          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
-        />
-        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-          {/* ─ Hero gradient header — identical to real screen ─ */}
-        <LinearGradient
-          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.heroHeaderBg, { marginTop: -1, paddingTop: 1 }]}
-        >
-          <View style={styles.headerSafe}>
-            <View style={styles.topBar}>
-              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-                <Ionicons name="menu-outline" size={24} color={colors.text} />
-              </TouchableOpacity>
-              <StunityLogo width={108} height={30} />
-              <View style={styles.topBarActions}>
-                <TouchableOpacity style={styles.headerIconButton}>
-                  <Ionicons name="add" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerIconButton}>
-                  <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-                  {inviteCount > 0 ? (
-                    <View style={styles.inviteBadge}>
-                      <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
+                 {/* Stats & Actions */}
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#EA580C22' : '#FFF7ED', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, gap: 6, borderWidth: 1, borderColor: isDark ? '#EA580C44' : '#FED7AA' }}>
+                      <Ionicons name="flame" size={15} color="#EA580C" />
+                      <Text style={{ color: '#EA580C', fontWeight: 'bold' }}>{stats?.currentStreak ?? 0}</Text>
                     </View>
-                  ) : null}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerIconButton}>
-                  <Ionicons name="refresh" size={22} color={colors.text} />
-                </TouchableOpacity>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#F59E0B22' : '#FEF3C7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, gap: 6, borderWidth: 1, borderColor: isDark ? '#F59E0B44' : '#FDE68A' }}>
+                      <Ionicons name="star" size={13} color="#F59E0B" />
+                      <Text style={{ color: '#F59E0B', fontWeight: 'bold' }}>{xp >= 1000 ? `${(xp / 1000).toFixed(1)}k` : xp} XP</Text>
+                    </View>
+
+                    <TouchableOpacity style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isDark ? '#1E293B' : '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? '#334155' : '#E2E8F0', marginLeft: 4 }}>
+                      <Ionicons name="chatbubble-ellipses" size={18} color="#0EA5E9" />
+                    </TouchableOpacity>
+                 </View>
               </View>
-            </View>
+           </SafeAreaView>
 
-            {/* Search bar — same position as real screen */}
-            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-              <Ionicons name="search" size={20} color={colors.textTertiary} />
-              <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton || '#E2E8F0', borderRadius: 6 }} />
-            </View>
-          </View>
-        </LinearGradient>
+           <ClassHubView 
+             classId={selectedClassId} 
+             myRole={user?.role} 
+             hideBackButton={true} 
+             hideAppBar={true}
+             hideTopSafe={true} 
+             classSelector={classSelectorUi}
+           />
+        </View>
+      );
+    }
 
-        <View style={styles.safeArea}>
-          <BlurView
-            intensity={isDark ? 42 : 72}
-            tint={isDark ? 'dark' : 'light'}
-            style={[
-              styles.loadingBlurShell,
-              {
-                backgroundColor: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.7)',
-                borderColor: isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.18)',
-              },
-            ]}
-          >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.loadingBlurContent}>
-              <ClubsHeaderSkeleton />
-              {[1, 2, 3].map((i) => <ClubCardSkeleton key={i} />)}
-            </ScrollView>
-          </BlurView>
+    if (loading || loadingSchoolClasses) {
+      // Return a simple loading state that doesn't look like the Bento grid
+      return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-        </View>
-        </SafeAreaView>
+      );
+    }
+
+    // Render Empty State if not loading and no selected class
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+         <Ionicons name="school-outline" size={80} color={colors.textTertiary} />
+         <Text style={[{ marginTop: 20, color: colors.text, fontSize: 18, fontWeight: 'bold' }, isKhmer && styles.khmerHeadingText]}>{t('classes.noClassesTitle')}</Text>
+         <Text style={[{ marginTop: 8, color: colors.textSecondary, textAlign: 'center', marginHorizontal: 32 }, isKhmer && styles.khmerInlineText]}>
+            {t('classes.noClassesDesc')}
+         </Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />
-      <LinearGradient
-        colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }}
-      />
-      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View style={[styles.animatedTabContent, layoutBreakpoint.isTablet && styles.tabletContentShell, tabContentAnimatedStyle]}>
-        {renderTabletLeftRail()}
-        {/* @ts-ignore FlashList types omit some valid props */}
-        <FlashList
-          style={isClubRailTablet ? styles.tabletCenterList : undefined}
-          key={`club-cols-${clubListColumns}`}
-          data={filteredClubs}
-          keyExtractor={keyExtractor}
-          renderItem={renderClubCard}
-          numColumns={clubListColumns}
-          estimatedItemSize={clubListColumns > 1 ? 210 : 180}
-          drawDistance={600}
-          getItemType={getItemType}
-          ListHeaderComponent={renderHeader}
-          ListEmptyComponent={renderEmptyState}
-          ListFooterComponent={renderFooter}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          onEndReached={loadMoreClubs}
-          onEndReachedThreshold={0.4}
-          // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
-          removeClippedSubviews={Platform.OS === 'android'}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-              colors={[COLORS.primary]}
-            />
-          }
-        />
-        {renderTabletRightRail()}
-      </Animated.View>
-      </View>
-      </SafeAreaView>
-    </View>
-  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -1792,6 +1282,16 @@ const createStyles = (
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  headerTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   headerIconButton: {
     position: 'relative',
@@ -2056,13 +1556,38 @@ const createStyles = (
     marginHorizontal: 12,
     marginTop: 8,
     marginBottom: 12,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#0E7490',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  disciplineWorkbenchGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 16,
     gap: 12,
+  },
+  disciplineWorkbenchDecor1: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    top: -40,
+    right: -30,
+  },
+  disciplineWorkbenchDecor2: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    bottom: -20,
+    left: 60,
   },
   disciplineWorkbenchIcon: {
     width: 42,
@@ -2173,11 +1698,24 @@ const createStyles = (
     marginBottom: 2,
   },
   schoolClassesTitleIcon: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  classCountBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 9999,
+    borderWidth: 1,
+    marginLeft: 4,
+  },
+  classCountBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   schoolClassesSubtitle: {
     fontSize: 13,
@@ -2291,6 +1829,37 @@ const createStyles = (
     fontSize: 12.5,
     fontWeight: '500',
     lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+  },
+  notLinkedCard: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  notLinkedIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  notLinkedTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  notLinkedSubtitle: {
+    fontSize: 13.5,
+    fontWeight: '500',
+    lineHeight: 20,
     textAlign: 'center',
     paddingHorizontal: 12,
   },
@@ -2463,14 +2032,14 @@ const createStyles = (
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 16,
-    marginTop: 4,
+    marginTop: 6,
     marginBottom: 16,
-    paddingVertical: 11,
+    paddingVertical: 13,
     paddingHorizontal: 16,
-    borderRadius: 9999,
-    backgroundColor: 'transparent',
+    borderRadius: 14,
+    backgroundColor: isDark ? 'rgba(20,184,166,0.12)' : '#F0FDFA',
     borderWidth: 1.25,
-    borderColor: '#14B8A6',
+    borderColor: isDark ? 'rgba(20,184,166,0.3)' : '#99F6E4',
     gap: 6,
   },
   seeAllGridBtn: {
@@ -2678,5 +2247,221 @@ const createStyles = (
     fontSize: 13,
     fontWeight: '600',
     color: colors.textTertiary,
+  },
+  
+  // ── BENTO BOX REDESIGN STYLES ─────────────────────────────────────────
+  bentoContainer: {
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  bentoNavbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  bentoNavBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoNavTitleRow: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  bentoNavTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  bentoHeroCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  bentoHeroGradient: {
+    padding: 24,
+    minHeight: 160,
+  },
+  bentoHeroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  bentoHeroPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  bentoHeroPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bentoHeroAvatarRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoHeroAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoHeroAvatarText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  bentoHeroAvatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#0EA5E9',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  bentoHeroTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  bentoHeroStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bentoHeroStatsText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bentoStatsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  bentoStatPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  bentoStatIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  bentoStatTextWrap: {
+    flex: 1,
+  },
+  bentoStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  bentoStatLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  bentoActionGrid: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    gap: 12,
+  },
+  bentoActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bentoActionWrap: {
+    flex: 1,
+  },
+  bentoActionBg: {
+    padding: 16,
+    borderRadius: 20,
+    minHeight: 110,
+    justifyContent: 'space-between',
+  },
+  bentoActionIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  bentoActionTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  bentoSwimlaneHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  cleanYearPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  cleanYearPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cleanTeacherSectionWrap: {
+    marginTop: 8,
+    gap: 32,
+    paddingBottom: 16,
+  },
+  cleanSectionBlock: {
+    marginBottom: 24,
+  },
+  cleanSectionHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  cleanSectionSeeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cleanDeckScrollContent: {
+    paddingRight: 20,
+    paddingBottom: 8,
   },
 });

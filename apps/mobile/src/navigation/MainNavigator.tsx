@@ -968,7 +968,7 @@ const MainNavigator = () => {
     void hydrateReelsCacheFromDisk(userId);
     void hydrateLearnHubFromDisk(userId);
     void hydrateFeedCacheFromDisk(userId);
-    void hydrateClubsCacheFromDisk(userId);
+    if (FEATURE_FLAGS.CLUBS_ENABLED) void hydrateClubsCacheFromDisk(userId);
     void hydrateProfileCacheFromDisk(userId);
     void hydrateClassesCacheFromDisk(userId);
     void hydrateClassDetailFromDisk(userId);
@@ -980,7 +980,7 @@ const MainNavigator = () => {
       void prefetchReelsFeed(userId);
       void prefetchLearnHub(userId);
       void prefetchFeed(userId);
-      void prefetchClubs(userId);
+      if (FEATURE_FLAGS.CLUBS_ENABLED) void prefetchClubs(userId);
       void prefetchProfile(userId);
       void prefetchClasses(userId);
     }, 1500);

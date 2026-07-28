@@ -2481,6 +2481,10 @@
       "teacherSectionOther": "Other linked classes",
       "teacherSectionClassCount": "{{count}} classes",
       "myClassesSection": "My classes",
+      "myClassesTitle": "My Classes",
+      "notLinkedTitle": "Not Linked to a School",
+      "notLinkedSubtitle": "You'll see your classes here once your school links your account.",
+      "tabletRailTitle": "Clubs",
       "communityClubs": "Community Clubs",
       "todaysClubs": "Today's Clubs",
       "searchPlaceholder": "Search lessons & clubs...",
@@ -2498,8 +2502,12 @@
     }
   },
   "classes": {
+    "noClassesTitle": "No Classes Assigned",
+    "noClassesDesc": "You are not enrolled in any classes for this academic year.",
     "directory": {
       "title": "School Directory",
+      "viewDirectory": "View directory",
+      "classesLabel": "Classes",
       "searchPlaceholder": "Search classes, grades, sections...",
       "fetching": "Fetching directory...",
       "loadFailed": "Failed to load class directory",

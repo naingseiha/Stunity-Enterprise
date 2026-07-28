@@ -20,6 +20,10 @@ export const FEATURE_FLAGS = {
   // Quiz War is hidden until its scoring/realtime redesign is complete.
   // Re-enable only alongside the backend QUIZ_WAR_ENABLED flag.
   QUIZ_WAR_ENABLED: process.env.EXPO_PUBLIC_QUIZ_WAR_ENABLED === 'true',
+  // Community Clubs are paused while the Classes screen is redesigned around
+  // school-linked class functionality. Club code stays intact — flip this on
+  // (or set EXPO_PUBLIC_CLUBS_ENABLED=true) to bring it back with no rework.
+  CLUBS_ENABLED: process.env.EXPO_PUBLIC_CLUBS_ENABLED === 'true',
 } as const;
 
 // Remote flags that actually gate client UI. Each key below has a verified
