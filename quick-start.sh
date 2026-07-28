@@ -5,8 +5,8 @@ echo "=================================="
 echo "  Tip: ./quick-start-lite.sh for feed/mobile dev (fewer Supabase connections)"
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
-API_PORTS=(3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
+PORTS=(3000 3001 3010 3011 3013 3014 3018 3020 3021)
+API_PORTS=(3001 3010 3011 3013 3014 3018 3020 3021)
 ADB_BIN="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Library/Android/sdk}}/platform-tools/adb"
 
 normalize_database_pool_url() {
@@ -62,17 +62,21 @@ load_root_env() {
 
   # Canonical local service URLs for cross-service calls
   export AUTH_SERVICE_URL="${AUTH_SERVICE_URL:-http://localhost:3001}"
-  export SCHOOL_SERVICE_URL="${SCHOOL_SERVICE_URL:-http://localhost:3002}"
-  export STUDENT_SERVICE_URL="${STUDENT_SERVICE_URL:-http://localhost:3003}"
-  export TEACHER_SERVICE_URL="${TEACHER_SERVICE_URL:-http://localhost:3004}"
-  export CLASS_SERVICE_URL="${CLASS_SERVICE_URL:-http://localhost:3005}"
-  export SUBJECT_SERVICE_URL="${SUBJECT_SERVICE_URL:-http://localhost:3006}"
-  export GRADE_SERVICE_URL="${GRADE_SERVICE_URL:-http://localhost:3007}"
-  export ATTENDANCE_SERVICE_URL="${ATTENDANCE_SERVICE_URL:-http://localhost:3008}"
-  export TIMETABLE_SERVICE_URL="${TIMETABLE_SERVICE_URL:-http://localhost:3009}"
+  # school/student/teacher/class/subject/grade/attendance/timetable/club were
+  # consolidated into academic-api (Phase 0, see services/academic-api/src/index.ts) —
+  # all point at its single port now, mirroring .env.production.
+  export SCHOOL_SERVICE_URL="${SCHOOL_SERVICE_URL:-http://localhost:3021}"
+  export STUDENT_SERVICE_URL="${STUDENT_SERVICE_URL:-http://localhost:3021}"
+  export TEACHER_SERVICE_URL="${TEACHER_SERVICE_URL:-http://localhost:3021}"
+  export CLASS_SERVICE_URL="${CLASS_SERVICE_URL:-http://localhost:3021}"
+  export SUBJECT_SERVICE_URL="${SUBJECT_SERVICE_URL:-http://localhost:3021}"
+  export GRADE_SERVICE_URL="${GRADE_SERVICE_URL:-http://localhost:3021}"
+  export ATTENDANCE_SERVICE_URL="${ATTENDANCE_SERVICE_URL:-http://localhost:3021}"
+  export TIMETABLE_SERVICE_URL="${TIMETABLE_SERVICE_URL:-http://localhost:3021}"
+  export ACADEMIC_API_URL="${ACADEMIC_API_URL:-http://localhost:3021}"
   export FEED_SERVICE_URL="${FEED_SERVICE_URL:-http://localhost:3010}"
   export MESSAGING_SERVICE_URL="${MESSAGING_SERVICE_URL:-http://localhost:3011}"
-  export CLUB_SERVICE_URL="${CLUB_SERVICE_URL:-http://localhost:3012}"
+  export CLUB_SERVICE_URL="${CLUB_SERVICE_URL:-http://localhost:3021/club}"
   export NOTIFICATION_SERVICE_URL="${NOTIFICATION_SERVICE_URL:-http://localhost:3013}"
   export ANALYTICS_SERVICE_URL="${ANALYTICS_SERVICE_URL:-http://localhost:3014}"
   export LEARN_SERVICE_URL="${LEARN_SERVICE_URL:-http://localhost:3018}"
@@ -282,29 +286,11 @@ start_service "services/auth-service" 3001 "auth.log" "Auth Service"
 wait_for_port 3001 "Auth Service" 60
 
 if [ "${QUICK_START_LITE:-0}" != "1" ]; then
-  start_service "services/school-service" 3002 "school.log" "School Service"
-  wait_for_port 3002 "School Service" 45
-
-  start_service "services/student-service" 3003 "student.log" "Student Service"
-  wait_for_port 3003 "Student Service" 45
-
-  start_service "services/teacher-service" 3004 "teacher.log" "Teacher Service"
-  wait_for_port 3004 "Teacher Service" 45
-
-  start_service "services/class-service" 3005 "class.log" "Class Service"
-  wait_for_port 3005 "Class Service" 45
-
-  start_service "services/subject-service" 3006 "subject.log" "Subject Service"
-  wait_for_port 3006 "Subject Service" 45
-
-  start_service "services/grade-service" 3007 "grade.log" "Grade Service"
-  wait_for_port 3007 "Grade Service" 45
-
-  start_service "services/attendance-service" 3008 "attendance.log" "Attendance Service"
-  wait_for_port 3008 "Attendance Service" 45
-
-  start_service "services/timetable-service" 3009 "timetable.log" "Timetable Service"
-  wait_for_port 3009 "Timetable Service" 45
+  # Consolidated school/student/teacher/class/subject/grade/attendance/timetable
+  # (Phase 0 — see services/academic-api/src/index.ts). Club is also mounted
+  # here under /club, so the standalone club-service start below is skipped.
+  start_service "services/academic-api" 3021 "academic-api.log" "Academic API"
+  wait_for_port 3021 "Academic API" 60
 fi
 
 start_service "services/feed-service" 3010 "feed.log" "Feed Service"
@@ -316,11 +302,6 @@ if [ "${SKIP_MESSAGING_SERVICE:-1}" != "1" ]; then
   wait_for_port 3011 "Messaging Service" 45
 else
   echo "  ℹ️  Messaging service skipped (SKIP_MESSAGING_SERVICE=1). Set SKIP_MESSAGING_SERVICE=0 to enable."
-fi
-
-if [ "${QUICK_START_LITE:-0}" != "1" ]; then
-  start_service "services/club-service" 3012 "club.log" "Club Service"
-  wait_for_port 3012 "Club Service" 45
 fi
 
 start_service "services/notification-service" 3013 "notification.log" "Notification Service"
@@ -354,7 +335,7 @@ echo "Checking status..."
 sleep 3
 
 # Check which services are running
-for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020 3000; do
+for port in 3001 3010 3011 3013 3014 3018 3020 3021 3000; do
   if lsof -ti:$port > /dev/null 2>&1; then
     echo "  ✅ Port $port: Running"
   else
@@ -367,12 +348,12 @@ smoke_test_new_endpoints
 echo ""
 echo "🌐 Web App: http://localhost:3000"
 echo "🔐 Auth Service: http://localhost:3001"
+if [ "${QUICK_START_LITE:-0}" != "1" ]; then
+  echo "🏫 Academic API: http://localhost:3021 (school/student/teacher/class/subject/grade/attendance/timetable/club)"
+fi
 echo "📱 Feed Service: http://localhost:3010"
 if [ "${SKIP_MESSAGING_SERVICE:-1}" != "1" ]; then
   echo "💬 Messaging Service: http://localhost:3011"
-fi
-if [ "${QUICK_START_LITE:-0}" != "1" ]; then
-  echo "🎓 Club Service: http://localhost:3012"
 fi
 echo "🔔 Notification Service: http://localhost:3013"
 if [ "${QUICK_START_LITE:-0}" != "1" ]; then

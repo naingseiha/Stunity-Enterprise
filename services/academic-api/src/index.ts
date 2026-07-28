@@ -31,6 +31,7 @@ import gradeRouter from './modules/grade';
 import attendanceRouter from './modules/attendance';
 import timetableRouter from './modules/timetable';
 import clubRouter from './modules/club';
+import reportsRouter from './modules/reports';
 import { requestIdMiddleware } from './core/requestId';
 
 const app = express();
@@ -111,6 +112,7 @@ app.use(gradeRouter);
 app.use(attendanceRouter);
 app.use(timetableRouter);
 app.use('/club', clubRouter);
+app.use(reportsRouter);
 
 app.use((err: any, req: Request, res: Response, _next: express.NextFunction) => {
   const requestId = res.locals.requestId;
@@ -125,7 +127,7 @@ app.use((err: any, req: Request, res: Response, _next: express.NextFunction) => 
 
 const server = app.listen(PORT, () => {
   console.log(`🏫 Academic API running on port ${PORT}`);
-  console.log('   modules: schools, students, teachers, classes, subjects, grades, attendance, timetable, club/*');
+  console.log('   modules: schools, students, teachers, classes, subjects, grades, attendance, timetable, club/*, reports');
 });
 
 const shutdown = async (signal: string) => {

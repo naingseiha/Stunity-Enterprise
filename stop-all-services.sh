@@ -8,8 +8,10 @@ echo "🛑 Stopping all Stunity services..."
 echo ""
 
 # Define service ports
-PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
-SERVICE_NAMES=("Web" "Auth" "School" "Student" "Teacher" "Class" "Subject" "Grade" "Attendance" "Timetable" "Feed" "Messaging" "Club" "Notification" "Analytics" "Learn" "AI")
+# school/student/teacher/class/subject/grade/attendance/timetable/club were
+# consolidated into academic-api (Phase 0) — one port covers all of them now.
+PORTS=(3000 3001 3010 3011 3013 3014 3018 3020 3021)
+SERVICE_NAMES=("Web" "Auth" "Feed" "Messaging" "Notification" "Analytics" "Learn" "AI" "Academic API")
 
 stopped_count=0
 free_count=0

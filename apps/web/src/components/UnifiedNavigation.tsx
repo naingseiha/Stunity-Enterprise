@@ -39,6 +39,7 @@ import {
   Globe,
   School,
   Brain,
+  PieChart,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
@@ -70,6 +71,7 @@ import { writePersistentCache } from '@/lib/persistent-cache';
 import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-cache';
 import { formatEducationModelLabel } from '@/lib/educationModel';
 import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
+import { canViewReportsDashboard } from '@/lib/permissions/reports';
 
 interface UnifiedNavProps {
   user?: any;
@@ -128,6 +130,7 @@ interface CachedLearnPayload {
 export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
     const autoT = useTranslations();
   const tMonthlyReport = useTranslations('monthlyReport');
+  const tReportsDashboard = useTranslations('reportsDashboard');
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -341,6 +344,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   );
 
   const canOpenAttendanceDashboard = isSchoolAttendanceAdminRole(user?.role);
+  const canOpenReportsDashboard = canViewReportsDashboard(user?.role);
 
   const canViewTeacherQuizAnalytics = useMemo(
     () =>
@@ -385,6 +389,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: tMonthlyReport('nav'), icon: Calendar, path: `/${locale}/grades/monthly-report`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: 'grades-core', skeleton: 'dashboard' as const },
+        ...(canOpenReportsDashboard
+          ? [{ name: tReportsDashboard('nav'), icon: PieChart, path: `/${locale}/reports/dashboard`, prefetch: null, skeleton: 'dashboard' as const }]
+          : []),
         ...(canOpenAttendanceDashboard
           ? [{ name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard' as const, skeleton: 'dashboard' as const }]
           : []),
@@ -420,7 +427,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         ],
       }]
       : []),
-  ], [canManageTranslations, canOpenAttendanceDashboard, canViewTeacherQuizAnalytics, locale, tMonthlyReport]);
+  ], [canManageTranslations, canOpenAttendanceDashboard, canOpenReportsDashboard, canViewTeacherQuizAnalytics, locale, tMonthlyReport, tReportsDashboard]);
 
   // Flatten for mobile menu compatibility
   const schoolMenuItems = useMemo(
