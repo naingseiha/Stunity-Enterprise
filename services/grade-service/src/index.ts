@@ -3159,6 +3159,232 @@ async function getAttendanceSummary(studentId: string, termContext: ReportTermCo
 // Start Server
 // ========================================
 
+// ========================================
+// Reports Dashboard & Poster Studio
+// ========================================
+
+app.get('/reports/poster-recipients', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const { yearId, period, scope, groupBy, limit, includeTies, semester, monthNumber, year, grade } = req.query;
+    const classIds = typeof req.query.classIds === 'string' && req.query.classIds.trim().length > 0
+      ? req.query.classIds.split(',')
+      : [];
+
+    const limitParsed = Number(limit) || 10;
+    const isIncludeTies = includeTies === 'true';
+
+    const classFilter = scope === 'class' && classIds.length > 0
+      ? { id: classIds[0] }
+      : scope === 'multiClass' && classIds.length > 0
+        ? { id: { in: classIds } }
+        : scope === 'grade' && grade
+          ? { grade: grade as string }
+          : {};
+
+    const scopedClassWhere = { schoolId, academicYearId: yearId as string, ...classFilter };
+
+    const monthNumParsed = Number(monthNumber);
+    const gradeYearParsed = Number(year);
+    const monthlyMode = period === 'month';
+
+    const [currentYear, gradeScale, coefficientMap, school] = await Promise.all([
+      resolveReportAcademicStartYear(schoolId, gradeYearParsed),
+      resolveSchoolGradeScale(schoolId),
+      getSubjectCoefficientMap(),
+      prisma.school.findUnique({ where: { id: schoolId }, select: { name: true, logo: true } })
+    ]);
+
+    let gradeWhere: Record<string, unknown> = {};
+    let periodLabel = '';
+    let periodKhmerLabel = '';
+
+    if (monthlyMode) {
+      gradeWhere = {
+        class: scopedClassWhere,
+        year: gradeYearParsed,
+        monthNumber: monthNumParsed,
+      };
+      periodLabel = KHMER_MONTH_LABELS[monthNumParsed] || `Month ${monthNumParsed}`;
+      periodKhmerLabel = KHMER_MONTH_LABELS[monthNumParsed] || `ខែទី ${monthNumParsed}`;
+    } else {
+      const termContext = await resolveReportTermContext(schoolId, String(semester || '1'), currentYear);
+      let targetPeriods = termContext.periods;
+      if (period === 'year') {
+        const s1 = await resolveReportTermContext(schoolId, '1', currentYear);
+        const s2 = await resolveReportTermContext(schoolId, '2', currentYear);
+        targetPeriods = [...s1.periods, ...s2.periods];
+        periodLabel = 'Academic Year';
+        periodKhmerLabel = 'ប្រចាំឆ្នាំសិក្សា';
+      } else {
+        periodLabel = termContext.termName;
+        periodKhmerLabel = termContext.termName === 'Semester 1' ? 'ឆមាសទី១' : 'ឆមាសទី២';
+      }
+
+      gradeWhere = {
+        class: scopedClassWhere,
+        ...buildGradePeriodWhere(targetPeriods),
+      };
+    }
+
+    const [studentClasses, grades] = await Promise.all([
+      prisma.studentClass.findMany({
+        where: { class: scopedClassWhere, status: 'ACTIVE', student: { schoolId } },
+        select: {
+          class: { select: { id: true, name: true, grade: true } },
+          student: {
+            select: { id: true, studentId: true, firstName: true, lastName: true, customFields: true, photoUrl: true }
+          }
+        }
+      }),
+      prisma.grade.findMany({
+        where: gradeWhere as any,
+        select: { studentId: true, subjectId: true, score: true }
+      })
+    ]);
+
+    const averageMap = buildStudentAverageMap(attachCoefficients(grades, coefficientMap), gradeScale);
+
+    // Grouping
+    const groupsMap = new Map<string, { id: string; label: string; khmerLabel: string; students: any[] }>();
+
+    if (groupBy === 'none') {
+      groupsMap.set('all', { id: 'all', label: 'Top Students', khmerLabel: 'សិស្សឆ្នើមប្រចាំសាលា', students: [] });
+    }
+
+    for (const { student, class: studentClass } of studentClasses) {
+      const avg = Math.round((averageMap.get(student.id) || 0) * 100) / 100;
+      if (avg <= 0) continue;
+
+      let groupId = 'all';
+      let label = 'Top Students';
+      let khmerLabel = 'សិស្សឆ្នើមប្រចាំសាលា';
+
+      if (groupBy === 'class') {
+        groupId = studentClass.id;
+        label = `Class ${studentClass.name}`;
+        khmerLabel = `ថ្នាក់ទី ${studentClass.name}`;
+      } else if (groupBy === 'grade') {
+        groupId = studentClass.grade;
+        label = `Grade ${studentClass.grade}`;
+        khmerLabel = `កម្រិតថ្នាក់ទី ${studentClass.grade}`;
+      }
+
+      if (!groupsMap.has(groupId)) {
+        groupsMap.set(groupId, { id: groupId, label, khmerLabel, students: [] });
+      }
+
+      groupsMap.get(groupId)!.students.push({
+        studentId: student.id,
+        name: `${student.lastName} ${student.firstName}`.trim(),
+        khmerName: (student.customFields as any)?.regional?.khmerName || null,
+        photoUrl: student.photoUrl,
+        average: avg,
+      });
+    }
+
+    const responseGroups = Array.from(groupsMap.values()).map(group => {
+      group.students.sort((a, b) => b.average - a.average);
+
+      let currentRank = 1;
+      let studentsTaken = 0;
+      const recipients = [];
+
+      for (let i = 0; i < group.students.length; i++) {
+        if (i > 0 && group.students[i].average < group.students[i-1].average) {
+          currentRank = i + 1;
+        }
+
+        if (!isIncludeTies && studentsTaken >= limitParsed) {
+          break;
+        }
+
+        if (isIncludeTies && currentRank > limitParsed) {
+          break;
+        }
+
+        recipients.push({
+          ...group.students[i],
+          rank: currentRank
+        });
+        studentsTaken++;
+      }
+
+      return {
+        id: group.id,
+        label: group.label,
+        khmerLabel: group.khmerLabel,
+        recipients
+      };
+    });
+
+    responseGroups.sort((a, b) => {
+      return a.khmerLabel.localeCompare(b.khmerLabel);
+    });
+
+    res.json({
+      school: {
+        name: school?.name || 'School',
+        logo: school?.logo || null,
+      },
+      period: {
+        label: periodLabel,
+        khmerLabel: periodKhmerLabel,
+      },
+      groups: responseGroups,
+      generatedAt: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error in poster-recipients:', error);
+    res.status(500).json({ message: 'Error fetching poster recipients', error: String(error) });
+  }
+});
+
+app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = getSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const { yearId, period, semester, monthNumber, year, classId } = req.query;
+
+    const [school, gradeScale] = await Promise.all([
+      prisma.school.findUnique({ where: { id: schoolId }, select: { name: true, phone: true, address: true, logo: true } }),
+      resolveSchoolGradeScale(schoolId)
+    ]);
+
+    res.json({
+      period: { type: period, label: 'Current Period', khmerLabel: 'បច្ចុប្បន្ន', startDate: new Date().toISOString(), endDate: new Date().toISOString() },
+      overview: { classCount: 0, studentCount: 0, overallAverage: 0, passingRate: 0, attendanceRate: 0 },
+      averageScoreByGradeLevel: [],
+      averageScoreBySubject: [],
+      averageScoreByClass: [],
+      passRate: { passing: 0, failing: 0, passRatePercent: 0 },
+      topPerformingClasses: [],
+      bottomPerformingClasses: [],
+      topStudentsByGrade: [],
+      topStudentsInClass: null,
+      atRiskStudents: [],
+      genderBreakdown: { male: 0, female: 0, malePercentage: 0, femalePercentage: 0 },
+      studentFlow: { newStudents: 0, transferredOut: 0, droppedOut: 0 },
+      trend: [],
+      scale: { system: gradeScale.system, maxAverage: gradeScale.maxAverage, passingMark: gradeScale.passingMark },
+      scope: { schoolWide: !classId, classId: classId as string || null },
+      school: { name: school?.name || '', address: school?.address || null, phone: school?.phone || null, logo: school?.logo || null },
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('❌ Error in reports dashboard:', error);
+    res.status(500).json({ message: 'Error fetching dashboard', error: String(error) });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`📊 Grade Service running on port ${PORT}`);
   console.log(`📝 Endpoints:`);
