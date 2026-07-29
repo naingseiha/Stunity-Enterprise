@@ -395,39 +395,64 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         matching the reference mosaic (small facts = small tiles,
                         rich/detailed content = large tiles). */}
                     <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:auto-rows-[minmax(0,auto)]">
+                      {/* 1. Overview 4 Stat Cards FIRST */}
+                      <AnimatedContent delay={0.06}>
+                        <StatCard title={t('overviewStudents')} value={data?.overview.totalStudents ?? 0} icon={Users} iconColor="blue" />
+                      </AnimatedContent>
+                      <AnimatedContent delay={0.065}>
+                        <StatCard title={t('overviewTeachers')} value={data?.overview.totalTeachers ?? 0} icon={GraduationCap} iconColor="purple" />
+                      </AnimatedContent>
+                      <AnimatedContent delay={0.07}>
+                        <StatCard title={t('overviewClasses')} value={data?.overview.totalClasses ?? 0} icon={School} iconColor="amber" />
+                      </AnimatedContent>
+                      <AnimatedContent delay={0.075}>
+                        <StatCard title={t('overviewAttendance')} value={`${data?.overview.attendanceRate ?? 0}%`} icon={TrendingUp} iconColor="green" />
+                      </AnimatedContent>
+
+                      {/* 2. Top 5 Honor Roll SECOND (Grade-level or Class-level) on Clean White Background */}
                       {showGradeHonorRoll && (
-                        <AnimatedContent delay={0.06} className="col-span-2 lg:col-span-4">
-                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
-                            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-gray-800/50 px-8 py-6">
-                              <div className="rounded-2xl bg-amber-100/70 p-3 text-amber-600 shadow-sm">
-                                <Trophy className="h-6 w-6" />
+                        <AnimatedContent delay={0.08} className="col-span-2 lg:col-span-4">
+                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800 pb-5 mb-6">
+                              <div className="flex items-center gap-3">
+                                <div className="rounded-2xl bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                                  <Trophy className="h-6 w-6" />
+                                </div>
+                                <div>
+                                  <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('honorRollTitle')}</h3>
+                                  <p className="text-sm font-medium text-slate-500 dark:text-gray-400">សិស្សឆ្នើមទាំង ៥ នាក់តាមកម្រិតថ្នាក់នីមួយៗ</p>
+                                </div>
                               </div>
-                              <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('honorRollTitle')}</h3>
                             </div>
-                            <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
+                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                               {data?.topStudentsByGrade.map((g) => (
-                                <div key={g.grade} className="rounded-3xl bg-slate-50/50 dark:bg-gray-800/30 p-6 border border-slate-100 dark:border-gray-800">
-                                  <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">{t('gradeLevelLabel')} {g.grade}</p>
-                                  <ul className="mt-4 space-y-3">
+                                <div key={g.grade} className="rounded-3xl bg-slate-50/60 dark:bg-gray-800/30 p-6 border border-slate-100 dark:border-gray-800/60">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 bg-amber-100/60 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200/50 dark:border-amber-900/30">
+                                      {t('gradeLevelLabel')} {g.grade}
+                                    </span>
+                                    <span className="text-[11px] font-bold text-slate-400">Top 5</span>
+                                  </div>
+                                  <ul className="space-y-2.5">
                                     {g.students.map((s) => (
-                                      <li key={s.studentId} className="flex items-center justify-between gap-3 rounded-2xl bg-white dark:bg-gray-900 px-4 py-3 shadow-sm border border-slate-100 dark:border-gray-800/60 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                                      <li key={s.studentId} className="flex items-center justify-between gap-3 rounded-2xl bg-white dark:bg-gray-900 px-4 py-3 shadow-xs border border-slate-100 dark:border-gray-800/60 transition-all hover:-translate-y-0.5 hover:shadow-md">
                                         <span className="flex items-center gap-3 truncate">
                                           <span
-                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black shadow-sm ${
+                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black ${
                                               s.rank === 1
-                                                ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-950 ring-2 ring-yellow-200/50'
+                                                ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-xs'
                                                 : s.rank === 2
-                                                  ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 ring-2 ring-slate-200/50'
+                                                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
                                                   : s.rank === 3
-                                                    ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-orange-950 ring-2 ring-orange-200/50'
-                                                    : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 ring-1 ring-slate-200/50'
+                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                                                    : 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400'
                                             }`}
                                           >
                                             {s.rank <= 3 ? <Medal className="h-4 w-4" /> : s.rank}
                                           </span>
                                           <span className="truncate text-sm font-bold text-slate-800 dark:text-gray-200">{s.khmerName || s.name}</span>
                                         </span>
-                                        <span className="shrink-0 text-sm font-black text-slate-950 dark:text-white bg-slate-100 dark:bg-gray-800 px-2.5 py-1 rounded-lg">{s.average}</span>
+                                        <span className="shrink-0 text-sm font-black text-slate-950 dark:text-white bg-slate-50 dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-slate-100 dark:border-gray-700">{s.average}</span>
                                       </li>
                                     ))}
                                   </ul>
@@ -439,42 +464,178 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                       )}
 
                       {showClassHonorRoll && (
-                        <AnimatedContent delay={0.06} className="col-span-2 lg:col-span-4">
-                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
-                            <div className="flex items-center gap-3 mb-6">
-                              <div className="rounded-2xl bg-amber-100/70 p-3 text-amber-600 shadow-sm">
-                                <Trophy className="h-6 w-6" />
+                        <AnimatedContent delay={0.08} className="col-span-2 lg:col-span-4">
+                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 sm:p-10 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/80 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                            {/* Header */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-gray-800 pb-6 mb-8">
+                              <div className="flex items-center gap-3">
+                                <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 p-3 text-white shadow-lg shadow-amber-500/20">
+                                  <Trophy className="h-6 w-6" />
+                                </div>
+                                <div>
+                                  <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">{t('honorRollTitle')}</h3>
+                                  <p className="text-sm font-medium text-slate-500 dark:text-gray-400">បញ្ជីសិស្សពូកែប្រចាំថ្នាក់ {scopeClassName}</p>
+                                </div>
                               </div>
-                              <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('honorRollTitle')}</h3>
+                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40 text-xs font-black uppercase tracking-wider">
+                                <Award className="h-4 w-4" /> Top 5 Students
+                              </span>
                             </div>
-                            <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                              {data?.topStudentsInClass?.map((s) => (
-                                <li key={s.studentId} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50/50 dark:bg-gray-800/30 px-5 py-4 shadow-sm border border-slate-100 dark:border-gray-800/60 transition-all hover:-translate-y-0.5 hover:shadow-md hover:bg-white dark:hover:bg-gray-900">
-                                  <span className="flex items-center gap-4">
-                                    <span
-                                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black shadow-sm ${
-                                        s.rank === 1
-                                          ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-950 ring-2 ring-yellow-200/50'
-                                          : s.rank === 2
-                                            ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 ring-2 ring-slate-200/50'
-                                            : s.rank === 3
-                                              ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-orange-950 ring-2 ring-orange-200/50'
-                                              : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 ring-1 ring-slate-200/50'
-                                      }`}
-                                    >
-                                      {s.rank <= 3 ? <Medal className="h-5 w-5" /> : s.rank}
-                                    </span>
-                                    <span className="text-base font-bold text-slate-800 dark:text-gray-200">{s.khmerName || s.name}</span>
-                                  </span>
-                                  <span className="text-base font-black text-slate-950 dark:text-white bg-slate-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">{s.average}</span>
-                                </li>
-                              ))}
-                            </ul>
+
+                            {/* Creative Clean Podium on White Background */}
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 pt-4 pb-6 max-w-5xl mx-auto">
+                              {/* Rank 2 */}
+                              {data?.topStudentsInClass?.find(s => s.rank === 2) && (() => {
+                                const rank2 = data.topStudentsInClass.find(s => s.rank === 2)!;
+                                return (
+                                  <div className="relative flex w-full max-w-[250px] flex-col items-center rounded-3xl bg-slate-50/80 dark:bg-gray-800/40 p-6 border border-slate-200/60 dark:border-gray-800 order-2 md:order-1 shadow-xs hover:shadow-md transition-all md:translate-y-4">
+                                    <div className="absolute -top-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900 ring-4 ring-white dark:ring-gray-900 shadow-md">
+                                       <Medal className="h-6 w-6 text-slate-800" />
+                                    </div>
+                                    <div className="mt-5 text-center">
+                                      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-gray-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full border border-slate-200 dark:border-gray-700">ចំណាត់ថ្នាក់ ២</span>
+                                      <p className="mt-3 text-lg font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{rank2.khmerName || rank2.name}</p>
+                                      <div className="mt-4 rounded-xl bg-white dark:bg-gray-900 px-4 py-2 border border-slate-200/60 dark:border-gray-800 shadow-xs">
+                                        <p className="text-sm font-black text-slate-900 dark:text-white">{rank2.average} <span className="text-xs font-semibold text-slate-400">ពិន្ទុ</span></p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Rank 1 */}
+                              {data?.topStudentsInClass?.find(s => s.rank === 1) && (() => {
+                                const rank1 = data.topStudentsInClass.find(s => s.rank === 1)!;
+                                return (
+                                  <div className="relative flex w-full max-w-[280px] flex-col items-center rounded-[2.2rem] bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 dark:from-amber-950/20 dark:via-gray-900 dark:to-gray-900 p-8 border-2 border-amber-300/80 dark:border-amber-700/60 order-1 md:order-2 shadow-xl shadow-amber-500/10 z-10 md:-translate-y-3">
+                                    <div className="absolute -top-7 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-950 ring-4 ring-white dark:ring-gray-900 shadow-lg shadow-amber-500/30">
+                                       <Medal className="h-7 w-7 text-yellow-950" />
+                                    </div>
+                                    <div className="mt-6 text-center">
+                                      <span className="inline-block text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-900/40 px-3.5 py-1 rounded-full">ចំណាត់ថ្នាក់ ១ 🏆</span>
+                                      <p className="mt-3 text-xl font-black text-slate-900 dark:text-white truncate max-w-[220px]">{rank1.khmerName || rank1.name}</p>
+                                      <div className="mt-4 rounded-xl bg-amber-500 text-white px-5 py-2 shadow-md shadow-amber-500/20">
+                                        <p className="text-base font-black">{rank1.average} <span className="text-xs font-medium text-amber-100">ពិន្ទុ</span></p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Rank 3 */}
+                              {data?.topStudentsInClass?.find(s => s.rank === 3) && (() => {
+                                const rank3 = data.topStudentsInClass.find(s => s.rank === 3)!;
+                                return (
+                                  <div className="relative flex w-full max-w-[250px] flex-col items-center rounded-3xl bg-slate-50/80 dark:bg-gray-800/40 p-6 border border-slate-200/60 dark:border-gray-800 order-3 md:order-3 shadow-xs hover:shadow-md transition-all md:translate-y-4">
+                                    <div className="absolute -top-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-300 to-amber-500 text-orange-950 ring-4 ring-white dark:ring-gray-900 shadow-md">
+                                       <Medal className="h-6 w-6 text-orange-950" />
+                                    </div>
+                                    <div className="mt-5 text-center">
+                                      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-gray-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full border border-slate-200 dark:border-gray-700">ចំណាត់ថ្នាក់ ៣</span>
+                                      <p className="mt-3 text-lg font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{rank3.khmerName || rank3.name}</p>
+                                      <div className="mt-4 rounded-xl bg-white dark:bg-gray-900 px-4 py-2 border border-slate-200/60 dark:border-gray-800 shadow-xs">
+                                        <p className="text-sm font-black text-slate-900 dark:text-white">{rank3.average} <span className="text-xs font-semibold text-slate-400">ពិន្ទុ</span></p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            {/* Rank 4 and 5 */}
+                            {(() => {
+                              const others = data?.topStudentsInClass?.filter(s => s.rank > 3) || [];
+                              if (others.length === 0) return null;
+                              return (
+                                <div className="mt-8 grid gap-4 md:grid-cols-2 max-w-3xl mx-auto pt-6 border-t border-slate-100 dark:border-gray-800">
+                                  {others.map(s => (
+                                    <div key={s.studentId} className="flex items-center justify-between rounded-2xl bg-slate-50/60 dark:bg-gray-800/30 px-5 py-3.5 border border-slate-100 dark:border-gray-800 hover:bg-slate-100/60 transition-colors">
+                                      <div className="flex items-center gap-3">
+                                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white dark:bg-gray-800 text-xs font-black text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700 shadow-xs">
+                                          {s.rank}
+                                        </span>
+                                        <span className="font-bold text-slate-800 dark:text-gray-200 text-sm">{s.khmerName || s.name}</span>
+                                      </div>
+                                      <span className="font-black text-slate-950 dark:text-white text-sm bg-white dark:bg-gray-800 px-3 py-1 rounded-lg border border-slate-200/60 dark:border-gray-700">{s.average}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </section>
                         </AnimatedContent>
                       )}
+
+                      {/* 3. MoEYS Mock Sections */}
+                      <AnimatedContent delay={0.086} className="col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
+                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                            <UserMinus className="h-5 w-5 text-rose-500" /> ស្ថានភាពសិស្ស (បោះបង់ & ផ្ទេរ)
+                          </h3>
+                          <div className="mt-6 grid grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-rose-600 dark:text-rose-400">សិស្សបោះបង់ការសិក្សា</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">១២ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                            <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-orange-600 dark:text-orange-400">សិស្សផ្ទេរចេញ</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">៥ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      <AnimatedContent delay={0.087} className="col-span-2 lg:col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-blue-200 dark:border-blue-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-200/40 dark:hover:shadow-black/40">
+                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                            <HeartHandshake className="h-5 w-5 text-blue-500" /> សិស្សអាហារូបករណ៍ / ក្រីក្រ
+                          </h3>
+                          <div className="mt-6 grid grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">ប័ណ្ណសមធម៌ ក្រ១</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">៤៥ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                            <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">ប័ណ្ណសមធម៌ ក្រ២</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">៣០ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      <AnimatedContent delay={0.088} className="col-span-2 lg:col-span-4">
+                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-emerald-200 dark:border-emerald-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-200/40 dark:hover:shadow-black/40">
+                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                            <UserCheck className="h-5 w-5 text-emerald-500" /> ស្ថិតិគ្រូបង្រៀន (កម្រិតវប្បធម៌ និងវត្តមាន)
+                          </h3>
+                          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4">
+                              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">បរិញ្ញាបត្រ / បរិញ្ញាបត្រជាន់ខ្ពស់</p>
+                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">២៨ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4">
+                              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">គរុកោសល្យ</p>
+                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">៤២ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                            </div>
+                            <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">អត្រាវត្តមានគ្រូប្រចាំខែ</p>
+                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">៩៨%</p>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      {/* 4. At Risk / Needs Attention LAST (or right after MoEYS metrics) */}
                       {(data?.atRiskStudents.length || 0) > 0 && (
-                        <AnimatedContent delay={0.065} className="col-span-2 lg:col-span-4">
+                        <AnimatedContent delay={0.089} className="col-span-2 lg:col-span-4">
                           <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
                             <div className="flex items-center gap-3">
                               <div className="rounded-[1rem] bg-rose-100 p-3 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
@@ -502,88 +663,6 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                           </section>
                         </AnimatedContent>
                       )}
-
-                      <AnimatedContent delay={0.07}>
-                        <StatCard title={t('overviewStudents')} value={data?.overview.totalStudents ?? 0} icon={Users} iconColor="blue" />
-                      </AnimatedContent>
-                      <AnimatedContent delay={0.075}>
-                        <StatCard title={t('overviewTeachers')} value={data?.overview.totalTeachers ?? 0} icon={GraduationCap} iconColor="purple" />
-                      </AnimatedContent>
-                      <AnimatedContent delay={0.08}>
-                        <StatCard title={t('overviewClasses')} value={data?.overview.totalClasses ?? 0} icon={School} iconColor="amber" />
-                      </AnimatedContent>
-                      <AnimatedContent delay={0.085}>
-                        <StatCard title={t('overviewAttendance')} value={`${data?.overview.attendanceRate ?? 0}%`} icon={TrendingUp} iconColor="green" />
-                      </AnimatedContent>
-
-                      {/* Mock MoEYS Section 1: Student Status */}
-                      <AnimatedContent delay={0.086} className="col-span-2">
-                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
-                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                            <UserMinus className="h-5 w-5 text-rose-500" /> ស្ថានភាពសិស្ស (បោះបង់ & ផ្ទេរ)
-                          </h3>
-                          <div className="mt-6 grid grid-cols-2 gap-4">
-                            <div className="rounded-2xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10 px-5 py-4">
-                              <p className="text-sm font-bold text-rose-600 dark:text-rose-400">សិស្សបោះបង់ការសិក្សា</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">១២ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
-                              </div>
-                            </div>
-                            <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 px-5 py-4">
-                              <p className="text-sm font-bold text-orange-600 dark:text-orange-400">សិស្សផ្ទេរចេញ</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">៥ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-                      </AnimatedContent>
-
-                      {/* Mock MoEYS Section 2: Scholarships */}
-                      <AnimatedContent delay={0.087} className="col-span-2 lg:col-span-2">
-                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-blue-200 dark:border-blue-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-200/40 dark:hover:shadow-black/40">
-                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                            <HeartHandshake className="h-5 w-5 text-blue-500" /> សិស្សអាហារូបករណ៍ / ក្រីក្រ
-                          </h3>
-                          <div className="mt-6 grid grid-cols-2 gap-4">
-                            <div className="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-4">
-                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">ប័ណ្ណសមធម៌ ក្រ១</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">៤៥ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
-                              </div>
-                            </div>
-                            <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10 px-5 py-4">
-                              <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">ប័ណ្ណសមធម៌ ក្រ២</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">៣០ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-                      </AnimatedContent>
-
-                      {/* Mock MoEYS Section 3: Teacher Metrics */}
-                      <AnimatedContent delay={0.088} className="col-span-2 lg:col-span-4">
-                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-emerald-200 dark:border-emerald-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-200/40 dark:hover:shadow-black/40">
-                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                            <UserCheck className="h-5 w-5 text-emerald-500" /> ស្ថិតិគ្រូបង្រៀន (កម្រិតវប្បធម៌ និងវត្តមាន)
-                          </h3>
-                          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4">
-                              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">បរិញ្ញាបត្រ / បរិញ្ញាបត្រជាន់ខ្ពស់</p>
-                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">២៨ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
-                            </div>
-                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4">
-                              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">គរុកោសល្យ</p>
-                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">៤២ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
-                            </div>
-                            <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 px-5 py-4">
-                              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">អត្រាវត្តមានគ្រូប្រចាំខែ</p>
-                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">៩៨%</p>
-                            </div>
-                          </div>
-                        </section>
-                      </AnimatedContent>
 
                       <AnimatedContent delay={0.09} className="col-span-2">
                         <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
