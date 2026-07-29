@@ -28,8 +28,15 @@ import {
   FileDown,
   TrendingUp,
   Award,
+  Trophy,
+  CheckCircle2,
+  AlertTriangle,
   ShieldAlert,
   Loader2,
+  UserMinus,
+  HeartHandshake,
+  UserCheck,
+  Medal
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
@@ -50,9 +57,22 @@ import {
   safeDashboardFileName,
 } from '@/lib/export/dashboardExport';
 
-const PASS_COLOR = '#10b981';
-const FAIL_COLOR = '#ef4444';
-const BAR_COLORS = ['#0891b2', '#6366f1', '#f59e0b', '#ec4899', '#14b8a6', '#8b5cf6', '#22c55e', '#f97316'];
+// dataviz skill reference palette (references/palette.md) — validated, not eyeballed.
+const SEQUENTIAL_BLUE = '#2a78d6'; // magnitude bars (subject/grade averages) — one hue, not a rainbow per bar
+const STATUS_GOOD = '#0ca30c';
+const STATUS_CRITICAL = '#d03b3b';
+const GENDER_COLORS = ['#2a78d6', '#eb6834']; // categorical slots 1 & 2, fixed order
+// Ordinal A→F severity ramp (best→worst), the standard "traffic light" reading
+// for a grade-distribution report — green anchors STATUS_GOOD, red anchors
+// STATUS_CRITICAL, with four ordered steps between.
+const GRADE_LETTER_COLORS: Record<'A' | 'B' | 'C' | 'D' | 'E' | 'F', string> = {
+  A: '#15803d',
+  B: '#65a30d',
+  C: '#ca8a04',
+  D: '#ea580c',
+  E: '#dc2626',
+  F: '#991b1b',
+};
 
 export default function ReportsDashboardPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
@@ -147,20 +167,47 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
       : t('scaleGeneric')
     : '';
 
-  const passRatePieData = data
-    ? [
-        { name: t('passingLabel'), value: data.passRate.passing },
-        { name: t('failingLabel'), value: data.passRate.failing },
-      ]
-    : [];
+  const genderPieData = [
+    { name: t('genderMale'), value: data?.genderBreakdown.male.count ?? 0 },
+    { name: t('genderFemale'), value: data?.genderBreakdown.female.count ?? 0 },
+  ];
+
+  const subjectsByPassRate = useMemo(
+    () => [...(data?.averageScoreBySubject || [])].sort((a, b) => a.passRatePercent - b.passRatePercent),
+    [data?.averageScoreBySubject]
+  );
+
+  // 100%-stacked distribution chart data: each subject's A–F counts converted
+  // to a share of that subject's own total, so bars are comparable across
+  // subjects with different enrollment/attendance counts.
+  const gradeDistributionChartData = useMemo(
+    () =>
+      (data?.averageScoreBySubject || []).map((s) => {
+        const total = s.gradeDistribution.reduce((sum, band) => sum + band.total, 0) || 1;
+        const row: Record<string, number | string> = { subjectKh: s.subjectKh };
+        s.gradeDistribution.forEach((band) => {
+          row[band.grade] = Math.round((band.total / total) * 1000) / 10;
+        });
+        return row;
+      }),
+    [data?.averageScoreBySubject]
+  );
+
+  const scopeClassName = classFilter ? classes.find((c) => c.id === classFilter)?.name || '' : '';
 
   const showClassRanking = (data?.averageScoreByClass.length || 0) > 1;
   const showTopBottom = Boolean(data?.scope.schoolWide) && (data?.topPerformingClasses.length || 0) > 0;
+  const showGradeHonorRoll = !classFilter && (data?.topStudentsByGrade.length || 0) > 0;
+  const showClassHonorRoll = Boolean(classFilter) && (data?.topStudentsInClass?.length || 0) > 0;
 
   const handleExport = async (kind: 'jpg' | 'pdf') => {
     if (!exportRef.current || !data) return;
     setExporting(kind);
     try {
+      // Charts below have entrance animation disabled specifically so exports
+      // are deterministic (see isAnimationActive={false}); this is just a small
+      // paint-settle margin, not an animation wait.
+      await new Promise((resolve) => setTimeout(resolve, 150));
       const { dataUrl, width, height } = await captureDashboardImage(exportRef.current);
       const fileName = safeDashboardFileName(school?.name || 'stunity', data.period.khmerLabel || data.period.label);
       if (kind === 'jpg') {
@@ -178,17 +225,21 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   if (!isClient) return null;
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
       <UnifiedNavigation user={user} school={school} />
-      <div className="lg:ml-64 min-h-screen bg-[radial-gradient(circle_at_top,_rgba(8,145,178,0.12),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(20,184,166,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_52%,#f8fafc_100%)]">
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="lg:ml-64 min-h-screen relative overflow-hidden">
+        {/* Animated background blobs for extra depth */}
+        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[20%] right-[-5%] w-[30%] h-[30%] bg-purple-500/5 dark:bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 relative z-10">
           {!hasAccess ? (
             <AnimatedContent>
-              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white px-6 py-16 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70">
+              <section className="mt-5 overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-16 text-center shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-rose-50 text-rose-600 shadow-inner">
                   <ShieldAlert className="h-8 w-8" />
                 </div>
-                <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950">{t('accessDenied')}</h3>
+                <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{t('accessDenied')}</h3>
               </section>
             </AnimatedContent>
           ) : (
@@ -200,10 +251,10 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     title={t('title')}
                     description={t('description')}
                     icon={BarChart3}
-                    backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,254,255,0.97)_56%,rgba(240,253,250,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(19,58,58,0.5)_48%,rgba(15,23,42,0.92))]"
-                    glowClassName="bg-[radial-gradient(circle_at_top,rgba(8,145,178,0.18),transparent_58%)] dark:opacity-50"
-                    eyebrowClassName="text-cyan-700/80"
-                    iconShellClassName="bg-cyan-950 text-white"
+                    backgroundClassName="bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40"
+                    glowClassName="opacity-0"
+                    eyebrowClassName="text-cyan-700/80 dark:text-cyan-400"
+                    iconShellClassName="bg-cyan-950 dark:bg-cyan-900 text-white"
                     actions={
                       <>
                         <button
@@ -226,26 +277,26 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     }
                   />
 
-                  <div className="overflow-hidden rounded-[1.9rem] border border-cyan-200/70 bg-[linear-gradient(145deg,rgba(8,51,68,0.98),rgba(8,145,178,0.9)_52%,rgba(20,184,166,0.85))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(8,51,68,0.5)] ring-1 ring-white/10">
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-cyan-100/80">{t('passRateTitle')}</p>
+                  <div className="flex flex-col justify-center overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-cyan-200 dark:border-cyan-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-200/40 dark:hover:shadow-black/40">
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-cyan-600 dark:text-cyan-400">{t('passRateTitle')}</p>
                     <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{data?.passRate.passRatePercent ?? 0}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-cyan-100/75">{scaleLabel}</span>
+                      <span className="text-5xl font-black tracking-tight text-slate-900 dark:text-white">{data?.passRate.passRatePercent ?? 0}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-slate-500 dark:text-gray-400">{scaleLabel}</span>
                     </div>
-                    <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
+                    <div className="mt-8 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-200"
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400"
                         style={{ width: `${Math.min(100, data?.passRate.passRatePercent ?? 0)}%` }}
                       />
                     </div>
-                    <div className="mt-6 grid grid-cols-2 gap-3">
-                      <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm">
-                        <p className="text-lg font-black tracking-tight">{data?.passRate.passing ?? 0}</p>
-                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-cyan-100/80">{t('passingLabel')}</p>
+                    <div className="mt-8 grid grid-cols-2 gap-4">
+                      <div className="rounded-2xl border border-slate-100 dark:border-gray-800/50 bg-slate-50/50 dark:bg-gray-900/50 px-5 py-4">
+                        <p className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{data?.passRate.passing ?? 0}</p>
+                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">{t('passingLabel')}</p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm">
-                        <p className="text-lg font-black tracking-tight">{data?.passRate.failing ?? 0}</p>
-                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-cyan-100/80">{t('failingLabel')}</p>
+                      <div className="rounded-2xl border border-slate-100 dark:border-gray-800/50 bg-slate-50/50 dark:bg-gray-900/50 px-5 py-4">
+                        <p className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{data?.passRate.failing ?? 0}</p>
+                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">{t('failingLabel')}</p>
                       </div>
                     </div>
                   </div>
@@ -253,14 +304,14 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
               </AnimatedContent>
 
               <AnimatedContent delay={0.04}>
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70">
-                  <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-5 py-4 sm:px-6">
+                <section className="mt-5 overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                  <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-gray-800/50 px-8 py-6">
                     {(['month', 'semester', 'year'] as ReportPeriodType[]).map((p) => (
                       <button
                         key={p}
                         onClick={() => setPeriod(p)}
                         className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-                          period === p ? 'bg-cyan-950 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          period === p ? 'bg-cyan-950 text-white' : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 hover:bg-slate-200'
                         }`}
                       >
                         {p === 'month' ? t('periodMonth') : p === 'semester' ? t('periodSemester') : t('periodYear')}
@@ -268,14 +319,14 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     ))}
                   </div>
 
-                  <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-3">
+                  <div className="grid gap-6 px-8 py-6 lg:grid-cols-3">
                     {period === 'month' && (
                       <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{t('periodMonth')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">{t('periodMonth')}</span>
                         <select
                           value={monthNumber}
                           onChange={(e) => setMonthNumber(Number(e.target.value))}
-                          className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                          className="h-12 w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-300 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 dark:focus:ring-cyan-900/30"
                         >
                           {KHMER_MONTHS.map((m) => (
                             <option key={m.number} value={m.number}>
@@ -288,11 +339,11 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
 
                     {period === 'semester' && (
                       <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{t('periodSemester')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">{t('periodSemester')}</span>
                         <select
                           value={semester}
                           onChange={(e) => setSemester(e.target.value as '1' | '2')}
-                          className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                          className="h-12 w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-300 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 dark:focus:ring-cyan-900/30"
                         >
                           <option value="1">{t('semester1')}</option>
                           <option value="2">{t('semester2')}</option>
@@ -302,11 +353,11 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
 
                     {canDrillDownByClass && (
                       <label className="space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{t('classFilterLabel')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">{t('classFilterLabel')}</span>
                         <select
                           value={classFilter}
                           onChange={(e) => setClassFilter(e.target.value)}
-                          className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                          className="h-12 w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-300 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 dark:focus:ring-cyan-900/30"
                         >
                           <option value="">{t('classFilterAll')}</option>
                           {classes.map((cls) => (
@@ -329,154 +380,523 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     </section>
                   </AnimatedContent>
                 ) : (
-                  <div ref={exportRef} className="bg-white">
-                    <AnimatedContent delay={0.06}>
-                      <div className="mt-5 flex items-center justify-between rounded-[1.2rem] border border-slate-200 bg-slate-50/60 px-5 py-4">
+                  <div ref={exportRef} className="space-y-5 relative">
+                    <AnimatedContent delay={0.06} className="mt-5">
+                      <div className="flex items-center justify-between bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50">
                         <div>
-                          <p className="text-lg font-black tracking-tight text-slate-950">{school?.name || ''}</p>
-                          <p className="text-sm font-medium text-slate-500">{data?.period.khmerLabel || data?.period.label}</p>
+                          <p className="text-lg font-black tracking-tight text-slate-950 dark:text-white">{school?.name || ''}</p>
+                          <p className="text-sm font-medium text-slate-500 dark:text-gray-400">{data?.period.khmerLabel || data?.period.label}</p>
                         </div>
-                        <p className="text-xs font-medium text-slate-400">{formatKhmerDate(new Date())}</p>
+                        <p className="text-xs font-medium text-slate-400 dark:text-gray-500">{formatKhmerDate(new Date())}</p>
                       </div>
                     </AnimatedContent>
 
-                    <AnimatedContent delay={0.08}>
-                      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {/* Bento grid — tile size/color follows content weight & category,
+                        matching the reference mosaic (small facts = small tiles,
+                        rich/detailed content = large tiles). */}
+                    <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:auto-rows-[minmax(0,auto)]">
+                      {showGradeHonorRoll && (
+                        <AnimatedContent delay={0.06} className="col-span-2 lg:col-span-4">
+                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-gray-800/50 px-8 py-6">
+                              <div className="rounded-2xl bg-amber-100/70 p-3 text-amber-600 shadow-sm">
+                                <Trophy className="h-6 w-6" />
+                              </div>
+                              <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('honorRollTitle')}</h3>
+                            </div>
+                            <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
+                              {data?.topStudentsByGrade.map((g) => (
+                                <div key={g.grade} className="rounded-3xl bg-slate-50/50 dark:bg-gray-800/30 p-6 border border-slate-100 dark:border-gray-800">
+                                  <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">{t('gradeLevelLabel')} {g.grade}</p>
+                                  <ul className="mt-4 space-y-3">
+                                    {g.students.map((s) => (
+                                      <li key={s.studentId} className="flex items-center justify-between gap-3 rounded-2xl bg-white dark:bg-gray-900 px-4 py-3 shadow-sm border border-slate-100 dark:border-gray-800/60 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                                        <span className="flex items-center gap-3 truncate">
+                                          <span
+                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black shadow-sm ${
+                                              s.rank === 1
+                                                ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-950 ring-2 ring-yellow-200/50'
+                                                : s.rank === 2
+                                                  ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 ring-2 ring-slate-200/50'
+                                                  : s.rank === 3
+                                                    ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-orange-950 ring-2 ring-orange-200/50'
+                                                    : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 ring-1 ring-slate-200/50'
+                                            }`}
+                                          >
+                                            {s.rank <= 3 ? <Medal className="h-4 w-4" /> : s.rank}
+                                          </span>
+                                          <span className="truncate text-sm font-bold text-slate-800 dark:text-gray-200">{s.khmerName || s.name}</span>
+                                        </span>
+                                        <span className="shrink-0 text-sm font-black text-slate-950 dark:text-white bg-slate-100 dark:bg-gray-800 px-2.5 py-1 rounded-lg">{s.average}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        </AnimatedContent>
+                      )}
+
+                      {showClassHonorRoll && (
+                        <AnimatedContent delay={0.06} className="col-span-2 lg:col-span-4">
+                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="rounded-2xl bg-amber-100/70 p-3 text-amber-600 shadow-sm">
+                                <Trophy className="h-6 w-6" />
+                              </div>
+                              <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('honorRollTitle')}</h3>
+                            </div>
+                            <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                              {data?.topStudentsInClass?.map((s) => (
+                                <li key={s.studentId} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50/50 dark:bg-gray-800/30 px-5 py-4 shadow-sm border border-slate-100 dark:border-gray-800/60 transition-all hover:-translate-y-0.5 hover:shadow-md hover:bg-white dark:hover:bg-gray-900">
+                                  <span className="flex items-center gap-4">
+                                    <span
+                                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black shadow-sm ${
+                                        s.rank === 1
+                                          ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-950 ring-2 ring-yellow-200/50'
+                                          : s.rank === 2
+                                            ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 ring-2 ring-slate-200/50'
+                                            : s.rank === 3
+                                              ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-orange-950 ring-2 ring-orange-200/50'
+                                              : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 ring-1 ring-slate-200/50'
+                                      }`}
+                                    >
+                                      {s.rank <= 3 ? <Medal className="h-5 w-5" /> : s.rank}
+                                    </span>
+                                    <span className="text-base font-bold text-slate-800 dark:text-gray-200">{s.khmerName || s.name}</span>
+                                  </span>
+                                  <span className="text-base font-black text-slate-950 dark:text-white bg-slate-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">{s.average}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        </AnimatedContent>
+                      )}
+                      {(data?.atRiskStudents.length || 0) > 0 && (
+                        <AnimatedContent delay={0.065} className="col-span-2 lg:col-span-4">
+                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
+                            <div className="flex items-center gap-3">
+                              <div className="rounded-[1rem] bg-rose-100 p-3 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
+                                <AlertTriangle className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('needsAttentionTitle')}</h3>
+                                <p className="text-sm font-medium text-slate-500 dark:text-gray-400">{t('needsAttentionSubtitle')}</p>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                              {data?.atRiskStudents.map((s) => (
+                                <div
+                                  key={s.studentId}
+                                  className="flex items-center justify-between gap-2 rounded-xl bg-white/80 px-4 py-3 shadow-sm ring-1 ring-rose-100 dark:bg-gray-900/60 dark:ring-rose-900/30"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-slate-800 dark:text-gray-200">{s.khmerName || s.name}</p>
+                                    <p className="text-xs font-medium text-slate-400 dark:text-gray-500">{s.className}</p>
+                                  </div>
+                                  <span className="shrink-0 text-sm font-black text-rose-600 dark:text-rose-400">{s.average}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        </AnimatedContent>
+                      )}
+
+                      <AnimatedContent delay={0.07}>
                         <StatCard title={t('overviewStudents')} value={data?.overview.totalStudents ?? 0} icon={Users} iconColor="blue" />
+                      </AnimatedContent>
+                      <AnimatedContent delay={0.075}>
                         <StatCard title={t('overviewTeachers')} value={data?.overview.totalTeachers ?? 0} icon={GraduationCap} iconColor="purple" />
+                      </AnimatedContent>
+                      <AnimatedContent delay={0.08}>
                         <StatCard title={t('overviewClasses')} value={data?.overview.totalClasses ?? 0} icon={School} iconColor="amber" />
+                      </AnimatedContent>
+                      <AnimatedContent delay={0.085}>
                         <StatCard title={t('overviewAttendance')} value={`${data?.overview.attendanceRate ?? 0}%`} icon={TrendingUp} iconColor="green" />
-                      </div>
-                    </AnimatedContent>
+                      </AnimatedContent>
 
-                    <AnimatedContent delay={0.1}>
-                      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                        <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70">
-                          <h3 className="text-xl font-black tracking-tight text-slate-950">{t('averageByGrade')}</h3>
-                          <div className="mt-4 h-[300px]">
+                      {/* Mock MoEYS Section 1: Student Status */}
+                      <AnimatedContent delay={0.086} className="col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
+                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                            <UserMinus className="h-5 w-5 text-rose-500" /> ស្ថានភាពសិស្ស (បោះបង់ & ផ្ទេរ)
+                          </h3>
+                          <div className="mt-6 grid grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-rose-600 dark:text-rose-400">សិស្សបោះបង់ការសិក្សា</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">១២ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                            <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-orange-600 dark:text-orange-400">សិស្សផ្ទេរចេញ</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">៥ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      {/* Mock MoEYS Section 2: Scholarships */}
+                      <AnimatedContent delay={0.087} className="col-span-2 lg:col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-blue-200 dark:border-blue-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-200/40 dark:hover:shadow-black/40">
+                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                            <HeartHandshake className="h-5 w-5 text-blue-500" /> សិស្សអាហារូបករណ៍ / ក្រីក្រ
+                          </h3>
+                          <div className="mt-6 grid grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">ប័ណ្ណសមធម៌ ក្រ១</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">៤៥ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                            <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">ប័ណ្ណសមធម៌ ក្រ២</p>
+                              <div className="mt-2 flex items-end justify-between">
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">៣០ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      {/* Mock MoEYS Section 3: Teacher Metrics */}
+                      <AnimatedContent delay={0.088} className="col-span-2 lg:col-span-4">
+                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-emerald-200 dark:border-emerald-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-200/40 dark:hover:shadow-black/40">
+                          <h3 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                            <UserCheck className="h-5 w-5 text-emerald-500" /> ស្ថិតិគ្រូបង្រៀន (កម្រិតវប្បធម៌ និងវត្តមាន)
+                          </h3>
+                          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4">
+                              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">បរិញ្ញាបត្រ / បរិញ្ញាបត្រជាន់ខ្ពស់</p>
+                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">២៨ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4">
+                              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">គរុកោសល្យ</p>
+                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">៤២ <span className="text-sm font-medium text-slate-500 dark:text-gray-400">នាក់</span></p>
+                            </div>
+                            <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 px-5 py-4">
+                              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">អត្រាវត្តមានគ្រូប្រចាំខែ</p>
+                              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">៩៨%</p>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      <AnimatedContent delay={0.09} className="col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('genderTitle')}</h3>
+                          <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
+                            <div className="h-[160px] w-[160px] shrink-0">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie data={genderPieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={75} paddingAngle={3} isAnimationActive={false}>
+                                    {genderPieData.map((_, index) => (
+                                      <Cell key={index} fill={GENDER_COLORS[index % GENDER_COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="grid flex-1 grid-cols-2 gap-3">
+                              <div className="rounded-2xl bg-slate-50 dark:bg-gray-800/50 px-5 py-4 border border-slate-100 dark:border-gray-800">
+                                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-gray-500">
+                                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: GENDER_COLORS[0] }} />
+                                  {t('genderMale')}
+                                </span>
+                                <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{data?.genderBreakdown.male.count ?? 0}</p>
+                                <p className="text-xs font-medium text-slate-500 dark:text-gray-400">{t('passRateTitle')} {data?.genderBreakdown.male.passRatePercent ?? 0}%</p>
+                              </div>
+                              <div className="rounded-2xl bg-slate-50 dark:bg-gray-800/50 px-5 py-4 border border-slate-100 dark:border-gray-800">
+                                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-gray-500">
+                                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: GENDER_COLORS[1] }} />
+                                  {t('genderFemale')}
+                                </span>
+                                <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{data?.genderBreakdown.female.count ?? 0}</p>
+                                <p className="text-xs font-medium text-slate-500 dark:text-gray-400">{t('passRateTitle')} {data?.genderBreakdown.female.passRatePercent ?? 0}%</p>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+                      <AnimatedContent delay={0.1} className="col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('averageByGrade')}</h3>
+                          <div className="mt-4 h-[260px]">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={data?.averageScoreByGradeLevel || []}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                                 <XAxis dataKey="grade" stroke="#64748b" fontSize={12} />
                                 <YAxis domain={[0, data?.scale.maxAverage || 100]} stroke="#64748b" fontSize={12} />
                                 <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0' }} />
-                                <Bar dataKey="average" radius={[8, 8, 0, 0]} fill="#0891b2" />
+                                <Bar dataKey="average" radius={[8, 8, 0, 0]} fill="#0891b2" isAnimationActive={false} />
                               </BarChart>
                             </ResponsiveContainer>
                           </div>
                         </section>
+                      </AnimatedContent>
 
-                        <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70">
-                          <h3 className="text-xl font-black tracking-tight text-slate-950">{t('averageBySubject')}</h3>
-                          <div className="mt-4 h-[300px]">
+                      <AnimatedContent delay={0.11} className="col-span-2 lg:col-span-4">
+                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('averageBySubject')}</h3>
+                          <div className="mt-4 h-[340px]">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={data?.averageScoreBySubject || []} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                                 <XAxis type="number" domain={[0, 100]} stroke="#64748b" fontSize={12} />
                                 <YAxis type="category" dataKey="subjectKh" stroke="#64748b" fontSize={11} width={90} />
                                 <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0' }} />
-                                <Bar dataKey="average" radius={[0, 8, 8, 0]}>
-                                  {(data?.averageScoreBySubject || []).map((_, index) => (
-                                    <Cell key={index} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-                                  ))}
-                                </Bar>
+                                <Bar dataKey="average" radius={[0, 8, 8, 0]} fill={SEQUENTIAL_BLUE} isAnimationActive={false} />
                               </BarChart>
                             </ResponsiveContainer>
                           </div>
                         </section>
-                      </div>
-                    </AnimatedContent>
-
-                    <AnimatedContent delay={0.12}>
-                      <section className="mt-5 overflow-hidden rounded-[1.55rem] border border-white/75 bg-white p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70">
-                        <h3 className="text-xl font-black tracking-tight text-slate-950">{t('trendTitle')}</h3>
-                        <div className="mt-4 h-[300px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={data?.trend || []}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                              <XAxis dataKey="khmerLabel" stroke="#64748b" fontSize={12} />
-                              <YAxis domain={[0, 100]} stroke="#64748b" fontSize={12} />
-                              <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0' }} />
-                              <Legend />
-                              <Line type="monotone" dataKey="average" name={t('trendAverage')} stroke="#0891b2" strokeWidth={3} dot={{ r: 4 }} />
-                              <Line type="monotone" dataKey="attendanceRate" name={t('trendAttendance')} stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </section>
-                    </AnimatedContent>
-
-                    {showTopBottom && (
-                      <AnimatedContent delay={0.14}>
-                        <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                          <section className="overflow-hidden rounded-[1.55rem] border border-emerald-200 bg-emerald-50/50 p-6">
-                            <h3 className="flex items-center gap-2 text-lg font-black tracking-tight text-emerald-800">
-                              <Award className="h-5 w-5" /> {t('topPerforming')}
-                            </h3>
-                            <ul className="mt-4 space-y-2">
-                              {data?.topPerformingClasses.map((c) => (
-                                <li key={c.classId} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  <span className="font-semibold text-slate-800">{c.className}</span>
-                                  <span className="font-black text-emerald-600">{c.average}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </section>
-
-                          <section className="overflow-hidden rounded-[1.55rem] border border-rose-200 bg-rose-50/50 p-6">
-                            <h3 className="text-lg font-black tracking-tight text-rose-800">{t('bottomPerforming')}</h3>
-                            <ul className="mt-4 space-y-2">
-                              {data?.bottomPerformingClasses.map((c) => (
-                                <li key={c.classId} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  <span className="font-semibold text-slate-800">{c.className}</span>
-                                  <span className="font-black text-rose-600">{c.average}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </section>
-                        </div>
                       </AnimatedContent>
-                    )}
 
-                    {showClassRanking && (
-                      <AnimatedContent delay={0.16}>
-                        <section className="mt-5 overflow-hidden rounded-[1.6rem] border border-white/75 bg-white shadow-[0_26px_75px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70">
-                          <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
-                            <h3 className="text-xl font-black tracking-tight text-slate-950">{t('averageByClass')}</h3>
+                      <AnimatedContent delay={0.115} className="col-span-2 lg:col-span-4">
+                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <div className="border-b border-slate-200 dark:border-gray-800/50 bg-slate-50/50 dark:bg-gray-900/50 px-8 py-6">
+                            <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('subjectGradeSheetTitle')}</h3>
+                            <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{data?.period.khmerLabel || data?.period.label}{scopeClassName ? ` • ${scopeClassName}` : ''}</p>
                           </div>
                           <div className="overflow-x-auto">
-                            <table className="w-full min-w-[600px]">
-                              <thead className="border-b border-slate-200 bg-slate-50">
+                            <table className="w-full min-w-[560px]">
+                              <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50">
                                 <tr>
-                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{t('rank')}</th>
-                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{t('classFilterLabel')}</th>
-                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{t('studentsCount')}</th>
-                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{t('averageByClass')}</th>
+                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('subjectColumnLabel')}</th>
+                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('averageScoreColumnLabel')}</th>
+                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('studentsCount')}</th>
+                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('passRateTitle')}</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {data?.averageScoreByClass.map((c) => (
-                                  <tr key={c.classId} className="hover:bg-slate-50">
-                                    <td className="px-5 py-3 font-bold text-slate-500">{c.rank}</td>
-                                    <td className="px-5 py-3 font-semibold text-slate-800">{c.className}</td>
-                                    <td className="px-5 py-3 text-slate-600">{c.studentCount}</td>
-                                    <td className="px-5 py-3 font-black text-slate-950">{c.average}</td>
+                              <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
+                                {(data?.averageScoreBySubject || []).map((s) => (
+                                  <tr key={s.subject} className="hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
+                                    <td className="px-5 py-3 font-semibold text-slate-800 dark:text-gray-200">{s.subjectKh}</td>
+                                    <td className="px-5 py-3 font-black text-slate-950 dark:text-white">{s.average}</td>
+                                    <td className="px-5 py-3 text-slate-600 dark:text-gray-400">{s.passCount}/{s.passCount + s.failCount}</td>
+                                    <td className="px-5 py-3">
+                                      <span
+                                        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black"
+                                        style={{
+                                          color: s.passRatePercent >= 50 ? STATUS_GOOD : STATUS_CRITICAL,
+                                          backgroundColor: s.passRatePercent >= 50 ? `${STATUS_GOOD}1a` : `${STATUS_CRITICAL}1a`,
+                                        }}
+                                      >
+                                        {s.passRatePercent >= 50 ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                                        {s.passRatePercent}%
+                                      </span>
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
+                          {(data?.averageScoreBySubject.length || 0) === 0 && (
+                            <p className="px-5 py-8 text-center text-sm font-medium text-slate-500 dark:text-gray-400 sm:px-6">{t('noData')}</p>
+                          )}
                         </section>
                       </AnimatedContent>
-                    )}
 
-                    {!loading && data && data.overview.totalStudents === 0 && (
-                      <AnimatedContent delay={0.06}>
-                        <section className="mt-5 rounded-[1.75rem] border border-slate-200 bg-slate-50 px-6 py-10 text-center text-slate-500">
-                          {t('noData')}
+                      <AnimatedContent delay={0.12} className="col-span-2 lg:col-span-4">
+                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <div className="border-b border-slate-200 dark:border-gray-800/50 bg-slate-50/50 dark:bg-gray-900/50 px-8 py-6">
+                            <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('gradeDistributionTitle')}</h3>
+                            <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{t('gradeDistributionSubtitle')}</p>
+                          </div>
+                          <div className="border-b border-amber-100/70 px-5 py-6 sm:px-6">
+                            <div style={{ height: Math.max(280, gradeDistributionChartData.length * 32) }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={gradeDistributionChartData} layout="vertical" barCategoryGap="28%">
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                                  <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} stroke="#64748b" fontSize={12} />
+                                  <YAxis type="category" dataKey="subjectKh" stroke="#64748b" fontSize={11} width={110} />
+                                  <Tooltip
+                                    contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0' }}
+                                    formatter={(value: any, name: any) => [`${value}%`, name]}
+                                  />
+                                  <Legend />
+                                  {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((letter) => (
+                                    <Bar
+                                      key={letter}
+                                      dataKey={letter}
+                                      name={letter}
+                                      stackId="grades"
+                                      fill={GRADE_LETTER_COLORS[letter]}
+                                      isAnimationActive={false}
+                                    />
+                                  ))}
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[760px]">
+                              <thead className="border-b border-slate-200 dark:border-gray-800/50 bg-slate-50/50 dark:bg-gray-900/50">
+                                <tr>
+                                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('subjectColumnLabel')}</th>
+                                  {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((letter) => (
+                                    <th key={letter} className="px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                                      {letter}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-amber-50">
+                                {(data?.averageScoreBySubject || []).map((s) => (
+                                  <tr key={s.subject} className="hover:bg-amber-50/30">
+                                    <td className="px-5 py-3 font-semibold text-slate-800 dark:text-gray-200">{s.subjectKh}</td>
+                                    {s.gradeDistribution.map((band) => (
+                                      <td key={band.grade} className="px-3 py-3 text-center">
+                                        {band.total > 0 ? (
+                                          <div>
+                                            <span className="text-sm font-black text-slate-950 dark:text-white">{band.total}</span>
+                                            <span className="ml-1 text-[11px] font-medium text-slate-400 dark:text-gray-500">
+                                              ({t('genderFemaleShort')}{band.female})
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <span className="text-sm font-medium text-slate-300">—</span>
+                                        )}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {(data?.averageScoreBySubject.length || 0) === 0 && (
+                            <p className="px-5 py-8 text-center text-sm font-medium text-slate-500 dark:text-gray-400 sm:px-6">{t('noData')}</p>
+                          )}
                         </section>
                       </AnimatedContent>
-                    )}
+
+                      <AnimatedContent delay={0.125} className="col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('subjectPassRateTitle')}</h3>
+                          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{t('subjectPassRateSubtitle')}</p>
+                          <ul className="mt-4 divide-y divide-rose-100/60">
+                            {subjectsByPassRate.map((s) => (
+                              <li key={s.subject} className="flex items-center justify-between gap-3 py-3">
+                                <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">{s.subjectKh}</span>
+                                <span className="flex items-center gap-3">
+                                  <span className="text-xs font-medium text-slate-400 dark:text-gray-500">{s.passCount}/{s.passCount + s.failCount}</span>
+                                  <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black"
+                                    style={{
+                                      color: s.passRatePercent >= 50 ? STATUS_GOOD : STATUS_CRITICAL,
+                                      backgroundColor: s.passRatePercent >= 50 ? `${STATUS_GOOD}1a` : `${STATUS_CRITICAL}1a`,
+                                    }}
+                                  >
+                                    {s.passRatePercent >= 50 ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                                    {s.passRatePercent}%
+                                  </span>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                      </AnimatedContent>
+
+                      <AnimatedContent delay={0.13} className="col-span-2">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                          <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('trendTitle')}</h3>
+                          <div className="mt-4 h-[260px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={data?.trend || []}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="khmerLabel" stroke="#64748b" fontSize={12} />
+                                <YAxis domain={[0, 100]} stroke="#64748b" fontSize={12} />
+                                <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0' }} />
+                                <Legend />
+                                <Line type="monotone" dataKey="average" name={t('trendAverage')} stroke="#0891b2" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
+                                <Line type="monotone" dataKey="attendanceRate" name={t('trendAttendance')} stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </section>
+                      </AnimatedContent>
+
+
+
+                      {showTopBottom && (
+                        <>
+                          <AnimatedContent delay={0.15} className="col-span-2">
+                            <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-emerald-200 dark:border-emerald-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-200/40 dark:hover:shadow-black/40">
+                              <h3 className="flex items-center gap-2 text-lg font-black tracking-tight text-emerald-600">
+                                <Award className="h-5 w-5" /> {t('topPerforming')}
+                              </h3>
+                              <ul className="mt-4 space-y-2">
+                                {data?.topPerformingClasses.map((c) => (
+                                  <li key={c.classId} className="flex items-center justify-between rounded-xl bg-white dark:bg-gray-900 px-4 py-3 shadow-sm">
+                                    <span className="font-semibold text-slate-800 dark:text-gray-200">{c.className}</span>
+                                    <span className="font-black text-emerald-600">{c.average}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          </AnimatedContent>
+
+                          <AnimatedContent delay={0.155} className="col-span-2">
+                            <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
+                              <h3 className="text-lg font-black tracking-tight text-rose-600">{t('bottomPerforming')}</h3>
+                              <ul className="mt-4 space-y-2">
+                                {data?.bottomPerformingClasses.map((c) => (
+                                  <li key={c.classId} className="flex items-center justify-between rounded-xl bg-white dark:bg-gray-900 px-4 py-3 shadow-sm">
+                                    <span className="font-semibold text-slate-800 dark:text-gray-200">{c.className}</span>
+                                    <span className="font-black text-rose-600">{c.average}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          </AnimatedContent>
+                        </>
+                      )}
+
+                      {showClassRanking && (
+                        <AnimatedContent delay={0.17} className="col-span-2 lg:col-span-4">
+                          <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                            <div className="border-b border-slate-200 dark:border-gray-800/50 bg-slate-50/50 dark:bg-gray-900/50 px-8 py-6">
+                              <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{t('averageByClass')}</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full min-w-[600px]">
+                                <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50">
+                                  <tr>
+                                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('rank')}</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('classFilterLabel')}</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('studentsCount')}</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('averageByClass')}</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
+                                  {data?.averageScoreByClass.map((c) => (
+                                    <tr key={c.classId} className="hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
+                                      <td className="px-5 py-3 font-bold text-slate-500 dark:text-gray-400">{c.rank}</td>
+                                      <td className="px-5 py-3 font-semibold text-slate-800 dark:text-gray-200">{c.className}</td>
+                                      <td className="px-5 py-3 text-slate-600 dark:text-gray-400">{c.studentCount}</td>
+                                      <td className="px-5 py-3 font-black text-slate-950 dark:text-white">{c.average}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </section>
+                        </AnimatedContent>
+                      )}
+
+                      {!loading && data && data.overview.totalStudents === 0 && (
+                        <AnimatedContent delay={0.06} className="col-span-2 lg:col-span-4">
+                          <section className="rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-10 text-center text-slate-500 dark:text-gray-400">
+                            {t('noData')}
+                          </section>
+                        </AnimatedContent>
+                      )}
+                    </div>
                   </div>
                 )}
               </BlurLoader>
@@ -484,6 +904,6 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
           )}
         </main>
       </div>
-    </>
+    </div>
   );
 }
