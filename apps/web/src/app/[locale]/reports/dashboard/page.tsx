@@ -483,32 +483,35 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         />
                       </AnimatedContent>
 
-                      {/* ══ 2. Honor Roll — GRADE VIEW — 3-Column Leaderboard Cards (White Theme + Khmer Motifs + Khmer Numerals) ══ */}
+                      {/* ══ 2. Honor Roll — GRADE VIEW — 3-Column Leaderboard Cards (White Theme + Visible Khmer Motifs + Khmer Numerals) ══ */}
                       {showGradeHonorRoll && (
                         <AnimatedContent delay={0.08} className="col-span-2 lg:col-span-4">
-                          <section className="bg-white rounded-[2.5rem] p-6 sm:p-10 border border-slate-100 shadow-[0_4px_30px_rgba(15,23,42,0.06)] relative overflow-hidden">
-                            {/* Abstract Ambient Khmer Motif Watermark Background */}
-                            <div className="absolute top-0 right-0 w-72 h-72 text-amber-500/[0.04] pointer-events-none select-none transform translate-x-12 -translate-y-12">
+                          <section className="bg-gradient-to-br from-amber-50/50 via-white to-amber-50/30 rounded-[2.5rem] p-6 sm:p-10 border border-slate-200/80 shadow-[0_4px_30px_rgba(15,23,42,0.06)] relative overflow-hidden">
+                            {/* Rich & Clearly Visible Abstract Khmer Motif Watermark Background */}
+                            <div className="absolute -top-10 -right-10 w-96 h-96 text-amber-500/15 pointer-events-none select-none">
                               <svg viewBox="0 0 200 200" fill="currentColor">
-                                <path d="M100 0 C120 40, 160 80, 200 100 C160 120, 120 160, 100 200 C80 160, 40 120, 0 100 C40 80, 80 40, 100 0 Z" />
-                                <circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" strokeWidth="8" />
+                                <path d="M100 10 C115 45 155 85 190 100 C155 115 115 155 100 190 C85 155 45 115 10 100 C45 85 85 45 100 10 Z" opacity="0.7" />
+                                <path d="M100 30 C110 55 145 90 170 100 C145 110 110 145 100 170 C90 145 55 110 30 100 C55 90 90 55 100 30 Z" opacity="0.6" fill="none" stroke="currentColor" strokeWidth="4" />
+                                <circle cx="100" cy="100" r="32" fill="none" stroke="currentColor" strokeWidth="4" />
+                                <circle cx="100" cy="100" r="16" fill="currentColor" opacity="0.5" />
                               </svg>
                             </div>
-                            <div className="absolute bottom-0 left-0 w-72 h-72 text-amber-500/[0.03] pointer-events-none select-none transform -translate-x-12 translate-y-12">
+                            <div className="absolute -bottom-10 -left-10 w-80 h-80 text-amber-600/12 pointer-events-none select-none">
                               <svg viewBox="0 0 200 200" fill="currentColor">
-                                <path d="M100 0 C120 40, 160 80, 200 100 C160 120, 120 160, 100 200 C80 160, 40 120, 0 100 C40 80, 80 40, 100 0 Z" />
+                                <path d="M100 10 C115 45 155 85 190 100 C155 115 115 155 100 190 C85 155 45 115 10 100 C45 85 85 45 100 10 Z" opacity="0.8" />
+                                <circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" strokeWidth="5" />
                               </svg>
                             </div>
 
                             {/* ── Top Bar ── */}
-                            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-8 sm:mb-10">
+                            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200/70 pb-6 mb-8 sm:mb-10">
                               <div>
                                 <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-600">✦ Honor Roll Leaderboard</p>
                                 <h3 className="mt-1 text-2xl sm:text-3xl tracking-tight text-slate-950" style={{ fontFamily: "var(--font-moul, 'Moul', serif)" }}>
                                   {t('honorRollTitle')}
                                 </h3>
                               </div>
-                              <span className="px-5 py-2 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-black uppercase tracking-widest shadow-2xs">
+                              <span className="px-5 py-2 rounded-full bg-amber-500/10 text-amber-900 border border-amber-300/80 text-xs font-black uppercase tracking-widest shadow-2xs">
                                 TOP 5 · តាមកម្រិតថ្នាក់ (3 COLUMNS)
                               </span>
                             </div>
@@ -518,12 +521,13 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                               {data?.topStudentsByGrade.map((g) => (
                                 <div
                                   key={g.grade}
-                                  className="relative rounded-[2.2rem] bg-slate-50/70 border border-slate-200/80 p-5 sm:p-6 shadow-xs hover:border-amber-400/60 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
+                                  className="relative rounded-[2.2rem] bg-white/90 backdrop-blur-xs border border-slate-200/80 p-5 sm:p-6 shadow-sm hover:border-amber-400/80 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
                                 >
-                                  {/* Subtle card background motif accent */}
-                                  <div className="absolute -bottom-6 -right-6 w-24 h-24 text-amber-500/[0.04] pointer-events-none select-none">
+                                  {/* Clearly visible card background Khmer motif accent */}
+                                  <div className="absolute -bottom-4 -right-4 w-28 h-28 text-amber-500/15 pointer-events-none select-none">
                                     <svg viewBox="0 0 100 100" fill="currentColor">
-                                      <path d="M50 0 C60 20, 80 40, 100 50 C80 60, 60 80, 50 100 C40 80, 20 60, 0 50 C20 40, 40 20, 50 0 Z" />
+                                      <path d="M50 5 C60 25 75 40 95 50 C75 60 60 75 50 95 C40 75 25 60 5 50 C25 40 40 25 50 5 Z" />
+                                      <circle cx="50" cy="50" r="16" fill="none" stroke="currentColor" strokeWidth="3" />
                                     </svg>
                                   </div>
 
