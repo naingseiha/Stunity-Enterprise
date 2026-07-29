@@ -6490,6 +6490,21 @@
     "rank": "លំដាប់",
     "studentsCount": "សិស្ស",
     "scaleMoeys": "ខ្នាតអប់រំកម្ពុជា (MoEYS)",
-    "scaleGeneric": "ខ្នាត១០០ពិន្ទុ"
+    "scaleGeneric": "ខ្នាត១០០ពិន្ទុ",
+    "honorRollTitle": "សិស្សពូកែបំផុត ៥ នាក់",
+    "gradeLevelLabel": "ថ្នាក់ទី",
+    "genderTitle": "ការបែងចែកតាមភេទ",
+    "genderMale": "ប្រុស",
+    "genderFemale": "ស្រី",
+    "subjectPassRateTitle": "អត្រាជាប់តាមមុខវិជ្ជា",
+    "subjectGradeSheetTitle": "និទ្ទេសតាមមុខវិជ្ជា",
+    "subjectColumnLabel": "មុខវិជ្ជា",
+    "averageScoreColumnLabel": "មធ្យមភាគ",
+    "subjectPassRateSubtitle": "តម្រៀបតាមមុខវិជ្ជាខ្សោយបំផុតមុន",
+    "gradeDistributionTitle": "ការបែងចែកនិទ្ទេសតាមមុខវិជ្ជា (A–F)",
+    "gradeDistributionSubtitle": "ចំនួនសិស្សតាមនិទ្ទេសនីមួយៗ ជាមួយចំនួនស្រី(ក្នុងវង់ក្រចក)",
+    "genderFemaleShort": "ស្រី ",
+    "needsAttentionTitle": "ត្រូវការការយកចិត្តទុកដាក់",
+    "needsAttentionSubtitle": "សិស្សដែលមធ្យមភាគបច្ចុប្បន្នធ្លាក់ក្រោមកម្រិតជាប់"
   }
 }

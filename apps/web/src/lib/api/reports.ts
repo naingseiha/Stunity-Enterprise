@@ -29,9 +29,47 @@ export interface GradeLevelAverage {
   studentCount: number;
 }
 
+export interface SubjectGradeBand {
+  grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  total: number;
+  male: number;
+  female: number;
+}
+
 export interface SubjectAverage {
   subject: string;
   subjectKh: string;
+  average: number;
+  passCount: number;
+  failCount: number;
+  passRatePercent: number;
+  gradeDistribution: SubjectGradeBand[];
+}
+
+export interface HonorRollStudent {
+  studentId: string;
+  name: string;
+  khmerName: string | null;
+  average: number;
+  rank: number;
+}
+
+export interface GradeLevelHonorRoll {
+  grade: string;
+  students: HonorRollStudent[];
+}
+
+export interface GenderBreakdown {
+  male: { count: number; passRatePercent: number };
+  female: { count: number; passRatePercent: number };
+}
+
+export interface AtRiskStudent {
+  studentId: string;
+  name: string;
+  khmerName: string | null;
+  classId: string;
+  className: string;
   average: number;
 }
 
@@ -66,6 +104,10 @@ export interface SchoolReportsDashboardResponse {
   passRate: { passing: number; failing: number; passRatePercent: number };
   topPerformingClasses: ClassAverage[];
   bottomPerformingClasses: ClassAverage[];
+  topStudentsByGrade: GradeLevelHonorRoll[];
+  topStudentsInClass: HonorRollStudent[] | null;
+  atRiskStudents: AtRiskStudent[];
+  genderBreakdown: GenderBreakdown;
   trend: DashboardTrendPoint[];
   scale: { system: 'KHM_MOEYS' | 'GENERIC'; maxAverage: number; passingMark: number };
   scope: { schoolWide: boolean; classId: string | null };

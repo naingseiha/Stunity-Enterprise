@@ -6490,6 +6490,21 @@
     "rank": "Rank",
     "studentsCount": "Students",
     "scaleMoeys": "MoEYS scale",
-    "scaleGeneric": "100-point scale"
+    "scaleGeneric": "100-point scale",
+    "honorRollTitle": "Top 5 Honor Roll",
+    "gradeLevelLabel": "Grade",
+    "genderTitle": "Gender Breakdown",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "subjectPassRateTitle": "Pass Rate by Subject",
+    "subjectGradeSheetTitle": "Grades by Subject",
+    "subjectColumnLabel": "Subject",
+    "averageScoreColumnLabel": "Average Score",
+    "subjectPassRateSubtitle": "Weakest subjects first",
+    "gradeDistributionTitle": "Grade Distribution by Subject (A–F)",
+    "gradeDistributionSubtitle": "Number of students per letter grade, with female count in parentheses",
+    "genderFemaleShort": "F ",
+    "needsAttentionTitle": "Needs Attention",
+    "needsAttentionSubtitle": "Students currently below the passing average"
   }
 }

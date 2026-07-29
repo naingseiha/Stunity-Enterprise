@@ -34,8 +34,13 @@ export function resolveGradeScale(educationModel?: string | null): GradeScale {
   return { system: 'GENERIC', maxAverage: 100, passingMark: 50 };
 }
 
-/** Generic 0–100 letter grade (unchanged legacy thresholds). */
-function genericGradeLevel(value: number): string {
+/**
+ * Generic 0–100 letter grade (unchanged legacy thresholds). Used both as the
+ * GENERIC system's composite grade level, and — regardless of school system —
+ * for any already-percentage value (e.g. a single subject's score/maxScore),
+ * since a per-subject percentage is always 0–100 even at a KHM_MOEYS school.
+ */
+export function genericGradeLevel(value: number): string {
   if (value >= 90) return 'A';
   if (value >= 80) return 'B';
   if (value >= 70) return 'C';
@@ -68,6 +73,28 @@ interface AverageInputGrade {
  *   - KHM_MOEYS: Σ(subjectMean) / Σ(coefficient)            → 0–50
  *   - GENERIC:   Σ(subjectMean × coefficient) / Σ(coefficient) → 0–100 weighted
  */
+/**
+ * Combine a student's already-averaged per-subject means into one composite
+ * average, system-aware. This is the same final step `buildStudentAverageMap`
+ * runs per student — factored out so callers that pre-aggregate subject means
+ * themselves (e.g. via a DB-side `groupBy` instead of fetching every raw grade
+ * row) can reuse the exact formula instead of re-deriving it.
+ */
+export function combineSubjectAverages(
+  subjectMeans: Array<{ mean: number; coefficient: number }>,
+  scale: GradeScale
+): number {
+  let numerator = 0;
+  let totalCoefficient = 0;
+
+  subjectMeans.forEach(({ mean, coefficient }) => {
+    numerator += scale.system === 'KHM_MOEYS' ? mean : mean * coefficient;
+    totalCoefficient += coefficient;
+  });
+
+  return totalCoefficient > 0 ? numerator / totalCoefficient : 0;
+}
+
 export function buildStudentAverageMap(
   grades: AverageInputGrade[],
   scale: GradeScale
@@ -95,16 +122,11 @@ export function buildStudentAverageMap(
   const averages = new Map<string, number>();
 
   studentSubjectTotals.forEach((subjectTotals, studentId) => {
-    let numerator = 0;
-    let totalCoefficient = 0;
-
-    subjectTotals.forEach((data) => {
-      const subjectMean = data.count > 0 ? data.total / data.count : 0;
-      numerator += scale.system === 'KHM_MOEYS' ? subjectMean : subjectMean * data.coefficient;
-      totalCoefficient += data.coefficient;
-    });
-
-    averages.set(studentId, totalCoefficient > 0 ? numerator / totalCoefficient : 0);
+    const subjectMeans = Array.from(subjectTotals.values()).map((data) => ({
+      mean: data.count > 0 ? data.total / data.count : 0,
+      coefficient: data.coefficient,
+    }));
+    averages.set(studentId, combineSubjectAverages(subjectMeans, scale));
   });
 
   return averages;

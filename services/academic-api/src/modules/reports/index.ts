@@ -3,6 +3,13 @@
  * Class + Student + Teacher) for the Monthly / Semester / Yearly analytics
  * dashboard. Lives in its own module because it spans domains that each
  * already have their own router (grade, attendance, class, ...).
+ *
+ * Performance note: the grade side is aggregated in Postgres via `groupBy`
+ * instead of `findMany`-ing every raw row and reducing in JS. For a school
+ * with ~125K grade rows in one academic year, `groupBy(['studentId','subjectId'])`
+ * (collapsing months) returns ~26K rows — ~5x less data over the wire and no
+ * `subject` relation join, since subject metadata is cached in memory instead
+ * (same pattern as `grade/index.ts`'s `getSubjectCoefficientMap`).
  */
 import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
@@ -10,16 +17,16 @@ import { getSharedPrisma } from '../../core/prisma';
 import { getJwtSecret } from '../../../../lib/jwt-secret';
 import {
   resolveGradeScale,
-  gradeLevelForScale,
   isPassingForScale,
-  buildStudentAverageMap,
+  combineSubjectAverages,
+  genericGradeLevel,
+  type GradeScale,
 } from '../grade/reports/grade-systems';
 import { parseAcademicStartYearName } from '../grade/reports/report-utils';
 import {
   fallbackReportTerm,
   enumerateReportPeriods,
   buildGradePeriodWhere,
-  reportPeriodCacheKey,
   monthStart,
   monthEnd,
   type ReportPeriod,
@@ -59,7 +66,7 @@ const getAuthUserId = (req: AuthRequest): string | null => req.user?.userId || r
 const SCHOOL_WIDE_REPORT_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
 
 const dashboardCache = new Map<string, { data: any; timestamp: number }>();
-const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
+const DASHBOARD_CACHE_TTL_MS = 10 * 60 * 1000;
 
 function readDashboardCache(key: string) {
   const cached = dashboardCache.get(key);
@@ -73,6 +80,25 @@ function readDashboardCache(key: string) {
 
 function writeDashboardCache(key: string, data: any) {
   dashboardCache.set(key, { data, timestamp: Date.now() });
+}
+
+// ── Subject metadata cache (id -> name/nameKh/maxScore/coefficient) ──
+// Subjects are a small, near-static table — cache instead of joining it onto
+// every grouped row, same pattern as grade/index.ts's getSubjectCoefficientMap.
+type SubjectMeta = { name: string; nameKh: string; maxScore: number; coefficient: number };
+const SUBJECT_META_CACHE_TTL_MS = 10 * 60 * 1000;
+let subjectMetaCache: { map: Map<string, SubjectMeta>; timestamp: number } | null = null;
+
+async function getSubjectMetaMap(): Promise<Map<string, SubjectMeta>> {
+  if (subjectMetaCache && Date.now() - subjectMetaCache.timestamp <= SUBJECT_META_CACHE_TTL_MS) {
+    return subjectMetaCache.map;
+  }
+  const subjects = await prisma.subject.findMany({
+    select: { id: true, name: true, nameKh: true, maxScore: true, coefficient: true },
+  });
+  const map = new Map(subjects.map((s) => [s.id, { name: s.name, nameKh: s.nameKh, maxScore: s.maxScore, coefficient: s.coefficient }]));
+  subjectMetaCache = { map, timestamp: Date.now() };
+  return map;
 }
 
 type AccessResult =
@@ -145,18 +171,12 @@ async function resolveAllowedClassIds(
 type PeriodType = 'month' | 'semester' | 'year';
 
 async function resolvePeriod(
-  schoolId: string,
-  yearId: string,
+  academicYear: { name: string; startDate: Date; endDate: Date; terms: Array<{ termNumber: number; name: string; startDate: Date; endDate: Date }> } | null,
   period: PeriodType,
   semester: string,
   monthNumber: number | undefined,
   calendarYear: number | undefined
 ): Promise<{ startDate: Date; endDate: Date; periods: ReportPeriod[]; label: string; khmerLabel: string }> {
-  const academicYear = await prisma.academicYear.findFirst({
-    where: { id: yearId, schoolId },
-    include: { terms: { orderBy: { termNumber: 'asc' } } },
-  });
-
   if (period === 'month') {
     const year = calendarYear || new Date().getFullYear();
     const mn = monthNumber && monthNumber >= 1 && monthNumber <= 12 ? monthNumber : new Date().getMonth() + 1;
@@ -191,6 +211,14 @@ async function resolvePeriod(
   return { startDate, endDate, periods, label: academicYear?.name || '', khmerLabel: academicYear?.name || '' };
 }
 
+function studentDisplayName(student: { firstName: string; lastName: string }): string {
+  return `${student.firstName} ${student.lastName}`.trim();
+}
+
+function studentKhmerName(student: { customFields: unknown }): string | null {
+  return (student.customFields as any)?.regional?.khmerName || null;
+}
+
 app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = getSchoolId(req);
@@ -200,7 +228,14 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
     if (!yearId) return res.status(400).json({ success: false, message: 'yearId is required' });
     const periodType: PeriodType = period === 'semester' || period === 'year' ? period : 'month';
 
-    const access = await resolveAllowedClassIds(req, schoolId, yearId, classId);
+    // Independent lookups — resolve in parallel instead of one after another.
+    const [access, academicYear] = await Promise.all([
+      resolveAllowedClassIds(req, schoolId, yearId, classId),
+      prisma.academicYear.findFirst({
+        where: { id: yearId, schoolId },
+        include: { terms: { orderBy: { termNumber: 'asc' } } },
+      }),
+    ]);
     if (access.allowed === false) return res.status(access.status).json({ success: false, message: access.message });
     const { classIds, scopeClassId } = access;
 
@@ -209,8 +244,7 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
     if (cached) return res.json(cached);
 
     const term = await resolvePeriod(
-      schoolId,
-      yearId,
+      academicYear,
       periodType,
       semester,
       monthNumber ? Number(monthNumber) : undefined,
@@ -228,6 +262,10 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
         passRate: { passing: 0, failing: 0, passRatePercent: 0 },
         topPerformingClasses: [],
         bottomPerformingClasses: [],
+        topStudentsByGrade: [],
+        topStudentsInClass: null,
+        atRiskStudents: [],
+        genderBreakdown: { male: { count: 0, passRatePercent: 0 }, female: { count: 0, passRatePercent: 0 } },
         trend: [],
         scale: gradeScale,
         scope: { schoolWide: false, classId: scopeClassId },
@@ -238,7 +276,7 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
 
     const gradePeriodWhere = buildGradePeriodWhere(term.periods);
 
-    const [school, classes, students, grades, attendanceRows] = await Promise.all([
+    const [school, classes, students, subjectMeta, studentSubjectGroups, monthSubjectGroups, attendanceRows] = await Promise.all([
       prisma.school.findUnique({ where: { id: schoolId }, select: { educationModel: true, name: true } }),
       prisma.class.findMany({
         where: { id: { in: classIds } },
@@ -253,20 +291,24 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       }),
       prisma.student.findMany({
         where: { schoolId, classId: { in: classIds } },
-        select: { id: true, classId: true },
+        select: { id: true, classId: true, firstName: true, lastName: true, customFields: true, gender: true },
       }),
-      prisma.grade.findMany({
+      getSubjectMetaMap(),
+      // Per-student, per-subject aggregate (collapses months) — drives composite
+      // averages, class/grade/gender grouping, top-N, and per-subject pass/fail.
+      prisma.grade.groupBy({
+        by: ['studentId', 'subjectId'],
         where: { classId: { in: classIds }, ...gradePeriodWhere },
-        select: {
-          studentId: true,
-          subjectId: true,
-          classId: true,
-          score: true,
-          maxScore: true,
-          year: true,
-          monthNumber: true,
-          subject: { select: { id: true, name: true, nameKh: true, coefficient: true } },
-        },
+        _sum: { score: true },
+        _count: { _all: true },
+      }),
+      // Per-month, per-subject aggregate (collapses students) — tiny, drives the
+      // trend line only.
+      prisma.grade.groupBy({
+        by: ['year', 'monthNumber', 'subjectId'],
+        where: { classId: { in: classIds }, ...gradePeriodWhere },
+        _sum: { score: true },
+        _count: { _all: true },
       }),
       prisma.attendance.findMany({
         where: { classId: { in: classIds }, date: { gte: term.startDate, lte: term.endDate } },
@@ -296,24 +338,55 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       attendanceRate,
     };
 
-    // ── Per-student averages (system-aware) + class/grade grouping ──
-    const averageMap = buildStudentAverageMap(grades, gradeScale);
-    const studentClassMap = new Map(students.map((s) => [s.id, s.classId]));
+    // ── Per-student, per-subject means (from the DB-side aggregate) ──
+    const studentSubjectMeans = new Map<string, Map<string, number>>();
+    studentSubjectGroups.forEach((g) => {
+      const count = g._count._all;
+      if (count === 0) return;
+      const mean = (g._sum.score || 0) / count;
+      let inner = studentSubjectMeans.get(g.studentId);
+      if (!inner) {
+        inner = new Map();
+        studentSubjectMeans.set(g.studentId, inner);
+      }
+      inner.set(g.subjectId, mean);
+    });
+
+    // Per-student composite average (system-aware), reusing the same
+    // combination formula buildStudentAverageMap uses internally.
+    const averageMap = new Map<string, number>();
+    studentSubjectMeans.forEach((subjectMeansForStudent, studentId) => {
+      const entries = Array.from(subjectMeansForStudent.entries()).map(([subjectId, mean]) => ({
+        mean,
+        coefficient: subjectMeta.get(subjectId)?.coefficient ?? 0,
+      }));
+      averageMap.set(studentId, combineSubjectAverages(entries, gradeScale));
+    });
+
+    const studentInfoMap = new Map(
+      students.map((s) => [
+        s.id,
+        { classId: s.classId, name: studentDisplayName(s), khmerName: studentKhmerName(s), gender: s.gender },
+      ])
+    );
 
     const classTotals = new Map<string, { total: number; count: number }>();
     const gradeLevelTotals = new Map<string, { total: number; count: number }>();
+    const gradeLevelStudents = new Map<string, Array<{ studentId: string; name: string; khmerName: string | null; average: number }>>();
+    const genderTotals = new Map<string, { count: number; passing: number }>();
     let passing = 0;
     let failing = 0;
 
     averageMap.forEach((average, studentId) => {
-      const classId = studentClassMap.get(studentId);
-      if (!classId) return;
-      const classInfo = classMap.get(classId);
+      const info = studentInfoMap.get(studentId);
+      if (!info?.classId) return;
+      const classInfo = classMap.get(info.classId);
+      const isPassing = isPassingForScale(gradeScale, average);
 
-      const classBucket = classTotals.get(classId) || { total: 0, count: 0 };
+      const classBucket = classTotals.get(info.classId) || { total: 0, count: 0 };
       classBucket.total += average;
       classBucket.count += 1;
-      classTotals.set(classId, classBucket);
+      classTotals.set(info.classId, classBucket);
 
       const gradeLevel = classInfo?.grade || 'unknown';
       const gradeBucket = gradeLevelTotals.get(gradeLevel) || { total: 0, count: 0 };
@@ -321,7 +394,17 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       gradeBucket.count += 1;
       gradeLevelTotals.set(gradeLevel, gradeBucket);
 
-      if (isPassingForScale(gradeScale, average)) passing += 1;
+      const gradeStudents = gradeLevelStudents.get(gradeLevel) || [];
+      gradeStudents.push({ studentId, name: info.name, khmerName: info.khmerName, average: Math.round(average * 100) / 100 });
+      gradeLevelStudents.set(gradeLevel, gradeStudents);
+
+      const genderKey = info.gender || 'UNKNOWN';
+      const genderBucket = genderTotals.get(genderKey) || { count: 0, passing: 0 };
+      genderBucket.count += 1;
+      if (isPassing) genderBucket.passing += 1;
+      genderTotals.set(genderKey, genderBucket);
+
+      if (isPassing) passing += 1;
       else failing += 1;
     });
 
@@ -351,39 +434,148 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       passRatePercent: totalGraded > 0 ? Math.round((passing / totalGraded) * 100) : 0,
     };
 
-    // ── Subject breakdown (raw percentage, grouped by subject name across grades) ──
-    const subjectTotals = new Map<string, { name: string; nameKh: string; total: number; count: number }>();
-    const monthlyTotals = new Map<string, { total: number; count: number }>();
+    // ── Top 5 honor roll — per grade level, and (when scoped to one class) in-class ──
+    const topStudentsByGrade = Array.from(gradeLevelStudents.entries())
+      .map(([grade, list]) => ({
+        grade,
+        students: list
+          .sort((a, b) => b.average - a.average)
+          .slice(0, 5)
+          .map((s, index) => ({ ...s, rank: index + 1 })),
+      }))
+      .sort((a, b) => a.grade.localeCompare(b.grade, undefined, { numeric: true }));
 
-    grades.forEach((grade) => {
-      const percentage = grade.maxScore > 0 ? (grade.score / grade.maxScore) * 100 : 0;
-      const subjectKey = grade.subject.name.trim().toLowerCase();
-      const subjectBucket = subjectTotals.get(subjectKey) || {
-        name: grade.subject.name,
-        nameKh: grade.subject.nameKh,
-        total: 0,
-        count: 0,
-      };
-      subjectBucket.total += percentage;
-      subjectBucket.count += 1;
-      subjectTotals.set(subjectKey, subjectBucket);
+    const topStudentsInClass = scopeClassId
+      ? (gradeLevelStudents.get(classMap.get(scopeClassId)?.grade || '') || [])
+          .filter((s) => studentInfoMap.get(s.studentId)?.classId === scopeClassId)
+          .sort((a, b) => b.average - a.average)
+          .slice(0, 5)
+          .map((s, index) => ({ ...s, rank: index + 1 }))
+      : null;
 
-      const monthKey = `${grade.year}-${grade.monthNumber}`;
-      const monthBucket = monthlyTotals.get(monthKey) || { total: 0, count: 0 };
-      monthBucket.total += percentage;
-      monthBucket.count += 1;
-      monthlyTotals.set(monthKey, monthBucket);
+    // ── At-risk students (failing the composite average) — worst 10, for a "Needs Attention" panel ──
+    const AT_RISK_LIMIT = 10;
+    const atRiskStudents = Array.from(averageMap.entries())
+      .filter(([, average]) => !isPassingForScale(gradeScale, average))
+      .map(([studentId, average]) => {
+        const info = studentInfoMap.get(studentId);
+        const classInfo = info?.classId ? classMap.get(info.classId) : undefined;
+        return {
+          studentId,
+          name: info?.name || '',
+          khmerName: info?.khmerName || null,
+          classId: info?.classId || '',
+          className: classInfo?.name || '',
+          average: Math.round(average * 100) / 100,
+        };
+      })
+      .sort((a, b) => a.average - b.average)
+      .slice(0, AT_RISK_LIMIT);
+
+    // ── Gender breakdown ──
+    const genderBreakdown = {
+      male: {
+        count: genderTotals.get('MALE')?.count || 0,
+        passRatePercent: genderTotals.get('MALE')?.count
+          ? Math.round(((genderTotals.get('MALE')?.passing || 0) / (genderTotals.get('MALE')?.count || 1)) * 100)
+          : 0,
+      },
+      female: {
+        count: genderTotals.get('FEMALE')?.count || 0,
+        passRatePercent: genderTotals.get('FEMALE')?.count
+          ? Math.round(((genderTotals.get('FEMALE')?.passing || 0) / (genderTotals.get('FEMALE')?.count || 1)) * 100)
+          : 0,
+      },
+    };
+
+    // ── Subject breakdown: average + pass/fail + A–F grade distribution ──
+    // Subjects are grade-scoped rows (Subject.grade), so e.g. "Informatics" in
+    // grade 7 and grade 10 are two different subjectIds — merge by normalized
+    // name so the school-wide breakdown shows one bar per subject, not one per
+    // (subject, grade) pair.
+    // Letter grades here use the plain 0–100 A–F bands (genericGradeLevel)
+    // regardless of the school's composite grading system: a single subject's
+    // score/maxScore is always a 0–100 percentage, distinct from the MoEYS
+    // 0–50 composite average used for overall pass/fail.
+    const GRADE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
+    const subjectAgg = new Map<
+      string,
+      {
+        name: string;
+        nameKh: string;
+        total: number;
+        count: number;
+        passing: number;
+        failing: number;
+        gradeCounts: Map<string, { total: number; male: number; female: number }>;
+      }
+    >();
+    studentSubjectMeans.forEach((subjectMeansForStudent, studentId) => {
+      const info = studentInfoMap.get(studentId);
+      subjectMeansForStudent.forEach((mean, subjectId) => {
+        const meta = subjectMeta.get(subjectId);
+        if (!meta) return;
+        const key = meta.name.trim().toLowerCase();
+        const bucket = subjectAgg.get(key) || {
+          name: meta.name,
+          nameKh: meta.nameKh,
+          total: 0,
+          count: 0,
+          passing: 0,
+          failing: 0,
+          gradeCounts: new Map(GRADE_LETTERS.map((g) => [g, { total: 0, male: 0, female: 0 }])),
+        };
+        const percentage = meta.maxScore > 0 ? (mean / meta.maxScore) * 100 : 0;
+        bucket.total += percentage;
+        bucket.count += 1;
+        if (percentage >= 50) bucket.passing += 1;
+        else bucket.failing += 1;
+
+        const letter = genericGradeLevel(percentage);
+        const gradeBucket = bucket.gradeCounts.get(letter)!;
+        gradeBucket.total += 1;
+        if (info?.gender === 'MALE') gradeBucket.male += 1;
+        else if (info?.gender === 'FEMALE') gradeBucket.female += 1;
+
+        subjectAgg.set(key, bucket);
+      });
     });
 
-    const averageScoreBySubject = Array.from(subjectTotals.values())
-      .map((subject) => ({
-        subject: subject.name,
-        subjectKh: subject.nameKh,
-        average: subject.count > 0 ? Math.round(subject.total / subject.count) : 0,
+    const averageScoreBySubject = Array.from(subjectAgg.values())
+      .map((data) => ({
+        subject: data.name,
+        subjectKh: data.nameKh,
+        average: data.count > 0 ? Math.round(data.total / data.count) : 0,
+        passCount: data.passing,
+        failCount: data.failing,
+        passRatePercent: data.count > 0 ? Math.round((data.passing / data.count) * 100) : 0,
+        gradeDistribution: GRADE_LETTERS.map((letter) => ({
+          grade: letter,
+          ...data.gradeCounts.get(letter)!,
+        })),
       }))
       .sort((a, b) => b.average - a.average);
 
-    // ── Attendance per month (for trend) ──
+    // ── Monthly trend (from the tiny month×subject aggregate) ──
+    const monthlyTotals = new Map<string, { total: number; count: number }>();
+    monthSubjectGroups.forEach((g) => {
+      const meta = subjectMeta.get(g.subjectId);
+      if (!meta || meta.maxScore <= 0) return;
+      const count = g._count._all;
+      if (count === 0) return;
+      const mean = (g._sum.score || 0) / count;
+      const percentage = (mean / meta.maxScore) * 100;
+
+      const key = `${g.year}-${g.monthNumber}`;
+      const bucket = monthlyTotals.get(key) || { total: 0, count: 0 };
+      // Weight by how many grade entries this (month, subject) bucket represents,
+      // so combining subjects back into one month figure equals the same
+      // mean-of-individual-ratios the old per-row calculation produced.
+      bucket.total += percentage * count;
+      bucket.count += count;
+      monthlyTotals.set(key, bucket);
+    });
+
     const attendanceByMonth = new Map<string, { present: number; total: number }>();
     attendanceRows.forEach((row) => {
       const d = new Date(row.date);
@@ -423,6 +615,10 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       passRate,
       topPerformingClasses: schoolWide ? averageScoreByClass.slice(0, 5) : [],
       bottomPerformingClasses: schoolWide ? averageScoreByClass.slice(-5).reverse() : [],
+      topStudentsByGrade: scopeClassId ? [] : topStudentsByGrade,
+      topStudentsInClass,
+      atRiskStudents,
+      genderBreakdown,
       trend,
       scale: gradeScale,
       scope: { schoolWide, classId: scopeClassId },
