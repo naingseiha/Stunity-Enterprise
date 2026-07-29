@@ -483,25 +483,14 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         />
                       </AnimatedContent>
 
-                      {/* ══ 2. Honor Roll — GRADE VIEW — 3-Column Leaderboard Cards (White Theme + Visible Khmer Motifs + Khmer Numerals) ══ */}
+                      {/* ══ 2. Honor Roll — GRADE VIEW — 3-Column Leaderboard Cards (White Theme + Hand-Drawn Khmer Carving Backdrop) ══ */}
                       {showGradeHonorRoll && (
                         <AnimatedContent delay={0.08} className="col-span-2 lg:col-span-4">
-                          <section className="bg-gradient-to-br from-amber-50/50 via-white to-amber-50/30 rounded-[2.5rem] p-6 sm:p-10 border border-slate-200/80 shadow-[0_4px_30px_rgba(15,23,42,0.06)] relative overflow-hidden">
-                            {/* Rich & Clearly Visible Abstract Khmer Motif Watermark Background */}
-                            <div className="absolute -top-10 -right-10 w-96 h-96 text-amber-500/15 pointer-events-none select-none">
-                              <svg viewBox="0 0 200 200" fill="currentColor">
-                                <path d="M100 10 C115 45 155 85 190 100 C155 115 115 155 100 190 C85 155 45 115 10 100 C45 85 85 45 100 10 Z" opacity="0.7" />
-                                <path d="M100 30 C110 55 145 90 170 100 C145 110 110 145 100 170 C90 145 55 110 30 100 C55 90 90 55 100 30 Z" opacity="0.6" fill="none" stroke="currentColor" strokeWidth="4" />
-                                <circle cx="100" cy="100" r="32" fill="none" stroke="currentColor" strokeWidth="4" />
-                                <circle cx="100" cy="100" r="16" fill="currentColor" opacity="0.5" />
-                              </svg>
-                            </div>
-                            <div className="absolute -bottom-10 -left-10 w-80 h-80 text-amber-600/12 pointer-events-none select-none">
-                              <svg viewBox="0 0 200 200" fill="currentColor">
-                                <path d="M100 10 C115 45 155 85 190 100 C155 115 115 155 100 190 C85 155 45 115 10 100 C45 85 85 45 100 10 Z" opacity="0.8" />
-                                <circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" strokeWidth="5" />
-                              </svg>
-                            </div>
+                          <section className="bg-white rounded-[2.5rem] p-6 sm:p-10 border border-slate-200/80 shadow-[0_4px_30px_rgba(15,23,42,0.06)] relative overflow-hidden">
+                            {/* Traditional Hand-Drawn Khmer Carving Bas-Relief Backdrop (Soft, Organic & Delicate) */}
+                            <div
+                              className="absolute inset-0 bg-[url('/images/khmer-carving-bg.jpg')] bg-contain bg-center bg-no-repeat opacity-[0.14] mix-blend-multiply pointer-events-none select-none filter blur-[0.2px] scale-95"
+                            />
 
                             {/* ── Top Bar ── */}
                             <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200/70 pb-6 mb-8 sm:mb-10">
@@ -607,10 +596,14 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         </AnimatedContent>
                       )}
 
-                      {/* ══ 2b. Honor Roll — CLASS VIEW — Editorial Magazine Spread (Moul Font + Khmer Numerals) ══ */}
+                      {/* ══ 2b. Honor Roll — CLASS VIEW — Editorial Magazine Spread (Moul Font + Khmer Numerals + Carving Backdrop) ══ */}
                       {showClassHonorRoll && (
                         <AnimatedContent delay={0.08} className="col-span-2 lg:col-span-4">
-                          <section className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-[0_4px_30px_rgba(15,23,42,0.06)]">
+                          <section className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-[0_4px_30px_rgba(15,23,42,0.06)] relative">
+                            {/* Traditional Hand-Drawn Khmer Carving Bas-Relief Backdrop (Soft, Organic & Delicate) */}
+                            <div
+                              className="absolute inset-0 bg-[url('/images/khmer-carving-bg.jpg')] bg-contain bg-center bg-no-repeat opacity-[0.10] mix-blend-multiply pointer-events-none select-none filter blur-[0.2px] scale-95"
+                            />
                             {/* ── Header ── */}
                             <div className="flex items-center justify-between px-8 sm:px-10 pt-8 sm:pt-10 pb-6 border-b border-slate-100">
                               <div>
