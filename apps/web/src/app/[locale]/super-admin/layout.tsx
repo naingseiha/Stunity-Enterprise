@@ -35,6 +35,7 @@ export default function SuperAdminLayout(
   }
 ) {
   const autoT = useTranslations();
+  const tNav = useTranslations('navigation');
   const params = use(props.params);
 
   const {
@@ -75,21 +76,26 @@ export default function SuperAdminLayout(
   };
 
   const navItems = [
-    { section: 'Overview', items: [{ href: `/${locale}/super-admin`, label: 'Dashboard', icon: LayoutDashboard }] },
     {
-      section: 'Platform', items: [
-        { href: `/${locale}/super-admin/schools`, label: 'Schools', icon: School },
-        { href: `/${locale}/super-admin/users`, label: 'Users', icon: Users },
-        { href: `/${locale}/super-admin/content`, label: 'Content Moderation', icon: MessageSquare },
-        { href: `/${locale}/super-admin/analytics`, label: 'Analytics', icon: TrendingUp },
-        { href: `/${locale}/super-admin/audit-logs`, label: 'Audit Logs', icon: FileText },
-        { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: Activity },
+      section: tNav('sections.overview'),
+      items: [{ href: `/${locale}/super-admin`, label: tNav('items.dashboard'), icon: LayoutDashboard }]
+    },
+    {
+      section: tNav('sections.platform'),
+      items: [
+        { href: `/${locale}/super-admin/schools`, label: tNav('items.schools'), icon: School },
+        { href: `/${locale}/super-admin/users`, label: tNav('items.users'), icon: Users },
+        { href: `/${locale}/super-admin/content`, label: tNav('items.contentModeration'), icon: MessageSquare },
+        { href: `/${locale}/super-admin/analytics`, label: tNav('items.analytics'), icon: TrendingUp },
+        { href: `/${locale}/super-admin/audit-logs`, label: tNav('items.auditLogs'), icon: FileText },
+        { href: `/${locale}/super-admin/health`, label: tNav('items.platformHealth'), icon: Activity },
       ]
     },
     {
-      section: 'Settings', items: [
-        { href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: Settings },
-        { href: `/${locale}/super-admin/language`, label: 'Language Management', icon: Globe },
+      section: tNav('sections.settings'),
+      items: [
+        { href: `/${locale}/super-admin/settings`, label: tNav('items.platformSettings'), icon: Settings },
+        { href: `/${locale}/super-admin/language`, label: tNav('items.languageManagement'), icon: Globe },
       ]
     },
   ];
@@ -105,11 +111,11 @@ export default function SuperAdminLayout(
     );
   }
 
-  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Super Admin';
+  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || tNav('items.superAdmin');
   const activeNavItem = navItems
     .flatMap((group) => group.items)
     .find((item) => pathname === item.href || (item.href !== `/${locale}/super-admin` && pathname.startsWith(item.href)));
-  const activeTitle = activeNavItem?.label || 'Platform Admin';
+  const activeTitle = activeNavItem?.label || tNav('items.platformAdmin');
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex">

@@ -1,6 +1,7 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslations } from 'next-intl';
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
@@ -47,6 +48,7 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const locale = (params?.locale as string) || 'en';
+  const tNav = useTranslations('navigation');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [user, setUser] = useState<any>(null);
 
@@ -60,11 +62,11 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
   }, [locale, router]);
 
   const navItems = [
-    { href: `/${locale}/instructor`, icon: LayoutDashboard, label: 'Dashboard' },
-    { href: `/${locale}/instructor/courses`, icon: BookOpen, label: 'My Courses' },
-    { href: `/${locale}/instructor/students`, icon: Users, label: 'Students' },
-    { href: `/${locale}/instructor/analytics`, icon: BarChart3, label: 'Analytics' },
-    { href: `/${locale}/instructor/settings`, icon: Settings, label: 'Settings' },
+    { href: `/${locale}/instructor`, icon: LayoutDashboard, label: tNav('items.dashboard') },
+    { href: `/${locale}/instructor/courses`, icon: BookOpen, label: tNav('items.myCourses') },
+    { href: `/${locale}/instructor/students`, icon: Users, label: tNav('items.students') },
+    { href: `/${locale}/instructor/analytics`, icon: BarChart3, label: tNav('items.analytics') },
+    { href: `/${locale}/instructor/settings`, icon: Settings, label: tNav('items.settings') },
   ];
 
   const handleLogout = () => {

@@ -52,6 +52,11 @@
   --font-tacteng: 'Tacteng', serif;
 }
 
+.font-moul,
+.font-khmer-moul {
+  font-family: var(--font-moul, 'Moul'), 'Khmer OS Muol Light', 'Khmer OS Muol', serif;
+}
+
 body {
   font-family: var(--font-poppins);
 }

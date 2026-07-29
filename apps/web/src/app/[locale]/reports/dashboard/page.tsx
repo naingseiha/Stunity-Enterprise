@@ -33,7 +33,6 @@ import {
   ShieldAlert,
   Loader2,
   UserMinus,
-  HeartHandshake,
   UserCheck,
   Medal,
   Sparkles,
@@ -41,6 +40,9 @@ import {
   Filter,
   Layers,
   FileSpreadsheet,
+  Landmark,
+  CalendarDays,
+  Hash,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
@@ -50,10 +52,11 @@ import StatCard from '@/components/dashboard/StatCard';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
+import { schoolAPI } from '@/lib/api/school';
 import { getSchoolReportsDashboard, SchoolReportsDashboardResponse, ReportPeriodType } from '@/lib/api/reports';
 import { canViewReportsDashboard, isSchoolWideReportsRole } from '@/lib/permissions/reports';
 import { KHMER_MONTHS, getKhmerMonthDisplayName } from '@/lib/reports/templates/khm-moeys/months';
-import { formatKhmerDate, toKhmerNumeral } from '@/lib/reports/templates/khm-moeys/khmer-date';
+import { formatKhmerDate, toKhmerNumeral, toKhmerDigits } from '@/lib/reports/templates/khm-moeys/khmer-date';
 import {
   captureDashboardImage,
   downloadDashboardJpg,
@@ -108,7 +111,16 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
     }
     const userData = TokenManager.getUserData();
     setUser(userData.user);
-    setSchool(userData.school);
+    const userSchool = userData.school;
+    setSchool(userSchool);
+
+    if (userSchool?.id) {
+      schoolAPI.getProfile(userSchool.id).then((profile) => {
+        if (profile) {
+          setSchool((prev: any) => ({ ...prev, ...profile }));
+        }
+      }).catch(() => {});
+    }
   }, [locale, router]);
 
   const hasAccess = canViewReportsDashboard(user?.role);
@@ -119,6 +131,56 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   const academicStartYear = useMemo(() => {
     const parsed = activeYear?.name ? parseInt(activeYear.name.split('-')[0], 10) : NaN;
     return Number.isFinite(parsed) ? parsed : new Date().getFullYear();
+  }, [activeYear?.name]);
+
+  const displaySchoolNameKhmer = useMemo(() => {
+    if (school?.nameKh) return school.nameKh;
+    if (school?.nameKhmer) return school.nameKhmer;
+    if (school?.khmerName) return school.khmerName;
+    if (school?.name_km) return school.name_km;
+    if (school?.name) {
+      if (school.name.includes('Svaythom') || school.name.includes('ស្វាយធំ')) {
+        return 'វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ';
+      }
+      if (school.name.startsWith('វិទ្យាល័យ') || school.name.startsWith('សាលា')) {
+        return school.name;
+      }
+      return `វិទ្យាល័យ ${school.name}`;
+    }
+    return 'វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ';
+  }, [school]);
+
+  const displayOfficeName = useMemo(() => {
+    if (school?.officeName) return school.officeName;
+    return 'ក្រសួងអប់រំ យុវជន និងកីឡា';
+  }, [school]);
+
+  const displayProvince = useMemo(() => {
+    if (school?.province) {
+      if (school.province.startsWith('ខេត្ត') || school.province.startsWith('រាជធានី')) {
+        return school.province;
+      }
+      return `ខេត្ត៖ ${school.province}`;
+    }
+    return 'ខេត្ត៖ សៀមរាប';
+  }, [school]);
+
+  const formattedPeriodSubtitle = useMemo(() => {
+    if (period === 'month') {
+      const m = KHMER_MONTHS.find((item) => item.number === monthNumber);
+      const monthName = m ? m.label : 'កក្កដា';
+      return `របាយការណ៍ប្រចាំខែ៖ ${monthName}`;
+    }
+    if (period === 'semester') {
+      const semDigit = semester === '1' ? '១' : '២';
+      return `របាយការណ៍ប្រចាំឆមាសទី${semDigit}`;
+    }
+    return 'របាយការណ៍ប្រចាំឆ្នាំ';
+  }, [period, monthNumber, semester]);
+
+  const formattedAcademicYearKhmer = useMemo(() => {
+    const yearStr = activeYear?.name || '2025-2026';
+    return toKhmerDigits(yearStr);
   }, [activeYear?.name]);
 
   useEffect(() => {
@@ -198,65 +260,18 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   const showGradeHonorRoll = !classFilter && (data?.topStudentsByGrade.length || 0) > 0;
   const showClassHonorRoll = Boolean(classFilter) && (data?.topStudentsInClass?.length || 0) > 0;
 
-  // Calculated MoEYS indicators disaggregated metrics based on active dataset
+  // Real MoEYS indicators only — sourced straight from the API response.
+  // No estimated/derived ratios: any field with no backing data source is
+  // simply not shown, rather than presented as an invented number.
   const moeysMetrics = useMemo(() => {
-    const totalStudents = data?.overview.totalStudents ?? 0;
     const femaleStudents = data?.genderBreakdown.female.count ?? 0;
-    const totalTeachers = data?.overview.totalTeachers ?? 0;
-    const femaleTeachers = Math.round(totalTeachers * 0.52);
-
-    // Dynamic MoEYS ratios
-    const dropouts = Math.max(0, Math.round(totalStudents * 0.015));
-    const dropoutsFemale = Math.round(dropouts * 0.45);
-    const transferOut = Math.max(0, Math.round(totalStudents * 0.008));
-    const transferOutFemale = Math.round(transferOut * 0.5);
-    const transferIn = Math.max(0, Math.round(totalStudents * 0.012));
-    const transferInFemale = Math.round(transferIn * 0.52);
-    const repeaters = Math.max(0, Math.round(totalStudents * 0.022));
-    const repeatersFemale = Math.round(repeaters * 0.4);
-
-    // Equity & Social protection
-    const idPoor1 = Math.round(totalStudents * 0.08);
-    const idPoor1Female = Math.round(idPoor1 * 0.51);
-    const idPoor2 = Math.round(totalStudents * 0.05);
-    const idPoor2Female = Math.round(idPoor2 * 0.49);
-    const disability = Math.max(0, Math.round(totalStudents * 0.012));
-    const disabilityFemale = Math.round(disability * 0.45);
-    const scholarships = Math.round(totalStudents * 0.06);
-    const scholarshipsFemale = Math.round(scholarships * 0.55);
-
-    // Teacher qualifications
-    const higherDegreeTeachers = Math.round(totalTeachers * 0.45);
-    const higherDegreeTeachersFemale = Math.round(higherDegreeTeachers * 0.45);
-    const pedagogyTeachers = Math.round(totalTeachers * 0.85);
-    const pedagogyTeachersFemale = Math.round(pedagogyTeachers * 0.52);
-
-    return {
-      totalStudents,
-      femaleStudents,
-      totalTeachers,
-      femaleTeachers,
-      dropouts,
-      dropoutsFemale,
-      transferOut,
-      transferOutFemale,
-      transferIn,
-      transferInFemale,
-      repeaters,
-      repeatersFemale,
-      idPoor1,
-      idPoor1Female,
-      idPoor2,
-      idPoor2Female,
-      disability,
-      disabilityFemale,
-      scholarships,
-      scholarshipsFemale,
-      higherDegreeTeachers,
-      higherDegreeTeachersFemale,
-      pedagogyTeachers,
-      pedagogyTeachersFemale,
+    const femaleTeachers = data?.overview.femaleTeachers ?? 0;
+    const flow = data?.studentFlow ?? {
+      repeaters: { total: 0, female: 0 },
+      transferIn: { total: 0, female: 0 },
+      transferOut: { total: 0, female: 0 },
     };
+    return { femaleStudents, femaleTeachers, ...flow };
   }, [data]);
 
   const handleExport = async (kind: 'jpg' | 'pdf') => {
@@ -304,7 +319,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
             <>
               {/* ════ Compact Top Bar (Header + Filters merged) ════ */}
               <AnimatedContent>
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-2xl px-5 py-3.5 shadow-sm border border-slate-200 dark:border-gray-800/50">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-2xl px-5 py-3.5 shadow-sm border border-slate-200 dark:border-gray-800/50 mb-6 sm:mb-8">
                   {/* Left: title + school */}
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-950 text-white">
@@ -397,7 +412,100 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     </section>
                   </AnimatedContent>
                 ) : (
-                  <div ref={exportRef} className="space-y-6 relative">
+                  <div ref={exportRef} className="space-y-6 relative mt-4 sm:mt-6">
+                    {/* Official Letterhead — Kingdom of Cambodia / MoEYS header for printed & exported reports */}
+                    <div className="relative overflow-hidden rounded-[2.5rem] border-2 border-amber-300/80 dark:border-amber-900/60 bg-gradient-to-b from-amber-50/40 via-white to-white dark:from-amber-950/10 dark:via-gray-900/80 dark:to-gray-900/80 shadow-[0_12px_40px_-15px_rgba(180,131,31,0.22)] px-6 py-8 sm:px-12 sm:py-10">
+                      {/* Inner Frame Border for Official MoEYS Document Aesthetic */}
+                      <div className="absolute inset-3 border border-amber-300/50 dark:border-amber-900/30 rounded-[2.1rem] pointer-events-none" />
+                      {/* Gold top accent bar */}
+                      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
+                      {/* Faint traditional Khmer motif watermark */}
+                      <div className="absolute inset-0 bg-[url('/images/khmer-carving-bg.jpg')] bg-contain bg-center bg-no-repeat opacity-[0.04] mix-blend-multiply pointer-events-none select-none" />
+
+                      {/* Top Section: Dual MoEYS Header (Left: Ministry/School Info, Right: Kingdom Motto) */}
+                      <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pb-6 border-b border-dashed border-amber-200/80 dark:border-gray-800">
+                        {/* Top Left: MoEYS & School Title (Moved down 3-4 lines with pt-8 sm:pt-12 to sit noticeably lower than right motto) */}
+                        <div className="text-center sm:text-left space-y-1.5 pt-8 sm:pt-12">
+                          <p
+                            className="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-300 font-moul"
+                            style={{ fontFamily: "var(--font-moul, 'Moul', 'Khmer OS Muol Light', serif)" }}
+                          >
+                            {displayOfficeName}
+                          </p>
+                          <p
+                            className="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-300 font-moul"
+                            style={{ fontFamily: "var(--font-moul, 'Moul', 'Khmer OS Muol Light', serif)" }}
+                          >
+                            {displayProvince}
+                          </p>
+                          <p
+                            className="text-xs sm:text-sm font-bold text-blue-900 dark:text-blue-300 font-moul"
+                            style={{ fontFamily: "var(--font-moul, 'Moul', 'Khmer OS Muol Light', serif)" }}
+                          >
+                            {displaySchoolNameKhmer}
+                          </p>
+                        </div>
+
+                        {/* Top Right: Kingdom Motto (Identical font & font-size for both motto lines, text-center) */}
+                        <div className="text-center space-y-1 w-full sm:w-auto">
+                          <h2
+                            className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white font-moul tracking-wide text-center"
+                            style={{ fontFamily: "var(--font-moul, 'Moul', 'Khmer OS Muol Light', serif)" }}
+                          >
+                            ព្រះរាជាណាចក្រកម្ពុជា
+                          </h2>
+                          <h3
+                            className="text-xs sm:text-sm font-bold text-slate-800 dark:text-gray-200 font-moul tracking-wide text-center"
+                            style={{ fontFamily: "var(--font-moul, 'Moul', 'Khmer OS Muol Light', serif)" }}
+                          >
+                            ជាតិ សាសនា ព្រះមហាក្សត្រ
+                          </h3>
+                          {/* Tacteng Symbol Ornament underneath Motto (centered) */}
+                          <div className="flex justify-center items-center pt-1">
+                            <span
+                              className="font-tacteing text-[24px] leading-none text-amber-600 dark:text-amber-400"
+                              style={{ fontFamily: "var(--font-tacteng, 'Tacteng', serif)" }}
+                            >
+                              3
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Center Section: Main Report Title */}
+                      <div className="relative z-10 text-center py-6">
+                        <h1
+                          className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-950 dark:text-white font-moul tracking-tight"
+                          style={{ fontFamily: "var(--font-moul, 'Moul', 'Khmer OS Muol Light', serif)" }}
+                        >
+                          របាយការណ៍សាលា
+                        </h1>
+                        <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-semibold text-slate-600 dark:text-gray-300">
+                          <span>ឆ្នាំសិក្សា៖ {formattedAcademicYearKhmer}</span>
+                          {scopeClassName && (
+                            <>
+                              <span className="text-slate-300 dark:text-gray-600">·</span>
+                              <span>ថ្នាក់ទី{scopeClassName}</span>
+                            </>
+                          )}
+                          <span className="text-slate-300 dark:text-gray-600">·</span>
+                          <span className="text-amber-700 dark:text-amber-400 font-bold">{formattedPeriodSubtitle}</span>
+                        </div>
+                      </div>
+
+                      {/* Footer info badges */}
+                      <div className="relative z-10 pt-2 flex flex-wrap items-center justify-center gap-2.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 dark:bg-gray-800/70 px-3.5 py-1.5 text-[10px] font-bold text-slate-500 dark:text-gray-400 border border-slate-200/70 dark:border-gray-700 shadow-2xs">
+                          <Hash className="h-3 w-3 text-amber-500" />
+                          លេខយោង៖ {data?.period.label || ''}-{schoolId ? schoolId.slice(-6).toUpperCase() : ''}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 dark:bg-gray-800/70 px-3.5 py-1.5 text-[10px] font-bold text-slate-500 dark:text-gray-400 border border-slate-200/70 dark:border-gray-700 shadow-2xs">
+                          <CalendarDays className="h-3 w-3 text-amber-500" />
+                          ចេញនៅថ្ងៃទី៖ {formatKhmerDate(new Date())}
+                        </span>
+                      </div>
+                    </div>
+
                     {/* Pass Rate mini bar (inline with school info) */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div>
@@ -711,35 +819,25 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         </AnimatedContent>
                       )}
 
-                      {/* 3. MoEYS Student Flow Section (ស្ថានភាពសិស្ស - បោះបង់, ផ្ទេរ, ត្រួតថ្នាក់) */}
+                      {/* 3. MoEYS Student Flow Section — real StudentProgression data only (ត្រួតថ្នាក់, ផ្ទេរ) */}
                       <AnimatedContent delay={0.086} className="col-span-2 lg:col-span-2">
                         <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-rose-200 dark:border-rose-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-200/40 dark:hover:shadow-black/40">
                           <div className="flex items-center justify-between mb-6">
                             <h3 className="flex items-center gap-2.5 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                              <UserMinus className="h-5 w-5 text-rose-500" /> ស្ថានភាពសិស្ស (បោះបង់ & ផ្ទេរ)
+                              <UserMinus className="h-5 w-5 text-rose-500" /> ស្ថានភាពសិស្ស (ផ្ទេរ & ត្រួតថ្នាក់)
                             </h3>
                             <span className="px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-200/50">
                               MoEYS Flow
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="rounded-2xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">បោះបង់ការសិក្សា</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="rounded-2xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-900/10 px-5 py-4">
+                              <p className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">សិស្សត្រួតថ្នាក់</p>
                               <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.dropouts)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-rose-600 bg-rose-100 dark:bg-rose-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.dropoutsFemale)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">សិស្សផ្ទេរចេញ</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.transferOut)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-orange-600 bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.transferOutFemale)}
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.repeaters.total)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
+                                <span className="text-[10px] font-black text-amber-600 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
+                                  ស្រី: {toKhmerNumeral(moeysMetrics.repeaters.female)}
                                 </span>
                               </div>
                             </div>
@@ -747,123 +845,54 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                             <div className="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-4">
                               <p className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">សិស្សផ្ទេរចូល</p>
                               <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.transferIn)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.transferIn.total)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
                                 <span className="text-[10px] font-black text-blue-600 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.transferInFemale)}
+                                  ស្រី: {toKhmerNumeral(moeysMetrics.transferIn.female)}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="rounded-2xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">សិស្សត្រួតថ្នាក់</p>
+                            <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-900/10 px-5 py-4">
+                              <p className="text-xs font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">សិស្សផ្ទេរចេញ</p>
                               <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.repeaters)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-amber-600 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.repeatersFemale)}
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.transferOut.total)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
+                                <span className="text-[10px] font-black text-orange-600 bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 rounded-full">
+                                  ស្រី: {toKhmerNumeral(moeysMetrics.transferOut.female)}
                                 </span>
                               </div>
                             </div>
                           </div>
+                          <p className="mt-4 text-[11px] font-semibold text-slate-400 dark:text-gray-500">
+                            ទិន្នន័យពិតពីកំណត់ត្រាតម្លើងថ្នាក់ក្នុងកំឡុងកាលបរិច្ឆេទដែលបានជ្រើសរើស។ ចំណាំ៖ ការបោះបង់ការសិក្សា (Dropout) មិនទាន់មានប្រព័ន្ធតាមដានផ្លូវការនៅឡើយទេ។
+                          </p>
                         </section>
                       </AnimatedContent>
 
-                      {/* 4. MoEYS Equity Cards & Social Protection */}
+                      {/* 4. MoEYS Teacher Attendance — real TeacherAttendance data only */}
                       <AnimatedContent delay={0.087} className="col-span-2 lg:col-span-2">
-                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-blue-200 dark:border-blue-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-200/40 dark:hover:shadow-black/40">
+                        <section className="h-full overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-emerald-200 dark:border-emerald-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-200/40 dark:hover:shadow-black/40">
                           <div className="flex items-center justify-between mb-6">
                             <h3 className="flex items-center gap-2.5 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                              <HeartHandshake className="h-5 w-5 text-blue-500" /> សិស្សអាហារូបករណ៍ / ក្រីក្រ
+                              <UserCheck className="h-5 w-5 text-emerald-500" /> វត្តមានគ្រូបង្រៀន
                             </h3>
-                            <span className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-200/50">
-                              Equity Cards
+                            <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-200/50">
+                              Teacher Attendance
                             </span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">ប័ណ្ណសមធម៌ ក្រ១</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.idPoor1)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-blue-600 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.idPoor1Female)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">ប័ណ្ណសមធម៌ ក្រ២</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.idPoor2)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-indigo-600 bg-indigo-100 dark:bg-indigo-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.idPoor2Female)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-purple-100 dark:border-purple-900/30 bg-purple-50/50 dark:bg-purple-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">សិស្សពិការ</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.disability)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-purple-600 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.disabilityFemale)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 px-5 py-4">
-                              <p className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">អាហារូបករណ៍</p>
-                              <div className="mt-2 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.scholarships)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.scholarshipsFemale)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-                      </AnimatedContent>
-
-                      {/* 5. MoEYS Teacher Qualification & Attendance Stats */}
-                      <AnimatedContent delay={0.088} className="col-span-2 lg:col-span-4">
-                        <section className="overflow-hidden bg-white dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-emerald-200 dark:border-emerald-900/50 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-200/40 dark:hover:shadow-black/40">
-                          <div className="flex items-center justify-between mb-6">
-                            <h3 className="flex items-center gap-2.5 text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                              <UserCheck className="h-5 w-5 text-emerald-500" /> ស្ថិតិគ្រូបង្រៀន (កម្រិតវប្បធម៌ និងវត្តមាន)
-                            </h3>
-                            <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-200/50">
-                              Pedagogy & Attendance
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5">
-                              <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-gray-400">បរិញ្ញាបត្រ / បរិញ្ញាបត្រជាន់ខ្ពស់</p>
-                              <div className="mt-3 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.higherDegreeTeachers)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-cyan-600 bg-cyan-100 dark:bg-cyan-900/40 px-2.5 py-1 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.higherDegreeTeachersFemale)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5">
-                              <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-gray-400">គរុកោសល្យ</p>
-                              <div className="mt-3 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.pedagogyTeachers)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">នាក់</span></p>
-                                <span className="text-[10px] font-black text-purple-600 bg-purple-100 dark:bg-purple-900/40 px-2.5 py-1 rounded-full">
-                                  ស្រី: {toKhmerNumeral(moeysMetrics.pedagogyTeachersFemale)}
-                                </span>
-                              </div>
+                              <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-gray-400">គ្រូបង្រៀនស្រី</p>
+                              <p className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(moeysMetrics.femaleTeachers)} <span className="text-xs font-bold text-slate-500 dark:text-gray-400">/ {toKhmerNumeral(data?.overview.totalTeachers ?? 0)} នាក់</span></p>
                             </div>
 
                             <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-900/10 px-6 py-5">
-                              <p className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">អត្រាវត្តមានគ្រូប្រចាំខែ</p>
-                              <div className="mt-3 flex items-end justify-between">
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">៩៨.៥%</p>
-                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-1 rounded-full">
-                                  វត្តមានទៀងទាត់
-                                </span>
-                              </div>
+                              <p className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">អត្រាវត្តមានគ្រូ</p>
+                              {data?.overview.teacherAttendanceRate !== null && data?.overview.teacherAttendanceRate !== undefined ? (
+                                <p className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{toKhmerNumeral(data.overview.teacherAttendanceRate)}%</p>
+                              ) : (
+                                <p className="mt-3 text-sm font-bold text-slate-400 dark:text-gray-500">មិនទាន់មានទិន្នន័យកត់ត្រាវត្តមានទេ</p>
+                              )}
                             </div>
                           </div>
                         </section>

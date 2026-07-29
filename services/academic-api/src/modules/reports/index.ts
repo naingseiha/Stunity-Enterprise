@@ -255,7 +255,7 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       const gradeScale = resolveGradeScale(null);
       const empty = {
         period: { type: periodType, label: term.label, khmerLabel: term.khmerLabel, startDate: term.startDate.toISOString(), endDate: term.endDate.toISOString() },
-        overview: { totalStudents: 0, totalTeachers: 0, totalClasses: 0, attendanceRate: 0 },
+        overview: { totalStudents: 0, totalTeachers: 0, femaleTeachers: 0, totalClasses: 0, attendanceRate: 0, teacherAttendanceRate: null },
         averageScoreByGradeLevel: [],
         averageScoreBySubject: [],
         averageScoreByClass: [],
@@ -266,9 +266,15 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
         topStudentsInClass: null,
         atRiskStudents: [],
         genderBreakdown: { male: { count: 0, passRatePercent: 0 }, female: { count: 0, passRatePercent: 0 } },
+        studentFlow: {
+          repeaters: { total: 0, female: 0 },
+          transferIn: { total: 0, female: 0 },
+          transferOut: { total: 0, female: 0 },
+        },
         trend: [],
         scale: gradeScale,
         scope: { schoolWide: false, classId: scopeClassId },
+        school: { name: '', address: null, phone: null, logo: null },
         generatedAt: new Date().toISOString(),
       };
       return res.json(empty);
@@ -276,8 +282,8 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
 
     const gradePeriodWhere = buildGradePeriodWhere(term.periods);
 
-    const [school, classes, students, subjectMeta, studentSubjectGroups, monthSubjectGroups, attendanceRows] = await Promise.all([
-      prisma.school.findUnique({ where: { id: schoolId }, select: { educationModel: true, name: true } }),
+    const [school, classes, students, subjectMeta, studentSubjectGroups, monthSubjectGroups, attendanceRows, progressionRows] = await Promise.all([
+      prisma.school.findUnique({ where: { id: schoolId }, select: { educationModel: true, name: true, address: true, phone: true, logo: true } }),
       prisma.class.findMany({
         where: { id: { in: classIds } },
         select: {
@@ -314,6 +320,20 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
         where: { classId: { in: classIds }, date: { gte: term.startDate, lte: term.endDate } },
         select: { date: true, status: true },
       }),
+      // MoEYS student-flow indicators (repeaters / transfers) — real
+      // StudentProgression records, scoped to the selected period by
+      // promotionDate so month/semester views reflect actual movement dates.
+      prisma.studentProgression.findMany({
+        where: {
+          promotionType: { in: ['REPEAT', 'TRANSFER_IN', 'TRANSFER_OUT'] },
+          promotionDate: { gte: term.startDate, lte: term.endDate },
+          OR: [
+            { toAcademicYearId: yearId, toClassId: { in: classIds } },
+            { fromAcademicYearId: yearId, fromClassId: { in: classIds } },
+          ],
+        },
+        select: { promotionType: true, student: { select: { gender: true } } },
+      }),
     ]);
 
     const gradeScale = resolveGradeScale(school?.educationModel);
@@ -331,12 +351,56 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
     const presentSessions = attendanceRows.filter((a) => a.status === 'PRESENT' || a.status === 'LATE').length;
     const attendanceRate = totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : 0;
 
+    // Real teacher gender + attendance — mirrors the attendance module's own
+    // PRESENT/LATE/PERMISSION-counts-as-present convention (teacherSchedule.ts).
+    const teacherIds = Array.from(teacherIdSet);
+    const [teacherRecords, teacherAttendanceRows] = await Promise.all([
+      teacherIds.length
+        ? prisma.teacher.findMany({ where: { id: { in: teacherIds } }, select: { gender: true } })
+        : Promise.resolve([]),
+      teacherIds.length
+        ? prisma.teacherAttendance.findMany({
+            where: { teacherId: { in: teacherIds }, date: { gte: term.startDate, lte: term.endDate } },
+            select: { status: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const femaleTeachers = teacherRecords.filter((t) => t.gender === 'FEMALE').length;
+    const teacherAttendanceTotal = teacherAttendanceRows.length;
+    const teacherAttendancePresent = teacherAttendanceRows.filter(
+      (a) => a.status === 'PRESENT' || a.status === 'LATE' || a.status === 'PERMISSION'
+    ).length;
+    const teacherAttendanceRate =
+      teacherAttendanceTotal > 0 ? Math.round((teacherAttendancePresent / teacherAttendanceTotal) * 100) : null;
+
     const overview = {
       totalStudents: students.length,
       totalTeachers: teacherIdSet.size,
+      femaleTeachers,
       totalClasses: classes.length,
       attendanceRate,
+      teacherAttendanceRate,
     };
+
+    // ── Student flow (MoEYS) — real StudentProgression records for the period ──
+    const studentFlowBuckets = {
+      repeaters: { total: 0, female: 0 },
+      transferIn: { total: 0, female: 0 },
+      transferOut: { total: 0, female: 0 },
+    };
+    progressionRows.forEach((row) => {
+      const bucket =
+        row.promotionType === 'REPEAT'
+          ? studentFlowBuckets.repeaters
+          : row.promotionType === 'TRANSFER_IN'
+            ? studentFlowBuckets.transferIn
+            : row.promotionType === 'TRANSFER_OUT'
+              ? studentFlowBuckets.transferOut
+              : null;
+      if (!bucket) return;
+      bucket.total += 1;
+      if (row.student.gender === 'FEMALE') bucket.female += 1;
+    });
 
     // ── Per-student, per-subject means (from the DB-side aggregate) ──
     const studentSubjectMeans = new Map<string, Map<string, number>>();
@@ -619,9 +683,11 @@ app.get('/reports/dashboard', authenticateToken, async (req: AuthRequest, res: R
       topStudentsInClass,
       atRiskStudents,
       genderBreakdown,
+      studentFlow: studentFlowBuckets,
       trend,
       scale: gradeScale,
       scope: { schoolWide, classId: scopeClassId },
+      school: { name: school?.name || '', address: school?.address || null, phone: school?.phone || null, logo: school?.logo || null },
       generatedAt: new Date().toISOString(),
     };
 

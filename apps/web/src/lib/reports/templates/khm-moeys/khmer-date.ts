@@ -23,6 +23,11 @@ export function toKhmerNumeral(num: number): string {
     .join('');
 }
 
+export function toKhmerDigits(str: string | number | null | undefined): string {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/\d/g, (match) => khmerNumerals[parseInt(match, 10)]);
+}
+
 export function formatKhmerDate(date: Date = new Date(), locationName?: string): string {
   const day = date.getDate();
   const monthIndex = date.getMonth();

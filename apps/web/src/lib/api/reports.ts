@@ -19,8 +19,22 @@ export interface SchoolReportsDashboardParams {
 export interface DashboardOverview {
   totalStudents: number;
   totalTeachers: number;
+  femaleTeachers: number;
   totalClasses: number;
   attendanceRate: number;
+  /** null when no TeacherAttendance rows exist yet for the selected period. */
+  teacherAttendanceRate: number | null;
+}
+
+export interface StudentFlowBucket {
+  total: number;
+  female: number;
+}
+
+export interface StudentFlow {
+  repeaters: StudentFlowBucket;
+  transferIn: StudentFlowBucket;
+  transferOut: StudentFlowBucket;
 }
 
 export interface GradeLevelAverage {
@@ -108,9 +122,11 @@ export interface SchoolReportsDashboardResponse {
   topStudentsInClass: HonorRollStudent[] | null;
   atRiskStudents: AtRiskStudent[];
   genderBreakdown: GenderBreakdown;
+  studentFlow: StudentFlow;
   trend: DashboardTrendPoint[];
   scale: { system: 'KHM_MOEYS' | 'GENERIC'; maxAverage: number; passingMark: number };
   scope: { schoolWide: boolean; classId: string | null };
+  school: { name: string; address: string | null; phone: string | null; logo: string | null };
   generatedAt: string;
 }
 

@@ -128,9 +128,10 @@ interface CachedLearnPayload {
 }
 
 export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
-    const autoT = useTranslations();
+  const autoT = useTranslations();
   const tMonthlyReport = useTranslations('monthlyReport');
   const tReportsDashboard = useTranslations('reportsDashboard');
+  const tNav = useTranslations('navigation');
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -276,7 +277,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   // Memoized nav items to prevent re-creation on every render
   const navItems = useMemo(() => [
     {
-      name: 'Feed',
+      key: 'feed',
+      name: tNav('items.feed'),
       icon: Home,
       path: `/${locale}/feed`,
       active: isFeedContext,
@@ -284,7 +286,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       prefetch: null as SchoolPrefetchType,
     },
     {
-      name: 'Clubs',
+      key: 'clubs',
+      name: tNav('items.clubs'),
       icon: Users,
       path: `/${locale}/clubs`,
       active: isClubsContext,
@@ -292,7 +295,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       prefetch: null as SchoolPrefetchType,
     },
     {
-      name: 'Events',
+      key: 'events',
+      name: tNav('items.events'),
       icon: Calendar,
       path: `/${locale}/events`,
       active: isEventsContext,
@@ -300,7 +304,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       prefetch: null as SchoolPrefetchType,
     },
     {
-      name: 'Live Quiz',
+      key: 'liveQuiz',
+      name: tNav('items.liveQuiz'),
       icon: Gamepad2,
       path: `/${locale}/live-quiz/join`,
       active: isLiveQuizContext,
@@ -308,7 +313,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       prefetch: null as SchoolPrefetchType,
     },
     {
-      name: 'Learn',
+      key: 'learn',
+      name: tNav('items.learn'),
       icon: BookOpen,
       path: `/${locale}/learn`,
       active: isLearnContext,
@@ -316,7 +322,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       prefetch: null as SchoolPrefetchType,
     },
     {
-      name: 'School',
+      key: 'school',
+      name: tNav('items.school'),
       icon: GraduationCap,
       path: `/${locale}/dashboard`,
       active: isSchoolContext,
@@ -325,17 +332,16 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     },
   ].filter(item => {
     // If we are in school management context, only show Feed and School
-    // This matches the user's request to simplify the menu in admin pages
     if (isSchoolContext) {
-      return item.name === 'Feed' || item.name === 'School';
+      return item.key === 'feed' || item.key === 'school';
     }
 
     // Hide 'School' menu if the user is not part of any school
-    if (item.name === 'School' && !school) {
+    if (item.key === 'school' && !school) {
       return false;
     }
     return true;
-  }), [locale, isFeedContext, isClubsContext, isEventsContext, isLiveQuizContext, isSchoolContext, isLearnContext, school]);
+  }), [locale, isFeedContext, isClubsContext, isEventsContext, isLiveQuizContext, isSchoolContext, isLearnContext, school, tNav]);
 
   const canManageTranslations = Boolean(
     user?.isSuperAdmin ||
@@ -356,78 +362,78 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   // Memoized school menu sections with grouped items
   const schoolMenuSections = useMemo<SchoolMenuSection[]>(() => [
     {
-      label: 'Overview',
+      label: tNav('sections.overview'),
       items: [
-        { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: 'dashboard', skeleton: 'dashboard' as const },
-        { name: 'Messages', icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: 'messages', skeleton: 'table' as const },
+        { name: tNav('items.dashboard'), icon: BarChart3, path: `/${locale}/dashboard`, prefetch: 'dashboard', skeleton: 'dashboard' as const },
+        { name: tNav('items.messages'), icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: 'messages', skeleton: 'table' as const },
       ],
     },
     {
-      label: 'Academic',
+      label: tNav('sections.academic'),
       items: [
-        { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students', skeleton: 'table' as const },
-        { name: 'Parents', icon: Users, path: `/${locale}/parents`, prefetch: 'parents', skeleton: 'table' as const },
-        { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers', skeleton: 'table' as const },
-        { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes', skeleton: 'cards' as const },
-        { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: 'subjects', skeleton: 'table' as const },
+        { name: tNav('items.students'), icon: Users, path: `/${locale}/students`, prefetch: 'students', skeleton: 'table' as const },
+        { name: tNav('items.parents'), icon: Users, path: `/${locale}/parents`, prefetch: 'parents', skeleton: 'table' as const },
+        { name: tNav('items.teachers'), icon: User, path: `/${locale}/teachers`, prefetch: 'teachers', skeleton: 'table' as const },
+        { name: tNav('items.classes'), icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes', skeleton: 'cards' as const },
+        { name: tNav('items.subjects'), icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: 'subjects', skeleton: 'table' as const },
         ...(canViewTeacherQuizAnalytics
-          ? [{ name: 'Quiz Analytics', icon: Brain, path: `/${locale}/teacher/quizzes/analytics`, prefetch: null, skeleton: 'dashboard' as const }]
+          ? [{ name: tNav('items.quizAnalytics'), icon: Brain, path: `/${locale}/teacher/quizzes/analytics`, prefetch: null, skeleton: 'dashboard' as const }]
           : []),
       ],
     },
     {
-      label: 'Schedule',
+      label: tNav('sections.schedule'),
       items: [
-        { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable`, prefetch: 'timetable-core', skeleton: 'cards' as const },
-        { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master`, prefetch: 'timetable-core', skeleton: 'table' as const },
+        { name: tNav('items.timetable'), icon: Calendar, path: `/${locale}/timetable`, prefetch: 'timetable-core', skeleton: 'cards' as const },
+        { name: tNav('items.masterTimetable'), icon: Calendar, path: `/${locale}/timetable/master`, prefetch: 'timetable-core', skeleton: 'table' as const },
       ],
     },
     {
-      label: 'Grades & Attendance',
+      label: tNav('sections.gradesAndAttendance'),
       items: [
-        { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: 'grades-core', skeleton: 'table' as const },
-        { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: 'grades-core', skeleton: 'table' as const },
+        { name: tNav('items.gradeEntry'), icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: 'grades-core', skeleton: 'table' as const },
+        { name: tNav('items.reportCards'), icon: FileText, path: `/${locale}/grades/reports`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: tMonthlyReport('nav'), icon: Calendar, path: `/${locale}/grades/monthly-report`, prefetch: 'grades-core', skeleton: 'table' as const },
-        { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: 'grades-core', skeleton: 'dashboard' as const },
+        { name: tNav('items.gradeAnalytics'), icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: 'grades-core', skeleton: 'dashboard' as const },
         ...(canOpenReportsDashboard
           ? [{ name: tReportsDashboard('nav'), icon: PieChart, path: `/${locale}/reports/dashboard`, prefetch: null, skeleton: 'dashboard' as const }]
           : []),
         ...(canOpenAttendanceDashboard
-          ? [{ name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard' as const, skeleton: 'dashboard' as const }]
+          ? [{ name: tNav('items.attendanceDashboard'), icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard' as const, skeleton: 'dashboard' as const }]
           : []),
-        { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: 'attendance-core', skeleton: 'table' as const },
-        { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: 'attendance-core', skeleton: 'table' as const },
+        { name: tNav('items.markAttendance'), icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: 'attendance-core', skeleton: 'table' as const },
+        { name: tNav('items.attendanceReports'), icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: 'attendance-core', skeleton: 'table' as const },
       ],
     },
     {
-      label: 'Year-End',
+      label: tNav('sections.yearEnd'),
       items: [
-        { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: 'year-end', skeleton: 'table' as const },
-        { name: 'Failed Students', icon: UserX, path: `/${locale}/settings/failed-students`, prefetch: 'failed-students', skeleton: 'table' as const },
-        { name: 'Year-End Workflow', icon: Archive, path: `/${locale}/settings/year-end-workflow`, prefetch: 'year-end', skeleton: 'table' as const },
+        { name: tNav('items.promotion'), icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: 'year-end', skeleton: 'table' as const },
+        { name: tNav('items.failedStudents'), icon: UserX, path: `/${locale}/settings/failed-students`, prefetch: 'failed-students', skeleton: 'table' as const },
+        { name: tNav('items.yearEndWorkflow'), icon: Archive, path: `/${locale}/settings/year-end-workflow`, prefetch: 'year-end', skeleton: 'table' as const },
       ],
     },
     {
-      label: 'School Setup',
+      label: tNav('sections.schoolSetup'),
       items: [
-        { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null, skeleton: 'table' as const },
+        { name: tNav('items.claimCodes'), icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null, skeleton: 'table' as const },
         ...(canOpenAttendanceDashboard
-          ? [{ name: 'Discipline Delegations', icon: Shield, path: `/${locale}/admin/discipline`, prefetch: null, skeleton: 'table' as const }]
+          ? [{ name: tNav('items.disciplineDelegations'), icon: Shield, path: `/${locale}/admin/discipline`, prefetch: null, skeleton: 'table' as const }]
           : []),
-        { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: 'locations', skeleton: 'table' as const },
-        { name: 'School Profile', icon: School, path: `/${locale}/settings/school-profile`, prefetch: null, skeleton: 'form' as const },
-        { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: 'academic-years', skeleton: 'table' as const },
+        { name: tNav('items.campusLocations'), icon: MapPin, path: `/${locale}/settings/locations`, prefetch: 'locations', skeleton: 'table' as const },
+        { name: tNav('items.schoolProfile'), icon: School, path: `/${locale}/settings/school-profile`, prefetch: null, skeleton: 'form' as const },
+        { name: tNav('items.settings'), icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: 'academic-years', skeleton: 'table' as const },
       ],
     },
     ...(canManageTranslations
       ? [{
-        label: 'Platform',
+        label: tNav('sections.platform'),
         items: [
-          { name: 'Language Management', icon: Globe, path: `/${locale}/super-admin/language`, prefetch: null, skeleton: 'table' as const },
+          { name: tNav('items.languageManagement'), icon: Globe, path: `/${locale}/super-admin/language`, prefetch: null, skeleton: 'table' as const },
         ],
       }]
       : []),
-  ], [canManageTranslations, canOpenAttendanceDashboard, canOpenReportsDashboard, canViewTeacherQuizAnalytics, locale, tMonthlyReport, tReportsDashboard]);
+  ], [canManageTranslations, canOpenAttendanceDashboard, canOpenReportsDashboard, canViewTeacherQuizAnalytics, locale, tMonthlyReport, tReportsDashboard, tNav]);
 
   // Flatten for mobile menu compatibility
   const schoolMenuItems = useMemo(

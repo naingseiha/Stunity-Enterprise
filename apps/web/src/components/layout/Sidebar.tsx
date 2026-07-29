@@ -1,6 +1,7 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,23 +19,24 @@ import {
   Ticket,
 } from 'lucide-react';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Students', href: '/students', icon: GraduationCap },
-  { name: 'Teachers', href: '/teachers', icon: Users },
-  { name: 'Parents', href: '/parents', icon: Users },
-  { name: 'Classes', href: '/classes', icon: School },
-  { name: 'Subjects', href: '/subjects', icon: BookOpen },
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Claim Codes', href: '/admin/claim-codes', icon: Ticket },
-  { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
+  const tNav = useTranslations('navigation');
   const [collapsed, setCollapsed] = useState(false);
+
+  const navigation = [
+    { name: tNav('items.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+    { name: tNav('items.students'), href: '/students', icon: GraduationCap },
+    { name: tNav('items.teachers'), href: '/teachers', icon: Users },
+    { name: tNav('items.parents'), href: '/parents', icon: Users },
+    { name: tNav('items.classes'), href: '/classes', icon: School },
+    { name: tNav('items.subjects'), href: '/subjects', icon: BookOpen },
+    { name: tNav('items.calendar'), href: '/calendar', icon: Calendar },
+    { name: tNav('items.claimCodes'), href: '/admin/claim-codes', icon: Ticket },
+    { name: tNav('items.reports'), href: '/reports', icon: FileText },
+    { name: tNav('items.analytics'), href: '/analytics', icon: BarChart3 },
+    { name: tNav('items.settings'), href: '/settings', icon: Settings },
+  ];
 
   return (
     <aside
