@@ -483,10 +483,23 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         />
                       </AnimatedContent>
 
-                      {/* ══ 2. Honor Roll — GRADE VIEW — 3-Column Leaderboard Cards (White Theme + Moul Font) ══ */}
+                      {/* ══ 2. Honor Roll — GRADE VIEW — 3-Column Leaderboard Cards (White Theme + Khmer Motifs + Khmer Numerals) ══ */}
                       {showGradeHonorRoll && (
                         <AnimatedContent delay={0.08} className="col-span-2 lg:col-span-4">
                           <section className="bg-white rounded-[2.5rem] p-6 sm:p-10 border border-slate-100 shadow-[0_4px_30px_rgba(15,23,42,0.06)] relative overflow-hidden">
+                            {/* Abstract Ambient Khmer Motif Watermark Background */}
+                            <div className="absolute top-0 right-0 w-72 h-72 text-amber-500/[0.04] pointer-events-none select-none transform translate-x-12 -translate-y-12">
+                              <svg viewBox="0 0 200 200" fill="currentColor">
+                                <path d="M100 0 C120 40, 160 80, 200 100 C160 120, 120 160, 100 200 C80 160, 40 120, 0 100 C40 80, 80 40, 100 0 Z" />
+                                <circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" strokeWidth="8" />
+                              </svg>
+                            </div>
+                            <div className="absolute bottom-0 left-0 w-72 h-72 text-amber-500/[0.03] pointer-events-none select-none transform -translate-x-12 translate-y-12">
+                              <svg viewBox="0 0 200 200" fill="currentColor">
+                                <path d="M100 0 C120 40, 160 80, 200 100 C160 120, 120 160, 100 200 C80 160, 40 120, 0 100 C40 80, 80 40, 100 0 Z" />
+                              </svg>
+                            </div>
+
                             {/* ── Top Bar ── */}
                             <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-8 sm:mb-10">
                               <div>
@@ -505,14 +518,21 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                               {data?.topStudentsByGrade.map((g) => (
                                 <div
                                   key={g.grade}
-                                  className="relative rounded-[2.2rem] bg-slate-50/70 border border-slate-200/80 p-5 sm:p-6 shadow-xs hover:border-amber-400/60 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                                  className="relative rounded-[2.2rem] bg-slate-50/70 border border-slate-200/80 p-5 sm:p-6 shadow-xs hover:border-amber-400/60 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden"
                                 >
+                                  {/* Subtle card background motif accent */}
+                                  <div className="absolute -bottom-6 -right-6 w-24 h-24 text-amber-500/[0.04] pointer-events-none select-none">
+                                    <svg viewBox="0 0 100 100" fill="currentColor">
+                                      <path d="M50 0 C60 20, 80 40, 100 50 C80 60, 60 80, 50 100 C40 80, 20 60, 0 50 C20 40, 40 20, 50 0 Z" />
+                                    </svg>
+                                  </div>
+
                                   {/* Grade Ribbon Header */}
                                   <div>
                                     <div className="relative mb-5 flex items-center justify-between border-b border-slate-200/60 pb-4">
                                       <div className="flex items-center gap-2 bg-amber-500 text-white px-4 py-1.5 rounded-full font-black text-xs shadow-sm border border-amber-400">
                                         <Trophy className="w-4 h-4 fill-white text-white" />
-                                        <span style={{ fontFamily: "var(--font-moul, 'Moul', serif)" }}>{t('gradeLevelLabel')} {g.grade}</span>
+                                        <span style={{ fontFamily: "var(--font-moul, 'Moul', serif)" }}>{t('gradeLevelLabel')} {toKhmerNumeral(Number(g.grade) || 0)}</span>
                                       </div>
                                       <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">TOP 5</span>
                                     </div>
