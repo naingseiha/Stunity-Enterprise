@@ -335,19 +335,23 @@ function getPortraitSlots(total: number): StudentSlot[] {
     );
   }
 
-  const cardWidth = 175;
-  const cardHeight = cardWidth * A4_FRAME_ASPECT_RATIO;
-  const horizontalGap = 160;
-  const verticalGap = 7;
-  const startX = (1240 - cardWidth * 2 - horizontalGap) / 2;
-  const startY = 432;
+  const isDenseTopTen = total >= 9;
+  const firstRowCount = Math.ceil(total / 2);
+  const cardWidth = isDenseTopTen ? 190 : 220;
+  const horizontalGap = isDenseTopTen ? 42 : 50;
+  const firstY = isDenseTopTen ? 636 : 590;
+  const secondY = isDenseTopTen ? 947 : 953;
 
-  return Array.from({ length: total }, (_, index) => ({
-    x: startX + (index % 2) * (cardWidth + horizontalGap),
-    y: startY + Math.floor(index / 2) * (cardHeight + verticalGap),
-    width: cardWidth,
-    height: cardHeight,
-  }));
+  return splitRows(
+    1240,
+    total,
+    firstRowCount,
+    cardWidth,
+    horizontalGap,
+    firstY,
+    secondY,
+    A4_FRAME_ASPECT_RATIO,
+  );
 }
 
 function getSlots(ratio: PosterRatioId, total: number) {
