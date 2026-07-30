@@ -128,6 +128,10 @@ export interface PosterRecipientsResponse {
     phone: string | null;
     logo: string | null;
   };
+  homeroomTeacher?: {
+    id: string;
+    name: string;
+  } | null;
   scale: {
     system: "KHM_MOEYS" | "GENERIC";
     maxAverage: number;

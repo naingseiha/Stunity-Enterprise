@@ -6,6 +6,7 @@ import {
   SquarePosterCanvas,
 } from "./PosterRatioCanvases";
 import HeritageHonorsCanvas from "./HeritageHonorsCanvas";
+import ModernKhmerExcellenceCanvas from "./ModernKhmerExcellenceCanvas";
 import type { PosterCanvasProps } from "./types";
 
 const TEMPLATE_ASSET_ROOT = "/poster-templates/clean-achievers";
@@ -295,6 +296,10 @@ export default function PosterCanvas(props: PosterCanvasProps) {
 
   if (props.template === "heritage-honors") {
     return <HeritageHonorsCanvas {...props} />;
+  }
+
+  if (props.template === "modern-khmer-excellence") {
+    return <ModernKhmerExcellenceCanvas {...props} />;
   }
 
   if (width === height) return <SquarePosterCanvas {...props} />;
