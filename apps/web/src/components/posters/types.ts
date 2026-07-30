@@ -1,6 +1,6 @@
 import type { PosterRecipientsResponse } from "@/lib/api/reports";
 
-export type PosterTemplateId = "clean-achievers";
+export type PosterTemplateId = "clean-achievers" | "heritage-honors";
 export type PosterRatioId = "square" | "portrait" | "landscape";
 
 export interface PosterRatioPreset {
@@ -38,9 +38,19 @@ export interface PosterCanvasProps {
 }
 
 export const POSTER_RATIOS: PosterRatioPreset[] = [
-  { id: "square", label: "Square 1:1", width: 1080, height: 1080 },
-  { id: "portrait", label: "Portrait 4:5", width: 1080, height: 1350 },
-  { id: "landscape", label: "Landscape 16:9", width: 1920, height: 1080 },
+  { id: "square", label: "Square 1:1 · 300 DPI", width: 2160, height: 2160 },
+  {
+    id: "portrait",
+    label: "Portrait A4 · 300 DPI",
+    width: 2480,
+    height: 3508,
+  },
+  {
+    id: "landscape",
+    label: "Landscape 16:9 · 300 DPI",
+    width: 3840,
+    height: 2160,
+  },
 ];
 
 export const POSTER_TEMPLATES: PosterTemplateDefinition[] = [
@@ -50,6 +60,15 @@ export const POSTER_TEMPLATES: PosterTemplateDefinition[] = [
     description:
       "Clean professional layouts for portrait, square and landscape.",
     accent: "from-[#6b132b] via-[#d4af63] to-[#0f5552]",
+    supportsGroups: true,
+    supportedRatios: ["portrait", "square", "landscape"],
+  },
+  {
+    id: "heritage-honors",
+    name: "Heritage Honors · Collection 2",
+    description:
+      "Premium Khmer heritage layouts with generated print-ready assets for Top 3, 5 and 10.",
+    accent: "from-[#fffaf0] via-[#b88a3b] to-[#0f5b57]",
     supportsGroups: true,
     supportedRatios: ["portrait", "square", "landscape"],
   },

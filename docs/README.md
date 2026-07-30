@@ -48,6 +48,7 @@ Long-form guides live in **[guides/](guides/README.md)** (education model, onboa
 - [MOBILE_API_INTEGRATION_GUIDE.md](MOBILE_API_INTEGRATION_GUIDE.md)
 - [SCHOOL_SOCIAL_INTEGRATION.md](SCHOOL_SOCIAL_INTEGRATION.md)
 - [TIMETABLE_SYSTEM.md](TIMETABLE_SYSTEM.md)
+- [poster-studio/design-collection-2-graphic-prompts.md](poster-studio/design-collection-2-graphic-prompts.md) — Index for Poster Studio Collection 2 prompt packs: Heritage Khmer and Modern White.
 
 ### Admin and enterprise
 

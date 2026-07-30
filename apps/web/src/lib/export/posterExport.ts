@@ -222,7 +222,7 @@ export async function capturePosterCanvas(
   source: HTMLElement,
   width: number,
   height: number,
-  scale = 2,
+  scale = 1,
 ): Promise<HTMLCanvasElement> {
   if ("fonts" in document) await document.fonts.ready;
 
@@ -302,6 +302,118 @@ function canvasToBlob(
   });
 }
 
+function crc32(bytes: Uint8Array) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createPngChunk(type: string, data: Uint8Array) {
+  const chunk = new Uint8Array(12 + data.length);
+  const view = new DataView(chunk.buffer);
+  view.setUint32(0, data.length);
+  const typeBytes = new TextEncoder().encode(type);
+  chunk.set(typeBytes, 4);
+  chunk.set(data, 8);
+  view.setUint32(8 + data.length, crc32(chunk.subarray(4, 8 + data.length)));
+  return chunk;
+}
+
+async function setPngDensity(blob: Blob, dpi: number) {
+  const source = new Uint8Array(await blob.arrayBuffer());
+  const signature = source.subarray(0, 8);
+  const chunks: Uint8Array[] = [signature];
+  const pixelsPerMeter = Math.round(dpi / 0.0254);
+  const density = new Uint8Array(9);
+  const densityView = new DataView(density.buffer);
+  densityView.setUint32(0, pixelsPerMeter);
+  densityView.setUint32(4, pixelsPerMeter);
+  density[8] = 1;
+  const densityChunk = createPngChunk("pHYs", density);
+
+  let offset = 8;
+  while (offset + 12 <= source.length) {
+    const length = new DataView(
+      source.buffer,
+      source.byteOffset + offset,
+      4,
+    ).getUint32(0);
+    const chunkEnd = offset + 12 + length;
+    if (chunkEnd > source.length) break;
+    const type = new TextDecoder().decode(
+      source.subarray(offset + 4, offset + 8),
+    );
+    if (type !== "pHYs") chunks.push(source.subarray(offset, chunkEnd));
+    if (type === "IHDR") chunks.push(densityChunk);
+    offset = chunkEnd;
+  }
+
+  return new Blob(
+    chunks.map((chunk) => Uint8Array.from(chunk).buffer),
+    { type: "image/png" },
+  );
+}
+
+async function setJpegDensity(blob: Blob, dpi: number) {
+  const source = new Uint8Array(await blob.arrayBuffer());
+  const hasJfif =
+    source.length >= 20 &&
+    source[0] === 0xff &&
+    source[1] === 0xd8 &&
+    source[2] === 0xff &&
+    source[3] === 0xe0 &&
+    String.fromCharCode(...source.subarray(6, 11)) === "JFIF\u0000";
+  const density = Math.min(65535, Math.max(1, Math.round(dpi)));
+
+  if (hasJfif) {
+    const output = source.slice();
+    const view = new DataView(output.buffer);
+    output[13] = 1;
+    view.setUint16(14, density);
+    view.setUint16(16, density);
+    return new Blob([output], { type: "image/jpeg" });
+  }
+
+  const jfif = new Uint8Array([
+    0xff,
+    0xe0,
+    0x00,
+    0x10,
+    0x4a,
+    0x46,
+    0x49,
+    0x46,
+    0x00,
+    0x01,
+    0x01,
+    0x01,
+    (density >> 8) & 0xff,
+    density & 0xff,
+    (density >> 8) & 0xff,
+    density & 0xff,
+    0x00,
+    0x00,
+  ]);
+  return new Blob([source.subarray(0, 2), jfif, source.subarray(2)], {
+    type: "image/jpeg",
+  });
+}
+
+async function setPrintDensity(
+  blob: Blob,
+  format: PosterImageFormat,
+  dpi = 300,
+) {
+  return format === "png"
+    ? setPngDensity(blob, dpi)
+    : setJpegDensity(blob, dpi);
+}
+
 function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -321,7 +433,8 @@ export async function downloadPosterImage(
   format: PosterImageFormat,
 ) {
   const canvas = await capturePosterCanvas(source, width, height);
-  const blob = await canvasToBlob(canvas, format);
+  const sourceBlob = await canvasToBlob(canvas, format);
+  const blob = await setPrintDensity(sourceBlob, format);
   downloadBlob(blob, `${fileName}.${format}`);
 }
 
@@ -335,13 +448,15 @@ export async function downloadPosterPdf(
   const dataUrl = canvas.toDataURL("image/png");
   const { default: jsPDF } = await import("jspdf");
   const orientation = width >= height ? "landscape" : "portrait";
+  const widthMm = (width / 300) * 25.4;
+  const heightMm = (height / 300) * 25.4;
   const doc = new jsPDF({
-    unit: "px",
-    format: [width, height],
+    unit: "mm",
+    format: [widthMm, heightMm],
     orientation,
     compress: true,
   });
-  doc.addImage(dataUrl, "PNG", 0, 0, width, height);
+  doc.addImage(dataUrl, "PNG", 0, 0, widthMm, heightMm);
   doc.save(`${fileName}.pdf`);
 }
 

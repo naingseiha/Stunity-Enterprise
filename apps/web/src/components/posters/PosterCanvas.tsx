@@ -5,6 +5,7 @@ import {
   LandscapePosterCanvas,
   SquarePosterCanvas,
 } from "./PosterRatioCanvases";
+import HeritageHonorsCanvas from "./HeritageHonorsCanvas";
 import type { PosterCanvasProps } from "./types";
 
 const TEMPLATE_ASSET_ROOT = "/poster-templates/clean-achievers";
@@ -292,6 +293,10 @@ export default function PosterCanvas(props: PosterCanvasProps) {
     academicYearLabel,
   } = props;
 
+  if (props.template === "heritage-honors") {
+    return <HeritageHonorsCanvas {...props} />;
+  }
+
   if (width === height) return <SquarePosterCanvas {...props} />;
   if (width > height) return <LandscapePosterCanvas {...props} />;
 
@@ -312,7 +317,7 @@ export default function PosterCanvas(props: PosterCanvasProps) {
       data-poster-svg="true"
       width={width}
       height={height}
-      viewBox="0 0 1080 1350"
+      viewBox="0 0 1080 1528"
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
       role="img"
@@ -363,7 +368,7 @@ export default function PosterCanvas(props: PosterCanvasProps) {
         x="0"
         y="0"
         width="1080"
-        height="1350"
+        height="1528"
         preserveAspectRatio="xMidYMid slice"
       />
 
@@ -561,10 +566,10 @@ export default function PosterCanvas(props: PosterCanvasProps) {
       )}
 
       <g data-poster-footer="true">
-        <rect x="70" y="1175" width="940" height="2" rx="1" fill="#d9bc79" />
-        <circle cx="92" cy="1240" r="20" fill="#6b132b" />
+        <rect x="70" y="1355" width="940" height="2" rx="1" fill="#d9bc79" />
+        <circle cx="92" cy="1435" r="20" fill="#6b132b" />
         <path
-          d="M80 1240l12-7 12 7-12 7zm4 7v9c5 4 11 4 16 0v-9"
+          d="M80 1435l12-7 12 7-12 7zm4 7v9c5 4 11 4 16 0v-9"
           fill="none"
           stroke="#fffaf0"
           strokeWidth="2.5"
@@ -573,7 +578,7 @@ export default function PosterCanvas(props: PosterCanvasProps) {
         />
         <text
           x="126"
-          y="1233"
+          y="1428"
           fontFamily="Arial, sans-serif"
           fontSize="18"
           fontWeight="700"
@@ -584,7 +589,7 @@ export default function PosterCanvas(props: PosterCanvasProps) {
         </text>
         <text
           x="126"
-          y="1258"
+          y="1453"
           fontFamily="Battambang, sans-serif"
           fontSize="12"
           fontWeight="700"
@@ -595,7 +600,7 @@ export default function PosterCanvas(props: PosterCanvasProps) {
 
         <text
           x="990"
-          y="1228"
+          y="1423"
           textAnchor="end"
           fontFamily="Battambang, sans-serif"
           fontSize="13"
@@ -606,7 +611,7 @@ export default function PosterCanvas(props: PosterCanvasProps) {
         </text>
         <text
           x="990"
-          y="1255"
+          y="1450"
           textAnchor="end"
           fontFamily="Battambang, sans-serif"
           fontSize="12"
