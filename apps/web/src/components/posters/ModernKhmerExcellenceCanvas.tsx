@@ -548,13 +548,13 @@ function StandardStudentCard({
   const photoHeight = slot.height * 0.665;
   const photoBottom = photoY + photoHeight;
   const photoArcY = photoY + photoWidth / 2;
-  const rankX = slot.x + slot.width * 0.238;
-  const rankY = slot.y + slot.height * 0.835;
+  const rankX = slot.x + slot.width * 0.267;
+  const rankY = slot.y + slot.height * 0.797;
   const rankRadius = slot.width * 0.066;
-  const nameX = slot.x + slot.width * 0.55;
-  const nameY = slot.y + slot.height * 0.835;
-  const classY = slot.y + slot.height * 0.91;
-  const scoreY = slot.y + slot.height * 0.962;
+  const nameX = slot.x + slot.width * 0.555;
+  const nameY = slot.y + slot.height * 0.79;
+  const classY = slot.y + slot.height * 0.858;
+  const scoreY = slot.y + slot.height * 0.905;
   const nameSize = Math.max(
     9,
     Math.min(
