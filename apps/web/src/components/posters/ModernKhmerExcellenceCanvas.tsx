@@ -58,10 +58,10 @@ const HEADER_LAYOUTS: Record<PosterRatioId, HeaderLayout> = {
     schoolFontSize: 13,
     schoolNameLimit: 38,
     mottoY: [34, 66, 102],
-    titleY: 274,
-    subtitleY: 315,
-    academicYearY: 346,
-    dividerY: 371,
+    titleY: 220,
+    subtitleY: 261,
+    academicYearY: 293,
+    dividerY: 320,
     titleFontSize: 36,
   },
   landscape: {
@@ -265,10 +265,10 @@ function getSquareSlots(total: number): StudentSlot[] {
       1080,
       total,
       firstRowCount,
-      210,
+      220,
       52,
-      385,
-      657,
+      340,
+      620,
       STANDARD_FRAME_ASPECT_RATIO,
     );
   }
@@ -534,11 +534,13 @@ function StandardStudentCard({
   slot,
   index,
   content,
+  ratio,
 }: {
   recipient: PosterRecipient;
   slot: StudentSlot;
   index: number;
   content: PosterCanvasProps["content"];
+  ratio: PosterRatioId;
 }) {
   const clipId = `modern-khmer-excellence-standard-photo-${index}`;
   const studentName = truncateLabel(displayName(recipient), 22);
@@ -548,11 +550,13 @@ function StandardStudentCard({
   const photoHeight = slot.height * 0.665;
   const photoBottom = photoY + photoHeight;
   const photoArcY = photoY + photoWidth / 2;
-  const rankX = slot.x + slot.width * 0.267;
-  const rankY = slot.y + slot.height * 0.797;
+  const rankX = slot.x + slot.width * (ratio === "square" ? 0.239 : 0.267);
+  const rankY = slot.y + slot.height * (ratio === "square" ? 0.774 : 0.797);
   const rankRadius = slot.width * 0.066;
   const nameX = slot.x + slot.width * 0.555;
   const nameY = slot.y + slot.height * 0.79;
+  const squareNameX = ratio === "square" ? nameX - slot.width * 0.018 : nameX;
+  const squareNameY = ratio === "square" ? nameY - slot.height * 0.008 : nameY;
   const classY = slot.y + slot.height * 0.858;
   const scoreY = slot.y + slot.height * 0.905;
   const nameSize = Math.max(
@@ -652,8 +656,8 @@ function StandardStudentCard({
         </g>
       )}
       <text
-        x={nameX}
-        y={nameY}
+        x={squareNameX}
+        y={squareNameY}
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="Moul, Khmer OS Muol Light, serif"
@@ -969,6 +973,146 @@ function ModernFooter({
     );
   }
 
+  if (ratio === "square") {
+    const formattedDate = data?.generatedAt
+      ? formatKhmerDate(data.generatedAt)
+      : "—";
+    const teacherName =
+      data?.homeroomTeacher?.name?.trim() || "________________";
+
+    return (
+      <g data-poster-footer="true" data-footer-layout="approval-signatures">
+        <rect
+          x="90"
+          y="958"
+          width="900"
+          height="1.5"
+          rx=".75"
+          fill="#b78c3c"
+          opacity=".58"
+        />
+        <rect
+          x="112"
+          y="966"
+          width="335"
+          height="62"
+          rx="12"
+          fill="#fffdf8"
+          fillOpacity=".9"
+          stroke="#b78c3c"
+          strokeWidth="1.5"
+          strokeOpacity=".68"
+        />
+        <rect
+          x="633"
+          y="966"
+          width="335"
+          height="62"
+          rx="12"
+          fill="#fffdf8"
+          fillOpacity=".9"
+          stroke="#b78c3c"
+          strokeWidth="1.5"
+          strokeOpacity=".68"
+        />
+        <g textAnchor="middle" fill="#68162d">
+          <text
+            x="279.5"
+            y="984"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="13"
+          >
+            បានឃើញ និងឯកភាព
+          </text>
+          <text
+            x="279.5"
+            y="1011"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="14"
+          >
+            នាយកសាលា
+          </text>
+          <text
+            x="800.5"
+            y="977"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="9"
+          >
+            កាលបរិច្ឆេទ៖ {formattedDate}
+          </text>
+          <text
+            x="800.5"
+            y="997"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="12"
+          >
+            គ្រូប្រចាំថ្នាក់
+          </text>
+          <text
+            x="800.5"
+            y="1018"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="10"
+          >
+            {truncateLabel(teacherName, 28)}
+          </text>
+        </g>
+        <rect
+          x={side}
+          y="1039"
+          width={layout.width - side * 2}
+          height="1.5"
+          rx=".75"
+          fill="#b78c3c"
+          opacity=".64"
+        />
+        <circle cx={side + 9} cy="1059" r="10" fill="#68162d" />
+        <path
+          d={`M${side + 4} 1059l5-3 5 3-5 3zm2 3v4c2 2 4 2 6 0v-4`}
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <text
+          x={side + 28}
+          y="1060"
+          dominantBaseline="central"
+          fontFamily="Arial, sans-serif"
+          fontSize="13"
+          fontWeight="700"
+          letterSpacing="2.6"
+          fill="#68162d"
+        >
+          STUNITY
+        </text>
+        <text
+          x={layout.width - side}
+          y="1060"
+          textAnchor="end"
+          dominantBaseline="central"
+          fontFamily="Battambang, sans-serif"
+          fontSize="10"
+          fontWeight="700"
+          fill="#5f625e"
+        >
+          {truncateLabel(
+            [data?.school.phone, data?.school.address]
+              .filter(Boolean)
+              .join("  •  "),
+            54,
+          )}
+        </text>
+      </g>
+    );
+  }
+
   return (
     <g data-poster-footer="true">
       <rect
@@ -1141,6 +1285,7 @@ export default function ModernKhmerExcellenceCanvas(props: PosterCanvasProps) {
                 slot={slots[index]}
                 index={index}
                 content={content}
+                ratio={ratio}
               />
             ),
           )}
