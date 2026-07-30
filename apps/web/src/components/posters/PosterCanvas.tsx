@@ -7,6 +7,7 @@ import {
 } from "./PosterRatioCanvases";
 import HeritageHonorsCanvas from "./HeritageHonorsCanvas";
 import ModernKhmerExcellenceCanvas from "./ModernKhmerExcellenceCanvas";
+import AngkorLaureatesCanvas from "./AngkorLaureatesCanvas";
 import type { PosterCanvasProps } from "./types";
 
 const TEMPLATE_ASSET_ROOT = "/poster-templates/clean-achievers";
@@ -300,6 +301,10 @@ export default function PosterCanvas(props: PosterCanvasProps) {
 
   if (props.template === "modern-khmer-excellence") {
     return <ModernKhmerExcellenceCanvas {...props} />;
+  }
+
+  if (props.template === "angkor-laureates") {
+    return <AngkorLaureatesCanvas {...props} />;
   }
 
   if (width === height) return <SquarePosterCanvas {...props} />;

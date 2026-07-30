@@ -4,12 +4,15 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
+  Award,
   Check,
+  Crown,
   Download,
   FileImage,
   FileText,
   ImageIcon,
   Layers3,
+  Landmark,
   Loader2,
   Palette,
   RefreshCw,
@@ -73,6 +76,28 @@ function hydratePosterAssetUrls(
   };
 }
 
+const TEMPLATE_CARD_META = {
+  "clean-achievers": {
+    icon: Sparkles,
+    eyebrow: "ស្អាតទំនើប",
+  },
+  "heritage-honors": {
+    icon: Award,
+    eyebrow: "បេតិកភណ្ឌខ្មែរ",
+  },
+  "modern-khmer-excellence": {
+    icon: Landmark,
+    eyebrow: "ស្ថាបត្យកម្មខ្មែរ",
+  },
+  "angkor-laureates": {
+    icon: Crown,
+    eyebrow: "កិត្តិយសអង្គរ",
+  },
+} satisfies Record<
+  PosterTemplateId,
+  { icon: typeof Sparkles; eyebrow: string }
+>;
+
 export default function PosterStudioPage(props: {
   params: Promise<{ locale: string }>;
 }) {
@@ -98,8 +123,8 @@ export default function PosterStudioPage(props: {
   const [customLimit, setCustomLimit] = useState(12);
   const [includeTies, setIncludeTies] = useState(true);
 
-  const [template, setTemplate] = useState<PosterTemplateId>("clean-achievers");
-  const [ratioId, setRatioId] = useState<PosterRatioId>("portrait");
+  const [template, setTemplate] = useState<PosterTemplateId>("heritage-honors");
+  const [ratioId, setRatioId] = useState<PosterRatioId>("square");
   const [content, setContent] = useState<PosterContentSettings>({
     title: t("defaultTitle"),
     subtitle: "",
@@ -579,7 +604,7 @@ export default function PosterStudioPage(props: {
                         onClick={() => setLimitPreset(item)}
                         className={`rounded-xl px-2 py-2 text-xs font-black ${limitPreset === item ? "bg-amber-500 text-slate-950" : "bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400"}`}
                       >
-                        {item === "custom" ? t("custom") : `Top ${item}`}
+                        {item === "custom" ? t("custom") : `សិស្ស ${item} នាក់`}
                       </button>
                     ))}
                   </div>
@@ -657,34 +682,58 @@ export default function PosterStudioPage(props: {
                     {t("template")}
                   </label>
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    {POSTER_TEMPLATES.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setTemplate(item.id);
-                          if (!item.supportedRatios.includes(ratioId)) {
-                            setRatioId(item.supportedRatios[0]);
+                    {POSTER_TEMPLATES.map((item) => {
+                      const meta = TEMPLATE_CARD_META[item.id];
+                      const TemplateIcon = meta.icon;
+                      const selected = template === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setTemplate(item.id);
+                            if (!item.supportedRatios.includes(ratioId)) {
+                              setRatioId(item.supportedRatios[0]);
+                            }
+                          }}
+                          disabled={
+                            (posterData?.groups.length || 0) > 1 &&
+                            !item.supportsGroups
                           }
-                        }}
-                        disabled={
-                          (posterData?.groups.length || 0) > 1 &&
-                          !item.supportsGroups
-                        }
-                        className={`overflow-hidden rounded-xl border text-left disabled:cursor-not-allowed disabled:opacity-40 ${template === item.id ? "border-fuchsia-500 ring-2 ring-fuchsia-200 dark:ring-fuchsia-900" : "border-slate-200 dark:border-gray-700"}`}
-                      >
-                        <div
-                          className={`h-12 bg-gradient-to-br ${item.accent}`}
-                        />
-                        <div className="p-2">
-                          <p className="text-[11px] font-black leading-tight">
-                            {item.name}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-[9px] font-medium leading-tight text-slate-400">
-                            {item.description}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                          className={`group relative overflow-hidden rounded-2xl border text-left transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+                            selected
+                              ? "border-fuchsia-500 bg-fuchsia-50/70 shadow-md ring-2 ring-fuchsia-200 dark:bg-fuchsia-950/20 dark:ring-fuchsia-900"
+                              : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-950"
+                          }`}
+                        >
+                          <div
+                            className={`relative flex h-20 items-center justify-between overflow-hidden bg-gradient-to-br px-3 ${item.accent}`}
+                          >
+                            <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px]" />
+                            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/70 bg-white/90 text-[#711b35] shadow-sm">
+                              <TemplateIcon className="h-6 w-6" />
+                            </div>
+                            <span className="relative rounded-full border border-white/70 bg-white/85 px-2 py-1 text-[9px] font-black text-[#711b35] shadow-sm">
+                              {meta.eyebrow}
+                            </span>
+                          </div>
+                          <div className="min-h-[94px] p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[12px] font-black leading-5 text-slate-900 dark:text-white">
+                                {item.name}
+                              </p>
+                              {selected && (
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-fuchsia-600 text-white">
+                                  <Check className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1.5 line-clamp-3 text-[10px] font-semibold leading-4 text-slate-500 dark:text-gray-400">
+                              {item.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <label className="mt-5 block text-xs font-black text-slate-600 dark:text-gray-300">

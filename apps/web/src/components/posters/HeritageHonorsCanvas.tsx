@@ -11,6 +11,7 @@ const BACKGROUNDS: Record<PosterRatioId, string> = {
   portrait: `${ASSET_ROOT}/background-portrait-a4.png`,
 };
 const STUDENT_FRAME = `${ASSET_ROOT}/student-frame.png`;
+const CIRCULAR_STUDENT_FRAME = `${ASSET_ROOT}/student-frame-circular.png`;
 const STUDENT_FRAME_ASPECT_RATIO = 1700 / 1400;
 
 const EDUCATION_DEPARTMENT = "មន្ទីរអប់រំយុវជន និងកីឡា";
@@ -48,6 +49,35 @@ function truncateLabel(value: string, maxCharacters: number) {
 function toKhmerNumerals(value: string | number) {
   const khmerDigits = ["០", "១", "២", "៣", "៤", "៥", "៦", "៧", "៨", "៩"];
   return String(value).replace(/\d/g, (digit) => khmerDigits[Number(digit)]);
+}
+
+function formatKhmerDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Phnom_Penh",
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value || "";
+  const months = [
+    "",
+    "មករា",
+    "កុម្ភៈ",
+    "មីនា",
+    "មេសា",
+    "ឧសភា",
+    "មិថុនា",
+    "កក្កដា",
+    "សីហា",
+    "កញ្ញា",
+    "តុលា",
+    "វិច្ឆិកា",
+    "ធ្នូ",
+  ];
+  return `ថ្ងៃទី ${toKhmerNumerals(part("day"))} ខែ ${months[Number(part("month"))] || part("month")} ឆ្នាំ ${toKhmerNumerals(part("year"))}`;
 }
 
 function schoolInitials(schoolName: string) {
@@ -121,20 +151,23 @@ function getSquareSlots(total: number): StudentSlot[] {
   }
   if (total <= 5) {
     const firstRowCount = Math.ceil(total / 2);
-    return splitRows(2160, total, firstRowCount, 390, 70, 725, 1225);
+    if (total === 5) {
+      return splitRows(2160, total, firstRowCount, 500, 100, 650, 1205);
+    }
+    return splitRows(2160, total, firstRowCount, 430, 85, 725, 1260);
   }
   return splitRows(2160, total, Math.min(5, total), 320, 42, 785, 1250);
 }
 
 function getLandscapeSlots(total: number): StudentSlot[] {
   if (total <= 3) {
-    const cardWidth = total === 1 ? 650 : total === 2 ? 600 : 560;
-    return centeredRow(3840, Math.max(1, total), cardWidth, 140, 650);
+    const cardWidth = total === 1 ? 860 : total === 2 ? 790 : 720;
+    return centeredRow(3840, Math.max(1, total), cardWidth, 200, 550);
   }
   if (total <= 5) {
-    return centeredRow(3840, total, 500, 95, 690);
+    return centeredRow(3840, total, 650, 95, 565);
   }
-  return splitRows(3840, total, Math.min(5, total), 430, 82, 585, 1138);
+  return splitRows(3840, total, Math.min(5, total), 540, 135, 550, 1110);
 }
 
 function getPortraitSlots(total: number): StudentSlot[] {
@@ -146,8 +179,24 @@ function getPortraitSlots(total: number): StudentSlot[] {
     ];
   }
   if (total <= 5) {
+    if (total === 5) {
+      return [
+        ...centeredRow(2480, 1, 620, 0, 780),
+        ...centeredRow(2480, 2, 580, 420, 1420),
+        ...centeredRow(2480, 2, 580, 420, 2050),
+      ];
+    }
     const firstRowCount = Math.ceil(total / 2);
     return splitRows(2480, total, firstRowCount, 500, 80, 880, 1510);
+  }
+
+  if (total === 10) {
+    return [
+      ...centeredRow(2480, 1, 560, 0, 750),
+      ...centeredRow(2480, 3, 440, 180, 1335),
+      ...centeredRow(2480, 3, 440, 180, 1810),
+      ...centeredRow(2480, 3, 440, 180, 2285),
+    ];
   }
 
   const columns = 2;
@@ -189,13 +238,14 @@ function HeritageHeader({
   const centerX = canvasWidth / 2;
   const landscape = ratio === "landscape";
   const portrait = ratio === "portrait";
+  const square = ratio === "square";
   const logoX = landscape ? 170 : portrait ? 190 : 170;
-  const logoY = landscape ? 275 : portrait ? 360 : 360;
+  const logoY = landscape ? 310 : portrait ? 360 : 360;
   const logoRadius = landscape ? 72 : 76;
   const schoolTextX = logoX + logoRadius + 46;
   const schoolNameLimit = landscape ? 48 : 36;
-  const titleY = landscape ? 300 : portrait ? 540 : 540;
-  const dividerY = landscape ? 520 : portrait ? 750 : 730;
+  const titleY = landscape ? 300 : portrait ? 540 : 420;
+  const dividerY = landscape ? 520 : portrait ? 750 : 620;
   const periodLabel =
     content.subtitle || data?.period.khmerLabel || data?.period.label || "";
   const honorRollPeriod = data
@@ -206,11 +256,15 @@ function HeritageHeader({
   const titleSize =
     Array.from(content.title).length > 25
       ? landscape
-        ? 58
-        : 54
+        ? 68
+        : square
+          ? 68
+          : 54
       : landscape
-        ? 70
-        : 66;
+        ? 84
+        : square
+          ? 80
+          : 66;
 
   return (
     <g data-poster-header="true">
@@ -225,7 +279,7 @@ function HeritageHeader({
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="Moul, Khmer OS Muol Light, serif"
-        fontSize={landscape ? 31 : 30}
+        fontSize={landscape ? 38 : square ? 36 : 30}
         fill="#711b35"
       >
         ព្រះរាជាណាចក្រកម្ពុជា
@@ -236,7 +290,7 @@ function HeritageHeader({
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="Moul, Khmer OS Muol Light, serif"
-        fontSize={landscape ? 29 : 28}
+        fontSize={landscape ? 35 : square ? 34 : 28}
         fill="#711b35"
       >
         ជាតិ សាសនា ព្រះមហាក្សត្រ
@@ -247,12 +301,27 @@ function HeritageHeader({
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="Tacteng, Tacteing, serif"
-        fontSize="52"
+        fontSize={landscape ? 60 : 52}
         fill="#b88a3b"
       >
         3
       </text>
 
+      {landscape && (
+        <rect
+          x="62"
+          y="175"
+          width="820"
+          height="270"
+          rx="46"
+          fill="#fffdf7"
+          fillOpacity=".84"
+          stroke="#c8a553"
+          strokeWidth="3"
+          strokeOpacity=".7"
+          filter="url(#heritage-honors-shadow)"
+        />
+      )}
       <circle
         cx={logoX}
         cy={logoY}
@@ -293,9 +362,10 @@ function HeritageHeader({
           <text
             key={label}
             x={schoolTextX}
-            y={logoY - 53 + index * 53}
+            y={logoY - 62 + index * 62}
+            dominantBaseline="central"
             fontFamily="Moul, Khmer OS Muol Light, serif"
-            fontSize={landscape ? 25 : 23}
+            fontSize={landscape ? 30 : square ? 29 : 23}
             fill="#711b35"
           >
             {truncateLabel(label, schoolNameLimit)}
@@ -319,9 +389,11 @@ function HeritageHeader({
         y={titleY + (landscape ? 82 : 88)}
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Battambang, sans-serif"
-        fontSize={landscape ? 34 : 32}
-        fontWeight="700"
+        fontFamily={
+          square ? "Moul, Khmer OS Muol Light, serif" : "Battambang, sans-serif"
+        }
+        fontSize={landscape ? 42 : square ? 38 : 32}
+        fontWeight={square ? undefined : "700"}
         fill="#0f5b57"
       >
         {truncateLabel(honorRollPeriod, landscape ? 54 : 42)}
@@ -331,9 +403,11 @@ function HeritageHeader({
         y={titleY + (landscape ? 137 : 146)}
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Battambang, sans-serif"
-        fontSize={landscape ? 27 : 26}
-        fontWeight="700"
+        fontFamily={
+          square ? "Moul, Khmer OS Muol Light, serif" : "Battambang, sans-serif"
+        }
+        fontSize={landscape ? 33 : square ? 32 : 26}
+        fontWeight={square ? undefined : "700"}
         fill="#806029"
       >
         ឆ្នាំសិក្សា៖ {academicYearLabel || "—"}
@@ -355,23 +429,37 @@ function HeritageStudentCard({
   slot,
   index,
   content,
+  ratio,
 }: {
   recipient: PosterRecipient;
   slot: StudentSlot;
   index: number;
   content: PosterCanvasProps["content"];
+  ratio: PosterRatioId;
 }) {
+  const circular = ratio !== "square";
+  const frameHeight = circular ? slot.width * 1.5 : slot.height;
   const photoCenterX = slot.x + slot.width * 0.5;
-  const photoCenterY = slot.y + slot.height * 0.385;
-  const photoRadius = slot.width * 0.31;
+  const photoCenterY = circular
+    ? slot.y + slot.width * 0.5
+    : slot.y + slot.height * 0.385;
+  const photoRadius = slot.width * (circular ? 0.255 : 0.31);
   const clipId = `heritage-honors-photo-${index}`;
-  const rankX = slot.x + slot.width * 0.22;
-  const rankY = slot.y + slot.height * 0.17;
+  const rankX = slot.x + slot.width * (circular ? 0.2 : 0.22);
+  const rankY = circular
+    ? slot.y + slot.width * 0.89
+    : slot.y + slot.height * 0.17;
   const rankRadius = slot.width * 0.075;
-  const textX = slot.x + slot.width * 0.5;
-  const nameY = slot.y + slot.height * 0.685;
-  const classY = slot.y + slot.height * 0.797;
-  const scoreY = slot.y + slot.height * 0.875;
+  const textX = slot.x + slot.width * (circular ? 0.56 : 0.5);
+  const nameY = circular
+    ? slot.y + slot.width * 0.89
+    : slot.y + slot.height * 0.685;
+  const classY = circular
+    ? slot.y + slot.width * 1.005
+    : slot.y + slot.height * 0.797;
+  const scoreY = circular
+    ? slot.y + slot.width * 1.005
+    : slot.y + slot.height * 0.875;
   const studentName = truncateLabel(displayName(recipient), 22);
   const nameSize = Math.max(
     20,
@@ -384,7 +472,7 @@ function HeritageStudentCard({
   return (
     <g
       data-student-card={recipient.studentId}
-      data-card-layout="portrait"
+      data-card-layout={circular ? "circular" : "portrait"}
       filter="url(#heritage-honors-card-shadow)"
     >
       <defs>
@@ -433,23 +521,25 @@ function HeritageStudentCard({
         </g>
       )}
       <image
-        href={STUDENT_FRAME}
+        href={circular ? CIRCULAR_STUDENT_FRAME : STUDENT_FRAME}
         x={slot.x}
         y={slot.y}
         width={slot.width}
-        height={slot.height}
+        height={frameHeight}
         preserveAspectRatio="none"
       />
       {content.showRanks && (
         <g data-rank-badge={recipient.rank}>
-          <circle
-            cx={rankX}
-            cy={rankY}
-            r={rankRadius}
-            fill="#711b35"
-            stroke="#d9b45f"
-            strokeWidth={Math.max(2, slot.width * 0.008)}
-          />
+          {!circular && (
+            <circle
+              cx={rankX}
+              cy={rankY}
+              r={rankRadius}
+              fill="#711b35"
+              stroke="#d9b45f"
+              strokeWidth={Math.max(2, slot.width * 0.008)}
+            />
+          )}
           <text
             x={rankX}
             y={rankY}
@@ -457,7 +547,7 @@ function HeritageStudentCard({
             dominantBaseline="central"
             fontFamily="Moul, Khmer OS Muol Light, serif"
             fontSize={rankRadius * 0.82}
-            fill="#ffffff"
+            fill={circular ? "#711b35" : "#ffffff"}
           >
             {toKhmerNumerals(recipient.rank)}
           </text>
@@ -476,7 +566,7 @@ function HeritageStudentCard({
       </text>
       {content.showClassNames && (
         <text
-          x={textX}
+          x={circular ? slot.x + slot.width * 0.36 : textX}
           y={classY}
           textAnchor="middle"
           dominantBaseline="central"
@@ -490,7 +580,7 @@ function HeritageStudentCard({
       )}
       {content.showScores && (
         <text
-          x={textX}
+          x={circular ? slot.x + slot.width * 0.67 : textX}
           y={scoreY}
           textAnchor="middle"
           dominantBaseline="central"
@@ -499,7 +589,7 @@ function HeritageStudentCard({
           fontWeight="700"
           fill="#806029"
         >
-          ម.ភ {recipient.average}
+          {circular ? recipient.average : `ម.ភ ${recipient.average}`}
         </text>
       )}
     </g>
@@ -519,6 +609,283 @@ function HeritageFooter({
   const lineY = height - (ratio === "portrait" ? 210 : 150);
   const brandY = height - (ratio === "portrait" ? 115 : 77);
   const side = ratio === "landscape" ? 130 : 105;
+
+  if (ratio === "portrait") {
+    const date = data?.generatedAt ? formatKhmerDate(data.generatedAt) : "—";
+    const teacherName = data?.homeroomTeacher?.name || "________________";
+    return (
+      <g data-poster-footer="true" data-footer-layout="approval-signatures">
+        <rect
+          x="230"
+          y="2890"
+          width="2020"
+          height="3"
+          fill="#c8a553"
+          opacity=".62"
+        />
+        <rect
+          x="300"
+          y="2930"
+          width="700"
+          height="330"
+          rx="34"
+          fill="#fffdf7"
+          fillOpacity=".88"
+          stroke="#c8a553"
+          strokeWidth="3"
+          strokeOpacity=".72"
+        />
+        <rect
+          x="1480"
+          y="2930"
+          width="700"
+          height="330"
+          rx="34"
+          fill="#fffdf7"
+          fillOpacity=".88"
+          stroke="#c8a553"
+          strokeWidth="3"
+          strokeOpacity=".72"
+        />
+        <g textAnchor="middle" fill="#711b35">
+          <text
+            x="650"
+            y="2990"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="36"
+          >
+            បានឃើញ និងឯកភាព
+          </text>
+          <text
+            x="650"
+            y="3070"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="36"
+          >
+            នាយកសាលា
+          </text>
+          <text
+            x="1830"
+            y="2982"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="32"
+          >
+            កាលបរិច្ឆេទ៖ {date}
+          </text>
+          <text
+            x="1830"
+            y="3066"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="36"
+          >
+            គ្រូប្រចាំថ្នាក់
+          </text>
+          <text
+            x="1830"
+            y="3210"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="34"
+          >
+            {truncateLabel(teacherName, 32)}
+          </text>
+        </g>
+        <rect
+          x={side}
+          y={lineY}
+          width={width - side * 2}
+          height="3"
+          rx="1.5"
+          fill="#c8a553"
+          opacity=".72"
+        />
+        <circle cx={side + 30} cy={brandY - 4} r="28" fill="#711b35" />
+        <path
+          d={`M${side + 15} ${brandY - 4}l15-9 15 9-15 9zm5 9v12c6 5 13 5 20 0V${brandY + 5}`}
+          fill="none"
+          stroke="#fffaf0"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <text
+          x={side + 78}
+          y={brandY - 12}
+          fontFamily="Arial, sans-serif"
+          fontSize="28"
+          fontWeight="700"
+          letterSpacing="5"
+          fill="#711b35"
+        >
+          STUNITY
+        </text>
+        <text
+          x={side + 78}
+          y={brandY + 22}
+          fontFamily="Battambang, sans-serif"
+          fontSize="18"
+          fontWeight="700"
+          fill="#0f5b57"
+        >
+          CELEBRATING STUDENT ACHIEVEMENT
+        </text>
+        <text
+          x={width - side}
+          y={brandY - 13}
+          textAnchor="end"
+          fontFamily="Battambang, sans-serif"
+          fontSize="22"
+          fontWeight="700"
+          fill="#711b35"
+        >
+          {truncateLabel(data?.school.phone || "", 28)}
+        </text>
+        <text
+          x={width - side}
+          y={brandY + 22}
+          textAnchor="end"
+          fontFamily="Battambang, sans-serif"
+          fontSize="19"
+          fontWeight="700"
+          fill="#6f6452"
+        >
+          {truncateLabel(data?.school.address || "", 48)}
+        </text>
+      </g>
+    );
+  }
+
+  if (ratio === "square") {
+    const date = data?.generatedAt ? formatKhmerDate(data.generatedAt) : "—";
+    const teacherName = data?.homeroomTeacher?.name || "________________";
+    return (
+      <g data-poster-footer="true" data-footer-layout="approval-signatures">
+        <rect
+          x="180"
+          y="1840"
+          width="1800"
+          height="3"
+          fill="#c8a553"
+          opacity=".62"
+        />
+        <rect
+          x="225"
+          y="1858"
+          width="670"
+          height="172"
+          rx="28"
+          fill="#fffdf7"
+          fillOpacity=".9"
+          stroke="#c8a553"
+          strokeWidth="3"
+          strokeOpacity=".72"
+        />
+        <rect
+          x="1265"
+          y="1858"
+          width="670"
+          height="172"
+          rx="28"
+          fill="#fffdf7"
+          fillOpacity=".9"
+          stroke="#c8a553"
+          strokeWidth="3"
+          strokeOpacity=".72"
+        />
+        <g textAnchor="middle" fill="#711b35">
+          <text
+            x="560"
+            y="1898"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="29"
+          >
+            បានឃើញ និងឯកភាព
+          </text>
+          <text
+            x="560"
+            y="1970"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="31"
+          >
+            នាយកសាលា
+          </text>
+          <text
+            x="1600"
+            y="1891"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="24"
+          >
+            កាលបរិច្ឆេទ៖ {date}
+          </text>
+          <text
+            x="1600"
+            y="1940"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="29"
+          >
+            គ្រូប្រចាំថ្នាក់
+          </text>
+          <text
+            x="1600"
+            y="1993"
+            dominantBaseline="central"
+            fontFamily="Moul, Khmer OS Muol Light, serif"
+            fontSize="26"
+          >
+            {truncateLabel(teacherName, 28)}
+          </text>
+        </g>
+        <rect
+          x={side}
+          y="2052"
+          width={width - side * 2}
+          height="3"
+          rx="1.5"
+          fill="#c8a553"
+          opacity=".72"
+        />
+        <circle cx={side + 30} cy="2104" r="28" fill="#711b35" />
+        <path
+          d={`M${side + 15} 2104l15-9 15 9-15 9zm5 9v12c6 5 13 5 20 0v-12`}
+          fill="none"
+          stroke="#fffaf0"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <text
+          x={side + 78}
+          y="2096"
+          fontFamily="Arial, sans-serif"
+          fontSize="28"
+          fontWeight="700"
+          letterSpacing="5"
+          fill="#711b35"
+        >
+          STUNITY
+        </text>
+        <text
+          x={width - side}
+          y="2108"
+          textAnchor="end"
+          fontFamily="Battambang, sans-serif"
+          fontSize="20"
+          fontWeight="700"
+          fill="#6f6452"
+        >
+          {truncateLabel(data?.school.address || "", 48)}
+        </text>
+      </g>
+    );
+  }
 
   return (
     <g data-poster-footer="true">
@@ -695,6 +1062,7 @@ export default function HeritageHonorsCanvas(props: PosterCanvasProps) {
               slot={slots[index]}
               index={index}
               content={content}
+              ratio={ratio}
             />
           ))}
         </g>
