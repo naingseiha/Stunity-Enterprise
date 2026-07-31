@@ -117,8 +117,8 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
   ];
 
   return (
-    <section id="features" className="py-20 sm:py-28 bg-white relative">
-      <div className="mx-auto max-w-6xl px-6">
+    <section id="features" className="py-24 sm:py-32 bg-white relative">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
 
         {/* ── Section Header ── */}
         <div className="flex flex-col items-center text-center mb-14">

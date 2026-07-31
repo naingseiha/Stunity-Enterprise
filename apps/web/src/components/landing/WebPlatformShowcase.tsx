@@ -5,8 +5,8 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
   const fontTitle = isKm ? "'Koulen', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   return (
-    <section className="py-24 bg-[#faf9ff] relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 relative z-10">
+    <section className="py-24 sm:py-32 bg-[#faf9ff] relative overflow-hidden">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-16">
           
           {/* Left Text Content */}

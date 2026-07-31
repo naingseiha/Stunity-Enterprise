@@ -6,7 +6,7 @@ export function MultiDeviceShowcase({ isKm, locale }: { isKm: boolean, locale: s
 
   return (
     <section className="py-24 sm:py-32 bg-white relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 relative z-10">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-20">

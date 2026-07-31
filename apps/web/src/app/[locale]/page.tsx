@@ -108,14 +108,13 @@ export default function HomePage() {
 
         {/* ── Hero Content ── */}
         <div
+          className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20"
           style={{
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'flex-end',
             justifyContent: 'space-between',
-            maxWidth: '1280px',
-            margin: '0 auto',
-            padding: '48px 48px 0 64px',
+            paddingTop: '48px',
             position: 'relative',
             zIndex: 10,
             minHeight: '540px',
@@ -284,8 +283,8 @@ export default function HomePage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="bg-[#111827] text-gray-400 py-12 px-6">
-        <div className="mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="bg-[#111827] text-gray-400 py-16">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
             <img src="/Stunity.png" alt="Stunity" className="h-6 grayscale brightness-200" />
             <span className="font-bold text-white text-sm">Stunity</span>

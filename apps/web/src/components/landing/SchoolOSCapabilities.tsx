@@ -88,8 +88,8 @@ export function SchoolOSCapabilities({ isKm }: { isKm: boolean }) {
   ];
 
   return (
-    <section className="py-24 bg-white relative border-t border-gray-100">
-      <div className="mx-auto max-w-6xl px-6">
+    <section className="py-24 sm:py-32 bg-white relative border-t border-gray-100">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
         
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">

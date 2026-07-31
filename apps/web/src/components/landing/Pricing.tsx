@@ -5,8 +5,8 @@ export function Pricing({ c, isKm, locale }: { c: any, isKm: boolean, locale: st
   const fontTitle = isKm ? "'Koulen', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   return (
-    <section id="pricing" className="py-24 bg-white relative">
-      <div className="mx-auto max-w-6xl px-6">
+    <section id="pricing" className="py-24 sm:py-32 bg-white relative">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
         
         <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 

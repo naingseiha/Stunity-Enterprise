@@ -28,8 +28,8 @@ export function AppFeaturesSteps({ isKm }: { isKm: boolean }) {
   ];
 
   return (
-    <section className="py-24 bg-white relative">
-      <div className="mx-auto max-w-6xl px-6">
+    <section className="py-24 sm:py-32 bg-white relative">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
         
         {/* Section Heading */}
         <div className="text-center mb-16">

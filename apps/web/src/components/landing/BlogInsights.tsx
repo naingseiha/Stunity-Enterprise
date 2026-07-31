@@ -32,8 +32,8 @@ export function BlogInsights({ isKm, locale }: { isKm: boolean, locale: string }
   ];
 
   return (
-    <section className="py-24 bg-[#faf9ff]">
-      <div className="mx-auto max-w-6xl px-6">
+    <section className="py-24 sm:py-32 bg-[#faf9ff]">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
         
         <div className="flex justify-between items-end mb-12">
           <h2 

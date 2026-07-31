@@ -13,6 +13,7 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
   const searchParams = useSearchParams();
   const lang: Lang = isKm ? 'km' : 'en';
   const [menuOpen, setMenuOpen] = useState(false);
+  const fontTitle = isKm ? "'Koulen', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
   const fontBody = isKm ? "'Battambang', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   const switchLanguage = (newLang: Lang) => {
@@ -24,188 +25,168 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
     router.push(query ? `${newPath}?${query}` : newPath);
   };
 
+  const navLinks = [
+    { href: '#features', label: c.nav.tools },
+    { href: '#social', label: c.nav.social },
+    { href: '#schools', label: c.nav.schools },
+    { href: '#pricing', label: c.nav.pricing },
+  ];
+
   return (
-    <header style={{ width: '100%', position: 'relative', zIndex: 50 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '20px 48px',
-          fontFamily: fontBody,
-        }}
+    <header className="w-full relative z-50">
+      <div 
+        className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 py-6 flex items-center justify-between"
+        style={{ fontFamily: fontBody }}
       >
-        {/* Logo */}
+        {/* Logo — Original color preserved */}
         <Link
           href={`/${locale}`}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
+          className="flex items-center transition-opacity hover:opacity-85"
+          aria-label="Stunity"
         >
-          <img src="/Stunity.png" alt="Stunity" style={{ height: '22px', width: 'auto', filter: 'brightness(0)' }} />
-          <span style={{ fontWeight: 900, fontSize: '15px', color: '#111827', letterSpacing: '-0.01em' }}>
-            STUNITY.™
-          </span>
+          <img 
+            src="/Stunity.png" 
+            alt="Stunity" 
+            className="h-8 sm:h-9 w-auto object-contain" 
+          />
         </Link>
 
-        {/* Center Nav Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {[
-            { href: '#features', label: c.nav.tools },
-            { href: '#social', label: c.nav.social },
-            { href: '#schools', label: c.nav.schools },
-            { href: '#pricing', label: c.nav.pricing },
-          ].map((item) => (
+        {/* Center Desktop Navigation — Uses Koulen font for Khmer menu title */}
+        <nav className="hidden md:flex items-center gap-8">
+          {navLinks.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#374151',
-                textDecoration: 'none',
-                borderRadius: '6px',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors tracking-wide"
+              style={{ fontFamily: fontTitle, fontSize: isKm ? '15px' : '13px' }}
             >
               {item.label}
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="#9ca3af">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
             </a>
           ))}
           <a
             href="#enterprise"
-            style={{
-              padding: '8px 16px', fontSize: '13px', fontWeight: 600,
-              color: '#374151', textDecoration: 'none', borderRadius: '6px',
-            }}
+            className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors tracking-wide"
+            style={{ fontFamily: fontTitle, fontSize: isKm ? '15px' : '13px' }}
           >
             {isKm ? 'សហគ្រាស' : 'Enterprise'}
           </a>
           <a
             href="#contact"
-            style={{
-              padding: '8px 16px', fontSize: '13px', fontWeight: 600,
-              color: '#374151', textDecoration: 'none', borderRadius: '6px',
-            }}
+            className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors tracking-wide"
+            style={{ fontFamily: fontTitle, fontSize: isKm ? '15px' : '13px' }}
           >
-            {isKm ? 'ទំនាក់ទំនង' : 'Contact us'}
+            {isKm ? 'ទំនាក់ទំនង' : 'Contact'}
           </a>
         </nav>
 
-        {/* Right: Language + Login + Join */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Right Action Controls */}
+        <div className="flex items-center gap-4">
 
-          {/* Language toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', padding: '2px' }}>
+          {/* Minimalist Language Switcher */}
+          <div className="flex items-center bg-black/5 backdrop-blur-md p-1 rounded-full text-xs font-semibold">
             <button
+              type="button"
               onClick={() => switchLanguage('en')}
-              style={{
-                padding: '5px 12px', fontSize: '11px', fontWeight: 700,
-                borderRadius: '4px', border: 'none', cursor: 'pointer',
-                background: !isKm ? 'white' : 'transparent',
-                color: '#374151',
-                boxShadow: !isKm ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.15s',
-              }}
-            >EN</button>
+              className={`px-3 py-1 rounded-full transition-all duration-200 text-[11px] ${
+                !isKm 
+                  ? 'bg-white text-gray-900 shadow-sm font-bold' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              EN
+            </button>
             <button
+              type="button"
               onClick={() => switchLanguage('km')}
-              style={{
-                padding: '5px 12px', fontSize: '11px', fontWeight: 700,
-                borderRadius: '4px', border: 'none', cursor: 'pointer',
-                background: isKm ? 'white' : 'transparent',
-                color: '#374151',
-                boxShadow: isKm ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.15s',
-              }}
-            >KM</button>
+              className={`px-3 py-1 rounded-full transition-all duration-200 text-[11px] ${
+                isKm 
+                  ? 'bg-white text-gray-900 shadow-sm font-bold' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              KM
+            </button>
           </div>
 
-          {/* Login button */}
+          {/* Log in link */}
           <Link
             href={`/${locale}/auth/login`}
-            style={{
-              padding: '9px 20px',
-              fontSize: '13px', fontWeight: 600,
-              color: '#374151', textDecoration: 'none',
-              borderRadius: '8px',
-              background: 'rgba(255,255,255,0.7)',
-              border: '1px solid rgba(0,0,0,0.1)',
-              transition: 'background 0.15s',
-            }}
+            className="hidden sm:inline-block text-xs sm:text-[13px] font-semibold text-gray-700 hover:text-gray-950 transition-colors px-2 py-1"
+            style={{ fontFamily: fontBody }}
           >
             {c.login}
           </Link>
 
-          {/* Join button — dark pill */}
+          {/* Primary Join Button — Dark Pill */}
           <Link
             href={`/${locale}/register-school`}
-            style={{
-              padding: '9px 20px',
-              fontSize: '13px', fontWeight: 700,
-              color: '#ffffff', textDecoration: 'none',
-              borderRadius: '8px',
-              background: '#111827',
-              transition: 'opacity 0.15s',
-            }}
+            className="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-[#111827] hover:bg-black rounded-full shadow-sm hover:shadow transition-all duration-200"
+            style={{ fontFamily: fontBody }}
           >
             {isKm ? 'ចុះឈ្មោះ' : 'Join'}
           </Link>
 
-          {/* Mobile hamburger */}
+          {/* Mobile Menu Button */}
           <button
-            onClick={() => setMenuOpen(v => !v)}
-            style={{ display: 'none', padding: '8px', background: 'none', border: 'none', cursor: 'pointer' }}
-            className="md-hidden-show"
-            aria-label="Menu"
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="md:hidden p-2 text-gray-800 hover:text-black transition-colors"
+            aria-label="Toggle menu"
           >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile Menu Dropdown */}
       {menuOpen && (
-        <div
-          style={{
-            position: 'absolute', top: '100%', left: '16px', right: '16px',
-            background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
-            borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)',
-            padding: '24px', zIndex: 100,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {[
-              { href: '#features', label: c.nav.tools },
-              { href: '#social', label: c.nav.social },
-              { href: '#schools', label: c.nav.schools },
-              { href: '#pricing', label: c.nav.pricing },
-            ].map((item) => (
+        <div className="md:hidden mx-6 sm:mx-10 bg-white/95 backdrop-blur-xl rounded-2xl border border-gray-100 p-6 shadow-xl space-y-4 relative z-50">
+          <div className="flex flex-col space-y-3">
+            {navLinks.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                style={{ fontSize: '14px', fontWeight: 600, color: '#374151', textDecoration: 'none' }}
+                className="text-base font-medium text-gray-800 hover:text-black py-1"
+                style={{ fontFamily: fontTitle }}
               >
                 {item.label}
               </a>
             ))}
+            <a
+              href="#enterprise"
+              onClick={() => setMenuOpen(false)}
+              className="text-base font-medium text-gray-800 hover:text-black py-1"
+              style={{ fontFamily: fontTitle }}
+            >
+              {isKm ? 'សហគ្រាស' : 'Enterprise'}
+            </a>
+            <a
+              href="#contact"
+              onClick={() => setMenuOpen(false)}
+              className="text-base font-medium text-gray-800 hover:text-black py-1"
+              style={{ fontFamily: fontTitle }}
+            >
+              {isKm ? 'ទំនាក់ទំនង' : 'Contact'}
+            </a>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
             <Link
               href={`/${locale}/auth/login`}
-              style={{
-                textAlign: 'center', padding: '12px', borderRadius: '10px',
-                background: '#f3f4f6', fontSize: '14px', fontWeight: 700,
-                color: '#111827', textDecoration: 'none',
-              }}
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-center py-2.5 text-sm font-semibold text-gray-800 bg-gray-100/70 rounded-full"
+              style={{ fontFamily: fontBody }}
             >
               {c.login}
+            </Link>
+            <Link
+              href={`/${locale}/register-school`}
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-center py-2.5 text-sm font-semibold text-white bg-[#111827] rounded-full"
+              style={{ fontFamily: fontBody }}
+            >
+              {isKm ? 'ចុះឈ្មោះ' : 'Join'}
             </Link>
           </div>
         </div>
