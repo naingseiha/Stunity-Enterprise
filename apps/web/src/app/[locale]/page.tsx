@@ -252,6 +252,29 @@ export default function HomePage() {
             <HeroMockup isKm={isKm} />
           </div>
         </div>
+
+        {/* ── Custom Notched Bottom Curve Overlay (Matching Reference Screenshot) ── */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, width: '100%', pointerEvents: 'none', zIndex: 20 }}>
+          <svg
+            viewBox="0 0 1440 60"
+            fill="none"
+            preserveAspectRatio="none"
+            style={{ width: '100%', height: '48px', display: 'block' }}
+          >
+            {/* White bottom fill under the notched curve */}
+            <path
+              d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45 L1440 60 L0 60 Z"
+              fill="#ffffff"
+            />
+            {/* Subtle mint stroke along the notched curve */}
+            <path
+              d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45"
+              fill="none"
+              stroke="#a7f3d0"
+              strokeWidth="1.5"
+            />
+          </svg>
+        </div>
       </div>
       {/* ── END HERO AREA ── */}
 

@@ -78,14 +78,7 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
         position: 'relative',
       }}
     >
-      {/* ── TOP LINE ── */}
-      <div
-        style={{
-          width: '100%',
-          height: '1px',
-          background: 'linear-gradient(90deg, transparent 0%, #d1fae5 10%, #6ee7b7 30%, #34d399 50%, #6ee7b7 70%, #d1fae5 90%, transparent 100%)',
-        }}
-      />
+      {/* Top line is formed seamlessly by the Hero notched curve SVG above */}
 
       {/* ── CONTENT ── */}
       <div style={{ padding: '32px 0' }}>
@@ -159,12 +152,12 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
 
       </div>
 
-      {/* ── BOTTOM LINE ── */}
+      {/* ── BOTTOM LINE (Matching Reference Screenshot) ── */}
       <div
         style={{
           width: '100%',
           height: '1px',
-          background: 'linear-gradient(90deg, transparent 0%, #d1fae5 10%, #6ee7b7 30%, #34d399 50%, #6ee7b7 70%, #d1fae5 90%, transparent 100%)',
+          background: '#e5e7eb',
         }}
       />
 
