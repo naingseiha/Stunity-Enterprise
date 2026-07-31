@@ -72,98 +72,51 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
   const doubled = [...partners, ...partners];
 
   return (
-    <section
-      style={{
-        width: '100%',
-        background: 'white',
-        position: 'relative',
-      }}
-    >
-      {/* Top line is formed seamlessly by the Hero notched curve SVG above */}
+    <section className="w-full bg-white relative">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 py-7 sm:py-9">
+        <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+          
+          {/* Left Column: Koulen Title + Vertical Divider */}
+          <div className="shrink-0 md:max-w-xs border-b md:border-b-0 md:border-r border-gray-200/80 pb-3 md:pb-0 md:pr-8">
+            <h3
+              className="text-sm sm:text-base font-bold text-gray-800 uppercase tracking-wide leading-snug"
+              style={{ fontFamily: fontTitle }}
+            >
+              {isKm ? 'ដៃគូស្ថាប័នអប់រំដែលជឿទុកចិត្ត' : 'TRUSTED BY EDUCATIONAL INSTITUTIONS'}
+            </h3>
+          </div>
 
-      {/* ── CONTENT ── */}
-      <div style={{ padding: '32px 0 28px' }}>
-
-        {/* Left-Aligned Label in Koulen Font (Aligned with Hero Curve Line) */}
-        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 mb-5">
-          <p
+          {/* Right Column: Marquee Logos Row */}
+          <div 
+            className="flex-1 overflow-hidden relative"
             style={{
-              textAlign: 'left',
-              fontSize: isKm ? '17px' : '12px',
-              fontWeight: 700,
-              color: '#374151',
-              letterSpacing: isKm ? '0.04em' : '0.12em',
-              textTransform: 'uppercase',
-              fontFamily: fontTitle,
-              margin: 0,
+              maskImage: 'linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%)',
             }}
           >
-            {isKm
-              ? 'ដៃគូស្ថាប័នអប់រំដែលជឿទុកចិត្ត'
-              : 'TRUSTED BY EDUCATIONAL INSTITUTIONS'}
-          </p>
-        </div>
-
-        {/* Scrolling marquee row */}
-        <div
-          style={{
-            overflow: 'hidden',
-            position: 'relative',
-            // Fade out edges
-            maskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%)',
-          }}
-        >
-          <div
-            className="animate-marquee"
-            style={{ display: 'flex', alignItems: 'center' }}
-          >
-            {doubled.map((p, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '9px',
-                  padding: '0 40px',
-                  flexShrink: 0,
-                  borderRight: '1px solid #f0f4f0',
-                  opacity: 0.55,
-                  transition: 'opacity 0.25s',
-                  cursor: 'default',
-                }}
-                onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.opacity = '1')}
-                onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.opacity = '0.55')}
-              >
-                {p.icon}
-                <span
-                  style={{
-                    fontFamily: fontBody,
-                    fontWeight: 700,
-                    fontSize: '15px',
-                    color: '#1f2937',
-                    whiteSpace: 'nowrap',
-                    letterSpacing: '-0.01em',
-                  }}
+            <div className="animate-marquee flex items-center gap-10">
+              {doubled.map((p, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2.5 shrink-0 opacity-60 hover:opacity-100 transition-opacity cursor-default"
                 >
-                  {p.name}
-                </span>
-              </div>
-            ))}
+                  {p.icon}
+                  <span
+                    className="text-sm font-bold text-gray-800 whitespace-nowrap"
+                    style={{ fontFamily: fontBody }}
+                  >
+                    {p.name}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
+        </div>
       </div>
 
-      {/* ── BOTTOM LINE (Matching Reference Screenshot) ── */}
-      <div
-        style={{
-          width: '100%',
-          height: '1px',
-          background: '#e5e7eb',
-        }}
-      />
-
+      {/* Bottom 1px Border Line */}
+      <div className="w-full h-[1px] bg-gray-200/80" />
     </section>
   );
 }
