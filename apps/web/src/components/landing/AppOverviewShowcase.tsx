@@ -7,14 +7,25 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
   const fontBody = isKm ? "'Battambang', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   return (
-    <section className="py-24 sm:py-32 bg-white relative overflow-hidden border-b border-gray-100">
+    <section className="w-full relative overflow-hidden py-24 sm:py-32 bg-gradient-to-b from-sky-50/90 via-indigo-50/40 to-emerald-50/70 border-b border-gray-100">
+      {/* Background Ambient Glow & Dot Grid Pattern (Full-Screen Edge-to-Edge) */}
+      <div 
+        className="absolute inset-0 opacity-40 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(#94a3b8 1.2px, transparent 1.2px)',
+          backgroundSize: '24px 24px'
+        }}
+      />
+      <div className="absolute top-1/4 left-1/6 w-[500px] h-[500px] bg-sky-200/50 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/6 w-[500px] h-[500px] bg-emerald-200/50 rounded-full blur-[120px] pointer-events-none" />
+
       <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 mb-5">
-            <Sparkles size={15} className="text-emerald-600" />
-            <span className="text-xs font-bold text-emerald-700 tracking-wide uppercase" style={{ fontFamily: fontBody }}>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/70 border border-emerald-200/80 mb-5 shadow-sm">
+            <Sparkles size={15} className="text-emerald-700" />
+            <span className="text-xs font-bold text-emerald-800 tracking-wide uppercase" style={{ fontFamily: fontBody }}>
               {isKm ? 'ប្រព័ន្ធសិក្សា និងគ្រប់គ្រងឆ្លាតវៃ' : 'All-In-One Education Ecosystem'}
             </span>
           </div>
@@ -32,29 +43,18 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
               </>
             )}
           </h2>
-          <p className="text-gray-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto" style={{ fontFamily: fontBody }}>
+          <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto" style={{ fontFamily: fontBody }}>
             {isKm
               ? 'ភ្ជាប់ទំនាក់ទំនងរវាងសិស្ស គ្រូបង្រៀន និងមាតាបិតា ជាមួយប្រព័ន្ធបណ្តាញសង្គមអប់រំ និងឧបករណ៍ AI ជំនួយការបង្រៀនស្តង់ដារ MoEYS។'
               : 'Connect students, educators, and parents seamlessly with our MoEYS-compliant AI tools, automated grading, and social learning feed.'}
           </p>
         </div>
 
-        {/* ── Main Showcase Container (Matching Reference Screenshot) ── */}
-        <div className="relative w-full max-w-5xl mx-auto bg-gradient-to-b from-sky-50/80 via-indigo-50/40 to-emerald-50/60 rounded-[40px] p-6 sm:p-12 lg:p-16 border border-gray-200/60 shadow-2xl overflow-hidden min-h-[580px] sm:min-h-[660px] flex items-center justify-center">
-          
-          {/* Background Ambient Glow & Dot Grid Pattern (Matching Screenshot) */}
-          <div 
-            className="absolute inset-0 opacity-40 pointer-events-none"
-            style={{
-              backgroundImage: 'radial-gradient(#94a3b8 1.2px, transparent 1.2px)',
-              backgroundSize: '24px 24px'
-            }}
-          />
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-sky-200/50 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-200/50 rounded-full blur-[100px] pointer-events-none" />
+        {/* ── Full-Screen Edge-to-Edge Canvas Area ── */}
+        <div className="relative w-full min-h-[560px] sm:min-h-[640px] flex items-center justify-center">
 
           {/* ── CENTER PHONE MOCKUP (Matching Screenshot) ── */}
-          <div className="relative z-20 w-[270px] sm:w-[320px] aspect-[9/18.5] bg-[#0d1117] rounded-[48px] p-3.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border-[6px] border-gray-800 transform hover:scale-[1.01] transition-transform duration-500">
+          <div className="relative z-20 w-[280px] sm:w-[330px] aspect-[9/18.5] bg-[#0d1117] rounded-[48px] p-3.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border-[6px] border-gray-800 transform hover:scale-[1.01] transition-transform duration-500">
             {/* Dynamic Island / Notch */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-4 bg-black rounded-full z-30 flex items-center justify-end px-2">
               <div className="w-2.5 h-2.5 rounded-full bg-[#101827] border border-gray-800" />
@@ -133,8 +133,8 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           </div>
 
           {/* ── FLOATING WIDGET 1: Top-Left Toggle Pill (Matching Screenshot) ── */}
-          <div className="absolute top-6 sm:top-12 left-4 sm:left-12 z-30 hidden sm:flex items-center gap-3 bg-white/90 backdrop-blur-xl border border-white/80 rounded-full px-4 py-2 shadow-lg transition-transform hover:scale-105 duration-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="absolute top-4 sm:top-8 left-0 sm:left-4 z-30 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-full px-4.5 py-2.5 shadow-xl transition-transform hover:scale-105 duration-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-bold text-gray-800" style={{ fontFamily: fontBody }}>
               {isKm ? 'ឧបករណ៍ AI ឆ្លាតវៃ' : 'AI Helper Tools'}
             </span>
@@ -144,7 +144,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           </div>
 
           {/* ── FLOATING WIDGET 2: Mid-Left Glass Card (Matching Screenshot) ── */}
-          <div className="absolute top-28 sm:top-36 left-4 sm:left-10 z-30 hidden sm:flex flex-col gap-2 bg-white/85 backdrop-blur-xl border border-white/80 rounded-2xl p-4 shadow-xl w-44 transition-transform hover:-translate-y-1 duration-300">
+          <div className="absolute top-28 sm:top-32 left-0 sm:left-2 z-30 hidden sm:flex flex-col gap-2 bg-white/90 backdrop-blur-xl border border-white/90 rounded-2xl p-4 shadow-xl w-48 transition-transform hover:-translate-y-1 duration-300">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
                 <Zap size={16} />
@@ -160,7 +160,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           </div>
 
           {/* ── FLOATING WIDGET 3: Bottom-Left Teacher Speech Bubble (Matching Screenshot) ── */}
-          <div className="absolute bottom-16 sm:bottom-20 left-2 sm:left-8 z-30 flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl p-3.5 shadow-2xl max-w-[280px] sm:max-w-[340px] transform hover:scale-105 transition-transform duration-300">
+          <div className="absolute bottom-12 sm:bottom-16 left-0 sm:left-0 z-30 flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl p-4 shadow-2xl max-w-[280px] sm:max-w-[340px] transform hover:scale-105 transition-transform duration-300">
             <div className="w-9 h-9 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-sm font-bold shrink-0">
               👩‍🏫
             </div>
@@ -170,22 +170,22 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           </div>
 
           {/* ── FLOATING WIDGET 4: Top-Right Stat Badge (Matching Screenshot) ── */}
-          <div className="absolute top-8 sm:top-14 right-4 sm:right-10 z-30 hidden sm:flex items-center gap-3 bg-white/90 backdrop-blur-xl border border-white/80 rounded-2xl px-4 py-2.5 shadow-lg transition-transform hover:scale-105 duration-300">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-              <TrendingUp size={15} />
+          <div className="absolute top-6 sm:top-10 right-0 sm:right-4 z-30 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl px-4.5 py-3 shadow-xl transition-transform hover:scale-105 duration-300">
+            <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+              <TrendingUp size={16} />
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900" style={{ fontFamily: fontBody }}>
                 {isKm ? 'ការរៀនសូត្ររបស់សិស្ស' : 'Student Engagement'}
               </p>
-              <p className="text-[10px] text-emerald-600 font-bold">
+              <p className="text-[11px] text-emerald-600 font-bold">
                 {isKm ? 'កើនឡើង +១៨% ខែនេះ!' : 'Increased by 18% this month!'}
               </p>
             </div>
           </div>
 
           {/* ── FLOATING WIDGET 5: Mid-Right 2x2 Floating Grid (Matching Screenshot) ── */}
-          <div className="absolute top-36 sm:top-40 right-4 sm:right-12 z-30 hidden sm:grid grid-cols-2 gap-2.5 bg-white/80 backdrop-blur-xl border border-white/80 p-3 rounded-2xl shadow-xl">
+          <div className="absolute top-32 sm:top-36 right-0 sm:right-6 z-30 hidden sm:grid grid-cols-2 gap-3 bg-white/90 backdrop-blur-xl border border-white/90 p-3.5 rounded-2xl shadow-xl">
             <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-md font-bold text-xs">
               MoEYS
             </div>
@@ -201,7 +201,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           </div>
 
           {/* ── FLOATING WIDGET 6: Bottom-Right AI Speech Bubble (Matching Screenshot) ── */}
-          <div className="absolute bottom-8 sm:bottom-12 right-2 sm:right-6 z-30 flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl p-3.5 shadow-2xl max-w-[290px] sm:max-w-[360px] transform hover:scale-105 transition-transform duration-300">
+          <div className="absolute bottom-6 sm:bottom-10 right-0 sm:right-0 z-30 flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl p-4 shadow-2xl max-w-[290px] sm:max-w-[360px] transform hover:scale-105 transition-transform duration-300">
             <p className="text-xs font-semibold text-gray-800 leading-snug" style={{ fontFamily: fontBody }}>
               {isKm 
                 ? 'បាទ! ឧបករណ៍ AI បានរៀបចំកិច្ចតែងការស្តង់ដារក្រសួងអប់រំរួចរាល់ 👨‍🏫' 
