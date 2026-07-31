@@ -8,7 +8,7 @@ export default function CleanAchievers({
   width,
   height,
 }: CertificateCanvasProps) {
-  const schoolName = data?.school?.nameKh || data?.school?.nameKhmer || data?.school?.name || placeholderSchoolName;
+  const schoolName = (data?.school as any)?.nameKh || (data?.school as any)?.nameKhmer || data?.school?.name || placeholderSchoolName;
   const schoolLogo = data?.school?.logo || null;
 
   const recipient = data?.groups?.[0]?.recipients?.[0];
