@@ -1,6 +1,7 @@
 'use client';
 
 export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
+  const fontTitle = isKm ? "'Koulen', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
   const fontBody = isKm ? "'Battambang', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   const partners = [
@@ -81,25 +82,27 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
       {/* Top line is formed seamlessly by the Hero notched curve SVG above */}
 
       {/* ── CONTENT ── */}
-      <div style={{ padding: '32px 0' }}>
+      <div style={{ padding: '32px 0 28px' }}>
 
-        {/* Label */}
-        <p
-          style={{
-            textAlign: 'center',
-            fontSize: '11px',
-            fontWeight: 600,
-            color: '#b0b8c1',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            fontFamily: fontBody,
-            marginBottom: '24px',
-          }}
-        >
-          {isKm
-            ? 'ដៃគូស្ថាប័នអប់រំដែលជឿទុកចិត្ត'
-            : 'TRUSTED BY EDUCATIONAL INSTITUTIONS'}
-        </p>
+        {/* Left-Aligned Label in Koulen Font (Aligned with Hero Curve Line) */}
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 mb-5">
+          <p
+            style={{
+              textAlign: 'left',
+              fontSize: isKm ? '17px' : '12px',
+              fontWeight: 700,
+              color: '#374151',
+              letterSpacing: isKm ? '0.04em' : '0.12em',
+              textTransform: 'uppercase',
+              fontFamily: fontTitle,
+              margin: 0,
+            }}
+          >
+            {isKm
+              ? 'ដៃគូស្ថាប័នអប់រំដែលជឿទុកចិត្ត'
+              : 'TRUSTED BY EDUCATIONAL INSTITUTIONS'}
+          </p>
+        </div>
 
         {/* Scrolling marquee row */}
         <div
