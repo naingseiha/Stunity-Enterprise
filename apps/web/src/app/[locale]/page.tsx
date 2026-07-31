@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl';
 import { Navbar } from '@/components/landing/Navbar';
 import { HeroMockup } from '@/components/landing/HeroMockup';
+import { AppOverviewShowcase } from '@/components/landing/AppOverviewShowcase';
 import { FeatureGrid } from '@/components/landing/FeatureGrid';
 import { TrustBadges } from '@/components/landing/TrustBadges';
 import { MultiDeviceShowcase } from '@/components/landing/MultiDeviceShowcase';
@@ -282,7 +283,10 @@ export default function HomePage() {
         {/* ── Brand Trust Badges ── */}
         <TrustBadges c={c} isKm={isKm} />
 
-        {/* ── Feature Grid ── */}
+        {/* ── App Overview Showcase (All App Features) ── */}
+        <AppOverviewShowcase isKm={isKm} />
+
+        {/* ── Feature Grid (Integration to control learning) ── */}
         <FeatureGrid c={c} isKm={isKm} locale={locale} />
 
         {/* ── Multi-Device Mockup ── */}
