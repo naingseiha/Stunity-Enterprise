@@ -304,7 +304,7 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   background: '#34d399', color: '#0d1117',
-                  padding: '12px 24px', borderRadius: '12px',
+                  padding: '12px 26px', borderRadius: '9999px',
                   fontFamily: fontBody, fontWeight: 800, fontSize: '14px',
                   textDecoration: 'none', transition: 'opacity 0.2s',
                 }}

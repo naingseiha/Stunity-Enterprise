@@ -12,6 +12,7 @@ import { AppFeaturesSteps } from '@/components/landing/AppFeaturesSteps';
 import { SchoolOSCapabilities } from '@/components/landing/SchoolOSCapabilities';
 import { BlogInsights } from '@/components/landing/BlogInsights';
 import { Pricing } from '@/components/landing/Pricing';
+import { Footer } from '@/components/landing/Footer';
 import Link from 'next/link';
 
 type Lang = 'en' | 'km';
@@ -161,16 +162,16 @@ export default function HomePage() {
               {c.heroSub}
             </p>
 
-            {/* CTA Buttons — matching screenshot exactly */}
+            {/* CTA Buttons — standardized fully rounded pills */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
               <Link
                 href={`/${locale}/register-school`}
                 style={{
                   display: 'inline-flex', alignItems: 'center',
-                  padding: '12px 24px',
+                  padding: '12px 26px',
                   background: '#0d1117',
                   color: '#fff',
-                  borderRadius: '8px',
+                  borderRadius: '9999px',
                   fontFamily: fontBody,
                   fontSize: '13px',
                   fontWeight: 700,
@@ -187,7 +188,7 @@ export default function HomePage() {
                   padding: '12px 20px',
                   background: 'transparent',
                   color: '#374151',
-                  borderRadius: '8px',
+                  borderRadius: '9999px',
                   fontFamily: fontBody,
                   fontSize: '13px',
                   fontWeight: 600,
@@ -309,16 +310,8 @@ export default function HomePage() {
         
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="bg-[#111827] text-gray-400 py-16">
-        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
-            <img src="/Stunity.png" alt="Stunity" className="h-6 grayscale brightness-200" />
-            <span className="font-bold text-white text-sm">Stunity</span>
-          </div>
-          <p className="text-xs">© {new Date().getFullYear()} Stunity Enterprise. All rights reserved.</p>
-        </div>
-      </footer>
+      {/* ── Creative Enterprise Footer ── */}
+      <Footer locale={locale} isKm={isKm} />
     </div>
   );
 }

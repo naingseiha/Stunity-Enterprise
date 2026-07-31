@@ -53,7 +53,7 @@ export function Pricing({ c, isKm, locale }: { c: any, isKm: boolean, locale: st
               
               <Link
                 href={`/${locale}/register-school`}
-                className={`block w-full py-4 text-center rounded-2xl text-sm font-bold transition-all duration-300 ${
+                className={`block w-full py-4 text-center rounded-full text-sm font-bold transition-all duration-300 ${
                   plan.highlight 
                     ? 'bg-white text-indigo-600 hover:shadow-lg' 
                     : 'bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-200'
