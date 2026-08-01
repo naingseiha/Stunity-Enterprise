@@ -4994,79 +4994,102 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
       });
     }
 
-    // Gather stats for each year
-    const yearComparisons = await Promise.all(years.map(async (year) => {
-      // Get classes for this year
-      const classesForYear = await prisma.class.findMany({
-        where: { schoolId, academicYearId: year.id },
-        select: { id: true, grade: true }
+    const yearIdsToCompare = years.map((year) => year.id);
+    const [
+      classesForYears,
+      subjectCount,
+      promotionStats,
+    ] = await Promise.all([
+      prisma.class.findMany({
+        where: { schoolId, academicYearId: { in: yearIdsToCompare } },
+        select: { id: true, grade: true, academicYearId: true, homeroomTeacherId: true }
+      }),
+      prisma.subject.count({ where: {} }),
+      prisma.studentProgression.groupBy({
+        by: ['fromAcademicYearId', 'promotionType'],
+        where: { fromAcademicYearId: { in: yearIdsToCompare } },
+        _count: true
+      }),
+    ]);
+
+    const classYearById = new Map(classesForYears.map((classItem) => [classItem.id, classItem.academicYearId]));
+    const allClassIds = classesForYears.map((classItem) => classItem.id);
+    const [studentClassEntries, teacherAssignments] = allClassIds.length > 0
+      ? await Promise.all([
+          prisma.studentClass.findMany({
+            where: { classId: { in: allClassIds } },
+            distinct: ['studentId', 'classId'],
+            select: { studentId: true, classId: true }
+          }),
+          prisma.teacherClass.findMany({
+            where: { classId: { in: allClassIds } },
+            distinct: ['teacherId', 'classId'],
+            select: { teacherId: true, classId: true }
+          }),
+        ])
+      : [[], []];
+
+    const enrolledStudentIds = Array.from(new Set(studentClassEntries.map((entry) => entry.studentId)));
+    const studentProfiles = enrolledStudentIds.length > 0
+      ? await prisma.student.findMany({
+          where: { id: { in: enrolledStudentIds } },
+          select: { id: true, gender: true }
+        })
+      : [];
+    const genderByStudentId = new Map(studentProfiles.map((student) => [student.id, student.gender || 'Unknown']));
+
+    const classesByYear = new Map<string, typeof classesForYears>();
+    const studentsByYear = new Map<string, Set<string>>();
+    const teachersByYear = new Map<string, Set<string>>();
+    const homeroomTeachersByYear = new Map<string, Set<string>>();
+    const promotionsByYear = new Map<string, Record<string, number>>();
+
+    years.forEach((year) => {
+      classesByYear.set(year.id, []);
+      studentsByYear.set(year.id, new Set());
+      teachersByYear.set(year.id, new Set());
+      homeroomTeachersByYear.set(year.id, new Set());
+      promotionsByYear.set(year.id, {});
+    });
+
+    classesForYears.forEach((classItem) => {
+      classesByYear.get(classItem.academicYearId)?.push(classItem);
+      if (classItem.homeroomTeacherId) {
+        homeroomTeachersByYear.get(classItem.academicYearId)?.add(classItem.homeroomTeacherId);
+      }
+    });
+
+    studentClassEntries.forEach((entry) => {
+      const yearId = classYearById.get(entry.classId);
+      if (yearId) studentsByYear.get(yearId)?.add(entry.studentId);
+    });
+
+    teacherAssignments.forEach((entry) => {
+      const yearId = classYearById.get(entry.classId);
+      if (yearId) teachersByYear.get(yearId)?.add(entry.teacherId);
+    });
+
+    promotionStats.forEach((promotion) => {
+      const bucket = promotionsByYear.get(promotion.fromAcademicYearId);
+      if (bucket) bucket[promotion.promotionType] = promotion._count;
+    });
+
+    const yearComparisons = years.map((year) => {
+      const classesForYear = classesByYear.get(year.id) || [];
+      const studentIdsForYear = studentsByYear.get(year.id) || new Set<string>();
+      const assignedTeachers = teachersByYear.get(year.id) || new Set<string>();
+      const homeroomTeachers = homeroomTeachersByYear.get(year.id) || new Set<string>();
+
+      const studentsByGender: Record<string, number> = {};
+      studentIdsForYear.forEach((studentId) => {
+        const gender = genderByStudentId.get(studentId) || 'Unknown';
+        studentsByGender[gender] = (studentsByGender[gender] || 0) + 1;
       });
-      const classIds = classesForYear.map(c => c.id);
 
-      // Student counts - count studentClasses in classes for this year
-      const studentClassEntries = await prisma.studentClass.findMany({
-        where: { classId: { in: classIds } },
-        distinct: ['studentId'],
-        select: { studentId: true }
-      });
-      const students = studentClassEntries.length;
-
-      // Teacher counts - teachers assigned to classes in this year
-      const teacherAssignments = await prisma.teacherClass.findMany({
-        where: { classId: { in: classIds } },
-        distinct: ['teacherId'],
-        select: { teacherId: true }
-      });
-      const teacherCount = teacherAssignments.length;
-
-      const homeroomClasses = await prisma.class.findMany({
-        where: { schoolId, academicYearId: year.id, homeroomTeacherId: { not: null } },
-        distinct: ['homeroomTeacherId'],
-        select: { homeroomTeacherId: true }
-      });
-
-      const teachers = Math.max(teacherCount, homeroomClasses.length);
-
-      // Class counts
-      const classCount = classesForYear.length;
-
-      // Class breakdown by grade
       const classesByGrade: Record<string, number> = {};
       classesForYear.forEach(c => {
         const key = `Grade ${c.grade}`;
         classesByGrade[key] = (classesByGrade[key] || 0) + 1;
-      });
-
-      // Student counts by gender
-      const enrolledStudentIds = studentClassEntries.map(e => e.studentId);
-
-      let studentsByGender: Record<string, number> = {};
-      if (enrolledStudentIds.length > 0) {
-        const studentGenders = await prisma.student.groupBy({
-          by: ['gender'],
-          where: { id: { in: enrolledStudentIds } },
-          _count: true
-        });
-        studentGenders.forEach(g => {
-          studentsByGender[g.gender || 'Unknown'] = g._count;
-        });
-      }
-
-      // Promotion stats (if year ended)
-      const promotionStats = await prisma.studentProgression.groupBy({
-        by: ['promotionType'],
-        where: { fromAcademicYearId: year.id },
-        _count: true
-      });
-
-      const promotions: Record<string, number> = {};
-      promotionStats.forEach(p => {
-        promotions[p.promotionType] = p._count;
-      });
-
-      // Subject count
-      const subjects = await prisma.subject.count({
-        where: {}
       });
 
       return {
@@ -5079,16 +5102,16 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
           isCurrent: year.isCurrent
         },
         stats: {
-          totalStudents: students,
-          totalTeachers: teachers,
-          totalClasses: classCount,
-          totalSubjects: subjects,
+          totalStudents: studentIdsForYear.size,
+          totalTeachers: Math.max(assignedTeachers.size, homeroomTeachers.size),
+          totalClasses: classesForYear.length,
+          totalSubjects: subjectCount,
           studentsByGender,
           classesByGrade,
-          promotions
+          promotions: promotionsByYear.get(year.id) || {}
         }
       };
-    }));
+    });
 
     // Calculate trends (compare with previous year)
     const trends = yearComparisons.map((current, index) => {
