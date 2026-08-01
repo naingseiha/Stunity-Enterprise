@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { parseDate } from './utils/dateParser';
 import IdGenerator from './utils/idGenerator';
@@ -21,6 +22,8 @@ import { getJwtSecret } from '../../../../lib/jwt-secret';
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const STALE_TTL = 10 * 60 * 1000; // 10 minutes (serve stale while refreshing)
+const TRANSCRIPT_FORMULA_VERSION = 'KHM_MOEYS_TRANSCRIPT_V1';
+const TRANSCRIPT_ISSUER_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
 
 const app = express.Router();
 
@@ -46,6 +49,31 @@ scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
 const normalizeRegionalValue = (value: any) => {
   if (typeof value === 'string') return value.trim() || null;
   return value ?? null;
+};
+
+const stableJson = (value: any): any => {
+  if (Array.isArray(value)) return value.map(stableJson);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.keys(value)
+      .sort()
+      .reduce((result: Record<string, any>, key) => {
+        result[key] = stableJson(value[key]);
+        return result;
+      }, {});
+  }
+  return value instanceof Date ? value.toISOString() : value;
+};
+
+const createTranscriptChecksum = (payload: any) =>
+  crypto.createHash('sha256').update(JSON.stringify(stableJson(payload))).digest('hex');
+
+const createTranscriptVerificationCode = () =>
+  `TR-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+
+const createTranscriptDocumentNumber = (schoolId: string, academicYearName: string | null | undefined, sequence: number) => {
+  const yearPart = (academicYearName || 'YEAR').replace(/[^0-9A-Za-z-]/g, '').slice(0, 16) || 'YEAR';
+  const schoolPart = schoolId.replace(/[^0-9A-Za-z]/g, '').slice(-6).toUpperCase() || 'SCHOOL';
+  return `TR-${schoolPart}-${yearPart}-${String(sequence).padStart(5, '0')}`;
 };
 
 function collectRegionalFields(
@@ -388,10 +416,354 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// Public transcript verification. Returns document metadata only; score and
+// attendance details remain behind authenticated transcript views.
+app.get('/transcripts/verify/:code', async (req: Request, res: Response) => {
+  try {
+    const verificationCode = String(req.params.code || '').trim().toUpperCase();
+    if (!verificationCode || !(prisma as any).studentTranscriptDocument?.findUnique) {
+      return res.status(404).json({ success: false, error: 'Transcript document not found' });
+    }
+
+    const document = await (prisma as any).studentTranscriptDocument.findUnique({
+      where: { verificationCode },
+      select: {
+        schoolId: true,
+        studentId: true,
+        academicYearId: true,
+        status: true,
+        documentNumber: true,
+        verificationCode: true,
+        snapshotChecksum: true,
+        formulaVersion: true,
+        approvedAt: true,
+        issuedAt: true,
+        revokedAt: true,
+      },
+    });
+
+    if (!document) {
+      return res.status(404).json({ success: false, error: 'Transcript document not found' });
+    }
+
+    const [student, school, academicYear] = await Promise.all([
+      prisma.student.findFirst({
+        where: { id: document.studentId, schoolId: document.schoolId },
+        select: { studentId: true, firstName: true, lastName: true },
+      }),
+      prisma.school.findUnique({
+        where: { id: document.schoolId },
+        select: { name: true },
+      }),
+      prisma.academicYear.findUnique({
+        where: { id: document.academicYearId },
+        select: { name: true },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        status: document.status,
+        isValid: document.status === 'OFFICIAL',
+        documentNumber: document.documentNumber,
+        verificationCode: document.verificationCode,
+        issuedAt: document.issuedAt,
+        approvedAt: document.approvedAt,
+        revokedAt: document.revokedAt,
+        formulaVersion: document.formulaVersion,
+        snapshotChecksum: document.snapshotChecksum,
+        schoolName: school?.name || null,
+        academicYear: academicYear?.name || null,
+        student: student
+          ? {
+              studentId: student.studentId,
+              name: `${student.lastName} ${student.firstName}`.trim(),
+            }
+          : null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Transcript verification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to verify transcript document',
+      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
+    });
+  }
+});
+
 // Apply auth middleware to all routes
 app.use('/students', authenticateToken);
 
 // ==========================================
+// Admissions — application intake and review
+// ==========================================
+const ADMISSION_STATUSES = new Set([
+  'DRAFT', 'RECEIVED', 'UNDER_REVIEW', 'WAITLISTED', 'APPROVED',
+  'REJECTED', 'ENROLLED', 'WITHDRAWN',
+]);
+const ADMISSION_TYPES = new Set(['NEW_STUDENT', 'RETURNING_STUDENT', 'TRANSFER_IN']);
+const ADMISSION_INTAKE_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'STAFF', 'TEACHER', 'SCHOOL_ADMIN']);
+const ADMISSION_REVIEW_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'STAFF', 'SCHOOL_ADMIN']);
+const ADMISSION_TRANSITIONS: Record<string, Set<string>> = {
+  DRAFT: new Set(['RECEIVED', 'WITHDRAWN']),
+  RECEIVED: new Set(['UNDER_REVIEW', 'WAITLISTED', 'APPROVED', 'REJECTED', 'WITHDRAWN']),
+  UNDER_REVIEW: new Set(['WAITLISTED', 'APPROVED', 'REJECTED', 'WITHDRAWN']),
+  WAITLISTED: new Set(['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'WITHDRAWN']),
+  APPROVED: new Set(['UNDER_REVIEW', 'ENROLLED', 'WITHDRAWN']),
+  REJECTED: new Set(['UNDER_REVIEW']),
+  ENROLLED: new Set(),
+  WITHDRAWN: new Set(['RECEIVED']),
+};
+
+const admissionNumber = (academicYearName?: string | null) => {
+  const year = (academicYearName || String(new Date().getFullYear())).replace(/[^0-9A-Za-z]/g, '').slice(0, 10);
+  return `ADM-${year || new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+};
+const cleanAdmissionText = (value: unknown, max = 250) =>
+  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) || null : null;
+
+app.use('/admissions', (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!ADMISSION_INTAKE_ROLES.has(req.user?.role || '')) {
+    return res.status(403).json({ success: false, message: 'Admission workspace permission required' });
+  }
+  next();
+});
+
+app.get('/admissions/summary', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    const academicYearId = cleanAdmissionText(req.query.academicYearId, 64);
+    const where = { schoolId, ...(academicYearId ? { academicYearId } : {}) };
+    const [grouped, awaitingPlacement] = await Promise.all([
+      (prisma as any).admissionApplication.groupBy({
+        by: ['status', 'applicantType'], where, _count: { _all: true },
+      }),
+      (prisma as any).admissionApplication.count({
+        where: { ...where, status: 'ENROLLED', targetClassId: null },
+      }),
+    ]);
+    const byStatus: Record<string, number> = {};
+    const byType: Record<string, number> = {};
+    for (const row of grouped) {
+      byStatus[row.status] = (byStatus[row.status] || 0) + row._count._all;
+      byType[row.applicantType] = (byType[row.applicantType] || 0) + row._count._all;
+    }
+    res.json({ success: true, data: { total: grouped.reduce((n: number, row: any) => n + row._count._all, 0), byStatus, byType, awaitingPlacement } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to load admission summary', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+  }
+});
+
+app.get('/admissions', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(10, Number(req.query.limit) || 25));
+    const search = cleanAdmissionText(req.query.search, 100);
+    const status = cleanAdmissionText(req.query.status, 30);
+    const applicantType = cleanAdmissionText(req.query.applicantType, 30);
+    const academicYearId = cleanAdmissionText(req.query.academicYearId, 64);
+    const where: any = {
+      schoolId,
+      ...(academicYearId ? { academicYearId } : {}),
+      ...(status && ADMISSION_STATUSES.has(status) ? { status } : {}),
+      ...(applicantType && ADMISSION_TYPES.has(applicantType) ? { applicantType } : {}),
+      ...(search && search.length >= 2 ? {
+        OR: [
+          { applicationNumber: { contains: search, mode: 'insensitive' } },
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { englishFirstName: { contains: search, mode: 'insensitive' } },
+          { englishLastName: { contains: search, mode: 'insensitive' } },
+          { phoneNumber: { contains: search } },
+          { student: { studentId: { contains: search, mode: 'insensitive' } } },
+        ],
+      } : {}),
+    };
+    const [applications, total] = await Promise.all([
+      (prisma as any).admissionApplication.findMany({
+        where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
+        include: {
+          academicYear: { select: { id: true, name: true } },
+          targetClass: { select: { id: true, name: true, grade: true } },
+          student: { select: { id: true, studentId: true, class: { select: { name: true, grade: true } } } },
+          createdBy: { select: { id: true, firstName: true, lastName: true } },
+        },
+      }),
+      (prisma as any).admissionApplication.count({ where }),
+    ]);
+    res.json({ success: true, data: { applications, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to load admission applications', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+  }
+});
+
+app.get('/admissions/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const application = await (prisma as any).admissionApplication.findFirst({
+      where: { id: req.params.id, schoolId: req.user!.schoolId },
+      include: {
+        academicYear: true, targetClass: true,
+        student: { select: { id: true, studentId: true, firstName: true, lastName: true, class: true } },
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+        reviewedBy: { select: { id: true, firstName: true, lastName: true } },
+        events: { orderBy: { createdAt: 'asc' }, include: { actor: { select: { firstName: true, lastName: true } } } },
+      },
+    });
+    if (!application) return res.status(404).json({ success: false, message: 'Application not found' });
+    res.json({ success: true, data: { application } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to load application', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+  }
+});
+
+app.post('/admissions', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    const createdById = req.user!.id;
+    const applicantType = String(req.body.applicantType || 'NEW_STUDENT');
+    if (!ADMISSION_TYPES.has(applicantType) || applicantType === 'TRANSFER_IN') {
+      return res.status(400).json({ success: false, message: 'Applicant type is not available in this phase' });
+    }
+    const academicYearId = cleanAdmissionText(req.body.academicYearId, 64);
+    if (!academicYearId) return res.status(400).json({ success: false, message: 'Academic year is required' });
+    const academicYear = await prisma.academicYear.findFirst({ where: { id: academicYearId, schoolId }, select: { id: true, name: true } });
+    if (!academicYear) return res.status(400).json({ success: false, message: 'Invalid academic year' });
+
+    let source: any = req.body;
+    let linkedStudent: any = null;
+    if (applicantType === 'RETURNING_STUDENT') {
+      const studentId = cleanAdmissionText(req.body.studentId, 64);
+      linkedStudent = studentId ? await prisma.student.findFirst({ where: { id: studentId, schoolId, isAccountActive: true } }) : null;
+      if (!linkedStudent) return res.status(400).json({ success: false, message: 'Please select an existing student' });
+      source = {
+        ...req.body,
+        firstName: linkedStudent.firstName, lastName: linkedStudent.lastName,
+        englishFirstName: linkedStudent.englishFirstName, englishLastName: linkedStudent.englishLastName,
+        gender: linkedStudent.gender, dateOfBirth: linkedStudent.dateOfBirth,
+        phoneNumber: linkedStudent.phoneNumber, email: linkedStudent.email,
+      };
+    }
+    const firstName = cleanAdmissionText(source.firstName, 100);
+    const lastName = cleanAdmissionText(source.lastName, 100);
+    const dateOfBirth = cleanAdmissionText(source.dateOfBirth, 30);
+    const gender = String(source.gender || '');
+    if (!firstName || !lastName || !dateOfBirth || !['MALE', 'FEMALE'].includes(gender)) {
+      return res.status(400).json({ success: false, message: 'Name, date of birth, and gender are required' });
+    }
+    if (linkedStudent) {
+      const exists = await (prisma as any).admissionApplication.findFirst({ where: { schoolId, academicYearId, studentId: linkedStudent.id } });
+      if (exists) return res.status(409).json({ success: false, message: 'This student already has an application for the selected year', data: { applicationId: exists.id } });
+    } else {
+      const duplicate = await (prisma as any).admissionApplication.findFirst({
+        where: { schoolId, academicYearId, firstName: { equals: firstName, mode: 'insensitive' }, lastName: { equals: lastName, mode: 'insensitive' }, dateOfBirth, status: { notIn: ['REJECTED', 'WITHDRAWN'] } },
+        select: { id: true, applicationNumber: true },
+      });
+      if (duplicate) return res.status(409).json({ success: false, message: 'A matching active application already exists', data: duplicate });
+    }
+    const targetClassId = cleanAdmissionText(req.body.targetClassId, 64);
+    if (targetClassId) {
+      const targetClass = await prisma.class.findFirst({ where: { id: targetClassId, schoolId, academicYearId } });
+      if (!targetClass) return res.status(400).json({ success: false, message: 'Target class does not belong to this academic year' });
+    }
+    const data: any = {
+      schoolId, academicYearId, createdById, applicantType, source: 'STAFF_ENTRY',
+      applicationNumber: admissionNumber(academicYear.name), status: 'RECEIVED',
+      studentId: linkedStudent?.id || null, targetClassId,
+      requestedGrade: cleanAdmissionText(req.body.requestedGrade, 30),
+      firstName, lastName, gender, dateOfBirth,
+      englishFirstName: cleanAdmissionText(source.englishFirstName, 100), englishLastName: cleanAdmissionText(source.englishLastName, 100),
+      phoneNumber: cleanAdmissionText(source.phoneNumber, 40), email: cleanAdmissionText(source.email, 160),
+      placeOfBirth: cleanAdmissionText(req.body.placeOfBirth, 500), currentAddress: cleanAdmissionText(req.body.currentAddress, 500),
+      fatherName: cleanAdmissionText(req.body.fatherName, 150), motherName: cleanAdmissionText(req.body.motherName, 150),
+      guardianName: cleanAdmissionText(req.body.guardianName, 150), guardianPhone: cleanAdmissionText(req.body.guardianPhone, 40),
+      previousSchool: cleanAdmissionText(req.body.previousSchool, 250), previousGrade: cleanAdmissionText(req.body.previousGrade, 30),
+      notes: cleanAdmissionText(req.body.notes, 2000), customFields: req.body.customFields && typeof req.body.customFields === 'object' ? req.body.customFields : undefined,
+      events: { create: { actorId: createdById, action: applicantType === 'RETURNING_STUDENT' ? 'RETURNING_APPLICATION_RECEIVED' : 'APPLICATION_RECEIVED', toStatus: 'RECEIVED', notes: cleanAdmissionText(req.body.notes, 2000) } },
+    };
+    const application = await (prisma as any).admissionApplication.create({ data, include: { academicYear: true, student: true, targetClass: true } });
+    res.status(201).json({ success: true, data: { application } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to create admission application', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+  }
+});
+
+app.patch('/admissions/:id/status', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!ADMISSION_REVIEW_ROLES.has(req.user!.role || '')) return res.status(403).json({ success: false, message: 'Admission review permission required' });
+    const status = String(req.body.status || '');
+    const current = await (prisma as any).admissionApplication.findFirst({ where: { id: req.params.id, schoolId: req.user!.schoolId } });
+    if (!current) return res.status(404).json({ success: false, message: 'Application not found' });
+    if (!ADMISSION_STATUSES.has(status) || status === 'ENROLLED' || !ADMISSION_TRANSITIONS[current.status]?.has(status)) {
+      return res.status(409).json({ success: false, message: `Cannot move application from ${current.status} to ${status}` });
+    }
+    const notes = cleanAdmissionText(req.body.notes, 2000);
+    if (['REJECTED', 'WITHDRAWN'].includes(status) && !notes) return res.status(400).json({ success: false, message: 'A reason is required for this status' });
+    const application = await (prisma as any).admissionApplication.update({
+      where: { id: current.id },
+      data: {
+        status, reviewedById: req.user!.id, reviewedAt: new Date(),
+        events: { create: { actorId: req.user!.id, action: 'STATUS_CHANGED', fromStatus: current.status, toStatus: status, notes } },
+      },
+    });
+    res.json({ success: true, data: { application } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to update application status', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+  }
+});
+
+app.post('/admissions/:id/enroll', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!ADMISSION_REVIEW_ROLES.has(req.user!.role || '')) return res.status(403).json({ success: false, message: 'Admission enrollment permission required' });
+    const schoolId = req.user!.schoolId;
+    const application = await (prisma as any).admissionApplication.findFirst({ where: { id: req.params.id, schoolId }, include: { academicYear: true } });
+    if (!application) return res.status(404).json({ success: false, message: 'Application not found' });
+    if (application.applicantType !== 'NEW_STUDENT') return res.status(409).json({ success: false, message: 'Returning students remain linked to promotion/repeat workflow' });
+    if (application.status !== 'APPROVED') return res.status(409).json({ success: false, message: 'Only approved applications can be enrolled' });
+    const leaveUnassigned = req.body.leaveUnassigned === true;
+    const classId = leaveUnassigned ? null : (cleanAdmissionText(req.body.classId, 64) || application.targetClassId);
+    let targetClass: any = null;
+    if (classId) {
+      targetClass = await prisma.class.findFirst({ where: { id: classId, schoolId, academicYearId: application.academicYearId } });
+      if (!targetClass) return res.status(400).json({ success: false, message: 'Select a class from the application academic year' });
+    }
+    const generatedStudentId = await generateStudentId(classId || undefined, schoolId);
+    const result = await prisma.$transaction(async (tx: any) => {
+      const student = await tx.student.create({ data: {
+        schoolId, studentId: generatedStudentId, firstName: application.firstName, lastName: application.lastName,
+        englishFirstName: application.englishFirstName, englishLastName: application.englishLastName,
+        gender: application.gender, dateOfBirth: application.dateOfBirth, phoneNumber: application.phoneNumber,
+        email: application.email, classId: classId || null, entryYear: new Date(application.academicYear.startDate).getFullYear(),
+        customFields: { regional: {
+          placeOfBirth: application.placeOfBirth, currentAddress: application.currentAddress,
+          fatherName: application.fatherName, motherName: application.motherName,
+          guardianName: application.guardianName, guardianPhone: application.guardianPhone,
+          previousSchool: application.previousSchool, previousGrade: application.previousGrade,
+          admissionApplicationNumber: application.applicationNumber,
+        } },
+      } });
+      if (classId) await tx.studentClass.create({ data: { studentId: student.id, classId, academicYearId: application.academicYearId } });
+      await tx.school.update({ where: { id: schoolId }, data: { currentStudents: { increment: 1 } } });
+      const updatedApplication = await tx.admissionApplication.update({
+        where: { id: application.id },
+        data: { studentId: student.id, targetClassId: classId || null, status: 'ENROLLED', enrolledAt: new Date(), reviewedById: req.user!.id,
+          events: { create: { actorId: req.user!.id, action: 'STUDENT_ENROLLED', fromStatus: 'APPROVED', toStatus: 'ENROLLED', metadata: { studentId: student.id, classId } } },
+        },
+      });
+      return { student, application: updatedApplication };
+    });
+    cache.clear();
+    res.status(201).json({ success: true, data: result });
+  } catch (error: any) {
+    if (error?.code === 'P2002') return res.status(409).json({ success: false, message: 'Student or application data conflicts with an existing record' });
+    res.status(500).json({ success: false, message: 'Failed to enroll student', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+  }
+});
+
+// ==========================================
+
 // Lightweight query helpers
 // ==========================================
 const LIGHTWEIGHT_STUDENT_SELECT = {
@@ -415,14 +787,37 @@ const LIGHTWEIGHT_STUDENT_SELECT = {
 const ENROLLMENT_ACTIVE_STATUSES = ['ACTIVE', 'INACTIVE'];
 
 function applyStudentSearchFilter(where: any, search?: string) {
-  if (!search) return;
+  const normalizedSearch = search?.trim().replace(/\s+/g, ' ');
+  if (!normalizedSearch || normalizedSearch.length < 2) return;
+
+  const searchTokens = normalizedSearch.split(' ').filter(Boolean).slice(0, 4);
+  const isIdentifierLike = /^[\p{L}\p{N}._/@-]+$/u.test(normalizedSearch) && searchTokens.length === 1;
+  const tokenFilters = searchTokens.map((token) => ({
+    OR: [
+      { firstName: { contains: token, mode: 'insensitive' } },
+      { lastName: { contains: token, mode: 'insensitive' } },
+      { englishFirstName: { contains: token, mode: 'insensitive' } },
+      { englishLastName: { contains: token, mode: 'insensitive' } },
+      { studentId: { contains: token, mode: 'insensitive' } },
+    ],
+  }));
+
   where.OR = [
-    { firstName: { contains: search, mode: 'insensitive' } },
-    { lastName: { contains: search, mode: 'insensitive' } },
-    { englishFirstName: { contains: search, mode: 'insensitive' } },
-    { englishLastName: { contains: search, mode: 'insensitive' } },
-    { email: { contains: search, mode: 'insensitive' } },
-    { studentId: { contains: search, mode: 'insensitive' } },
+    ...(isIdentifierLike
+      ? [
+          { studentId: { startsWith: normalizedSearch, mode: 'insensitive' } },
+          { email: { startsWith: normalizedSearch, mode: 'insensitive' } },
+          { phoneNumber: { startsWith: normalizedSearch, mode: 'insensitive' } },
+        ]
+      : []),
+    { studentId: { contains: normalizedSearch, mode: 'insensitive' } },
+    { email: { contains: normalizedSearch, mode: 'insensitive' } },
+    { phoneNumber: { contains: normalizedSearch, mode: 'insensitive' } },
+    { firstName: { contains: normalizedSearch, mode: 'insensitive' } },
+    { lastName: { contains: normalizedSearch, mode: 'insensitive' } },
+    { englishFirstName: { contains: normalizedSearch, mode: 'insensitive' } },
+    { englishLastName: { contains: normalizedSearch, mode: 'insensitive' } },
+    { AND: tokenFilters },
   ];
 }
 
@@ -439,6 +834,7 @@ async function getLightweightStudentsPayload({
   classId,
   gender,
   academicYearId,
+  placement,
   search,
 }: {
   schoolId: string;
@@ -448,24 +844,32 @@ async function getLightweightStudentsPayload({
   classId?: string;
   gender?: string;
   academicYearId?: string;
+  placement?: string;
   search?: string;
 }) {
   const normalizedGender = getStudentGenderFilter(gender);
+  const normalizedPlacement = placement === 'assigned' || placement === 'unassigned' ? placement : undefined;
 
   let students: any[] = [];
   let totalCount = 0;
+  let assignedCount = 0;
+  let unassignedCount = 0;
 
   if (!academicYearId) {
-    const where: any = { schoolId };
+    const baseWhere: any = { schoolId, isAccountActive: true };
     if (classId && classId !== 'all') {
-      where.classId = classId;
+      baseWhere.classId = classId;
     }
     if (normalizedGender) {
-      where.gender = normalizedGender;
+      baseWhere.gender = normalizedGender;
     }
-    applyStudentSearchFilter(where, search);
+    applyStudentSearchFilter(baseWhere, search);
 
-    [totalCount, students] = await Promise.all([
+    const where: any = { ...baseWhere };
+    if (normalizedPlacement === 'assigned') where.classId = { not: null };
+    if (normalizedPlacement === 'unassigned') where.classId = null;
+
+    [totalCount, students, assignedCount, unassignedCount] = await Promise.all([
       prisma.student.count({ where }),
       prisma.student.findMany({
         where,
@@ -479,6 +883,8 @@ async function getLightweightStudentsPayload({
         skip,
         take: limit,
       }),
+      prisma.student.count({ where: { ...baseWhere, classId: { not: null } } }),
+      prisma.student.count({ where: { ...baseWhere, classId: null } }),
     ]);
   } else {
     const yearClasses = await prisma.class.findMany({
@@ -503,16 +909,28 @@ async function getLightweightStudentsPayload({
 
       const yearWhere: any = {
         schoolId,
+        isAccountActive: true,
         studentClasses: {
           some: yearScopeFilter,
         },
       };
+      const yearBaseWhere: any = { schoolId, isAccountActive: true };
       if (normalizedGender) {
         yearWhere.gender = normalizedGender;
+        yearBaseWhere.gender = normalizedGender;
       }
       applyStudentSearchFilter(yearWhere, search);
+      applyStudentSearchFilter(yearBaseWhere, search);
 
-      [totalCount, students] = await Promise.all([
+      if (normalizedPlacement === 'unassigned') {
+        delete yearWhere.studentClasses;
+        yearWhere.NOT = { studentClasses: { some: yearScopeFilter } };
+      }
+
+      const assignedWhere = { ...yearBaseWhere, studentClasses: { some: yearScopeFilter } };
+      const unassignedWhere = { ...yearBaseWhere, NOT: { studentClasses: { some: yearScopeFilter } } };
+
+      [totalCount, students, assignedCount, unassignedCount] = await Promise.all([
         prisma.student.count({ where: yearWhere }),
         prisma.student.findMany({
           where: yearWhere,
@@ -534,6 +952,8 @@ async function getLightweightStudentsPayload({
           skip,
           take: limit,
         }),
+        prisma.student.count({ where: assignedWhere }),
+        prisma.student.count({ where: unassignedWhere }),
       ]);
 
       const classById = new Map(
@@ -563,6 +983,11 @@ async function getLightweightStudentsPayload({
   return {
     success: true,
     data: students,
+    summary: {
+      total: assignedCount + unassignedCount,
+      assigned: assignedCount,
+      unassigned: unassignedCount,
+    },
     pagination: {
       page,
       limit,
@@ -585,6 +1010,7 @@ async function refreshCache(
   classId?: string,
   gender?: string,
   academicYearId?: string,
+  placement?: string,
   search?: string
 ) {
   try {
@@ -596,6 +1022,7 @@ async function refreshCache(
       classId,
       gender,
       academicYearId,
+      placement,
       search,
     });
 
@@ -628,10 +1055,11 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     const classId = req.query.classId as string | undefined;
     const gender = req.query.gender as string | undefined;
     const academicYearId = req.query.academicYearId as string | undefined;
+    const placement = req.query.placement as string | undefined;
     const search = (req.query.search as string | undefined)?.trim();
 
     // Create cache key
-    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}:${search || 'all'}`;
+    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}:${placement || 'all'}:${search || 'all'}`;
 
     // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
@@ -648,7 +1076,7 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     if (isStale) {
       console.log(`⏳ Serving stale cache while refreshing...`);
       // Trigger background refresh (non-blocking)
-      refreshCache(cacheKey, schoolId, page, limit, skip, classId, gender, academicYearId, search).catch(console.error);
+      refreshCache(cacheKey, schoolId, page, limit, skip, classId, gender, academicYearId, placement, search).catch(console.error);
       return res.json(cached.data);
     }
 
@@ -660,6 +1088,7 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
       classId,
       gender,
       academicYearId,
+      placement,
       search,
     });
     const queryTime = Date.now() - startTime;
@@ -848,13 +1277,22 @@ app.get('/students/:id', async (req: AuthRequest, res: Response) => {
         schoolId, // Multi-tenant filter
       },
       include: {
-        class: true,
-        grades: {
+        class: {
           include: {
-            subject: true,
+            academicYear: true,
           },
         },
-        attendance: true,
+        studentClasses: {
+          where: { status: 'ACTIVE' },
+          include: {
+            class: {
+              include: {
+                academicYear: true,
+              },
+            },
+          },
+          orderBy: { enrolledAt: 'desc' },
+        },
       },
     });
 
@@ -1846,30 +2284,144 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    await prisma.student.delete({
-      where: { id },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.student.update({
+        where: { id },
+        data: {
+          isAccountActive: false,
+          accountDeactivatedAt: new Date(),
+          deactivationReason: 'Archived from student directory',
+          classId: null,
+        },
+      });
 
-    // Update school's current student count
-    const currentCount = await prisma.student.count({
-      where: { schoolId },
-    });
+      await tx.studentClass.updateMany({
+        where: {
+          studentId: id,
+          status: { in: ENROLLMENT_ACTIVE_STATUSES },
+        },
+        data: { status: 'DROPPED' },
+      });
 
-    await prisma.school.update({
-      where: { id: schoolId },
-      data: { currentStudents: currentCount },
+      const currentCount = await tx.student.count({
+        where: { schoolId, isAccountActive: true },
+      });
+
+      await tx.school.update({
+        where: { id: schoolId },
+        data: { currentStudents: currentCount },
+      });
     });
     cache.clear();
 
     res.json({
       success: true,
-      message: "លុបសិស្សបានជោគជ័យ (Student deleted successfully)",
+      message: "បានរក្សាទុកសិស្សជាបណ្ណសារ (Student archived successfully)",
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
       message: "មានបញ្ហាក្នុងការលុបសិស្ស (Error deleting student)",
       error: error.message,
+    });
+  }
+});
+
+// POST /students/reassign - Atomically move one or more students into a class
+app.post('/students/reassign', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    const { studentId, studentIds, targetClassId } = req.body || {};
+    const ids = Array.isArray(studentIds)
+      ? studentIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+      : (typeof studentId === 'string' && studentId.trim() ? [studentId] : []);
+
+    if (ids.length === 0 || typeof targetClassId !== 'string' || !targetClassId.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentId/studentIds and targetClassId are required',
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const targetClass = await tx.class.findFirst({
+        where: { id: targetClassId, schoolId },
+        select: { id: true, name: true, grade: true, academicYearId: true },
+      });
+
+      if (!targetClass) {
+        throw new Error('Target class not found in your school');
+      }
+
+      const students = await tx.student.findMany({
+        where: { id: { in: ids }, schoolId, isAccountActive: true },
+        select: { id: true },
+      });
+      const validIds = students.map((student) => student.id);
+
+      if (validIds.length !== ids.length) {
+        throw new Error('One or more students were not found in your school');
+      }
+
+      await tx.studentClass.updateMany({
+        where: {
+          studentId: { in: validIds },
+          status: { in: ENROLLMENT_ACTIVE_STATUSES },
+          OR: [
+            { academicYearId: targetClass.academicYearId },
+            { class: { academicYearId: targetClass.academicYearId } },
+          ],
+        },
+        data: { status: 'DROPPED' },
+      });
+
+      for (const id of validIds) {
+        await tx.studentClass.upsert({
+          where: {
+            studentId_classId_academicYearId: {
+              studentId: id,
+              classId: targetClass.id,
+              academicYearId: targetClass.academicYearId,
+            },
+          },
+          update: { status: 'ACTIVE' },
+          create: {
+            studentId: id,
+            classId: targetClass.id,
+            academicYearId: targetClass.academicYearId,
+            status: 'ACTIVE',
+          },
+        });
+      }
+
+      await tx.student.updateMany({
+        where: { id: { in: validIds }, schoolId },
+        data: { classId: targetClass.id },
+      });
+
+      await (tx as any).admissionApplication.updateMany({
+        where: {
+          schoolId,
+          academicYearId: targetClass.academicYearId,
+          studentId: { in: validIds },
+          status: 'ENROLLED',
+        },
+        data: { targetClassId: targetClass.id },
+      });
+
+      return {
+        assigned: validIds.length,
+        class: targetClass,
+      };
+    });
+
+    cache.clear();
+    res.json({ success: true, data: result, message: 'Students reassigned successfully' });
+  } catch (error: any) {
+    console.error('Student reassignment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to reassign students',
     });
   }
 });
@@ -2343,6 +2895,33 @@ app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => 
     // Verify student belongs to school
     const student = await prisma.student.findFirst({
       where: { id, schoolId },
+      include: {
+        studentClasses: {
+          include: {
+            class: {
+              include: { academicYear: true },
+            },
+          },
+          orderBy: { enrolledAt: 'desc' },
+        },
+        StudentProgression: {
+          include: {
+            fromAcademicYear: {
+              select: { id: true, name: true, startDate: true, endDate: true },
+            },
+            toAcademicYear: {
+              select: { id: true, name: true, startDate: true, endDate: true },
+            },
+            fromClass: {
+              select: { id: true, name: true, grade: true, section: true },
+            },
+            toClass: {
+              select: { id: true, name: true, grade: true, section: true },
+            },
+          },
+          orderBy: { promotionDate: 'asc' },
+        },
+      },
     });
 
     if (!student) {
@@ -2352,47 +2931,60 @@ app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => 
       });
     }
 
-    // Get progression history
-    const progressions = await prisma.studentProgression.findMany({
-      where: { studentId: id },
-      include: {
-        fromAcademicYear: {
-          select: {
-            id: true,
-            name: true,
-            startDate: true,
-            endDate: true,
+    const progressions = student.StudentProgression;
+
+    const currentEnrollment =
+      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE' && enrollment.class.academicYear?.status === 'ACTIVE') ||
+      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE') ||
+      student.studentClasses[0] ||
+      null;
+
+    // Historical imports can leave two StudentClass rows for the same
+    // placement (most commonly one row with academicYearId and one without).
+    // Present one authoritative placement and prefer the active row so the
+    // student timeline does not imply that they enrolled twice.
+    const uniqueClassEnrollments = Array.from(
+      student.studentClasses.reduce((placements, enrollment) => {
+        const academicYearId = enrollment.class.academicYear?.id || enrollment.academicYearId || 'unknown';
+        const placementKey = `${enrollment.classId}:${academicYearId}`;
+        const existing = placements.get(placementKey);
+
+        if (!existing || (existing.status !== 'ACTIVE' && enrollment.status === 'ACTIVE')) {
+          placements.set(placementKey, enrollment);
+        }
+
+        return placements;
+      }, new Map<string, (typeof student.studentClasses)[number]>()).values()
+    );
+
+    const classHistory = uniqueClassEnrollments.map((enrollment) => ({
+      id: enrollment.id,
+      academicYear: enrollment.class.academicYear
+        ? {
+            id: enrollment.class.academicYear.id,
+            name: enrollment.class.academicYear.name,
+            status: enrollment.class.academicYear.status,
+          }
+        : {
+            id: enrollment.academicYearId || '',
+            name: 'Unknown academic year',
+            status: 'UNKNOWN',
           },
-        },
-        toAcademicYear: {
-          select: {
-            id: true,
-            name: true,
-            startDate: true,
-            endDate: true,
-          },
-        },
-        fromClass: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            section: true,
-          },
-        },
-        toClass: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            section: true,
-          },
-        },
+      class: {
+        id: enrollment.class.id,
+        name: enrollment.class.name,
+        grade: enrollment.class.grade,
+        section: enrollment.class.section,
       },
-      orderBy: {
-        promotionDate: 'asc',
-      },
-    });
+      enrolledAt: enrollment.enrolledAt,
+      status: enrollment.status,
+    }));
+
+    const progressionItems = progressions.map((progression) => ({
+      ...progression,
+      fromYear: progression.fromAcademicYear,
+      toYear: progression.toAcademicYear,
+    }));
 
     res.json({
       success: true,
@@ -2400,12 +2992,39 @@ app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => 
         student: {
           id: student.id,
           studentId: student.studentId,
-          name: {
-            latin: `${student.firstName} ${student.lastName}`,
-            khmer: (student.customFields as any)?.regional?.khmerName || null,
-          },
+          name: `${student.firstName} ${student.lastName}`.trim(),
+          khmerName: (student.customFields as any)?.regional?.khmerName || null,
+          gender: student.gender,
+          dateOfBirth: student.dateOfBirth,
+          photoUrl: student.photoUrl,
+          currentClass: currentEnrollment
+            ? {
+                id: currentEnrollment.class.id,
+                name: currentEnrollment.class.name,
+                grade: currentEnrollment.class.grade,
+              }
+            : null,
+          currentYear: currentEnrollment?.class.academicYear
+            ? {
+                id: currentEnrollment.class.academicYear.id,
+                name: currentEnrollment.class.academicYear.name,
+              }
+            : null,
         },
-        progressions,
+        progressions: progressionItems,
+        classHistory,
+        summary: {
+          totalYears: new Set(
+            uniqueClassEnrollments
+              .map((enrollment) => enrollment.class.academicYear?.id || enrollment.academicYearId)
+              .filter(Boolean)
+          ).size,
+          totalProgressions: progressions.length,
+          currentGrade: currentEnrollment?.class.grade || null,
+          firstEnrolledYear: classHistory.length > 0
+            ? classHistory[classHistory.length - 1].academicYear.name
+            : null,
+        },
       },
     });
   } catch (error: any) {
@@ -2413,7 +3032,7 @@ app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => 
     res.status(500).json({
       success: false,
       message: 'Failed to fetch progression history',
-      error: error.message,
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }
 });
@@ -2598,63 +3217,112 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
       return res.status(404).json({ success: false, error: 'Student not found' });
     }
 
-    // Get all classes student has been enrolled in
-    const classIds = student.studentClasses.map((sc) => sc.classId);
-
-    // Get all grades for student across all classes
-    const grades = await prisma.grade.findMany({
-      where: { studentId: id },
-      include: {
-        subject: true,
-        class: {
-          include: {
-            academicYear: true,
+    const classIds = [...new Set(student.studentClasses.map((sc) => sc.classId))];
+    const [grades, monthlySummaries, attendanceRows, officialDocuments] = await Promise.all([
+      prisma.grade.findMany({
+        where: { studentId: id },
+        include: {
+          subject: true,
+          class: {
+            include: {
+              academicYear: true,
+            }
           }
-        }
-      },
-      orderBy: [
-        { year: 'desc' },
-        { monthNumber: 'desc' }
-      ]
+        },
+        orderBy: [
+          { year: 'desc' },
+          { monthNumber: 'desc' }
+        ]
+      }),
+      prisma.studentMonthlySummary.findMany({
+        where: { studentId: id },
+        orderBy: [
+          { year: 'desc' },
+          { monthNumber: 'desc' }
+        ]
+      }),
+      classIds.length > 0
+        ? prisma.attendance.findMany({
+            where: { studentId: id, classId: { in: classIds } },
+            select: { classId: true, status: true },
+          })
+        : Promise.resolve([]),
+      (prisma as any).studentTranscriptDocument?.findMany
+        ? (prisma as any).studentTranscriptDocument.findMany({
+            where: { studentId: id, schoolId, status: { not: 'REVOKED' } },
+            orderBy: { issuedAt: 'desc' },
+            select: {
+              id: true,
+              academicYearId: true,
+              status: true,
+              documentNumber: true,
+              verificationCode: true,
+              snapshotChecksum: true,
+              formulaVersion: true,
+              approvedAt: true,
+              issuedAt: true,
+              approvedById: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+    const latestOfficialByYear = new Map<string, any>();
+    (officialDocuments as any[]).forEach((document) => {
+      if (!latestOfficialByYear.has(document.academicYearId)) {
+        latestOfficialByYear.set(document.academicYearId, {
+          status: document.status,
+          isOfficial: document.status === 'OFFICIAL',
+          documentNumber: document.documentNumber,
+          verificationCode: document.verificationCode,
+          snapshotChecksum: document.snapshotChecksum,
+          formulaVersion: document.formulaVersion,
+          approvedAt: document.approvedAt,
+          approvedById: document.approvedById,
+          issuedAt: document.issuedAt,
+          generatedAt: document.issuedAt,
+        });
+      }
     });
 
-    // Get all monthly summaries
-    const monthlySummaries = await prisma.studentMonthlySummary.findMany({
-      where: { studentId: id },
-      orderBy: [
-        { year: 'desc' },
-        { monthNumber: 'desc' }
-      ]
+    const attendanceByClass: Record<string, { total: number; present: number; absent: number; late: number; excused: number; rate: number }> = {};
+    classIds.forEach((classId) => {
+      attendanceByClass[classId] = { total: 0, present: 0, absent: 0, late: 0, excused: 0, rate: 0 };
     });
-
-    // Get attendance summaries by class
-    const attendanceByClass: Record<string, any> = {};
-    for (const sc of student.studentClasses) {
-      const attendance = await prisma.attendance.findMany({
-        where: {
-          studentId: id,
-          classId: sc.classId,
-        }
-      });
-
-      const total = attendance.length;
-      const present = attendance.filter((a) => a.status === 'PRESENT').length;
-      const absent = attendance.filter((a) => a.status === 'ABSENT').length;
-      const late = attendance.filter((a) => a.status === 'LATE').length;
-      const excused = attendance.filter((a) => a.status === 'EXCUSED').length;
-
-      attendanceByClass[sc.classId] = {
-        total,
-        present,
-        absent,
-        late,
-        excused,
-        rate: total > 0 ? Math.round((present / total) * 100) : 0,
-      };
-    }
+    attendanceRows.forEach((attendance) => {
+      if (!attendance.classId || !attendanceByClass[attendance.classId]) return;
+      const bucket = attendanceByClass[attendance.classId];
+      bucket.total += 1;
+      if (attendance.status === 'PRESENT') bucket.present += 1;
+      if (attendance.status === 'ABSENT') bucket.absent += 1;
+      if (attendance.status === 'LATE') bucket.late += 1;
+      if (attendance.status === 'EXCUSED' || attendance.status === 'PERMISSION') bucket.excused += 1;
+    });
+    Object.values(attendanceByClass).forEach((bucket) => {
+      bucket.rate = bucket.total > 0 ? Math.round((bucket.present / bucket.total) * 100) : 0;
+    });
 
     // Group grades by academic year
     const gradesByYear: Record<string, any> = {};
+    student.studentClasses.forEach((enrollment) => {
+      const academicYear = enrollment.class?.academicYear;
+      if (!academicYear || gradesByYear[academicYear.id]) return;
+      gradesByYear[academicYear.id] = {
+        yearId: academicYear.id,
+        yearName: academicYear.name,
+        classId: enrollment.classId,
+        startDate: academicYear.startDate,
+        endDate: academicYear.endDate,
+        className: enrollment.class?.name,
+        gradeLevel: enrollment.class?.grade,
+        subjects: {},
+      };
+    });
+    const normalizeSubjectIdentity = (value?: string | null) => value
+      ?.normalize('NFKC')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase();
+
     grades.forEach((grade: any) => {
       const yearId = grade.class?.academicYear?.id || 'unknown';
       const yearName = grade.class?.academicYear?.name || 'Unknown Year';
@@ -2672,10 +3340,14 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
         };
       }
 
-      const subjectId = grade.subjectId;
-      if (!gradesByYear[yearId].subjects[subjectId]) {
-        gradesByYear[yearId].subjects[subjectId] = {
-          subjectId,
+      const subjectKey = normalizeSubjectIdentity(grade.subject?.nameKh)
+        || normalizeSubjectIdentity(grade.subject?.code)
+        || normalizeSubjectIdentity(grade.subject?.name)
+        || grade.subjectId;
+
+      if (!gradesByYear[yearId].subjects[subjectKey]) {
+        gradesByYear[yearId].subjects[subjectKey] = {
+          subjectId: grade.subjectId,
           subjectName: grade.subject?.name,
           subjectNameKh: grade.subject?.nameKh || null,
           subjectCode: grade.subject?.code,
@@ -2683,7 +3355,10 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
         };
       }
 
-      gradesByYear[yearId].subjects[subjectId].grades.push({
+      const subjectGrades = gradesByYear[yearId].subjects[subjectKey].grades;
+      const assessmentKey = `${grade.year ?? 'unknown'}:${grade.monthNumber ?? normalizeSubjectIdentity(grade.month) ?? grade.id}`;
+      const duplicateIndex = subjectGrades.findIndex((item: any) => item.assessmentKey === assessmentKey);
+      const gradeItem = {
         id: grade.id,
         score: grade.score,
         maxScore: grade.maxScore,
@@ -2692,7 +3367,15 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
         monthNumber: grade.monthNumber,
         year: grade.year,
         remarks: grade.remarks,
-      });
+        assessmentKey,
+        updatedAt: grade.updatedAt,
+      };
+
+      if (duplicateIndex === -1) {
+        subjectGrades.push(gradeItem);
+      } else if (new Date(grade.updatedAt).getTime() > new Date(subjectGrades[duplicateIndex].updatedAt).getTime()) {
+        subjectGrades[duplicateIndex] = gradeItem;
+      }
     });
 
     // Calculate yearly averages
@@ -2705,17 +3388,29 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
 
       subjects.forEach((subject: any) => {
         const subjectGrades = subject.grades;
-        if (subjectGrades.length > 0) {
-          const avg = subjectGrades.reduce((sum: number, g: any) => sum + (g.percentage || 0), 0) / subjectGrades.length;
+        const percentages = subjectGrades
+          .map((grade: any) => {
+            if (Number.isFinite(grade.percentage)) return grade.percentage;
+            if (Number.isFinite(grade.score) && Number.isFinite(grade.maxScore) && grade.maxScore > 0) {
+              return (grade.score / grade.maxScore) * 100;
+            }
+            return null;
+          })
+          .filter((percentage: number | null): percentage is number => percentage !== null);
+        if (percentages.length > 0) {
+          const avg = percentages.reduce((sum: number, percentage: number) => sum + percentage, 0) / percentages.length;
           subject.average = Math.round(avg * 100) / 100;
           subject.letterGrade = getLetterGrade(avg);
           totalAvg += avg;
           subjectCount++;
         }
+
+
+        subject.grades = subjectGrades.map(({ assessmentKey, updatedAt, ...gradeItem }: any) => gradeItem);
       });
 
       yearData.overallAverage = subjectCount > 0 ? Math.round((totalAvg / subjectCount) * 100) / 100 : null;
-      yearData.overallGrade = yearData.overallAverage ? getLetterGrade(yearData.overallAverage) : null;
+      yearData.overallGrade = yearData.overallAverage !== null ? getLetterGrade(yearData.overallAverage) : null;
       yearData.subjectCount = subjectCount;
     });
 
@@ -2741,11 +3436,17 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
     let overallGPA = 0;
     let gpaCount = 0;
     allYears.forEach((year: any) => {
-      if (year.overallAverage) {
+      if (typeof year.overallAverage === 'number' && Number.isFinite(year.overallAverage)) {
         overallGPA += year.overallAverage;
         gpaCount++;
       }
     });
+
+    const currentEnrollment =
+      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE' && enrollment.class.academicYear?.status === 'ACTIVE') ||
+      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE') ||
+      student.studentClasses[0] ||
+      null;
 
     // Build transcript response
     const transcript = {
@@ -2765,8 +3466,8 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
       },
       summary: {
         totalYears,
-        currentClass: student.studentClasses[0]?.class?.name || null,
-        currentGrade: student.studentClasses[0]?.class?.grade || null,
+        currentClass: currentEnrollment?.class?.name || null,
+        currentGrade: currentEnrollment?.class?.grade || null,
         cumulativeAverage: gpaCount > 0 ? Math.round((overallGPA / gpaCount) * 100) / 100 : null,
         cumulativeGrade: gpaCount > 0 ? getLetterGrade(overallGPA / gpaCount) : null,
         promotions: automaticPromoCount + manualPromoCount,
@@ -2795,6 +3496,15 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
         classRank: ms.classRank,
         gradeLevel: ms.gradeLevel,
       })),
+      documentMetaByYear: Object.fromEntries(latestOfficialByYear),
+      documentMeta: {
+        status: officialDocuments.length > 0 ? 'OFFICIAL' : 'DRAFT',
+        isOfficial: officialDocuments.length > 0,
+        generatedAt: new Date().toISOString(),
+        formulaVersion: TRANSCRIPT_FORMULA_VERSION,
+        hasGrades: grades.length > 0,
+        hasAttendance: attendanceRows.length > 0,
+      },
     };
 
     res.json({ success: true, data: transcript });
@@ -2804,7 +3514,250 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
     res.status(500).json({
       success: false,
       error: 'Failed to get student transcript',
-      details: error.message,
+      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
+    });
+  }
+});
+
+// POST /students/:id/transcript/issue - Lock an official transcript record
+app.post('/students/:id/transcript/issue', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user?.schoolId;
+    const userId = req.user?.id;
+    const role = req.user?.role || '';
+    const academicYearId = String(req.body?.academicYearId || '');
+
+    if (!schoolId || !userId) {
+      return res.status(400).json({ success: false, error: 'School ID required' });
+    }
+    if (!TRANSCRIPT_ISSUER_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Administrator access required to issue official transcripts' });
+    }
+    if (!academicYearId) {
+      return res.status(400).json({ success: false, error: 'Academic year is required' });
+    }
+    if (!(prisma as any).studentTranscriptDocument?.create) {
+      return res.status(501).json({ success: false, error: 'Transcript issuance storage is not available. Apply the latest database migration first.' });
+    }
+
+    const existingOfficial = await (prisma as any).studentTranscriptDocument.findFirst({
+      where: { schoolId, studentId: id, academicYearId, status: 'OFFICIAL' },
+      select: { documentNumber: true, verificationCode: true, issuedAt: true },
+    });
+    if (existingOfficial) {
+      return res.status(409).json({
+        success: false,
+        error: 'An official transcript already exists for this academic year. Revoke it before issuing a replacement.',
+        data: existingOfficial,
+      });
+    }
+
+    const student = await prisma.student.findFirst({
+      where: { id, schoolId },
+      select: {
+        id: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
+        dateOfBirth: true,
+        gender: true,
+        customFields: true,
+        studentClasses: {
+          where: { OR: [{ academicYearId }, { class: { academicYearId } }] },
+          select: {
+            classId: true,
+            status: true,
+            class: {
+              select: {
+                id: true,
+                name: true,
+                grade: true,
+                academicYear: { select: { id: true, name: true, startDate: true, endDate: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    const enrollment = student.studentClasses.find((item) => item.status === 'ACTIVE') || student.studentClasses[0];
+    if (!enrollment?.class?.academicYear) {
+      return res.status(404).json({ success: false, error: 'Academic year enrollment not found for this student' });
+    }
+
+    const [grades, monthlySummaries, attendanceRows, existingCount] = await Promise.all([
+      prisma.grade.findMany({
+        where: { studentId: id, class: { academicYearId } },
+        include: { subject: true },
+        orderBy: [{ year: 'asc' }, { monthNumber: 'asc' }, { subjectId: 'asc' }],
+      }),
+      prisma.studentMonthlySummary.findMany({
+        where: { studentId: id, classId: enrollment.classId },
+        orderBy: [{ year: 'asc' }, { monthNumber: 'asc' }],
+      }),
+      prisma.attendance.findMany({
+        where: { studentId: id, classId: enrollment.classId },
+        select: { date: true, status: true, session: true },
+        orderBy: { date: 'asc' },
+      }),
+      (prisma as any).studentTranscriptDocument.count({ where: { schoolId } }),
+    ]);
+
+    if (grades.length === 0) {
+      return res.status(409).json({ success: false, error: 'Cannot issue an official transcript before grades are recorded for this academic year' });
+    }
+
+    const snapshotData = stableJson({
+      student: {
+        id: student.id,
+        studentId: student.studentId,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        englishFirstName: student.englishFirstName,
+        englishLastName: student.englishLastName,
+        khmerName: (student.customFields as any)?.regional?.khmerName || null,
+        dateOfBirth: student.dateOfBirth,
+        gender: student.gender,
+      },
+      academicYear: enrollment.class.academicYear,
+      class: { id: enrollment.class.id, name: enrollment.class.name, grade: enrollment.class.grade },
+      gradeRecords: grades.map((grade: any) => ({
+        id: grade.id,
+        subjectId: grade.subjectId,
+        subjectCode: grade.subject?.code,
+        subjectName: grade.subject?.name,
+        subjectNameKh: grade.subject?.nameKh,
+        score: grade.score,
+        maxScore: grade.maxScore,
+        percentage: grade.percentage,
+        month: grade.month,
+        monthNumber: grade.monthNumber,
+        year: grade.year,
+        updatedAt: grade.updatedAt,
+      })),
+      monthlySummaries: monthlySummaries.map((summary) => ({
+        month: summary.month,
+        monthNumber: summary.monthNumber,
+        year: summary.year,
+        totalScore: summary.totalScore,
+        totalMaxScore: summary.totalMaxScore,
+        average: summary.average,
+        classRank: summary.classRank,
+        gradeLevel: summary.gradeLevel,
+        updatedAt: summary.updatedAt,
+      })),
+      attendance: attendanceRows,
+      formulaVersion: TRANSCRIPT_FORMULA_VERSION,
+    });
+
+    const issuedDocument = await (prisma as any).studentTranscriptDocument.create({
+      data: {
+        schoolId,
+        studentId: id,
+        academicYearId,
+        status: 'OFFICIAL',
+        documentNumber: createTranscriptDocumentNumber(schoolId, enrollment.class.academicYear.name, existingCount + 1),
+        verificationCode: createTranscriptVerificationCode(),
+        snapshotChecksum: createTranscriptChecksum(snapshotData),
+        snapshotData,
+        formulaVersion: TRANSCRIPT_FORMULA_VERSION,
+        approvedById: userId,
+        approvedAt: new Date(),
+      },
+      select: {
+        id: true,
+        academicYearId: true,
+        status: true,
+        documentNumber: true,
+        verificationCode: true,
+        snapshotChecksum: true,
+        formulaVersion: true,
+        approvedAt: true,
+        issuedAt: true,
+        approvedById: true,
+      },
+    });
+
+    cache.clear();
+    res.status(201).json({ success: true, data: issuedDocument });
+  } catch (error: any) {
+    console.error('Issue transcript error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to issue official transcript',
+      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
+    });
+  }
+});
+
+// POST /students/:id/transcript/revoke - Revoke the active official transcript
+app.post('/students/:id/transcript/revoke', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user?.schoolId;
+    const userId = req.user?.id;
+    const role = req.user?.role || '';
+    const academicYearId = String(req.body?.academicYearId || '');
+    const reason = String(req.body?.reason || '').trim();
+
+    if (!schoolId || !userId) {
+      return res.status(400).json({ success: false, error: 'School ID required' });
+    }
+    if (!TRANSCRIPT_ISSUER_ROLES.has(role)) {
+      return res.status(403).json({ success: false, error: 'Administrator access required to revoke official transcripts' });
+    }
+    if (!academicYearId) {
+      return res.status(400).json({ success: false, error: 'Academic year is required' });
+    }
+    if (!reason) {
+      return res.status(400).json({ success: false, error: 'Revocation reason is required' });
+    }
+    if (!(prisma as any).studentTranscriptDocument?.update) {
+      return res.status(501).json({ success: false, error: 'Transcript issuance storage is not available. Apply the latest database migration first.' });
+    }
+
+    const existingOfficial = await (prisma as any).studentTranscriptDocument.findFirst({
+      where: { schoolId, studentId: id, academicYearId, status: 'OFFICIAL' },
+      select: { id: true },
+    });
+    if (!existingOfficial) {
+      return res.status(404).json({ success: false, error: 'No active official transcript found for this academic year' });
+    }
+
+    const revokedDocument = await (prisma as any).studentTranscriptDocument.update({
+      where: { id: existingOfficial.id },
+      data: {
+        status: 'REVOKED',
+        revokedAt: new Date(),
+        revokedById: userId,
+        revocationReason: reason,
+      },
+      select: {
+        id: true,
+        academicYearId: true,
+        status: true,
+        documentNumber: true,
+        verificationCode: true,
+        revokedAt: true,
+        revocationReason: true,
+      },
+    });
+
+    cache.clear();
+    res.json({ success: true, data: revokedDocument });
+  } catch (error: any) {
+    console.error('Revoke transcript error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to revoke official transcript',
+      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
     });
   }
 });

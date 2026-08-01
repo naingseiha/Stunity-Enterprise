@@ -2,43 +2,58 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
-import BlurLoader from '@/components/BlurLoader';
-import AnimatedContent from '@/components/AnimatedContent';
+import { STUDENT_SERVICE_URL } from '@/lib/api/config';
 import { schoolAPI } from '@/lib/api/school';
 import { gradeAPI, type KhmerMonthlyReportData } from '@/lib/api/grades';
 import { sortSubjectsByOrder } from '@/lib/reports/templates/khm-moeys/subjects';
+import { KHMER_MONTHS, getKhmerMonthLabel } from '@/lib/reports/templates/khm-moeys/months';
 import TranscriptPrint from '@/components/reports/templates/khm-moeys/TranscriptPrint';
 import { formatReportDate } from '@/lib/reports/templates/khm-moeys/khmer-date';
 import {
-  FileText,
+  calculateTranscriptSubject,
+  calculateTranscriptSummary,
+  getKhmerRemark,
+  getLetterGrade,
+} from '@/lib/reports/studentTranscript';
+import {
   Home,
   ChevronRight,
-  User,
-  Calendar,
   Award,
-  TrendingUp,
-  TrendingDown,
-  Book,
-  Clock,
-  CheckCircle,
-  XCircle,
   Download,
   Printer,
   ArrowLeft,
-  GraduationCap,
-  BookOpen,
-  BarChart3,
-  History,
   AlertTriangle,
   Settings,
   Loader2,
+  ShieldCheck,
+  ShieldOff,
 } from 'lucide-react';
 
 interface TranscriptData {
+  documentMeta?: {
+    status: 'DRAFT' | 'OFFICIAL';
+    isOfficial: boolean;
+    generatedAt: string;
+    formulaVersion: string;
+    hasGrades: boolean;
+    hasAttendance: boolean;
+  };
+  documentMetaByYear?: Record<string, {
+    status: 'DRAFT' | 'OFFICIAL' | 'REVOKED';
+    isOfficial: boolean;
+    documentNumber?: string;
+    verificationCode?: string;
+    snapshotChecksum?: string;
+    formulaVersion: string;
+    approvedAt?: string;
+    approvedById?: string;
+    issuedAt?: string;
+    generatedAt?: string;
+  }>;
   student: {
     id: string;
     studentId: string;
@@ -115,6 +130,7 @@ interface TranscriptData {
     month: string;
     monthNumber: number;
     year: number;
+    classId: string;
     totalScore: number;
     totalMaxScore: number;
     average: number;
@@ -123,52 +139,33 @@ interface TranscriptData {
   }[];
 }
 
-const getGradeColor = (grade: string | null): string => {
-  if (!grade) return 'text-gray-500';
-  switch (grade) {
-    case 'A': return 'text-emerald-600';
-    case 'B': return 'text-blue-600';
-    case 'C': return 'text-yellow-600';
-    case 'D': return 'text-orange-600';
-    case 'E':
-    case 'F': return 'text-red-600';
-    default: return 'text-gray-500';
-  }
-};
-
-const getGradeBg = (grade: string | null): string => {
-  if (!grade) return 'bg-gray-100 dark:bg-gray-800';
-  switch (grade) {
-    case 'A': return 'bg-emerald-100';
-    case 'B': return 'bg-blue-100';
-    case 'C': return 'bg-yellow-100';
-    case 'D': return 'bg-orange-100';
-    case 'E':
-    case 'F': return 'bg-red-100';
-    default: return 'bg-gray-100 dark:bg-gray-800';
-  }
-};
-
 export default function StudentTranscriptPage() {
   const router = useRouter();
-  const t = useTranslations('common');
   const tTranscript = useTranslations('auto.web.students_id_transcript_page');
   const params = useParams();
   const studentId = params?.id as string;
   const locale = params?.locale as string;
   
-  const [user, setUser] = useState<any>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [school, setSchool] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('');
   const [transcript, setTranscript] = useState<TranscriptData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [issuingOfficial, setIssuingOfficial] = useState(false);
+  const [revokingOfficial, setRevokingOfficial] = useState(false);
+  const [issueError, setIssueError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [selectedYearId, setSelectedYearId] = useState<string>('');
-  const printRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState<'cumulative' | 'monthly'>('cumulative');
   const [selectedMonths, setSelectedMonths] = useState<{ month: string; monthNumber: number; year: number; classId: string }[]>([]);
-  const [reportDataList, setReportDataList] = useState<{ month: string; monthNumber: number; year: number; data: KhmerMonthlyReportData }[]>([]);
+  const [reportDataList, setReportDataList] = useState<{
+    month: string;
+    monthNumber: number;
+    year: number;
+    classId: string;
+    data: KhmerMonthlyReportData;
+  }[]>([]);
   const [schoolProfile, setSchoolProfile] = useState<any>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [generatedMonths, setGeneratedMonths] = useState<{ month: string; monthNumber: number; year: number; classId: string }[]>([]);
@@ -184,113 +181,92 @@ export default function StudentTranscriptPage() {
 
   const SETTINGS_STORAGE = 'stunity:monthly-report-print-settings:v1';
 
-  // Available Khmer academic months (Nov to Aug) computed based on academic years
+  // Only expose months backed by persisted grade/summary records. Calendar
+  // defaults and hard-coded "current year" cutoffs can create empty or future
+  // reports, so they must never drive document generation.
   const availableMonths = useMemo(() => {
     if (!transcript?.academicYears) return [];
-    
-    const list: { month: string; monthNumber: number; year: number; classId: string; label: string }[] = [];
-    
-    const academicMonths = [
-      { number: 11, label: 'វិច្ឆិកា' },
-      { number: 12, label: 'ធ្នូ' },
-      { number: 1, label: 'មករា' },
-      { number: 2, label: 'កុម្ភៈ' },
-      { number: 3, label: 'មីនា' },
-      { number: 5, label: 'ឧសភា' },
-      { number: 6, label: 'មិថុនា' },
-      { number: 7, label: 'កក្កដា' },
-      { number: 8, label: 'សីហា' },
-    ];
+    const records = new Map<string, { month: string; monthNumber: number; year: number; classId: string; label: string }>();
+    const addRecord = (monthNumber: number | null | undefined, year: number | null | undefined, classId?: string, month?: string | null) => {
+      if (!monthNumber || !year || !classId) return;
+      const monthLabel = getKhmerMonthLabel(monthNumber) || month || `Month ${monthNumber}`;
+      const key = `${classId}-${monthNumber}-${year}`;
+      records.set(key, { month: monthLabel, monthNumber, year, classId, label: `${monthLabel} ${year}` });
+    };
 
-    transcript.academicYears.forEach((year) => {
-      const classId = year.classId;
-      if (!classId) return;
-
-      let startYear = 2025;
-      let endYear = 2026;
-      if (year.yearName && year.yearName.includes('-')) {
-        const parts = year.yearName.split('-');
-        startYear = parseInt(parts[0], 10) || startYear;
-        endYear = parseInt(parts[1], 10) || endYear;
-      } else if (year.startDate) {
-        startYear = new Date(year.startDate).getFullYear();
-        endYear = year.endDate ? new Date(year.endDate).getFullYear() : startYear + 1;
-      }
-
-      const isCurrentYear = year.yearName === '2025-2026' || endYear === 2026;
-
-      academicMonths.forEach((m) => {
-        const mYear = m.number >= 9 ? startYear : endYear;
-        
-        // For the current academic year, limit selection to Nov 2025 to March 2026 per user instruction
-        if (isCurrentYear) {
-          if (m.number > 3 && m.number < 11) {
-            return;
-          }
-        }
-
-        list.push({
-          month: m.label,
-          monthNumber: m.number,
-          year: mYear,
-          classId,
-          label: `${m.label} ${mYear}`
-        });
+    transcript.monthlySummaries.forEach((summary) =>
+      addRecord(summary.monthNumber, summary.year, summary.classId, summary.month)
+    );
+    transcript.academicYears.forEach((academicYear) => {
+      academicYear.subjects.forEach((subject) => {
+        subject.grades.forEach((grade) =>
+          addRecord(grade.monthNumber, grade.year, academicYear.classId, grade.month)
+        );
       });
     });
 
-    return list;
+    const academicOrder = new Map<number, number>(
+      KHMER_MONTHS.map((month, index): [number, number] => [month.number, index])
+    );
+    return [...records.values()].sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return (academicOrder.get(a.monthNumber) ?? 99) - (academicOrder.get(b.monthNumber) ?? 99);
+    });
   }, [transcript]);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.push('/auth/login');
+      router.push(`/${locale}/auth/login`);
       return;
     }
     
     const userData = TokenManager.getUserData();
-    setUser(userData.user);
-    setSchool(userData.school);
-  }, [router]);
+    setSchool(userData?.school ?? null);
+    setUserRole((userData as any)?.role || userData?.user?.role || '');
+    setAuthReady(true);
+  }, [locale, router]);
 
-  useEffect(() => {
-    if (user && studentId) {
-      fetchTranscript();
-    }
-  }, [user, studentId]);
-
-  const fetchTranscript = async () => {
+  const fetchTranscript = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError(null);
       
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}/students/${studentId}/transcript`, {
+      const response = await fetch(`${STUDENT_SERVICE_URL}/students/${studentId}/transcript`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        signal,
       });
       
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
       
-      if (data.success) {
+      if (response.ok && data?.success && Array.isArray(data?.data?.academicYears)) {
         setTranscript(data.data);
-        // Expand first year by default
         if (data.data.academicYears.length > 0) {
-          setExpandedYears(new Set([data.data.academicYears[0].yearId]));
           setSelectedYearId(data.data.academicYears[0].yearId);
+        } else {
+          setSelectedYearId('');
         }
       } else {
-        setError(data.error || 'Failed to load transcript');
+        throw new Error(data?.error || `Failed to load transcript (${response.status})`);
       }
     } catch (err: any) {
+      if (err?.name === 'AbortError') return;
       setError(err.message || 'Failed to load transcript');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [studentId]);
+
+  useEffect(() => {
+    if (!authReady || !studentId) return;
+    const controller = new AbortController();
+    void fetchTranscript(controller.signal);
+    return () => controller.abort();
+  }, [authReady, fetchTranscript, studentId]);
 
   useEffect(() => {
     const fetchSchoolProfile = async () => {
@@ -306,7 +282,7 @@ export default function StudentTranscriptPage() {
           if (savedSettingsRaw) {
             try {
               savedSettings = JSON.parse(savedSettingsRaw);
-            } catch (e) {
+            } catch {
               /* ignore */
             }
           }
@@ -356,7 +332,7 @@ export default function StudentTranscriptPage() {
     // Fetch only those that aren't already fetched
     const monthsToFetch = selectedMonths.filter((m) => {
       const alreadyFetched = reportDataList.some(
-        (r) => r.month === m.month && r.monthNumber === m.monthNumber && r.year === m.year
+        (r) => r.classId === m.classId && r.monthNumber === m.monthNumber && r.year === m.year
       );
       return !alreadyFetched;
     });
@@ -386,18 +362,22 @@ export default function StudentTranscriptPage() {
           format: 'summary',
           template: templateQuery,
         });
+        if (!Array.isArray(data.students) || !data.students.some((student) => student.studentId === studentId)) {
+          throw new Error(locale === 'km' ? 'មិនមានទិន្នន័យសិស្សក្នុងរបាយការណ៍ខែនេះទេ' : 'This student is missing from the monthly report');
+        }
 
         const newReport = {
           month: m.month,
           monthNumber: m.monthNumber,
           year: m.year,
+          classId: m.classId,
           data,
         };
 
         // Append to reportDataList progressively
         setReportDataList((prev) => {
           const filtered = prev.filter(
-            (r) => !(r.month === m.month && r.monthNumber === m.monthNumber && r.year === m.year)
+            (r) => !(r.classId === m.classId && r.monthNumber === m.monthNumber && r.year === m.year)
           );
           return [...filtered, newReport];
         });
@@ -430,17 +410,21 @@ export default function StudentTranscriptPage() {
         format: 'summary',
         template: templateQuery,
       });
+      if (!Array.isArray(data.students) || !data.students.some((student) => student.studentId === studentId)) {
+        throw new Error(locale === 'km' ? 'មិនមានទិន្នន័យសិស្សក្នុងរបាយការណ៍ខែនេះទេ' : 'This student is missing from the monthly report');
+      }
 
       const newReport = {
         month: m.month,
         monthNumber: m.monthNumber,
         year: m.year,
+        classId: m.classId,
         data,
       };
 
       setReportDataList((prev) => {
         const filtered = prev.filter(
-          (r) => !(r.month === m.month && r.monthNumber === m.monthNumber && r.year === m.year)
+          (r) => !(r.classId === m.classId && r.monthNumber === m.monthNumber && r.year === m.year)
         );
         return [...filtered, newReport];
       });
@@ -455,9 +439,9 @@ export default function StudentTranscriptPage() {
 
   const handleToggleMonth = (m: { month: string; monthNumber: number; year: number; classId: string }) => {
     setSelectedMonths((prev) => {
-      const exists = prev.some((x) => x.month === m.month && x.monthNumber === m.monthNumber && x.year === m.year);
+      const exists = prev.some((x) => x.classId === m.classId && x.monthNumber === m.monthNumber && x.year === m.year);
       if (exists) {
-        return prev.filter((x) => !(x.month === m.month && x.monthNumber === m.monthNumber && x.year === m.year));
+        return prev.filter((x) => !(x.classId === m.classId && x.monthNumber === m.monthNumber && x.year === m.year));
       } else {
         return [...prev, m];
       }
@@ -472,32 +456,143 @@ export default function StudentTranscriptPage() {
     setSelectedMonths([]);
   };
 
-  const toggleYear = (yearId: string) => {
-    setExpandedYears(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(yearId)) {
-        newSet.delete(yearId);
-      } else {
-        newSet.add(yearId);
-      }
-      return newSet;
-    });
-  };
+  const selectedAcademicYear = transcript?.academicYears.find((year) => year.yearId === selectedYearId)
+    ?? transcript?.academicYears[0];
+  const selectedYearDocument = selectedYearId ? transcript?.documentMetaByYear?.[selectedYearId] : null;
+  const isSelectedYearOfficial = selectedYearDocument?.status === 'OFFICIAL';
+  const canPrintCumulative = Boolean(
+    selectedAcademicYear?.subjects.some((subject) => subject.grades.length > 0)
+  );
+  const canIssueOfficial = Boolean(
+    selectedAcademicYear
+      && canPrintCumulative
+      && !isSelectedYearOfficial
+      && ['ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(userRole)
+  );
+  const printableMonthlyReports = generatedMonths
+    .map((month) => reportDataList.find(
+      (report) => report.classId === month.classId
+        && report.monthNumber === month.monthNumber
+        && report.year === month.year
+    ))
+    .filter((report): report is NonNullable<typeof report> => Boolean(report));
+  const canPrintMonthly = generatedMonths.length > 0
+    && printableMonthlyReports.length === generatedMonths.length
+    && !Object.values(loadingMonths).some(Boolean)
+    && generatedMonths.every((month) => !fetchErrors[`${month.classId}-${month.monthNumber}-${month.year}`]);
+  const canPrint = activeTab === 'cumulative' ? canPrintCumulative : canPrintMonthly;
 
   const handlePrint = () => {
-    window.print();
+    if (canPrint) window.print();
   };
 
-  const handleExportPDF = async () => {
-    window.print();
+  const handleExportPDF = () => {
+    if (canPrint) window.print();
+  };
+
+  const handleIssueOfficial = async () => {
+    if (!selectedAcademicYear || !canIssueOfficial) return;
+
+    const confirmed = window.confirm(
+      locale === 'km'
+        ? 'តើអ្នកចង់ចេញព្រឹត្តិបត្រពិន្ទុផ្លូវការសម្រាប់ឆ្នាំសិក្សានេះឬ? កំណត់ត្រានេះនឹងរក្សាទុកជាឯកសារ audit។'
+        : 'Issue an official transcript for this academic year? This creates an auditable record.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setIssuingOfficial(true);
+      setIssueError(null);
+      const token = TokenManager.getAccessToken();
+      const response = await fetch(`${STUDENT_SERVICE_URL}/students/${studentId}/transcript/issue`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ academicYearId: selectedAcademicYear.yearId }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || `Failed to issue transcript (${response.status})`);
+      }
+      setTranscript((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          documentMetaByYear: {
+            ...(prev.documentMetaByYear || {}),
+            [selectedAcademicYear.yearId]: {
+              ...data.data,
+              isOfficial: data.data.status === 'OFFICIAL',
+              generatedAt: data.data.issuedAt,
+            },
+          },
+        };
+      });
+    } catch (err: any) {
+      setIssueError(err.message || (locale === 'km' ? 'មិនអាចចេញឯកសារផ្លូវការបានទេ' : 'Could not issue official transcript'));
+    } finally {
+      setIssuingOfficial(false);
+    }
+  };
+
+  const handleRevokeOfficial = async () => {
+    if (!selectedAcademicYear || !isSelectedYearOfficial) return;
+
+    const reason = window.prompt(
+      locale === 'km'
+        ? 'សូមបញ្ចូលហេតុផលសម្រាប់ដកហូតឯកសារផ្លូវការនេះ'
+        : 'Enter the reason for revoking this official transcript'
+    );
+    if (!reason?.trim()) return;
+
+    try {
+      setRevokingOfficial(true);
+      setIssueError(null);
+      const token = TokenManager.getAccessToken();
+      const response = await fetch(`${STUDENT_SERVICE_URL}/students/${studentId}/transcript/revoke`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ academicYearId: selectedAcademicYear.yearId, reason }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || `Failed to revoke transcript (${response.status})`);
+      }
+      setTranscript((prev) => {
+        if (!prev) return prev;
+        const nextDocuments = { ...(prev.documentMetaByYear || {}) };
+        delete nextDocuments[selectedAcademicYear.yearId];
+        return { ...prev, documentMetaByYear: nextDocuments };
+      });
+    } catch (err: any) {
+      setIssueError(err.message || (locale === 'km' ? 'មិនអាចដកហូតឯកសារផ្លូវការបានទេ' : 'Could not revoke official transcript'));
+    } finally {
+      setRevokingOfficial(false);
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
-        <BlurLoader isLoading={true} showSpinner={false}>
-          <div className="p-8"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_62cb9bc3" /></div>
-        </BlurLoader>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
+        <UnifiedNavigation />
+        <main className="lg:ml-64 p-4 lg:p-8" aria-busy="true" aria-live="polite">
+          <div className="mx-auto max-w-6xl space-y-6 animate-pulse">
+            <div className="h-5 w-64 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <Loader2 className="h-5 w-5 animate-spin text-orange-500" aria-hidden="true" />
+              <span><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_62cb9bc3" /></span>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
+              <div className="h-80 rounded-xl bg-white shadow-sm dark:bg-gray-900" />
+              <div className="min-h-[520px] rounded-xl bg-white shadow-sm dark:bg-gray-900" />
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -512,12 +607,20 @@ export default function StudentTranscriptPage() {
             <div>
               <h3 className="font-semibold text-red-800"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_f18cbf09" /></h3>
               <p className="text-red-600">{error || 'Student not found'}</p>
-              <button
-                onClick={() => router.back()}
-                className="mt-2 text-red-700 hover:underline flex items-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_0751d601" />
-              </button>
+              <div className="mt-3 flex flex-wrap gap-4">
+                <button
+                  onClick={() => void fetchTranscript()}
+                  className="font-medium text-red-700 hover:underline"
+                >
+                  {locale === 'km' ? 'ព្យាយាមម្តងទៀត' : 'Try again'}
+                </button>
+                <button
+                  onClick={() => router.back()}
+                  className="text-red-700 hover:underline flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_0751d601" />
+                </button>
+              </div>
             </div>
           </div>
         </main>
@@ -525,12 +628,19 @@ export default function StudentTranscriptPage() {
     );
   }
 
-  const { student, summary, academicYears, progressions, monthlySummaries } = transcript;
+  const { student, summary, academicYears } = transcript;
+  const studentPhotoUrl = student.photo
+    ? /^https?:\/\//.test(student.photo)
+      ? student.photo
+      : `${STUDENT_SERVICE_URL}${student.photo}`
+    : null;
 
   const renderCumulativeCard = (isPrint: boolean) => {
     if (!transcript) return null;
     const selectedYear = academicYears.find(y => y.yearId === selectedYearId) || academicYears[0];
     if (!selectedYear) return null;
+    const officialDocument = transcript.documentMetaByYear?.[selectedYear.yearId];
+    const isOfficialDocument = officialDocument?.status === 'OFFICIAL';
 
     const provinceVal = schoolProfile?.province || settings.province || '';
     const cleanProvince = provinceVal.replace(/^(ខេត្ត៖|ខេត្ត)/, '').trim();
@@ -545,15 +655,6 @@ export default function StudentTranscriptPage() {
       return String(num).replace(/[0-9]/g, (w) => khmerDigits[+w]);
     };
 
-    const getLetterGrade = (percentage: number): string => {
-      if (percentage >= 90) return 'A';
-      if (percentage >= 80) return 'B';
-      if (percentage >= 70) return 'C';
-      if (percentage >= 60) return 'D';
-      if (percentage >= 50) return 'E';
-      return 'F';
-    };
-
     // Sort subjects by MOEYS order
     const mappedSubjects = selectedYear.subjects.map((s: any) => ({
       ...s,
@@ -563,185 +664,67 @@ export default function StudentTranscriptPage() {
     }));
     const sortedSubjects = sortSubjectsByOrder(mappedSubjects);
 
-    // Calculate Semester 1 and Semester 2 scores
+    // Only calculate from persisted grade records. Missing semester scores,
+    // ranks and attendance periods remain blank; they are never synthesized.
     const subjectsData = sortedSubjects.map((subject: any) => {
-      const s1Grades = subject.grades.filter((g: any) => [11, 12, 1, 2, 3].includes(g.monthNumber));
-      const s2Grades = subject.grades.filter((g: any) => [4, 5, 6, 7, 8].includes(g.monthNumber));
-      
-      const maxScore = subject.grades[0]?.maxScore || 50;
-
-      // Semester 1 raw score average
-      const s1Score = s1Grades.length > 0 
-        ? s1Grades.reduce((sum: number, g: any) => sum + g.score, 0) / s1Grades.length 
-        : null;
-
-      // Semester 2 raw score average (fallback to deterministic mock S2 score if empty for complete yearly display)
-      const mockS2Score = s1Score 
-        ? Math.min(maxScore, Math.round(s1Score * (0.9 + (subject.subjectId.charCodeAt(0) % 3) * 0.1) * 10) / 10) 
-        : null;
-      
-      const s2Score = s2Grades.length > 0 
-        ? s2Grades.reduce((sum: number, g: any) => sum + g.score, 0) / s2Grades.length 
-        : mockS2Score;
-
-      const annualScore = (s1Score !== null && s2Score !== null) 
-        ? (s1Score + s2Score) / 2 
-        : (s1Score || s2Score || 0);
-
-      const s1Pct = s1Score ? (s1Score / maxScore) * 100 : 0;
-      const s2Pct = s2Score ? (s2Score / maxScore) * 100 : 0;
-      const annualPct = (annualScore / maxScore) * 100;
-
-      // Deterministic mock subject rank based on percentage for realistic visual output
-      const s1Rank = s1Score ? Math.max(1, Math.round((1 - s1Pct / 100) * 35) + 1) : null;
-      const s2Rank = s2Score ? Math.max(1, Math.round((1 - s2Pct / 100) * 35) + 1) : null;
-      const annualRank = annualScore ? Math.max(1, Math.round((1 - annualPct / 100) * 35) + 1) : null;
-
-      // Grades, remarks, result
-      const gradeLetter = getLetterGrade(annualPct);
-      
-      const getKhmerRemark = (grade: string) => {
-        if (grade === 'A') return 'ល្អប្រសើរ';
-        if (grade === 'B') return 'ល្អណាស់';
-        if (grade === 'C') return 'ល្អ';
-        if (grade === 'D') return 'ល្អបង្គួរ';
-        if (grade === 'E') return 'មធ្យម';
-        return 'ខ្សោយ';
-      };
-      
-      const remark = getKhmerRemark(gradeLetter);
-      const result = annualPct >= 50 ? 'ជាប់' : 'ធ្លាក់';
-
+      const calculation = calculateTranscriptSubject(subject);
       return {
         ...subject,
-        maxScore,
-        s1Score,
-        s1Rank,
-        s2Score,
-        s2Rank,
-        annualScore,
-        annualRank,
-        gradeLetter,
-        remark,
-        result,
-        s1Pct,
-        s2Pct,
-        annualPct,
+        maxScore: calculation.maxScore,
+        s1Score: calculation.semester1Score,
+        s1Rank: null,
+        s2Score: calculation.semester2Score,
+        s2Rank: null,
+        annualScore: calculation.annualScore,
+        annualRank: null,
+        gradeLetter: calculation.gradeLetter,
+        remark: calculation.remark,
+        result: calculation.result,
+        isComplete: calculation.isComplete,
       };
     });
 
-    // Total max score
-    const totalMax = subjectsData.reduce((sum, s) => sum + s.maxScore, 0);
-    
-    // Total S1 score
-    const totalS1 = subjectsData.reduce((sum, s) => sum + (s.s1Score || 0), 0);
-    
-    // Total S2 score
-    const totalS2 = subjectsData.reduce((sum, s) => sum + (s.s2Score || 0), 0);
-    
-    // Total Annual score
-    const totalAnnual = subjectsData.reduce((sum, s) => sum + (s.annualScore || 0), 0);
+    const sumWhenComplete = (values: Array<number | null>) =>
+      values.length > 0 && values.every((value) => value !== null)
+        ? values.reduce((sum, value) => sum + (value as number), 0)
+        : null;
+    const totalMax = sumWhenComplete(subjectsData.map((subject) => subject.maxScore));
+    const totalS1 = sumWhenComplete(subjectsData.map((subject) => subject.s1Score));
+    const totalS2 = sumWhenComplete(subjectsData.map((subject) => subject.s2Score));
+    const totalAnnual = sumWhenComplete(subjectsData.map((subject) => subject.annualScore));
+    const calculatedSummary = calculateTranscriptSummary(sortedSubjects as any[]);
+    const s1ExamAvg = calculatedSummary.semester1Exam;
+    const s2ExamAvg = calculatedSummary.semester2Exam;
+    const annualExamAvg = calculatedSummary.annualExam;
+    const s1MonthlyAvg = calculatedSummary.semester1Monthly;
+    const s2MonthlyAvg = calculatedSummary.semester2Monthly;
+    const annualMonthlyAvg = calculatedSummary.annualMonthly;
+    const s1OverallAvg = calculatedSummary.semester1Overall;
+    const s2OverallAvg = calculatedSummary.semester2Overall;
+    const annualOverallAvg = calculatedSummary.annualOverall;
+    const overallAvgPct = annualOverallAvg === null ? null : annualOverallAvg * 2;
+    const overallGrade = overallAvgPct === null ? null : getLetterGrade(overallAvgPct);
+    const overallRemark = overallGrade ? getKhmerRemark(overallGrade) : null;
+    const overallResult = overallAvgPct === null ? null : overallAvgPct >= 50 ? 'ជាប់' : 'ធ្លាក់';
+    const annualExcused = selectedYear.attendance?.excused ?? null;
+    const annualUnexcused = selectedYear.attendance?.absent ?? null;
 
-    // Compute Row 16: Semester Exam averages (scaled to 50)
-    // S1 exam is month 3. S2 exam is month 8.
-    const s1ExamPctSum = subjectsData.reduce((sum, s) => {
-      const examGrade = s.grades.find((g: any) => g.monthNumber === 3);
-      const pct = examGrade ? (examGrade.score / s.maxScore) * 100 : s.s1Pct * 1.02;
-      return sum + Math.min(100, pct);
-    }, 0);
-    const s1ExamAvgPct = s1ExamPctSum / subjectsData.length;
-    const s1ExamAvg = s1ExamAvgPct * 0.5; // Scaled to 50
-
-    const s2ExamPctSum = subjectsData.reduce((sum, s) => {
-      const examGrade = s.grades.find((g: any) => g.monthNumber === 8);
-      const pct = examGrade ? (examGrade.score / s.maxScore) * 100 : s.s2Pct * 1.01;
-      return sum + Math.min(100, pct);
-    }, 0);
-    const s2ExamAvgPct = s2ExamPctSum / subjectsData.length;
-    const s2ExamAvg = s2ExamAvgPct * 0.5; // Scaled to 50
-
-    const annualExamAvg = (s1ExamAvg + s2ExamAvg) / 2;
-
-    // Compute Row 17: Semester Monthly averages (scaled to 50)
-    // S1 monthly is months 11,12,1,2. S2 monthly is months 4,5,6,7.
-    const s1MonthlyPctSum = subjectsData.reduce((sum, s) => {
-      const monthlyGrades = s.grades.filter((g: any) => [11, 12, 1, 2].includes(g.monthNumber));
-      const pct = monthlyGrades.length > 0 
-        ? monthlyGrades.reduce((acc: number, g: any) => acc + (g.score / s.maxScore) * 100, 0) / monthlyGrades.length
-        : s.s1Pct * 0.98;
-      return sum + Math.min(100, pct);
-    }, 0);
-    const s1MonthlyAvgPct = s1MonthlyPctSum / subjectsData.length;
-    const s1MonthlyAvg = s1MonthlyAvgPct * 0.5; // Scaled to 50
-
-    const s2MonthlyPctSum = subjectsData.reduce((sum, s) => {
-      const monthlyGrades = s.grades.filter((g: any) => [4, 5, 6, 7].includes(g.monthNumber));
-      const pct = monthlyGrades.length > 0 
-        ? monthlyGrades.reduce((acc: number, g: any) => acc + (g.score / s.maxScore) * 100, 0) / monthlyGrades.length
-        : s.s2Pct * 0.99;
-      return sum + Math.min(100, pct);
-    }, 0);
-    const s2MonthlyAvgPct = s2MonthlyPctSum / subjectsData.length;
-    const s2MonthlyAvg = s2MonthlyAvgPct * 0.5; // Scaled to 50
-
-    const annualMonthlyAvg = (s1MonthlyAvg + s2MonthlyAvg) / 2;
-
-    // Compute Row 18: Overall Semester/Annual Averages (scaled to 50)
-    const s1OverallAvg = (s1ExamAvg + s1MonthlyAvg) / 2;
-    const s2OverallAvg = (s2ExamAvg + s2MonthlyAvg) / 2;
-    const annualOverallAvg = (annualExamAvg + annualMonthlyAvg) / 2;
-
-    // Class ranks for averages
-    const s1ExamRank = Math.max(1, Math.round((1 - s1ExamAvgPct / 100) * 35) + 1);
-    const s2ExamRank = Math.max(1, Math.round((1 - s2ExamAvgPct / 100) * 35) + 1);
-    const annualExamRank = Math.max(1, Math.round((1 - (annualExamAvg / 50)) * 35) + 1);
-
-    const s1MonthlyRank = Math.max(1, Math.round((1 - s1MonthlyAvgPct / 100) * 35) + 1);
-    const s2MonthlyRank = Math.max(1, Math.round((1 - s2MonthlyAvgPct / 100) * 35) + 1);
-    const annualMonthlyRank = Math.max(1, Math.round((1 - (annualMonthlyAvg / 50)) * 35) + 1);
-
-    const s1OverallRank = Math.max(1, Math.round((1 - (s1OverallAvg / 50)) * 35) + 1);
-    const s2OverallRank = Math.max(1, Math.round((1 - (s2OverallAvg / 50)) * 35) + 1);
-    const annualOverallRank = Math.max(1, Math.round((1 - (annualOverallAvg / 50)) * 35) + 1);
-
-    const overallAvgPct = (annualOverallAvg / 50) * 100;
-    const overallGrade = getLetterGrade(overallAvgPct);
-    
-    const getKhmerRemark = (grade: string) => {
-      if (grade === 'A') return 'ល្អប្រសើរ';
-      if (grade === 'B') return 'ល្អណាស់';
-      if (grade === 'C') return 'ល្អ';
-      if (grade === 'D') return 'ល្អបង្គួរ';
-      if (grade === 'E') return 'មធ្យម';
-      return 'ខ្សោយ';
-    };
-    const overallRemark = getKhmerRemark(overallGrade);
-    const overallResult = overallAvgPct >= 50 ? 'ជាប់' : 'ធ្លាក់';
-
-    // Attendance splitting
-    const rawExcused = selectedYear.attendance?.excused || 0;
-    const rawAbsent = selectedYear.attendance?.absent || 0;
-
-    const s1Excused = rawExcused > 0 ? Math.floor(rawExcused / 2) : 1;
-    const s2Excused = rawExcused > 0 ? (rawExcused - s1Excused) : 1;
-    const annualExcused = s1Excused + s2Excused;
-
-    const s1Unexcused = rawAbsent > 0 ? Math.floor(rawAbsent / 2) : 0;
-    const s2Unexcused = rawAbsent > 0 ? (rawAbsent - s1Unexcused) : 1;
-    const annualUnexcused = s1Unexcused + s2Unexcused;
+    const displayNumber = (value: number | null, digits = 2) =>
+      value === null ? '-' : toKhmerNumerals(value.toFixed(digits));
+    const displayAttendance = (value: number | null) =>
+      value === null ? '-' : toKhmerNumerals(value.toString().padStart(2, '0'));
 
     return (
       <div className="khmer-transcript-print w-full bg-white text-black rounded-xl">
-        <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet" />
         <style>{`
           .transcript-moul-branding {
-            font-family: 'Moul', "Metal", "Khmer OS Muol Light", serif;
+            font-family: var(--font-moul), "Khmer OS Muol Light", serif;
             font-size: 9.5px;
             line-height: 1.6;
             margin: 0;
           }
           .transcript-kingdom-text {
-            font-family: 'Moul', "Metal", "Khmer OS Muol Light", serif;
+            font-family: var(--font-moul), "Khmer OS Muol Light", serif;
             font-size: 10px;
             line-height: 1.6;
             margin: 0;
@@ -764,6 +747,13 @@ export default function StudentTranscriptPage() {
           
           {/* Formal MoEYS Double Border Frame */}
           <div className="cumulative-transcript-inner border-[3px] border-double border-black p-4 h-full flex flex-col justify-between" style={{ minHeight: isPrint ? '287mm' : 'auto' }}>
+            <div className={`mb-2 border px-3 py-1.5 text-center text-[9px] font-bold ${
+              isOfficialDocument ? 'border-emerald-700 bg-emerald-50 text-emerald-900' : 'border-amber-500 bg-amber-50 text-amber-900'
+            }`}>
+              {isOfficialDocument
+                ? `ឯកសារផ្លូវការ · លេខឯកសារ ${officialDocument?.documentNumber || '-'} · លេខផ្ទៀងផ្ទាត់ ${officialDocument?.verificationCode || '-'}`
+                : 'សេចក្តីព្រាងសម្រាប់ពិនិត្យ · មិនមែនជាឯកសារផ្លូវការ'}
+            </div>
             <div>
               {/* MoEYS Standard Header */}
               <div className="transcript-header-container flex justify-between items-start mb-3 relative">
@@ -793,8 +783,8 @@ export default function StudentTranscriptPage() {
 
                 {/* Photo Box */}
                 <div className="transcript-photo-placeholder w-[70px] h-[90px] border border-gray-400 flex flex-col items-center justify-center bg-gray-50 rounded select-none" style={{ marginTop: '40px' }}>
-                  {student.photo ? (
-                    <img src={student.photo} alt={student.firstName} className="w-full h-full object-cover" />
+                  {studentPhotoUrl ? (
+                    <img src={studentPhotoUrl} alt={student.firstName} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[7px] text-gray-500 font-bold">រូបថត ៣x៤</span>
                   )}
@@ -803,12 +793,17 @@ export default function StudentTranscriptPage() {
 
               {/* Main Title */}
               <div className="text-center mb-3">
-                <h2 className="text-lg font-bold text-red-600 uppercase" style={{ fontFamily: 'Moul, serif' }}>
+                <h2 className="text-lg font-bold text-red-600 uppercase" style={{ fontFamily: 'var(--font-moul), serif' }}>
                   ព្រឹត្តិបត្រពិន្ទុរួម
                 </h2>
                 <p className="text-xs font-bold text-red-600 mt-0.5">
                   ឆ្នាំសិក្សា៖ {toKhmerNumerals(selectedYear.yearName)}
                 </p>
+                {isOfficialDocument && (
+                  <p className="mt-1 text-[9px] font-semibold text-black">
+                    Document No: {officialDocument?.documentNumber} · Verification: {officialDocument?.verificationCode}
+                  </p>
+                )}
               </div>
 
               {/* Student Details Grid */}
@@ -845,7 +840,7 @@ export default function StudentTranscriptPage() {
 
               {/* Academic Records Table */}
               <div className="mb-3">
-                <h3 className="text-xs font-bold text-black border-b border-black pb-0.5 mb-2" style={{ fontFamily: 'Moul, serif' }}>
+                <h3 className="text-xs font-bold text-black border-b border-black pb-0.5 mb-2" style={{ fontFamily: 'var(--font-moul), serif' }}>
                   ក. លទ្ធផលនៃការសិក្សា
                 </h3>
                 
@@ -877,16 +872,16 @@ export default function StudentTranscriptPage() {
                       <tr key={subject.subjectId} className="hover:bg-gray-55 text-center">
                         <td className="border border-black p-0.5 font-bold">{toKhmerNumerals(idx + 1)}</td>
                         <td className="border border-black p-0.5 text-left pl-1 font-medium">{subject.subjectNameKh || subject.subjectName}</td>
-                        <td className="border border-black p-0.5">{toKhmerNumerals(subject.maxScore)}</td>
-                        <td className="border border-black p-0.5 font-semibold">{toKhmerNumerals(subject.s1Score?.toFixed(1) || '-')}</td>
-                        <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(subject.s1Rank || '-')}</td>
-                        <td className="border border-black p-0.5 font-semibold">{toKhmerNumerals(subject.s2Score?.toFixed(1) || '-')}</td>
-                        <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(subject.s2Rank || '-')}</td>
-                        <td className="border border-black p-0.5 font-bold">{toKhmerNumerals(subject.annualScore?.toFixed(2) || '-')}</td>
-                        <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(subject.annualRank || '-')}</td>
-                        <td className="border border-black p-0.5 font-bold">{subject.gradeLetter}</td>
-                        <td className="border border-black p-0.5">{subject.remark}</td>
-                        <td className="border border-black p-0.5 font-semibold" style={{ color: subject.result === 'ធ្លាក់' ? '#dc2626' : 'inherit' }}>{subject.result}</td>
+                        <td className="border border-black p-0.5">{subject.maxScore === null ? '-' : toKhmerNumerals(subject.maxScore)}</td>
+                        <td className="border border-black p-0.5 font-semibold">{displayNumber(subject.s1Score, 1)}</td>
+                        <td className="border border-black p-0.5 text-gray-700">-</td>
+                        <td className="border border-black p-0.5 font-semibold">{displayNumber(subject.s2Score, 1)}</td>
+                        <td className="border border-black p-0.5 text-gray-700">-</td>
+                        <td className="border border-black p-0.5 font-bold">{displayNumber(subject.annualScore)}</td>
+                        <td className="border border-black p-0.5 text-gray-700">-</td>
+                        <td className="border border-black p-0.5 font-bold">{subject.gradeLetter || '-'}</td>
+                        <td className="border border-black p-0.5">{subject.remark || '-'}</td>
+                        <td className="border border-black p-0.5 font-semibold" style={{ color: subject.result === 'ធ្លាក់' ? '#dc2626' : 'inherit' }}>{subject.result || '-'}</td>
                         <td className="border border-black p-0.5 font-bold">-</td>
                       </tr>
                     ))}
@@ -894,12 +889,12 @@ export default function StudentTranscriptPage() {
                     {/* Total Row */}
                     <tr className="bg-gray-100 font-bold text-center">
                       <td className="border border-black p-0.5" colSpan={2}>ពិន្ទុសរុប</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(totalMax)}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(totalS1.toFixed(1))}</td>
+                      <td className="border border-black p-0.5">{displayNumber(totalMax, 0)}</td>
+                      <td className="border border-black p-0.5">{displayNumber(totalS1, 1)}</td>
                       <td className="border border-black p-0.5 bg-gray-50">-</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(totalS2.toFixed(1))}</td>
+                      <td className="border border-black p-0.5">{displayNumber(totalS2, 1)}</td>
                       <td className="border border-black p-0.5 bg-gray-50">-</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(totalAnnual.toFixed(2))}</td>
+                      <td className="border border-black p-0.5">{displayNumber(totalAnnual)}</td>
                       <td className="border border-black p-0.5 bg-gray-50" colSpan={4}>-</td>
                       <td className="border border-black p-0.5">-</td>
                     </tr>
@@ -908,11 +903,11 @@ export default function StudentTranscriptPage() {
                     <tr className="font-semibold text-center">
                       <td className="border border-black p-0.5 text-left pl-1" colSpan={2}>មធ្យមភាគពិន្ទុប្រឡងឆមាស</td>
                       <td className="border border-black p-0.5">៥០</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s1ExamAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(s1ExamRank)}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s2ExamAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(s2ExamRank)}</td>
-                      <td className="border border-black p-0.5 font-bold">{toKhmerNumerals(annualExamAvg.toFixed(2))}</td>
+                      <td className="border border-black p-0.5">{displayNumber(s1ExamAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5">{displayNumber(s2ExamAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5 font-bold">{displayNumber(annualExamAvg)}</td>
                       <td className="border border-black p-0.5 text-gray-750" colSpan={5}>-</td>
                     </tr>
 
@@ -920,11 +915,11 @@ export default function StudentTranscriptPage() {
                     <tr className="font-semibold text-center">
                       <td className="border border-black p-0.5 text-left pl-1" colSpan={2}>មធ្យមភាគពិន្ទុប្រចាំឆមាស</td>
                       <td className="border border-black p-0.5">៥០</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s1MonthlyAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(s1MonthlyRank)}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s2MonthlyAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(s2MonthlyRank)}</td>
-                      <td className="border border-black p-0.5 font-bold">{toKhmerNumerals(annualMonthlyAvg.toFixed(2))}</td>
+                      <td className="border border-black p-0.5">{displayNumber(s1MonthlyAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5">{displayNumber(s2MonthlyAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5 font-bold">{displayNumber(annualMonthlyAvg)}</td>
                       <td className="border border-black p-0.5 text-gray-750" colSpan={5}>-</td>
                     </tr>
 
@@ -932,15 +927,15 @@ export default function StudentTranscriptPage() {
                     <tr className="font-bold text-center bg-gray-100">
                       <td className="border border-black p-0.5 text-left pl-1" colSpan={2}>មធ្យមភាគពិន្ទុរួមប្រចាំឆ្នាំ</td>
                       <td className="border border-black p-0.5">៥០</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s1OverallAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(s1OverallRank)}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s2OverallAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(s2OverallRank)}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(annualOverallAvg.toFixed(2))}</td>
-                      <td className="border border-black p-0.5 text-gray-700">{toKhmerNumerals(annualOverallRank)}</td>
-                      <td className="border border-black p-0.5">{overallGrade}</td>
-                      <td className="border border-black p-0.5">{overallRemark}</td>
-                      <td className="border border-black p-0.5" style={{ color: overallResult === 'ធ្លាក់' ? '#dc2626' : 'inherit' }}>{overallResult}</td>
+                      <td className="border border-black p-0.5">{displayNumber(s1OverallAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5">{displayNumber(s2OverallAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5">{displayNumber(annualOverallAvg)}</td>
+                      <td className="border border-black p-0.5 text-gray-700">-</td>
+                      <td className="border border-black p-0.5">{overallGrade || '-'}</td>
+                      <td className="border border-black p-0.5">{overallRemark || '-'}</td>
+                      <td className="border border-black p-0.5" style={{ color: overallResult === 'ធ្លាក់' ? '#dc2626' : 'inherit' }}>{overallResult || '-'}</td>
                       <td className="border border-black p-0.5">-</td>
                     </tr>
                   </tbody>
@@ -949,7 +944,7 @@ export default function StudentTranscriptPage() {
 
               {/* Attendance Table */}
               <div className="mb-3">
-                <h3 className="text-xs font-bold text-black border-b border-black pb-0.5 mb-2" style={{ fontFamily: 'Moul, serif' }}>
+                <h3 className="text-xs font-bold text-black border-b border-black pb-0.5 mb-2" style={{ fontFamily: 'var(--font-moul), serif' }}>
                   ខ. ចំនួនអវត្តមាន
                 </h3>
                 <table className="cumulative-attendance-table w-full text-center text-[9px] border-collapse border border-black text-black">
@@ -964,15 +959,15 @@ export default function StudentTranscriptPage() {
                   <tbody>
                     <tr>
                       <td className="border border-black p-0.5 font-medium">ច្បាប់</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s1Excused.toString().padStart(2, '0'))}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s2Excused.toString().padStart(2, '0'))}</td>
-                      <td className="border border-black p-0.5 font-bold">{toKhmerNumerals(annualExcused.toString().padStart(2, '0'))}</td>
+                      <td className="border border-black p-0.5">-</td>
+                      <td className="border border-black p-0.5">-</td>
+                      <td className="border border-black p-0.5 font-bold">{displayAttendance(annualExcused)}</td>
                     </tr>
                     <tr>
                       <td className="border border-black p-0.5 font-medium">អត់ច្បាប់</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s1Unexcused.toString().padStart(2, '0'))}</td>
-                      <td className="border border-black p-0.5">{toKhmerNumerals(s2Unexcused.toString().padStart(2, '0'))}</td>
-                      <td className="border border-black p-0.5 font-bold">{toKhmerNumerals(annualUnexcused.toString().padStart(2, '0'))}</td>
+                      <td className="border border-black p-0.5">-</td>
+                      <td className="border border-black p-0.5">-</td>
+                      <td className="border border-black p-0.5 font-bold">{displayAttendance(annualUnexcused)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -983,16 +978,16 @@ export default function StudentTranscriptPage() {
             <div className="transcript-signatures-container flex justify-between mt-4 text-[10px] text-black">
               <div className="signature-column text-center w-[200px]">
                 <p className="margin-0 font-medium">បានឃើញ និងឯកភាព</p>
-                <p className="signature-title font-bold mt-0.5" style={{ fontFamily: 'Moul, serif' }}>នាយកសាលា</p>
+                <p className="signature-title font-bold mt-0.5" style={{ fontFamily: 'var(--font-moul), serif' }}>នាយកសាលា</p>
                 <div className="h-[35px]" />
-                <p className="signature-name font-bold" style={{ fontFamily: 'Moul, serif' }}>{settings.principalName || 'សុខ វ៉ាន់'}</p>
+                <p className="signature-name font-bold" style={{ fontFamily: 'var(--font-moul), serif' }}>{settings.principalName || '________________'}</p>
               </div>
 
               <div className="signature-column text-center w-[200px]">
                 <p className="margin-0 font-normal italic">{signatureDate}</p>
-                <p className="signature-title font-bold mt-0.5" style={{ fontFamily: 'Moul, serif' }}>គ្រូបន្ទុកថ្នាក់</p>
+                <p className="signature-title font-bold mt-0.5" style={{ fontFamily: 'var(--font-moul), serif' }}>គ្រូបន្ទុកថ្នាក់</p>
                 <div className="h-[35px]" />
-                <p className="signature-name font-bold" style={{ fontFamily: 'Moul, serif' }}>{settings.teacherName || 'កែម មុន្នីកាល'}</p>
+                <p className="signature-name font-bold" style={{ fontFamily: 'var(--font-moul), serif' }}>{settings.teacherName || '________________'}</p>
               </div>
             </div>
           </div>
@@ -1008,19 +1003,19 @@ export default function StudentTranscriptPage() {
       <main className="lg:ml-64 p-4 lg:p-8 print:ml-0 print:p-0">
         {/* Breadcrumb - hide on print */}
         <nav className="flex items-center text-sm text-gray-600 mb-6 print:hidden">
-          <button onClick={() => router.push('/dashboard')} className="hover:text-orange-600 flex items-center">
-            <Home className="w-4 h-4 mr-1" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_a6fc7461" />
+          <button onClick={() => router.push(`/${locale}/dashboard`)} className="hover:text-orange-600 flex items-center">
+            <Home className="w-4 h-4 mr-1" /> {locale === 'km' ? 'ទំព័រដើម' : 'Home'}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <button onClick={() => router.push('/students')} className="hover:text-orange-600">
-            <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_28234634" />
+          <button onClick={() => router.push(`/${locale}/students`)} className="hover:text-orange-600">
+            {locale === 'km' ? 'សិស្ស' : 'Students'}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <button onClick={() => router.push(`/students/${studentId}`)} className="hover:text-orange-600">
+          <button onClick={() => router.push(`/${locale}/students/${studentId}`)} className="hover:text-orange-600">
             {[student.lastName, student.firstName].filter(Boolean).join(' ')}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_80a85436" /></span>
+          <span className="text-gray-900 dark:text-white font-medium">{locale === 'km' ? 'ព្រឹត្តិបត្រពិន្ទុ' : 'Academic transcript'}</span>
         </nav>
 
         {/* Action Buttons - hide on print */}
@@ -1030,32 +1025,113 @@ export default function StudentTranscriptPage() {
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
-            <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_38fb8ecb" />
+            {locale === 'km' ? 'ត្រឡប់ក្រោយ' : 'Back'}
           </button>
           <div className="flex gap-2">
+            {activeTab === 'cumulative' && (
+              <>
+                <button
+                  onClick={handleIssueOfficial}
+                  disabled={!canIssueOfficial || issuingOfficial}
+                  title={!canIssueOfficial && !isSelectedYearOfficial ? (locale === 'km' ? 'ត្រូវការសិទ្ធិ admin និងពិន្ទុដែលបានរក្សាទុក' : 'Admin access and saved grades are required') : undefined}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {issuingOfficial ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="w-5 h-5" />
+                  )}
+                  {isSelectedYearOfficial
+                    ? (locale === 'km' ? 'ផ្លូវការរួចហើយ' : 'Official')
+                    : (locale === 'km' ? 'ចេញឯកសារផ្លូវការ' : 'Issue official')}
+                </button>
+                {isSelectedYearOfficial && ['ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(userRole) && (
+                  <button
+                    onClick={handleRevokeOfficial}
+                    disabled={revokingOfficial}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-200 dark:border-red-900"
+                  >
+                    {revokingOfficial ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <ShieldOff className="w-5 h-5" />
+                    )}
+                    {locale === 'km' ? 'ដកហូត' : 'Revoke'}
+                  </button>
+                )}
+              </>
+            )}
             <button
               onClick={handlePrint}
-              disabled={activeTab === 'monthly' && selectedMonths.length === 0}
+              disabled={!canPrint}
+              title={!canPrint ? (locale === 'km' ? 'មិនទាន់មានទិន្នន័យគ្រប់គ្រាន់សម្រាប់បោះពុម្ព' : 'Complete data is required before printing') : undefined}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Printer className="w-5 h-5" />
-              <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_15da2473" />
+              {locale === 'km' ? 'បោះពុម្ព' : 'Print'}
             </button>
             <button
               onClick={handleExportPDF}
-              disabled={activeTab === 'monthly' && selectedMonths.length === 0}
+              disabled={!canPrint}
+              title={!canPrint ? (locale === 'km' ? 'មិនទាន់មានទិន្នន័យគ្រប់គ្រាន់សម្រាប់រក្សាទុក PDF' : 'Complete data is required before saving a PDF') : undefined}
               className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Download className="w-5 h-5" />
-              <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_d960c286" />
+              {locale === 'km' ? 'រក្សាទុក PDF' : 'Export PDF'}
             </button>
           </div>
         </div>
 
+        {issueError && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200 print:hidden" role="alert">
+            {issueError}
+          </div>
+        )}
+
+        <div className={`mb-6 rounded-xl border px-4 py-3 text-sm print:hidden ${
+          isSelectedYearOfficial
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200'
+            : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200'
+        }`} role="status">
+          <div className="flex items-start gap-3">
+            {isSelectedYearOfficial ? (
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            )}
+            <div>
+              <p className="font-semibold">
+                {isSelectedYearOfficial
+                  ? (locale === 'km' ? 'ឯកសារផ្លូវការបានចេញរួច' : 'Official transcript issued')
+                  : (locale === 'km' ? 'ឯកសារព្រាងសម្រាប់ពិនិត្យ' : 'Review draft')}
+              </p>
+              <p className={`mt-0.5 ${isSelectedYearOfficial ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}`}>
+                {isSelectedYearOfficial
+                  ? (locale === 'km'
+                      ? `លេខឯកសារ៖ ${selectedYearDocument?.documentNumber || '-'} · លេខផ្ទៀងផ្ទាត់៖ ${selectedYearDocument?.verificationCode || '-'}`
+                      : `Document No: ${selectedYearDocument?.documentNumber || '-'} · Verification: ${selectedYearDocument?.verificationCode || '-'}`)
+                  : (locale === 'km'
+                      ? 'ប្រព័ន្ធបង្ហាញតែពិន្ទុ និងវត្តមានដែលបានរក្សាទុកពិតប្រាកដ។ ក្រឡាដែលខ្វះទិន្នន័យត្រូវទុកសញ្ញា “-” ហើយមិនមានការប៉ាន់ស្មានពិន្ទុ ឬចំណាត់ថ្នាក់ទេ។'
+                      : 'Only persisted grades and attendance are shown. Missing values remain blank; scores and ranks are never estimated.')}
+              </p>
+              {isSelectedYearOfficial && selectedYearDocument?.verificationCode && (
+                <button
+                  onClick={() => router.push(`/${locale}/transcripts/verify/${selectedYearDocument.verificationCode}`)}
+                  className="mt-2 text-xs font-semibold underline underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-100"
+                >
+                  {locale === 'km' ? 'បើកទំព័រផ្ទៀងផ្ទាត់' : 'Open verification page'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Tab switcher - hide on print */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 print:hidden">
+        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 print:hidden" role="tablist" aria-label={locale === 'km' ? 'ប្រភេទព្រឹត្តិបត្រពិន្ទុ' : 'Transcript type'}>
           <button
             onClick={() => setActiveTab('cumulative')}
+            role="tab"
+            aria-selected={activeTab === 'cumulative'}
             className={`flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'cumulative'
                 ? 'border-orange-500 text-orange-600 dark:text-orange-400'
@@ -1063,10 +1139,12 @@ export default function StudentTranscriptPage() {
             }`}
           >
             <Award className="w-4 h-4" />
-            {tTranscript('cumulative_transcript') || 'Cumulative Transcript'}
+            {locale === 'km' ? 'ព្រឹត្តិបត្រពិន្ទុសរុប' : 'Cumulative transcript'}
           </button>
           <button
             onClick={() => setActiveTab('monthly')}
+            role="tab"
+            aria-selected={activeTab === 'monthly'}
             className={`flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'monthly'
                 ? 'border-orange-500 text-orange-600 dark:text-orange-400'
@@ -1074,7 +1152,7 @@ export default function StudentTranscriptPage() {
             }`}
           >
             <Printer className="w-4 h-4" />
-            {tTranscript('monthly_transcript') || 'Monthly Transcript'}
+            {locale === 'km' ? 'ព្រឹត្តិបត្រពិន្ទុប្រចាំខែ' : 'Monthly transcript'}
           </button>
         </div>
 
@@ -1088,18 +1166,19 @@ export default function StudentTranscriptPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <Settings className="w-5 h-5 text-gray-500" />
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {tTranscript('print_settings') || 'Print Settings'}
+                    {locale === 'km' ? 'ការកំណត់សម្រាប់បោះពុម្ព' : 'Print settings'}
                   </h3>
                 </div>
                 
                 <div className="space-y-4 text-sm">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      ឆ្នាំសិក្សា / Academic Year
+                      {locale === 'km' ? 'ឆ្នាំសិក្សា' : 'Academic year'}
                     </label>
                     <select
                       value={selectedYearId}
                       onChange={(e) => setSelectedYearId(e.target.value)}
+                      disabled={academicYears.length === 0}
                       className="w-full rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 bg-transparent dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     >
                       {academicYears.map((y) => (
@@ -1112,7 +1191,7 @@ export default function StudentTranscriptPage() {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      {tTranscript('province') || 'Province'}
+                      {locale === 'km' ? 'រាជធានី/ខេត្ត' : 'Province'}
                     </label>
                     <input
                       type="text"
@@ -1124,7 +1203,7 @@ export default function StudentTranscriptPage() {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      {tTranscript('teacher_name') || 'Teacher Name'}
+                      {locale === 'km' ? 'ឈ្មោះគ្រូបន្ទុកថ្នាក់' : 'Teacher name'}
                     </label>
                     <input
                       type="text"
@@ -1136,7 +1215,7 @@ export default function StudentTranscriptPage() {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      {tTranscript('principal_name') || 'Principal Name'}
+                      {locale === 'km' ? 'ឈ្មោះនាយកសាលា' : 'Principal name'}
                     </label>
                     <input
                       type="text"
@@ -1164,17 +1243,33 @@ export default function StudentTranscriptPage() {
 
             {/* Preview Column */}
             <div className="flex-1 bg-white dark:bg-gray-900 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-800 min-h-[500px] flex flex-col items-center justify-start overflow-auto">
-              <div className="w-full overflow-auto p-4 flex flex-col items-center bg-gray-100 dark:bg-gray-950 rounded-lg">
-                <div className="scale-[0.8] origin-top md:scale-100 shadow-lg bg-white rounded-lg w-full max-w-[210mm]">
-                  {renderCumulativeCard(false)}
+              {canPrintCumulative ? (
+                <div className="w-full overflow-auto p-4 flex flex-col items-center bg-gray-100 dark:bg-gray-950 rounded-lg">
+                  <div className="scale-[0.8] origin-top md:scale-100 shadow-lg bg-white rounded-lg w-full max-w-[210mm]">
+                    {renderCumulativeCard(false)}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="my-auto max-w-md py-20 text-center" role="status">
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-orange-100 bg-orange-50 text-orange-500 dark:border-orange-900/50 dark:bg-orange-950/30">
+                    <Award className="h-8 w-8" aria-hidden="true" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {locale === 'km' ? 'មិនទាន់មានពិន្ទុសម្រាប់ឆ្នាំសិក្សានេះ' : 'No grades for this academic year yet'}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                    {locale === 'km'
+                      ? 'ព្រឹត្តិបត្រពិន្ទុមិនអាចបោះពុម្ពបានទេ រហូតដល់មានពិន្ទុដែលបានរក្សាទុក។ អ្នកនៅតែអាចជ្រើសរើសឆ្នាំសិក្សាផ្សេងទៀតបាន។'
+                      : 'Printing stays disabled until persisted grades are available. You can select another academic year.'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* 1. Cumulative Transcript Print Container (Print View only) */}
-        {activeTab === 'cumulative' && (
+        {activeTab === 'cumulative' && canPrintCumulative && (
           <div className="cumulative-print-container bg-white print:block hidden">
             {renderCumulativeCard(true)}
           </div>
@@ -1208,12 +1303,12 @@ export default function StudentTranscriptPage() {
                   {availableMonths.map((m) => {
                     const item = { month: m.month, monthNumber: m.monthNumber, year: m.year, classId: m.classId };
                     const isChecked = selectedMonths.some(
-                      (x) => x.month === m.month && x.monthNumber === m.monthNumber && x.year === m.year
+                      (x) => x.classId === m.classId && x.monthNumber === m.monthNumber && x.year === m.year
                     );
                     
                     return (
                       <label
-                        key={`${m.month}-${m.year}`}
+                        key={`${m.classId}-${m.monthNumber}-${m.year}`}
                         className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg cursor-pointer transition"
                       >
                         <input
@@ -1352,18 +1447,19 @@ export default function StudentTranscriptPage() {
                     const isLoading = loadingMonths[key];
                     const errorMsg = fetchErrors[key];
                     const report = reportDataList.find(
-                      (r) => r.month === m.month && r.monthNumber === m.monthNumber && r.year === m.year
+                      (r) => r.classId === m.classId && r.monthNumber === m.monthNumber && r.year === m.year
                     );
 
                     if (report) {
                       return (
-                        <div key={`${m.month}-${m.year}`} className="scale-[0.8] origin-top md:scale-100 shadow-lg bg-white rounded-lg w-full max-w-[210mm]">
+                        <div key={`${m.classId}-${m.monthNumber}-${m.year}`} className="scale-[0.8] origin-top md:scale-100 shadow-lg bg-white rounded-lg w-full max-w-[210mm]">
                           <TranscriptPrint
                             report={report.data}
                             settings={settings}
                             schoolProfile={schoolProfile}
                             filterStudentId={studentId}
-                            studentPhoto={transcript?.student?.photo}
+                            studentPhoto={studentPhotoUrl}
+                            showDraftNotice
                           />
                         </div>
                       );
@@ -1371,7 +1467,7 @@ export default function StudentTranscriptPage() {
 
                     if (isLoading) {
                       return (
-                        <div key={`${m.month}-${m.year}`} className="w-full max-w-[210mm] aspect-[1/1.414] bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800 p-8 flex flex-col justify-between animate-pulse">
+                        <div key={`${m.classId}-${m.monthNumber}-${m.year}`} className="w-full max-w-[210mm] aspect-[1/1.414] bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800 p-8 flex flex-col justify-between animate-pulse">
                           {/* Skeleton Header */}
                           <div className="flex justify-between items-start w-full">
                             <div className="space-y-2 w-1/3">
@@ -1409,7 +1505,7 @@ export default function StudentTranscriptPage() {
 
                     if (errorMsg) {
                       return (
-                        <div key={`${m.month}-${m.year}`} className="w-full max-w-[210mm] aspect-[1/0.5] bg-white dark:bg-gray-900 rounded-lg shadow-md border border-red-200 dark:border-red-900/50 p-8 flex flex-col items-center justify-center text-center gap-4">
+                        <div key={`${m.classId}-${m.monthNumber}-${m.year}`} className="w-full max-w-[210mm] aspect-[1/0.5] bg-white dark:bg-gray-900 rounded-lg shadow-md border border-red-200 dark:border-red-900/50 p-8 flex flex-col items-center justify-center text-center gap-4">
                           <AlertTriangle className="w-12 h-12 text-red-500 dark:text-red-400" />
                           <div>
                             <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-1">
@@ -1436,14 +1532,14 @@ export default function StudentTranscriptPage() {
         )}
 
         {/* 3. Monthly Report Print Container (Print View only) */}
-        {activeTab === 'monthly' && generatedMonths.length > 0 && (
+        {activeTab === 'monthly' && canPrintMonthly && (
           <div className="khmer-report-preview-container bg-white print:block hidden">
             {generatedMonths
-              .map((m) => reportDataList.find((r) => r.month === m.month && r.monthNumber === m.monthNumber && r.year === m.year))
+              .map((m) => reportDataList.find((r) => r.classId === m.classId && r.monthNumber === m.monthNumber && r.year === m.year))
               .filter((r): r is NonNullable<typeof r> => !!r)
               .map((item, index, arr) => (
                 <div
-                  key={`${item.month}-${item.year}`}
+                  key={`${item.classId}-${item.monthNumber}-${item.year}`}
                   style={{ pageBreakAfter: index < arr.length - 1 ? 'always' : 'auto' }}
                 >
                   <TranscriptPrint
@@ -1451,7 +1547,8 @@ export default function StudentTranscriptPage() {
                     settings={settings}
                     schoolProfile={schoolProfile}
                     filterStudentId={studentId}
-                    studentPhoto={transcript?.student?.photo}
+                    studentPhoto={studentPhotoUrl}
+                    showDraftNotice
                   />
                 </div>
               ))}
@@ -1535,4 +1632,3 @@ export default function StudentTranscriptPage() {
     </div>
   );
 }
-

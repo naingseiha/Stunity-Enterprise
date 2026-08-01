@@ -1,14 +1,16 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { Plus, X, GraduationCap, Users, LayoutDashboard, HelpCircle, Save } from 'lucide-react';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { getAvailableMonthsForGrade, getKhmerMonthDisplayName } from '@/lib/reports/khmerMonthly';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { gradeAPI, GradeGridItem } from '@/lib/api/grades';
 import { TokenManager } from '@/lib/api/auth';
-import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
 import { useSubjects } from '@/hooks/useSubjects';
 import BlurLoader from '@/components/BlurLoader';
@@ -136,8 +138,14 @@ export default function GradeEntryPage() {
 
     try {
       setLoadingGrid(true);
-      const monthStr = `Month ${selectedMonth}`;
-      const data = await gradeAPI.getGradeGrid(selectedClass, selectedSubject, monthStr);
+      const gradeStr = selectedClassObj?.grade || '';
+      const available = getAvailableMonthsForGrade(selectedYear?.terms || [], gradeStr);
+      let monthLabelStr = `Month ${selectedMonth}`;
+      const found = available.find(m => m.number === selectedMonth);
+      if (found) {
+        monthLabelStr = getKhmerMonthDisplayName(found.number, found.label, found.isExamMonth, found.termNumber);
+      }
+      const data = await gradeAPI.getGradeGrid(selectedClass, selectedSubject, monthLabelStr);
       setGridData(data);
       
       // Initialize grade entries
@@ -249,8 +257,15 @@ export default function GradeEntryPage() {
       
       const subject = subjects.find(s => s.id === selectedSubject);
       const maxScore = subject?.maxScore || 100;
-      const monthStr = `Month ${selectedMonth}`;
-      const year = new Date().getFullYear();
+      
+      const gradeStr = selectedClassObj?.grade || '';
+      const available = getAvailableMonthsForGrade(selectedYear?.terms || [], gradeStr);
+      let monthLabelStr = `Month ${selectedMonth}`;
+      const found = available.find(m => m.number === selectedMonth);
+      if (found) {
+        monthLabelStr = getKhmerMonthDisplayName(found.number, found.label, found.isExamMonth, found.termNumber);
+      }
+      const academicStartYear = selectedYear?.startDate ? new Date(selectedYear.startDate).getFullYear() : new Date().getFullYear();
       
       const grades = modifiedEntries
         .filter(e => e.score !== null)
@@ -260,9 +275,9 @@ export default function GradeEntryPage() {
           classId: selectedClass,
           score: e.score!,
           maxScore,
-          month: monthStr,
+          month: monthLabelStr,
           monthNumber: selectedMonth,
-          year,
+          year: academicStartYear,
           remarks: e.remarks || undefined,
         }));
       
@@ -389,8 +404,14 @@ export default function GradeEntryPage() {
     }
 
     try {
-      const monthStr = `Month ${selectedMonth}`;
-      await gradeAPI.calculateAverages(selectedClass, monthStr);
+      const gradeStr = classes.find((c) => c.id === selectedClass)?.grade || '';
+      const available = getAvailableMonthsForGrade(selectedYear?.terms || [], gradeStr);
+      let monthLabelStr = `Month ${selectedMonth}`;
+      const found = available.find(m => m.number === selectedMonth);
+      if (found) {
+        monthLabelStr = getKhmerMonthDisplayName(found.number, found.label, found.isExamMonth, found.termNumber);
+      }
+      await gradeAPI.calculateAverages(selectedClass, monthLabelStr);
       alert('Class averages calculated successfully!');
       await loadGrades();
     } catch (error) {
@@ -505,7 +526,22 @@ export default function GradeEntryPage() {
   const selectedYearLabel = selectedYear?.name || 'Choose academic year';
   const selectedClassName = selectedClassObj?.name || 'Choose class';
   const selectedSubjectName = subject?.name || 'Choose subject';
-  const monthLabel = `Month ${selectedMonth}`;
+  const availableMonths = useMemo(() => {
+    const gradeStr = classes.find((c) => c.id === selectedClass)?.grade || '';
+    return getAvailableMonthsForGrade(selectedYear?.terms || [], gradeStr);
+  }, [selectedYear?.terms, classes, selectedClass]);
+
+  useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.some(m => m.number === selectedMonth)) {
+      setSelectedMonth(availableMonths[0].number);
+    }
+  }, [availableMonths, selectedMonth]);
+
+  let monthLabel = `Month ${selectedMonth}`;
+  const foundM = availableMonths.find(m => m.number === selectedMonth);
+  if (foundM) {
+    monthLabel = getKhmerMonthDisplayName(foundM.number, foundM.label, foundM.isExamMonth, foundM.termNumber);
+  }
   const modifiedCount = Array.from(gradeEntries.values()).filter((entry) => entry.isModified).length;
   const scoredCount = Array.from(gradeEntries.values()).filter(
     (entry) => entry.score !== null && entry.score !== undefined
@@ -906,11 +942,19 @@ export default function GradeEntryPage() {
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   >
-                    {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                      <option key={month} value={month}>
-                        {autoT("auto.web.shared.dynamic.monthPrefix")} {month}
-                      </option>
-                    ))}
+                    {availableMonths.length > 0 ? (
+                      availableMonths.map((month) => (
+                        <option key={month.number} value={month.number}>
+                          {getKhmerMonthDisplayName(month.number, month.label, month.isExamMonth, month.termNumber)}
+                        </option>
+                      ))
+                    ) : (
+                      Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                        <option key={month} value={month}>
+                          {autoT("auto.web.shared.dynamic.monthPrefix")} {month}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 

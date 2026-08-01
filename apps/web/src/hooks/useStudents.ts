@@ -44,6 +44,7 @@ export interface StudentsParams {
   gender?: string;
   search?: string;
   academicYearId?: string;
+  placement?: 'assigned' | 'unassigned';
   disabled?: boolean;
 }
 
@@ -55,6 +56,11 @@ interface StudentsResponse {
     page: number;
     limit: number;
     totalPages: number;
+  };
+  summary?: {
+    total: number;
+    assigned: number;
+    unassigned: number;
   };
 }
 
@@ -97,6 +103,7 @@ function createStudentsCacheKey(params?: StudentsParams): string | null {
     queryParams.append('search', params.search.trim());
   }
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
+  if (params?.placement) queryParams.append('placement', params.placement);
 
   return `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`;
 }
@@ -161,6 +168,11 @@ export function useStudents(params?: StudentsParams) {
   return {
     students,
     pagination,
+    summary: resolvedData?.summary || {
+      total: pagination.total,
+      assigned: students.filter((student) => Boolean(student.class)).length,
+      unassigned: students.filter((student) => !student.class).length,
+    },
     isLoading,
     isValidating, // True when revalidating in background
     error,

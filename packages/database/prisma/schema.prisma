@@ -59,6 +59,8 @@ model School {
   claimCodes            ClaimCode[]
   schoolLinkRequests    SchoolLinkRequest[]
   schoolMemberships     SchoolMembership[]
+  transcriptDocuments   StudentTranscriptDocument[]
+  admissionApplications AdmissionApplication[]
   classes               Class[]
   featureFlags          FeatureFlag[]
   idGenerationLogs      IdGenerationLog[]
@@ -108,6 +110,8 @@ model AcademicYear {
   gradingScales    GradingScale[]
   progressionsFrom StudentProgression[] @relation("FromYear")
   progressionsTo   StudentProgression[] @relation("ToYear")
+  transcriptDocuments StudentTranscriptDocument[]
+  admissionApplications AdmissionApplication[]
   timetableEntries TimetableEntry[]
 
   @@unique([schoolId, name])
@@ -175,6 +179,7 @@ model Class {
   homeroomTeacherId       String?                 @unique
   academicYearId          String
   attendance              Attendance[]
+  admissionApplications   AdmissionApplication[]
   classShiftOverrides     ClassShiftOverride[]
   classShift              ClassShift?
   academicYear            AcademicYear            @relation(fields: [academicYearId], references: [id])
@@ -283,6 +288,109 @@ model StudentMonthlySummary {
   @@map("student_monthly_summaries")
 }
 
+model StudentTranscriptDocument {
+  id               String                   @id @default(cuid())
+  schoolId         String
+  studentId        String
+  academicYearId   String
+  status           TranscriptDocumentStatus @default(OFFICIAL)
+  documentNumber   String
+  verificationCode String                   @unique
+  snapshotChecksum String
+  snapshotData     Json?
+  formulaVersion   String                   @default("KHM_MOEYS_TRANSCRIPT_V1")
+  approvedById     String?
+  approvedAt       DateTime?
+  revokedAt        DateTime?
+  revokedById      String?
+  revocationReason String?
+  issuedAt         DateTime                 @default(now())
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  academicYear     AcademicYear             @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  approvedBy       User?                    @relation("TranscriptApprovedBy", fields: [approvedById], references: [id])
+  school           School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student          Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, documentNumber])
+  @@index([schoolId, studentId, academicYearId, status])
+  @@index([studentId, issuedAt])
+  @@index([verificationCode])
+  @@map("student_transcript_documents")
+}
+
+model AdmissionApplication {
+  id                String                     @id @default(cuid())
+  schoolId          String
+  academicYearId    String
+  applicationNumber String
+  applicantType     AdmissionApplicantType     @default(NEW_STUDENT)
+  status            AdmissionApplicationStatus @default(RECEIVED)
+  source            AdmissionApplicationSource @default(STAFF_ENTRY)
+  studentId         String?
+  targetClassId     String?
+  requestedGrade    String?
+  firstName         String
+  lastName          String
+  englishFirstName  String?
+  englishLastName   String?
+  gender            Gender
+  dateOfBirth       String
+  phoneNumber       String?
+  email             String?
+  placeOfBirth      String?
+  currentAddress    String?
+  fatherName        String?
+  motherName        String?
+  guardianName      String?
+  guardianPhone     String?
+  previousSchool    String?
+  previousGrade     String?
+  documents         Json?
+  customFields      Json?
+  notes             String?
+  submittedAt       DateTime                   @default(now())
+  reviewedAt        DateTime?
+  enrolledAt        DateTime?
+  createdById       String
+  reviewedById      String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  academicYear      AcademicYear               @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  createdBy         User                       @relation("AdmissionApplicationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  reviewedBy        User?                      @relation("AdmissionApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  school            School                     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student           Student?                   @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  targetClass       Class?                     @relation(fields: [targetClassId], references: [id], onDelete: SetNull)
+  events            AdmissionApplicationEvent[]
+
+  @@unique([schoolId, applicationNumber])
+  @@unique([schoolId, academicYearId, studentId])
+  @@index([schoolId, academicYearId, status, createdAt(sort: Desc)], map: "admission_applications_school_year_status_created_idx")
+  @@index([schoolId, applicantType, status], map: "admission_applications_school_type_status_idx")
+  @@index([schoolId, firstName, lastName], map: "admission_applications_school_name_idx")
+  @@index([studentId])
+  @@map("admission_applications")
+}
+
+model AdmissionApplicationEvent {
+  id            String                      @id @default(cuid())
+  applicationId String
+  actorId       String?
+  action        String
+  fromStatus    AdmissionApplicationStatus?
+  toStatus      AdmissionApplicationStatus?
+  notes         String?
+  metadata      Json?
+  createdAt     DateTime                    @default(now())
+  application   AdmissionApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  actor         User?                       @relation("AdmissionApplicationEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt], map: "admission_application_events_application_created_idx")
+  @@index([actorId])
+  @@map("admission_application_events")
+}
+
 model Student {
   id                         String                      @id @default(cuid())
   schoolId                   String
@@ -317,6 +425,8 @@ model Student {
   monthlySummaries           StudentMonthlySummary[]
   studentParents             StudentParent[]
   StudentProgression         StudentProgression[]
+  transcriptDocuments        StudentTranscriptDocument[]
+  admissionApplications      AdmissionApplication[]
   classAssignmentSubmissions ClassAssignmentSubmission[]
   class                      Class?                      @relation(fields: [classId], references: [id])
   school                     School                      @relation(fields: [schoolId], references: [id])
@@ -329,6 +439,11 @@ model Student {
   @@index([classId, studentRole])
   @@index([schoolId, classId])
   @@index([schoolId, isAccountActive])
+  @@index([schoolId, isAccountActive, studentId], map: "students_school_active_student_id_idx")
+  @@index([schoolId, isAccountActive, email], map: "students_school_active_email_idx")
+  @@index([schoolId, isAccountActive, phoneNumber], map: "students_school_active_phone_idx")
+  @@index([schoolId, isAccountActive, englishFirstName, englishLastName], map: "students_school_active_english_name_idx")
+  @@index([schoolId, isAccountActive, createdAt], map: "students_school_active_created_at_idx")
   @@index([schoolId, firstName, lastName])
   @@index([schoolId, createdAt])
   @@index([permanentId])
@@ -744,6 +859,10 @@ model User {
   passkeyCredentials           PasskeyCredential[]
   authSessions                 AuthSession[]
   schoolMemberships            SchoolMembership[]
+  transcriptDocumentsApproved  StudentTranscriptDocument[]   @relation("TranscriptApprovedBy")
+  admissionApplicationsCreated AdmissionApplication[]         @relation("AdmissionApplicationCreatedBy")
+  admissionApplicationsReviewed AdmissionApplication[]        @relation("AdmissionApplicationReviewedBy")
+  admissionApplicationEvents    AdmissionApplicationEvent[]    @relation("AdmissionApplicationEventActor")
   clubAnnouncements            ClubAnnouncement[]           @relation("ClubAnnouncementCreator")
   clubSubmissionGrading        ClubAssignmentSubmission[]   @relation("ClubSubmissionGrader")
   clubAssignments              ClubAssignment[]             @relation("ClubAssignmentCreator")
@@ -4007,6 +4126,12 @@ enum AcademicYearStatus {
   ARCHIVED
 }
 
+enum TranscriptDocumentStatus {
+  DRAFT
+  OFFICIAL
+  REVOKED
+}
+
 enum PromotionType {
   AUTOMATIC
   MANUAL
@@ -4014,6 +4139,29 @@ enum PromotionType {
   NEW_ADMISSION
   TRANSFER_IN
   TRANSFER_OUT
+}
+
+enum AdmissionApplicantType {
+  NEW_STUDENT
+  RETURNING_STUDENT
+  TRANSFER_IN
+}
+
+enum AdmissionApplicationStatus {
+  DRAFT
+  RECEIVED
+  UNDER_REVIEW
+  WAITLISTED
+  APPROVED
+  REJECTED
+  ENROLLED
+  WITHDRAWN
+}
+
+enum AdmissionApplicationSource {
+  STAFF_ENTRY
+  SELF_SERVICE
+  SCHOOL_TRANSFER
 }
 
 enum SubscriptionTier {

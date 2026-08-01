@@ -9,6 +9,7 @@ interface AcademicYearContextType {
   selectedYear: AcademicYear | null;
   allYears: AcademicYear[];
   schoolId: string | null;
+  terms: any[];
   setSelectedYear: (year: AcademicYear) => void;
   loading: boolean;
   refreshYears: () => Promise<void>;
@@ -22,6 +23,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const [selectedYear, setSelectedYearState] = useState<AcademicYear | null>(null);
   const [allYears, setAllYears] = useState<AcademicYear[]>([]);
   const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [terms, setTerms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadYears = async () => {
@@ -104,6 +106,30 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     loadYears();
   }, []);
 
+  useEffect(() => {
+    const fetchTerms = async () => {
+      if (!selectedYear?.id || !schoolId) {
+        setTerms([]);
+        return;
+      }
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}/terms`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setTerms(data.data || []);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load terms:', err);
+      }
+    };
+    fetchTerms();
+  }, [selectedYear?.id, schoolId]);
+
   const setSelectedYear = (year: AcademicYear) => {
     setSelectedYearState(year);
     localStorage.setItem('selectedAcademicYearId', year.id);
@@ -120,6 +146,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         selectedYear,
         allYears,
         schoolId,
+        terms,
         setSelectedYear,
         loading,
         refreshYears,

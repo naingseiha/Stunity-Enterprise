@@ -460,7 +460,44 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
 
   if (format === 'semester-1' || format === 'semester-2') {
     const isSem1 = format === 'semester-1';
-    const examMonthNumber = shared.requestedMonthNumber;
+
+    // Fetch AcademicTerm to dynamically compute preMonths
+    let preMonths: number[] = [...(isSem1 ? L.MOEYS_SEMESTER_ONE_PRE_MONTHS : L.MOEYS_SEMESTER_TWO_PRE_MONTHS)];
+    let examMonthNumber = shared.requestedMonthNumber;
+
+    if (query.academicYearId) {
+      const terms = await prisma.academicTerm.findMany({
+        where: {
+          academicYearId: query.academicYearId,
+          termNumber: isSem1 ? 1 : 2,
+        }
+      });
+
+      const gradeNum = Number(String(shared.reportGrade).replace(/[^0-9]/g, '')) || 0;
+      const term = terms.find(t => t.gradeLevels.length === 0 || t.gradeLevels.includes(gradeNum)) || terms[0];
+
+      if (term) {
+        if (term.examMonth) {
+          examMonthNumber = term.examMonth;
+        }
+
+        const startDate = new Date(term.startDate);
+        const endDate = new Date(term.endDate);
+        const allMonths: number[] = [];
+        const current = new Date(startDate);
+        current.setDate(1);
+        
+        while (current <= endDate) {
+          allMonths.push(current.getMonth() + 1);
+          current.setMonth(current.getMonth() + 1);
+        }
+        
+        const examIdx = term.examMonth ? allMonths.indexOf(term.examMonth) : -1;
+        preMonths = (examIdx !== -1 ? allMonths.slice(0, examIdx) : allMonths)
+          .filter(m => !term.excludedMonths.includes(m));
+      }
+    }
+
     const examLabel = L.resolveKhmerMonthLabel(examMonthNumber, shared.monthParam);
     const examActualYear = L.resolveKhmerMonthlyReportPeriod(
       shared.academicStartYear,
@@ -469,7 +506,6 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
     );
 
     const preSnapshots: { monthNumber: number; label: string; year: number; students: RankedStudent[] }[] = [];
-    const preMonths = isSem1 ? L.MOEYS_SEMESTER_ONE_PRE_MONTHS : L.MOEYS_SEMESTER_TWO_PRE_MONTHS;
 
     for (const m of preMonths) {
       const label = L.resolveKhmerMonthLabel(m, undefined);

@@ -34,18 +34,12 @@ import {
   Loader2,
   UserMinus,
   UserCheck,
-  Medal,
-  Sparkles,
-  BookOpen,
-  Filter,
-  Layers,
   FileSpreadsheet,
-  Landmark,
   CalendarDays,
   Hash,
+  ScrollText,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import StatCard from '@/components/dashboard/StatCard';
@@ -350,6 +344,14 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
 
                   {/* Right: dropdowns + export */}
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => router.push(`/${locale}/students`)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-black text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                      title={locale === 'km' ? 'ជ្រើសសិស្ស ដើម្បីមើល ឬបោះពុម្ពព្រឹត្តិបត្រពិន្ទុ' : 'Choose a student to view or print a transcript'}
+                    >
+                      <ScrollText className="h-3.5 w-3.5" aria-hidden="true" />
+                      {locale === 'km' ? 'ព្រឹត្តិបត្រពិន្ទុសិស្ស' : 'Student transcripts'}
+                    </button>
                     {period === 'month' && (
                       <select
                         value={monthNumber}

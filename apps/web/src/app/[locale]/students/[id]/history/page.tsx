@@ -1,9 +1,9 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState, use } from 'react';
+import { useCallback, useEffect, useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
@@ -14,7 +14,6 @@ import {
   TrendingUp,
   GraduationCap,
   Clock,
-  Award,
   ChevronRight,
   AlertCircle,
   CheckCircle2,
@@ -35,9 +34,11 @@ interface Progression {
 }
 
 interface ClassHistory {
+  id: string;
   academicYear: { id: string; name: string; status: string };
   class: { id: string; name: string; grade: string; section: string | null };
   enrolledAt: string;
+  status: string;
 }
 
 interface StudentHistory {
@@ -65,7 +66,6 @@ interface StudentHistory {
 export default function StudentHistoryPage(props: { params: Promise<{ locale: string; id: string }> }) {
   const params = use(props.params);
   const router = useRouter();
-  const t = useTranslations('common');
   const { id } = useParams();
   const [data, setData] = useState<StudentHistory | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,21 +77,17 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
 
   const handleLogout = async () => {
     await TokenManager.logout();
-    router.push(`/${params.locale}/login`);
+    router.push(`/${params.locale}/auth/login`);
   };
 
-  useEffect(() => {
-    loadStudentHistory();
-  }, [id]);
-
-  const loadStudentHistory = async () => {
+  const loadStudentHistory = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError('');
 
       const token = TokenManager.getAccessToken();
       if (!token) {
-        router.push(`/${params.locale}/login`);
+        router.replace(`/${params.locale}/auth/login`);
         return;
       }
 
@@ -102,45 +98,69 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          signal,
         }
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to load student history');
+        throw new Error(result.error || result.message || 'Failed to load student history');
+      }
+      if (!result.data?.student || !Array.isArray(result.data?.progressions) || !Array.isArray(result.data?.classHistory) || !result.data?.summary) {
+        throw new Error('Student history data is incomplete. Please try again.');
       }
 
       setData(result.data);
     } catch (err: any) {
+      if (err?.name === 'AbortError') return;
       console.error('Error loading student history:', err);
-      setError(err.message);
+      setError(err.message || 'Failed to load student history');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [id, params.locale, router]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadStudentHistory(controller.signal);
+    return () => controller.abort();
+  }, [loadStudentHistory]);
 
   const getPromotionTypeInfo = (type: string) => {
+    const km = params.locale === 'km';
     switch (type) {
       case 'AUTOMATIC':
-        return { label: 'Promoted', color: 'bg-green-100 text-green-700', icon: TrendingUp };
+        return { label: km ? 'ឡើងថ្នាក់' : 'Promoted', color: 'bg-green-100 text-green-700', icon: TrendingUp };
       case 'MANUAL':
-        return { label: 'Manual', color: 'bg-blue-100 text-blue-700', icon: UserPlus };
+        return { label: km ? 'កែដោយដៃ' : 'Manual', color: 'bg-blue-100 text-blue-700', icon: UserPlus };
       case 'REPEAT':
-        return { label: 'Repeated', color: 'bg-orange-100 text-orange-700', icon: RefreshCw };
+        return { label: km ? 'រៀនត្រួតថ្នាក់' : 'Repeated', color: 'bg-orange-100 text-orange-700', icon: RefreshCw };
       case 'NEW_ADMISSION':
-        return { label: 'New Admission', color: 'bg-purple-100 text-purple-700', icon: UserPlus };
+        return { label: km ? 'ចូលរៀនថ្មី' : 'New admission', color: 'bg-purple-100 text-purple-700', icon: UserPlus };
       case 'TRANSFER_IN':
-        return { label: 'Transfer In', color: 'bg-cyan-100 text-cyan-700', icon: ArrowUpRight };
+        return { label: km ? 'ផ្ទេរចូល' : 'Transfer in', color: 'bg-cyan-100 text-cyan-700', icon: ArrowUpRight };
       case 'TRANSFER_OUT':
-        return { label: 'Transfer Out', color: 'bg-red-100 text-red-700', icon: ArrowUpRight };
+        return { label: km ? 'ផ្ទេរចេញ' : 'Transfer out', color: 'bg-red-100 text-red-700', icon: ArrowUpRight };
       default:
         return { label: type, color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200', icon: ChevronRight };
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '-';
+
+    if (params.locale === 'km') {
+      const khmerMonths = [
+        'មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា',
+        'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ',
+      ];
+      const toKhmerDigits = (value: number) => String(value).replace(/\d/g, (digit) => '០១២៣៤៥៦៧៨៩'[Number(digit)]);
+      return `${toKhmerDigits(date.getDate())} ${khmerMonths[date.getMonth()]} ${toKhmerDigits(date.getFullYear())}`;
+    }
+
+    return date.toLocaleDateString(params.locale === 'km' ? 'km-KH' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -172,10 +192,10 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
               <h3 className="text-lg font-semibold text-red-900 mb-2"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_ced81dea" /></h3>
               <p className="text-red-700 mb-4">{error || 'Student not found'}</p>
               <button
-                onClick={() => router.back()}
+                onClick={() => void loadStudentHistory()}
                 className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700"
               >
-                <AutoI18nText i18nKey="auto.web.students_id_history_page.k_7485b91f" />
+                {params.locale === 'km' ? 'ព្យាយាមម្ដងទៀត' : 'Try again'}
               </button>
             </div>
           </div>
@@ -185,6 +205,12 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
   }
 
   const { student, progressions, classHistory, summary } = data;
+  const isKhmer = params.locale === 'km';
+  const studentPhotoSrc = student.photoUrl
+    ? /^https?:\/\//.test(student.photoUrl)
+      ? student.photoUrl
+      : `${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`
+    : null;
 
   return (
     <>
@@ -202,10 +228,14 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div className="flex items-center gap-4">
-                {student.photoUrl ? (
-                  <img
-                    src={student.photoUrl}
+                {studentPhotoSrc ? (
+                  <Image
+                    src={studentPhotoSrc}
                     alt={student.name}
+                    width={64}
+                    height={64}
+                    priority
+                    unoptimized
                     className="w-16 h-16 rounded-full object-cover border-2 border-white/50"
                   />
                 ) : (
@@ -216,7 +246,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <div>
                   <h1 className="text-2xl font-bold">{student.khmerName || student.name}</h1>
                   <p className="text-blue-100">
-                    {student.studentId} <AutoI18nText i18nKey="auto.web.students_id_history_page.k_859d6748" />
+                    {student.studentId} • {isKhmer ? 'ប្រវត្តិសិក្សា' : 'Academic history'}
                   </p>
                 </div>
               </div>
@@ -234,7 +264,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.totalYears}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_4c864056" /></h3>
+              <h3 className="text-sm font-medium text-gray-600">{isKhmer ? 'ឆ្នាំដែលបានសិក្សា' : 'Years enrolled'}</h3>
             </div>
 
             <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -244,7 +274,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.totalProgressions}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_77271b19" /></h3>
+              <h3 className="text-sm font-medium text-gray-600">{isKhmer ? 'ការឡើងថ្នាក់' : 'Progressions'}</h3>
             </div>
 
             <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -254,7 +284,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.currentGrade || '-'}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_291e646f" /></h3>
+              <h3 className="text-sm font-medium text-gray-600">{isKhmer ? 'ថ្នាក់បច្ចុប្បន្ន' : 'Current grade'}</h3>
             </div>
 
             <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -264,7 +294,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-lg font-bold text-gray-900 dark:text-white">{summary.firstEnrolledYear || '-'}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_24e6700c" /></h3>
+              <h3 className="text-sm font-medium text-gray-600">{isKhmer ? 'ចូលរៀនដំបូង' : 'First enrolled'}</h3>
             </div>
           </div>
 
@@ -273,7 +303,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <AutoI18nText i18nKey="auto.web.students_id_history_page.k_3b8433bc" />
+                {isKhmer ? 'ការសិក្សាបច្ចុប្បន្ន' : 'Current enrollment'}
               </h2>
               <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl border border-green-200">
                 <div className="p-3 bg-green-500 rounded-lg">
@@ -282,14 +312,14 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">{student.currentClass.name}</h3>
                   <p className="text-sm text-gray-600">
-                    <AutoI18nText i18nKey="auto.web.students_id_history_page.k_2f631fbb" /> {student.currentClass.grade} • {student.currentYear.name}
+                    {isKhmer ? 'ថ្នាក់ទី' : 'Grade'} {student.currentClass.grade} • {student.currentYear.name}
                   </p>
                 </div>
                 <button
                   onClick={() => router.push(`/${params.locale}/classes/${student.currentClass?.id}/roster`)}
                   className="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                 >
-                  <AutoI18nText i18nKey="auto.web.students_id_history_page.k_763d7cca" />
+                  {isKhmer ? 'មើលបញ្ជីថ្នាក់' : 'View class'}
                 </button>
               </div>
             </div>
@@ -299,7 +329,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-gray-600" />
-              <AutoI18nText i18nKey="auto.web.students_id_history_page.k_c4d6f36b" />
+              {isKhmer ? 'ប្រវត្តិការឡើងថ្នាក់' : 'Progression history'}
             </h2>
 
             {progressions.length > 0 ? (
@@ -308,7 +338,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
                 <div className="space-y-6">
-                  {progressions.map((p, index) => {
+                  {progressions.map((p) => {
                     const typeInfo = getPromotionTypeInfo(p.promotionType);
                     const TypeIcon = typeInfo.icon;
 
@@ -354,8 +384,8 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p><AutoI18nText i18nKey="auto.web.students_id_history_page.k_e177a8e4" /></p>
-                <p className="text-sm"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_7dd56084" /></p>
+                <p>{isKhmer ? 'មិនទាន់មានប្រវត្តិឡើងថ្នាក់' : 'No progression history available'}</p>
+                <p className="text-sm">{isKhmer ? 'ប្រវត្តិនឹងបង្ហាញនៅទីនេះ នៅពេលសិស្សត្រូវបានឡើងថ្នាក់ ឬផ្ទេរថ្នាក់។' : 'Promotions and transfers will appear here.'}</p>
               </div>
             )}
           </div>
@@ -364,7 +394,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-gray-600" />
-              <AutoI18nText i18nKey="auto.web.students_id_history_page.k_72c3591c" />
+              {isKhmer ? 'ប្រវត្តិការចុះឈ្មោះតាមថ្នាក់' : 'Class enrollment history'}
             </h2>
 
             {classHistory.length > 0 ? (
@@ -372,16 +402,16 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_ae1317a9" /></th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_18f6c50f" /></th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_2f631fbb" /></th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_113810b9" /></th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_d8a6cb43" /></th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ឆ្នាំសិក្សា' : 'Academic year'}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ថ្នាក់' : 'Class'}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'កម្រិតថ្នាក់' : 'Grade'}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ថ្ងៃចូលរៀន' : 'Enrolled date'}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ស្ថានភាព' : 'Status'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {classHistory.map((history, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
+                    {classHistory.map((history) => (
+                      <tr key={history.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gray-400" />
@@ -389,15 +419,17 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                           </div>
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{history.class.name}</td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_2f631fbb" /> {history.class.grade}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{isKhmer ? 'ថ្នាក់ទី' : 'Grade'} {history.class.grade}</td>
                         <td className="px-4 py-3 text-gray-500 text-sm">{formatDate(history.enrolledAt)}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            history.academicYear.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                            history.academicYear.status === 'ARCHIVED' ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' :
+                            history.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                            history.status === 'INACTIVE' ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' :
                             'bg-blue-100 text-blue-700'
                           }`}>
-                            {history.academicYear.status}
+                            {history.status === 'ACTIVE'
+                              ? (params.locale === 'km' ? 'កំពុងសិក្សា' : 'Active')
+                              : (params.locale === 'km' ? 'បានបញ្ចប់' : 'Completed')}
                           </span>
                         </td>
                       </tr>

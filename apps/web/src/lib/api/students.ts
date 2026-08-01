@@ -151,6 +151,7 @@ export async function getStudents(params?: {
   gender?: string;
   search?: string;
   academicYearId?: string;
+  placement?: 'assigned' | 'unassigned';
 }): Promise<StudentsResponse> {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
@@ -159,6 +160,7 @@ export async function getStudents(params?: {
   if (params?.gender) queryParams.append('gender', params.gender);
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
+  if (params?.placement) queryParams.append('placement', params.placement);
 
   const cacheKey = `students:${queryParams.toString()}`;
 
@@ -366,6 +368,23 @@ export async function deleteStudent(id: string): Promise<{ success: boolean; mes
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to delete student' }));
     throw new Error(error.message || 'Failed to delete student');
+  }
+
+  const result = await response.json();
+  invalidateCache('students:');
+  return result;
+}
+
+export async function reassignStudents(studentIds: string[], targetClassId: string): Promise<{ success: boolean; data: { assigned: number; class: any }; message: string }> {
+  const response = await fetch(`${STUDENT_SERVICE_URL}/students/reassign`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ studentIds, targetClassId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to reassign students' }));
+    throw new Error(error.message || 'Failed to reassign students');
   }
 
   const result = await response.json();

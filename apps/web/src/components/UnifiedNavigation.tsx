@@ -257,6 +257,7 @@ export default function UnifiedNavigation({
     () =>
       pathname.includes("/dashboard") ||
       pathname.includes("/students") ||
+      pathname.includes("/admissions") ||
       pathname.includes("/parents") ||
       pathname.includes("/teachers") ||
       pathname.includes("/classes") ||
@@ -447,6 +448,13 @@ export default function UnifiedNavigation({
             icon: Users,
             path: `/${locale}/students`,
             prefetch: "students",
+            skeleton: "table" as const,
+          },
+          {
+            name: tNav("items.admissions"),
+            icon: ClipboardCheck,
+            path: `/${locale}/admissions`,
+            prefetch: null,
             skeleton: "table" as const,
           },
           {

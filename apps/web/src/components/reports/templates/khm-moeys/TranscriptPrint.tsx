@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { KhmerMonthlyReportData, KhmerMonthlyReportStudent } from '@/lib/api/grades';
+import type { KhmerMonthlyReportData } from '@/lib/api/grades';
 import { formatReportDate } from '@/lib/reports/templates/khm-moeys/khmer-date';
 import { sortSubjectsByOrder } from '@/lib/reports/templates/khm-moeys/subjects';
 
@@ -11,6 +11,7 @@ interface TranscriptPrintProps {
   schoolProfile?: any;
   filterStudentId?: string;
   studentPhoto?: string | null;
+  showDraftNotice?: boolean;
 }
 
 // Convert numbers to Khmer numerals
@@ -53,7 +54,7 @@ function getSubjectResult(score: number, max: number): string {
   return score >= max * 0.5 ? 'ជាប់' : 'ធ្លាក់';
 }
 
-export default function TranscriptPrint({ report, settings, schoolProfile, filterStudentId, studentPhoto }: TranscriptPrintProps) {
+export default function TranscriptPrint({ report, settings, schoolProfile, filterStudentId, studentPhoto, showDraftNotice = false }: TranscriptPrintProps) {
   const columnSubjects = sortSubjectsByOrder(report.subjects, report.grade);
   const teacherName = settings.teacherName || report.teacherName || '';
   const monthLine = report.period?.month ? `ខែ${report.period.month}` : '';
@@ -73,22 +74,25 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
 
     columnSubjects.forEach((subject) => {
       const subjectKey = subject.nameKh || subject.name;
-      const scores = report.students.map((student) => {
-        const score = student.grades[subjectKey] ?? student.grades[subject.id] ?? 0;
-        return { studentId: student.studentId, score };
+      const rankingKey = subject.id || subjectKey;
+      const scores = report.students.flatMap((student) => {
+        const score = student.grades[subjectKey] ?? student.grades[subject.id] ?? null;
+        return typeof score === 'number' && Number.isFinite(score)
+          ? [{ studentId: student.studentId, score }]
+          : [];
       });
 
       // Sort descending
       scores.sort((a, b) => b.score - a.score);
 
       // Assign ranks with handling for ties
-      rankings[subjectKey] = {};
+      rankings[rankingKey] = {};
       let currentRank = 1;
       for (let i = 0; i < scores.length; i++) {
         if (i > 0 && scores[i].score < scores[i - 1].score) {
           currentRank = i + 1;
         }
-        rankings[subjectKey][scores[i].studentId] = currentRank;
+        rankings[rankingKey][scores[i].studentId] = currentRank;
       }
     });
 
@@ -97,7 +101,6 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
 
   return (
     <div className="khmer-transcript-print">
-      <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet" />
       <style>{`
         @font-face { font-family: "Khmer OS Muol Light"; src: local("Khmer OS Muol Light"), local("KhmerOSMuolLight"); }
         @font-face { font-family: "Tacteing"; src: local("Tacteing"), local("TacteingA"), local("Tacteng"), local("TactengA"); }
@@ -115,6 +118,17 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
           box-sizing: border-box;
           page-break-after: always;
           position: relative;
+        }
+
+        .transcript-draft-notice {
+          border: 1px solid #d97706;
+          background: #fffbeb;
+          color: #92400e;
+          font-size: 8px;
+          font-weight: 700;
+          margin-bottom: 2mm;
+          padding: 1.5mm 2mm;
+          text-align: center;
         }
 
         .transcript-page:last-child {
@@ -339,6 +353,21 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
           color: #475569;
         }
 
+        .transcript-moul-branding,
+        .transcript-kingdom-text,
+        .transcript-main-title,
+        .transcript-sub-title,
+        .transcript-year-title,
+        .student-meta-label,
+        .transcript-section-title,
+        .transcript-results-table th,
+        .transcript-results-table tr.summary-row td,
+        .attendance-table th,
+        .signature-title,
+        .signature-name {
+          font-family: var(--font-moul), "Khmer OS Muol Light", serif;
+        }
+
         @media print {
           @page {
             size: A4 portrait;
@@ -365,7 +394,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
 
       {report.students
         .filter((student) => !filterStudentId || student.studentId === filterStudentId)
-        .map((student, studentIndex) => {
+        .map((student) => {
         // Calculate dynamic properties for student
         const classSize = report.students.length;
         const femaleCount = report.students.filter(
@@ -378,9 +407,9 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
         let passedSubjectsCount = 0;
         columnSubjects.forEach((sub) => {
           const subjectKey = sub.nameKh || sub.name;
-          const score = student.grades[subjectKey] ?? student.grades[sub.id] ?? 0;
+          const score = student.grades[subjectKey] ?? student.grades[sub.id] ?? null;
           const max = sub.maxScore || 100;
-          if (score >= max * 0.5) {
+          if (typeof score === 'number' && Number.isFinite(score) && score >= max * 0.5) {
             passedSubjectsCount++;
           }
         });
@@ -403,6 +432,11 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
 
         return (
           <div className="transcript-page" key={student.studentId}>
+            {showDraftNotice && (
+              <div className="transcript-draft-notice">
+                សេចក្តីព្រាងសម្រាប់ពិនិត្យ · មិនមែនជាឯកសារផ្លូវការ
+              </div>
+            )}
             {/* Header section */}
             <div className="transcript-header-container">
               <div className="transcript-header-left" style={{ paddingTop: logoUrl ? '15px' : '45px' }}>
@@ -411,7 +445,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
                     <img src={logoUrl} alt="Logo" style={{ width: 50, height: 50, objectFit: 'contain' }} />
                   </div>
                 )}
-                <p className="transcript-moul-branding">មន្ទីរអប់រំ យុវជន និងកីឡាខេត្តព្រះសីហនុ</p>
+                <p className="transcript-moul-branding">មន្ទីរអប់រំ យុវជន និងកីឡា{cleanProvince ? `ខេត្ត${cleanProvince}` : ''}</p>
                 <p className="transcript-moul-branding">ការិយាល័យអប់រំ យុវជន និងកីឡា</p>
                 <p className="transcript-moul-branding">{schoolName}</p>
               </div>
@@ -483,6 +517,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
               <tbody>
                 {columnSubjects.map((sub, index) => {
                   const subjectKey = sub.nameKh || sub.name;
+                  const rankingKey = sub.id || subjectKey;
                   const rawScore = student.grades[subjectKey] ?? student.grades[sub.id] ?? null;
                   const max = sub.maxScore || 100;
                   const displayScore = rawScore !== null ? toKhmerNumerals(rawScore.toFixed(1)) : '-';
@@ -492,7 +527,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
                   const result = rawScore !== null ? getSubjectResult(rawScore, max) : '-';
 
                   // Extract pre-calculated rank
-                  const rank = subjectRankings[subjectKey]?.[student.studentId] ?? null;
+                  const rank = subjectRankings[rankingKey]?.[student.studentId] ?? null;
                   const displayRank = rank !== null ? toKhmerNumerals(rank) : '-';
 
                   return (
@@ -586,14 +621,14 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
                 <p style={{ margin: 0, opacity: 0.9 }}>បានឃើញ និងឯកភាព</p>
                 <p className="signature-title">នាយកសាលា</p>
                 <div style={{ height: '35px' }} />
-                <p className="signature-name">{settings.principalName || 'សុខ វ៉ាន់'}</p>
+                <p className="signature-name">{settings.principalName || '________________'}</p>
               </div>
 
               <div className="signature-column">
                 <p style={{ margin: 0, fontStyle: 'italic' }}>{signatureDate}</p>
                 <p className="signature-title">គ្រូធ្វើការងារ</p>
                 <div style={{ height: '35px' }} />
-                <p className="signature-name">{teacherName || 'កែម មុន្នីកាល'}</p>
+                <p className="signature-name">{teacherName || '________________'}</p>
               </div>
             </div>
 

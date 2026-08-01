@@ -17,7 +17,14 @@ export function getKhmerMonthLabel(monthNumber: number) {
   return month?.label || `Month ${monthNumber}`;
 }
 
-export function getKhmerMonthDisplayName(monthNumber: number, label?: string) {
-  if (monthNumber === 2) return 'ឆមាសទី១';
+export function getKhmerMonthDisplayName(monthNumber: number, label?: string, isExamMonth?: boolean, termNumber?: number) {
+  if (isExamMonth && termNumber) return `ឆមាសទី${toKhmerDigits(termNumber)}`;
+  if (monthNumber === 2 && !isExamMonth) return label || getKhmerMonthLabel(monthNumber); // don't hardcode ឆមាសទី១
   return label || getKhmerMonthLabel(monthNumber);
+}
+
+function toKhmerDigits(num: number | string | undefined | null) {
+  if (!num) return "";
+  const khmerDigits = ["០", "១", "២", "៣", "៤", "៥", "៦", "៧", "៨", "៩"];
+  return String(num).replace(/[0-9]/g, (d) => khmerDigits[parseInt(d)]);
 }

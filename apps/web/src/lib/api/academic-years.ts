@@ -13,6 +13,22 @@ export interface AcademicYear {
   isPromotionDone: boolean;
   createdAt: string;
   updatedAt: string;
+  terms?: AcademicTerm[];
+}
+
+export interface AcademicTerm {
+  id: string;
+  academicYearId: string;
+  name: string;
+  nameKh: string | null;
+  termNumber: number;
+  startDate: string;
+  endDate: string;
+  gradeLevels: number[];
+  examMonth: number | null;
+  excludedMonths: number[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateAcademicYearData {

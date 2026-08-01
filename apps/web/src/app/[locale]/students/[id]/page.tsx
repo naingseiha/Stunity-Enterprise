@@ -2,13 +2,13 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
   Award,
   BookOpen,
-  Calendar,
   CheckCircle2,
   Clock3,
   GraduationCap,
@@ -18,12 +18,12 @@ import {
   Phone,
   Printer,
   ShieldCheck,
-  Activity,
   Sparkles,
   TrendingUp,
   User,
   Users,
   FileText,
+  RefreshCw,
   type LucideIcon,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -88,49 +88,26 @@ interface Progression {
 
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
 
-function formatDisplayDate(value?: string | null) {
-  if (!value) return 'Unknown';
+function formatDisplayDate(value?: string | null, locale = 'en') {
+  if (!value) return locale === 'km' ? 'មិនមានទិន្នន័យ' : 'Unknown';
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
+
+  if (locale === 'km') {
+    const khmerMonths = [
+      'មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា',
+      'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ',
+    ];
+    const toKhmerDigits = (part: number) => String(part).replace(/\d/g, (digit) => '០១២៣៤៥៦៧៨៩'[Number(digit)]);
+    return `${toKhmerDigits(date.getDate())} ${khmerMonths[date.getMonth()]} ${toKhmerDigits(date.getFullYear())}`;
+  }
 
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }).format(date);
-}
-
-function formatAgeLabel(value?: string | null) {
-  if (!value) return 'Unknown';
-
-  const birthDate = new Date(value);
-  if (Number.isNaN(birthDate.getTime())) return 'Unknown';
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const hasBirthdayPassed =
-    today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
-
-  if (!hasBirthdayPassed) {
-    age -= 1;
-  }
-
-  return age >= 0 ? `${age} yrs` : 'Unknown';
-}
-
-function formatGenderLabel(value?: string | null) {
-  switch ((value || '').toUpperCase()) {
-    case 'MALE':
-      return 'Male';
-    case 'FEMALE':
-      return 'Female';
-    case 'OTHER':
-      return 'Other';
-    default:
-      return 'Unspecified';
-  }
 }
 
 function normalizeStudent(rawStudent: any): Student | null {
@@ -168,18 +145,12 @@ function normalizeStudent(rawStudent: any): Student | null {
   };
 }
 
-function getStudentInitials(student: Pick<Student, 'firstNameLatin' | 'lastNameLatin'>) {
-  const firstInitial = student.firstNameLatin?.charAt(0) ?? '';
-  const lastInitial = student.lastNameLatin?.charAt(0) ?? '';
-  return `${firstInitial}${lastInitial}`.toUpperCase() || 'ST';
-}
-
 function getSafeTimestamp(value?: string | null) {
   const timestamp = Date.parse(value || '');
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function getPromotionMeta(type: string): {
+function getPromotionMeta(type: string, isKhmer = false): {
   icon: LucideIcon;
   label: string;
   badgeClass: string;
@@ -189,7 +160,7 @@ function getPromotionMeta(type: string): {
     case 'AUTOMATIC':
       return {
         icon: TrendingUp,
-        label: 'Automatic',
+        label: isKhmer ? 'ឡើងថ្នាក់ស្វ័យប្រវត្តិ' : 'Automatic',
         badgeClass:
           'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
         iconClass:
@@ -198,7 +169,7 @@ function getPromotionMeta(type: string): {
     case 'MANUAL':
       return {
         icon: User,
-        label: 'Manual',
+        label: isKhmer ? 'កែតម្រូវដោយដៃ' : 'Manual',
         badgeClass:
           'bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20',
         iconClass: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
@@ -206,7 +177,7 @@ function getPromotionMeta(type: string): {
     case 'REPEAT':
       return {
         icon: Clock3,
-        label: 'Repeat',
+        label: isKhmer ? 'រៀនត្រួតថ្នាក់' : 'Repeat',
         badgeClass:
           'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
         iconClass:
@@ -215,7 +186,7 @@ function getPromotionMeta(type: string): {
     default:
       return {
         icon: CheckCircle2,
-        label: 'Recorded',
+        label: isKhmer ? 'បានកត់ត្រា' : 'Recorded',
         badgeClass:
           'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300 dark:ring-slate-500/20',
         iconClass: 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300',
@@ -408,10 +379,8 @@ function TimelineLoadingState() {
 }
 
 export default function StudentDetailPage(props: { params: Promise<{ locale: string; id: string }> }) {
-    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
-  const t = useTranslations('common');
   const tDynamic = useTranslations('dynamicFields');
   const { locale, id } = params;
   const { user, school } = TokenManager.getUserData();
@@ -424,6 +393,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   const [isTogglingLock, setIsTogglingLock] = useState(false);
   const [error, setError] = useState('');
   const [progressionError, setProgressionError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -512,7 +482,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
     void fetchProgressionHistory();
 
     return () => controller.abort();
-  }, [id, locale, router]);
+  }, [id, locale, reloadKey, router]);
 
   const orderedProgressions = useMemo(
     () => [...progressions].sort((a, b) => getSafeTimestamp(b.promotionDate) - getSafeTimestamp(a.promotionDate)),
@@ -520,6 +490,15 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   );
 
   const latestProgression = orderedProgressions[0] ?? null;
+  const currentEnrollment = useMemo(() => {
+    const enrollments = Array.isArray(student?.studentClasses) ? student.studentClasses : [];
+    return (
+      enrollments.find((enrollment: any) => enrollment.status === 'ACTIVE' && enrollment.class?.academicYear?.status === 'ACTIVE') ||
+      enrollments.find((enrollment: any) => enrollment.status === 'ACTIVE') ||
+      enrollments[0] ||
+      null
+    );
+  }, [student]);
   const academicYearsCovered = useMemo(() => {
     const yearIds = new Set<string>();
 
@@ -528,17 +507,32 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
       if (progression.toAcademicYear?.id) yearIds.add(progression.toAcademicYear.id);
     });
 
+    if (Array.isArray(student?.studentClasses)) {
+      student.studentClasses.forEach((enrollment: any) => {
+        const yearId = enrollment.academicYearId || enrollment.class?.academicYear?.id;
+        if (yearId) yearIds.add(yearId);
+      });
+    }
+
     return yearIds.size;
-  }, [orderedProgressions]);
+  }, [orderedProgressions, student]);
 
   const manualMoveCount = orderedProgressions.filter((progression) => progression.promotionType === 'MANUAL').length;
   const repeatCount = orderedProgressions.filter((progression) => progression.promotionType === 'REPEAT').length;
-  const currentClassName = latestProgression?.toClass?.name || 'No class placement yet';
-  const currentGradeLabel = latestProgression?.toClass?.grade
-    ? `Grade ${latestProgression.toClass.grade}`
-    : 'Awaiting grade record';
-  const currentAcademicYear = latestProgression?.toAcademicYear?.name || 'Awaiting first progression';
-  const latestMoveLabel = latestProgression ? formatDisplayDate(latestProgression.promotionDate) : 'No movement yet';
+  const currentClass = currentEnrollment?.class || student?.class || latestProgression?.toClass || null;
+  const isKhmer = locale === 'km';
+  const currentClassName = currentClass?.name || (isKhmer ? 'មិនទាន់បានចាត់ថ្នាក់' : 'No class placement yet');
+  const currentGradeLabel = currentClass?.grade
+    ? `${isKhmer ? 'ថ្នាក់ទី' : 'Grade'} ${currentClass.grade}`
+    : (isKhmer ? 'កំពុងរង់ចាំទិន្នន័យកម្រិតថ្នាក់' : 'Awaiting grade record');
+  const currentAcademicYear =
+    currentEnrollment?.class?.academicYear?.name ||
+    student?.class?.academicYear?.name ||
+    latestProgression?.toAcademicYear?.name ||
+    (isKhmer ? 'មិនទាន់មានឆ្នាំសិក្សា' : 'Academic year unavailable');
+  const latestMoveLabel = latestProgression
+    ? formatDisplayDate(latestProgression.promotionDate, locale)
+    : (isKhmer ? 'មិនទាន់មានការផ្លាស់ប្តូរ' : 'No movement yet');
   const profileFields = [
     student?.email,
     student?.phoneNumber,
@@ -549,14 +543,22 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   ];
   const filledFieldsCount = profileFields.filter(Boolean).length;
   const profileHealthScore = Math.round((filledFieldsCount / profileFields.length) * 100);
+  const studentPhotoSrc = student?.photoUrl
+    ? /^https?:\/\//.test(student.photoUrl)
+      ? student.photoUrl
+      : `${STUDENT_SERVICE_URL}${student.photoUrl}`
+    : null;
 
   const placementHealthLabel = latestProgression
     ? repeatCount > 0
-      ? `${repeatCount} repeat flag${repeatCount > 1 ? 's' : ''}`
+      ? (isKhmer ? `រៀនត្រួតថ្នាក់ ${repeatCount} ដង` : `${repeatCount} repeat flag${repeatCount > 1 ? 's' : ''}`)
       : manualMoveCount > 0
-        ? `${manualMoveCount} manual update${manualMoveCount > 1 ? 's' : ''}`
-        : 'Progression on track'
-    : 'Awaiting first placement history';
+        ? (isKhmer ? `កែតម្រូវដោយដៃ ${manualMoveCount} ដង` : `${manualMoveCount} manual update${manualMoveCount > 1 ? 's' : ''}`)
+        : (isKhmer ? 'ដំណើរការសិក្សាប្រក្រតី' : 'Progression on track')
+    : currentClass
+      ? (isKhmer ? 'បានបញ្ជាក់ថ្នាក់បច្ចុប្បន្ន' : 'Current placement confirmed')
+      : (isKhmer ? 'កំពុងរង់ចាំការចាត់ថ្នាក់ដំបូង' : 'Awaiting first class placement');
+  const canManageIdentityLock = ['ADMIN', 'SUPER_ADMIN'].includes(user?.role || '');
 
   const handleToggleLock = async () => {
     if (!student) return;
@@ -606,7 +608,15 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 {error || 'Student not found'}
               </p>
             </div>
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setReloadKey((value) => value + 1)}
+                className="inline-flex items-center gap-2 rounded-[0.85rem] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+              >
+                <RefreshCw className="h-4 w-4" />
+                {locale === 'km' ? 'ព្យាយាមម្ដងទៀត' : 'Try again'}
+              </button>
               <button
                 type="button"
                 onClick={() => router.push(`/${locale}/students`)}
@@ -641,7 +651,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800/70 dark:bg-gray-900/80 dark:text-gray-200"
           >
             <ArrowLeft className="h-4 w-4" />
-            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6d5b12d1" />
+            {isKhmer ? 'ត្រឡប់ទៅបញ្ជីសិស្ស' : 'Back to students'}
           </button>
 
           <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
@@ -649,16 +659,20 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e57f0e7e" />
+                  {isKhmer ? 'កំណត់ត្រាសិស្ស' : 'Student record'}
                 </div>
 
                 <div className="mt-8 flex flex-col items-center gap-6">
                   <div className="relative overflow-hidden h-40 w-40 rounded-[2rem] shadow-2xl ring-8 ring-white dark:ring-gray-900">
                     <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-600/20 via-cyan-500/20 to-emerald-400/20 blur-2xl dark:from-blue-500/30 dark:via-cyan-500/30 dark:to-emerald-500/30" />
-                    {student.photoUrl ? (
-                      <img
-                        src={`${STUDENT_SERVICE_URL}${student.photoUrl}`}
-                        alt={student.firstName}
+                    {studentPhotoSrc ? (
+                      <Image
+                        src={studentPhotoSrc}
+                        alt={student.firstName || student.khmerName || 'Student'}
+                        fill
+                        sizes="160px"
+                        priority
+                        unoptimized
                         className="h-full w-full object-cover transition-all duration-700 group-hover:scale-110"
                       />
                     ) : (
@@ -672,7 +686,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
 
                   <div className="flex flex-col items-center gap-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      Student ID: {student.studentId}
+                      {isKhmer ? 'លេខសម្គាល់សិស្ស' : 'Student ID'}: {student.studentId}
                     </p>
                     <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
                       {[student.lastName, student.firstName].filter(Boolean).join(' ') || student.khmerName}
@@ -699,7 +713,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       </div>
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_f9a0f9f5" />
+                          {isKhmer ? 'ថ្នាក់បច្ចុប្បន្ន' : 'Current class'}
                         </p>
                         <h3 className="mt-1 text-lg font-black text-slate-900 dark:text-white">{currentClassName}</h3>
                         <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-gray-400">
@@ -712,7 +726,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         {placementHealthLabel}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200 dark:bg-gray-800/50 dark:text-gray-300 dark:ring-gray-700/50">
-                        Last Update: {latestMoveLabel}
+                        {isKhmer ? 'កែប្រែចុងក្រោយ' : 'Last update'}: {latestMoveLabel}
                       </span>
                     </div>
                   </div>
@@ -731,13 +745,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         />
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_183aafb9" />
+                            {isKhmer ? 'ភាពពេញលេញនៃប្រវត្តិរូប' : 'Profile health'}
                           </p>
                           <p className="mt-1 text-base font-black text-slate-900 dark:text-white">
-                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_77241e69" />
+                            {isKhmer ? 'ការត្រួតពិនិត្យទិន្នន័យ' : 'Status check'}
                           </p>
                           <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-gray-400">
-                            {filledFieldsCount} of 6 fields completed
+                            {isKhmer ? `បានបំពេញ ${filledFieldsCount} ក្នុងចំណោម 6 ទិន្នន័យ` : `${filledFieldsCount} of 6 fields completed`}
                           </p>
                         </div>
                       </div>
@@ -752,25 +766,35 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         </div>
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6338df26" />
+                            {isKhmer ? 'ការពារអត្តសញ្ញាណ' : 'Identity lock'}
                           </p>
                           <p className="mt-1 text-base font-black text-slate-900 dark:text-white">
-                            {student.isProfileLocked ? 'Locked' : 'Unlocked'}
+                            {student.isProfileLocked
+                              ? (isKhmer ? 'បានចាក់សោ' : 'Locked')
+                              : (isKhmer ? 'មិនបានចាក់សោ' : 'Unlocked')}
                           </p>
                           <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-gray-400">
-                            {student.isProfileLocked ? 'Records protected' : 'Security inactive'}
+                            {student.isProfileLocked
+                              ? (isKhmer ? 'ទិន្នន័យត្រូវបានការពារ' : 'Records protected')
+                              : (isKhmer ? 'ការការពារមិនទាន់ដំណើរការ' : 'Security inactive')}
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={handleToggleLock}
-                        disabled={isTogglingLock}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          student.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow transition duration-200 ease-in-out ${student.isProfileLocked ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </button>
+                      {canManageIdentityLock ? (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-label={locale === 'km' ? 'បិទ ឬបើកការកែប្រវត្តិរូបសិស្ស' : 'Lock or unlock student profile editing'}
+                          aria-checked={Boolean(student.isProfileLocked)}
+                          onClick={handleToggleLock}
+                          disabled={isTogglingLock}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 ${
+                            student.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
+                          }`}
+                        >
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow transition duration-200 ease-in-out ${student.isProfileLocked ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -783,11 +807,11 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     <div className="flex items-center gap-8">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_ff5375d1" />
+                          {isKhmer ? 'សេចក្ដីសង្ខេបការសិក្សា' : 'Academic snapshot'}
                         </p>
                         <div className="mt-2 flex items-baseline gap-2">
                           <span className="text-3xl font-black text-slate-900 dark:text-white">{orderedProgressions.length}</span>
-                          <span className="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Records</span>
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">{isKhmer ? 'កំណត់ត្រា' : 'Records'}</span>
                         </div>
                       </div>
                       <div className="h-10 w-px bg-slate-100 dark:bg-gray-800" />
@@ -797,7 +821,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-slate-100 dark:bg-gray-800 dark:text-gray-300"
                       >
                         <History className="h-3.5 w-3.5" />
-                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e1345fc0" />
+                        {isKhmer ? 'ប្រវត្តិពេញលេញ' : 'Full history'}
                       </button>
                     </div>
 
@@ -808,7 +832,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                       >
                         <Printer className="h-4 w-4 text-slate-400" />
-                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6cb2a2f0" />
+                        {isKhmer ? 'បោះពុម្ព' : 'Print'}
                       </button>
                       <button
                         type="button"
@@ -816,7 +840,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2 text-xs font-black uppercase tracking-wider text-white shadow-xl transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-gray-100"
                       >
                         <Award className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e4e7d133" />
+                        {isKhmer ? 'ព្រឹត្តិបត្រពិន្ទុ' : 'Transcript'}
                       </button>
                     </div>
                   </div>
@@ -829,30 +853,38 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
         <AnimatedContent animation="slide-up" delay={40}>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label={autoT("auto.web.locale_students_id_page.k_ad948007")}
+              label={isKhmer ? 'ការឡើងថ្នាក់' : 'Progressions'}
               value={String(orderedProgressions.length)}
-              helper={orderedProgressions.length > 0 ? "Recorded promotions" : "No history recorded"}
+              helper={orderedProgressions.length > 0
+                ? (isKhmer ? 'មានកំណត់ត្រាឡើងថ្នាក់' : 'Recorded promotions')
+                : (isKhmer ? 'មិនទាន់មានប្រវត្តិ' : 'No history recorded')}
               icon={TrendingUp}
               tone="blue"
             />
             <MetricCard
-              label={autoT("auto.web.locale_students_id_page.k_88e0cd96")}
+              label={isKhmer ? 'ឆ្នាំសិក្សា' : 'Academic years'}
               value={String(academicYearsCovered)}
-              helper={academicYearsCovered > 0 ? "Years with history" : "Initial enrollment"}
+              helper={academicYearsCovered > 0
+                ? (isKhmer ? 'ឆ្នាំដែលមានប្រវត្តិសិក្សា' : 'Years with history')
+                : (isKhmer ? 'ការចុះឈ្មោះដំបូង' : 'Initial enrollment')}
               icon={BookOpen}
               tone="emerald"
             />
             <MetricCard
-              label={autoT("auto.web.locale_students_id_page.k_13e88078")}
+              label={isKhmer ? 'ការកែតម្រូវដោយដៃ' : 'Manual moves'}
               value={String(manualMoveCount)}
-              helper={manualMoveCount > 0 ? "Admin interventions" : "Standard path"}
+              helper={manualMoveCount > 0
+                ? (isKhmer ? 'ការកែតម្រូវរបស់អ្នកគ្រប់គ្រង' : 'Admin interventions')
+                : (isKhmer ? 'ដំណើរការធម្មតា' : 'Standard path')}
               icon={User}
               tone="amber"
             />
             <MetricCard
-              label={autoT("auto.web.locale_students_id_page.k_116baa9d")}
+              label={isKhmer ? 'គុណភាពទិន្នន័យ' : 'Profile quality'}
               value={`${profileHealthScore}%`}
-              helper={profileHealthScore === 100 ? "Complete record" : `${filledFieldsCount}/6 fields filled`}
+              helper={profileHealthScore === 100
+                ? (isKhmer ? 'ទិន្នន័យពេញលេញ' : 'Complete record')
+                : (isKhmer ? `បានបំពេញ ${filledFieldsCount}/6 ទិន្នន័យ` : `${filledFieldsCount}/6 fields filled`)}
               icon={ShieldCheck}
               tone={profileHealthScore > 80 ? "emerald" : profileHealthScore > 50 ? "blue" : "amber"}
             />
@@ -872,10 +904,12 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/50 px-8 py-6 dark:border-gray-800/50">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                        Section {sectionIdx + 1}
+                        {isKhmer ? `ផ្នែកទី ${sectionIdx + 1}` : `Section ${sectionIdx + 1}`}
                       </p>
                       <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                        {section.label}
+                        {isKhmer
+                          ? ({ personal: 'ព័ត៌មានផ្ទាល់ខ្លួន', family: 'មាតាបិតា និងគ្រួសារ', academic: 'ប្រវត្តិសិក្សា', exams: 'កំណត់ត្រាប្រឡង' }[section.id] || section.label)
+                          : section.label}
                       </h2>
                     </div>
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-gray-800 dark:text-gray-500">
@@ -888,7 +922,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       let displayValue = rawValue || 'N/A';
                       
                       if (field.type === 'date' && rawValue) {
-                        displayValue = formatDisplayDate(rawValue);
+                        displayValue = formatDisplayDate(rawValue, locale);
                       } else if (field.type === 'select' && field.options) {
                         displayValue = field.options.find(o => o.value === rawValue)?.label || rawValue || 'N/A';
                       }
@@ -917,10 +951,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/70 px-8 py-6 dark:border-gray-800/70">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_1952f8f1" />
+                    {isKhmer ? 'បរិបទបញ្ជីសិស្ស' : 'Directory context'}
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_10b1bacd" />
+                    {isKhmer ? 'ទំនាក់ទំនង និងការចាត់ថ្នាក់' : 'Contact and placement'}
                   </h2>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-gray-800 dark:text-gray-500">
@@ -930,7 +964,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <div className="grid gap-4 p-8 md:grid-cols-2">
                 <div className="rounded-[1.25rem] border border-blue-100/80 bg-gradient-to-br from-blue-50/30 via-white to-cyan-50/30 p-6 shadow-sm dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/50 md:col-span-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_41ca76c5" />
+                    {isKhmer ? 'ថ្នាក់បច្ចុប្បន្ន' : 'Current placement'}
                   </p>
                   <p className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-white">
                     {currentClassName}
@@ -946,7 +980,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_958eb1b5" />
                   </div>
                   <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white break-all">
-                    {student.email || 'Not available'}
+                    {student.email || (isKhmer ? 'មិនមានទិន្នន័យ' : 'Not available')}
                   </p>
                 </div>
 
@@ -956,17 +990,17 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_b4c01ab3" />
                   </div>
                   <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-                    {student.phoneNumber || 'Not available'}
+                    {student.phoneNumber || (isKhmer ? 'មិនមានទិន្នន័យ' : 'Not available')}
                   </p>
                 </div>
 
                 <div className="rounded-[1.25rem] border border-slate-100 dark:border-gray-800/70 bg-slate-50/50 dark:bg-gray-800/50 p-6 md:col-span-2">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                     <MapPin className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_af9d477a" />
+                    {isKhmer ? 'អាសយដ្ឋាន' : 'Address'}
                   </div>
                   <p className="mt-3 text-sm font-semibold leading-6 text-slate-900 dark:text-white">
-                    {student.currentAddress || 'Not available'}
+                    {student.currentAddress || (isKhmer ? 'មិនមានទិន្នន័យ' : 'Not available')}
                   </p>
                 </div>
               </div>
@@ -980,22 +1014,22 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_131fa679" />
+                    {isKhmer ? 'បន្ទាត់ពេលវេលាសិក្សា' : 'Academic timeline'}
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_bf8cee74" />
+                    {isKhmer ? 'ប្រវត្តិការឡើងថ្នាក់' : 'Progression history'}
                   </h2>
                   <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_246b3552" />
+                    {isKhmer ? 'ពិនិត្យការផ្លាស់ប្តូរឆ្នាំសិក្សា ថ្នាក់ និងប្រភេទការឡើងថ្នាក់។' : 'Review academic movement by year, class, and promotion type.'}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                    {orderedProgressions.length} <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_8f37d936" />
+                    {orderedProgressions.length} {isKhmer ? 'កំណត់ត្រា' : 'records'}
                   </span>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                    {academicYearsCovered} <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_33d7d686" />
+                    {academicYearsCovered} {isKhmer ? 'ឆ្នាំសិក្សា' : 'academic years'}
                   </span>
                 </div>
               </div>
@@ -1015,15 +1049,15 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-slate-500 shadow-sm ring-1 ring-slate-200/70 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800/70">
                     <GraduationCap className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e96562d9" /></h3>
+                  <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{isKhmer ? 'មិនទាន់មានប្រវត្តិឡើងថ្នាក់' : 'No progression history yet'}</h3>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6433d64c" />
+                    {isKhmer ? 'សិស្សនេះមិនទាន់បានឡើងទៅឆ្នាំសិក្សាបន្ទាប់ទេ។' : 'This student has not been promoted into another academic year yet.'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {orderedProgressions.map((progression) => {
-                    const promotionMeta = getPromotionMeta(progression.promotionType);
+                    const promotionMeta = getPromotionMeta(progression.promotionType, isKhmer);
                     const PromotionIcon = promotionMeta.icon;
 
                     return (
@@ -1050,7 +1084,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                                 </span>
                               </div>
                               <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                                <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_82454662" /> {formatDisplayDate(progression.promotionDate)}
+                                {isKhmer ? 'កាលបរិច្ឆេទ' : 'Date'}: {formatDisplayDate(progression.promotionDate, locale)}
                               </p>
                             </div>
                           </div>

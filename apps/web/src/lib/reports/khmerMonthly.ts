@@ -5,3 +5,4 @@
 export { KHMER_MONTHS, getKhmerMonthLabel, getKhmerMonthDisplayName } from './templates/khm-moeys/months';
 export { getSubjectAbbreviation, sortSubjectsByOrder } from './templates/khm-moeys/subjects';
 export { paginateKhmerMonthlyReport, paginateReports, calculateStudentsPerPage } from './templates/khm-moeys/pagination';
+export { getAvailableMonthsForGrade, getMonthsBetweenDates } from './templates/khm-moeys/dynamic-months';

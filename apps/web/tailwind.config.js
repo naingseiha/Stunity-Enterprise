@@ -32,6 +32,12 @@ module.exports = {
           },
         },
       },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        'glass-sm': '0 4px 16px 0 rgba(31, 38, 135, 0.05)',
+        'glass-lg': '0 12px 48px 0 rgba(31, 38, 135, 0.1)',
+        'glow': '0 0 20px rgba(99, 102, 241, 0.3)',
+      },
       keyframes: {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },

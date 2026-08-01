@@ -33,6 +33,7 @@ import {
   MoreVertical,
   Download,
   FileSpreadsheet,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   PieChart,
@@ -47,7 +48,7 @@ import {
 } from 'recharts';
 import * as XLSX from 'xlsx';
 import { TokenManager } from '@/lib/api/auth';
-import { deleteStudent, type Student } from '@/lib/api/students';
+import { deleteStudent, reassignStudents, type Student } from '@/lib/api/students';
 import { useStudents } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
 import StudentModal from '@/components/students/StudentModal';
@@ -72,22 +73,31 @@ type MetricTone = 'blue' | 'emerald' | 'amber' | 'violet';
 
 const ITEMS_PER_PAGE = 20;
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
-const CLASS_SERVICE_URL = process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005';
+const MAX_EXPORT_ROWS = 10000;
 
-function formatDisplayDate(value?: string | null) {
-  if (!value) return 'Unknown';
+function isKhmerLocale(locale: string) {
+  return locale.toLowerCase().startsWith('km');
+}
+
+function localLabel(locale: string, en: string, km: string) {
+  return isKhmerLocale(locale) ? km : en;
+}
+
+function formatDisplayDate(value?: string | null, locale = 'en') {
+  const unknownLabel = localLabel(locale, 'Unknown', 'មិនមានទិន្នន័យ');
+  if (!value) return unknownLabel;
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Unknown';
+  if (Number.isNaN(date.getTime())) return unknownLabel;
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(isKhmerLocale(locale) ? 'km-KH' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }).format(date);
 }
 
-function formatAgeLabel(value?: string | null) {
+function formatAgeLabel(value?: string | null, locale = 'en') {
   if (!value) return null;
 
   const birthDate = new Date(value);
@@ -103,7 +113,19 @@ function formatAgeLabel(value?: string | null) {
     age -= 1;
   }
 
-  return age >= 0 ? `${age} yrs` : null;
+  if (age < 0) return null;
+
+  return isKhmerLocale(locale)
+    ? `${new Intl.NumberFormat('km-KH').format(age)} ឆ្នាំ`
+    : `${age} yrs`;
+}
+
+function resolvePhotoUrl(photoUrl?: string | null) {
+  if (!photoUrl) return null;
+  if (/^https?:\/\//i.test(photoUrl) || photoUrl.startsWith('data:') || photoUrl.startsWith('blob:')) {
+    return photoUrl;
+  }
+  return `${STUDENT_SERVICE_URL}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}`;
 }
 
 function getStudentInitials(student: Pick<Student, 'firstName' | 'lastName'>) {
@@ -129,9 +151,11 @@ function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md'
   };
 
   if (student.photoUrl) {
+    const photoSrc = resolvePhotoUrl(student.photoUrl);
+
     return (
       <img
-        src={`${STUDENT_SERVICE_URL}${student.photoUrl}`}
+        src={photoSrc || undefined}
         alt={`${student.lastName} ${student.firstName}`}
         className={`${sizeClasses[size]} rounded-2xl object-cover ring-1 ring-slate-200/70 shadow-sm dark:ring-gray-700/70`}
       />
@@ -336,7 +360,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const { selectedYear } = useAcademicYear();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 300);
+  const debouncedSearch = useDebounce(searchTerm, 220);
   const [showModal, setShowModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -352,9 +376,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const [showBulkReassignModal, setShowBulkReassignModal] = useState(false);
   const [isCompactView, setIsCompactView] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isBulkArchiving, setIsBulkArchiving] = useState(false);
 
   const { user, school } = TokenManager.getUserData();
   const serverClassFilter = classFilter !== 'all' && classFilter !== 'unassigned' ? classFilter : undefined;
+  const placementFilter = classFilter === 'unassigned' ? 'unassigned' : undefined;
+  const normalizedSearchTerm = debouncedSearch.trim().replace(/\s+/g, ' ');
+  const effectiveSearch = normalizedSearchTerm.length >= 2 ? normalizedSearchTerm : '';
+  const isSearchWaitingForMoreInput = searchTerm.trim().length > 0 && searchTerm.trim().length < 2;
 
   const {
     students,
@@ -363,11 +393,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     isValidating,
     mutate,
     isEmpty,
+    summary,
   } = useStudents({
     page,
     limit: ITEMS_PER_PAGE,
-    search: debouncedSearch,
+    search: effectiveSearch,
     classId: serverClassFilter,
+    placement: placementFilter,
     academicYearId: selectedYear?.id,
   });
 
@@ -397,11 +429,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, selectedYear?.id, classFilter]);
+  }, [effectiveSearch, selectedYear?.id, classFilter]);
 
   useEffect(() => {
     setSelectedStudents(new Set());
-  }, [page, debouncedSearch, selectedYear?.id, classFilter]);
+  }, [page, effectiveSearch, selectedYear?.id, classFilter]);
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -462,28 +494,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     setReassignMessage(null);
 
     try {
-      const token = TokenManager.getAccessToken();
-
-      if (studentToReassign.class?.id) {
-        await fetch(`${CLASS_SERVICE_URL}/classes/${studentToReassign.class.id}/students/${studentToReassign.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      const response = await fetch(`${CLASS_SERVICE_URL}/classes/${targetClassId}/students`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentId: studentToReassign.id,
-          academicYearId: selectedYear?.id,
-        }),
-      });
-
-      const data = await response.json();
+      const data = await reassignStudents([studentToReassign.id], targetClassId);
 
       if (data.success) {
         const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
@@ -523,32 +534,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     setReassignMessage(null);
 
     try {
-      const token = TokenManager.getAccessToken();
       const studentIds = Array.from(selectedStudents);
-
-      for (const studentId of studentIds) {
-        const student = students.find((currentStudent) => currentStudent.id === studentId);
-        if (student?.class?.id) {
-          await fetch(`${CLASS_SERVICE_URL}/classes/${student.class.id}/students/${studentId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        }
-      }
-
-      const response = await fetch(`${CLASS_SERVICE_URL}/classes/${targetClassId}/students/batch`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentIds,
-          academicYearId: selectedYear?.id,
-        }),
-      });
-
-      const data = await response.json();
+      const data = await reassignStudents(studentIds, targetClassId);
 
       if (data.success) {
         const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
@@ -577,22 +564,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     }
   };
 
-  const filteredStudents = useMemo(() => {
-    if (classFilter === 'unassigned') {
-      return students.filter((student) => !student.class);
-    }
-
-    return students;
-  }, [classFilter, students]);
+  const filteredStudents = useMemo(() => students, [students]);
 
   const totalPages = pagination.totalPages || 1;
   const totalCount = pagination.total || 0;
-  const visibleAssignedCount = useMemo(
-    () => filteredStudents.filter((student) => Boolean(student.class)).length,
-    [filteredStudents]
-  );
-  const visibleUnassignedCount = filteredStudents.length - visibleAssignedCount;
-  const assignmentRate = filteredStudents.length > 0 ? Math.round((visibleAssignedCount / filteredStudents.length) * 100) : 0;
+  const visibleAssignedCount = summary.assigned;
+  const visibleUnassignedCount = summary.unassigned;
+  const assignmentRate = summary.total > 0 ? Math.round((visibleAssignedCount / summary.total) * 100) : 0;
   const classesWithStudents = useMemo(
     () => availableClasses.filter((classItem) => (classItem.studentCount ?? 0) > 0).length,
     [availableClasses]
@@ -616,7 +594,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   );
   const allVisibleSelected = filteredStudents.length > 0 && filteredStudents.every((student) => selectedStudents.has(student.id));
   const someVisibleSelected = filteredStudents.some((student) => selectedStudents.has(student.id));
-  const hasActiveFilter = debouncedSearch.trim().length > 0 || classFilter !== 'all';
+  const hasActiveFilter = effectiveSearch.length > 0 || classFilter !== 'all';
   const hasVisibleMatches = filteredStudents.length > 0;
   const showNoRoster = !isLoading && isEmpty && !hasActiveFilter;
   const showNoMatches = !isLoading && !showNoRoster && !hasVisibleMatches;
@@ -635,7 +613,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   }, [classFilter, classScopeLabel]);
 
   const rosterHealth = useMemo(() => {
-    if (filteredStudents.length === 0) {
+    if (summary.total === 0) {
       return {
         label: t('awaitingFocus'),
         helper: t('awaitingFocusHelper'),
@@ -668,7 +646,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       icon: AlertCircle,
       iconClass: 'text-amber-500 dark:text-amber-300',
     };
-  }, [assignmentRate, filteredStudents.length, visibleUnassignedCount]);
+  }, [assignmentRate, summary.total, visibleUnassignedCount]);
 
   const placementData = useMemo(() => [
     { name: t('placed'), value: visibleAssignedCount, color: '#10B981' },
@@ -687,33 +665,101 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       color: name === 'MALE' ? '#3B82F6' : name === 'FEMALE' ? '#D946EF' : '#64748B'
     }));
   }, [filteredStudents]);
-  const handleExport = useCallback(() => {
-    const exportData = students.map(student => ({
-      'Student ID': student.studentId,
-      'First Name': student.firstName,
-      'Last Name': student.lastName,
-      'English Name': `${student.englishLastName || ''} ${student.englishFirstName || ''}`.trim() || '-',
-      'Native Name': `${student.lastName || ''} ${student.firstName || ''}`.trim() || '-',
-      'Gender': student.gender,
-      'Date of Birth': student.dateOfBirth,
-      'Class': student.class?.name || 'Unassigned',
-      'Grade': student.class?.grade || '-',
-      'Email': student.email || '-',
-      'Phone': student.phoneNumber || '-',
-    }));
+  const handleExport = useCallback(async () => {
+    if (isExporting) return;
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Students');
-    XLSX.writeFile(wb, `Students_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
-  }, [students]);
+    setIsExporting(true);
+
+    try {
+      const token = TokenManager.getAccessToken();
+      const exportLimit = Math.min(
+        Math.max(summary.total || totalCount || ITEMS_PER_PAGE, ITEMS_PER_PAGE),
+        MAX_EXPORT_ROWS
+      );
+      const queryParams = new URLSearchParams({
+        page: '1',
+        limit: String(exportLimit),
+      });
+
+      if (effectiveSearch) queryParams.append('search', effectiveSearch);
+      if (serverClassFilter) queryParams.append('classId', serverClassFilter);
+      if (placementFilter) queryParams.append('placement', placementFilter);
+      if (selectedYear?.id) queryParams.append('academicYearId', selectedYear.id);
+
+      const response = await fetch(`${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || error.error || 'Failed to export students');
+      }
+
+      const payload = await response.json();
+      const exportStudents: Student[] = Array.isArray(payload.data) ? payload.data : [];
+      const unassignedLabel = localLabel(locale, 'Unassigned', 'មិនទាន់ចាត់ថ្នាក់');
+
+      const exportData = exportStudents.map((student, index) => ({
+        [localLabel(locale, 'No.', 'ល.រ')]: index + 1,
+        [localLabel(locale, 'Student ID', 'លេខសម្គាល់សិស្ស')]: student.studentId,
+        [localLabel(locale, 'First Name', 'នាមខ្លួន')]: student.firstName,
+        [localLabel(locale, 'Last Name', 'នាមត្រកូល')]: student.lastName,
+        [localLabel(locale, 'English Name', 'ឈ្មោះអង់គ្លេស')]: `${student.englishLastName || ''} ${student.englishFirstName || ''}`.trim() || '-',
+        [localLabel(locale, 'Native Name', 'ឈ្មោះដើម')]: `${student.lastName || ''} ${student.firstName || ''}`.trim() || '-',
+        [localLabel(locale, 'Gender', 'ភេទ')]: student.gender,
+        [localLabel(locale, 'Date of Birth', 'ថ្ងៃខែឆ្នាំកំណើត')]: formatDisplayDate(student.dateOfBirth, locale),
+        [localLabel(locale, 'Class', 'ថ្នាក់')]: student.class?.name || unassignedLabel,
+        [localLabel(locale, 'Grade', 'កម្រិតថ្នាក់')]: student.class?.grade || '-',
+        [localLabel(locale, 'Email', 'អ៊ីមែល')]: student.email || '-',
+        [localLabel(locale, 'Phone', 'លេខទូរស័ព្ទ')]: student.phoneNumber || '-',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Students');
+      XLSX.writeFile(wb, `Students_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      if ((summary.total || totalCount) > MAX_EXPORT_ROWS) {
+        alert(localLabel(locale, `Exported the first ${MAX_EXPORT_ROWS.toLocaleString()} matching students. Narrow your filters to export a smaller complete set.`, `បាននាំចេញសិស្ស ${MAX_EXPORT_ROWS.toLocaleString()} នាក់ដំបូង។ សូមបង្រួម filter ដើម្បីនាំចេញទិន្នន័យពេញលេញ។`));
+      }
+    } catch (error: any) {
+      alert(error.message || localLabel(locale, 'Failed to export students', 'នាំចេញសិស្សមិនបានជោគជ័យ'));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [effectiveSearch, isExporting, locale, placementFilter, selectedYear?.id, serverClassFilter, summary.total, totalCount]);
+
+  const handleBulkArchive = useCallback(async () => {
+    if (selectedStudents.size === 0 || isBulkArchiving) return;
+    if (!confirm(t('confirmDeleteBulk', { count: selectedStudents.size }))) return;
+
+    setIsBulkArchiving(true);
+
+    try {
+      const results = await Promise.allSettled(
+        Array.from(selectedStudents).map((id) => deleteStudent(id))
+      );
+      const failedCount = results.filter((result) => result.status === 'rejected').length;
+
+      setSelectedStudents(new Set());
+      await mutate();
+
+      if (failedCount > 0) {
+        alert(localLabel(locale, `${failedCount} selected students could not be archived. Please retry them.`, `សិស្សដែលបានជ្រើស ${failedCount} នាក់ មិនអាចរក្សាទុកជាបណ្ណសារបាន។ សូមសាកល្បងម្ដងទៀត។`));
+      }
+    } catch (error: any) {
+      alert(error.message || localLabel(locale, 'Failed to archive selected students', 'រក្សាទុកសិស្សដែលបានជ្រើសជាបណ្ណសារមិនបានជោគជ័យ'));
+    } finally {
+      setIsBulkArchiving(false);
+    }
+  }, [isBulkArchiving, locale, mutate, selectedStudents, t]);
 
   const summaryCards = useMemo(
     () => [
       {
         icon: Users,
         label: t('schoolRoster'),
-        value: totalCount,
+        value: summary.total,
         helper: school?.name || t('totalRecordsLabel'),
         tone: 'blue' as MetricTone,
       },
@@ -728,7 +774,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         icon: GraduationCap,
         label: t('placedInClass'),
         value: visibleAssignedCount,
-        helper: filteredStudents.length > 0 ? t('placedPercentage', { rate: assignmentRate }) : t('noRecords'),
+        helper: summary.total > 0 ? t('placedPercentage', { rate: assignmentRate }) : t('noRecords'),
         tone: 'emerald' as MetricTone,
       },
       {
@@ -739,7 +785,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         tone: 'amber' as MetricTone,
       },
     ],
-    [assignmentRate, availableClasses.length, classesWithStudents, filteredStudents.length, hasActiveFilter, school?.name, totalCount, visibleAssignedCount, selectedYear]
+    [assignmentRate, availableClasses.length, classesWithStudents, filteredStudents.length, hasActiveFilter, school?.name, summary.total, visibleAssignedCount, selectedYear]
   );
 
   const toggleStudentSelection = useCallback((studentId: string) => {
@@ -815,10 +861,10 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
                       <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                         <Home className="h-3.5 w-3.5" />
-                        Home
+                        {localLabel(locale, 'Home', 'ទំព័រដើម')}
                       </span>
                       <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-                      <span className="text-slate-900 dark:text-gray-100">Students</span>
+                      <span className="text-slate-900 dark:text-gray-100">{localLabel(locale, 'Students', 'សិស្ស')}</span>
                     </div>
                   }
                   backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -875,10 +921,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <button
                         type="button"
                         onClick={handleExport}
+                        disabled={isExporting}
                         className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                       >
-                        <Download className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        {isExporting ? localLabel(locale, 'Exporting…', 'កំពុងនាំចេញ…') : <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/${locale}/admissions`)}
+                        className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300"
+                      >
+                        <ClipboardCheck className="h-4 w-4" />
+                        {localLabel(locale, 'Admissions', 'ទទួលពាក្យចូលរៀន')}
                       </button>
 
                       <button
@@ -887,7 +943,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all hover:bg-indigo-100 hover:-translate-y-0.5 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
                       >
                         <FileSpreadsheet className="h-4 w-4" />
-                        Bulk Import
+                        {localLabel(locale, 'Bulk Import', 'នាំចូលច្រើន')}
                       </button>
 
                       <button
@@ -896,7 +952,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1a08c62e" />
+                        {localLabel(locale, 'Add Student', 'បន្ថែមសិស្ស')}
                       </button>
                     </>
                   }
@@ -923,7 +979,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-cyan-200/75 dark:bg-gray-900/10">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 transition-all duration-700"
-                      style={{ width: `${Math.max(filteredStudents.length ? assignmentRate : 0, filteredStudents.length > 0 ? 8 : 0)}%` }}
+                      style={{ width: `${Math.max(summary.total ? assignmentRate : 0, summary.total > 0 ? 8 : 0)}%` }}
                     />
                   </div>
 
@@ -1074,10 +1130,10 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {selectedYear?.name || 'Academic year not set'}
+                      {selectedYear?.name || localLabel(locale, 'Academic year not set', 'មិនទាន់កំណត់ឆ្នាំសិក្សា')}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {debouncedSearch ? t('search', { term: debouncedSearch }) : t('noKeywordFilter')}
+                      {effectiveSearch ? t('search', { term: effectiveSearch }) : t('noKeywordFilter')}
                     </span>
                     {hasActiveFilter && hasVisibleMatches && (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-2 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
@@ -1088,18 +1144,39 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_240px_auto]">
-                  <label className="relative block">
-                    <span className="pointer-events-none absolute left-4 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400">
-                      <Search className="h-4 w-4" />
-                    </span>
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder={t('searchPlaceholder')}
-                      className="h-14 w-full rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 pl-14 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
-                    />
-                  </label>
+                  <div className="space-y-2">
+                    <label className="relative block">
+                      <span className="pointer-events-none absolute left-4 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400">
+                        <Search className="h-4 w-4" />
+                      </span>
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        placeholder={t('searchPlaceholder')}
+                        className="h-14 w-full rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 pl-14 pr-12 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
+                      />
+                      {searchTerm ? (
+                        <button
+                          type="button"
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                          aria-label={localLabel(locale, 'Clear search', 'សម្អាតការស្វែងរក')}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </label>
+                    {isSearchWaitingForMoreInput ? (
+                      <p className="pl-4 text-xs font-medium text-amber-600 dark:text-amber-300">
+                        {localLabel(locale, 'Type at least 2 characters to search quickly.', 'សូមវាយយ៉ាងហោចណាស់ ២ តួអក្សរ ដើម្បីស្វែងរកបានលឿន។')}
+                      </p>
+                    ) : (
+                      <p className="pl-4 text-xs font-medium text-slate-400 dark:text-gray-500">
+                        {localLabel(locale, 'Search by student ID, Khmer/English name, email, or phone.', 'ស្វែងរកតាមលេខសិស្ស ឈ្មោះខ្មែរ/អង់គ្លេស អ៊ីមែល ឬលេខទូរស័ព្ទ។')}
+                      </p>
+                    )}
+                  </div>
 
                   <select
                     value={classFilter}
@@ -1139,9 +1216,10 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         {Array.from({ length: 8 }).map((_, index) => (
                           <div
                             key={index}
-                            className="grid grid-cols-[48px_minmax(0,2.4fr)_1.2fr_1.3fr_1fr_1.1fr] items-center gap-4 rounded-xl border border-slate-100/80 px-4 py-4 dark:border-gray-800/60"
+                            className="grid grid-cols-[48px_64px_minmax(0,2.4fr)_1.2fr_1.3fr_1fr_1.1fr] items-center gap-4 rounded-xl border border-slate-100/80 px-4 py-4 dark:border-gray-800/60"
                           >
                             <div className="h-5 w-5 rounded bg-slate-100 dark:bg-none dark:bg-gray-800" />
+                            <div className="h-7 w-10 rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800" />
                             <div className="flex items-center gap-4">
                               <div className="h-11 w-11 rounded-2xl bg-slate-100 dark:bg-none dark:bg-gray-800" />
                               <div className="space-y-2">
@@ -1262,6 +1340,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   )}
                                 </button>
                               </th>
+                              <th className={`px-3 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
+                                {localLabel(locale, 'No.', 'ល.រ')}
+                              </th>
                               <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('student')}</th>
                               <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('studentId')}</th>
                               <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('currentClass')}</th>
@@ -1270,8 +1351,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100/80 dark:divide-gray-800/70">
-                            {filteredStudents.map((student) => {
-                              const ageLabel = formatAgeLabel(student.dateOfBirth);
+                            {filteredStudents.map((student, index) => {
+                              const ageLabel = formatAgeLabel(student.dateOfBirth, locale);
+                              const rowNumber = pageStart + index;
 
                               return (
                                 <tr
@@ -1295,6 +1377,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                         <Square className="h-[18px] w-[18px] text-slate-300 transition-colors group-hover:text-slate-500 dark:text-gray-700 dark:text-gray-200 dark:group-hover:text-gray-500" />
                                       )}
                                     </button>
+                                  </td>
+                                  <td className={`px-3 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                    <span className={`inline-flex min-w-10 justify-center rounded-full bg-slate-50 font-mono font-bold text-slate-500 ring-1 ring-slate-200/70 dark:bg-gray-800/70 dark:text-gray-300 dark:ring-gray-700/70 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1.5 text-xs'}`}>
+                                      {rowNumber}
+                                    </span>
                                   </td>
                                   <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'}`}>
                                     <div className="flex items-start gap-4">
@@ -1339,7 +1426,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   </td>
                                   <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
                                     <p className={`font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
-                                      {formatDisplayDate(student.dateOfBirth)}
+                                      {formatDisplayDate(student.dateOfBirth, locale)}
                                     </p>
                                     {ageLabel && !isCompactView ? (
                                       <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{ageLabel}</p>
@@ -1388,7 +1475,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       </div>
 
                       <div className="space-y-4 p-4 lg:hidden">
-                        {filteredStudents.map((student) => {
+                        {filteredStudents.map((student, index) => {
+                          const rowNumber = pageStart + index;
                           return (
                             <article
                               key={student.id}
@@ -1421,6 +1509,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                           {formatName(student.lastName, student.firstName)}
                                         </p>
                                         <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{student.studentId}</p>
+                                        <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">
+                                          {localLabel(locale, 'No.', 'ល.រ')} {rowNumber}
+                                        </p>
                                         <p className="mt-0.5 truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">
                                           {formatName(student.englishLastName, student.englishFirstName)}
                                         </p>
@@ -1439,7 +1530,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">{t('unassigned')}</span>
                                     )}
                                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70">
-                                      {formatAgeLabel(student.dateOfBirth) || t('ageUnavailable')}
+                                      {formatAgeLabel(student.dateOfBirth, locale) || t('ageUnavailable')}
                                     </span>
                                   </div>
 
@@ -1447,13 +1538,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                     <div>
                                       <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{t('currentClass')}</p>
                                       <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                        {student.class?.name || 'Unassigned'}
+                                        {student.class?.name || localLabel(locale, 'Unassigned', 'មិនទាន់ចាត់ថ្នាក់')}
                                       </p>
                                     </div>
                                     <div>
                                       <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{t('birthDate')}</p>
                                       <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                        {formatDisplayDate(student.dateOfBirth)}
+                                        {formatDisplayDate(student.dateOfBirth, locale)}
                                       </p>
                                     </div>
                                   </div>
@@ -1611,17 +1702,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                   <button
                     type="button"
-                    onClick={() => {
-                      if (confirm(t('confirmDeleteBulk', { count: selectedStudents.size }))) {
-                        Array.from(selectedStudents).forEach(id => deleteStudent(id));
-                        setSelectedStudents(new Set());
-                        mutate();
-                      }
-                    }}
+                    onClick={handleBulkArchive}
+                    disabled={isBulkArchiving}
                     className="inline-flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/30 hover:text-red-300"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8c3a97c1" />
+                    {isBulkArchiving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    {isBulkArchiving ? localLabel(locale, 'Archiving…', 'កំពុងរក្សាទុកជាបណ្ណសារ…') : <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8c3a97c1" />}
                   </button>
                 </div>
 
@@ -1713,10 +1799,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {studentToReassign.class?.name || 'Unassigned'}
+                        {studentToReassign.class?.name || localLabel(locale, 'Unassigned', 'មិនទាន់ចាត់ថ្នាក់')}
                       </p>
                       <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">
-                        {studentToReassign.class ? `Grade ${studentToReassign.class.grade}` : 'Ready for placement'}
+                        {studentToReassign.class
+                          ? localLabel(locale, `Grade ${studentToReassign.class.grade}`, `កម្រិត ${studentToReassign.class.grade}`)
+                          : localLabel(locale, 'Ready for placement', 'រួចរាល់សម្រាប់ចាត់ថ្នាក់')}
                       </p>
                     </div>
                   </div>

@@ -48,6 +48,7 @@ import {
   getKhmerMonthLabel,
   KHMER_MONTHS,
   sortSubjectsByOrder,
+  getAvailableMonthsForGrade,
 } from '@/lib/reports/khmerMonthly';
 
 type ReportScope = 'class' | 'grade';
@@ -130,6 +131,16 @@ export default function KhmerMonthlyReportPage() {
   const reportFormat: MonthlyReportFormat = reportType === 'monthly' ? 'detailed' : (selectedSemester === 1 ? 'semester-1' : 'semester-2');
   const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  
+  const availableMonths = useMemo(() => {
+    return getAvailableMonthsForGrade(contextSelectedYear?.terms || [], selectedGrade);
+  }, [contextSelectedYear?.terms, selectedGrade]);
+
+  useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.some(m => m.number === selectedMonthNumber)) {
+      setSelectedMonthNumber(availableMonths[0].number);
+    }
+  }, [availableMonths, selectedMonthNumber]);
   const [schoolProfile, setSchoolProfile] = useState<any>(null);
   const [tablePage, setTablePage] = useState(0);
   const [tableSort, setTableSort] = useState<{
@@ -1437,11 +1448,19 @@ export default function KhmerMonthlyReportPage() {
                               value={selectedMonthNumber}
                               onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
                             >
-                              {KHMER_MONTHS.map((month) => (
-                                <option key={month.number} value={month.number}>
-                                  {getKhmerMonthDisplayName(month.number, month.label)}
-                                </option>
-                              ))}
+                              {availableMonths.length > 0 ? (
+                                availableMonths.map((month) => (
+                                  <option key={month.number} value={month.number}>
+                                    {getKhmerMonthDisplayName(month.number, month.label, month.isExamMonth, month.termNumber)}
+                                  </option>
+                                ))
+                              ) : (
+                                KHMER_MONTHS.map((month) => (
+                                  <option key={month.number} value={month.number}>
+                                    {getKhmerMonthDisplayName(month.number, month.label)}
+                                  </option>
+                                ))
+                              )}
                             </select>
                           </label>
                         ) : (
