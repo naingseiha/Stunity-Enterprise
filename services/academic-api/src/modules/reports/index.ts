@@ -841,7 +841,9 @@ app.get(
             femaleTeachers: 0,
             totalClasses: 0,
             attendanceRate: 0,
+            attendanceRecords: 0,
             teacherAttendanceRate: null,
+            teacherAttendanceRecords: 0,
           },
           averageScoreByGradeLevel: [],
           averageScoreBySubject: [],
@@ -1025,7 +1027,9 @@ app.get(
         femaleTeachers,
         totalClasses: classes.length,
         attendanceRate,
+        attendanceRecords: totalSessions,
         teacherAttendanceRate,
+        teacherAttendanceRecords: teacherAttendanceTotal,
       };
 
       // ── Student flow (MoEYS) — real StudentProgression records for the period ──

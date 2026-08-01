@@ -27,8 +27,12 @@ export interface DashboardOverview {
   femaleTeachers: number;
   totalClasses: number;
   attendanceRate: number;
+  /** Number of student attendance rows used in attendanceRate. */
+  attendanceRecords?: number;
   /** null when no TeacherAttendance rows exist yet for the selected period. */
   teacherAttendanceRate: number | null;
+  /** Number of teacher attendance rows used in teacherAttendanceRate. */
+  teacherAttendanceRecords?: number;
 }
 
 export interface StudentFlowBucket {
