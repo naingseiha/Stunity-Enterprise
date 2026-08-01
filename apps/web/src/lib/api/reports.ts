@@ -29,6 +29,8 @@ export interface DashboardOverview {
   attendanceRate: number;
   /** Number of student attendance rows used in attendanceRate. */
   attendanceRecords?: number;
+  /** False when records appear to contain exceptions without enough explicit presence rows. */
+  attendanceRateReliable?: boolean;
   /** null when no TeacherAttendance rows exist yet for the selected period. */
   teacherAttendanceRate: number | null;
   /** Number of teacher attendance rows used in teacherAttendanceRate. */
@@ -177,6 +179,44 @@ export interface DashboardTrendPoint {
   khmerLabel: string;
   average: number;
   attendanceRate: number;
+  passRatePercent?: number;
+  passing?: number;
+  failing?: number;
+  gradedStudents?: number;
+  attendanceRecords?: number;
+  attendanceRateReliable?: boolean;
+  onTimeRate?: number;
+  lateRate?: number;
+  absenceRate?: number;
+  excusedRate?: number;
+}
+
+export interface AttendanceBreakdownBucket {
+  count: number;
+  rate: number;
+}
+
+export interface DashboardAttendanceBreakdown {
+  totalRecords: number;
+  studentsWithRecords: number;
+  attendanceRate: number;
+  rateReliable: boolean;
+  onTime: AttendanceBreakdownBucket;
+  late: AttendanceBreakdownBucket;
+  absent: AttendanceBreakdownBucket;
+  excused: AttendanceBreakdownBucket;
+}
+
+export interface DashboardDisciplineSummary {
+  totalTrackedIncidents: number;
+  studentsInvolved: number;
+  repeatedLateStudents: number;
+  categories: Array<{
+    type: "LATE";
+    count: number;
+    students: number;
+  }>;
+  untrackedCategories: Array<"UNIFORM" | "HAIR" | "OTHER">;
 }
 
 export interface SchoolReportsDashboardResponse {
@@ -200,6 +240,8 @@ export interface SchoolReportsDashboardResponse {
   genderBreakdown: GenderBreakdown;
   studentFlow: StudentFlow;
   trend: DashboardTrendPoint[];
+  attendanceBreakdown?: DashboardAttendanceBreakdown;
+  disciplineSummary?: DashboardDisciplineSummary;
   scale: {
     system: "KHM_MOEYS" | "GENERIC";
     maxAverage: number;
@@ -230,7 +272,9 @@ export async function getSchoolReportsDashboard(
   if (params.year) query.set("year", String(params.year));
   if (params.classId) query.set("classId", params.classId);
 
-  const cacheKey = `reports:dashboard:${params.schoolId}:${query.toString()}`;
+  // Version the key because the dashboard aggregate schema evolves; otherwise
+  // a tab can briefly reuse a structurally stale response after deployment.
+  const cacheKey = `reports:dashboard:v2:${params.schoolId}:${query.toString()}`;
   const cached = readPersistentCache<SchoolReportsDashboardResponse>(
     cacheKey,
     REPORTS_DASHBOARD_CACHE_TTL_MS,

@@ -30,6 +30,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { SchoolReportsDashboardResponse } from '@/lib/api/reports';
+import OperationalHealthSection from './OperationalHealthSection';
 
 type DashboardProps = {
   data: SchoolReportsDashboardResponse;
@@ -138,6 +139,9 @@ export default function CleanReportsDashboard({
       ? Math.round((data.overview.totalStudents / data.overview.totalTeachers) * 10) / 10
       : 0;
     const attendanceAvailable = (data.overview.attendanceRecords ?? (data.overview.attendanceRate > 0 ? 1 : 0)) > 0;
+    const attendanceRateReliable = data.overview.attendanceRateReliable
+      ?? data.attendanceBreakdown?.rateReliable
+      ?? (attendanceAvailable && data.overview.attendanceRate > 0);
     const teacherAttendanceAvailable = (data.overview.teacherAttendanceRecords ?? (data.overview.teacherAttendanceRate !== null ? 1 : 0)) > 0;
     const genderGap = Math.round((data.genderBreakdown.female.passRatePercent - data.genderBreakdown.male.passRatePercent) * 10) / 10;
     const observedTrend = data.trend.filter((point) => point.average > 0 || point.attendanceRate > 0);
@@ -170,15 +174,19 @@ export default function CleanReportsDashboard({
         value: `${weakest.passRatePercent}%`,
       });
     }
-    if (!attendanceAvailable) {
+    if (!attendanceRateReliable) {
       priorities.push({
         severity: 'warning',
-        title: tx('បំពេញកំណត់ត្រាវត្តមាន', 'Complete attendance records'),
+        title: tx('បំពេញកំណត់ត្រាវត្តមានឱ្យគ្រប់', 'Complete attendance coverage'),
         detail: tx(
-          'មិនទាន់មានទិន្នន័យគ្រប់គ្រាន់សម្រាប់វាយតម្លៃការចូលរៀនក្នុងរយៈពេលនេះ។',
-          'There are not enough records to evaluate attendance for this period.',
+          attendanceAvailable
+            ? 'មានកំណត់ត្រាអវត្តមាន ប៉ុន្តែខ្វះកំណត់ត្រាវត្តមានច្បាស់លាស់ ដូច្នេះមិនអាចគណនាអត្រាវត្តមានបានទេ។'
+            : 'មិនទាន់មានទិន្នន័យគ្រប់គ្រាន់សម្រាប់វាយតម្លៃការចូលរៀនក្នុងរយៈពេលនេះ។',
+          attendanceAvailable
+            ? 'Absence events exist, but explicit presence coverage is incomplete, so an attendance rate cannot be calculated safely.'
+            : 'There are not enough records to evaluate attendance for this period.',
         ),
-        value: tx('ខ្វះទិន្នន័យ', 'Missing'),
+        value: attendanceAvailable ? tx('មិនពេញលេញ', 'Partial') : tx('ខ្វះទិន្នន័យ', 'Missing'),
       });
     } else if (data.overview.attendanceRate < 90) {
       priorities.push({
@@ -218,6 +226,7 @@ export default function CleanReportsDashboard({
       averageClassSize,
       studentTeacherRatio,
       attendanceAvailable,
+      attendanceRateReliable,
       teacherAttendanceAvailable,
       genderGap,
       observedTrend,
@@ -385,12 +394,14 @@ export default function CleanReportsDashboard({
         />
         <MetricCard
           label={tx('វត្តមានសិស្ស', 'Student attendance')}
-          value={model.attendanceAvailable ? `${data.overview.attendanceRate}%` : '—'}
-          detail={model.attendanceAvailable
+          value={model.attendanceRateReliable ? `${data.overview.attendanceRate}%` : '—'}
+          detail={model.attendanceRateReliable
             ? `${(data.overview.attendanceRecords ?? 0).toLocaleString()} ${tx('កំណត់ត្រា', 'records')}`
+            : model.attendanceAvailable
+              ? tx('កំណត់ត្រាមិនពេញលេញសម្រាប់គណនាភាគរយ', 'Partial records; rate withheld')
             : tx('មិនមានកំណត់ត្រាក្នុងរយៈពេលនេះ', 'No records for this period')}
           icon={ClipboardCheck}
-          status={!model.attendanceAvailable ? 'warning' : data.overview.attendanceRate >= 90 ? 'good' : 'warning'}
+          status={!model.attendanceRateReliable ? 'warning' : data.overview.attendanceRate >= 90 ? 'good' : 'warning'}
         />
         <MetricCard
           label={tx('ការគ្របដណ្តប់ពិន្ទុ', 'Grade coverage')}
@@ -522,6 +533,8 @@ export default function CleanReportsDashboard({
         </section>
       </div>
 
+      <OperationalHealthSection data={data} locale={locale} />
+
       <section className={`${cardClass} p-5 sm:p-6`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <SectionHeading
@@ -533,25 +546,59 @@ export default function CleanReportsDashboard({
             <span className="text-[10px] font-semibold text-slate-400">{tx('បង្ហាញ ៨ មុខវិជ្ជាទាបបំផុត', 'Showing the 8 lowest subjects')}</span>
           )}
         </div>
-        <div className="mt-5 w-full" style={{ height: Math.max(260, model.subjectFocus.length * 42) }}>
-          {model.subjectFocus.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 980, height: 360 }}>
-              <BarChart data={model.subjectFocus} layout="vertical" margin={{ top: 4, right: 18, left: 20, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} unit="%" />
-                <YAxis type="category" dataKey={km ? 'subjectKh' : 'subject'} width={100} tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
-                <Tooltip />
-                <ReferenceLine x={50} stroke="#f59e0b" strokeDasharray="4 4" />
-                <Bar dataKey="passRatePercent" name={tx('អត្រាជាប់', 'Pass rate')} radius={[0, 5, 5, 0]} maxBarSize={20}>
-                  {model.subjectFocus.map((subject) => (
-                    <Cell key={subject.subject} fill={subject.passRatePercent < 50 ? '#e11d48' : subject.passRatePercent < 70 ? '#f59e0b' : '#2563eb'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <EmptyChart label={tx('មិនទាន់មានទិន្នន័យតាមមុខវិជ្ជា', 'No subject performance data')} />
-          )}
+        <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="w-full" style={{ height: Math.max(280, model.subjectFocus.length * 42) }}>
+            {model.subjectFocus.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 700, height: 360 }}>
+                <BarChart data={model.subjectFocus} layout="vertical" margin={{ top: 4, right: 18, left: 20, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} unit="%" />
+                  <YAxis type="category" dataKey={km ? 'subjectKh' : 'subject'} width={100} tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <ReferenceLine x={50} stroke="#f59e0b" strokeDasharray="4 4" />
+                  <Bar dataKey="passRatePercent" name={tx('អត្រាជាប់', 'Pass rate')} radius={[0, 5, 5, 0]} maxBarSize={20}>
+                    {model.subjectFocus.map((subject) => (
+                      <Cell key={subject.subject} fill={subject.passRatePercent < 50 ? '#e11d48' : subject.passRatePercent < 70 ? '#f59e0b' : '#2563eb'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyChart label={tx('មិនទាន់មានទិន្នន័យតាមមុខវិជ្ជា', 'No subject performance data')} />
+            )}
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/50">
+              <p className="text-xs font-black text-slate-800 dark:text-slate-200">{tx('ចំនួនជាប់តាមមុខវិជ្ជា', 'Pass counts by subject')}</p>
+              <p className="mt-1 text-[9px] text-slate-400">{tx('ចំនួនជាប់ ÷ សិស្សបានវាយតម្លៃ', 'Passing students ÷ assessed students')}</p>
+            </div>
+            {model.subjectFocus.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[420px]">
+                  <thead>
+                    <tr className="text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <th className="px-4 py-2.5">{tx('មុខវិជ្ជា', 'Subject')}</th>
+                      <th className="px-4 py-2.5">{tx('ជាប់', 'Pass')}</th>
+                      <th className="px-4 py-2.5">{tx('ក្រោមកម្រិត', 'Below')}</th>
+                      <th className="px-4 py-2.5 text-right">{tx('អត្រា', 'Rate')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {model.subjectFocus.map((subject) => (
+                      <tr key={subject.subject} className="text-[10px] text-slate-600 dark:text-slate-300">
+                        <td className="px-4 py-2.5 font-bold text-slate-800 dark:text-slate-200">{km ? subject.subjectKh : subject.subject}</td>
+                        <td className="px-4 py-2.5">{subject.passCount}</td>
+                        <td className="px-4 py-2.5">{subject.failCount}</td>
+                        <td className={`px-4 py-2.5 text-right font-black ${subject.passRatePercent < 50 ? 'text-rose-700 dark:text-rose-300' : subject.passRatePercent < 70 ? 'text-amber-700 dark:text-amber-300' : 'text-blue-700 dark:text-blue-300'}`}>{subject.passRatePercent}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-5 text-center text-xs text-slate-500">{tx('មិនទាន់មានទិន្នន័យ', 'No data')}</div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -928,8 +975,8 @@ export default function CleanReportsDashboard({
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-[10px] font-bold">
-            <span className={`rounded-full px-2.5 py-1 ${model.attendanceAvailable ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'}`}>
-              {tx('វត្តមានសិស្ស', 'Student attendance')}: {model.attendanceAvailable ? tx('មានទិន្នន័យ', 'available') : tx('ខ្វះ', 'missing')}
+            <span className={`rounded-full px-2.5 py-1 ${model.attendanceRateReliable ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'}`}>
+              {tx('វត្តមានសិស្ស', 'Student attendance')}: {model.attendanceRateReliable ? tx('អាចគណនា', 'ready') : model.attendanceAvailable ? tx('មិនពេញលេញ', 'partial') : tx('ខ្វះ', 'missing')}
             </span>
             <span className={`rounded-full px-2.5 py-1 ${model.teacherAttendanceAvailable ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
               {tx('វត្តមានគ្រូ', 'Teacher attendance')}: {model.teacherAttendanceAvailable ? `${data.overview.teacherAttendanceRate}%` : tx('ខ្វះ', 'missing')}

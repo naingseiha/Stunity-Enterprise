@@ -842,6 +842,7 @@ app.get(
             totalClasses: 0,
             attendanceRate: 0,
             attendanceRecords: 0,
+            attendanceRateReliable: false,
             teacherAttendanceRate: null,
             teacherAttendanceRecords: 0,
           },
@@ -864,6 +865,23 @@ app.get(
             transferOut: { total: 0, female: 0 },
           },
           trend: [],
+          attendanceBreakdown: {
+            totalRecords: 0,
+            studentsWithRecords: 0,
+            attendanceRate: 0,
+            rateReliable: false,
+            onTime: { count: 0, rate: 0 },
+            late: { count: 0, rate: 0 },
+            absent: { count: 0, rate: 0 },
+            excused: { count: 0, rate: 0 },
+          },
+          disciplineSummary: {
+            totalTrackedIncidents: 0,
+            studentsInvolved: 0,
+            repeatedLateStudents: 0,
+            categories: [{ type: "LATE", count: 0, students: 0 }],
+            untrackedCategories: ["UNIFORM", "HAIR", "OTHER"],
+          },
           scale: gradeScale,
           scope: { schoolWide: false, classId: scopeClassId },
           school: { name: "", address: null, phone: null, logo: null },
@@ -880,7 +898,7 @@ app.get(
         students,
         subjectMeta,
         studentSubjectGroups,
-        monthSubjectGroups,
+        monthStudentSubjectGroups,
         attendanceRows,
         progressionRows,
       ] = await Promise.all([
@@ -928,10 +946,11 @@ app.get(
           _sum: { score: true },
           _count: { _all: true },
         }),
-        // Per-month, per-subject aggregate (collapses students) — tiny, drives the
-        // trend line only.
+        // Per-month, per-student, per-subject aggregate. This preserves the
+        // student grain required for a defensible monthly pass rate while still
+        // collapsing multiple raw grade entries for the same subject/month.
         prisma.grade.groupBy({
-          by: ["year", "monthNumber", "subjectId"],
+          by: ["year", "monthNumber", "studentId", "subjectId"],
           where: { classId: { in: classIds }, ...gradePeriodWhere },
           _sum: { score: true },
           _count: { _all: true },
@@ -941,7 +960,7 @@ app.get(
             classId: { in: classIds },
             date: { gte: term.startDate, lte: term.endDate },
           },
-          select: { date: true, status: true },
+          select: { studentId: true, date: true, status: true },
         }),
         // MoEYS student-flow indicators (repeaters / transfers) — real
         // StudentProgression records, scoped to the selected period by
@@ -976,13 +995,83 @@ app.get(
       });
 
       const totalSessions = attendanceRows.length;
-      const presentSessions = attendanceRows.filter(
-        (a) => a.status === "PRESENT" || a.status === "LATE",
+      const onTimeSessions = attendanceRows.filter(
+        (a) => a.status === "PRESENT",
       ).length;
+      const lateSessions = attendanceRows.filter(
+        (a) => a.status === "LATE",
+      ).length;
+      const absentSessions = attendanceRows.filter(
+        (a) => a.status === "ABSENT",
+      ).length;
+      const excusedSessions = Math.max(
+        0,
+        totalSessions - onTimeSessions - lateSessions - absentSessions,
+      );
+      const presentSessions = onTimeSessions + lateSessions;
+      const rateOf = (count: number, total: number) =>
+        total > 0 ? Math.round((count / total) * 100) : 0;
       const attendanceRate =
-        totalSessions > 0
-          ? Math.round((presentSessions / totalSessions) * 100)
-          : 0;
+        rateOf(presentSessions, totalSessions);
+      const studentsWithAttendanceRecords = new Set(
+        attendanceRows.map((row) => row.studentId),
+      ).size;
+      // Some imported/monthly-entry datasets only store exceptions (absence or
+      // permission) and leave ordinary presence blank. Do not publish a 0%
+      // attendance rate unless there are enough explicit presence rows to show
+      // that a full-roster workflow is actually being used.
+      const attendanceRateReliable =
+        totalSessions > 0 &&
+        (presentSessions >= Math.min(studentsWithAttendanceRecords, 10) ||
+          absentSessions + excusedSessions === 0);
+      const attendanceBreakdown = {
+        totalRecords: totalSessions,
+        studentsWithRecords: studentsWithAttendanceRecords,
+        attendanceRate,
+        rateReliable: attendanceRateReliable,
+        onTime: {
+          count: onTimeSessions,
+          rate: rateOf(onTimeSessions, totalSessions),
+        },
+        late: {
+          count: lateSessions,
+          rate: rateOf(lateSessions, totalSessions),
+        },
+        absent: {
+          count: absentSessions,
+          rate: rateOf(absentSessions, totalSessions),
+        },
+        excused: {
+          count: excusedSessions,
+          rate: rateOf(excusedSessions, totalSessions),
+        },
+      };
+
+      const lateCountsByStudent = new Map<string, number>();
+      attendanceRows.forEach((row) => {
+        if (row.status !== "LATE") return;
+        lateCountsByStudent.set(
+          row.studentId,
+          (lateCountsByStudent.get(row.studentId) || 0) + 1,
+        );
+      });
+      const disciplineSummary = {
+        totalTrackedIncidents: lateSessions,
+        studentsInvolved: lateCountsByStudent.size,
+        repeatedLateStudents: Array.from(lateCountsByStudent.values()).filter(
+          (count) => count >= 3,
+        ).length,
+        categories: [
+          {
+            type: "LATE",
+            count: lateSessions,
+            students: lateCountsByStudent.size,
+          },
+        ],
+        // These categories are requested by schools but have no standardized
+        // incident source yet. Expose the gap instead of inventing zeroes.
+        untrackedCategories: ["UNIFORM", "HAIR", "OTHER"],
+      };
 
       // Real teacher gender + attendance — mirrors the attendance module's own
       // PRESENT/LATE/PERMISSION-counts-as-present convention (teacherSchedule.ts).
@@ -1028,6 +1117,7 @@ app.get(
         totalClasses: classes.length,
         attendanceRate,
         attendanceRecords: totalSessions,
+        attendanceRateReliable,
         teacherAttendanceRate,
         teacherAttendanceRecords: teacherAttendanceTotal,
       };
@@ -1332,9 +1422,13 @@ app.get(
         }))
         .sort((a, b) => b.average - a.average);
 
-      // ── Monthly trend (from the tiny month×subject aggregate) ──
+      // ── Monthly learning + attendance trend ──
       const monthlyTotals = new Map<string, { total: number; count: number }>();
-      monthSubjectGroups.forEach((g) => {
+      const monthlyStudentSubjects = new Map<
+        string,
+        Map<string, Array<{ mean: number; coefficient: number }>>
+      >();
+      monthStudentSubjectGroups.forEach((g) => {
         const meta = subjectMeta.get(g.subjectId);
         if (!meta || meta.maxScore <= 0) return;
         const count = g._count._all;
@@ -1350,26 +1444,81 @@ app.get(
         bucket.total += percentage * count;
         bucket.count += count;
         monthlyTotals.set(key, bucket);
+
+        const studentMap = monthlyStudentSubjects.get(key) || new Map();
+        const subjectMeans = studentMap.get(g.studentId) || [];
+        subjectMeans.push({ mean, coefficient: meta.coefficient });
+        studentMap.set(g.studentId, subjectMeans);
+        monthlyStudentSubjects.set(key, studentMap);
+      });
+
+      const monthlyPassRates = new Map<
+        string,
+        { passing: number; failing: number; total: number; rate: number }
+      >();
+      monthlyStudentSubjects.forEach((studentsForMonth, key) => {
+        let monthlyPassing = 0;
+        let monthlyFailing = 0;
+        studentsForMonth.forEach((subjectMeans) => {
+          const average = combineSubjectAverages(subjectMeans, gradeScale);
+          if (isPassingForScale(gradeScale, average)) monthlyPassing += 1;
+          else monthlyFailing += 1;
+        });
+        const monthlyGraded = monthlyPassing + monthlyFailing;
+        monthlyPassRates.set(key, {
+          passing: monthlyPassing,
+          failing: monthlyFailing,
+          total: monthlyGraded,
+          rate: rateOf(monthlyPassing, monthlyGraded),
+        });
       });
 
       const attendanceByMonth = new Map<
         string,
-        { present: number; total: number }
+        {
+          onTime: number;
+          late: number;
+          absent: number;
+          excused: number;
+          total: number;
+          students: Set<string>;
+        }
       >();
       attendanceRows.forEach((row) => {
         const d = new Date(row.date);
         const key = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}`;
-        const bucket = attendanceByMonth.get(key) || { present: 0, total: 0 };
+        const bucket = attendanceByMonth.get(key) || {
+          onTime: 0,
+          late: 0,
+          absent: 0,
+          excused: 0,
+          total: 0,
+          students: new Set<string>(),
+        };
         bucket.total += 1;
-        if (row.status === "PRESENT" || row.status === "LATE")
-          bucket.present += 1;
+        bucket.students.add(row.studentId);
+        if (row.status === "PRESENT") bucket.onTime += 1;
+        else if (row.status === "LATE") bucket.late += 1;
+        else if (row.status === "ABSENT") bucket.absent += 1;
+        else bucket.excused += 1;
         attendanceByMonth.set(key, bucket);
       });
 
       const trend = term.periods.map((p) => {
         const key = `${p.year}-${p.monthNumber}`;
         const gradeBucket = monthlyTotals.get(key);
+        const monthlyPass = monthlyPassRates.get(key);
         const attendanceBucket = attendanceByMonth.get(key);
+        const monthlyAttendanceTotal = attendanceBucket?.total || 0;
+        const monthlyPresent = attendanceBucket
+          ? attendanceBucket.onTime + attendanceBucket.late
+          : 0;
+        const monthlyAttendanceRateReliable = Boolean(
+          attendanceBucket &&
+            attendanceBucket.total > 0 &&
+            (monthlyPresent >= Math.min(attendanceBucket.students.size, 10) ||
+              attendanceBucket.absent + attendanceBucket.excused === 0),
+        );
         return {
           label: `${p.year}-${String(p.monthNumber).padStart(2, "0")}`,
           khmerLabel: p.label,
@@ -1377,12 +1526,29 @@ app.get(
             gradeBucket && gradeBucket.count > 0
               ? Math.round(gradeBucket.total / gradeBucket.count)
               : 0,
-          attendanceRate:
-            attendanceBucket && attendanceBucket.total > 0
-              ? Math.round(
-                  (attendanceBucket.present / attendanceBucket.total) * 100,
-                )
-              : 0,
+          passRatePercent: monthlyPass?.rate || 0,
+          passing: monthlyPass?.passing || 0,
+          failing: monthlyPass?.failing || 0,
+          gradedStudents: monthlyPass?.total || 0,
+          attendanceRate: rateOf(monthlyPresent, monthlyAttendanceTotal),
+          attendanceRecords: monthlyAttendanceTotal,
+          attendanceRateReliable: monthlyAttendanceRateReliable,
+          onTimeRate: rateOf(
+            attendanceBucket?.onTime || 0,
+            monthlyAttendanceTotal,
+          ),
+          lateRate: rateOf(
+            attendanceBucket?.late || 0,
+            monthlyAttendanceTotal,
+          ),
+          absenceRate: rateOf(
+            attendanceBucket?.absent || 0,
+            monthlyAttendanceTotal,
+          ),
+          excusedRate: rateOf(
+            attendanceBucket?.excused || 0,
+            monthlyAttendanceTotal,
+          ),
         };
       });
 
@@ -1411,6 +1577,8 @@ app.get(
         genderBreakdown,
         studentFlow: studentFlowBuckets,
         trend,
+        attendanceBreakdown,
+        disciplineSummary,
         scale: gradeScale,
         scope: { schoolWide, classId: scopeClassId },
         school: {
