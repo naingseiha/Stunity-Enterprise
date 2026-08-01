@@ -28,17 +28,39 @@ export interface AdmissionApplication {
   gender: "MALE" | "FEMALE";
   dateOfBirth: string;
   phoneNumber?: string | null;
+  email?: string | null;
+  placeOfBirth?: string | null;
+  currentAddress?: string | null;
+  fatherName?: string | null;
+  motherName?: string | null;
   guardianName?: string | null;
   guardianPhone?: string | null;
+  previousSchool?: string | null;
+  previousGrade?: string | null;
   notes?: string | null;
+  reviewedAt?: string | null;
+  enrolledAt?: string | null;
   createdAt: string;
   academicYear?: { id: string; name: string };
   targetClass?: { id: string; name: string; grade: string } | null;
   student?: {
     id: string;
     studentId: string;
+    firstName?: string;
+    lastName?: string;
     class?: { name: string; grade: string } | null;
   } | null;
+  createdBy?: { id: string; firstName: string; lastName: string } | null;
+  reviewedBy?: { id: string; firstName: string; lastName: string } | null;
+  events?: Array<{
+    id: string;
+    action: string;
+    fromStatus?: AdmissionStatus | null;
+    toStatus?: AdmissionStatus | null;
+    notes?: string | null;
+    createdAt: string;
+    actor?: { firstName: string; lastName: string } | null;
+  }>;
 }
 
 export interface AdmissionInput {
@@ -98,6 +120,9 @@ export const getAdmissionSummary = (academicYearId?: string) =>
   admissionFetch(
     `/admissions/summary${academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : ""}`,
   );
+
+export const getAdmissionApplication = (id: string) =>
+  admissionFetch(`/admissions/${encodeURIComponent(id)}`);
 
 export const createAdmissionApplication = (data: AdmissionInput) =>
   admissionFetch("/admissions", { method: "POST", body: JSON.stringify(data) });

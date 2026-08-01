@@ -494,7 +494,7 @@ app.get('/transcripts/verify/:code', async (req: Request, res: Response) => {
 });
 
 // Apply auth middleware to all routes
-app.use('/students', authenticateToken);
+app.use(['/students', '/admissions'], authenticateToken);
 
 // ==========================================
 // Admissions — application intake and review
@@ -523,6 +523,18 @@ const admissionNumber = (academicYearName?: string | null) => {
 };
 const cleanAdmissionText = (value: unknown, max = 250) =>
   typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) || null : null;
+const cleanAdmissionEmail = (value: unknown) => cleanAdmissionText(value, 160)?.toLowerCase() || null;
+const isValidAdmissionEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isValidAdmissionBirthDate = (value: string) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return year >= 1900 && parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1
+    && parsed.getUTCDate() === day && parsed.getTime() <= Date.now();
+};
 
 app.use('/admissions', (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!ADMISSION_INTAKE_ROLES.has(req.user?.role || '')) {
@@ -653,6 +665,13 @@ app.post('/admissions', async (req: AuthRequest, res: Response) => {
     if (!firstName || !lastName || !dateOfBirth || !['MALE', 'FEMALE'].includes(gender)) {
       return res.status(400).json({ success: false, message: 'Name, date of birth, and gender are required' });
     }
+    if (applicantType === 'NEW_STUDENT' && !isValidAdmissionBirthDate(dateOfBirth)) {
+      return res.status(400).json({ success: false, message: 'Date of birth must be a valid past date' });
+    }
+    const email = cleanAdmissionEmail(source.email);
+    if (email && !isValidAdmissionEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
+    }
     if (linkedStudent) {
       const exists = await (prisma as any).admissionApplication.findFirst({ where: { schoolId, academicYearId, studentId: linkedStudent.id } });
       if (exists) return res.status(409).json({ success: false, message: 'This student already has an application for the selected year', data: { applicationId: exists.id } });
@@ -663,7 +682,11 @@ app.post('/admissions', async (req: AuthRequest, res: Response) => {
       });
       if (duplicate) return res.status(409).json({ success: false, message: 'A matching active application already exists', data: duplicate });
     }
-    const targetClassId = cleanAdmissionText(req.body.targetClassId, 64);
+    // A returning-student application is a receipt only. Placement remains in
+    // the promotion/repeat workflow and must not be implied here.
+    const targetClassId = applicantType === 'NEW_STUDENT'
+      ? cleanAdmissionText(req.body.targetClassId, 64)
+      : null;
     if (targetClassId) {
       const targetClass = await prisma.class.findFirst({ where: { id: targetClassId, schoolId, academicYearId } });
       if (!targetClass) return res.status(400).json({ success: false, message: 'Target class does not belong to this academic year' });
@@ -672,10 +695,10 @@ app.post('/admissions', async (req: AuthRequest, res: Response) => {
       schoolId, academicYearId, createdById, applicantType, source: 'STAFF_ENTRY',
       applicationNumber: admissionNumber(academicYear.name), status: 'RECEIVED',
       studentId: linkedStudent?.id || null, targetClassId,
-      requestedGrade: cleanAdmissionText(req.body.requestedGrade, 30),
+      requestedGrade: applicantType === 'NEW_STUDENT' ? cleanAdmissionText(req.body.requestedGrade, 30) : null,
       firstName, lastName, gender, dateOfBirth,
       englishFirstName: cleanAdmissionText(source.englishFirstName, 100), englishLastName: cleanAdmissionText(source.englishLastName, 100),
-      phoneNumber: cleanAdmissionText(source.phoneNumber, 40), email: cleanAdmissionText(source.email, 160),
+      phoneNumber: cleanAdmissionText(source.phoneNumber, 40), email,
       placeOfBirth: cleanAdmissionText(req.body.placeOfBirth, 500), currentAddress: cleanAdmissionText(req.body.currentAddress, 500),
       fatherName: cleanAdmissionText(req.body.fatherName, 150), motherName: cleanAdmissionText(req.body.motherName, 150),
       guardianName: cleanAdmissionText(req.body.guardianName, 150), guardianPhone: cleanAdmissionText(req.body.guardianPhone, 40),
@@ -696,6 +719,9 @@ app.patch('/admissions/:id/status', async (req: AuthRequest, res: Response) => {
     const status = String(req.body.status || '');
     const current = await (prisma as any).admissionApplication.findFirst({ where: { id: req.params.id, schoolId: req.user!.schoolId } });
     if (!current) return res.status(404).json({ success: false, message: 'Application not found' });
+    if (current.applicantType === 'RETURNING_STUDENT') {
+      return res.status(409).json({ success: false, message: 'Returning-student applications are receipt records only; use the promotion/repeat workflow' });
+    }
     if (!ADMISSION_STATUSES.has(status) || status === 'ENROLLED' || !ADMISSION_TRANSITIONS[current.status]?.has(status)) {
       return res.status(409).json({ success: false, message: `Cannot move application from ${current.status} to ${status}` });
     }
@@ -729,13 +755,25 @@ app.post('/admissions/:id/enroll', async (req: AuthRequest, res: Response) => {
       targetClass = await prisma.class.findFirst({ where: { id: classId, schoolId, academicYearId: application.academicYearId } });
       if (!targetClass) return res.status(400).json({ success: false, message: 'Select a class from the application academic year' });
     }
-    const generatedStudentId = await generateStudentId(classId || undefined, schoolId);
+    const enrollmentYear = new Date(application.academicYear.startDate).getFullYear();
+    const generatedStudentId = await generateStudentId(classId || undefined, schoolId, enrollmentYear);
     const result = await prisma.$transaction(async (tx: any) => {
+      // Claim the approved application inside the transaction. This prevents a
+      // double click or two reviewers from creating two student records.
+      const claim = await tx.admissionApplication.updateMany({
+        where: { id: application.id, schoolId, status: 'APPROVED', studentId: null },
+        data: { status: 'ENROLLED', enrolledAt: new Date(), reviewedById: req.user!.id },
+      });
+      if (claim.count !== 1) {
+        const conflict: any = new Error('Application has already been enrolled or changed');
+        conflict.code = 'ADMISSION_ALREADY_ENROLLED';
+        throw conflict;
+      }
       const student = await tx.student.create({ data: {
         schoolId, studentId: generatedStudentId, firstName: application.firstName, lastName: application.lastName,
         englishFirstName: application.englishFirstName, englishLastName: application.englishLastName,
         gender: application.gender, dateOfBirth: application.dateOfBirth, phoneNumber: application.phoneNumber,
-        email: application.email, classId: classId || null, entryYear: new Date(application.academicYear.startDate).getFullYear(),
+        email: application.email, classId: classId || null, entryYear: enrollmentYear,
         customFields: { regional: {
           placeOfBirth: application.placeOfBirth, currentAddress: application.currentAddress,
           fatherName: application.fatherName, motherName: application.motherName,
@@ -757,6 +795,7 @@ app.post('/admissions/:id/enroll', async (req: AuthRequest, res: Response) => {
     cache.clear();
     res.status(201).json({ success: true, data: result });
   } catch (error: any) {
+    if (error?.code === 'ADMISSION_ALREADY_ENROLLED') return res.status(409).json({ success: false, message: error.message });
     if (error?.code === 'P2002') return res.status(409).json({ success: false, message: 'Student or application data conflicts with an existing record' });
     res.status(500).json({ success: false, message: 'Failed to enroll student', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
   }

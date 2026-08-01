@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 import { TokenManager } from "@/lib/api/auth";
 import UnifiedNavigation from "@/components/UnifiedNavigation";
@@ -24,6 +25,7 @@ import { getStudents, type Student } from "@/lib/api/students";
 import {
   createAdmissionApplication,
   enrollAdmission,
+  getAdmissionApplication,
   getAdmissionApplications,
   getAdmissionSummary,
   updateAdmissionStatus,
@@ -82,6 +84,9 @@ export default function AdmissionsPage({
   const [showForm, setShowForm] = useState(false);
   const [enrollmentApplication, setEnrollmentApplication] =
     useState<AdmissionApplication | null>(null);
+  const [detailApplication, setDetailApplication] =
+    useState<AdmissionApplication | null>(null);
+  const [detailLoadingId, setDetailLoadingId] = useState("");
   const [actingId, setActingId] = useState("");
 
   const handleLogout = async () => {
@@ -171,6 +176,19 @@ export default function AdmissionsPage({
     }
   };
 
+  const openApplication = async (application: AdmissionApplication) => {
+    setDetailLoadingId(application.id);
+    setError("");
+    try {
+      const response = await getAdmissionApplication(application.id);
+      setDetailApplication(response.data.application);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setDetailLoadingId("");
+    }
+  };
+
   const cards = [
     {
       label: l("Total applications", "ពាក្យសរុប"),
@@ -215,31 +233,32 @@ export default function AdmissionsPage({
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-      <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#f8fafc_36%,#f1f5f9_100%)] px-4 py-4 dark:bg-none dark:bg-gray-950 sm:px-6 sm:py-6 lg:ml-64 lg:px-8">
-        <div className="pointer-events-none absolute -right-24 top-28 h-80 w-80 rounded-full bg-violet-200/35 blur-3xl dark:bg-violet-500/5" />
-        <div className="pointer-events-none absolute left-8 top-80 h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl dark:bg-cyan-500/5" />
-        <div className="relative mx-auto max-w-[1500px] space-y-4 sm:space-y-6">
-          <section className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-[linear-gradient(135deg,#1d4ed8_0%,#4338ca_54%,#6d28d9_100%)] p-5 text-white shadow-[0_24px_70px_-32px_rgba(49,46,129,.8)] sm:rounded-[1.8rem] sm:p-8">
-            <div className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border-[40px] border-white/5" />
-            <div className="pointer-events-none absolute bottom-0 right-28 h-24 w-56 bg-gradient-to-t from-cyan-300/10 to-transparent blur-2xl" />
-            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[.28em] text-blue-100">
-                  {l("Admissions workspace", "មជ្ឈមណ្ឌលទទួលពាក្យ")}
-                </p>
-                <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                  {l("Student Admissions", "ការចុះឈ្មោះចូលរៀន")}
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm font-medium text-blue-100">
-                  {l(
-                    "Receive, review and convert approved applications into official student records.",
-                    "ទទួល ពិនិត្យ និងបម្លែងពាក្យដែលបានអនុម័តទៅជាកំណត់ត្រាសិស្សផ្លូវការ។",
-                  )}
-                </p>
+      <div className="min-h-screen bg-gray-50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+        <main className="mx-auto max-w-7xl space-y-8 px-4 pb-12 pt-4 sm:px-6 lg:px-8">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:p-7">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+              <div className="flex items-start gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 sm:h-14 sm:w-14">
+                  <ClipboardCheck className="h-6 w-6" />
+                </span>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[.22em] text-blue-600 dark:text-blue-400">
+                    {l("Admissions workspace", "មជ្ឈមណ្ឌលទទួលពាក្យ")}
+                  </p>
+                  <h1 className="mt-1.5 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                    {l("Student Admissions", "ការចុះឈ្មោះចូលរៀន")}
+                  </h1>
+                  <p className="mt-1.5 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
+                    {l(
+                      "Receive, review and convert approved applications into official student records.",
+                      "ទទួល ពិនិត្យ និងបម្លែងពាក្យដែលបានអនុម័តទៅជាកំណត់ត្រាសិស្សផ្លូវការ។",
+                    )}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowForm(true)}
-                className="relative inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-indigo-700 shadow-[0_14px_35px_-12px_rgba(15,23,42,.55)] transition hover:-translate-y-0.5 sm:w-auto"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-5 py-3 text-sm font-black text-white transition-colors hover:border-blue-700 hover:bg-blue-700 sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
                 {l("Receive application", "ទទួលពាក្យថ្មី")}
@@ -247,41 +266,42 @@ export default function AdmissionsPage({
             </div>
           </section>
 
-          <section className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 xl:grid-cols-6">
+          <section className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-3 xl:grid-cols-6">
             {cards.map(({ label, value, icon: Icon, tone }) => (
               <div
                 key={label}
-                className="min-w-[155px] snap-start rounded-2xl border border-white bg-white/90 p-4 shadow-[0_10px_35px_-24px_rgba(15,23,42,.65)] ring-1 ring-slate-200/70 backdrop-blur sm:min-w-0 dark:border-gray-800 dark:bg-gray-900/90 dark:ring-gray-800"
+                className="min-w-[170px] snap-start rounded-3xl border border-slate-200 bg-white p-5 transition-colors hover:border-slate-300 sm:min-w-0 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 dark:text-gray-400">
-                      {label}
-                    </p>
-                    <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
-                      {value}
-                    </p>
-                  </div>
-                  <span className={`rounded-xl p-3 ${tone}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <span
+                    className={`rounded-2xl border border-current/10 p-3 ${tone}`}
+                  >
                     <Icon className="h-5 w-5" />
                   </span>
+                  <span className="mt-1 h-2 w-2 rounded-full bg-slate-200 dark:bg-slate-700" />
                 </div>
+                <p className="mt-5 text-3xl font-black tracking-tight text-slate-900 tabular-nums dark:text-white">
+                  {value}
+                </p>
+                <p className="mt-1 text-xs font-bold leading-5 text-slate-500 dark:text-slate-400">
+                  {label}
+                </p>
               </div>
             ))}
           </section>
 
-          <section className="overflow-hidden rounded-[1.35rem] border border-white bg-white/95 shadow-[0_18px_55px_-38px_rgba(15,23,42,.55)] ring-1 ring-slate-200/70 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 dark:ring-gray-800">
-            <div className="border-b border-slate-200 p-4 dark:border-gray-800 sm:p-5">
-              <div className="mb-4 flex items-end justify-between gap-3">
+          <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div className="border-b border-slate-200 p-5 dark:border-slate-800 sm:p-6">
+              <div className="mb-5 flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[.24em] text-blue-600 dark:text-blue-400">
+                  <p className="text-[11px] font-black uppercase tracking-[.22em] text-blue-600 dark:text-blue-400">
                     {l("Application register", "បញ្ជីទទួលពាក្យ")}
                   </p>
-                  <h2 className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+                  <h2 className="mt-1.5 text-xl font-black tracking-tight text-slate-900 dark:text-white">
                     {l("Manage applications", "គ្រប់គ្រងពាក្យចូលរៀន")}
                   </h2>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   {pagination.total} {l("records", "ពាក្យ")}
                 </span>
               </div>
@@ -295,14 +315,14 @@ export default function AdmissionsPage({
                       "Search name, ID, phone…",
                       "ស្វែងរកឈ្មោះ លេខសម្គាល់ ទូរសព្ទ…",
                     )}
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium outline-none transition-colors focus:border-blue-500 focus:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:border-blue-500"
                   />
                 </label>
                 <select
                   value={academicYearId}
                   onChange={(e) => setAcademicYearId(e.target.value)}
                   disabled={yearsLoading}
-                  className="h-12 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                  className="h-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">{l("Academic year", "ឆ្នាំសិក្សា")}</option>
                   {years.map((y) => (
@@ -315,7 +335,7 @@ export default function AdmissionsPage({
                 <select
                   value={applicantType}
                   onChange={(e) => setApplicantType(e.target.value)}
-                  className="h-12 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                  className="h-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">
                     {l("All applicant types", "ប្រភេទបេក្ខជនទាំងអស់")}
@@ -330,7 +350,7 @@ export default function AdmissionsPage({
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="col-span-2 h-12 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold md:col-span-1 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                  className="col-span-2 h-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-blue-500 md:col-span-1 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">
                     {l("All statuses", "ស្ថានភាពទាំងអស់")}
@@ -354,7 +374,7 @@ export default function AdmissionsPage({
               </div>
             </div>
             {error && (
-              <div className="m-4 flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">
+              <div className="m-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
@@ -386,7 +406,7 @@ export default function AdmissionsPage({
                 applications.map((application, index) => (
                   <article
                     key={application.id}
-                    className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_12px_36px_-28px_rgba(15,23,42,.7)] dark:border-gray-800 dark:bg-gray-900"
+                    className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -413,7 +433,7 @@ export default function AdmissionsPage({
                       </span>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2.5">
-                      <div className="rounded-xl bg-slate-50 p-3 dark:bg-gray-950/60">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/60">
                         <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                           {l("Applicant", "ប្រភេទសិស្ស")}
                         </p>
@@ -423,7 +443,7 @@ export default function AdmissionsPage({
                             : l("New student", "សិស្សថ្មី")}
                         </p>
                       </div>
-                      <div className="rounded-xl bg-slate-50 p-3 dark:bg-gray-950/60">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/60">
                         <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                           {l("Placement", "ការចាត់ថ្នាក់")}
                         </p>
@@ -438,18 +458,32 @@ export default function AdmissionsPage({
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3 dark:border-gray-800">
+                      <button
+                        onClick={() => openApplication(application)}
+                        disabled={detailLoadingId === application.id}
+                        className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200"
+                      >
+                        {detailLoadingId === application.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                        {l("View", "មើលពាក្យ")}
+                      </button>
                       {actingId === application.id ? (
                         <Loader2 className="mx-auto h-5 w-5 animate-spin text-blue-600" />
                       ) : (
                         <>
-                          {canReview && application.status === "RECEIVED" && (
-                            <button
-                              onClick={() => act(application, "UNDER_REVIEW")}
-                              className="min-h-10 flex-1 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 dark:border-gray-700 dark:text-gray-200"
-                            >
-                              {l("Review", "ពិនិត្យ")}
-                            </button>
-                          )}
+                          {canReview &&
+                            application.applicantType === "NEW_STUDENT" &&
+                            application.status === "RECEIVED" && (
+                              <button
+                                onClick={() => act(application, "UNDER_REVIEW")}
+                                className="min-h-10 flex-1 rounded-xl border border-slate-200 px-3 text-xs font-black text-slate-700 dark:border-gray-700 dark:text-gray-200"
+                              >
+                                {l("Review", "ពិនិត្យ")}
+                              </button>
+                            )}
                           {canReview &&
                             ["RECEIVED", "UNDER_REVIEW", "WAITLISTED"].includes(
                               application.status,
@@ -465,7 +499,8 @@ export default function AdmissionsPage({
                           {canReview &&
                             ["RECEIVED", "UNDER_REVIEW", "WAITLISTED"].includes(
                               application.status,
-                            ) && (
+                            ) &&
+                            application.applicantType === "NEW_STUDENT" && (
                               <button
                                 onClick={() => act(application, "REJECTED")}
                                 className="min-h-10 rounded-xl bg-red-50 px-3 text-xs font-black text-red-700 dark:bg-red-500/10 dark:text-red-300"
@@ -478,7 +513,7 @@ export default function AdmissionsPage({
                               onClick={() =>
                                 setEnrollmentApplication(application)
                               }
-                              className="min-h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-black text-white shadow-lg shadow-blue-500/20"
+                              className="min-h-11 w-full rounded-xl border border-blue-600 bg-blue-600 px-4 text-sm font-black text-white transition-colors hover:border-blue-700 hover:bg-blue-700"
                             >
                               {l("Admit student", "ទទួលជាសិស្ស")}
                             </button>
@@ -600,11 +635,24 @@ export default function AdmissionsPage({
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => openApplication(application)}
+                              disabled={detailLoadingId === application.id}
+                              className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-gray-700"
+                            >
+                              {detailLoadingId === application.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Eye className="h-3.5 w-3.5" />
+                              )}
+                              {l("View", "មើល")}
+                            </button>
                             {actingId === application.id ? (
                               <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                             ) : (
                               <>
                                 {canReview &&
+                                  application.applicantType === "NEW_STUDENT" &&
                                   application.status === "RECEIVED" && (
                                     <button
                                       onClick={() =>
@@ -637,7 +685,9 @@ export default function AdmissionsPage({
                                     "RECEIVED",
                                     "UNDER_REVIEW",
                                     "WAITLISTED",
-                                  ].includes(application.status) && (
+                                  ].includes(application.status) &&
+                                  application.applicantType ===
+                                    "NEW_STUDENT" && (
                                     <button
                                       onClick={() =>
                                         act(application, "REJECTED")
@@ -703,7 +753,7 @@ export default function AdmissionsPage({
               </div>
             </div>
           </section>
-        </div>
+        </main>
         {showForm && (
           <AdmissionForm
             locale={locale}
@@ -725,8 +775,202 @@ export default function AdmissionsPage({
             onConfirm={(options) => enroll(enrollmentApplication, options)}
           />
         )}
+        {detailApplication && (
+          <AdmissionDetailModal
+            locale={locale}
+            application={detailApplication}
+            onClose={() => setDetailApplication(null)}
+          />
+        )}
       </div>
     </>
+  );
+}
+
+function AdmissionDetailModal({
+  locale,
+  application,
+  onClose,
+}: {
+  locale: string;
+  application: AdmissionApplication;
+  onClose: () => void;
+}) {
+  const km = locale.startsWith("km");
+  const l = (en: string, kh: string) => (km ? kh : en);
+  const value = (item?: string | null) => item?.trim() || "—";
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="flex max-h-[100dvh] w-full max-w-4xl flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:max-h-[94vh] sm:rounded-3xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-start justify-between border-b border-slate-200 px-5 py-5 dark:border-slate-800 sm:px-6">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-black uppercase tracking-[.2em] text-blue-600 dark:text-blue-400">
+                {application.applicationNumber}
+              </p>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-black ${STATUS_COLORS[application.status]}`}
+              >
+                {statusLabel(application.status, km)}
+              </span>
+            </div>
+            <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+              {application.lastName} {application.firstName}
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-gray-400">
+              {application.applicantType === "RETURNING_STUDENT"
+                ? l(
+                    "Returning student · receipt record",
+                    "សិស្សចាស់ · កំណត់ត្រាទទួលពាក្យ",
+                  )
+                : l("New student application", "ពាក្យចូលរៀនសិស្សថ្មី")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 dark:border-gray-700"
+            aria-label={l("Close", "បិទ")}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <ReviewCard
+              label={l("Intake", "ការទទួលពាក្យ")}
+              rows={[
+                [
+                  l("Academic year", "ឆ្នាំសិក្សា"),
+                  value(application.academicYear?.name),
+                ],
+                [
+                  l("Requested class", "ថ្នាក់ស្នើសុំ"),
+                  value(
+                    application.targetClass?.name || application.requestedGrade,
+                  ),
+                ],
+              ]}
+            />
+            <ReviewCard
+              label={l("Identity", "អត្តសញ្ញាណ")}
+              rows={[
+                [
+                  l("Date of birth", "ថ្ងៃខែឆ្នាំកំណើត"),
+                  value(application.dateOfBirth),
+                ],
+                [
+                  l("Gender", "ភេទ"),
+                  application.gender === "FEMALE"
+                    ? l("Female", "ស្រី")
+                    : l("Male", "ប្រុស"),
+                ],
+              ]}
+            />
+            <ReviewCard
+              label={l("Contact", "ទំនាក់ទំនង")}
+              rows={[
+                [l("Phone", "ទូរសព្ទ"), value(application.phoneNumber)],
+                [l("Email", "អ៊ីមែល"), value(application.email)],
+              ]}
+            />
+          </div>
+
+          {application.applicantType === "NEW_STUDENT" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ReviewCard
+                label={l("Family", "គ្រួសារ")}
+                rows={[
+                  [l("Father", "ឪពុក"), value(application.fatherName)],
+                  [l("Mother", "ម្តាយ"), value(application.motherName)],
+                  [
+                    l("Guardian", "អាណាព្យាបាល"),
+                    value(application.guardianName),
+                  ],
+                  [
+                    l("Guardian phone", "ទូរសព្ទអាណាព្យាបាល"),
+                    value(application.guardianPhone),
+                  ],
+                ]}
+              />
+              <ReviewCard
+                label={l(
+                  "Address and previous study",
+                  "អាសយដ្ឋាន និងប្រវត្តិសិក្សា",
+                )}
+                rows={[
+                  [
+                    l("Place of birth", "ទីកន្លែងកំណើត"),
+                    value(application.placeOfBirth),
+                  ],
+                  [
+                    l("Current address", "អាសយដ្ឋានបច្ចុប្បន្ន"),
+                    value(application.currentAddress),
+                  ],
+                  [
+                    l("Previous school", "សាលាចាស់"),
+                    value(application.previousSchool),
+                  ],
+                  [
+                    l("Previous grade", "ថ្នាក់មុន"),
+                    value(application.previousGrade),
+                  ],
+                ]}
+              />
+            </div>
+          )}
+
+          {application.notes && (
+            <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
+              <p className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                {l("Intake note", "កំណត់ត្រាទទួលពាក្យ")}
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-amber-950 dark:text-amber-100">
+                {application.notes}
+              </p>
+            </section>
+          )}
+
+          <section>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white">
+              {l("Application history", "ប្រវត្តិពាក្យ")}
+            </h3>
+            <div className="mt-3 space-y-2">
+              {(application.events || []).map((event) => (
+                <div
+                  key={event.id}
+                  className="flex gap-3 rounded-xl border border-slate-200 p-3 dark:border-gray-700"
+                >
+                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      {event.toStatus
+                        ? statusLabel(event.toStatus, km)
+                        : event.action.replaceAll("_", " ")}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {new Date(event.createdAt).toLocaleString(
+                        km ? "km-KH" : "en-GB",
+                      )}
+                      {event.actor
+                        ? ` · ${event.actor.lastName} ${event.actor.firstName}`
+                        : ""}
+                    </p>
+                    {event.notes && (
+                      <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">
+                        {event.notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -756,8 +1000,8 @@ function EnrollmentDecisionModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-[1.6rem] border border-white/60 bg-white shadow-[0_35px_100px_-30px_rgba(15,23,42,.55)] dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5 dark:border-gray-800">
+      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5 dark:border-slate-800">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[.24em] text-blue-600 dark:text-blue-400">
               {l("Admission decision", "សេចក្តីសម្រេចទទួលចូលរៀន")}
@@ -805,7 +1049,7 @@ function EnrollmentDecisionModal({
               onClick={() => setPlacementMode("UNASSIGNED")}
               className={`rounded-2xl border p-4 text-left transition ${
                 placementMode === "UNASSIGNED"
-                  ? "border-blue-500 bg-blue-50 ring-4 ring-blue-500/10 dark:bg-blue-500/10"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10"
                   : "border-slate-200 hover:border-slate-300 dark:border-gray-700 dark:hover:border-gray-600"
               }`}
             >
@@ -828,7 +1072,7 @@ function EnrollmentDecisionModal({
               onClick={() => setPlacementMode("CLASS")}
               className={`rounded-2xl border p-4 text-left transition ${
                 placementMode === "CLASS"
-                  ? "border-emerald-500 bg-emerald-50 ring-4 ring-emerald-500/10 dark:bg-emerald-500/10"
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
                   : "border-slate-200 hover:border-slate-300 dark:border-gray-700 dark:hover:border-gray-600"
               }`}
             >
@@ -894,7 +1138,7 @@ function EnrollmentDecisionModal({
               )
             }
             disabled={submitting || (placementMode === "CLASS" && !classId)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition-colors hover:border-blue-700 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1007,6 +1251,20 @@ function AdmissionForm({
         return;
       }
     }
+    if (
+      step === 2 &&
+      type === "NEW_STUDENT" &&
+      data.email?.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())
+    ) {
+      setError(
+        l(
+          "Please enter a valid email address.",
+          "សូមបញ្ចូលអាសយដ្ឋានអ៊ីមែលឱ្យបានត្រឹមត្រូវ។",
+        ),
+      );
+      return;
+    }
     setStep((current) => Math.min(3, current + 1));
   };
 
@@ -1043,14 +1301,19 @@ function AdmissionForm({
   const yearName =
     years.find((year: any) => year.id === data.academicYearId)?.name || "—";
   const className =
-    classes.find((item: any) => item.id === data.targetClassId)?.name ||
-    l("Assign later", "ចាត់ថ្នាក់ពេលក្រោយ");
+    type === "RETURNING_STUDENT"
+      ? l(
+          "Receipt only — Year-End placement",
+          "កត់ត្រាប៉ុណ្ណោះ — ចាត់ថ្នាក់តាម Year-End",
+        )
+      : classes.find((item: any) => item.id === data.targetClassId)?.name ||
+        l("Assign later", "ចាត់ថ្នាក់ពេលក្រោយ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:p-4">
       <form
         onSubmit={submit}
-        className="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[94vh] sm:rounded-[1.7rem] dark:bg-gray-900"
+        className="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:h-auto sm:max-h-[94vh] sm:rounded-3xl dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="border-b border-slate-200 bg-white px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:pt-5">
           <div className="flex items-start justify-between gap-4">
@@ -1128,9 +1391,13 @@ function AdmissionForm({
                           setData((prev) => ({
                             ...prev,
                             applicantType: value,
+                            targetClassId:
+                              value === "NEW_STUDENT"
+                                ? prev.targetClassId
+                                : undefined,
                           }));
                         }}
-                        className={`min-h-12 rounded-xl px-3 text-sm font-black transition ${type === value ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200 dark:bg-gray-950 dark:text-blue-300 dark:ring-gray-700" : "text-slate-500"}`}
+                        className={`min-h-12 rounded-xl border px-3 text-sm font-black transition-colors ${type === value ? "border-blue-200 bg-white text-blue-700 dark:border-blue-900 dark:bg-gray-950 dark:text-blue-300" : "border-transparent text-slate-500"}`}
                       >
                         {value === "NEW_STUDENT"
                           ? l("New student", "សិស្សថ្មី")
@@ -1144,8 +1411,12 @@ function AdmissionForm({
                 <FormHeading
                   title={l("Intake details", "ព័ត៌មានទទួលពាក្យ")}
                   description={l(
-                    "Class selection is optional and can be completed later.",
-                    "អាចទុកការចាត់ថ្នាក់សម្រាប់ធ្វើនៅពេលក្រោយ។",
+                    type === "NEW_STUDENT"
+                      ? "Class selection is optional and can be completed later."
+                      : "Returning students stay in the promotion or repetition workflow.",
+                    type === "NEW_STUDENT"
+                      ? "អាចទុកការចាត់ថ្នាក់សម្រាប់ធ្វើនៅពេលក្រោយ។"
+                      : "សិស្សចាស់នៅតែស្ថិតក្នុងមុខងារឡើងថ្នាក់ ឬត្រួតថ្នាក់។",
                   )}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -1154,7 +1425,11 @@ function AdmissionForm({
                       className={input}
                       value={data.academicYearId}
                       onChange={(event) =>
-                        set("academicYearId", event.target.value)
+                        setData((prev) => ({
+                          ...prev,
+                          academicYearId: event.target.value,
+                          targetClassId: undefined,
+                        }))
                       }
                     >
                       {years.map((year: any) => (
@@ -1164,28 +1439,30 @@ function AdmissionForm({
                       ))}
                     </select>
                   </Field>
-                  <Field label={l("Requested class", "ថ្នាក់ស្នើសុំ")}>
-                    <select
-                      className={input}
-                      value={data.targetClassId || ""}
-                      onChange={(event) =>
-                        set("targetClassId", event.target.value)
-                      }
-                    >
-                      <option value="">
-                        {l(
-                          "Decide and assign later",
-                          "សម្រេច និងចាត់ថ្នាក់ពេលក្រោយ",
-                        )}
-                      </option>
-                      {classes.map((classroom: any) => (
-                        <option key={classroom.id} value={classroom.id}>
-                          {classroom.name} — {l("Grade", "ថ្នាក់ទី")}{" "}
-                          {classroom.grade}
+                  {type === "NEW_STUDENT" && (
+                    <Field label={l("Requested class", "ថ្នាក់ស្នើសុំ")}>
+                      <select
+                        className={input}
+                        value={data.targetClassId || ""}
+                        onChange={(event) =>
+                          set("targetClassId", event.target.value)
+                        }
+                      >
+                        <option value="">
+                          {l(
+                            "Decide and assign later",
+                            "សម្រេច និងចាត់ថ្នាក់ពេលក្រោយ",
+                          )}
                         </option>
-                      ))}
-                    </select>
-                  </Field>
+                        {classes.map((classroom: any) => (
+                          <option key={classroom.id} value={classroom.id}>
+                            {classroom.name} — {l("Grade", "ថ្នាក់ទី")}{" "}
+                            {classroom.grade}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
                 </div>
               </section>
               {type === "RETURNING_STUDENT" ? (
@@ -1327,6 +1604,7 @@ function AdmissionForm({
                     >
                       <input
                         type="date"
+                        max={new Date().toISOString().slice(0, 10)}
                         className={input}
                         value={data.dateOfBirth || ""}
                         onChange={(event) =>
@@ -1342,55 +1620,57 @@ function AdmissionForm({
 
           {step === 2 && (
             <div className="space-y-6">
-              <section>
-                <FormHeading
-                  title={l("Contact information", "ព័ត៌មានទំនាក់ទំនង")}
-                  description={l(
-                    "Phone details help the school contact the family quickly.",
-                    "លេខទូរសព្ទជួយឱ្យសាលាទាក់ទងគ្រួសារបានលឿន។",
-                  )}
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label={l("Student phone", "លេខទូរសព្ទសិស្ស")}>
-                    <input
-                      inputMode="tel"
-                      className={input}
-                      value={data.phoneNumber || ""}
-                      onChange={(event) =>
-                        set("phoneNumber", event.target.value)
-                      }
-                    />
-                  </Field>
-                  <Field label={l("Email", "អ៊ីមែល")}>
-                    <input
-                      type="email"
-                      inputMode="email"
-                      className={input}
-                      value={data.email || ""}
-                      onChange={(event) => set("email", event.target.value)}
-                    />
-                  </Field>
-                  <Field label={l("Guardian name", "ឈ្មោះអាណាព្យាបាល")}>
-                    <input
-                      className={input}
-                      value={data.guardianName || ""}
-                      onChange={(event) =>
-                        set("guardianName", event.target.value)
-                      }
-                    />
-                  </Field>
-                  <Field label={l("Guardian phone", "លេខទូរសព្ទអាណាព្យាបាល")}>
-                    <input
-                      inputMode="tel"
-                      className={input}
-                      value={data.guardianPhone || ""}
-                      onChange={(event) =>
-                        set("guardianPhone", event.target.value)
-                      }
-                    />
-                  </Field>
-                </div>
-              </section>
+              {type === "NEW_STUDENT" && (
+                <section>
+                  <FormHeading
+                    title={l("Contact information", "ព័ត៌មានទំនាក់ទំនង")}
+                    description={l(
+                      "Phone details help the school contact the family quickly.",
+                      "លេខទូរសព្ទជួយឱ្យសាលាទាក់ទងគ្រួសារបានលឿន។",
+                    )}
+                  />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={l("Student phone", "លេខទូរសព្ទសិស្ស")}>
+                      <input
+                        inputMode="tel"
+                        className={input}
+                        value={data.phoneNumber || ""}
+                        onChange={(event) =>
+                          set("phoneNumber", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label={l("Email", "អ៊ីមែល")}>
+                      <input
+                        type="email"
+                        inputMode="email"
+                        className={input}
+                        value={data.email || ""}
+                        onChange={(event) => set("email", event.target.value)}
+                      />
+                    </Field>
+                    <Field label={l("Guardian name", "ឈ្មោះអាណាព្យាបាល")}>
+                      <input
+                        className={input}
+                        value={data.guardianName || ""}
+                        onChange={(event) =>
+                          set("guardianName", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label={l("Guardian phone", "លេខទូរសព្ទអាណាព្យាបាល")}>
+                      <input
+                        inputMode="tel"
+                        className={input}
+                        value={data.guardianPhone || ""}
+                        onChange={(event) =>
+                          set("guardianPhone", event.target.value)
+                        }
+                      />
+                    </Field>
+                  </div>
+                </section>
+              )}
               {type === "NEW_STUDENT" && (
                 <>
                   <section>
@@ -1484,58 +1764,78 @@ function AdmissionForm({
 
           {step === 3 && (
             <div className="space-y-4">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white">
-                <p className="text-xs font-black uppercase tracking-[.2em] text-blue-100">
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/60 dark:bg-blue-950/30">
+                <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600 dark:text-blue-400">
                   {type === "NEW_STUDENT"
                     ? l("New student", "សិស្សថ្មី")
                     : l("Returning student", "សិស្សចាស់")}
                 </p>
-                <h3 className="mt-2 text-2xl font-black">
+                <h3 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
                   {displayName || l("Student application", "ពាក្យសិស្ស")}
                 </h3>
-                <p className="mt-1 text-sm text-blue-100">
+                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   {yearName} · {className}
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              {type === "RETURNING_STUDENT" ? (
                 <ReviewCard
-                  label={l("Student details", "ព័ត៌មានសិស្ស")}
+                  label={l(
+                    "Existing student record",
+                    "កំណត់ត្រាសិស្សដែលមានស្រាប់",
+                  )}
                   rows={[
                     [
-                      l("Date of birth", "ថ្ងៃខែឆ្នាំកំណើត"),
-                      type === "RETURNING_STUDENT"
-                        ? selectedStudent?.dateOfBirth || "—"
-                        : data.dateOfBirth || "—",
+                      l("Student ID", "លេខសម្គាល់សិស្ស"),
+                      selectedStudent?.studentId || "—",
                     ],
                     [
-                      l("Gender", "ភេទ"),
-                      type === "RETURNING_STUDENT"
-                        ? selectedStudent?.gender || "—"
-                        : data.gender === "FEMALE"
-                          ? l("Female", "ស្រី")
-                          : l("Male", "ប្រុស"),
+                      l("Current class", "ថ្នាក់បច្ចុប្បន្ន"),
+                      selectedStudent?.class?.name || "—",
+                    ],
+                    [
+                      l("Date of birth", "ថ្ងៃខែឆ្នាំកំណើត"),
+                      selectedStudent?.dateOfBirth || "—",
                     ],
                     [
                       l("Phone", "ទូរសព្ទ"),
-                      data.phoneNumber || selectedStudent?.phoneNumber || "—",
+                      selectedStudent?.phoneNumber || "—",
                     ],
                   ]}
                 />
-                <ReviewCard
-                  label={l("Family contact", "ទំនាក់ទំនងគ្រួសារ")}
-                  rows={[
-                    [l("Guardian", "អាណាព្យាបាល"), data.guardianName || "—"],
-                    [
-                      l("Guardian phone", "ទូរសព្ទអាណាព្យាបាល"),
-                      data.guardianPhone || "—",
-                    ],
-                    [
-                      l("Previous school", "សាលាចាស់"),
-                      data.previousSchool || "—",
-                    ],
-                  ]}
-                />
-              </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ReviewCard
+                    label={l("Student details", "ព័ត៌មានសិស្ស")}
+                    rows={[
+                      [
+                        l("Date of birth", "ថ្ងៃខែឆ្នាំកំណើត"),
+                        data.dateOfBirth || "—",
+                      ],
+                      [
+                        l("Gender", "ភេទ"),
+                        data.gender === "FEMALE"
+                          ? l("Female", "ស្រី")
+                          : l("Male", "ប្រុស"),
+                      ],
+                      [l("Phone", "ទូរសព្ទ"), data.phoneNumber || "—"],
+                    ]}
+                  />
+                  <ReviewCard
+                    label={l("Family contact", "ទំនាក់ទំនងគ្រួសារ")}
+                    rows={[
+                      [l("Guardian", "អាណាព្យាបាល"), data.guardianName || "—"],
+                      [
+                        l("Guardian phone", "ទូរសព្ទអាណាព្យាបាល"),
+                        data.guardianPhone || "—",
+                      ],
+                      [
+                        l("Previous school", "សាលាចាស់"),
+                        data.previousSchool || "—",
+                      ],
+                    ]}
+                  />
+                </div>
+              )}
               {data.notes && (
                 <div className="rounded-2xl border border-slate-200 p-4 dark:border-gray-700">
                   <p className="text-xs font-black uppercase tracking-wider text-slate-400">
@@ -1547,10 +1847,15 @@ function AdmissionForm({
                 </div>
               )}
               <p className="rounded-xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
-                {l(
-                  "Please verify the information before saving. The application can be reviewed and approved afterward.",
-                  "សូមផ្ទៀងផ្ទាត់ព័ត៌មានមុនរក្សាទុក។ ពាក្យនេះអាចត្រូវបានពិនិត្យ និងអនុម័តនៅពេលក្រោយ។",
-                )}
+                {type === "RETURNING_STUDENT"
+                  ? l(
+                      "Saving records receipt only; it will not change the student's class or progression.",
+                      "ការរក្សាទុកគឺកត់ត្រាការទទួលពាក្យប៉ុណ្ណោះ មិនផ្លាស់ប្តូរថ្នាក់ ឬការឡើងថ្នាក់របស់សិស្សទេ។",
+                    )
+                  : l(
+                      "Please verify the information before saving. The application can be reviewed and approved afterward.",
+                      "សូមផ្ទៀងផ្ទាត់ព័ត៌មានមុនរក្សាទុក។ ពាក្យនេះអាចត្រូវបានពិនិត្យ និងអនុម័តនៅពេលក្រោយ។",
+                    )}
               </p>
             </div>
           )}
@@ -1575,7 +1880,7 @@ function AdmissionForm({
               <button
                 type="button"
                 onClick={next}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-lg shadow-blue-500/20"
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-5 text-sm font-black text-white transition-colors hover:border-blue-700 hover:bg-blue-700"
               >
                 {l("Continue", "បន្ត")}
                 <ChevronRight className="h-4 w-4" />
@@ -1584,7 +1889,7 @@ function AdmissionForm({
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 text-sm font-black text-white shadow-lg shadow-blue-500/20 disabled:opacity-40"
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-5 text-sm font-black text-white transition-colors hover:border-blue-700 hover:bg-blue-700 disabled:opacity-40"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

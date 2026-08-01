@@ -15,13 +15,18 @@ const prisma = getPooledPrismaClient();
  * - 25120045 = Enrolled in 2025, Grade 12, Student #45
  * - 26080123 = Enrolled in 2026, Grade 8, Student #123
  */
-export async function generateStudentId(classId?: string, schoolId?: string): Promise<string> {
+export async function generateStudentId(
+  classId?: string,
+  schoolId?: string,
+  enrollmentYear = new Date().getFullYear(),
+): Promise<string> {
   try {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("🎯 Generating Student ID...");
 
-    // Get current year (last 2 digits)
-    const year = new Date().getFullYear().toString().slice(-2);
+    // Use the intake academic year when supplied. Admissions for the next
+    // academic year often open before the calendar year changes.
+    const year = enrollmentYear.toString().slice(-2);
     console.log(`   Year: 20${year}`);
 
     // Get grade code from class
@@ -58,7 +63,9 @@ export async function generateStudentId(classId?: string, schoolId?: string): Pr
         startsWith: prefix,
       },
     };
-    if (schoolId) whereClause.schoolId = schoolId; // Multi-tenant filter
+    // Student.studentId is globally unique in the current schema, so sequence
+    // allocation must also be global. Filtering by school here can generate the
+    // same identifier in two schools and make the second enrollment fail.
 
     const lastStudent = await prisma.student.findFirst({
       where: whereClause,
