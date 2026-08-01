@@ -8,11 +8,16 @@ export default function AngkorLaureates({
   width,
   height,
 }: CertificateCanvasProps) {
-  const schoolName = data?.school?.name || placeholderSchoolName;
+  const schoolName = (data?.school as any)?.nameKh || (data?.school as any)?.nameKhmer || data?.school?.name || placeholderSchoolName;
   const schoolLogo = data?.school?.logo || null;
 
   const recipient = data?.groups?.[0]?.recipients?.[0];
-  const recipientName = recipient?.name || "ឈ្នោះសិស្ស";
+  const recipientName = recipient?.name || "ឈ្មោះសិស្ស";
+  const detailItems = [
+    content.showStudentId && recipient?.studentId ? `ID: ${recipient.studentId}` : null,
+    content.showRanks && recipient?.rank ? `លំដាប់ទី ${recipient.rank}` : null,
+    content.showScores && recipient?.average ? `ពិន្ទុមធ្យម ${recipient.average.toFixed(2)}` : null,
+  ].filter(Boolean);
 
   const ratio = width > height ? "landscape" : "portrait-a4";
   const bgImage = `/poster-templates/angkor-laureates/background-${ratio}.png`;
@@ -67,6 +72,15 @@ export default function AngkorLaureates({
             >
               {recipientName}
             </div>
+            {detailItems.length > 0 && (
+              <div className="mb-8 flex flex-wrap justify-center gap-4 text-[1.6rem] font-bold text-[#fbbf24]">
+                {detailItems.map((item) => (
+                  <span key={item} className="rounded-full border-2 border-[#fbbf24]/50 bg-black/20 px-7 py-2">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            )}
             <p className="max-w-5xl text-[2rem] leading-[4rem] font-bold text-slate-300">
               ចំពោះសមិទ្ធផលសិក្សាដ៏ឆ្នើម ការខិតខំប្រឹងប្រែង ការលះបង់ 
               និងអាកប្បកិរិយាជាគំរូក្នុងឆ្នាំសិក្សានេះ។ ការខិតខំរបស់អ្នកគឺជាគំរូដ៏ល្អ។

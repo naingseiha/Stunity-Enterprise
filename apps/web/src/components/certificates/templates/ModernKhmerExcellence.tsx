@@ -8,11 +8,16 @@ export default function ModernKhmerExcellence({
   width,
   height,
 }: CertificateCanvasProps) {
-  const schoolName = data?.school?.name || placeholderSchoolName;
+  const schoolName = (data?.school as any)?.nameKh || (data?.school as any)?.nameKhmer || data?.school?.name || placeholderSchoolName;
   const schoolLogo = data?.school?.logo || null;
 
   const recipient = data?.groups?.[0]?.recipients?.[0];
-  const recipientName = recipient?.name || "ឈ្នោះសិស្ស";
+  const recipientName = recipient?.name || "ឈ្មោះសិស្ស";
+  const detailItems = [
+    content.showStudentId && recipient?.studentId ? `ID: ${recipient.studentId}` : null,
+    content.showRanks && recipient?.rank ? `លំដាប់ទី ${recipient.rank}` : null,
+    content.showScores && recipient?.average ? `ពិន្ទុមធ្យម ${recipient.average.toFixed(2)}` : null,
+  ].filter(Boolean);
 
   const ratio = width > height ? "landscape" : "portrait-a4";
   const bgImage = `/poster-templates/modern-khmer-excellence/background-${ratio}.png`;
@@ -67,6 +72,15 @@ export default function ModernKhmerExcellence({
           >
             {recipientName}
           </div>
+          {detailItems.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-4 text-[1.6rem] font-bold text-[#0f5b57]">
+              {detailItems.map((item) => (
+                <span key={item} className="rounded-full border-2 border-[#0f5b57]/20 bg-white/75 px-7 py-2">
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
 
           <p className="mt-12 max-w-5xl text-[2rem] leading-[4rem] text-slate-600 font-bold">
             ចំពោះការចូលរួមយ៉ាងសកម្ម និងសមិទ្ធផលដែលសម្រេចបាននៅក្នុងកម្មវិធីសិក្សា

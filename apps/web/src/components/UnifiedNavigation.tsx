@@ -48,6 +48,7 @@ import {
   Brain,
   PieChart,
   Award,
+  ScrollText,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import AcademicYearSelector from "./AcademicYearSelector";
@@ -150,6 +151,7 @@ export default function UnifiedNavigation({
   const tMonthlyReport = useTranslations("monthlyReport");
   const tReportsDashboard = useTranslations("reportsDashboard");
   const tPosterStudio = useTranslations("posterStudio");
+  const tCertificateStudio = useTranslations("certificateStudio");
   const tNav = useTranslations("navigation");
   const router = useRouter();
   const pathname = usePathname();
@@ -554,6 +556,13 @@ export default function UnifiedNavigation({
                   prefetch: null,
                   skeleton: "dashboard" as const,
                 },
+                {
+                  name: tCertificateStudio("nav"),
+                  icon: ScrollText,
+                  path: `/${locale}/reports/certificate-studio`,
+                  prefetch: null,
+                  skeleton: "dashboard" as const,
+                },
               ]
             : []),
           ...(canOpenAttendanceDashboard
@@ -676,6 +685,7 @@ export default function UnifiedNavigation({
       canOpenReportsDashboard,
       canViewTeacherQuizAnalytics,
       locale,
+      tCertificateStudio,
       tMonthlyReport,
       tPosterStudio,
       tReportsDashboard,

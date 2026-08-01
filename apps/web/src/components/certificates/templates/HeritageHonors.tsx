@@ -8,11 +8,16 @@ export default function HeritageHonors({
   width,
   height,
 }: CertificateCanvasProps) {
-  const schoolName = data?.school?.name || placeholderSchoolName;
+  const schoolName = (data?.school as any)?.nameKh || (data?.school as any)?.nameKhmer || data?.school?.name || placeholderSchoolName;
   const schoolLogo = data?.school?.logo || null;
 
   const recipient = data?.groups?.[0]?.recipients?.[0];
-  const recipientName = recipient?.name || "ឈ្នោះសិស្ស";
+  const recipientName = recipient?.name || "ឈ្មោះសិស្ស";
+  const detailItems = [
+    content.showStudentId && recipient?.studentId ? `ID: ${recipient.studentId}` : null,
+    content.showRanks && recipient?.rank ? `លំដាប់ទី ${recipient.rank}` : null,
+    content.showScores && recipient?.average ? `ពិន្ទុមធ្យម ${recipient.average.toFixed(2)}` : null,
+  ].filter(Boolean);
 
   const ratio = width > height ? "landscape" : "portrait-a4";
   const bgImage = `/poster-templates/heritage-honors/background-${ratio}.png`;
@@ -66,6 +71,15 @@ export default function HeritageHonors({
           >
             {recipientName}
           </div>
+          {detailItems.length > 0 && (
+            <div className="mb-8 flex flex-wrap justify-center gap-4 text-[1.6rem] font-bold text-[#0f5b57]">
+              {detailItems.map((item) => (
+                <span key={item} className="rounded-full border-2 border-[#b88a3b]/60 bg-white/60 px-7 py-2">
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="max-w-5xl text-[2rem] leading-[4rem] text-[#4a3b22] font-bold">
             បានបញ្ចប់ការសិក្សាដោយជោគជ័យ និងទទួលបាននិទ្ទេសល្អប្រសើរ
             ក្នុងឆ្នាំសិក្សា {academicYearLabel}។

@@ -13,6 +13,11 @@ export default function CleanAchievers({
 
   const recipient = data?.groups?.[0]?.recipients?.[0];
   const recipientName = recipient?.name || "ឈ្មោះសិស្ស";
+  const detailItems = [
+    content.showStudentId && recipient?.studentId ? `ID: ${recipient.studentId}` : null,
+    content.showRanks && recipient?.rank ? `លំដាប់ទី ${recipient.rank}` : null,
+    content.showScores && recipient?.average ? `ពិន្ទុមធ្យម ${recipient.average.toFixed(2)}` : null,
+  ].filter(Boolean);
   
   const ratio = width > height ? "landscape" : "portrait-a4";
   
@@ -58,6 +63,15 @@ export default function CleanAchievers({
           <div className="my-12 text-[7.5rem] font-normal text-[#1a365d] drop-shadow-md" style={{ fontFamily: '"Moul", "Khmer OS Muol Light", serif' }}>
             {recipientName}
           </div>
+          {detailItems.length > 0 && (
+            <div className="mb-8 flex flex-wrap justify-center gap-4 text-[1.7rem] font-bold text-[#0f5b57]">
+              {detailItems.map((item) => (
+                <span key={item} className="rounded-full border-2 border-[#d4af37]/50 bg-white/80 px-8 py-2">
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="max-w-5xl text-[2.2rem] leading-[4rem] text-slate-700 font-bold px-12">
             សម្រាប់សមិទ្ធផលឆ្នើមក្នុងការសិក្សា ក្នុងឆ្នាំសិក្សា {academicYearLabel}។ 
             ការលះបង់ និងការខិតខំប្រឹងប្រែងរបស់អ្នក គឺជាគំរូដ៏ល្អ។

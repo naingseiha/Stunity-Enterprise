@@ -460,6 +460,35 @@ export async function downloadPosterPdf(
   doc.save(`${fileName}.pdf`);
 }
 
+export async function downloadPosterPdfPages(
+  sources: HTMLElement[],
+  fileName: string,
+  width: number,
+  height: number,
+) {
+  if (sources.length === 0) return;
+
+  const { default: jsPDF } = await import("jspdf");
+  const orientation = width >= height ? "landscape" : "portrait";
+  const widthMm = (width / 300) * 25.4;
+  const heightMm = (height / 300) * 25.4;
+  const doc = new jsPDF({
+    unit: "mm",
+    format: [widthMm, heightMm],
+    orientation,
+    compress: true,
+  });
+
+  for (let index = 0; index < sources.length; index += 1) {
+    const canvas = await capturePosterCanvas(sources[index], width, height);
+    const dataUrl = canvas.toDataURL("image/png");
+    if (index > 0) doc.addPage([widthMm, heightMm], orientation);
+    doc.addImage(dataUrl, "PNG", 0, 0, widthMm, heightMm);
+  }
+
+  doc.save(`${fileName}.pdf`);
+}
+
 export function safePosterFileName(schoolName: string, periodLabel: string) {
   return (
     `${schoolName}-${periodLabel}-congratulations`
