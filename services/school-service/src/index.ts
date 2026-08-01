@@ -20,10 +20,17 @@ import {
   STANDARD_GRADING_SCALE,
   DEFAULT_EXAM_TYPES,
   DEFAULT_TERMS,
+  CAMBODIA_FLEXIBLE_TERMS,
   TermTemplate,
   getSchoolTypeConfig,
   getEducationModelDefaults,
 } from './utils/default-templates';
+import {
+  AcademicTermValidationError,
+  academicTermData,
+  academicTermNeedsUpdate,
+  normalizeAndValidateAcademicTerms,
+} from './utils/academic-year-terms';
 
 // Load environment variables from root .env in local dev, and keep process env for deployed runtimes
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -725,9 +732,13 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
           terms: {
             create: materializedDefaultTerms.map((term) => ({
               name: term.name,
+              nameKh: term.nameKh,
               termNumber: term.termNumber,
               startDate: term.startDate,
               endDate: term.endDate,
+              gradeLevels: term.gradeLevels || [],
+              examMonth: term.examMonth || null,
+              excludedMonths: term.excludedMonths || [],
             })),
           },
           examTypes: {
@@ -2575,21 +2586,96 @@ app.post('/schools/:schoolId/academic-years', async (req: Request, res: Response
 app.put('/schools/:schoolId/academic-years/:yearId', async (req: Request, res: Response) => {
   try {
     const { schoolId, yearId } = req.params;
-    const { name, startDate, endDate, status, isCurrent } = req.body;
+    const { name, startDate, endDate, status, isCurrent, terms } = req.body;
+
+    const existingYear = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+      include: { terms: true },
+    });
+    if (!existingYear) {
+      return res.status(404).json({ success: false, error: 'Academic year not found' });
+    }
+
+    const normalizedTerms = terms === undefined
+      ? null
+      : normalizeAndValidateAcademicTerms(
+          terms,
+          startDate || existingYear.startDate,
+          endDate || existingYear.endDate,
+        );
 
     const updateData: any = {};
-    if (name) updateData.name = name;
-    if (startDate) updateData.startDate = new Date(startDate);
-    if (endDate) updateData.endDate = new Date(endDate);
-    if (status) updateData.status = status;
-    if (typeof isCurrent === 'boolean') updateData.isCurrent = isCurrent;
+    if (name && name !== existingYear.name) updateData.name = name;
+    if (startDate && new Date(startDate).getTime() !== existingYear.startDate.getTime()) {
+      updateData.startDate = new Date(startDate);
+    }
+    if (endDate && new Date(endDate).getTime() !== existingYear.endDate.getTime()) {
+      updateData.endDate = new Date(endDate);
+    }
+    if (status && status !== existingYear.status) updateData.status = status;
+    if (typeof isCurrent === 'boolean' && isCurrent !== existingYear.isCurrent) {
+      updateData.isCurrent = isCurrent;
+    }
 
-    const year = await prisma.academicYear.update({
-      where: {
-        id: yearId,
-        schoolId,
-      },
-      data: updateData,
+    const existingIds = new Set(existingYear.terms.map((term) => term.id));
+    const incomingIds = normalizedTerms
+      ? normalizedTerms
+          .filter((term) => term.id && existingIds.has(term.id))
+          .map((term) => term.id as string)
+      : [];
+    const unknownId = normalizedTerms?.find(
+      (term) => term.id && !term.id.startsWith('new-') && !existingIds.has(term.id),
+    );
+    if (unknownId) {
+      throw new AcademicTermValidationError('One of the terms does not belong to this academic year');
+    }
+
+    const termsToDelete = normalizedTerms
+      ? existingYear.terms.filter((term) => !incomingIds.includes(term.id))
+      : [];
+    const termUpdates = (normalizedTerms || []).flatMap((term) => {
+      if (!term.id || !existingIds.has(term.id)) return [];
+      const existing = existingYear.terms.find((item) => item.id === term.id);
+      const data = academicTermData(term);
+      return existing && academicTermNeedsUpdate(existing, data) ? [{ id: term.id, data }] : [];
+    });
+    const termCreates = (normalizedTerms || [])
+      .filter((term) => !term.id || !existingIds.has(term.id))
+      .map((term) => academicTermData(term));
+    const hasTermMutations = termsToDelete.length > 0 || termUpdates.length > 0 || termCreates.length > 0;
+
+    if (Object.keys(updateData).length === 0 && !hasTermMutations) {
+      return res.json({ success: true, data: existingYear });
+    }
+
+    const year = await prisma.$transaction(async (tx) => {
+      let updatedYear: any = existingYear;
+      if (Object.keys(updateData).length > 0) {
+        updatedYear = await tx.academicYear.update({
+          where: { id: yearId, schoolId },
+          data: updateData,
+          include: { terms: { orderBy: [{ termNumber: 'asc' }, { startDate: 'asc' }] } },
+        });
+      }
+
+      if (!hasTermMutations) return updatedYear;
+
+      for (const term of termsToDelete) {
+        await tx.examType.updateMany({ where: { termId: term.id }, data: { termId: null } });
+        await tx.academicTerm.delete({ where: { id: term.id } });
+      }
+      await Promise.all([
+        ...termUpdates.map((term) => tx.academicTerm.update({ where: { id: term.id }, data: term.data })),
+        ...termCreates.map((data) => tx.academicTerm.create({ data: { ...data, academicYearId: yearId } })),
+      ]);
+
+      return tx.academicYear.findUnique({
+        where: { id: yearId },
+        include: { terms: { orderBy: [{ termNumber: 'asc' }, { startDate: 'asc' }] } },
+      });
+    }, {
+      maxWait: 10_000,
+      timeout: 30_000,
     });
 
     clearAcademicYearCache(schoolId);
@@ -2600,9 +2686,9 @@ app.put('/schools/:schoolId/academic-years/:yearId', async (req: Request, res: R
     });
   } catch (error: any) {
     console.error('Error updating academic year:', error);
-    res.status(404).json({
+    res.status(error instanceof AcademicTermValidationError ? 400 : 500).json({
       success: false,
-      error: 'Academic year not found or failed to update',
+      error: error instanceof AcademicTermValidationError ? error.message : 'Failed to update academic year',
       message: error.message,
     });
   }
@@ -4294,6 +4380,14 @@ app.get('/schools/:schoolId/academic-years/:yearId/calendar', async (req: Reques
       return res.json(cachedResponse);
     }
 
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+      select: { name: true, startDate: true, endDate: true },
+    });
+    if (!academicYear) {
+      return res.status(404).json({ success: false, error: 'រកមិនឃើញឆ្នាំសិក្សា។' });
+    }
+
     const calendar = await prisma.academicCalendar.findFirst({
       where: { academicYearId: yearId },
       include: {
@@ -4310,7 +4404,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/calendar', async (req: Reques
           id: null,
           name: 'No calendar',
           events: [],
-          academicYear: null,
+          academicYear,
         },
       };
       writeAcademicYearCache(cacheKey, emptyResponse);
@@ -4332,9 +4426,39 @@ app.post('/schools/:schoolId/academic-years/:yearId/calendar/events', async (req
     const { schoolId, yearId } = req.params;
     const { type, title, description, startDate, endDate, isSchoolDay, isPublic } = req.body;
 
+    if (!title?.trim() || !startDate) {
+      return res.status(400).json({ success: false, error: 'សូមបំពេញឈ្មោះ និងថ្ងៃចាប់ផ្តើម។' });
+    }
+
+    const eventStart = new Date(startDate);
+    const eventEnd = new Date(endDate || startDate);
+    if (Number.isNaN(eventStart.getTime()) || Number.isNaN(eventEnd.getTime())) {
+      return res.status(400).json({ success: false, error: 'កាលបរិច្ឆេទមិនត្រឹមត្រូវ។' });
+    }
+    if (eventEnd < eventStart) {
+      return res.status(400).json({ success: false, error: 'ថ្ងៃបញ្ចប់ត្រូវស្ថិតនៅក្រោយ ឬស្មើថ្ងៃចាប់ផ្តើម។' });
+    }
+
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+      select: { id: true, startDate: true, endDate: true },
+    });
+    if (!academicYear) {
+      return res.status(404).json({ success: false, error: 'រកមិនឃើញឆ្នាំសិក្សា។' });
+    }
+    if (eventStart < academicYear.startDate || eventEnd > academicYear.endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'ចន្លោះថ្ងៃត្រូវស្ថិតនៅក្នុងឆ្នាំសិក្សាដែលបានជ្រើស។',
+      });
+    }
+
+    const eventType = type || 'SPECIAL_EVENT';
+    const closesSchool = eventType === 'VACATION' || eventType === 'HOLIDAY';
+
     // Get or create calendar
     let calendar = await prisma.academicCalendar.findFirst({
-      where: { academicYearId: yearId },
+      where: { academicYearId: academicYear.id },
     });
 
     if (!calendar) {
@@ -4349,12 +4473,12 @@ app.post('/schools/:schoolId/academic-years/:yearId/calendar/events', async (req
     const event = await prisma.calendarEvent.create({
       data: {
         calendarId: calendar.id,
-        type: type || 'SPECIAL_EVENT',
-        title,
-        description,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate || startDate),
-        isSchoolDay: isSchoolDay !== false,
+        type: eventType,
+        title: title.trim(),
+        description: description?.trim() || null,
+        startDate: eventStart,
+        endDate: eventEnd,
+        isSchoolDay: closesSchool ? false : isSchoolDay !== false,
         isPublic: isPublic !== false,
       },
     });
@@ -4387,6 +4511,28 @@ app.delete('/schools/:schoolId/academic-years/:yearId/calendar/events/:eventId',
 // ============================================================
 // 📅 NEW YEAR SETUP WIZARD API
 // ============================================================
+
+// GET /schools/:schoolId/academic-years/:yearId/terms - Lightweight term data for editing
+app.get('/schools/:schoolId/academic-years/:yearId/terms', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+    const year = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+      select: {
+        terms: { orderBy: [{ termNumber: 'asc' }, { startDate: 'asc' }] },
+      },
+    });
+
+    if (!year) {
+      return res.status(404).json({ success: false, error: 'រកមិនឃើញឆ្នាំសិក្សា។' });
+    }
+
+    res.json({ success: true, data: year.terms });
+  } catch (error: any) {
+    console.error('Error fetching academic year terms:', error);
+    res.status(500).json({ success: false, error: 'មិនអាចទាញយកឆមាសបានទេ។' });
+  }
+});
 
 // GET /schools/:schoolId/academic-years/:yearId/template - Get year as template for copying
 app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Request, res: Response) => {
@@ -4497,6 +4643,10 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
       return res.status(400).json({ success: false, error: 'Name, start date, and end date are required' });
     }
 
+    const normalizedTerms = copyFromYearId || terms === undefined
+      ? null
+      : normalizeAndValidateAcademicTerms(terms, startDate, endDate);
+
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create the academic year
@@ -4528,6 +4678,7 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
 
       // 2. Create terms
       let createdTerms: any[] = [];
+      const copiedTermIds = new Map<string, string>();
       if (copyTerms && sourceYear?.terms?.length) {
         // Calculate date offset
         const sourceStart = new Date(sourceYear.startDate);
@@ -4540,25 +4691,28 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
           termStart.setDate(termStart.getDate() + dayOffset);
           termEnd.setDate(termEnd.getDate() + dayOffset);
 
-          createdTerms.push(await tx.academicTerm.create({
+          const createdTerm = await tx.academicTerm.create({
             data: {
               academicYearId: newYear.id,
               name: term.name,
+              nameKh: term.nameKh,
               termNumber: term.termNumber,
               startDate: termStart,
-              endDate: termEnd
+              endDate: termEnd,
+              gradeLevels: term.gradeLevels,
+              examMonth: term.examMonth,
+              excludedMonths: term.excludedMonths,
             }
-          }));
+          });
+          createdTerms.push(createdTerm);
+          copiedTermIds.set(term.id, createdTerm.id);
         }
-      } else if (terms?.length) {
-        for (const term of terms) {
+      } else if (normalizedTerms?.length) {
+        for (const term of normalizedTerms) {
           createdTerms.push(await tx.academicTerm.create({
             data: {
               academicYearId: newYear.id,
-              name: term.name,
-              termNumber: term.termNumber,
-              startDate: new Date(term.startDate),
-              endDate: new Date(term.endDate)
+              ...academicTermData(term),
             }
           }));
         }
@@ -4571,11 +4725,7 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
           // Map to new term if applicable
           let newTermId = null;
           if (examType.termId && createdTerms.length) {
-            const sourceTerm = sourceYear.terms.find((t: any) => t.id === examType.termId);
-            if (sourceTerm) {
-              const newTerm = createdTerms.find(t => t.termNumber === sourceTerm.termNumber);
-              if (newTerm) newTermId = newTerm.id;
-            }
+            newTermId = copiedTermIds.get(examType.termId) || null;
           }
 
           createdExamTypes.push(await tx.examType.create({
@@ -4754,6 +4904,9 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
           holidays: createdHolidays.length
         }
       };
+    }, {
+      maxWait: 10_000,
+      timeout: 60_000,
     });
 
     clearAcademicYearCache(schoolId);
@@ -4765,7 +4918,10 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
     });
   } catch (error: any) {
     console.error('Error creating year with wizard:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to create academic year' });
+    res.status(error instanceof AcademicTermValidationError ? 400 : 500).json({
+      success: false,
+      error: error.message || 'Failed to create academic year',
+    });
   }
 });
 
@@ -4785,6 +4941,7 @@ app.get('/schools/:schoolId/setup-templates', async (req: Request, res: Response
       success: true,
       data: {
         defaultTerms: DEFAULT_TERMS,
+        cambodiaTermPatterns: CAMBODIA_FLEXIBLE_TERMS,
         defaultExamTypes: DEFAULT_EXAM_TYPES,
         defaultGradingScale: STANDARD_GRADING_SCALE,
         cambodianHolidays: getCambodianHolidays(new Date().getFullYear())

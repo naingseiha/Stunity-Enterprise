@@ -11,6 +11,12 @@ import AnimatedContent from '@/components/AnimatedContent';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
 import { useAcademicYearTemplate, useSetupTemplates } from '@/hooks/useAcademicYearResources';
 import {
+  buildCambodiaAcademicTerms,
+  validateAcademicTerms,
+  type AcademicTermFormValue as Term,
+} from '@/lib/academic-year-terms';
+import AcademicCalendarEditor from '@/components/academic-years/AcademicCalendarEditor';
+import {
   AlertCircle,
   ArrowLeft,
   Award,
@@ -29,13 +35,6 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-
-interface Term {
-  name: string;
-  termNumber: number;
-  startDate: string;
-  endDate: string;
-}
 
 interface ExamType {
   name: string;
@@ -74,29 +73,37 @@ interface Holiday {
 }
 
 const STEPS = [
-  { id: 1, title: 'Basic Info', icon: Calendar, description: 'Name and dates' },
-  { id: 2, title: 'Terms', icon: Clock, description: 'Semesters / terms' },
-  { id: 3, title: 'Exam Types', icon: BookOpen, description: 'Assessment types' },
-  { id: 4, title: 'Grading', icon: Award, description: 'Grade scales' },
-  { id: 5, title: 'Classes', icon: School, description: 'Structure and sections' },
-  { id: 6, title: 'Calendar', icon: CalendarDays, description: 'Holidays and dates' },
+  { id: 1, title: 'ព័ត៌មានទូទៅ', icon: Calendar, description: 'ឈ្មោះ និងកាលបរិច្ឆេទ' },
+  { id: 2, title: 'ឆមាស', icon: Clock, description: 'ក្រុមថ្នាក់ និងខែប្រឡង' },
+  { id: 3, title: 'ប្រភេទប្រឡង', icon: BookOpen, description: 'ការវាយតម្លៃ' },
+  { id: 4, title: 'និទ្ទេស', icon: Award, description: 'កម្រិតពិន្ទុ' },
+  { id: 5, title: 'ថ្នាក់រៀន', icon: School, description: 'កម្រិត និងបន្ទប់' },
+  { id: 6, title: 'ប្រតិទិន', icon: CalendarDays, description: 'ថ្ងៃឈប់ និងព្រឹត្តិការណ៍' },
 ] as const;
 
 const DEFAULT_GRADE_RANGES: GradeRange[] = [
-  { grade: 'A', minScore: 90, maxScore: 100, gpa: 4.0, description: 'Excellent', color: '#10B981' },
-  { grade: 'B', minScore: 80, maxScore: 89, gpa: 3.0, description: 'Very Good', color: '#3B82F6' },
-  { grade: 'C', minScore: 70, maxScore: 79, gpa: 2.5, description: 'Good', color: '#22D3EE' },
-  { grade: 'D', minScore: 60, maxScore: 69, gpa: 2.0, description: 'Fair', color: '#F59E0B' },
-  { grade: 'E', minScore: 50, maxScore: 59, gpa: 1.0, description: 'Pass', color: '#FB923C' },
-  { grade: 'F', minScore: 0, maxScore: 49, gpa: 0.0, description: 'Fail', color: '#EF4444' },
+  { grade: 'A', minScore: 90, maxScore: 100, gpa: 4.0, description: 'ល្អប្រសើរ', color: '#10B981' },
+  { grade: 'B', minScore: 80, maxScore: 89, gpa: 3.0, description: 'ល្អណាស់', color: '#3B82F6' },
+  { grade: 'C', minScore: 70, maxScore: 79, gpa: 2.5, description: 'ល្អ', color: '#22D3EE' },
+  { grade: 'D', minScore: 60, maxScore: 69, gpa: 2.0, description: 'មធ្យម', color: '#F59E0B' },
+  { grade: 'E', minScore: 50, maxScore: 59, gpa: 1.0, description: 'ជាប់', color: '#FB923C' },
+  { grade: 'F', minScore: 0, maxScore: 49, gpa: 0.0, description: 'ធ្លាក់', color: '#EF4444' },
 ];
 
 function formatDateLabel(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const date = new Date(`${value}T00:00:00Z`);
+  const khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+  return `${date.getUTCDate()} ${khmerMonths[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
+
+function getSuggestedAcademicYear() {
+  const now = new Date();
+  const startYear = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+  return {
+    name: `${startYear}-${startYear + 1}`,
+    startDate: `${startYear}-11-01`,
+    endDate: `${startYear + 1}-08-31`,
+  };
 }
 
 function MetricCard({
@@ -179,7 +186,7 @@ function StepBadge({
             active ? 'text-white/60' : complete ? 'text-emerald-600' : 'text-slate-400'
           }`}
         >
-          <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_c918700b" />{number}
+          ជំហានទី {String(number).padStart(2, '0')}
         </p>
         <p className="mt-1 text-sm font-bold">{title}</p>
         <p
@@ -231,7 +238,7 @@ function FieldLabel({ children }: { children: ReactNode }) {
 }
 
 export default function AcademicYearWizardPage(props: { params: Promise<{ locale: string }> }) {
-    const autoT = useTranslations();
+  const autoT = useTranslations();
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
@@ -252,10 +259,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { years: existingYears } = useAcademicYearsList(school?.id);
+  const suggestedAcademicYear = useMemo(getSuggestedAcademicYear, []);
 
-  const [yearName, setYearName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [yearName, setYearName] = useState(suggestedAcademicYear.name);
+  const [startDate, setStartDate] = useState(suggestedAcademicYear.startDate);
+  const [endDate, setEndDate] = useState(suggestedAcademicYear.endDate);
   const [copyFromYearId, setCopyFromYearId] = useState(copyFromId || '');
   const [copyOptions, setCopyOptions] = useState({
     terms: true,
@@ -265,19 +273,18 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
     holidays: true,
   });
 
-  const [terms, setTerms] = useState<Term[]>([
-    { name: 'Semester 1', termNumber: 1, startDate: '', endDate: '' },
-    { name: 'Semester 2', termNumber: 2, startDate: '', endDate: '' },
-  ]);
+  const [terms, setTerms] = useState<Term[]>(() =>
+    buildCambodiaAcademicTerms(suggestedAcademicYear.startDate, suggestedAcademicYear.endDate)
+  );
 
   const [examTypes, setExamTypes] = useState<ExamType[]>([
-    { name: 'Monthly Test', weight: 10, maxScore: 100, order: 1 },
-    { name: 'Midterm Exam', weight: 30, maxScore: 100, order: 2 },
-    { name: 'Final Exam', weight: 60, maxScore: 100, order: 3 },
+    { name: 'ការប្រឡងប្រចាំខែ', weight: 10, maxScore: 100, order: 1 },
+    { name: 'ការប្រឡងពាក់កណ្តាលឆមាស', weight: 30, maxScore: 100, order: 2 },
+    { name: 'ការប្រឡងបញ្ចប់ឆមាស', weight: 60, maxScore: 100, order: 3 },
   ]);
 
   const [gradingScales, setGradingScales] = useState<GradingScale[]>([
-    { name: 'Standard Scale', isDefault: true, ranges: [...DEFAULT_GRADE_RANGES] },
+    { name: 'កម្រិតនិទ្ទេសស្តង់ដារ', isDefault: true, ranges: [...DEFAULT_GRADE_RANGES] },
   ]);
 
   const [classConfigs, setClassConfigs] = useState<ClassConfig[]>([
@@ -328,15 +335,15 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
   const validateStep1 = () => {
     if (!yearName.trim()) {
-      setError('Please enter a year name.');
+      setError('សូមបញ្ចូលឈ្មោះឆ្នាំសិក្សា។');
       return false;
     }
     if (!startDate || !endDate) {
-      setError('Please select both start and end dates.');
+      setError('សូមជ្រើសថ្ងៃចាប់ផ្តើម និងថ្ងៃបញ្ចប់។');
       return false;
     }
     if (new Date(endDate) <= new Date(startDate)) {
-      setError('End date must be after start date.');
+      setError('ថ្ងៃបញ្ចប់ត្រូវនៅក្រោយថ្ងៃចាប់ផ្តើម។');
       return false;
     }
     setError('');
@@ -344,15 +351,10 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
   };
 
   const validateStep2 = () => {
-    if (terms.length === 0) {
-      setError('Please add at least one term.');
+    const termError = validateAcademicTerms(terms, startDate, endDate);
+    if (termError) {
+      setError(termError);
       return false;
-    }
-    for (const term of terms) {
-      if (!term.name || !term.startDate || !term.endDate) {
-        setError('Please fill in all term fields.');
-        return false;
-      }
     }
     setError('');
     return true;
@@ -361,7 +363,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
   const validateStep3 = () => {
     const totalWeight = examTypes.reduce((sum, item) => sum + item.weight, 0);
     if (Math.abs(totalWeight - 100) > 0.1) {
-      setError(`Exam weights must total 100% (currently ${totalWeight}%).`);
+      setError(`ភាគរយនៃការវាយតម្លៃត្រូវសរុបស្មើ ១០០% (បច្ចុប្បន្ន ${totalWeight}%)។`);
       return false;
     }
     setError('');
@@ -387,7 +389,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
     try {
       const token = TokenManager.getAccessToken();
       const schoolId = school?.id;
-      if (!schoolId) throw new Error('School not found.');
+      if (!schoolId) throw new Error('រកមិនឃើញព័ត៌មានសាលា។');
 
       const classesData: any[] = [];
       for (const config of classConfigs) {
@@ -437,28 +439,15 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data?.success === false) {
-        throw new Error(data?.error || 'Failed to create academic year.');
+        throw new Error(data?.error || 'មិនអាចបង្កើតឆ្នាំសិក្សាបានទេ។');
       }
 
       router.push(`/${locale}/settings/academic-years/${data.data.year.id}`);
     } catch (err: any) {
-      setError(err.message || 'Failed to create academic year.');
+      setError(err.message || 'មិនអាចបង្កើតឆ្នាំសិក្សាបានទេ។');
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const addTerm = () => {
-    const nextNumber = terms.length + 1;
-    setTerms([...terms, { name: `Term ${nextNumber}`, termNumber: nextNumber, startDate: '', endDate: '' }]);
-  };
-
-  const removeTerm = (index: number) => setTerms(terms.filter((_, termIndex) => termIndex !== index));
-
-  const updateTerm = (index: number, field: keyof Term, value: string | number) => {
-    const updated = [...terms];
-    updated[index] = { ...updated[index], [field]: value };
-    setTerms(updated);
   };
 
   const addExamType = () => {
@@ -552,23 +541,23 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_1da3cfd6" />
+                      ត្រឡប់ទៅបញ្ជីឆ្នាំសិក្សា
                     </button>
-                    <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-amber-500"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_04fc3fdb" /></p>
+                    <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-amber-500">រៀបចំឆ្នាំសិក្សាថ្មី</p>
                     <h1 className="mt-3 max-w-3xl text-4xl font-black tracking-tight text-slate-950 sm:text-[2.65rem]">
-                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_7abebe99" />
+                      បង្កើតឆ្នាំសិក្សាថ្មីតាមជំហានងាយៗ
                     </h1>
                     <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600">
-                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_d69bc91e" />
+                      កំណត់ព័ត៌មានមូលដ្ឋាន ឆមាស ការវាយតម្លៃ ថ្នាក់រៀន និងប្រតិទិននៅកន្លែងតែមួយ។
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <Calendar className="h-4 w-4 text-amber-500" />
-                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_bca4eec1" /> {currentStep} <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_8ba5fbd1" /> {STEPS.length}
+                        ជំហានទី {currentStep} ក្នុងចំណោម {STEPS.length}
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <Copy className="h-4 w-4 text-sky-500" />
-                        {usingCopyMode ? 'Using source year template' : 'Starting from custom setup'}
+                        {usingCopyMode ? 'កំពុងប្រើគំរូពីឆ្នាំសិក្សាមុន' : 'កំពុងកំណត់ថ្មីដោយខ្លួនឯង'}
                       </span>
                     </div>
                   </div>
@@ -578,17 +567,17 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               <div className="overflow-hidden rounded-[1.9rem] border border-amber-200/70 bg-[linear-gradient(145deg,rgba(120,53,15,0.96),rgba(146,64,14,0.94)_48%,rgba(30,64,175,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(120,53,15,0.56)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_ba9f89ba" /></p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80">វឌ្ឍនភាពរៀបចំ</p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_2499f75c" /></span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <Sparkles className="h-7 w-7 text-amber-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-200 to-sky-200"
                     style={{ width: `${readyScore}%` }}
@@ -596,18 +585,18 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                 </div>
                 <div className="mt-6 grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Terms', value: totalTerms },
-                    { label: 'Classes', value: totalClasses },
-                    { label: 'Events', value: holidayCount },
+                    { label: 'ឆមាស', value: totalTerms },
+                    { label: 'ថ្នាក់រៀន', value: totalClasses },
+                    { label: 'ព្រឹត្តិការណ៍', value: holidayCount },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/10 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-amber-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
-                  {usingCopyMode ? 'Template-assisted setup is active' : 'Custom setup will be submitted'}
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
+                  {usingCopyMode ? 'កំពុងរៀបចំដោយជំនួយពីគំរូ' : 'កំពុងរៀបចំថ្មីដោយខ្លួនឯង'}
                 </div>
               </div>
             </div>
@@ -615,10 +604,10 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_ebbfd67b")} value={currentStep} helper={STEPS[currentStep - 1].title} tone="amber" />
-              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_055affd1")} value={totalTerms} helper="Academic segments configured" tone="sky" />
-              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_ae1b0908")} value={totalClasses} helper="Classes that will be created" tone="emerald" />
-              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_edc3ff07")} value={holidayCount} helper="Holiday and special date entries" tone="slate" />
+              <MetricCard label="ជំហានបច្ចុប្បន្ន" value={currentStep} helper={STEPS[currentStep - 1].title} tone="amber" />
+              <MetricCard label="ឆមាស" value={totalTerms} helper="ចំនួនឆមាសដែលបានកំណត់" tone="sky" />
+              <MetricCard label="គម្រោងថ្នាក់រៀន" value={totalClasses} helper="ចំនួនថ្នាក់រៀនដែលនឹងបង្កើត" tone="emerald" />
+              <MetricCard label="ប្រតិទិន" value={holidayCount} helper="ថ្ងៃឈប់ និងថ្ងៃពិសេស" tone="slate" />
             </div>
           </AnimatedContent>
 
@@ -662,9 +651,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
             <div className="mt-5 space-y-5">
               {currentStep === 1 ? (
                 <SectionShell
-                  eyebrow="Cycle Foundation"
-                  title={autoT("auto.web.years_new_wizard_page.k_086c6189")}
-                  description="Name the academic year, set the date range, and optionally copy from an earlier cycle to accelerate setup."
+                  eyebrow="ព័ត៌មានមូលដ្ឋាន"
+                  title="ព័ត៌មានទូទៅនៃឆ្នាំសិក្សា"
+                  description="ដាក់ឈ្មោះ កំណត់ថ្ងៃចាប់ផ្តើម និងថ្ងៃបញ្ចប់ ឬចម្លងការកំណត់ពីឆ្នាំសិក្សាមុន។"
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_320px]">
                     <div className="space-y-5">
@@ -674,18 +663,18 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             <Copy className="h-4 w-4" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-slate-950"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_5ad66ca6" /></p>
-                            <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_4e668a5c" /></p>
+                            <p className="text-sm font-bold text-slate-950">ចម្លងពីឆ្នាំសិក្សាដែលមានស្រាប់</p>
+                            <p className="mt-1 text-sm text-slate-500">ប្រើឆ្នាំមុនជាគំរូ ដើម្បីមិនចាំបាច់កំណត់ឆមាស ថ្នាក់រៀន និទ្ទេស និងថ្ងៃឈប់ឡើងវិញ។</p>
                           </div>
                         </div>
                         <div className="mt-4">
-                          <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_bef61500" /></FieldLabel>
+                          <FieldLabel>ឆ្នាំសិក្សាគំរូ</FieldLabel>
                           <select
                             value={copyFromYearId}
                             onChange={(event) => setCopyFromYearId(event.target.value)}
                             className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                           >
-                            <option value="">{autoT("auto.web.years_new_wizard_page.k_55780ee9")}</option>
+                            <option value="">កំណត់ថ្មីដោយខ្លួនឯង</option>
                             {existingYears.map((year) => (
                               <option key={year.id} value={year.id}>
                                 {year.name} ({year.status})
@@ -699,11 +688,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_1b91bcfd" /></p>
                             <div className="mt-4 grid gap-3 sm:grid-cols-2">
                               {[
-                                { key: 'terms', label: `Terms (${sourceYearData.copyOptions.terms})` },
-                                { key: 'examTypes', label: `Exam Types (${sourceYearData.copyOptions.examTypes})` },
-                                { key: 'gradingScales', label: `Grading (${sourceYearData.copyOptions.gradingScales})` },
-                                { key: 'classes', label: `Classes (${sourceYearData.copyOptions.classes})` },
-                                { key: 'holidays', label: `Holidays (${sourceYearData.copyOptions.holidays})` },
+                                { key: 'terms', label: `ឆមាស (${sourceYearData.copyOptions.terms})` },
+                                { key: 'examTypes', label: `ប្រភេទប្រឡង (${sourceYearData.copyOptions.examTypes})` },
+                                { key: 'gradingScales', label: `និទ្ទេស (${sourceYearData.copyOptions.gradingScales})` },
+                                { key: 'classes', label: `ថ្នាក់រៀន (${sourceYearData.copyOptions.classes})` },
+                                { key: 'holidays', label: `ថ្ងៃឈប់ (${sourceYearData.copyOptions.holidays})` },
                               ].map((option) => (
                                 <label
                                   key={option.key}
@@ -727,12 +716,12 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
-                          <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_0bf9f161" /></FieldLabel>
+                          <FieldLabel>ឈ្មោះឆ្នាំសិក្សា</FieldLabel>
                           <input
                             type="text"
                             value={yearName}
                             onChange={(event) => setYearName(event.target.value)}
-                            placeholder={autoT("auto.web.years_new_wizard_page.k_ce03846c")}
+                            placeholder="ឧ. ២០២៦-២០២៧"
                             className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                           />
                         </div>
@@ -760,20 +749,20 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                     <div className="space-y-4">
                       <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 shadow-sm">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_1af9b76a" /></p>
-                        <h3 className="mt-3 text-xl font-black tracking-tight text-slate-950">{yearName || 'Academic year title'}</h3>
+                        <h3 className="mt-3 text-xl font-black tracking-tight text-slate-950">{yearName || 'ឈ្មោះឆ្នាំសិក្សា'}</h3>
                         <p className="mt-2 text-sm text-slate-500">
-                          {startDate && endDate ? `${formatDateLabel(startDate)} - ${formatDateLabel(endDate)}` : 'Add dates to preview the cycle range.'}
+                          {startDate && endDate ? `${formatDateLabel(startDate)} - ${formatDateLabel(endDate)}` : 'បញ្ចូលកាលបរិច្ឆេទ ដើម្បីមើលរយៈពេលឆ្នាំសិក្សា។'}
                         </p>
                       </div>
                       <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e216e058" /></p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">របៀបរៀបចំ</p>
                         <p className="mt-3 text-sm font-semibold text-amber-900">
-                          {usingCopyMode ? 'Copy mode is active.' : 'Fresh custom setup is active.'}
+                          {usingCopyMode ? 'កំពុងប្រើទម្រង់ចម្លង។' : 'កំពុងរៀបចំថ្មីដោយខ្លួនឯង។'}
                         </p>
                         <p className="mt-2 text-sm leading-6 text-amber-800">
                           {usingCopyMode
-                            ? 'The final submission will copy the selected resources from the source year according to the options above.'
-                            : 'The final submission will use the terms, exam types, grading, class plan, and calendar you define in the next steps.'}
+                            ? 'ពេលរក្សាទុក ប្រព័ន្ធនឹងចម្លងតែទិន្នន័យដែលបានជ្រើសពីឆ្នាំសិក្សាមុន។'
+                            : 'ពេលរក្សាទុក ប្រព័ន្ធនឹងប្រើឆមាស ប្រភេទប្រឡង និទ្ទេស ថ្នាក់រៀន និងប្រតិទិនដែលអ្នកកំណត់នៅជំហានបន្ទាប់។'}
                         </p>
                       </div>
                     </div>
@@ -783,90 +772,37 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
               {currentStep === 2 ? (
                 <SectionShell
-                  eyebrow="Academic Structure"
-                  title={autoT("auto.web.years_new_wizard_page.k_fb7e7909")}
-                  description="Define the academic segments that shape reporting windows, calendars, and performance tracking."
-                  action={
-                    <button
-                      onClick={addTerm}
-                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_df587b0b" />
-                    </button>
-                  }
+                  eyebrow="រចនាសម្ព័ន្ធឆ្នាំសិក្សា"
+                  title="កំណត់ឆមាសតាមក្រុមថ្នាក់"
+                  description="រៀបចំថ្នាក់ដែលប្រើកាលវិភាគដូចគ្នាជាក្រុម ដើម្បីងាយគ្រប់គ្រងឆមាស ខែប្រឡង និងខែឈប់សម្រាក។"
                 >
-                  <div className="space-y-4">
-                    {terms.map((term, index) => (
-                      <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_54f5b3ca" /> {index + 1}</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_25e95a9b" /></p>
-                          </div>
-                          {terms.length > 1 ? (
-                            <button
-                              onClick={() => removeTerm(index)}
-                              className="rounded-full p-2 text-rose-500 transition hover:bg-rose-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          ) : null}
-                        </div>
-                        <div className="mt-4 grid gap-4 md:grid-cols-4">
-                          <div className="md:col-span-2">
-                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_36f1b49f" /></FieldLabel>
-                            <input
-                              type="text"
-                              value={term.name}
-                              onChange={(event) => updateTerm(index, 'name', event.target.value)}
-                              placeholder={autoT("auto.web.years_new_wizard_page.k_d353f9c9")}
-                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
-                            />
-                          </div>
-                          <div>
-                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b1ad75c0" /></FieldLabel>
-                            <input
-                              type="date"
-                              value={term.startDate}
-                              onChange={(event) => updateTerm(index, 'startDate', event.target.value)}
-                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
-                            />
-                          </div>
-                          <div>
-                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b85e8584" /></FieldLabel>
-                            <input
-                              type="date"
-                              value={term.endDate}
-                              onChange={(event) => updateTerm(index, 'endDate', event.target.value)}
-                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <AcademicCalendarEditor
+                    terms={terms}
+                    academicYearStart={startDate}
+                    academicYearEnd={endDate}
+                    onChange={setTerms}
+                  />
                 </SectionShell>
               ) : null}
 
               {currentStep === 3 ? (
                 <SectionShell
-                  eyebrow="Assessment"
-                  title={autoT("auto.web.years_new_wizard_page.k_abca0446")}
-                  description="Configure how the year is assessed. Weights should total 100% for a balanced grading model."
+                  eyebrow="ការវាយតម្លៃ"
+                  title="ប្រភេទប្រឡង និងទម្ងន់ពិន្ទុ"
+                  description="កំណត់ប្រភេទប្រឡង និងទម្ងន់ពិន្ទុ។ ផលបូកទម្ងន់គួរតែស្មើ ១០០%។"
                   action={
                     <button
                       onClick={addExamType}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_7c09dea0" />
+                      បន្ថែមប្រភេទប្រឡង
                     </button>
                   }
                 >
                   <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_2e32c70e" /></p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">ផលបូកទម្ងន់ពិន្ទុ</p>
                       <span className={`text-lg font-black ${Math.abs(examWeightTotal - 100) < 0.1 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {examWeightTotal}%
                       </span>
@@ -877,8 +813,8 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_cc32b4b7" /> {index + 1}</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_905158f1" /></p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">ប្រភេទប្រឡងទី {index + 1}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">សមាសភាគនៃការវាយតម្លៃ</p>
                           </div>
                           {examTypes.length > 1 ? (
                             <button
@@ -896,12 +832,12 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               type="text"
                               value={exam.name}
                               onChange={(event) => updateExamType(index, 'name', event.target.value)}
-                              placeholder={autoT("auto.web.years_new_wizard_page.k_07ba34fa")}
+                              placeholder="ឈ្មោះប្រភេទប្រឡង"
                               className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
-                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_596f85f0" /></FieldLabel>
+                            <FieldLabel>ទម្ងន់ (%)</FieldLabel>
                             <input
                               type="number"
                               value={exam.weight}
@@ -930,9 +866,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
               {currentStep === 4 ? (
                 <SectionShell
-                  eyebrow="Grading"
-                  title={autoT("auto.web.years_new_wizard_page.k_f35db4e7")}
-                  description="Define how raw scores map into grade letters and GPA values for this academic cycle."
+                  eyebrow="ការកំណត់និទ្ទេស"
+                  title="កម្រិតនិទ្ទេស"
+                  description="កំណត់ចន្លោះពិន្ទុ និទ្ទេស និងតម្លៃ GPA សម្រាប់ឆ្នាំសិក្សានេះ។"
                 >
                   {gradingScales.map((scale, scaleIndex) => (
                     <div key={scaleIndex} className="space-y-4">
@@ -959,19 +895,19 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               }}
                               className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-amber-600 focus:ring-amber-500"
                             />
-                            <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_4a840d12" />
+                            ប្រើជាកម្រិតលំនាំដើម
                           </label>
                         </div>
                       </div>
 
                       <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 shadow-sm">
                         <div className="hidden grid-cols-[80px_repeat(3,120px)_minmax(0,1fr)_96px] gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400 md:grid">
-                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_66e7b55d" /></p>
-                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_0d58d0d8" /></p>
-                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e2134509" /></p>
+                          <p>និទ្ទេស</p>
+                          <p>ពិន្ទុអប្បបរមា</p>
+                          <p>ពិន្ទុអតិបរមា</p>
                           <p>GPA</p>
                           <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_c40b7939" /></p>
-                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b22208e9" /></p>
+                          <p>ពណ៌</p>
                         </div>
                         <div className="divide-y divide-slate-200 dark:divide-gray-800/80">
                           {scale.ranges.map((range, rangeIndex) => (
@@ -1048,16 +984,16 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
               {currentStep === 5 ? (
                 <SectionShell
-                  eyebrow="Class Model"
-                  title={autoT("auto.web.years_new_wizard_page.k_704e323b")}
-                  description={`Define grade levels, sections, and capacity. ${totalClasses} classes are currently planned.`}
+                  eyebrow="រចនាសម្ព័ន្ធថ្នាក់រៀន"
+                  title="រចនាសម្ព័ន្ធថ្នាក់រៀន"
+                  description={`កំណត់កម្រិតថ្នាក់ បន្ទប់ និងចំនួនសិស្សអតិបរមា។ បច្ចុប្បន្នមានគម្រោងបង្កើត ${totalClasses} ថ្នាក់។`}
                   action={
                     <button
                       onClick={addGradeLevel}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_dc4ab6b1" />
+                      បន្ថែមកម្រិតថ្នាក់
                     </button>
                   }
                 >
@@ -1067,7 +1003,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                           <div className="grid flex-1 gap-4 md:grid-cols-3">
                             <div>
-                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_67eb3327" /></FieldLabel>
+                              <FieldLabel>កម្រិតថ្នាក់</FieldLabel>
                               <input
                                 type="number"
                                 value={config.gradeLevel}
@@ -1078,7 +1014,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               />
                             </div>
                             <div>
-                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_ff7471b7" /></FieldLabel>
+                              <FieldLabel>បន្ទប់</FieldLabel>
                               <div className="flex flex-wrap gap-2">
                                 {config.sections.map((section, sectionIndex) => (
                                   <span
@@ -1095,12 +1031,12 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   onClick={() => addSectionToGrade(index)}
                                   className="rounded-full border border-dashed border-slate-300 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-amber-300 hover:text-amber-600"
                                 >
-                                  <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_5b0c1043" />
+                                  + បន្ថែម
                                 </button>
                               </div>
                             </div>
                             <div>
-                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_8be43bf0" /></FieldLabel>
+                              <FieldLabel>ចំនួនសិស្សអតិបរមាក្នុងមួយថ្នាក់</FieldLabel>
                               <input
                                 type="number"
                                 value={config.capacity}
@@ -1125,7 +1061,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   </div>
 
                   <div className="mt-5 rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_4bf8f077" /></p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">ថ្នាក់រៀនដែលនឹងបង្កើត</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {classConfigs.flatMap((config) =>
                         config.sections.map((section) => (
@@ -1145,9 +1081,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
               {currentStep === 6 ? (
                 <SectionShell
-                  eyebrow="Calendar"
-                  title={autoT("auto.web.years_new_wizard_page.k_47e6d323")}
-                  description="Load default holidays or add special dates manually so the year begins with a clean scheduling baseline."
+                  eyebrow="ប្រតិទិនសិក្សា"
+                  title="ប្រតិទិនឆ្នាំសិក្សា"
+                  description="ប្រើថ្ងៃឈប់សម្រាកគំរូ ឬបន្ថែមថ្ងៃពិសេសដោយខ្លួនឯង។"
                   action={
                     <div className="flex flex-wrap gap-2 sm:justify-end">
                       <button
@@ -1155,14 +1091,14 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
                       >
                         <Sparkles className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_efef952c" />
+                        ប្រើថ្ងៃឈប់សម្រាកគំរូកម្ពុជា
                       </button>
                       <button
                         onClick={addHoliday}
                         className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                       >
                         <Plus className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e7ff2596" />
+                        បន្ថែមថ្ងៃឈប់
                       </button>
                     </div>
                   }
@@ -1172,9 +1108,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/70">
                         <CalendarDays className="h-8 w-8 text-slate-400" />
                       </div>
-                      <h3 className="mt-5 text-lg font-bold text-slate-950"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_f26c0939" /></h3>
+                      <h3 className="mt-5 text-lg font-bold text-slate-950">មិនទាន់មានថ្ងៃឈប់សម្រាក</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b52a993d" />
+                        ប្រើគំរូថ្ងៃឈប់សម្រាកស្តង់ដាររបស់កម្ពុជា ឬបន្ថែមកាលបរិច្ឆេទដោយខ្លួនឯង។
                       </p>
                     </div>
                   ) : (
@@ -1183,8 +1119,8 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{holiday.type}</p>
-                              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_584218e8" /></p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{holiday.type === 'HOLIDAY' ? 'ថ្ងៃឈប់សម្រាក' : holiday.type}</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">កាលបរិច្ឆេទក្នុងប្រតិទិន</p>
                             </div>
                             <button
                               onClick={() => removeHoliday(index)}
@@ -1195,12 +1131,12 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           </div>
                           <div className="mt-4 grid gap-4 md:grid-cols-4">
                             <div className="md:col-span-2">
-                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_179eeeb8" /></FieldLabel>
+                              <FieldLabel>ឈ្មោះថ្ងៃឈប់សម្រាក</FieldLabel>
                               <input
                                 type="text"
                                 value={holiday.title}
                                 onChange={(event) => updateHoliday(index, 'title', event.target.value)}
-                                placeholder={autoT("auto.web.years_new_wizard_page.k_9fbf00f2")}
+                                placeholder="ឧ. ពិធីបុណ្យចូលឆ្នាំខ្មែរ"
                                 className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
@@ -1262,7 +1198,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-emerald-600 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_45px_-24px_rgba(16,185,129,0.55)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  {submitting ? 'Creating academic year...' : 'Create academic year'}
+                  {submitting ? 'កំពុងបង្កើតឆ្នាំសិក្សា...' : 'បង្កើតឆ្នាំសិក្សា'}
                 </button>
               )}
             </div>

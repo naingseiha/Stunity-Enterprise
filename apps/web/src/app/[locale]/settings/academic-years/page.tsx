@@ -14,6 +14,7 @@ import {
   setCurrentAcademicYear,
   type AcademicYear,
   updateAcademicYear,
+  getAcademicYearTerms,
 } from '@/lib/api/academic-years';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -21,6 +22,12 @@ import PageSkeleton from '@/components/layout/PageSkeleton';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
+import {
+  normalizeAcademicTerm,
+  validateAcademicTerms,
+  type AcademicTermFormValue,
+} from '@/lib/academic-year-terms';
+import AcademicCalendarEditor from '@/components/academic-years/AcademicCalendarEditor';
 import {
   prefetchAcademicYearComparison,
   prefetchSetupTemplates,
@@ -50,11 +57,9 @@ import {
 } from 'lucide-react';
 
 function formatDateLabel(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const months = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+  const date = new Date(value);
+  return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 function getDurationLabel(startDate: string, endDate: string) {
@@ -64,38 +69,38 @@ function getDurationLabel(startDate: string, endDate: string) {
     1,
     (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
   );
-  return `${months} mo`;
+  return `${months} ខែ`;
 }
 
 function getStatusMeta(status: string) {
   const statusMap = {
     PLANNING: {
-      label: 'Planning',
+      label: 'កំពុងរៀបចំ',
       icon: Clock,
       badge:
         'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-300',
-      helper: 'Preparation and setup',
+      helper: 'កំពុងរៀបចំ និងកំណត់ព័ត៌មាន',
     },
     ACTIVE: {
-      label: 'Active',
+      label: 'កំពុងដំណើរការ',
       icon: CheckCircle2,
       badge:
         'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300',
-      helper: 'Live academic operations',
+      helper: 'កំពុងប្រើប្រាស់សម្រាប់ការសិក្សា',
     },
     ENDED: {
-      label: 'Ended',
+      label: 'បានបញ្ចប់',
       icon: TrendingUp,
       badge:
         'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300',
-      helper: 'Ready for close-out actions',
+      helper: 'ត្រៀមសម្រាប់សកម្មភាពបិទឆ្នាំ',
     },
     ARCHIVED: {
-      label: 'Archived',
+      label: 'ក្នុងបណ្ណសារ',
       icon: Archive,
       badge:
         'border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300',
-      helper: 'Locked for record keeping',
+      helper: 'បានបិទសម្រាប់រក្សាទុកជាឯកសារយោង',
     },
   } as const;
 
@@ -201,7 +206,7 @@ function ModalShell({
         <div className="flex items-start justify-between border-b border-slate-200 dark:border-gray-800/80 px-6 py-5 dark:border-gray-800">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-              <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_49090fd2" />
+              ការគ្រប់គ្រងឆ្នាំសិក្សា
             </p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
               {title}
@@ -247,6 +252,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
   const { years, isLoading: isLoadingYears, mutate: mutateYears } = useAcademicYearsList(school?.id);
 
   const successTimeoutRef = useRef<number | null>(null);
+  const editLoadRequestRef = useRef(0);
 
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -263,6 +269,12 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
   const [editYearName, setEditYearName] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
+  const [editTerms, setEditTerms] = useState<AcademicTermFormValue[]>([]);
+  const [editModalTab, setEditModalTab] = useState<'general' | 'terms'>('general');
+  const [editTermsLoading, setEditTermsLoading] = useState(false);
+  const [editTermsLoadError, setEditTermsLoadError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copySourceYear, setCopySourceYear] = useState<AcademicYear | null>(null);
@@ -302,9 +314,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
   };
 
   const closeEditModal = () => {
+    editLoadRequestRef.current += 1;
     setShowEditModal(false);
     setSelectedYear(null);
-    setError('');
+    setEditTermsLoading(false);
+    setEditTermsLoadError('');
+    setEditSaving(false);
+    setEditError('');
   };
 
   const closeDeleteModal = () => {
@@ -323,13 +339,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
   const handleCreateYear = async () => {
     if (!newYearName || !newStartDate || !newEndDate) {
-      setError('Please fill all fields');
+      setError('សូមបំពេញព័ត៌មានចាំបាច់ទាំងអស់។');
       return;
     }
 
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) {
         router.push(`/${locale}/auth/login`);
@@ -354,25 +370,53 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       setCopyFromYearId('');
       closeCreateModal();
       await refreshAcademicYearsData();
-      showTimedSuccess('Academic year created successfully.');
+      showTimedSuccess('បានបង្កើតឆ្នាំសិក្សាដោយជោគជ័យ។');
     } catch (err: any) {
-      setError(`Error creating academic year: ${err.message}`);
+      setError(`មិនអាចបង្កើតឆ្នាំសិក្សា៖ ${err.message}`);
     }
   };
 
   const handleSetCurrent = async (yearId: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
       await setCurrentAcademicYear(schoolId, yearId, token);
       setError('');
       await refreshAcademicYearsData();
-      showTimedSuccess('Current academic year updated.');
+      showTimedSuccess('បានកំណត់ឆ្នាំសិក្សាបច្ចុប្បន្ន។');
     } catch (err: any) {
-      setError(`Error setting current year: ${err.message}`);
+      setError(`មិនអាចកំណត់ឆ្នាំសិក្សាបច្ចុប្បន្ន៖ ${err.message}`);
+    }
+  };
+
+  const loadEditTerms = async (year: AcademicYear) => {
+    const requestId = editLoadRequestRef.current + 1;
+    editLoadRequestRef.current = requestId;
+    setEditTermsLoading(true);
+    setEditTermsLoadError('');
+
+    try {
+      const token = TokenManager.getAccessToken();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      if (!token || !schoolId) {
+        throw new Error('សូមចូលប្រើប្រាស់ម្តងទៀត។');
+      }
+      const terms = await getAcademicYearTerms(schoolId, year.id, token);
+      if (editLoadRequestRef.current === requestId) {
+        setEditTerms(terms.map(normalizeAcademicTerm));
+      }
+    } catch (err: any) {
+      if (editLoadRequestRef.current === requestId) {
+        setEditTerms([]);
+        setEditTermsLoadError(err.message || 'មិនអាចទាញយកឆមាសបានទេ។');
+      }
+    } finally {
+      if (editLoadRequestRef.current === requestId) {
+        setEditTermsLoading(false);
+      }
     }
   };
 
@@ -381,20 +425,39 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
     setEditYearName(year.name);
     setEditStartDate(year.startDate.split('T')[0]);
     setEditEndDate(year.endDate.split('T')[0]);
+    setEditTerms([]);
+    setEditError('');
+    setEditModalTab('general');
     setShowEditModal(true);
+    void loadEditTerms(year);
   };
+
 
   const handleUpdateYear = async () => {
     if (!editYearName || !editStartDate || !editEndDate || !selectedYear) {
-      setError('Please fill all fields');
+      setEditError('សូមបំពេញព័ត៌មានចាំបាច់ទាំងអស់។');
+      return;
+    }
+
+    const canSubmitTerms = !editTermsLoading && !editTermsLoadError;
+    const termError = canSubmitTerms
+      ? validateAcademicTerms(editTerms, editStartDate, editEndDate)
+      : null;
+    if (termError) {
+      setEditError(termError);
+      setEditModalTab('terms');
       return;
     }
 
     try {
+      setEditSaving(true);
+      setEditError('');
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
-      if (!token || !schoolId) return;
+      if (!token || !schoolId) {
+        throw new Error('សូមចូលប្រើប្រាស់ម្តងទៀត។');
+      }
 
       await updateAcademicYear(
         schoolId,
@@ -403,19 +466,21 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           name: editYearName,
           startDate: new Date(editStartDate).toISOString(),
           endDate: new Date(editEndDate).toISOString(),
+          terms: canSubmitTerms ? editTerms : undefined,
         },
         token
       );
 
-      setError('');
       closeEditModal();
       setEditYearName('');
       setEditStartDate('');
       setEditEndDate('');
       await refreshAcademicYearsData();
-      showTimedSuccess('Academic year updated successfully.');
+      showTimedSuccess('បានកែប្រែឆ្នាំសិក្សាដោយជោគជ័យ។');
     } catch (err: any) {
-      setError(`Error updating year: ${err.message}`);
+      setEditError(`មិនអាចកែប្រែឆ្នាំសិក្សា៖ ${err.message}`);
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -429,7 +494,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -437,9 +502,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       setError('');
       closeDeleteModal();
       await refreshAcademicYearsData();
-      showTimedSuccess('Academic year deleted successfully.');
+      showTimedSuccess('បានលុបឆ្នាំសិក្សាដោយជោគជ័យ។');
     } catch (err: any) {
-      setError(`Error deleting year: ${err.message}`);
+      setError(`មិនអាចលុបឆ្នាំសិក្សា៖ ${err.message}`);
     }
   };
 
@@ -450,7 +515,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) {
         router.push(`/${locale}/auth/login`);
@@ -460,9 +525,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       await archiveAcademicYear(schoolId, year.id, token);
       setError('');
       await refreshAcademicYearsData();
-      showTimedSuccess(`Academic year "${year.name}" has been archived successfully.`);
+      showTimedSuccess(`បានដាក់ឆ្នាំសិក្សា “${year.name}” ក្នុងបណ្ណសារ។`);
     } catch (err: any) {
-      setError(`Error archiving year: ${err.message}`);
+      setError(`មិនអាចដាក់ឆ្នាំសិក្សាក្នុងបណ្ណសារ៖ ${err.message}`);
     }
   };
 
@@ -479,14 +544,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
     try {
       setCopyLoading(true);
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
       const preview = await getCopyPreview(schoolId, year.id, token);
       setCopyPreviewData(preview);
     } catch (err: any) {
-      setCopyError(`Failed to load preview: ${err.message}`);
+      setCopyError(`មិនអាចផ្ទុកព័ត៌មានសម្រាប់មើលជាមុនបានទេ៖ ${err.message}`);
     } finally {
       setCopyLoading(false);
     }
@@ -494,12 +559,12 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
   const handleExecuteCopy = async () => {
     if (!copySourceYear || !copyTargetYearId) {
-      setCopyError('Please select a target year');
+      setCopyError('សូមជ្រើសឆ្នាំសិក្សាគោលដៅ។');
       return;
     }
 
     if (!copySubjects && !copyTeachers && !copyClasses) {
-      setCopyError('Please select at least one option to copy');
+      setCopyError('សូមជ្រើសទិន្នន័យយ៉ាងហោចណាស់មួយប្រភេទសម្រាប់ចម្លង។');
       return;
     }
 
@@ -507,7 +572,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       setCopyLoading(true);
       setCopyError('');
       const token = TokenManager.getAccessToken();
-      const schoolId = userData?.school?.id || userData?.school?.id;
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -527,9 +592,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       closeCopyModal();
       await refreshAcademicYearsData();
-      showTimedSuccess('Settings copied successfully.');
+      showTimedSuccess('បានចម្លងការកំណត់ដោយជោគជ័យ។');
     } catch (err: any) {
-      setCopyError(`Failed to copy settings: ${err.message}`);
+      setCopyError(`មិនអាចចម្លងការកំណត់បានទេ៖ ${err.message}`);
     } finally {
       setCopyLoading(false);
     }
@@ -566,9 +631,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
             <CompactHeroCard
-              eyebrow={autoT("auto.web.settings_academic_years_page.k_9514e3cc")}
-              title="Academic years"
-              description="Plan and manage yearly cycles from one workspace."
+              eyebrow="ការរៀបចំឆ្នាំសិក្សា"
+              title="ឆ្នាំសិក្សា"
+              description="រៀបចំ និងគ្រប់គ្រងឆ្នាំសិក្សាទាំងអស់ពីកន្លែងតែមួយ។"
               icon={Calendar}
               breadcrumbs={
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
@@ -577,7 +642,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_0294d612" />
                   </span>
                   <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-                  <span className="text-slate-900 dark:text-gray-100">Academic years</span>
+                  <span className="text-slate-900 dark:text-gray-100">ឆ្នាំសិក្សា</span>
                 </div>
               }
               backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(255,247,237,0.96)_48%,rgba(254,243,199,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -599,7 +664,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 dark:hover:text-white"
                   >
                     <BarChart3 className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_cada1811" />
+                    ប្រៀបធៀបឆ្នាំសិក្សា
                   </button>
                   <button
                     onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
@@ -614,14 +679,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:from-indigo-500 hover:via-violet-500 hover:to-blue-500"
                   >
                     <Sparkles className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e19251ee" />
+                    បង្កើតតាមជំហាន
                   </button>
                   <button
                     onClick={() => setShowCreateModal(true)}
                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 dark:hover:text-white"
                   >
                     <Plus className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_f32da73f" />
+                    បង្កើតរហ័ស
                   </button>
                 </>
               }
@@ -634,11 +699,11 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-gray-400">
-                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_646c3e25" />
+                      សង្ខេបឆ្នាំសិក្សា
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight">{years.length}</h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e6a507e3" />
+                      ចំនួនឆ្នាំសិក្សាដែលមានក្នុងសាលានេះ
                     </p>
                   </div>
                   <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/15">
@@ -656,24 +721,24 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
                     <p className="text-xl font-black text-slate-900 dark:text-gray-100">{promotionReadyCount}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
-                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_0479f2db" />
+                      រង់ចាំការឡើងថ្នាក់
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_161a6d3c" />
+                    ឆ្នាំសិក្សាបច្ចុប្បន្ន
                   </p>
                   <p className="mt-2 text-base font-black tracking-tight">
-                    {currentYear?.name || 'Not assigned yet'}
+                    {currentYear?.name || 'មិនទាន់បានកំណត់'}
                   </p>
                   <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">
                     {currentYear
                       ? `${formatDateLabel(currentYear.startDate)} - ${formatDateLabel(
                           currentYear.endDate
                         )}`
-                      : 'Set one cycle as current to keep planning and promotion actions in sync.'}
+                      : 'កំណត់ឆ្នាំសិក្សាមួយជាបច្ចុប្បន្ន ដើម្បីភ្ជាប់ការរៀបចំ និងការឡើងថ្នាក់ឱ្យត្រឹមត្រូវ។'}
                   </p>
                 </div>
               </div>
@@ -719,30 +784,30 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           <AnimatedContent animation="slide-up" delay={100}>
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <MetricCard
-                label={autoT("auto.web.settings_academic_years_page.k_2eaf5176")}
+                label="ឆ្នាំសិក្សាសរុប"
                 value={years.length}
-                helper="All school years on record"
+                helper="ឆ្នាំសិក្សាទាំងអស់ក្នុងប្រព័ន្ធ"
                 tone="gold"
                 icon={Calendar}
               />
               <MetricCard
-                label={autoT("auto.web.settings_academic_years_page.k_e272c68e")}
+                label="កំពុងរៀបចំ"
                 value={planningCount}
-                helper="Cycles still being prepared"
+                helper="ឆ្នាំដែលកំពុងរៀបចំ"
                 tone="sky"
                 icon={Clock}
               />
               <MetricCard
-                label={autoT("auto.web.settings_academic_years_page.k_5d0524bc")}
+                label="ក្នុងបណ្ណសារ"
                 value={archivedCount}
-                helper="Closed and protected for reference"
+                helper="ឆ្នាំដែលបានបិទសម្រាប់យោង"
                 tone="slate"
                 icon={Archive}
               />
               <MetricCard
-                label={autoT("auto.web.settings_academic_years_page.k_a3d0836d")}
+                label="រង់ចាំការឡើងថ្នាក់"
                 value={promotionReadyCount}
-                helper="Cycles waiting on final advancement"
+                helper="ឆ្នាំដែលរង់ចាំដំឡើងថ្នាក់"
                 tone="emerald"
                 icon={TrendingUp}
               />
@@ -754,17 +819,17 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7d46bbce" />
+                    បញ្ជីឆ្នាំសិក្សា
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_a11e9048" />
+                    ឆ្នាំសិក្សាទាំងអស់
                   </h2>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7bcbee4f" />
+                    ពិនិត្យស្ថានភាព កំណត់ឆ្នាំបច្ចុប្បន្ន និងគ្រប់គ្រងសកម្មភាពប្រចាំឆ្នាំពីបញ្ជីតែមួយ។
                   </p>
                 </div>
                 <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-                  {currentYear ? `Current cycle: ${currentYear.name}` : 'No current cycle assigned'}
+                  {currentYear ? `ឆ្នាំបច្ចុប្បន្ន៖ ${currentYear.name}` : 'មិនទាន់បានកំណត់ឆ្នាំបច្ចុប្បន្ន'}
                 </div>
               </div>
 
@@ -831,7 +896,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                             <div className="mt-5 grid gap-3 sm:grid-cols-3">
                               <div className="rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_6d363632" />
+                                  រយៈពេល
                                 </p>
                                 <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                                   {getDurationLabel(year.startDate, year.endDate)}
@@ -839,22 +904,22 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                               </div>
                               <div className="rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_f3be0054" />
+                                  ការឡើងថ្នាក់
                                 </p>
                                 <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">
-                                  {year.isPromotionDone ? 'Completed' : 'Pending'}
+                                  {year.isPromotionDone ? 'បានបញ្ចប់' : 'កំពុងរង់ចាំ'}
                                 </p>
                               </div>
                               <div className="rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_8c5e8ee2" />
+                                  ប្រភេទឆ្នាំ
                                 </p>
                                 <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                                   {year.isCurrent
-                                    ? 'Live'
+                                    ? 'កំពុងប្រើប្រាស់'
                                     : year.status === 'ARCHIVED'
-                                      ? 'Historic'
-                                      : 'Managed'}
+                                      ? 'ប្រវត្តិសាស្ត្រ'
+                                      : 'កំពុងគ្រប់គ្រង'}
                                 </p>
                               </div>
                             </div>
@@ -868,7 +933,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-amber-700 transition hover:bg-amber-600 hover:text-white dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-300"
                                 >
                                   <Play className="h-4 w-4 fill-current" />
-                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_52f3b4b0" />
+                                  កំណត់ជាបច្ចុប្បន្ន
                                 </button>
                               )}
 
@@ -883,7 +948,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300"
                                   >
                                     <TrendingUp className="h-4 w-4" />
-                                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_2b40647b" />
+                                    ដំឡើងសិស្សឡើងថ្នាក់
                                   </button>
                                 )}
 
@@ -899,7 +964,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                 className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-sky-700 transition hover:bg-sky-600 hover:text-white dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-300"
                               >
                                 <Copy className="h-4 w-4" />
-                                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7998dd0f" />
+                                ចម្លងការកំណត់
                               </button>
 
                               <button
@@ -949,8 +1014,8 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {showCreateModal && (
         <ModalShell
-          title={autoT("auto.web.settings_academic_years_page.k_2bc24a51")}
-          subtitle="Define the calendar window and optionally inherit structure from a previous cycle."
+          title="បង្កើតឆ្នាំសិក្សា"
+          subtitle="កំណត់ចន្លោះកាលបរិច្ឆេទ និងអាចចម្លងរចនាសម្ព័ន្ធពីឆ្នាំសិក្សាមុនបាន។"
           onClose={closeCreateModal}
           footer={
             <div className="flex gap-3">
@@ -964,7 +1029,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 onClick={handleCreateYear}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-[0_20px_45px_-22px_rgba(245,158,11,0.72)] transition hover:-translate-y-0.5"
               >
-                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_6c224945" />
+                បង្កើតឆ្នាំសិក្សា
               </button>
             </div>
           }
@@ -972,16 +1037,16 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           <div className="space-y-6">
             <div className="rounded-[1.4rem] border border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
-                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_aa1e2440" />
+                ចំណាំអំពីការរៀបចំ
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600 dark:text-gray-300">
-                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e1c18534" />
+                ឆ្នាំសិក្សាថ្មីចាប់ផ្តើមក្នុងស្ថានភាពរៀបចំ ដើម្បីឱ្យសាលាអាចកំណត់ថ្នាក់ បុគ្គលិក និងពេលឡើងថ្នាក់ជាមុន។
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="md:col-span-2">
-                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_1cc05a2e" /></FieldLabel>
+                <FieldLabel>ឈ្មោះឆ្នាំសិក្សា</FieldLabel>
                 <div className="relative">
                   <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -1015,7 +1080,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </div>
 
               <div className="md:col-span-2">
-                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_632f23ad" /></FieldLabel>
+                <FieldLabel>ចម្លងពីឆ្នាំសិក្សាដែលមានស្រាប់</FieldLabel>
                 <div className="relative">
                   <select
                     value={copyFromYearId}
@@ -1039,65 +1104,165 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {showEditModal && selectedYear && (
         <ModalShell
-          title={autoT("auto.web.settings_academic_years_page.k_977389de")}
-          subtitle={`Update the calendar window for ${selectedYear.name}.`}
-          onClose={closeEditModal}
+          title="កែប្រែឆ្នាំសិក្សា"
+          subtitle={`កែប្រែកាលបរិច្ឆេទ និងឆមាសសម្រាប់ឆ្នាំសិក្សា ${selectedYear.name}`}
+          onClose={editSaving ? () => undefined : closeEditModal}
+          maxWidth="max-w-4xl"
           footer={
             <div className="flex gap-3">
               <button
                 onClick={closeEditModal}
-                className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
+                disabled={editSaving}
+                className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
                 <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_4cffa94f" />
               </button>
               <button
                 onClick={handleUpdateYear}
-                className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-none dark:bg-gray-900 dark:text-slate-950 dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
+                disabled={editSaving}
+                aria-busy={editSaving}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-none dark:bg-gray-900 dark:text-slate-950 dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
               >
-                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ea44ed2e" />
+                {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {editSaving ? 'កំពុងរក្សាទុក...' : 'រក្សាទុកការផ្លាស់ប្តូរ'}
               </button>
             </div>
           }
         >
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_1cc05a2e" /></FieldLabel>
-              <div className="relative">
-                <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          {editError ? (
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              <p className="text-sm font-semibold leading-6">{editError}</p>
+            </div>
+          ) : null}
+
+          {/* Tabs */}
+          <div className="mb-8 flex gap-4 border-b border-slate-200 dark:border-gray-800">
+            <button
+              onClick={() => setEditModalTab('general')}
+              className={`border-b-2 pb-3 text-sm font-bold transition ${
+                editModalTab === 'general'
+                  ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              ព័ត៌មានទូទៅ
+            </button>
+            <button
+              onClick={() => setEditModalTab('terms')}
+              className={`border-b-2 pb-3 text-sm font-bold transition ${
+                editModalTab === 'terms'
+                  ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              ឆមាស និងក្រុមថ្នាក់
+            </button>
+          </div>
+
+          {editModalTab === 'general' && (
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <FieldLabel>ឈ្មោះឆ្នាំសិក្សា</FieldLabel>
+                <div className="relative">
+                  <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={editYearName}
+                    onChange={(e) => setEditYearName(e.target.value)}
+                    className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ac25b9c6" /></FieldLabel>
                 <input
-                  type="text"
-                  value={editYearName}
-                  onChange={(e) => setEditYearName(e.target.value)}
-                  className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                  className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_bd639e93" /></FieldLabel>
+                <input
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                  className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                 />
               </div>
             </div>
+          )}
+
+          {editModalTab === 'terms' && (
             <div>
-              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ac25b9c6" /></FieldLabel>
-              <input
-                type="date"
-                value={editStartDate}
-                onChange={(e) => setEditStartDate(e.target.value)}
-                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
-              />
+              <div className="mb-5">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">កាលវិភាគឆមាស និងក្រុមថ្នាក់</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">
+                  កែតែក្រុមថ្នាក់ម្តង ហើយឆមាសទាំងអស់ក្នុងក្រុមនោះនឹងអនុវត្តតាម។
+                </p>
+              </div>
+              {editTermsLoading ? (
+                <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-sky-100 bg-sky-50/70 px-6 text-center dark:border-sky-900/60 dark:bg-sky-950/20">
+                  <Loader2 className="h-8 w-8 animate-spin text-sky-600" />
+                  <p className="mt-3 font-bold text-sky-950 dark:text-sky-100">កំពុងទាញយកទិន្នន័យឆមាស...</p>
+                  <p className="mt-1 text-sm text-sky-700 dark:text-sky-300">អ្នកនៅតែអាចរក្សាទុកព័ត៌មានទូទៅបាន។</p>
+                </div>
+              ) : editTermsLoadError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 dark:border-rose-900/60 dark:bg-rose-950/25">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+                    <div>
+                      <p className="font-black text-rose-950 dark:text-rose-100">មិនអាចទាញយកទិន្នន័យឆមាស</p>
+                      <p className="mt-1 text-sm text-rose-700 dark:text-rose-300">{editTermsLoadError}</p>
+                      <button
+                        type="button"
+                        onClick={() => void loadEditTerms(selectedYear)}
+                        className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700"
+                      >
+                        ព្យាយាមម្តងទៀត
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <AcademicCalendarEditor
+                    terms={editTerms}
+                    academicYearStart={editStartDate}
+                    academicYearEnd={editEndDate}
+                    onChange={setEditTerms}
+                  />
+                  <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/25 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-black text-amber-950 dark:text-amber-100">ចង់កំណត់វិសមកាលជាចន្លោះថ្ងៃ?</p>
+                      <p className="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-200">
+                        ឧទាហរណ៍៖ ០៦ មេសា ដល់ ២០ មេសា។ ប្រើប្រតិទិនសិក្សា ដើម្បីកុំឱ្យខែមេសាទាំងមូលក្លាយជាខែឈប់។
+                      </p>
+                    </div>
+                    <a
+                      href={`/${locale}/settings/academic-years/${selectedYear.id}/calendar?add=vacation`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-amber-700"
+                    >
+                      <Calendar className="h-4 w-4" />
+                      កំណត់វិសមកាលជាចន្លោះថ្ងៃ
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
-            <div>
-              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_bd639e93" /></FieldLabel>
-              <input
-                type="date"
-                value={editEndDate}
-                onChange={(e) => setEditEndDate(e.target.value)}
-                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
+          )}
         </ModalShell>
       )}
 
       {showDeleteModal && selectedYear && (
         <ModalShell
           title={autoT("auto.web.settings_academic_years_page.k_a3dc4d85")}
-          subtitle={`This permanently removes ${selectedYear.name} if no dependent records are attached.`}
+          subtitle={`លុបឆ្នាំសិក្សា ${selectedYear.name} ជាអចិន្ត្រៃយ៍ ប្រសិនបើគ្មានទិន្នន័យពាក់ព័ន្ធ។`}
           onClose={closeDeleteModal}
           maxWidth="max-w-lg"
           footer={
@@ -1136,7 +1301,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       {showCopyModal && copySourceYear && (
         <ModalShell
           title={autoT("auto.web.settings_academic_years_page.k_b098d044")}
-          subtitle={`Move structure forward from ${copySourceYear.name} without carrying student records.`}
+          subtitle={`ចម្លងរចនាសម្ព័ន្ធពី ${copySourceYear.name} ដោយមិនផ្ទេរកំណត់ត្រាសិស្ស។`}
           onClose={closeCopyModal}
           maxWidth="max-w-4xl"
           footer={
@@ -1153,7 +1318,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 disabled={copyLoading || !copyTargetYearId}
                 className="flex-[1.4] rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {copyLoading ? 'Copying Settings...' : 'Apply Copy'}
+                {copyLoading ? 'កំពុងចម្លងការកំណត់...' : 'ចាប់ផ្តើមចម្លង'}
               </button>
             </div>
           }
@@ -1176,21 +1341,21 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   <MetricCard
                     label={autoT("auto.web.settings_academic_years_page.k_27c06af6")}
                     value={copyPreviewData?.subjectsCount || 0}
-                    helper="Subjects available to copy"
+                    helper="មុខវិជ្ជាដែលអាចចម្លងបាន"
                     tone="sky"
                     icon={BookOpen}
                   />
                   <MetricCard
                     label={autoT("auto.web.settings_academic_years_page.k_dcdf3756")}
                     value={copyPreviewData?.teachersCount || 0}
-                    helper="Teacher assignments available"
+                    helper="ការចាត់តាំងគ្រូដែលអាចចម្លងបាន"
                     tone="emerald"
                     icon={Users}
                   />
                   <MetricCard
                     label={autoT("auto.web.settings_academic_years_page.k_b6e09360")}
                     value={copyPreviewData?.classesCount || 0}
-                    helper="Classes available to copy"
+                    helper="ថ្នាក់រៀនដែលអាចចម្លងបាន"
                     tone="gold"
                     icon={GraduationCap}
                   />

@@ -388,28 +388,74 @@ export interface TermTemplate {
   startDay: number;
   endMonth: number;
   endDay: number;
+  examMonth?: number;
+  excludedMonths?: number[];
+  gradeLevels?: number[];
 }
 
-export const DEFAULT_TERMS: TermTemplate[] = [
+export const CAMBODIA_STANDARD_TERMS: TermTemplate[] = [
   {
     name: 'Semester 1',
     nameKh: 'ឆមាសទី១',
     termNumber: 1,
-    startMonth: 9,  // September
+    startMonth: 11,
     startDay: 1,
-    endMonth: 12,   // December
+    endMonth: 3,
     endDay: 31,
+    examMonth: 3,
+    excludedMonths: [],
+    gradeLevels: [7, 8, 10, 11],
   },
   {
     name: 'Semester 2',
     nameKh: 'ឆមាសទី២',
     termNumber: 2,
-    startMonth: 1,  // January
+    startMonth: 5,
     startDay: 1,
-    endMonth: 8,    // August
+    endMonth: 8,
     endDay: 31,
+    examMonth: 8,
+    excludedMonths: [],
+    gradeLevels: [7, 8, 10, 11],
   },
 ];
+
+export const CAMBODIA_EXAM_GRADES_TERMS: TermTemplate[] = [
+  {
+    name: 'Semester 1',
+    nameKh: 'ឆមាសទី១',
+    termNumber: 1,
+    startMonth: 11,
+    startDay: 1,
+    endMonth: 2,
+    endDay: 28,
+    examMonth: 2,
+    excludedMonths: [],
+    gradeLevels: [9, 12],
+  },
+  {
+    name: 'Semester 2',
+    nameKh: 'ឆមាសទី២',
+    termNumber: 2,
+    startMonth: 3,
+    startDay: 1,
+    endMonth: 8,
+    endDay: 31,
+    examMonth: 7,
+    excludedMonths: [],
+    gradeLevels: [9, 12],
+  },
+];
+
+export const CAMBODIA_FLEXIBLE_TERMS: TermTemplate[] = [
+  ...CAMBODIA_STANDARD_TERMS,
+  ...CAMBODIA_EXAM_GRADES_TERMS,
+];
+
+export const DEFAULT_TERMS: TermTemplate[] = CAMBODIA_STANDARD_TERMS.map((term) => ({
+  ...term,
+  gradeLevels: [],
+}));
 
 // ========================================
 // SCHOOL CONFIGURATION BY TYPE

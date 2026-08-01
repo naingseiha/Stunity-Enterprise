@@ -1588,19 +1588,23 @@ model SchoolSettings {
 }
 
 model AcademicTerm {
-  id             String       @id @default(cuid())
-  academicYearId String
-  name           String
-  termNumber     Int
-  startDate      DateTime
-  endDate        DateTime
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  examTypes      ExamType[]
+  id               String       @id @default(cuid())
+  academicYearId   String
+  name             String
+  nameKh           String?
+  termNumber       Int
+  startDate        DateTime
+  endDate          DateTime
+  gradeLevels      Int[]        @default([])
+  examMonth        Int?
+  excludedMonths   Int[]        @default([])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  academicYear     AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  examTypes        ExamType[]
 
-  @@unique([academicYearId, termNumber])
   @@index([academicYearId])
+  @@index([academicYearId, termNumber])
   @@map("academic_terms")
 }
 

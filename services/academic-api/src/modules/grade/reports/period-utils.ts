@@ -97,7 +97,8 @@ export async function resolveReportTermContext(
   prisma: PrismaClient,
   schoolId: string | null,
   semester: string,
-  academicStartYear: number
+  academicStartYear: number,
+  gradeLevel?: number,
 ): Promise<ReportTermContext> {
   const semesterNumber = semester === '2' ? 2 : 1;
 
@@ -129,7 +130,9 @@ export async function resolveReportTermContext(
     ],
   });
 
-  const term = academicYear?.terms?.[0];
+  const term = academicYear?.terms?.find(
+    (candidate) => !Number.isFinite(gradeLevel) || candidate.gradeLevels.length === 0 || candidate.gradeLevels.includes(gradeLevel!),
+  );
   if (!term) {
     const fallback = fallbackReportTerm(semester, academicStartYear);
     return {
@@ -145,7 +148,8 @@ export async function resolveReportTermContext(
     termNumber: term.termNumber,
     startDate: term.startDate,
     endDate: term.endDate,
-    periods: enumerateReportPeriods(term.startDate, term.endDate),
+    periods: enumerateReportPeriods(term.startDate, term.endDate)
+      .filter((period) => !term.excludedMonths.includes(period.monthNumber)),
   };
 }
 

@@ -724,7 +724,8 @@ async function resolveReportAcademicStartYear(
 async function resolveReportTermContext(
   schoolId: string | null,
   semester: string,
-  academicStartYear: number
+  academicStartYear: number,
+  gradeLevel?: number,
 ): Promise<ReportTermContext> {
   const semesterNumber = semester === '2' ? 2 : 1;
 
@@ -756,7 +757,9 @@ async function resolveReportTermContext(
     ],
   });
 
-  const term = academicYear?.terms?.[0];
+  const term = academicYear?.terms?.find(
+    (candidate) => !Number.isFinite(gradeLevel) || candidate.gradeLevels.length === 0 || candidate.gradeLevels.includes(gradeLevel!),
+  );
   if (!term) {
     const fallback = fallbackReportTerm(semester, academicStartYear);
     return {
@@ -772,7 +775,8 @@ async function resolveReportTermContext(
     termNumber: term.termNumber,
     startDate: term.startDate,
     endDate: term.endDate,
-    periods: enumerateReportPeriods(term.startDate, term.endDate),
+    periods: enumerateReportPeriods(term.startDate, term.endDate)
+      .filter((period) => !term.excludedMonths.includes(period.monthNumber)),
   };
 }
 
@@ -2292,15 +2296,6 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     const { semester = '1', year } = req.query;
     const schoolId = getSchoolId(req);
     const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
-    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
-    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
-    const cacheKey = `${schoolId || 'unknown'}:report-card:${studentId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
-    const cachedResponse = readGradeReportCache(cacheKey);
-
-    if (cachedResponse) {
-      return res.json(cachedResponse);
-    }
-
     // Get student info
     const student = await prisma.student.findUnique({
       where: { id: studentId },
@@ -2318,6 +2313,17 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
+
+    const termContext = await resolveReportTermContext(
+      schoolId,
+      String(semester),
+      currentYear,
+      Number(student.class?.grade),
+    );
+    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
+    const cacheKey = `${schoolId || 'unknown'}:report-card:${studentId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
+    const cachedResponse = readGradeReportCache(cacheKey);
+    if (cachedResponse) return res.json(cachedResponse);
 
     const [grades, attendanceSummary, activeStudentClasses, classGrades] = await Promise.all([
       prisma.grade.findMany({
@@ -2600,7 +2606,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       }
       // cacheKey already built (and checked) above for monthly mode.
     } else {
-      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+      termContext = await resolveReportTermContext(schoolId, String(semester), currentYear, Number(classInfo.grade));
       gradeWhere = {
         ...scopedClassFilter,
         ...buildGradePeriodWhere(termContext.periods),
@@ -2750,7 +2756,11 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
     const { year } = req.query;
     const schoolId = getSchoolId(req);
     const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
-    const termContext = await resolveReportTermContext(schoolId, semester, currentYear);
+    const scopedClass = await prisma.class.findFirst({
+      where: { id: classId, ...(schoolId ? { schoolId } : {}) },
+      select: { grade: true },
+    });
+    const termContext = await resolveReportTermContext(schoolId, semester, currentYear, Number(scopedClass?.grade));
     const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
     const cacheKey = `${schoolId || 'unknown'}:semester-summary:${classId}:${semester}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
     const cachedResponse = readGradeReportCache(cacheKey);
@@ -2880,7 +2890,11 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
     const { semester = '1', year } = req.query;
     const schoolId = getSchoolId(req);
     const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
-    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+    const scopedClass = await prisma.class.findFirst({
+      where: { id: classId, ...(schoolId ? { schoolId } : {}) },
+      select: { grade: true },
+    });
+    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear, Number(scopedClass?.grade));
     const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
     const cacheKey = `${schoolId || 'unknown'}:grade-analytics:${classId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
     const cachedResponse = readGradeReportCache(cacheKey);

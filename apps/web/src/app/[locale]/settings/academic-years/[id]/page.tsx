@@ -1,6 +1,7 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { MONTHS } from '@/lib/academic-year-terms';
 import { useTranslations } from 'next-intl';
 import { useState, use, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -100,7 +101,17 @@ interface AcademicYearDetail {
   };
   classes: ClassInfo[];
   teachers: TeacherInfo[];
-  terms: Array<{ id: string; name: string; termNumber: number; startDate: string; endDate: string }>;
+  terms: Array<{
+    id: string;
+    name: string;
+    nameKh?: string | null;
+    termNumber: number;
+    startDate: string;
+    endDate: string;
+    gradeLevels: number[];
+    examMonth?: number | null;
+    excludedMonths: number[];
+  }>;
   examTypes: Array<{ id: string; name: string; weight: number; maxScore: number }>;
   promotionHistory: {
     promotedOut: PromotionRecord[];
@@ -113,26 +124,23 @@ interface AcademicYearDetail {
 type DetailTab = 'overview' | 'classes' | 'teachers' | 'promotions' | 'calendar';
 
 const TABS: Array<{ id: DetailTab; label: string; icon: typeof BookOpen }> = [
-  { id: 'overview', label: 'Overview', icon: Layers3 },
-  { id: 'classes', label: 'Classes', icon: BookOpen },
-  { id: 'teachers', label: 'Teachers', icon: Users },
-  { id: 'promotions', label: 'Promotions', icon: TrendingUp },
-  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
+  { id: 'overview', label: 'ទិដ្ឋភាពទូទៅ', icon: Layers3 },
+  { id: 'classes', label: 'ថ្នាក់រៀន', icon: BookOpen },
+  { id: 'teachers', label: 'គ្រូបង្រៀន', icon: Users },
+  { id: 'promotions', label: 'ការឡើងថ្នាក់', icon: TrendingUp },
+  { id: 'calendar', label: 'ប្រតិទិន', icon: CalendarDays },
 ];
 
 function formatDateLabel(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const date = new Date(value);
+  const khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+  return `${date.getUTCDate()} ${khmerMonths[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 function formatMonthLabel(value: string) {
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-  });
+  const date = new Date(value);
+  const khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+  return `${khmerMonths[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 function formatNumber(value: number) {
@@ -152,29 +160,29 @@ function getDurationLabel(startDate: string, endDate: string) {
 function getStatusMeta(status: AcademicYearDetail['academicYear']['status']) {
   const map = {
     PLANNING: {
-      label: 'Planning',
-      helper: 'Setup and curriculum preparation',
+      label: 'កំពុងរៀបចំ',
+      helper: 'កំណត់ប្រព័ន្ធ និងរៀបចំកម្មវិធីសិក្សា',
       badge: 'border-sky-200 bg-sky-50 text-sky-700',
       icon: Clock3,
       score: 34,
     },
     ACTIVE: {
-      label: 'Active',
-      helper: 'Live academic operations',
+      label: 'កំពុងដំណើរការ',
+      helper: 'ឆ្នាំសិក្សាកំពុងប្រើប្រាស់',
       badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
       icon: CheckCircle2,
       score: 74,
     },
     ENDED: {
-      label: 'Ended',
-      helper: 'Ready for close-out',
+      label: 'បានបញ្ចប់',
+      helper: 'រួចរាល់សម្រាប់បិទឆ្នាំសិក្សា',
       badge: 'border-amber-200 bg-amber-50 text-amber-700',
       icon: TrendingUp,
       score: 88,
     },
     ARCHIVED: {
-      label: 'Archived',
-      helper: 'Stored for record keeping',
+      label: 'បានទុកក្នុងបណ្ណសារ',
+      helper: 'រក្សាទុកសម្រាប់យោងពេលក្រោយ',
       badge: 'border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200',
       icon: BookOpen,
       score: 100,
@@ -377,8 +385,8 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
   );
   const gradeEntries = Object.keys(statistics.studentsByGrade).length;
   const genderSplit = [
-    { label: 'Male', value: statistics.studentsByGender.MALE || 0 },
-    { label: 'Female', value: statistics.studentsByGender.FEMALE || 0 },
+    { label: 'ប្រុស', value: statistics.studentsByGender.MALE || 0 },
+    { label: 'ស្រី', value: statistics.studentsByGender.FEMALE || 0 },
   ];
 
   return (
@@ -391,7 +399,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_360px]">
               <CompactHeroCard
                 icon={CalendarDays}
-                eyebrow="Academic Cycle"
+                eyebrow="ឆ្នាំសិក្សា"
                 title={academicYear.name}
                 description="Review cycle readiness, staffing, and promotion movement from one calm operations view."
                 chipsPosition="below"
@@ -462,9 +470,9 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                 </div>
                 <div className="mt-6 grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Students', value: formatNumber(statistics.totalStudents) },
-                    { label: 'Classes', value: formatNumber(statistics.totalClasses) },
-                    { label: 'Terms', value: formatNumber(terms.length) },
+                    { label: 'សិស្ស', value: formatNumber(statistics.totalStudents) },
+                    { label: 'ថ្នាក់រៀន', value: formatNumber(statistics.totalClasses) },
+                    { label: 'ឆមាស', value: formatNumber(terms.length) },
                   ].map((item) => (
                     <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
@@ -539,7 +547,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                 <div className="space-y-5">
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_380px]">
                     <SectionCard
-                      eyebrow="Snapshot"
+                      eyebrow="សេចក្តីសង្ខេប"
                       title={autoT("auto.web.academic_years_id_page.k_7a9ba09c")}
                       action={
                         <button
@@ -608,33 +616,33 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       </div>
                     </SectionCard>
 
-                    <SectionCard eyebrow="Actions" title={autoT("auto.web.academic_years_id_page.k_6dbc553b")}>
+                    <SectionCard eyebrow="សកម្មភាព" title={autoT("auto.web.academic_years_id_page.k_6dbc553b")}>
                       <div className="space-y-3">
                         {[
                           {
-                            label: 'Promotion workspace',
-                            helper: 'Review and move students into the next cycle.',
+                            label: 'គ្រប់គ្រងការឡើងថ្នាក់',
+                            helper: 'ពិនិត្យ និងបញ្ជូនសិស្សទៅឆ្នាំសិក្សាបន្ទាប់។',
                             icon: TrendingUp,
                             onClick: handlePromoteStudents,
                             tone: 'from-amber-500 to-orange-500',
                           },
                           {
-                            label: 'Year-end workflow',
-                            helper: 'Close and archive this cycle with control.',
+                            label: 'ដំណើរការបិទឆ្នាំសិក្សា',
+                            helper: 'បិទ និងរក្សាទុកឆ្នាំសិក្សានេះដោយមានការត្រួតពិនិត្យ។',
                             icon: RefreshCw,
                             onClick: handleYearEndWorkflow,
                             tone: 'from-fuchsia-500 to-violet-500',
                           },
                           {
-                            label: 'Copy setup forward',
-                            helper: 'Start a new cycle using this one as the template.',
+                            label: 'ចម្លងទៅឆ្នាំសិក្សាថ្មី',
+                            helper: 'ប្រើឆ្នាំសិក្សានេះជាគំរូសម្រាប់ឆ្នាំបន្ទាប់។',
                             icon: Copy,
                             onClick: handleCopySettings,
                             tone: 'from-sky-500 to-cyan-500',
                           },
                           {
-                            label: 'Manage calendar',
-                            helper: 'Open the academic event schedule and holidays.',
+                            label: 'គ្រប់គ្រងប្រតិទិន',
+                            helper: 'បើកកាលវិភាគព្រឹត្តិការណ៍ និងថ្ងៃឈប់សម្រាក។',
                             icon: CalendarDays,
                             onClick: handleViewCalendar,
                             tone: 'from-emerald-500 to-teal-500',
@@ -662,7 +670,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     </SectionCard>
                   </div>
 
-                  <SectionCard eyebrow="Distribution" title={autoT("auto.web.academic_years_id_page.k_9d7950aa")}>
+                  <SectionCard eyebrow="ការបែងចែក" title={autoT("auto.web.academic_years_id_page.k_9d7950aa")}>
                     {gradeEntries > 0 ? (
                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                         {Object.entries(statistics.studentsByGrade)
@@ -689,16 +697,31 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   </SectionCard>
 
                   <div className="grid gap-5 lg:grid-cols-2">
-                    <SectionCard eyebrow="Terms" title={autoT("auto.web.academic_years_id_page.k_471699da")}>
+                    <SectionCard eyebrow="ឆមាស" title={autoT("auto.web.academic_years_id_page.k_471699da")}>
                       {terms.length > 0 ? (
                         <div className="space-y-3">
                           {terms.map((term) => (
-                            <div key={term.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4">
+                            <div key={term.id} className="flex flex-col gap-3 rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800/80 dark:bg-gray-800/50 sm:flex-row sm:items-center sm:justify-between">
                               <div>
                                 <p className="font-semibold text-slate-950">{term.name}</p>
                                 <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_eeeae0e5" /> {term.termNumber}</p>
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-bold text-sky-700">
+                                    {term.gradeLevels?.length ? `ថ្នាក់ទី ${term.gradeLevels.join(', ')}` : 'គ្រប់កម្រិតថ្នាក់'}
+                                  </span>
+                                  {term.examMonth ? (
+                                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                                      ខែប្រឡង៖ {MONTHS.find((month) => month.value === term.examMonth)?.km || term.examMonth}
+                                    </span>
+                                  ) : null}
+                                  {term.excludedMonths?.map((monthNumber) => (
+                                    <span key={monthNumber} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+                                      Break: {MONTHS.find((month) => month.value === monthNumber)?.en || monthNumber}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                              <p className="text-sm font-medium text-slate-600">
+                              <p className="shrink-0 text-sm font-medium text-slate-600">
                                 {formatDateLabel(term.startDate)} - {formatDateLabel(term.endDate)}
                               </p>
                             </div>
@@ -713,7 +736,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       )}
                     </SectionCard>
 
-                    <SectionCard eyebrow="Assessments" title={autoT("auto.web.academic_years_id_page.k_ad3327e0")}>
+                    <SectionCard eyebrow="ការវាយតម្លៃ" title={autoT("auto.web.academic_years_id_page.k_ad3327e0")}>
                       {examTypes.length > 0 ? (
                         <div className="space-y-3">
                           {examTypes.map((exam) => (
@@ -742,7 +765,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
 
               {activeTab === 'classes' ? (
                 <SectionCard
-                  eyebrow="Classes"
+                  eyebrow="ថ្នាក់រៀន"
                   title={`Class structure · ${formatNumber(statistics.totalClasses)}`}
                   action={
                     <button
@@ -838,7 +861,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
 
               {activeTab === 'teachers' ? (
                 <SectionCard
-                  eyebrow="Faculty"
+                  eyebrow="គ្រូបង្រៀន"
                   title={`Teachers in cycle · ${formatNumber(statistics.totalTeachers)}`}
                   action={
                     <button
@@ -931,7 +954,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   </div>
 
                   <SectionCard
-                    eyebrow="History"
+                    eyebrow="ប្រវត្តិ"
                     title={autoT("auto.web.academic_years_id_page.k_cbcd6ff4")}
                     action={
                       <button
@@ -1021,7 +1044,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
 
               {activeTab === 'calendar' ? (
                 <SectionCard
-                  eyebrow="Calendar"
+                  eyebrow="ប្រតិទិន"
                   title={autoT("auto.web.academic_years_id_page.k_8caf10e1")}
                   action={
                     <button
@@ -1060,9 +1083,9 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_5c854614" /></p>
                       <div className="mt-4 space-y-3">
                         {[
-                          { icon: CalendarDays, label: 'Open full calendar', helper: 'Manage events and holidays', onClick: handleViewCalendar },
-                          { icon: RefreshCw, label: 'Year-end workflow', helper: 'Finish the cycle after the calendar closes', onClick: handleYearEndWorkflow },
-                          { icon: Copy, label: 'Copy this setup', helper: 'Carry structure into the next year', onClick: handleCopySettings },
+                          { icon: CalendarDays, label: 'បើកប្រតិទិនពេញលេញ', helper: 'គ្រប់គ្រងព្រឹត្តិការណ៍ និងថ្ងៃឈប់', onClick: handleViewCalendar },
+                          { icon: RefreshCw, label: 'ដំណើរការបិទឆ្នាំសិក្សា', helper: 'បញ្ចប់ឆ្នាំសិក្សាបន្ទាប់ពីកាលវិភាគបិទ', onClick: handleYearEndWorkflow },
+                          { icon: Copy, label: 'ចម្លងការកំណត់នេះ', helper: 'យករចនាសម្ព័ន្ធទៅប្រើក្នុងឆ្នាំបន្ទាប់', onClick: handleCopySettings },
                         ].map((item) => {
                           const Icon = item.icon;
                           return (

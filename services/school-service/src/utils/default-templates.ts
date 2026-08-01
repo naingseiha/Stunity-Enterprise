@@ -352,6 +352,101 @@ export interface ExamTypeTemplate {
   order: number;
 }
 
+// ========================================
+// DEFAULT ACADEMIC TERMS
+// ========================================
+
+export interface TermTemplate {
+  name: string;
+  nameKh: string;
+  termNumber: number;
+  startMonth: number; // 1-12
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+  examMonth?: number; // Which month the semester exam occurs (1-12)
+  excludedMonths?: number[]; // Months inside the date range that are school breaks
+  gradeLevels?: number[]; // Empty means all grades
+}
+
+// ========================================
+// CAMBODIA — Standard Grades (7, 8, 10, 11)
+// Nov → Mar (exam Feb or Mar), skip Apr, May → Aug (exam Jul or Aug)
+// ========================================
+export const CAMBODIA_STANDARD_TERMS: TermTemplate[] = [
+  {
+    name: 'Semester 1',
+    nameKh: 'ឆមាសទី១',
+    termNumber: 1,
+    startMonth: 11, // November
+    startDay: 1,
+    endMonth: 3,    // March
+    endDay: 31,
+    examMonth: 3,   // Default exam month: March (can be changed to Feb)
+    excludedMonths: [],
+    gradeLevels: [7, 8, 10, 11],
+  },
+  {
+    name: 'Semester 2',
+    nameKh: 'ឆមាសទី២',
+    termNumber: 2,
+    startMonth: 5,  // May
+    startDay: 1,
+    endMonth: 8,    // August
+    endDay: 31,
+    examMonth: 8,   // Default exam month: August (can be changed to July)
+    excludedMonths: [],
+    gradeLevels: [7, 8, 10, 11],
+  },
+];
+
+// ========================================
+// CAMBODIA — Exam Grades (9, 12)
+// Nov → Feb (national exam in Feb), skip Apr, Mar → Aug (exam Jun or Jul)
+// ========================================
+export const CAMBODIA_EXAM_GRADES_TERMS: TermTemplate[] = [
+  {
+    name: 'Semester 1',
+    nameKh: 'ឆមាសទី១',
+    termNumber: 1,
+    startMonth: 11, // November
+    startDay: 1,
+    endMonth: 2,    // February
+    endDay: 28,
+    examMonth: 2,   // Fixed: February (national exam month for Gr 9 & 12)
+    excludedMonths: [],
+    gradeLevels: [9, 12],
+  },
+  {
+    name: 'Semester 2',
+    nameKh: 'ឆមាសទី២',
+    termNumber: 2,
+    startMonth: 3,  // March (exam grades start sem 2 in March)
+    startDay: 1,
+    endMonth: 8,    // August
+    endDay: 31,
+    examMonth: 7,   // Default exam month: July (can be changed to June)
+    excludedMonths: [],
+    gradeLevels: [9, 12],
+  },
+];
+
+// ========================================
+// DEFAULT_TERMS — Cambodia MoEYS standard (Gr 7,8,10,11 pattern)
+// Updated to reflect real Cambodia school calendar
+// ========================================
+export const CAMBODIA_FLEXIBLE_TERMS: TermTemplate[] = [
+  ...CAMBODIA_STANDARD_TERMS,
+  ...CAMBODIA_EXAM_GRADES_TERMS,
+];
+
+// Registration keeps a universally applicable two-semester baseline. Admins
+// can apply the grade-specific Cambodia preset when the school needs it.
+export const DEFAULT_TERMS: TermTemplate[] = CAMBODIA_STANDARD_TERMS.map((term) => ({
+  ...term,
+  gradeLevels: [],
+}));
+
 export const DEFAULT_EXAM_TYPES: ExamTypeTemplate[] = [
   {
     name: 'Monthly Test',
@@ -373,41 +468,6 @@ export const DEFAULT_EXAM_TYPES: ExamTypeTemplate[] = [
     weight: 60,
     maxScore: 100,
     order: 3,
-  },
-];
-
-// ========================================
-// DEFAULT ACADEMIC TERMS
-// ========================================
-
-export interface TermTemplate {
-  name: string;
-  nameKh: string;
-  termNumber: number;
-  startMonth: number; // 1-12
-  startDay: number;
-  endMonth: number;
-  endDay: number;
-}
-
-export const DEFAULT_TERMS: TermTemplate[] = [
-  {
-    name: 'Semester 1',
-    nameKh: 'ឆមាសទី១',
-    termNumber: 1,
-    startMonth: 9,  // September
-    startDay: 1,
-    endMonth: 12,   // December
-    endDay: 31,
-  },
-  {
-    name: 'Semester 2',
-    nameKh: 'ឆមាសទី២',
-    termNumber: 2,
-    startMonth: 1,  // January
-    startDay: 1,
-    endMonth: 8,    // August
-    endDay: 31,
   },
 ];
 

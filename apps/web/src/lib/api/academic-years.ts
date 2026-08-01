@@ -29,6 +29,7 @@ export interface UpdateAcademicYearData {
   endDate?: string;
   status?: AcademicYear['status'];
   isCurrent?: boolean;
+  terms?: any[];
 }
 
 export interface CopySettingsData {
@@ -217,8 +218,8 @@ export async function updateAcademicYear(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to update academic year');
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || error.message || 'មិនអាចកែប្រែឆ្នាំសិក្សាបានទេ។');
   }
 
   const data = await response.json();
@@ -273,4 +274,34 @@ export async function getAcademicYearStats(
 
   const data = await response.json();
   return data.data;
+}
+
+export async function getAcademicYearTemplate(schoolId: string, yearId: string, token: string) {
+  const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/template`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch academic year template');
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+export async function getAcademicYearTerms(schoolId: string, yearId: string, token: string) {
+  const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/terms`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.success === false) {
+    throw new Error(data?.error || 'មិនអាចទាញយកឆមាសបានទេ។');
+  }
+
+  return data.data || [];
 }
