@@ -42,7 +42,6 @@ import {
   Moon,
   Sun,
   Gamepad2,
-  LayoutDashboard,
   Globe,
   School,
   Brain,
@@ -163,6 +162,10 @@ export default function UnifiedNavigation({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [schoolMenuQuery, setSchoolMenuQuery] = useState("");
+  const [expandedSchoolSections, setExpandedSchoolSections] = useState<
+    Record<string, boolean>
+  >({});
   const [isHydrated, setIsHydrated] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [, setTransitionSkeleton] = useState<{
@@ -256,6 +259,7 @@ export default function UnifiedNavigation({
       pathname.includes("/dashboard") ||
       pathname.includes("/students") ||
       pathname.includes("/admissions") ||
+      pathname.includes("/people") ||
       pathname.includes("/parents") ||
       pathname.includes("/teachers") ||
       pathname.includes("/classes") ||
@@ -264,6 +268,7 @@ export default function UnifiedNavigation({
       pathname.includes("/timetable") ||
       pathname.includes("/settings") ||
       pathname.includes("/reports") ||
+      pathname.includes("/teacher/quizzes/analytics") ||
       pathname.includes("/admin"), // Added for admin pages like claim-codes
     [pathname],
   );
@@ -288,7 +293,8 @@ export default function UnifiedNavigation({
     [school?.educationModel],
   );
   const showEducationModel = Boolean(school?.id);
-  const schoolLogoUrl = school?.logoUrl || school?.logo || school?.imageUrl || null;
+  const schoolLogoUrl =
+    school?.logoUrl || school?.logo || school?.imageUrl || null;
 
   // Optimistic active state - uses pending path if navigating, otherwise actual path
   const getOptimisticActive = useCallback(
@@ -407,39 +413,35 @@ export default function UnifiedNavigation({
   );
 
   const canOpenAttendanceDashboard = isSchoolAttendanceAdminRole(user?.role);
-  const canViewTeacherQuizAnalytics = useMemo(
-    () =>
-      ["TEACHER", "ADMIN", "STAFF", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
-        user?.role ?? "",
-      ) || Boolean(user?.isSuperAdmin),
-    [user?.isSuperAdmin, user?.role],
-  );
+  const canViewTeacherQuizAnalytics =
+    ["TEACHER", "ADMIN", "STAFF", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
+      user?.role ?? "",
+    ) || Boolean(user?.isSuperAdmin);
 
-  // Task-oriented information architecture: the sidebar exposes work areas,
-  // while dense report destinations live in the Reports hub.
-  const schoolMenuSections = useMemo<SchoolMenuSection[]>(
+  const standaloneSchoolMenuItems = useMemo<SchoolMenuItem[]>(
     () => [
       {
-        key: "overview",
-        label: tNav("sections.overview"),
-        icon: LayoutDashboard,
-        items: [
-          {
-            name: tNav("items.dashboard"),
-            icon: BarChart3,
-            path: `/${locale}/dashboard`,
-            prefetch: "dashboard",
-            skeleton: "dashboard" as const,
-          },
-          {
-            name: tNav("items.messages"),
-            icon: MessageCircle,
-            path: `/${locale}/dashboard/messages`,
-            prefetch: "messages",
-            skeleton: "table" as const,
-          },
-        ],
+        name: tNav("items.dashboard"),
+        icon: BarChart3,
+        path: `/${locale}/dashboard`,
+        prefetch: "dashboard",
+        skeleton: "dashboard",
       },
+      {
+        name: tNav("items.messages"),
+        icon: MessageCircle,
+        path: `/${locale}/dashboard/messages`,
+        prefetch: "messages",
+        skeleton: "table",
+      },
+    ],
+    [locale, tNav],
+  );
+
+  // Discoverable hybrid IA: destinations stay directly accessible while
+  // collapsible groups keep the sidebar compact.
+  const schoolMenuSections = useMemo<SchoolMenuSection[]>(
+    () => [
       {
         key: "people",
         label: tNav("sections.people"),
@@ -547,6 +549,13 @@ export default function UnifiedNavigation({
                 },
               ]
             : []),
+          {
+            name: tNav("items.attendanceReports"),
+            icon: FolderKanban,
+            path: `/${locale}/attendance/reports`,
+            prefetch: "attendance-core",
+            skeleton: "table" as const,
+          },
         ],
       },
       {
@@ -565,7 +574,6 @@ export default function UnifiedNavigation({
               `/${locale}/grades/reports`,
               `/${locale}/grades/monthly-report`,
               `/${locale}/grades/analytics`,
-              `/${locale}/attendance/reports`,
             ],
           },
           ...(canViewTeacherQuizAnalytics
@@ -587,6 +595,13 @@ export default function UnifiedNavigation({
         icon: Clock3,
         items: [
           {
+            name: tNav("items.yearEndWorkflow"),
+            icon: Archive,
+            path: `/${locale}/settings/year-end-workflow`,
+            prefetch: "year-end",
+            skeleton: "table" as const,
+          },
+          {
             name: tNav("items.promotion"),
             icon: TrendingUp,
             path: `/${locale}/settings/promotion`,
@@ -600,13 +615,6 @@ export default function UnifiedNavigation({
             prefetch: "failed-students",
             skeleton: "table" as const,
           },
-          {
-            name: tNav("items.yearEndWorkflow"),
-            icon: Archive,
-            path: `/${locale}/settings/year-end-workflow`,
-            prefetch: "year-end",
-            skeleton: "table" as const,
-          },
         ],
       },
       {
@@ -614,6 +622,28 @@ export default function UnifiedNavigation({
         label: tNav("sections.administration"),
         icon: Briefcase,
         items: [
+          {
+            name: tNav("items.academicYears"),
+            icon: Calendar,
+            path: `/${locale}/settings/academic-years`,
+            prefetch: "academic-years",
+            skeleton: "table" as const,
+            activePaths: [`/${locale}/settings/academic-years`],
+          },
+          {
+            name: tNav("items.schoolProfile"),
+            icon: School,
+            path: `/${locale}/settings/school-profile`,
+            prefetch: null,
+            skeleton: "form" as const,
+          },
+          {
+            name: tNav("items.campusLocations"),
+            icon: MapPin,
+            path: `/${locale}/settings/locations`,
+            prefetch: "locations",
+            skeleton: "table" as const,
+          },
           {
             name: tNav("items.claimCodes"),
             icon: Ticket,
@@ -632,27 +662,6 @@ export default function UnifiedNavigation({
                 },
               ]
             : []),
-          {
-            name: tNav("items.campusLocations"),
-            icon: MapPin,
-            path: `/${locale}/settings/locations`,
-            prefetch: "locations",
-            skeleton: "table" as const,
-          },
-          {
-            name: tNav("items.schoolProfile"),
-            icon: School,
-            path: `/${locale}/settings/school-profile`,
-            prefetch: null,
-            skeleton: "form" as const,
-          },
-          {
-            name: tNav("items.settings"),
-            icon: Settings,
-            path: `/${locale}/settings/academic-years`,
-            prefetch: "academic-years",
-            skeleton: "table" as const,
-          },
         ],
       },
       ...(canManageTranslations
@@ -685,7 +694,9 @@ export default function UnifiedNavigation({
 
   const isSchoolItemActive = useCallback(
     (item: SchoolMenuItem) => {
-      if (item.activePaths?.some((activePath) => pathname.startsWith(activePath))) {
+      if (
+        item.activePaths?.some((activePath) => pathname.startsWith(activePath))
+      ) {
         return true;
       }
       return pathname === item.path;
@@ -693,10 +704,54 @@ export default function UnifiedNavigation({
     [pathname],
   );
 
+  const filteredSchoolMenuSections = useMemo(() => {
+    const query = schoolMenuQuery.trim().toLocaleLowerCase();
+    if (!query) return schoolMenuSections;
+
+    return schoolMenuSections
+      .map((section) => {
+        const sectionMatches = section.label
+          .toLocaleLowerCase()
+          .includes(query);
+        return {
+          ...section,
+          items: sectionMatches
+            ? section.items
+            : section.items.filter((item) =>
+                item.name.toLocaleLowerCase().includes(query),
+              ),
+        };
+      })
+      .filter((section) => section.items.length > 0);
+  }, [schoolMenuQuery, schoolMenuSections]);
+
+  useEffect(() => {
+    const activeSection = schoolMenuSections.find((section) =>
+      section.items.some(isSchoolItemActive),
+    );
+    if (!activeSection) return;
+
+    setExpandedSchoolSections((current) =>
+      current[activeSection.key]
+        ? current
+        : { ...current, [activeSection.key]: true },
+    );
+  }, [isSchoolItemActive, schoolMenuSections]);
+
+  const toggleSchoolSection = useCallback((sectionKey: string) => {
+    setExpandedSchoolSections((current) => ({
+      ...current,
+      [sectionKey]: !current[sectionKey],
+    }));
+  }, []);
+
   // Flatten for mobile menu compatibility
   const schoolMenuItems = useMemo(
-    () => schoolMenuSections.flatMap((s) => s.items),
-    [schoolMenuSections],
+    () => [
+      ...standaloneSchoolMenuItems,
+      ...schoolMenuSections.flatMap((s) => s.items),
+    ],
+    [schoolMenuSections, standaloneSchoolMenuItems],
   );
 
   // Prefetch data on hover for instant navigation
@@ -1358,7 +1413,9 @@ export default function UnifiedNavigation({
                       {user?.role?.replaceAll("_", " ")}
                     </p>
                   </div>
-                  <ChevronDown className={`hidden 2xl:block h-3.5 w-3.5 text-slate-400 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`hidden 2xl:block h-3.5 w-3.5 text-slate-400 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`}
+                  />
                 </button>
 
                 {/* Profile Dropdown - Refined */}
@@ -1430,18 +1487,6 @@ export default function UnifiedNavigation({
                         </span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
                       </Link>
-                      {canViewTeacherQuizAnalytics && (
-                        <Link
-                          href={`/${locale}/teacher/quizzes/analytics`}
-                          prefetch={true}
-                          onClick={() => setProfileMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
-                        >
-                          <Brain className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" />
-                          <span className="flex-1">Quiz Analytics</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
-                        </Link>
-                      )}
                       <Link
                         href={`/${locale}/settings`}
                         prefetch={true}
@@ -1478,6 +1523,9 @@ export default function UnifiedNavigation({
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={
+                  mobileMenuOpen ? tNav("closeMenu") : tNav("openMenu")
+                }
                 className="md:hidden ml-1 p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200"
               >
                 {mobileMenuOpen ? (
@@ -1492,8 +1540,8 @@ export default function UnifiedNavigation({
 
         {/* Mobile Menu - Refined */}
         {mobileMenuOpen && (
-          <div className="md:hidden max-h-[calc(100vh-3.5rem)] overflow-y-auto border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-slate-950/98 backdrop-blur-xl">
-            <div className="px-3 py-3 space-y-0.5">
+          <div className="max-h-[calc(100vh-3.5rem)] overflow-y-auto border-t border-slate-200 bg-white/98 backdrop-blur-xl md:hidden dark:border-slate-800 dark:bg-slate-950/98">
+            <div className="space-y-0.5 px-3 py-3">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = getOptimisticActive(item.path, item.active);
@@ -1527,19 +1575,19 @@ export default function UnifiedNavigation({
                       router.push(item.path);
                     }}
                     className={`
-                      flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-150
+                      flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors
                       ${
                         isActive
-                          ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80"
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950/35 dark:text-blue-300"
+                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
                       }
                     `}
                   >
                     {isNavigating ? (
-                      <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                     ) : (
                       <Icon
-                        className={`w-5 h-5 ${isActive ? "text-orange-500" : "text-gray-400"}`}
+                        className={`h-4 w-4 ${isActive ? "text-blue-600" : "text-slate-400"}`}
                       />
                     )}
                     <span className="flex-1">{item.name}</span>
@@ -1548,53 +1596,149 @@ export default function UnifiedNavigation({
                         {item.badge}
                       </span>
                     )}
-                    <ChevronRight
-                      className={`w-4 h-4 ${isActive ? "text-orange-400" : "text-gray-300"}`}
-                    />
+                    <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                   </Link>
                 );
               })}
 
               {isSchoolContext && (
                 <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-800">
-                  <div className="mb-3 flex items-center justify-between px-3">
+                  <div className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/70">
                     <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                      <p className="text-[12px] font-bold text-slate-900 dark:text-white">
                         {school?.name || tNav("adminWorkspace")}
                       </p>
-                      <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                      <p className="mt-0.5 text-[9px] font-medium text-slate-400">
                         {tNav("adminWorkspace")}
                       </p>
                     </div>
                     <AcademicYearSelector />
                   </div>
-                  {schoolMenuSections.map((section) => (
-                    <div key={section.key} className="mb-4">
-                      <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                        {section.label}
-                      </p>
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = isSchoolItemActive(item);
-                        return (
-                          <Link
-                            key={item.path}
-                            href={item.path}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+
+                  <div className="mb-3 space-y-1 border-b border-slate-200 pb-3 dark:border-slate-800">
+                    {standaloneSchoolMenuItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = isSchoolItemActive(item);
+                      return (
+                        <Link
+                          key={item.path}
+                          href={item.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-colors ${
+                            isActive
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/35 dark:text-blue-300"
+                              : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                          }`}
+                        >
+                          {isActive ? (
+                            <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                          ) : null}
+                          <Icon
+                            className={`h-4 w-4 ${
                               isActive
-                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
-                                : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                                ? "text-blue-600 dark:text-blue-300"
+                                : "text-slate-400"
                             }`}
-                          >
-                            <Icon className="h-4 w-4" />
-                            <span className="flex-1">{item.name}</span>
-                            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  ))}
+                          />
+                          <span className="kh-navigation-main-item flex-1">
+                            {item.name}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  <div className="relative mb-3">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="search"
+                      value={schoolMenuQuery}
+                      onChange={(event) =>
+                        setSchoolMenuQuery(event.target.value)
+                      }
+                      placeholder={tNav("searchMenu")}
+                      aria-label={tNav("searchMenu")}
+                      className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[12px] text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300 focus:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:focus:border-slate-700"
+                    />
+                  </div>
+
+                  {filteredSchoolMenuSections.map((section) => {
+                    const SectionIcon = section.icon;
+                    const sectionHasActiveItem =
+                      section.items.some(isSchoolItemActive);
+                    const isExpanded =
+                      Boolean(schoolMenuQuery.trim()) ||
+                      Boolean(expandedSchoolSections[section.key]);
+
+                    return (
+                      <div key={section.key} className="mb-1">
+                        <button
+                          type="button"
+                          onClick={() => toggleSchoolSection(section.key)}
+                          aria-expanded={isExpanded}
+                          className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                            sectionHasActiveItem
+                              ? "bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-white"
+                              : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                          }`}
+                        >
+                          <SectionIcon className="h-4 w-4 text-slate-400" />
+                          <span className="kh-navigation-main-item flex-1 text-[13px]">
+                            {section.label}
+                          </span>
+                          <span className="min-w-5 rounded-md bg-slate-100 px-1.5 py-0.5 text-center text-[9px] font-semibold text-slate-500 group-hover:bg-white dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-800">
+                            {section.items.length}
+                          </span>
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {isExpanded ? (
+                          <div className="mt-1 space-y-px">
+                            {section.items.map((item) => {
+                              const Icon = item.icon;
+                              const isActive = isSchoolItemActive(item);
+                              return (
+                                <Link
+                                  key={item.path}
+                                  href={item.path}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
+                                    isActive
+                                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/35 dark:text-blue-300"
+                                      : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                                  }`}
+                                >
+                                  {isActive ? (
+                                    <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                                  ) : null}
+                                  <Icon
+                                    className={`h-4 w-4 ${
+                                      isActive
+                                        ? "text-blue-600 dark:text-blue-300"
+                                        : "text-slate-400"
+                                    }`}
+                                  />
+                                  <span className="kh-navigation-submenu flex-1">
+                                    {item.name}
+                                  </span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+
+                  {filteredSchoolMenuSections.length === 0 ? (
+                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                      {tNav("noMenuResults")}
+                    </p>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -1604,16 +1748,16 @@ export default function UnifiedNavigation({
 
       {/* School context sidebar: grouped work areas */}
       {isSchoolContext && (
-        <aside className="kh-navigation-font hidden lg:flex fixed left-0 top-14 w-64 h-[calc(100vh-3.5rem)] flex-col bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800 overflow-hidden z-40">
-          <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-900">
+        <aside className="kh-navigation-font fixed left-0 top-14 z-40 hidden h-[calc(100vh-3.5rem)] w-64 flex-col overflow-hidden border-r border-slate-200 bg-white lg:flex dark:border-slate-800 dark:bg-slate-950">
+          <div className="border-b border-slate-100 px-4 py-4 dark:border-slate-900">
             <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-50 to-cyan-50 text-blue-600 shadow-sm ring-1 ring-blue-100 dark:from-blue-950/60 dark:to-cyan-950/30 dark:text-blue-300 dark:ring-blue-900">
+              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 {schoolLogoUrl ? (
                   <Image
                     src={schoolLogoUrl}
                     alt={school?.name || tNav("items.school")}
-                    width={44}
-                    height={44}
+                    width={40}
+                    height={40}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -1621,101 +1765,228 @@ export default function UnifiedNavigation({
                 )}
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                   {tNav("adminWorkspace")}
                 </p>
-                <p className="mt-1 truncate text-sm font-black text-slate-950 dark:text-white">
+                <p className="mt-0.5 truncate text-[13px] font-bold text-slate-900 dark:text-white">
                   {school?.name || tNav("items.school")}
                 </p>
+                {showEducationModel ? (
+                  <p className="mt-0.5 truncate text-[9px] font-medium text-slate-400 dark:text-slate-500">
+                    {educationModelLabel}
+                  </p>
+                ) : null}
               </div>
             </div>
-            {showEducationModel && (
-              <p className="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
-                {educationModelLabel}
-              </p>
-            )}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-5">
-            <div>
-              {schoolMenuSections.map((section, sectionIndex) => {
-                return (
-                  <section key={section.key} className={sectionIndex > 0 ? "mt-8 border-t border-slate-200 pt-7 dark:border-slate-800" : ""}>
-                    <div className="mb-4">
-                      <p className="kh-navigation-section-title text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-                        {section.label}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = optimisticPath
-                          ? optimisticPath === item.path || Boolean(item.activePaths?.some((path) => optimisticPath.startsWith(path)))
-                          : isSchoolItemActive(item);
-                        const isNavigating =
-                          optimisticPath === item.path && pathname !== item.path;
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="sticky top-0 z-10 bg-white pb-2 dark:bg-slate-950">
+              <div className="space-y-1 pb-3">
+                {standaloneSchoolMenuItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = optimisticPath
+                    ? optimisticPath === item.path
+                    : isSchoolItemActive(item);
+                  const isNavigating =
+                    optimisticPath === item.path && pathname !== item.path;
 
-                        return (
-                          <Link
-                            key={item.path}
-                            href={item.path}
-                            prefetch={true}
-                            onMouseEnter={() => primeRoute(item.path, item.prefetch)}
-                            onFocus={() => primeRoute(item.path, item.prefetch)}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              // Escape valve: if this item is already stuck in navigating state, clear it
-                              if (
-                                optimisticPath === item.path &&
-                                pathname !== item.path
-                              ) {
-                                setOptimisticPath(null);
-                                setTransitionSkeleton(null);
-                              }
-                              beginNavigationFeedback(item.path, item.skeleton, true);
-                              router.push(item.path);
-                            }}
-                            className={`group relative flex items-center gap-3 rounded-xl px-0 py-2.5 text-[13px] font-semibold transition-all duration-200 ${
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      prefetch={true}
+                      onMouseEnter={() => primeRoute(item.path, item.prefetch)}
+                      onFocus={() => primeRoute(item.path, item.prefetch)}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        beginNavigationFeedback(item.path, item.skeleton, true);
+                        router.push(item.path);
+                      }}
+                      className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors ${
+                        isActive
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950/35 dark:text-blue-300"
+                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900/70"
+                      }`}
+                    >
+                      {isActive ? (
+                        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                      ) : null}
+                      <span className="grid h-6 w-6 shrink-0 place-items-center">
+                        {isNavigating ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Icon
+                            className={`h-3.5 w-3.5 ${
                               isActive
-                                ? "text-blue-700 dark:text-blue-300"
-                                : "text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                                ? "text-blue-600 dark:text-blue-300"
+                                : "text-slate-400"
                             }`}
-                          >
-                            <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition-colors ${
-                              isActive
-                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
-                                : "bg-transparent text-slate-700 dark:text-slate-300"
-                            }`}>
-                              {isNavigating ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Icon className="h-4 w-4" />
-                              )}
-                            </span>
-                            <span className="min-w-0 flex-1 truncate">
-                              {item.name}
-                            </span>
-                            {isActive ? (
-                              <span className="h-2 w-2 rounded-full bg-blue-500" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-600" />
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
+                          />
+                        )}
+                      </span>
+                      <span className="kh-navigation-main-item min-w-0 flex-1 truncate">
+                        {item.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    value={schoolMenuQuery}
+                    onChange={(event) => setSchoolMenuQuery(event.target.value)}
+                    placeholder={tNav("searchMenu")}
+                    aria-label={tNav("searchMenu")}
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[11px] font-medium text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300 focus:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:focus:border-slate-700"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              {filteredSchoolMenuSections.map((section) => {
+                const SectionIcon = section.icon;
+                const sectionHasActiveItem =
+                  section.items.some(isSchoolItemActive);
+                const isExpanded =
+                  Boolean(schoolMenuQuery.trim()) ||
+                  Boolean(expandedSchoolSections[section.key]);
+
+                return (
+                  <section key={section.key}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSchoolSection(section.key)}
+                      aria-expanded={isExpanded}
+                      className={`group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                        sectionHasActiveItem
+                          ? "bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-white"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900/70 dark:hover:text-white"
+                      }`}
+                    >
+                      <SectionIcon
+                        className={`h-3.5 w-3.5 shrink-0 ${
+                          sectionHasActiveItem
+                            ? "text-slate-700 dark:text-slate-200"
+                            : "text-slate-400"
+                        }`}
+                      />
+                      <span className="kh-navigation-main-item min-w-0 flex-1 truncate text-[12px]">
+                        {section.label}
+                      </span>
+                      <span className="min-w-5 rounded-md bg-slate-100 px-1.5 py-0.5 text-center text-[9px] font-semibold tabular-nums text-slate-500 group-hover:bg-white dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-800">
+                        {section.items.length}
+                      </span>
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 shrink-0 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="mt-1 space-y-px">
+                        {section.items.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = optimisticPath
+                            ? optimisticPath === item.path ||
+                              Boolean(
+                                item.activePaths?.some((path) =>
+                                  optimisticPath.startsWith(path),
+                                ),
+                              )
+                            : isSchoolItemActive(item);
+                          const isNavigating =
+                            optimisticPath === item.path &&
+                            pathname !== item.path;
+
+                          return (
+                            <Link
+                              key={item.path}
+                              href={item.path}
+                              prefetch={true}
+                              onMouseEnter={() =>
+                                primeRoute(item.path, item.prefetch)
+                              }
+                              onFocus={() =>
+                                primeRoute(item.path, item.prefetch)
+                              }
+                              onClick={(e) => {
+                                e.preventDefault();
+                                // Escape valve: if this item is already stuck in navigating state, clear it
+                                if (
+                                  optimisticPath === item.path &&
+                                  pathname !== item.path
+                                ) {
+                                  setOptimisticPath(null);
+                                  setTransitionSkeleton(null);
+                                }
+                                beginNavigationFeedback(
+                                  item.path,
+                                  item.skeleton,
+                                  true,
+                                );
+                                router.push(item.path);
+                              }}
+                              className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors ${
+                                isActive
+                                  ? "bg-blue-50 text-blue-700 dark:bg-blue-950/35 dark:text-blue-300"
+                                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900/70 dark:hover:text-white"
+                              }`}
+                            >
+                              {isActive ? (
+                                <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                              ) : null}
+                              <span
+                                className={`grid h-6 w-6 shrink-0 place-items-center transition-colors ${
+                                  isActive
+                                    ? "text-blue-600 dark:text-blue-300"
+                                    : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                                }`}
+                              >
+                                {isNavigating ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Icon className="h-3.5 w-3.5" />
+                                )}
+                              </span>
+                              <span className="kh-navigation-submenu min-w-0 flex-1 truncate">
+                                {item.name}
+                              </span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </section>
                 );
               })}
+
+              {filteredSchoolMenuSections.length === 0 ? (
+                <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                  {tNav("noMenuResults")}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-900">
+          <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-900">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-emerald-500" />
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <Shield className="h-3.5 w-3.5" />
+              </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{tNav("secureWorkspace")}</p>
-                <p className="kh-navigation-note text-[9px] text-slate-400">{tNav("roleBasedAccess")}</p>
+                <p className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+                  {tNav("secureWorkspace")}
+                </p>
+                <p className="kh-navigation-note truncate text-[8px] text-slate-400">
+                  {tNav("roleBasedAccess")}
+                </p>
               </div>
             </div>
           </div>

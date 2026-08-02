@@ -1,94 +1,85 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowUpRight,
-  Award,
-  BarChart3,
-  Brain,
-  CalendarRange,
-  LineChart,
   ChevronRight,
-  FileBarChart,
-  GraduationCap,
-  LayoutDashboard,
+  FolderKanban,
+  LayoutGrid,
   ShieldCheck,
-  Sparkles,
-  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import UnifiedNavigation from "@/components/UnifiedNavigation";
 import PageSkeleton from "@/components/layout/PageSkeleton";
 import { TokenManager } from "@/lib/api/auth";
-import { canViewReportsDashboard } from "@/lib/permissions/reports";
 
-type ReportTool = {
+export type HubTone = "blue" | "emerald" | "violet" | "amber" | "cyan" | "rose";
+
+export type HubTool = {
   key: string;
   title: string;
   description: string;
   href: string;
   icon: LucideIcon;
-  tone: "blue" | "violet" | "emerald" | "amber" | "rose" | "cyan";
-  requiresReportsAccess?: boolean;
+  tone: HubTone;
+  badge?: string;
   roles?: string[];
 };
 
-type ReportSection = {
+export type HubSection = {
   key: string;
   title: string;
   description: string;
   icon: LucideIcon;
-  tone: "blue" | "emerald" | "violet";
-  tools: ReportTool[];
+  tone: "blue" | "emerald" | "violet" | "amber";
+  tools: HubTool[];
 };
 
-const toneStyles: Record<
-  ReportTool["tone"],
-  { icon: string; iconHover: string; borderHover: string }
-> = {
+type WorkspaceHubPageProps = {
+  locale: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  sections: HubSection[];
+  primaryAction?: {
+    label: string;
+    href: string;
+  };
+};
+
+const toolStyles: Record<HubTone, { icon: string; hover: string }> = {
   blue: {
     icon: "border-blue-100 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300",
-    iconHover:
-      "group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white",
-    borderHover: "hover:border-blue-200 dark:hover:border-blue-700/60",
-  },
-  violet: {
-    icon: "border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300",
-    iconHover:
-      "group-hover:border-violet-600 group-hover:bg-violet-600 group-hover:text-white",
-    borderHover: "hover:border-violet-200 dark:hover:border-violet-700/60",
+    hover: "hover:border-blue-200 dark:hover:border-blue-700/60",
   },
   emerald: {
     icon: "border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
-    iconHover:
-      "group-hover:border-emerald-600 group-hover:bg-emerald-600 group-hover:text-white",
-    borderHover: "hover:border-emerald-200 dark:hover:border-emerald-700/60",
+    hover: "hover:border-emerald-200 dark:hover:border-emerald-700/60",
+  },
+  violet: {
+    icon: "border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300",
+    hover: "hover:border-violet-200 dark:hover:border-violet-700/60",
   },
   amber: {
     icon: "border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
-    iconHover:
-      "group-hover:border-amber-500 group-hover:bg-amber-500 group-hover:text-white",
-    borderHover: "hover:border-amber-200 dark:hover:border-amber-700/60",
-  },
-  rose: {
-    icon: "border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
-    iconHover:
-      "group-hover:border-rose-600 group-hover:bg-rose-600 group-hover:text-white",
-    borderHover: "hover:border-rose-200 dark:hover:border-rose-700/60",
+    hover: "hover:border-amber-200 dark:hover:border-amber-700/60",
   },
   cyan: {
     icon: "border-cyan-100 bg-cyan-50 text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300",
-    iconHover:
-      "group-hover:border-cyan-600 group-hover:bg-cyan-600 group-hover:text-white",
-    borderHover: "hover:border-cyan-200 dark:hover:border-cyan-700/60",
+    hover: "hover:border-cyan-200 dark:hover:border-cyan-700/60",
+  },
+  rose: {
+    icon: "border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+    hover: "hover:border-rose-200 dark:hover:border-rose-700/60",
   },
 };
 
 const sectionStyles: Record<
-  ReportSection["tone"],
+  HubSection["tone"],
   { icon: string; rule: string; count: string }
 > = {
   blue: {
@@ -108,14 +99,25 @@ const sectionStyles: Record<
     count:
       "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300",
   },
+  amber: {
+    icon: "bg-amber-500 text-white",
+    rule: "bg-amber-500",
+    count:
+      "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+  },
 };
 
-export default function ReportsHubPage(props: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = use(props.params);
+export default function WorkspaceHubPage({
+  locale,
+  eyebrow,
+  title,
+  description,
+  icon: PageIcon,
+  sections,
+  primaryAction,
+}: WorkspaceHubPageProps) {
   const router = useRouter();
-  const t = useTranslations("reportsHub");
+  const t = useTranslations("workspaceHubs.common");
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -133,128 +135,27 @@ export default function ReportsHubPage(props: {
     setLoading(false);
   }, [locale, router]);
 
-  const hasReportsAccess = canViewReportsDashboard(user?.role);
-
-  const sections = useMemo<ReportSection[]>(() => {
-    const allSections: ReportSection[] = [
-      {
-        key: "performance",
-        title: t("performance"),
-        description: t("performanceDescription"),
-        icon: LineChart,
-        tone: "blue",
-        tools: [
-          {
-            key: "dashboard",
-            title: t("reportsDashboard"),
-            description: t("reportsDashboardDescription"),
-            href: `/${locale}/reports/dashboard`,
-            icon: LayoutDashboard,
-            tone: "blue",
-            requiresReportsAccess: true,
-          },
-          {
-            key: "grade-analytics",
-            title: t("gradeAnalytics"),
-            description: t("gradeAnalyticsDescription"),
-            href: `/${locale}/grades/analytics`,
-            icon: BarChart3,
-            tone: "violet",
-          },
-          {
-            key: "year-comparison",
-            title: t("yearComparison"),
-            description: t("yearComparisonDescription"),
-            href: `/${locale}/reports/year-comparison`,
-            icon: CalendarRange,
-            tone: "emerald",
-          },
-          {
-            key: "quiz-analytics",
-            title: t("quizAnalytics"),
-            description: t("quizAnalyticsDescription"),
-            href: `/${locale}/teacher/quizzes/analytics`,
-            icon: Brain,
-            tone: "cyan",
-            roles: ["TEACHER", "ADMIN", "STAFF", "SCHOOL_ADMIN", "SUPER_ADMIN"],
-          },
-        ],
-      },
-      {
-        key: "records",
-        title: t("records"),
-        description: t("recordsDescription"),
-        icon: GraduationCap,
-        tone: "emerald",
-        tools: [
-          {
-            key: "report-cards",
-            title: t("reportCards"),
-            description: t("reportCardsDescription"),
-            href: `/${locale}/grades/reports`,
-            icon: FileBarChart,
-            tone: "blue",
-          },
-          {
-            key: "monthly-report",
-            title: t("monthlyReport"),
-            description: t("monthlyReportDescription"),
-            href: `/${locale}/grades/monthly-report`,
-            icon: CalendarRange,
-            tone: "amber",
-          },
-          {
-            key: "attendance-reports",
-            title: t("attendanceReports"),
-            description: t("attendanceReportsDescription"),
-            href: `/${locale}/attendance/reports`,
-            icon: UserCheck,
-            tone: "cyan",
-          },
-        ],
-      },
-      {
-        key: "creative",
-        title: t("creative"),
-        description: t("creativeDescription"),
-        icon: Sparkles,
-        tone: "violet",
-        tools: [
-          {
-            key: "poster-studio",
-            title: t("posterStudio"),
-            description: t("posterStudioDescription"),
-            href: `/${locale}/reports/poster-studio`,
-            icon: Award,
-            tone: "rose",
-            requiresReportsAccess: true,
-          },
-          {
-            key: "certificate-studio",
-            title: t("certificateStudio"),
-            description: t("certificateStudioDescription"),
-            href: `/${locale}/reports/certificate-studio`,
-            icon: GraduationCap,
-            tone: "amber",
-            requiresReportsAccess: true,
-          },
-        ],
-      },
-    ];
-
-    return allSections
-      .map((section) => ({
-        ...section,
-        tools: section.tools.filter(
-          (tool) =>
-            (!tool.requiresReportsAccess || hasReportsAccess) &&
-            (!tool.roles ||
+  const visibleSections = useMemo(
+    () =>
+      sections
+        .map((section) => ({
+          ...section,
+          tools: section.tools.filter(
+            (tool) =>
+              !tool.roles ||
               tool.roles.includes(user?.role) ||
-              Boolean(user?.isSuperAdmin)),
-        ),
-      }))
-      .filter((section) => section.tools.length > 0);
-  }, [hasReportsAccess, locale, t, user?.isSuperAdmin, user?.role]);
+              Boolean(user?.isSuperAdmin),
+          ),
+        }))
+        .filter((section) => section.tools.length > 0),
+    [sections, user?.isSuperAdmin, user?.role],
+  );
+
+  const toolCount = useMemo(
+    () =>
+      visibleSections.reduce((sum, section) => sum + section.tools.length, 0),
+    [visibleSections],
+  );
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -264,11 +165,6 @@ export default function ReportsHubPage(props: {
   if (loading) {
     return <PageSkeleton user={user} school={school} type="dashboard" />;
   }
-
-  const tools = sections.flatMap((section) => section.tools);
-  const toolCount = tools.length;
-  const featuredTool = tools.find((tool) => tool.key === "dashboard");
-  const featuredHref = featuredTool?.href ?? `/${locale}/reports/dashboard`;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white">
@@ -287,37 +183,37 @@ export default function ReportsHubPage(props: {
                     href={`/${locale}/dashboard`}
                     className="transition-colors hover:text-blue-600"
                   >
-                    {t("backToDashboard")}
+                    {t("dashboard")}
                   </Link>
                   <ChevronRight className="h-3 w-3" aria-hidden="true" />
                   <span className="text-slate-600 dark:text-gray-300">
-                    {t("title")}
+                    {title}
                   </span>
                 </nav>
 
                 <div className="flex items-start gap-3.5">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-                    <FileBarChart className="h-5 w-5" />
+                    <PageIcon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-[1.7rem]">
-                        {t("title")}
+                        {title}
                       </h1>
                       <span className="hidden h-4 w-px bg-slate-200 dark:bg-gray-700 sm:block" />
                       <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                        {t("eyebrow")}
+                        {eyebrow}
                       </p>
                     </div>
                     <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-gray-400">
-                      {t("description")}
+                      {description}
                     </p>
                     <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        {school?.name || t("eyebrow")}
+                        {school?.name || eyebrow}
                       </span>
                       <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        {t("authorizedAccess")}
+                        {t("roleAccess")}
                       </span>
                     </div>
                   </div>
@@ -328,66 +224,70 @@ export default function ReportsHubPage(props: {
                 <div className="flex min-w-0 items-center gap-3 sm:pr-1">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-                      <FileBarChart className="h-4 w-4" />
+                      <FolderKanban className="h-4 w-4" />
                     </span>
-                    <div className="min-w-0">
+                    <div>
                       <p className="text-lg font-black leading-none tracking-tight text-slate-950 dark:text-white">
                         {toolCount}
                       </p>
                       <p className="mt-1 whitespace-nowrap text-[9px] font-bold text-slate-500 dark:text-gray-400">
-                        {t("availableTools")}
+                        {t("tools")}
                       </p>
                     </div>
                   </div>
                   <span className="h-8 w-px bg-slate-200 dark:bg-gray-700" />
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                      <LayoutDashboard className="h-4 w-4" />
+                      <LayoutGrid className="h-4 w-4" />
                     </span>
-                    <div className="min-w-0">
+                    <div>
                       <p className="text-lg font-black leading-none tracking-tight text-slate-950 dark:text-white">
-                        {sections.length}
+                        {visibleSections.length}
                       </p>
                       <p className="mt-1 whitespace-nowrap text-[9px] font-bold text-slate-500 dark:text-gray-400">
-                        {t("categories")}
+                        {t("groups")}
                       </p>
                     </div>
                   </div>
                 </div>
-                <Link
-                  href={featuredHref}
-                  className="group inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-[11px] font-bold text-white transition-colors hover:bg-blue-700"
-                >
-                  {t("openDashboard")}
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
+
+                {primaryAction ? (
+                  <Link
+                    href={primaryAction.href}
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-[11px] font-bold text-white transition-colors hover:bg-blue-700"
+                  >
+                    {primaryAction.label}
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                ) : null}
               </div>
             </div>
           </section>
 
-          <section aria-labelledby="reports-tools-heading">
+          <section aria-labelledby="workspace-tools-heading">
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2
-                  id="reports-tools-heading"
+                  id="workspace-tools-heading"
                   className="text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl"
                 >
-                  {t("allReports")}
+                  {t("allTools")}
                 </h2>
                 <p className="mt-1.5 max-w-2xl text-xs font-medium leading-5 text-slate-500 dark:text-slate-400">
-                  {t("toolsDescription")}
+                  {t("chooseTool")}
                 </p>
               </div>
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                {t("authorizedAccess")}
+                {t("roleAccess")}
               </span>
             </div>
 
             <div className="grid items-start gap-5 xl:grid-cols-3">
-              {sections.map((section) => {
+              {visibleSections.map((section) => {
                 const SectionIcon = section.icon;
                 const sectionTone = sectionStyles[section.tone];
+
                 return (
                   <article
                     key={section.key}
@@ -421,15 +321,16 @@ export default function ReportsHubPage(props: {
                       <div className="mt-5 space-y-2.5">
                         {section.tools.map((tool) => {
                           const ToolIcon = tool.icon;
-                          const tone = toneStyles[tool.tone];
+                          const tone = toolStyles[tool.tone];
+
                           return (
                             <Link
                               key={tool.key}
                               href={tool.href}
-                              className={`group flex min-h-[6.5rem] items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 transition-colors hover:bg-white dark:border-gray-800 dark:bg-gray-950/35 dark:hover:bg-gray-800/70 ${tone.borderHover}`}
+                              className={`group flex min-h-[6.5rem] items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 transition-colors hover:bg-white dark:border-gray-800 dark:bg-gray-950/35 dark:hover:bg-gray-800/70 ${tone.hover}`}
                             >
                               <span
-                                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition-colors ${tone.icon} ${tone.iconHover}`}
+                                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition-colors ${tone.icon}`}
                               >
                                 <ToolIcon className="h-[18px] w-[18px]" />
                               </span>
@@ -438,9 +339,9 @@ export default function ReportsHubPage(props: {
                                   <span className="line-clamp-1 flex-1 text-[13px] font-black leading-5 text-slate-900 dark:text-white">
                                     {tool.title}
                                   </span>
-                                  {tool.key === "dashboard" ? (
+                                  {tool.badge ? (
                                     <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
-                                      {t("recommended")}
+                                      {tool.badge}
                                     </span>
                                   ) : null}
                                 </span>
