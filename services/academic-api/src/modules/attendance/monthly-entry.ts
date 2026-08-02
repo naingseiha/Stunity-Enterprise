@@ -29,10 +29,13 @@ export function registerMonthlyEntryRoutes(
         const numYear = parseInt(String(year));
         const numMonth = parseInt(String(monthNumber));
 
-        // Determine date range for the requested month
-        // Physical year: if month > 4 it's the academic start year, otherwise next year.
-        // (This matches standard MOEYS academic calendar: Sept(9) to July(7))
-        const physicalYear = numMonth > 4 ? numYear : numYear + 1;
+        // Determine the academic year's start month dynamically
+        const classInfo = await prisma.class.findUnique({
+          where: { id: String(classId) },
+          include: { academicYear: true }
+        });
+        const ayStartMonth = classInfo?.academicYear?.startDate ? classInfo.academicYear.startDate.getUTCMonth() + 1 : 11;
+        const physicalYear = numMonth >= ayStartMonth ? numYear : numYear + 1;
         const monthStartStr = `${physicalYear}-${String(numMonth).padStart(2, "0")}-01T00:00:00.000Z`;
         const dateStart = new Date(monthStartStr);
 
@@ -126,7 +129,12 @@ export function registerMonthlyEntryRoutes(
         const numMonth = parseInt(String(monthNumber));
         const numDay = parseInt(String(day));
 
-        const physicalYear = numMonth > 4 ? numYear : numYear + 1;
+        const classInfo = await prisma.class.findUnique({
+          where: { id: String(classId) },
+          include: { academicYear: true }
+        });
+        const ayStartMonth = classInfo?.academicYear?.startDate ? classInfo.academicYear.startDate.getUTCMonth() + 1 : 11;
+        const physicalYear = numMonth >= ayStartMonth ? numYear : numYear + 1;
         const targetDateStr = getLocalDateString(
           physicalYear,
           numMonth,
