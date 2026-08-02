@@ -1,8 +1,12 @@
-import type { PrismaClient } from '@prisma/client';
-import { resolveReportAcademicStartYear } from '../report-utils';
-import * as L from './khm-moeys-logic';
+import type { PrismaClient } from "@prisma/client";
+import { resolveReportAcademicStartYear } from "../report-utils";
+import * as L from "./khm-moeys-logic";
 
-export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1' | 'semester-2';
+export type MonthlyReportFormat =
+  | "summary"
+  | "detailed"
+  | "semester-1"
+  | "semester-2";
 
 export interface MonthlyReportQuery {
   scope?: string;
@@ -20,19 +24,27 @@ export interface MonthlyReportQuery {
 }
 
 function parseFormat(raw?: string): MonthlyReportFormat {
-  const f = String(raw || 'summary').toLowerCase();
-  if (f === 'detailed') return 'detailed';
-  if (f === 'semester-1' || f === 'semester_1' || f === 'semester1') return 'semester-1';
-  if (f === 'semester-2' || f === 'semester_2' || f === 'semester2') return 'semester-2';
-  return 'summary';
+  const f = String(raw || "summary").toLowerCase();
+  if (f === "detailed") return "detailed";
+  if (f === "semester-1" || f === "semester_1" || f === "semester1")
+    return "semester-1";
+  if (f === "semester-2" || f === "semester_2" || f === "semester2")
+    return "semester-2";
+  return "summary";
 }
 
 /** Resolve month number from query (duplicated from index — Khmer labels use explicit monthNumber) */
-function resolveMonthNumber(month: string, providedMonthNumber?: number): number {
-  if (typeof providedMonthNumber === 'number' && Number.isFinite(providedMonthNumber)) {
+function resolveMonthNumber(
+  month: string,
+  providedMonthNumber?: number,
+): number {
+  if (
+    typeof providedMonthNumber === "number" &&
+    Number.isFinite(providedMonthNumber)
+  ) {
     return providedMonthNumber;
   }
-  const parsed = parseInt(month.replace(/[^\d]/g, ''), 10);
+  const parsed = parseInt(month.replace(/[^\d]/g, ""), 10);
   if (Number.isFinite(parsed) && parsed > 0) {
     return parsed;
   }
@@ -74,7 +86,7 @@ async function computeRankedStudentsForMonth(
   prisma: PrismaClient,
   ctx: {
     schoolId: string;
-    reportScope: 'class' | 'grade';
+    reportScope: "class" | "grade";
     selectedClasses: any[];
     classIds: string[];
     roster: Array<{ student: any; class: any }>;
@@ -86,7 +98,7 @@ async function computeRankedStudentsForMonth(
     requestedMonthNumber: number;
     monthLabel: string;
     actualYear: number;
-  }
+  },
 ): Promise<RankedStudent[]> {
   const {
     schoolId,
@@ -112,7 +124,11 @@ async function computeRankedStudentsForMonth(
           where: {
             studentId: { in: studentIds },
             classId: { in: classIds },
-            ...L.buildMonthlyGradeWhere(requestedMonthNumber, monthLabel, actualYear),
+            ...L.buildMonthlyGradeWhere(
+              requestedMonthNumber,
+              monthLabel,
+              actualYear,
+            ),
           },
           include: {
             subject: {
@@ -135,7 +151,7 @@ async function computeRankedStudentsForMonth(
       : Promise.resolve([]),
     studentIds.length > 0
       ? prisma.attendance.groupBy({
-          by: ['studentId', 'status'],
+          by: ["studentId", "status"],
           where: {
             studentId: { in: studentIds },
             classId: { in: classIds },
@@ -153,27 +169,35 @@ async function computeRankedStudentsForMonth(
 
   const gradesByStudent = new Map<string, Map<string, any>>();
   gradesForMonth.forEach((gradeEntry) => {
-    const studentGrades = gradesByStudent.get(gradeEntry.studentId) || new Map();
+    const studentGrades =
+      gradesByStudent.get(gradeEntry.studentId) || new Map();
     studentGrades.set(gradeEntry.subjectId, gradeEntry);
     gradesByStudent.set(gradeEntry.studentId, studentGrades);
   });
 
-  const attendanceByStudent = new Map<string, { absent: number; permission: number }>();
+  const attendanceByStudent = new Map<
+    string,
+    { absent: number; permission: number }
+  >();
   attendanceCounts.forEach((entry) => {
-    const totals = attendanceByStudent.get(entry.studentId) || { absent: 0, permission: 0 };
-    if (entry.status === 'ABSENT') totals.absent += entry._count.status;
-    if (entry.status === 'PERMISSION' || entry.status === 'EXCUSED') totals.permission += entry._count.status;
+    const totals = attendanceByStudent.get(entry.studentId) || {
+      absent: 0,
+      permission: 0,
+    };
+    if (entry.status === "ABSENT") totals.absent += entry._count.status;
+    if (entry.status === "PERMISSION" || entry.status === "EXCUSED")
+      totals.permission += entry._count.status;
     attendanceByStudent.set(entry.studentId, totals);
   });
 
   const usesSemesterOneEnglishRule = L.shouldApplySemesterOneEnglishRule(
     reportGrade,
     requestedMonthNumber,
-    monthLabel
+    monthLabel,
   );
 
   const reportStudents = roster.map((entry) => {
-    const classInfo = entry.class || classById.get(entry.student.classId || '');
+    const classInfo = entry.class || classById.get(entry.student.classId || "");
     const classTrack = classInfo?.track || null;
     const studentGrades = gradesByStudent.get(entry.student.id) || new Map();
     const gradeMap: Record<string, number | null> = {};
@@ -185,16 +209,25 @@ async function computeRankedStudentsForMonth(
       const subjectIds = subjectAliasMap.get(subject.id) || [subject.id];
       const appliesToTrack = subjectIds.some((subjectId) => {
         const subjectTrack = subjectById.get(subjectId)?.track || null;
-        return !subjectTrack || subjectTrack === 'common' || subjectTrack === classTrack;
+        return (
+          !subjectTrack ||
+          subjectTrack === "common" ||
+          subjectTrack === classTrack
+        );
       });
       if (!appliesToTrack) return;
 
-      const gradeEntry = subjectIds.map((subjectId) => studentGrades.get(subjectId)).find(Boolean);
+      const gradeEntry = subjectIds
+        .map((subjectId) => studentGrades.get(subjectId))
+        .find(Boolean);
       gradeMap[subject.id] = gradeEntry ? gradeEntry.score : null;
       if (!gradeEntry) return;
 
       if (usesSemesterOneEnglishRule && L.isEnglishSubject(subject)) {
-        englishBonus += Math.max(gradeEntry.score - L.ENGLISH_SCORE_BASELINE, 0);
+        englishBonus += Math.max(
+          gradeEntry.score - L.ENGLISH_SCORE_BASELINE,
+          0,
+        );
         return;
       }
 
@@ -203,8 +236,12 @@ async function computeRankedStudentsForMonth(
     });
 
     const adjustedTotalScore = totalScore + englishBonus;
-    const average = totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
-    const attendance = attendanceByStudent.get(entry.student.id) || { absent: 0, permission: 0 };
+    const average =
+      totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
+    const attendance = attendanceByStudent.get(entry.student.id) || {
+      absent: 0,
+      permission: 0,
+    };
 
     return {
       studentId: entry.student.id,
@@ -214,7 +251,7 @@ async function computeRankedStudentsForMonth(
       lastName: entry.student.lastName,
       gender: entry.student.gender,
       classId: classInfo?.id || entry.student.classId,
-      className: classInfo?.name || '',
+      className: classInfo?.name || "",
       classTrack,
       grades: gradeMap,
       totalScore: Math.round(adjustedTotalScore * 100) / 100,
@@ -230,7 +267,7 @@ async function computeRankedStudentsForMonth(
   return reportStudents
     .sort((a, b) => {
       if (b.average !== a.average) return b.average - a.average;
-      return a.studentName.localeCompare(b.studentName, 'km');
+      return a.studentName.localeCompare(b.studentName, "km");
     })
     .map((student, index) => ({
       ...student,
@@ -241,10 +278,10 @@ async function computeRankedStudentsForMonth(
 async function loadSharedContext(
   prisma: PrismaClient,
   schoolId: string,
-  query: MonthlyReportQuery
+  query: MonthlyReportQuery,
 ) {
   const {
-    scope = 'class',
+    scope = "class",
     classId,
     grade,
     month,
@@ -254,12 +291,23 @@ async function loadSharedContext(
     academicYearId,
   } = query;
 
-  const requestedMonthNumber = Number(monthNumber) || resolveMonthNumber(String(month || ''), undefined);
-  if (!requestedMonthNumber || requestedMonthNumber < 1 || requestedMonthNumber > 12) {
-    throw new Error('VALIDATION: A valid monthNumber between 1 and 12 is required');
+  const requestedMonthNumber =
+    Number(monthNumber) || resolveMonthNumber(String(month || ""), undefined);
+  if (
+    !requestedMonthNumber ||
+    requestedMonthNumber < 1 ||
+    requestedMonthNumber > 12
+  ) {
+    throw new Error(
+      "VALIDATION: A valid monthNumber between 1 and 12 is required",
+    );
   }
 
-  const academicStartYear = await resolveReportAcademicStartYear(prisma, schoolId, year as string | undefined);
+  const academicStartYear = await resolveReportAcademicStartYear(
+    prisma,
+    schoolId,
+    year as string | undefined,
+  );
 
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
@@ -273,14 +321,17 @@ async function loadSharedContext(
     },
   });
 
-  const reportScope: 'class' | 'grade' = String(scope) === 'grade' ? 'grade' : 'class';
+  const reportScope: "class" | "grade" =
+    String(scope) === "grade" ? "grade" : "class";
   const selectedClasses =
-    reportScope === 'class'
+    reportScope === "class"
       ? await prisma.class.findMany({
           where: {
-            id: String(classId || ''),
+            id: String(classId || ""),
             schoolId,
-            ...(academicYearId ? { academicYearId: String(academicYearId) } : {}),
+            ...(academicYearId
+              ? { academicYearId: String(academicYearId) }
+              : {}),
           },
           include: {
             academicYear: true,
@@ -290,35 +341,62 @@ async function loadSharedContext(
       : await prisma.class.findMany({
           where: {
             schoolId,
-            grade: String(grade || ''),
-            ...(academicYearId ? { academicYearId: String(academicYearId) } : {}),
+            grade: String(grade || ""),
+            ...(academicYearId
+              ? { academicYearId: String(academicYearId) }
+              : {}),
           },
           include: {
             academicYear: true,
             homeroomTeacher: true,
           },
-          orderBy: [{ name: 'asc' }, { section: 'asc' }],
+          orderBy: [{ name: "asc" }, { section: "asc" }],
         });
 
   if (selectedClasses.length === 0) {
-    throw new Error(reportScope === 'class' ? 'NOT_FOUND: Class not found' : 'NOT_FOUND: No classes found for this grade');
+    throw new Error(
+      reportScope === "class"
+        ? "NOT_FOUND: Class not found"
+        : "NOT_FOUND: No classes found for this grade",
+    );
   }
 
   const classIds = selectedClasses.map((classInfo) => classInfo.id);
-  const reportGrade = reportScope === 'class' ? selectedClasses[0].grade : String(grade || selectedClasses[0].grade);
-  const classById = new Map(selectedClasses.map((classInfo) => [classInfo.id, classInfo]));
+  const reportGrade =
+    reportScope === "class"
+      ? selectedClasses[0].grade
+      : String(grade || selectedClasses[0].grade);
+  const classById = new Map(
+    selectedClasses.map((classInfo) => [classInfo.id, classInfo]),
+  );
+  const bootstrapMonthNumber = requestedMonthNumber;
+  const bootstrapLabel = L.resolveKhmerMonthLabel(
+    bootstrapMonthNumber,
+    month as string | undefined,
+  );
+  const bootstrapActualYear = L.resolveKhmerMonthlyReportPeriod(
+    academicStartYear,
+    bootstrapMonthNumber,
+    periodYear as string | undefined,
+  );
+  const reportPeriodStart = L.monthStart(
+    bootstrapActualYear,
+    bootstrapMonthNumber,
+  );
+  const reportPeriodEnd = L.monthEnd(bootstrapActualYear, bootstrapMonthNumber);
 
   const studentClasses = await prisma.studentClass.findMany({
     where: {
       classId: { in: classIds },
-      status: 'ACTIVE',
+      startedAt: { lte: reportPeriodEnd },
+      OR: [{ endedAt: null }, { endedAt: { gt: reportPeriodStart } }],
       ...(academicYearId ? { academicYearId: String(academicYearId) } : {}),
     },
     include: {
       student: true,
       class: true,
     },
-    orderBy: [{ class: { name: 'asc' } }, { student: { firstName: 'asc' } }],
+    orderBy: [{ class: { name: "asc" } }, { student: { firstName: "asc" } }],
   });
 
   const fallbackStudents =
@@ -333,7 +411,7 @@ async function loadSharedContext(
           include: {
             class: true,
           },
-          orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+          orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
         });
 
   const roster =
@@ -344,15 +422,23 @@ async function loadSharedContext(
         }))
       : fallbackStudents.map((student) => ({
           student,
-          class: student.class || classById.get(student.classId || ''),
+          class: student.class || classById.get(student.classId || ""),
         }));
 
-  const trackValues = Array.from(new Set(selectedClasses.map((classInfo) => classInfo.track).filter(Boolean))) as string[];
+  const trackValues = Array.from(
+    new Set(
+      selectedClasses.map((classInfo) => classInfo.track).filter(Boolean),
+    ),
+  ) as string[];
   const subjects = await prisma.subject.findMany({
     where: {
       grade: reportGrade,
       isActive: true,
-      OR: [{ track: null }, { track: 'common' }, ...trackValues.map((track) => ({ track }))],
+      OR: [
+        { track: null },
+        { track: "common" },
+        ...trackValues.map((track) => ({ track })),
+      ],
     },
     select: {
       id: true,
@@ -372,21 +458,17 @@ async function loadSharedContext(
 
   const studentIds = roster.map((entry) => entry.student.id);
 
-  const bootstrapMonthNumber = requestedMonthNumber;
-  const bootstrapLabel = L.resolveKhmerMonthLabel(bootstrapMonthNumber, month as string | undefined);
-  const bootstrapActualYear = L.resolveKhmerMonthlyReportPeriod(
-    academicStartYear,
-    bootstrapMonthNumber,
-    periodYear as string | undefined
-  );
-
   const bootstrapGrades =
     studentIds.length > 0
       ? await prisma.grade.findMany({
           where: {
             studentId: { in: studentIds },
             classId: { in: classIds },
-            ...L.buildMonthlyGradeWhere(bootstrapMonthNumber, bootstrapLabel, bootstrapActualYear),
+            ...L.buildMonthlyGradeWhere(
+              bootstrapMonthNumber,
+              bootstrapLabel,
+              bootstrapActualYear,
+            ),
           },
           select: { subjectId: true },
         })
@@ -394,7 +476,10 @@ async function loadSharedContext(
 
   const gradeCountBySubject = new Map<string, number>();
   bootstrapGrades.forEach((gradeEntry) => {
-    gradeCountBySubject.set(gradeEntry.subjectId, (gradeCountBySubject.get(gradeEntry.subjectId) || 0) + 1);
+    gradeCountBySubject.set(
+      gradeEntry.subjectId,
+      (gradeCountBySubject.get(gradeEntry.subjectId) || 0) + 1,
+    );
   });
 
   const subjectsByGroup = new Map<string, typeof subjects>();
@@ -415,22 +500,29 @@ async function loadSharedContext(
 
         const aTrack = L.normalizeKhmerReportKey(a.track);
         const bTrack = L.normalizeKhmerReportKey(b.track);
-        const aTrackPriority = aTrack && aTrack !== 'common' ? 0 : aTrack === 'common' ? 1 : 2;
-        const bTrackPriority = bTrack && bTrack !== 'common' ? 0 : bTrack === 'common' ? 1 : 2;
-        if (aTrackPriority !== bTrackPriority) return aTrackPriority - bTrackPriority;
+        const aTrackPriority =
+          aTrack && aTrack !== "common" ? 0 : aTrack === "common" ? 1 : 2;
+        const bTrackPriority =
+          bTrack && bTrack !== "common" ? 0 : bTrack === "common" ? 1 : 2;
+        if (aTrackPriority !== bTrackPriority)
+          return aTrackPriority - bTrackPriority;
 
         return L.compareSubjectsForKhmerMonthlyReport(a, b);
       })[0];
 
-      subjectAliasMap.set(preferredSubject.id, groupedSubjects.map((subject) => subject.id));
+      subjectAliasMap.set(
+        preferredSubject.id,
+        groupedSubjects.map((subject) => subject.id),
+      );
       return preferredSubject;
     })
     .sort(L.compareSubjectsForKhmerMonthlyReport);
 
-  const homeroomTeacher = reportScope === 'class' ? selectedClasses[0].homeroomTeacher : null;
+  const homeroomTeacher =
+    reportScope === "class" ? selectedClasses[0].homeroomTeacher : null;
   const teacherName = homeroomTeacher
-    ? `${homeroomTeacher.lastName || ''} ${homeroomTeacher.firstName || ''}`.trim()
-    : '';
+    ? `${homeroomTeacher.lastName || ""} ${homeroomTeacher.firstName || ""}`.trim()
+    : "";
 
   return {
     requestedMonthNumber,
@@ -453,16 +545,24 @@ async function loadSharedContext(
   };
 }
 
-export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId: string, query: MonthlyReportQuery) {
+export async function buildKhmMoeysMonthlyReport(
+  prisma: PrismaClient,
+  schoolId: string,
+  query: MonthlyReportQuery,
+) {
   const format = parseFormat(query.format);
 
   const shared = await loadSharedContext(prisma, schoolId, query);
 
-  if (format === 'semester-1' || format === 'semester-2') {
-    const isSem1 = format === 'semester-1';
+  if (format === "semester-1" || format === "semester-2") {
+    const isSem1 = format === "semester-1";
 
     // Fetch AcademicTerm to dynamically compute preMonths
-    let preMonths: number[] = [...(isSem1 ? L.MOEYS_SEMESTER_ONE_PRE_MONTHS : L.MOEYS_SEMESTER_TWO_PRE_MONTHS)];
+    let preMonths: number[] = [
+      ...(isSem1
+        ? L.MOEYS_SEMESTER_ONE_PRE_MONTHS
+        : L.MOEYS_SEMESTER_TWO_PRE_MONTHS),
+    ];
     let examMonthNumber = shared.requestedMonthNumber;
 
     if (query.academicYearId) {
@@ -470,11 +570,15 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
         where: {
           academicYearId: query.academicYearId,
           termNumber: isSem1 ? 1 : 2,
-        }
+        },
       });
 
-      const gradeNum = Number(String(shared.reportGrade).replace(/[^0-9]/g, '')) || 0;
-      const term = terms.find(t => t.gradeLevels.length === 0 || t.gradeLevels.includes(gradeNum)) || terms[0];
+      const gradeNum =
+        Number(String(shared.reportGrade).replace(/[^0-9]/g, "")) || 0;
+      const term =
+        terms.find(
+          (t) => t.gradeLevels.length === 0 || t.gradeLevels.includes(gradeNum),
+        ) || terms[0];
 
       if (term) {
         if (term.examMonth) {
@@ -486,33 +590,42 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
         const allMonths: number[] = [];
         const current = new Date(startDate);
         current.setDate(1);
-        
+
         while (current <= endDate) {
           allMonths.push(current.getMonth() + 1);
           current.setMonth(current.getMonth() + 1);
         }
-        
+
         const examIdx = term.examMonth ? allMonths.indexOf(term.examMonth) : -1;
-        preMonths = (examIdx !== -1 ? allMonths.slice(0, examIdx) : allMonths)
-          .filter(m => !term.excludedMonths.includes(m));
+        preMonths = (
+          examIdx !== -1 ? allMonths.slice(0, examIdx) : allMonths
+        ).filter((m) => !term.excludedMonths.includes(m));
       }
     }
 
-    const examLabel = L.resolveKhmerMonthLabel(examMonthNumber, shared.monthParam);
+    const examLabel = L.resolveKhmerMonthLabel(
+      examMonthNumber,
+      shared.monthParam,
+    );
     const examActualYear = L.resolveKhmerMonthlyReportPeriod(
       shared.academicStartYear,
       examMonthNumber,
-      query.periodYear as string | undefined
+      query.periodYear as string | undefined,
     );
 
-    const preSnapshots: { monthNumber: number; label: string; year: number; students: RankedStudent[] }[] = [];
+    const preSnapshots: {
+      monthNumber: number;
+      label: string;
+      year: number;
+      students: RankedStudent[];
+    }[] = [];
 
     for (const m of preMonths) {
       const label = L.resolveKhmerMonthLabel(m, undefined);
       const actualYear = L.resolveKhmerMonthlyReportPeriod(
         shared.academicStartYear,
         m,
-        query.periodYear as string | undefined
+        query.periodYear as string | undefined,
       );
       const students = await computeRankedStudentsForMonth(prisma, {
         schoolId,
@@ -551,12 +664,15 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
     const merged = examStudents.map((examRow) => {
       const preMonthAverages: number[] = [];
       for (const snap of preSnapshots) {
-        const row = snap.students.find((s) => s.studentId === examRow.studentId);
+        const row = snap.students.find(
+          (s) => s.studentId === examRow.studentId,
+        );
         if (row !== undefined) preMonthAverages.push(row.average);
       }
       const preSemesterAverage =
         preMonthAverages.length > 0
-          ? preMonthAverages.reduce((sum, v) => sum + v, 0) / preMonthAverages.length
+          ? preMonthAverages.reduce((sum, v) => sum + v, 0) /
+            preMonthAverages.length
           : 0;
 
       const examAverage = examRow.average;
@@ -584,17 +700,27 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
       };
     });
 
-    const preSorted = [...merged].sort((a, b) => b.semesterOne.preSemesterAverage - a.semesterOne.preSemesterAverage);
-    const examSorted = [...merged].sort((a, b) => b.semesterOne.examAverage - a.semesterOne.examAverage);
-    const finalSorted = [...merged].sort((a, b) => b.semesterOne.finalAverage - a.semesterOne.finalAverage);
+    const preSorted = [...merged].sort(
+      (a, b) =>
+        b.semesterOne.preSemesterAverage - a.semesterOne.preSemesterAverage,
+    );
+    const examSorted = [...merged].sort(
+      (a, b) => b.semesterOne.examAverage - a.semesterOne.examAverage,
+    );
+    const finalSorted = [...merged].sort(
+      (a, b) => b.semesterOne.finalAverage - a.semesterOne.finalAverage,
+    );
 
     const withRanks = merged.map((row) => ({
       ...row,
       semesterOne: {
         ...row.semesterOne,
-        preSemesterRank: preSorted.findIndex((s) => s.studentId === row.studentId) + 1,
-        examRank: examSorted.findIndex((s) => s.studentId === row.studentId) + 1,
-        finalRank: finalSorted.findIndex((s) => s.studentId === row.studentId) + 1,
+        preSemesterRank:
+          preSorted.findIndex((s) => s.studentId === row.studentId) + 1,
+        examRank:
+          examSorted.findIndex((s) => s.studentId === row.studentId) + 1,
+        finalRank:
+          finalSorted.findIndex((s) => s.studentId === row.studentId) + 1,
       },
     }));
 
@@ -603,7 +729,7 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
         if (b.semesterOne.finalAverage !== a.semesterOne.finalAverage) {
           return b.semesterOne.finalAverage - a.semesterOne.finalAverage;
         }
-        return a.studentName.localeCompare(b.studentName, 'km');
+        return a.studentName.localeCompare(b.studentName, "km");
       })
       .map((s, i) => ({
         ...s,
@@ -613,19 +739,29 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
       }));
 
     const totalStudents = rankedStudents.length;
-    const femaleStudents = rankedStudents.filter((student) => L.isFemaleGender(student.gender)).length;
-    const passedStudents = rankedStudents.filter((student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE);
-    const failedStudents = rankedStudents.filter((student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE);
+    const femaleStudents = rankedStudents.filter((student) =>
+      L.isFemaleGender(student.gender),
+    ).length;
+    const passedStudents = rankedStudents.filter(
+      (student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE,
+    );
+    const failedStudents = rankedStudents.filter(
+      (student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE,
+    );
 
     const monthsIncluded = [
-      ...preSnapshots.map((s) => ({ monthNumber: s.monthNumber, label: s.label, year: s.year })),
+      ...preSnapshots.map((s) => ({
+        monthNumber: s.monthNumber,
+        label: s.label,
+        year: s.year,
+      })),
       { monthNumber: examMonthNumber, label: examLabel, year: examActualYear },
     ];
 
     return {
       template: L.KHMER_MONTH_REPORT_TEMPLATE,
       format,
-      scope: shared.reportScope as 'class' | 'grade',
+      scope: shared.reportScope as "class" | "grade",
       school: shared.school,
       academicYear: {
         startYear: shared.academicStartYear,
@@ -640,7 +776,7 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
       },
       monthsIncluded,
       class:
-        shared.reportScope === 'class'
+        shared.reportScope === "class"
           ? {
               id: shared.selectedClasses[0].id,
               name: shared.selectedClasses[0].name,
@@ -658,18 +794,22 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
         totalStudents,
         femaleStudents,
         passedStudents: passedStudents.length,
-        passedFemaleStudents: passedStudents.filter((student) => L.isFemaleGender(student.gender)).length,
+        passedFemaleStudents: passedStudents.filter((student) =>
+          L.isFemaleGender(student.gender),
+        ).length,
         failedStudents: failedStudents.length,
-        failedFemaleStudents: failedStudents.filter((student) => L.isFemaleGender(student.gender)).length,
+        failedFemaleStudents: failedStudents.filter((student) =>
+          L.isFemaleGender(student.gender),
+        ).length,
       },
       rules: {
-        system: 'KHM_MOEYS',
+        system: "KHM_MOEYS",
         passingAverage: L.KHMER_MONTH_PASSING_AVERAGE,
         semesterOneEnglishBaseline: L.ENGLISH_SCORE_BASELINE,
         usesSemesterOneEnglishRule: L.shouldApplySemesterOneEnglishRule(
           shared.reportGrade,
           examMonthNumber,
-          examLabel
+          examLabel,
         ),
       },
       generatedAt: new Date().toISOString(),
@@ -678,16 +818,19 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
 
   /** summary & detailed — same payload; print layout differs on client */
   const requestedMonthNumber = shared.requestedMonthNumber;
-  const monthLabel = L.resolveKhmerMonthLabel(requestedMonthNumber, shared.monthParam);
+  const monthLabel = L.resolveKhmerMonthLabel(
+    requestedMonthNumber,
+    shared.monthParam,
+  );
   const actualYear = L.resolveKhmerMonthlyReportPeriod(
     shared.academicStartYear,
     requestedMonthNumber,
-    query.periodYear as string | undefined
+    query.periodYear as string | undefined,
   );
 
   const rankedStudents = await computeRankedStudentsForMonth(prisma, {
     schoolId,
-    reportScope: shared.reportScope as 'class' | 'grade',
+    reportScope: shared.reportScope as "class" | "grade",
     selectedClasses: shared.selectedClasses,
     classIds: shared.classIds,
     roster: shared.roster,
@@ -702,20 +845,26 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
   });
 
   const totalStudents = rankedStudents.length;
-  const femaleStudents = rankedStudents.filter((student) => L.isFemaleGender(student.gender)).length;
-  const passedStudents = rankedStudents.filter((student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE);
-  const failedStudents = rankedStudents.filter((student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE);
+  const femaleStudents = rankedStudents.filter((student) =>
+    L.isFemaleGender(student.gender),
+  ).length;
+  const passedStudents = rankedStudents.filter(
+    (student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE,
+  );
+  const failedStudents = rankedStudents.filter(
+    (student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE,
+  );
 
   const usesSemesterOneEnglishRule = L.shouldApplySemesterOneEnglishRule(
     shared.reportGrade,
     requestedMonthNumber,
-    monthLabel
+    monthLabel,
   );
 
   return {
     template: L.KHMER_MONTH_REPORT_TEMPLATE,
     format,
-    scope: shared.reportScope as 'class' | 'grade',
+    scope: shared.reportScope as "class" | "grade",
     school: shared.school,
     academicYear: {
       startYear: shared.academicStartYear,
@@ -728,9 +877,15 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
       academicStartYear: shared.academicStartYear,
       year: actualYear,
     },
-    monthsIncluded: [{ monthNumber: requestedMonthNumber, label: monthLabel, year: actualYear }],
+    monthsIncluded: [
+      {
+        monthNumber: requestedMonthNumber,
+        label: monthLabel,
+        year: actualYear,
+      },
+    ],
     class:
-      shared.reportScope === 'class'
+      shared.reportScope === "class"
         ? {
             id: shared.selectedClasses[0].id,
             name: shared.selectedClasses[0].name,
@@ -748,12 +903,16 @@ export async function buildKhmMoeysMonthlyReport(prisma: PrismaClient, schoolId:
       totalStudents,
       femaleStudents,
       passedStudents: passedStudents.length,
-      passedFemaleStudents: passedStudents.filter((student) => L.isFemaleGender(student.gender)).length,
+      passedFemaleStudents: passedStudents.filter((student) =>
+        L.isFemaleGender(student.gender),
+      ).length,
       failedStudents: failedStudents.length,
-      failedFemaleStudents: failedStudents.filter((student) => L.isFemaleGender(student.gender)).length,
+      failedFemaleStudents: failedStudents.filter((student) =>
+        L.isFemaleGender(student.gender),
+      ).length,
     },
     rules: {
-      system: 'KHM_MOEYS',
+      system: "KHM_MOEYS",
       passingAverage: L.KHMER_MONTH_PASSING_AVERAGE,
       semesterOneEnglishBaseline: L.ENGLISH_SCORE_BASELINE,
       usesSemesterOneEnglishRule,

@@ -38,6 +38,10 @@ interface ClassHistory {
   academicYear: { id: string; name: string; status: string };
   class: { id: string; name: string; grade: string; section: string | null };
   enrolledAt: string;
+  startedAt?: string;
+  endedAt?: string | null;
+  entryReason?: string;
+  exitReason?: string | null;
   status: string;
 }
 
@@ -405,7 +409,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ឆ្នាំសិក្សា' : 'Academic year'}</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ថ្នាក់' : 'Class'}</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'កម្រិតថ្នាក់' : 'Grade'}</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ថ្ងៃចូលរៀន' : 'Enrolled date'}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'រយៈពេលសិក្សា' : 'Enrollment period'}</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">{isKhmer ? 'ស្ថានភាព' : 'Status'}</th>
                     </tr>
                   </thead>
@@ -420,7 +424,19 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{history.class.name}</td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{isKhmer ? 'ថ្នាក់ទី' : 'Grade'} {history.class.grade}</td>
-                        <td className="px-4 py-3 text-gray-500 text-sm">{formatDate(history.enrolledAt)}</td>
+                        <td className="px-4 py-3 text-gray-500 text-sm">
+                          <div>{formatDate(history.startedAt || history.enrolledAt)}</div>
+                          <div className="mt-0.5 text-xs text-gray-400">
+                            {history.endedAt
+                              ? `${isKhmer ? 'ដល់' : 'to'} ${formatDate(history.endedAt)}`
+                              : (isKhmer ? 'ដល់បច្ចុប្បន្ន' : 'Current')}
+                          </div>
+                          {history.exitReason && (
+                            <div className="mt-1 text-[11px] font-medium text-blue-600 dark:text-blue-300">
+                              {history.exitReason.replaceAll('_', ' ')}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             history.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :

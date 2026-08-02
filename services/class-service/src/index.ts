@@ -1,17 +1,22 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-import dotenv from 'dotenv';
-import { shouldRunDbStartupWarmup, withPrismaPoolParams } from '../../lib/prisma-pool-url';
+import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import jwt from "jsonwebtoken";
+import { PrismaClient } from "@prisma/client";
+import dotenv from "dotenv";
+import {
+  shouldRunDbStartupWarmup,
+  withPrismaPoolParams,
+} from "../../lib/prisma-pool-url";
 
 // Load environment variables from root .env
-dotenv.config({ path: '../../.env' });
+dotenv.config({ path: "../../.env" });
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error(
+    "FATAL: JWT_SECRET must be set in production. Refusing to start.",
+  );
 }
 
 // Simple in-memory cache
@@ -19,45 +24,77 @@ const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const app = express();
-app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
+app.set("trust proxy", 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
 // ✅ Singleton Prisma pattern
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  datasources: { db: { url: withPrismaPoolParams(process.env.DATABASE_URL) } },
-  log: ['error'],
-});
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    datasources: {
+      db: { url: withPrismaPoolParams(process.env.DATABASE_URL) },
+    },
+    log: ["error"],
+  });
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // Database warmup
 if (shouldRunDbStartupWarmup()) {
-  (async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
+  (async () => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      console.log("✅ Database ready");
+    } catch (e) {
+      console.error("⚠️ DB warmup failed");
+    }
+  })();
 }
 
 const PORT = process.env.PORT || process.env.CLASS_SERVICE_PORT || 3005;
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+const JWT_SECRET = process.env.JWT_SECRET || "stunity-enterprise-secret-2026";
 
 // Middleware - CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "http://localhost:3003",
+      "http://localhost:3004",
+      "http://localhost:3005",
+    ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow all origins in production if CORS_ORIGIN is set to *
-    if (process.env.CORS_ORIGIN === '*') return callback(null, true);
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
-app.use(express.json({ limit: '1mb' }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow all origins in production if CORS_ORIGIN is set to *
+      if (process.env.CORS_ORIGIN === "*") return callback(null, true);
+
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+app.use(
+  helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }),
+);
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: "Too many requests" },
+  }),
+);
+app.use(express.json({ limit: "1mb" }));
 
 // ===========================
 // JWT Auth Middleware
@@ -75,15 +112,15 @@ interface AuthRequest extends Request {
 const authMiddleware = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = req.headers.authorization?.replace("Bearer ", "");
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'No authentication token provided',
+        message: "No authentication token provided",
       });
     }
 
@@ -96,7 +133,7 @@ const authMiddleware = async (
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token format',
+        message: "Invalid token format",
       });
     }
 
@@ -104,7 +141,7 @@ const authMiddleware = async (
     if (decoded.school && !decoded.school.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'School account is inactive',
+        message: "School account is inactive",
       });
     }
 
@@ -115,14 +152,14 @@ const authMiddleware = async (
       if (now > trialEnd) {
         return res.status(403).json({
           success: false,
-          message: 'Trial period has expired. Please upgrade to continue.',
+          message: "Trial period has expired. Please upgrade to continue.",
         });
       }
     }
 
     req.user = {
       userId: decoded.userId,
-      email: decoded.email || '',
+      email: decoded.email || "",
       role: decoded.role,
       schoolId: decoded.schoolId,
       school: decoded.school,
@@ -130,10 +167,10 @@ const authMiddleware = async (
 
     next();
   } catch (error: any) {
-    console.error('❌ Auth error:', error);
+    console.error("❌ Auth error:", error);
     return res.status(401).json({
       success: false,
-      message: 'Invalid or expired token',
+      message: "Invalid or expired token",
     });
   }
 };
@@ -141,12 +178,12 @@ const authMiddleware = async (
 // ===========================
 // Health Check
 // ===========================
-app.get('/health', (req: Request, res: Response) => {
+app.get("/health", (req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Class service is running',
-    service: 'class-service',
-    version: '2.0.0',
+    message: "Class service is running",
+    service: "class-service",
+    version: "2.0.0",
     port: PORT,
   });
 });
@@ -155,51 +192,47 @@ app.get('/health', (req: Request, res: Response) => {
 // POST /classes/batch
 // Batch create classes (for onboarding - no auth required)
 // ===========================
-app.post('/classes/batch', async (req: Request, res: Response) => {
+app.post("/classes/batch", async (req: Request, res: Response) => {
   try {
     const { schoolId, academicYearId, classes } = req.body;
 
     if (!schoolId) {
       return res.status(400).json({
         success: false,
-        message: 'schoolId is required',
+        message: "schoolId is required",
       });
     }
 
     if (!academicYearId) {
       return res.status(400).json({
         success: false,
-        message: 'academicYearId is required',
+        message: "academicYearId is required",
       });
     }
 
     if (!classes || !Array.isArray(classes) || classes.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'classes array is required',
+        message: "classes array is required",
       });
     }
 
-    console.log(`➕ [Onboarding] Batch creating ${classes.length} classes for school ${schoolId}...`);
+    console.log(
+      `➕ [Onboarding] Batch creating ${classes.length} classes for school ${schoolId}...`,
+    );
 
     const createdClasses = [];
     const errors = [];
 
     for (const classData of classes) {
       try {
-        const {
-          name,
-          nameKh,
-          grade,
-          section,
-          capacity,
-        } = classData;
+        const { name, nameKh, grade, section, capacity } = classData;
 
         // Basic validation
         if (!name || !grade) {
           errors.push({
             class: classData,
-            error: 'Missing required fields (name, grade)',
+            error: "Missing required fields (name, grade)",
           });
           continue;
         }
@@ -254,10 +287,10 @@ app.post('/classes/batch', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('❌ Batch create error:', error);
+    console.error("❌ Batch create error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error creating classes',
+      message: "Error creating classes",
       error: error.message,
     });
   }
@@ -266,8 +299,19 @@ app.post('/classes/batch', async (req: Request, res: Response) => {
 // Apply auth middleware to all routes below
 app.use(authMiddleware);
 
-const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
-const CLASS_WRITE_ROLES = new Set(['TEACHER', 'ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+const CLASS_ADMIN_ROLES = new Set([
+  "ADMIN",
+  "STAFF",
+  "SUPER_ADMIN",
+  "SCHOOL_ADMIN",
+]);
+const CLASS_WRITE_ROLES = new Set([
+  "TEACHER",
+  "ADMIN",
+  "STAFF",
+  "SUPER_ADMIN",
+  "SCHOOL_ADMIN",
+]);
 
 type ScopedUserRecord = {
   id: string;
@@ -301,7 +345,7 @@ const syncHomeroomTeacherAssignment = async (
     classId: string;
     schoolId: string;
     homeroomTeacherId?: string | null;
-  }
+  },
 ) => {
   await tx.teacher.updateMany({
     where: {
@@ -337,7 +381,7 @@ const syncHomeroomTeacherAssignment = async (
     existingTeacherAssignment.homeroomClassId !== classId
   ) {
     throw new Error(
-      `Teacher is already homeroom teacher for class ${existingTeacherAssignment.homeroomClass?.name || 'another class'}`
+      `Teacher is already homeroom teacher for class ${existingTeacherAssignment.homeroomClass?.name || "another class"}`,
     );
   }
 
@@ -347,16 +391,21 @@ const syncHomeroomTeacherAssignment = async (
   });
 };
 
-const hydrateHomeroomTeachers = async <T extends { homeroomTeacherId?: string | null; homeroomTeacher?: any }>(
+const hydrateHomeroomTeachers = async <
+  T extends { homeroomTeacherId?: string | null; homeroomTeacher?: any },
+>(
   classes: T[],
-  schoolId: string
+  schoolId: string,
 ) => {
   const missingTeacherIds = Array.from(
     new Set(
       classes
-        .filter((classItem) => classItem.homeroomTeacherId && !classItem.homeroomTeacher)
-        .map((classItem) => classItem.homeroomTeacherId as string)
-    )
+        .filter(
+          (classItem) =>
+            classItem.homeroomTeacherId && !classItem.homeroomTeacher,
+        )
+        .map((classItem) => classItem.homeroomTeacherId as string),
+    ),
   );
 
   if (missingTeacherIds.length === 0) {
@@ -386,11 +435,18 @@ const hydrateHomeroomTeachers = async <T extends { homeroomTeacherId?: string | 
     ...classItem,
     homeroomTeacher:
       classItem.homeroomTeacher ||
-      (classItem.homeroomTeacherId ? teacherById.get(classItem.homeroomTeacherId) || null : null),
+      (classItem.homeroomTeacherId
+        ? teacherById.get(classItem.homeroomTeacherId) || null
+        : null),
   }));
 };
 
-type MyClassesYear = { id: string; name: string; isCurrent: boolean; status?: string | null };
+type MyClassesYear = {
+  id: string;
+  name: string;
+  isCurrent: boolean;
+  status?: string | null;
+};
 
 /**
  * Classes tied to a teacher profile for GET /classes/my (homeroom, TeacherClass, or TimetableEntry).
@@ -445,16 +501,19 @@ const buildMyClassesForTeacherProfile = async (params: {
         select: {
           studentClasses: {
             where: {
-              status: 'ACTIVE',
+              status: "ACTIVE",
             },
           },
         },
       },
     },
-    orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+    orderBy: [{ grade: "asc" }, { section: "asc" }],
   });
 
-  const hydratedTeacherClasses = await hydrateHomeroomTeachers(teacherClasses, schoolId);
+  const hydratedTeacherClasses = await hydrateHomeroomTeachers(
+    teacherClasses,
+    schoolId,
+  );
   const classIds = hydratedTeacherClasses.map((c) => c.id);
   const timetableRows =
     classIds.length === 0
@@ -466,7 +525,7 @@ const buildMyClassesForTeacherProfile = async (params: {
             classId: { in: classIds },
           },
           select: { classId: true },
-          distinct: ['classId'],
+          distinct: ["classId"],
         });
   const timetableClassIdSet = new Set(timetableRows.map((r) => r.classId));
 
@@ -488,7 +547,10 @@ const buildMyClassesForTeacherProfile = async (params: {
   }));
 };
 
-const getScopedUserRecord = async (userId: string, schoolId: string): Promise<ScopedUserRecord | null> =>
+const getScopedUserRecord = async (
+  userId: string,
+  schoolId: string,
+): Promise<ScopedUserRecord | null> =>
   prisma.user.findFirst({
     where: {
       id: userId,
@@ -505,7 +567,7 @@ const getScopedUserRecord = async (userId: string, schoolId: string): Promise<Sc
 
 const resolveClassAccess = async (
   classId: string,
-  authUser: NonNullable<AuthRequest['user']>
+  authUser: NonNullable<AuthRequest["user"]>,
 ): Promise<ClassAccessResolution | null> => {
   const [classData, userRecord] = await Promise.all([
     prisma.class.findFirst({
@@ -539,7 +601,7 @@ const resolveClassAccess = async (
     };
   }
 
-  if (role === 'STUDENT') {
+  if (role === "STUDENT") {
     if (!userRecord.studentId) {
       return {
         classData,
@@ -547,7 +609,7 @@ const resolveClassAccess = async (
         canView: false,
         canEdit: false,
         linkedStudentIds: [],
-        reason: 'Student profile is not linked to this account',
+        reason: "Student profile is not linked to this account",
       };
     }
 
@@ -555,7 +617,7 @@ const resolveClassAccess = async (
       where: {
         classId,
         studentId: userRecord.studentId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         class: {
           schoolId: authUser.schoolId,
         },
@@ -569,11 +631,11 @@ const resolveClassAccess = async (
       canView: Boolean(enrollment),
       canEdit: false,
       linkedStudentIds: enrollment ? [userRecord.studentId] : [],
-      reason: enrollment ? undefined : 'Student is not enrolled in this class',
+      reason: enrollment ? undefined : "Student is not enrolled in this class",
     };
   }
 
-  if (role === 'TEACHER') {
+  if (role === "TEACHER") {
     if (!userRecord.teacherId) {
       return {
         classData,
@@ -581,7 +643,7 @@ const resolveClassAccess = async (
         canView: false,
         canEdit: false,
         linkedStudentIds: [],
-        reason: 'Teacher profile is not linked to this account',
+        reason: "Teacher profile is not linked to this account",
       };
     }
 
@@ -605,11 +667,13 @@ const resolveClassAccess = async (
       canEdit: Boolean(teacherAccess),
       linkedStudentIds: [],
       linkedTeacherId: userRecord.teacherId,
-      reason: teacherAccess ? undefined : 'Teacher is not assigned to this class',
+      reason: teacherAccess
+        ? undefined
+        : "Teacher is not assigned to this class",
     };
   }
 
-  if (role === 'PARENT') {
+  if (role === "PARENT") {
     if (!userRecord.parentId) {
       return {
         classData,
@@ -617,7 +681,7 @@ const resolveClassAccess = async (
         canView: false,
         canEdit: false,
         linkedStudentIds: [],
-        reason: 'Parent profile is not linked to this account',
+        reason: "Parent profile is not linked to this account",
       };
     }
 
@@ -629,7 +693,7 @@ const resolveClassAccess = async (
           studentClasses: {
             some: {
               classId,
-              status: 'ACTIVE',
+              status: "ACTIVE",
             },
           },
         },
@@ -645,7 +709,10 @@ const resolveClassAccess = async (
       canView: childrenInClass.length > 0,
       canEdit: false,
       linkedStudentIds: childrenInClass.map((entry) => entry.studentId),
-      reason: childrenInClass.length > 0 ? undefined : 'No linked child is enrolled in this class',
+      reason:
+        childrenInClass.length > 0
+          ? undefined
+          : "No linked child is enrolled in this class",
     };
   }
 
@@ -655,7 +722,7 @@ const resolveClassAccess = async (
     canView: false,
     canEdit: false,
     linkedStudentIds: [],
-    reason: 'Role is not eligible for class hub access',
+    reason: "Role is not eligible for class hub access",
   };
 };
 
@@ -663,7 +730,7 @@ const resolveClassAccess = async (
 // GET /classes/lightweight
 // Ultra-fast loading for dropdowns
 // ===========================
-app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
+app.get("/classes/lightweight", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const academicYearId = req.query.academicYearId as string | undefined;
@@ -673,7 +740,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     const limit = limitParam
       ? Math.min(1000, Math.max(1, parseInt(limitParam, 10) || 100))
       : undefined;
-    const cacheKey = `classes:lightweight:${schoolId}:${academicYearId || 'all'}:${grade || 'all'}:${limit || 'all'}:${search?.trim() || 'all'}`;
+    const cacheKey = `classes:lightweight:${schoolId}:${academicYearId || "all"}:${grade || "all"}:${limit || "all"}:${search?.trim() || "all"}`;
     const startTime = Date.now();
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -702,8 +769,8 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     // Add search filter if provided
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { section: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { section: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -736,7 +803,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
           },
         },
       },
-      orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+      orderBy: [{ grade: "asc" }, { section: "asc" }],
       ...(limit ? { take: limit } : {}),
     });
 
@@ -748,7 +815,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
       if (!yearExists) {
         return res.status(404).json({
           success: false,
-          message: 'Academic year not found or access denied',
+          message: "Academic year not found or access denied",
         });
       }
     }
@@ -757,16 +824,16 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     const classIds = hydratedClasses.map((cls) => cls.id);
     const activeEnrollmentCounts = classIds.length
       ? await prisma.studentClass.groupBy({
-          by: ['classId'],
+          by: ["classId"],
           where: {
             classId: { in: classIds },
-            status: 'ACTIVE',
+            status: "ACTIVE",
           },
           _count: { _all: true },
         })
       : [];
     const activeEnrollmentMap = new Map<string, number>(
-      activeEnrollmentCounts.map((entry) => [entry.classId, entry._count._all])
+      activeEnrollmentCounts.map((entry) => [entry.classId, entry._count._all]),
     );
     const classesWithCounts = hydratedClasses.map((cls) => ({
       ...cls,
@@ -777,7 +844,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
 
     const elapsedTime = Date.now() - startTime;
     console.log(
-      `⚡ [School ${schoolId}] Found ${classes.length} classes in ${elapsedTime}ms`
+      `⚡ [School ${schoolId}] Found ${classes.length} classes in ${elapsedTime}ms`,
     );
 
     const response = {
@@ -787,10 +854,10 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
     res.json(response);
   } catch (error: any) {
-    console.error('❌ Error getting classes (lightweight):', error);
+    console.error("❌ Error getting classes (lightweight):", error);
     res.status(500).json({
       success: false,
-      message: 'Error getting classes',
+      message: "Error getting classes",
       error: error.message,
     });
   }
@@ -800,7 +867,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
 // GET /classes
 // Full data with relations
 // ===========================
-app.get('/classes', async (req: AuthRequest, res: Response) => {
+app.get("/classes", async (req: AuthRequest, res: Response) => {
   try {
     const role = req.user!.role;
     const schoolId = req.user!.schoolId;
@@ -810,7 +877,8 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
     if (!CLASS_ADMIN_ROLES.has(role)) {
       return res.status(403).json({
         success: false,
-        message: 'Only school administrators can view the full class directory. Use /classes/my for scoped class access.',
+        message:
+          "Only school administrators can view the full class directory. Use /classes/my for scoped class access.",
       });
     }
 
@@ -833,11 +901,11 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { classId: { contains: search, mode: 'insensitive' } },
-        { grade: { contains: search, mode: 'insensitive' } },
-        { section: { contains: search, mode: 'insensitive' } },
-        { track: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { classId: { contains: search, mode: "insensitive" } },
+        { grade: { contains: search, mode: "insensitive" } },
+        { section: { contains: search, mode: "insensitive" } },
+        { track: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -887,22 +955,24 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
           },
         },
       },
-      orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+      orderBy: [{ grade: "asc" }, { section: "asc" }],
     });
 
     const hydratedClasses = await hydrateHomeroomTeachers(classes, schoolId);
 
-    console.log(`✅ [School ${schoolId}] Found ${hydratedClasses.length} classes`);
+    console.log(
+      `✅ [School ${schoolId}] Found ${hydratedClasses.length} classes`,
+    );
 
     res.json({
       success: true,
       data: hydratedClasses,
     });
   } catch (error: any) {
-    console.error('❌ Error getting classes:', error);
+    console.error("❌ Error getting classes:", error);
     res.status(500).json({
       success: false,
-      message: 'Error getting classes',
+      message: "Error getting classes",
       error: error.message,
     });
   }
@@ -912,14 +982,14 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
 // GET /classes/academic-years
 // Get all academic years for this school
 // ===========================
-app.get('/classes/academic-years', async (req: AuthRequest, res: Response) => {
+app.get("/classes/academic-years", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     console.log(`📅 [School ${schoolId}] Fetching academic years...`);
 
     const years = await prisma.academicYear.findMany({
       where: { schoolId },
-      orderBy: { startDate: 'desc' },
+      orderBy: { startDate: "desc" },
       select: {
         id: true,
         name: true,
@@ -935,10 +1005,10 @@ app.get('/classes/academic-years', async (req: AuthRequest, res: Response) => {
       data: years,
     });
   } catch (error: any) {
-    console.error('❌ Error getting academic years:', error);
+    console.error("❌ Error getting academic years:", error);
     res.status(500).json({
       success: false,
-      message: 'Error getting academic years',
+      message: "Error getting academic years",
       error: error.message,
     });
   }
@@ -948,11 +1018,13 @@ app.get('/classes/academic-years', async (req: AuthRequest, res: Response) => {
 // GET /classes/grade/:grade
 // Get classes by grade
 // ===========================
-app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
+app.get("/classes/grade/:grade", async (req: AuthRequest, res: Response) => {
   try {
     const { grade } = req.params;
     const schoolId = req.user!.schoolId;
-    console.log(`📚 [School ${schoolId}] Fetching classes for grade ${grade}...`);
+    console.log(
+      `📚 [School ${schoolId}] Fetching classes for grade ${grade}...`,
+    );
 
     const classes = await prisma.class.findMany({
       where: {
@@ -976,20 +1048,22 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
           },
         },
       },
-      orderBy: [{ section: 'asc' }],
+      orderBy: [{ section: "asc" }],
     });
 
-    console.log(`✅ [School ${schoolId}] Found ${classes.length} classes for grade ${grade}`);
+    console.log(
+      `✅ [School ${schoolId}] Found ${classes.length} classes for grade ${grade}`,
+    );
 
     res.json({
       success: true,
       data: classes,
     });
   } catch (error: any) {
-    console.error('❌ Error getting classes by grade:', error);
+    console.error("❌ Error getting classes by grade:", error);
     res.status(500).json({
       success: false,
-      message: 'Error getting classes by grade',
+      message: "Error getting classes by grade",
       error: error.message,
     });
   }
@@ -999,7 +1073,7 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
 // GET /classes/my
 // Get classes for current authenticated user (student/teacher)
 // ===========================
-app.get('/classes/my', async (req: AuthRequest, res: Response) => {
+app.get("/classes/my", async (req: AuthRequest, res: Response) => {
   try {
     const { userId, role, schoolId } = req.user!;
     const { academicYearId } = req.query;
@@ -1040,7 +1114,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         meta: {
           role,
           linked: false,
-          reason: 'No current academic year found',
+          reason: "No current academic year found",
         },
       });
     }
@@ -1061,11 +1135,11 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
     if (!userRecord) {
       return res.status(404).json({
         success: false,
-        message: 'Authenticated user not found in school context',
+        message: "Authenticated user not found in school context",
       });
     }
 
-    if (role === 'STUDENT') {
+    if (role === "STUDENT") {
       if (!userRecord.studentId) {
         return res.json({
           success: true,
@@ -1073,7 +1147,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
           meta: {
             role,
             linked: false,
-            reason: 'Student profile is not linked to this account',
+            reason: "Student profile is not linked to this account",
           },
         });
       }
@@ -1081,7 +1155,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
       const studentClasses = await prisma.studentClass.findMany({
         where: {
           studentId: userRecord.studentId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           class: {
             schoolId,
             academicYearId: selectedYear.id,
@@ -1120,7 +1194,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
                 select: {
                   studentClasses: {
                     where: {
-                      status: 'ACTIVE',
+                      status: "ACTIVE",
                     },
                   },
                 },
@@ -1128,18 +1202,21 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
             },
           },
         },
-        orderBy: [{ class: { grade: 'asc' } }, { class: { section: 'asc' } }],
+        orderBy: [{ class: { grade: "asc" } }, { class: { section: "asc" } }],
       });
 
       const hydratedStudentClassMap = new Map(
-        (await hydrateHomeroomTeachers(studentClasses.map((sc) => sc.class), schoolId)).map((classItem) => [
-          classItem.id,
-          classItem,
-        ])
+        (
+          await hydrateHomeroomTeachers(
+            studentClasses.map((sc) => sc.class),
+            schoolId,
+          )
+        ).map((classItem) => [classItem.id, classItem]),
       );
 
       const classes = studentClasses.map((sc) => {
-        const classRecord = hydratedStudentClassMap.get(sc.class.id) || sc.class;
+        const classRecord =
+          hydratedStudentClassMap.get(sc.class.id) || sc.class;
         return {
           id: classRecord.id,
           classId: classRecord.classId,
@@ -1151,7 +1228,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
           academicYear: classRecord.academicYear,
           homeroomTeacher: classRecord.homeroomTeacher,
           studentCount: classRecord._count.studentClasses,
-          myRole: 'STUDENT',
+          myRole: "STUDENT",
           isHomeroom: false,
           linkedStudentId: userRecord.studentId,
         };
@@ -1168,7 +1245,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (role === 'TEACHER') {
+    if (role === "TEACHER") {
       if (!userRecord.teacherId) {
         return res.json({
           success: true,
@@ -1176,7 +1253,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
           meta: {
             role,
             linked: false,
-            reason: 'Teacher profile is not linked to this account',
+            reason: "Teacher profile is not linked to this account",
           },
         });
       }
@@ -1185,7 +1262,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         teacherId: userRecord.teacherId,
         schoolId,
         selectedYear,
-        myRole: 'TEACHER',
+        myRole: "TEACHER",
       });
 
       return res.json({
@@ -1199,7 +1276,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (role === 'PARENT') {
+    if (role === "PARENT") {
       if (!userRecord.parentId) {
         return res.json({
           success: true,
@@ -1207,7 +1284,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
           meta: {
             role,
             linked: false,
-            reason: 'Parent profile is not linked to this account',
+            reason: "Parent profile is not linked to this account",
           },
         });
       }
@@ -1228,7 +1305,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
               lastName: true,
               studentClasses: {
                 where: {
-                  status: 'ACTIVE',
+                  status: "ACTIVE",
                   class: {
                     schoolId,
                     academicYearId: selectedYear.id,
@@ -1268,7 +1345,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
                         select: {
                           studentClasses: {
                             where: {
-                              status: 'ACTIVE',
+                              status: "ACTIVE",
                             },
                           },
                         },
@@ -1305,7 +1382,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
               academicYear: studentClass.class.academicYear,
               homeroomTeacher: studentClass.class.homeroomTeacher,
               studentCount: studentClass.class._count.studentClasses,
-              myRole: 'PARENT',
+              myRole: "PARENT",
               isHomeroom: false,
               linkedStudentId: link.studentId,
               linkedStudentIds: [link.studentId],
@@ -1318,16 +1395,29 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
             existing.linkedStudentIds.push(link.studentId);
           }
 
-          if (!existing.linkedChildren.some((linkedChild: any) => linkedChild.id === child.id)) {
+          if (
+            !existing.linkedChildren.some(
+              (linkedChild: any) => linkedChild.id === child.id,
+            )
+          ) {
             existing.linkedChildren.push(child);
           }
         });
       });
 
-      const classes = (await hydrateHomeroomTeachers(Array.from(parentClassesMap.values()), schoolId)).sort((a, b) => {
-        const gradeCompare = String(a.grade).localeCompare(String(b.grade), undefined, { numeric: true });
+      const classes = (
+        await hydrateHomeroomTeachers(
+          Array.from(parentClassesMap.values()),
+          schoolId,
+        )
+      ).sort((a, b) => {
+        const gradeCompare = String(a.grade).localeCompare(
+          String(b.grade),
+          undefined,
+          { numeric: true },
+        );
         if (gradeCompare !== 0) return gradeCompare;
-        return String(a.section || '').localeCompare(String(b.section || ''));
+        return String(a.section || "").localeCompare(String(b.section || ""));
       });
 
       return res.json({
@@ -1399,13 +1489,13 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
             select: {
               studentClasses: {
                 where: {
-                  status: 'ACTIVE',
+                  status: "ACTIVE",
                 },
               },
             },
           },
         },
-        orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+        orderBy: [{ grade: "asc" }, { section: "asc" }],
       });
 
       const hydratedClasses = await hydrateHomeroomTeachers(classes, schoolId);
@@ -1440,14 +1530,14 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
       meta: {
         role,
         linked: false,
-        reason: 'Role is not eligible for school class view',
+        reason: "Role is not eligible for school class view",
       },
     });
   } catch (error: any) {
-    console.error('❌ Error getting my classes:', error);
+    console.error("❌ Error getting my classes:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error getting my classes',
+      message: "Error getting my classes",
       error: error.message,
     });
   }
@@ -1459,111 +1549,119 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
 // Multi-tenant: academicYearId is validated to belong to req.user.schoolId.
 // NOTE: This route MUST be before /classes/:id to prevent route conflict
 // ===========================
-app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { academicYearId } = req.params;
-    const schoolId = req.user!.schoolId;
-    const { search, limit = '100', page = '1' } = req.query as any;
+app.get(
+  "/classes/unassigned-students/:academicYearId",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { academicYearId } = req.params;
+      const schoolId = req.user!.schoolId;
+      const { search, limit = "100", page = "1" } = req.query as any;
 
-    // Multi-tenant: ensure academic year belongs to this school
-    const academicYear = await prisma.academicYear.findFirst({
-      where: { id: academicYearId, schoolId },
-      select: { id: true },
-    });
-    if (!academicYear) {
-      return res.status(404).json({
+      // Multi-tenant: ensure academic year belongs to this school
+      const academicYear = await prisma.academicYear.findFirst({
+        where: { id: academicYearId, schoolId },
+        select: { id: true },
+      });
+      if (!academicYear) {
+        return res.status(404).json({
+          success: false,
+          message: "Academic year not found or access denied",
+        });
+      }
+
+      console.log(
+        `🔍 [School ${schoolId}] Getting unassigned students for year: ${academicYearId}`,
+      );
+
+      // Get all student IDs assigned to any class in this academic year.
+      // Use class.academicYearId so we count enrollments even when StudentClass.academicYearId is null.
+      const assignedStudentClasses = await prisma.studentClass.findMany({
+        where: {
+          status: "ACTIVE",
+          class: {
+            academicYearId,
+            schoolId,
+          },
+        },
+        select: { studentId: true },
+      });
+
+      const assignedStudentIds = [
+        ...new Set(assignedStudentClasses.map((sc) => sc.studentId)),
+      ];
+
+      // Build where clause for unassigned students
+      const where: any = {
+        schoolId,
+        isAccountActive: true,
+      };
+
+      if (assignedStudentIds.length > 0) {
+        where.id = { notIn: assignedStudentIds };
+      }
+
+      if (search) {
+        where.OR = [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { studentId: { contains: search, mode: "insensitive" } },
+        ];
+      }
+
+      const limitNum = Math.min(parseInt(limit), 100);
+      const pageNum = Math.max(parseInt(page), 1);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Get unassigned students with pagination
+      const [students, total] = await Promise.all([
+        prisma.student.findMany({
+          where,
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            gender: true,
+            dateOfBirth: true,
+            photoUrl: true,
+            customFields: true,
+          },
+          orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+          take: limitNum,
+          skip,
+        }),
+        prisma.student.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          students,
+          pagination: {
+            total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(total / limitNum),
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Error getting unassigned students:", error);
+      res.status(500).json({
         success: false,
-        message: 'Academic year not found or access denied',
+        message: "Error fetching unassigned students",
+        error: error.message,
       });
     }
-
-    console.log(`🔍 [School ${schoolId}] Getting unassigned students for year: ${academicYearId}`);
-
-    // Get all student IDs assigned to any class in this academic year.
-    // Use class.academicYearId so we count enrollments even when StudentClass.academicYearId is null.
-    const assignedStudentClasses = await prisma.studentClass.findMany({
-      where: {
-        status: 'ACTIVE',
-        class: {
-          academicYearId,
-          schoolId,
-        },
-      },
-      select: { studentId: true },
-    });
-
-    const assignedStudentIds = [...new Set(assignedStudentClasses.map(sc => sc.studentId))];
-
-    // Build where clause for unassigned students
-    const where: any = {
-      schoolId,
-      isAccountActive: true,
-    };
-
-    if (assignedStudentIds.length > 0) {
-      where.id = { notIn: assignedStudentIds };
-    }
-
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { studentId: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    const limitNum = Math.min(parseInt(limit), 100);
-    const pageNum = Math.max(parseInt(page), 1);
-    const skip = (pageNum - 1) * limitNum;
-
-    // Get unassigned students with pagination
-    const [students, total] = await Promise.all([
-      prisma.student.findMany({
-        where,
-        select: {
-          id: true,
-          studentId: true,
-          firstName: true,
-          lastName: true,
-          gender: true,
-          dateOfBirth: true,
-          photoUrl: true,
-          customFields: true,
-        },
-        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
-        take: limitNum,
-        skip,
-      }),
-      prisma.student.count({ where }),
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        students,
-        pagination: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
-        },
-      },
-    });
-  } catch (error: any) {
-    console.error('❌ Error getting unassigned students:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching unassigned students',
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 // ===========================
 // GET /classes/:id
 // Get single class by ID
 // ===========================
-app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
+app.get("/classes/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -1616,7 +1714,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
             },
           },
           orderBy: {
-            createdAt: 'asc',
+            createdAt: "asc",
           },
         },
         teacherClasses: {
@@ -1643,23 +1741,28 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
     if (!classData) {
       return res.status(404).json({
         success: false,
-        message: 'Class not found or does not belong to your school',
+        message: "Class not found or does not belong to your school",
       });
     }
 
-    const [hydratedClassData] = await hydrateHomeroomTeachers([classData], schoolId);
+    const [hydratedClassData] = await hydrateHomeroomTeachers(
+      [classData],
+      schoolId,
+    );
 
-    console.log(`✅ [School ${schoolId}] Found class: ${hydratedClassData.name} (${hydratedClassData.academicYear.name})`);
+    console.log(
+      `✅ [School ${schoolId}] Found class: ${hydratedClassData.name} (${hydratedClassData.academicYear.name})`,
+    );
 
     res.json({
       success: true,
       data: hydratedClassData,
     });
   } catch (error: any) {
-    console.error('❌ Error fetching class:', error);
+    console.error("❌ Error fetching class:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching class',
+      message: "Error fetching class",
       error: error.message,
     });
   }
@@ -1669,7 +1772,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
 // POST /classes
 // Create new class
 // ===========================
-app.post('/classes', async (req: AuthRequest, res: Response) => {
+app.post("/classes", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     console.log(`➕ [School ${schoolId}] Creating new class...`);
@@ -1690,7 +1793,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
     if (!name || !grade || !academicYearId) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: name, grade, academicYearId',
+        message: "Missing required fields: name, grade, academicYearId",
       });
     }
 
@@ -1705,7 +1808,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
     if (!academicYear) {
       return res.status(400).json({
         success: false,
-        message: 'Academic year not found or does not belong to your school',
+        message: "Academic year not found or does not belong to your school",
       });
     }
 
@@ -1721,7 +1824,8 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
     if (existingClass) {
       return res.status(400).json({
         success: false,
-        message: 'Class name already exists in your school for this academic year',
+        message:
+          "Class name already exists in your school for this academic year",
       });
     }
 
@@ -1745,14 +1849,15 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
       if (!teacher) {
         return res.status(400).json({
           success: false,
-          message: 'Homeroom teacher not found or does not belong to your school',
+          message:
+            "Homeroom teacher not found or does not belong to your school",
         });
       }
 
       if (teacher.homeroomClassId) {
         return res.status(400).json({
           success: false,
-          message: `Teacher is already homeroom teacher for class ${teacher.homeroomClass?.name || 'another class'}`,
+          message: `Teacher is already homeroom teacher for class ${teacher.homeroomClass?.name || "another class"}`,
         });
       }
 
@@ -1823,14 +1928,14 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({
       success: true,
-      message: 'Class created successfully',
+      message: "Class created successfully",
       data: newClass,
     });
   } catch (error: any) {
-    console.error('❌ Error creating class:', error);
+    console.error("❌ Error creating class:", error);
     res.status(500).json({
       success: false,
-      message: 'Error creating class',
+      message: "Error creating class",
       error: error.message,
     });
   }
@@ -1840,7 +1945,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
 // PUT /classes/:id
 // Update class
 // ===========================
-app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
+app.put("/classes/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -1857,7 +1962,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
     if (!existingClass) {
       return res.status(404).json({
         success: false,
-        message: 'Class not found or does not belong to your school',
+        message: "Class not found or does not belong to your school",
       });
     }
 
@@ -1872,7 +1977,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       capacity,
     } = req.body;
     const requestedHomeroomTeacherId =
-      homeroomTeacherId === '' ? null : homeroomTeacherId;
+      homeroomTeacherId === "" ? null : homeroomTeacherId;
 
     // If changing academic year, verify new year exists and belongs to school
     if (academicYearId && academicYearId !== existingClass.academicYearId) {
@@ -1886,13 +1991,16 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       if (!academicYear) {
         return res.status(400).json({
           success: false,
-          message: 'Academic year not found or does not belong to your school',
+          message: "Academic year not found or does not belong to your school",
         });
       }
     }
 
     // Verify new homeroom teacher belongs to school (if provided)
-    if (requestedHomeroomTeacherId && requestedHomeroomTeacherId !== existingClass.homeroomTeacherId) {
+    if (
+      requestedHomeroomTeacherId &&
+      requestedHomeroomTeacherId !== existingClass.homeroomTeacherId
+    ) {
       const teacher = await prisma.teacher.findFirst({
         where: {
           id: requestedHomeroomTeacherId,
@@ -1911,14 +2019,15 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       if (!teacher) {
         return res.status(400).json({
           success: false,
-          message: 'Homeroom teacher not found or does not belong to your school',
+          message:
+            "Homeroom teacher not found or does not belong to your school",
         });
       }
 
       if (teacher.homeroomClassId && teacher.homeroomClassId !== id) {
         return res.status(400).json({
           success: false,
-          message: `Teacher is already homeroom teacher for class ${teacher.homeroomClass?.name || 'another class'}`,
+          message: `Teacher is already homeroom teacher for class ${teacher.homeroomClass?.name || "another class"}`,
         });
       }
 
@@ -1950,7 +2059,9 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
           ...(section !== undefined && { section }),
           ...(track !== undefined && { track }),
           ...(academicYearId !== undefined && { academicYearId }),
-          ...(requestedHomeroomTeacherId !== undefined && { homeroomTeacherId: requestedHomeroomTeacherId }),
+          ...(requestedHomeroomTeacherId !== undefined && {
+            homeroomTeacherId: requestedHomeroomTeacherId,
+          }),
           ...(capacity !== undefined && { capacity }),
         },
       });
@@ -1997,14 +2108,14 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Class updated successfully',
+      message: "Class updated successfully",
       data: updatedClass,
     });
   } catch (error: any) {
-    console.error('❌ Error updating class:', error);
+    console.error("❌ Error updating class:", error);
     res.status(500).json({
       success: false,
-      message: 'Error updating class',
+      message: "Error updating class",
       error: error.message,
     });
   }
@@ -2014,7 +2125,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
 // DELETE /classes/:id
 // Delete class
 // ===========================
-app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
+app.delete("/classes/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId;
@@ -2030,6 +2141,14 @@ app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
         _count: {
           select: {
             students: true,
+            studentClasses: true,
+            grades: true,
+            attendance: true,
+            studentMonthlySummaries: true,
+            progressionsFrom: true,
+            progressionsTo: true,
+            transfersFrom: true,
+            transfersTo: true,
           },
         },
       },
@@ -2038,15 +2157,29 @@ app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
     if (!existingClass) {
       return res.status(404).json({
         success: false,
-        message: 'Class not found or does not belong to your school',
+        message: "Class not found or does not belong to your school",
       });
     }
 
-    // Check if class has students
-    if (existingClass._count.students > 0) {
-      return res.status(400).json({
+    const historicalRecordCount =
+      existingClass._count.studentClasses +
+      existingClass._count.grades +
+      existingClass._count.attendance +
+      existingClass._count.studentMonthlySummaries +
+      existingClass._count.progressionsFrom +
+      existingClass._count.progressionsTo +
+      existingClass._count.transfersFrom +
+      existingClass._count.transfersTo;
+
+    // Academic facts are immutable history. A class with any history must be
+    // archived by lifecycle tooling, never hard-deleted.
+    if (existingClass._count.students > 0 || historicalRecordCount > 0) {
+      return res.status(409).json({
         success: false,
-        message: `Cannot delete class with ${existingClass._count.students} students. Please reassign students first.`,
+        message:
+          historicalRecordCount > 0
+            ? "Cannot delete a class with enrollment, grade, attendance, summary, progression, or transfer history."
+            : `Cannot delete class with ${existingClass._count.students} students. Please reassign students first.`,
       });
     }
 
@@ -2060,13 +2193,13 @@ app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Class deleted successfully',
+      message: "Class deleted successfully",
     });
   } catch (error: any) {
-    console.error('❌ Error deleting class:', error);
+    console.error("❌ Error deleting class:", error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting class',
+      message: "Error deleting class",
       error: error.message,
     });
   }
@@ -2076,77 +2209,84 @@ app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
 // POST /classes/:id/assign-students
 // Assign students to class
 // ===========================
-app.post('/classes/:id/assign-students', async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { studentIds } = req.body;
-    const schoolId = req.user!.schoolId;
-    console.log(`➕ [School ${schoolId}] Assigning students to class: ${id}`);
+app.post(
+  "/classes/:id/assign-students",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { studentIds } = req.body;
+      const schoolId = req.user!.schoolId;
+      console.log(`➕ [School ${schoolId}] Assigning students to class: ${id}`);
 
-    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
-      return res.status(400).json({
+      if (
+        !studentIds ||
+        !Array.isArray(studentIds) ||
+        studentIds.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "studentIds array is required",
+        });
+      }
+
+      // ✅ Verify class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id,
+          schoolId: schoolId,
+        },
+      });
+
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
+
+      // ✅ Verify all students belong to school
+      const students = await prisma.student.findMany({
+        where: {
+          id: { in: studentIds },
+          schoolId: schoolId,
+        },
+      });
+
+      if (students.length !== studentIds.length) {
+        return res.status(400).json({
+          success: false,
+          message: "Some students not found or do not belong to your school",
+        });
+      }
+
+      // Update students to assign to class
+      await prisma.student.updateMany({
+        where: {
+          id: { in: studentIds },
+        },
+        data: {
+          classId: id,
+        },
+      });
+
+      console.log(
+        `✅ [School ${schoolId}] Assigned ${studentIds.length} students to class ${classData.name}`,
+      );
+
+      res.json({
+        success: true,
+        message: `Successfully assigned ${studentIds.length} students to class`,
+      });
+    } catch (error: any) {
+      console.error("❌ Error assigning students:", error);
+      res.status(500).json({
         success: false,
-        message: 'studentIds array is required',
+        message: "Error assigning students",
+        error: error.message,
       });
     }
-
-    // ✅ Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // ✅ Verify all students belong to school
-    const students = await prisma.student.findMany({
-      where: {
-        id: { in: studentIds },
-        schoolId: schoolId,
-      },
-    });
-
-    if (students.length !== studentIds.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'Some students not found or do not belong to your school',
-      });
-    }
-
-    // Update students to assign to class
-    await prisma.student.updateMany({
-      where: {
-        id: { in: studentIds },
-      },
-      data: {
-        classId: id,
-      },
-    });
-
-    console.log(
-      `✅ [School ${schoolId}] Assigned ${studentIds.length} students to class ${classData.name}`
-    );
-
-    res.json({
-      success: true,
-      message: `Successfully assigned ${studentIds.length} students to class`,
-    });
-  } catch (error: any) {
-    console.error('❌ Error assigning students:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error assigning students',
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 // NOTE: DELETE /classes/:id/students/:studentId is defined later using StudentClass junction table
 
@@ -2154,829 +2294,1064 @@ app.post('/classes/:id/assign-students', async (req: AuthRequest, res: Response)
 // GET /classes/:id/students
 // Get all students in a class
 // ===========================
-app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.user!.schoolId;
-    console.log(`📋 [School ${schoolId}] Fetching students for class: ${id}`);
+app.get(
+  "/classes/:id/students",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.user!.schoolId;
+      console.log(`📋 [School ${schoolId}] Fetching students for class: ${id}`);
 
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
 
-    if (!access.canView) {
-      return res.status(403).json({
-        success: false,
-        message: access.reason || 'You do not have access to this class',
-      });
-    }
+      if (!access.canView) {
+        return res.status(403).json({
+          success: false,
+          message: access.reason || "You do not have access to this class",
+        });
+      }
 
-    // Get all students in this class via StudentClass junction table
-    const studentClasses = await prisma.studentClass.findMany({
-      where: {
-        classId: id,
-        status: 'ACTIVE',
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            studentId: true,
-            firstName: true,
-            lastName: true,
-            englishFirstName: true,
-            englishLastName: true,
-            gender: true,
-            dateOfBirth: true,
-            photoUrl: true,
-            customFields: true,
-            user: {
-              select: {
-                id: true,
+      // Get all students in this class via StudentClass junction table
+      const studentClasses = await prisma.studentClass.findMany({
+        where: {
+          classId: id,
+          status: "ACTIVE",
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              studentId: true,
+              firstName: true,
+              lastName: true,
+              englishFirstName: true,
+              englishLastName: true,
+              gender: true,
+              dateOfBirth: true,
+              photoUrl: true,
+              customFields: true,
+              user: {
+                select: {
+                  id: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        student: {
-          firstName: 'asc',
+        orderBy: {
+          student: {
+            firstName: "asc",
+          },
         },
-      },
-    });
+      });
 
-    const uniqueStudentsMap = new Map();
-    studentClasses.forEach(sc => {
-      // Keep the active one, or the first one we see
-      if (!uniqueStudentsMap.has(sc.student.id)) {
-        uniqueStudentsMap.set(sc.student.id, {
-          ...sc.student,
-          nameKh: sc.student.customFields
-            ? (sc.student.customFields as any)?.regional?.khmerName || (sc.student.customFields as any)?.khmerName
-            : undefined,
-          status: sc.status,
-          enrolledAt: sc.enrolledAt,
-          studentClassId: sc.id,
-        });
-      } else {
-        // If we already have one, but this one is explicitly ACTIVE and the other isn't, prefer this one
-        const existing = uniqueStudentsMap.get(sc.student.id);
-        if (sc.status === 'ACTIVE' && existing.status !== 'ACTIVE') {
+      const uniqueStudentsMap = new Map();
+      studentClasses.forEach((sc) => {
+        // Keep the active one, or the first one we see
+        if (!uniqueStudentsMap.has(sc.student.id)) {
           uniqueStudentsMap.set(sc.student.id, {
             ...sc.student,
             nameKh: sc.student.customFields
-              ? (sc.student.customFields as any)?.regional?.khmerName || (sc.student.customFields as any)?.khmerName
+              ? (sc.student.customFields as any)?.regional?.khmerName ||
+                (sc.student.customFields as any)?.khmerName
               : undefined,
             status: sc.status,
             enrolledAt: sc.enrolledAt,
             studentClassId: sc.id,
           });
+        } else {
+          // If we already have one, but this one is explicitly ACTIVE and the other isn't, prefer this one
+          const existing = uniqueStudentsMap.get(sc.student.id);
+          if (sc.status === "ACTIVE" && existing.status !== "ACTIVE") {
+            uniqueStudentsMap.set(sc.student.id, {
+              ...sc.student,
+              nameKh: sc.student.customFields
+                ? (sc.student.customFields as any)?.regional?.khmerName ||
+                  (sc.student.customFields as any)?.khmerName
+                : undefined,
+              status: sc.status,
+              enrolledAt: sc.enrolledAt,
+              studentClassId: sc.id,
+            });
+          }
         }
-      }
-    });
+      });
 
-    const directClassStudents = await prisma.student.findMany({
-      where: {
-        classId: id,
-        schoolId,
-        isAccountActive: true,
-      },
-      select: {
-        id: true,
-        studentId: true,
-        firstName: true,
-        lastName: true,
-        englishFirstName: true,
-        englishLastName: true,
-        gender: true,
-        dateOfBirth: true,
-        photoUrl: true,
-        customFields: true,
-        user: {
-          select: {
-            id: true,
+      const directClassStudents = await prisma.student.findMany({
+        where: {
+          classId: id,
+          schoolId,
+          isAccountActive: true,
+        },
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          englishFirstName: true,
+          englishLastName: true,
+          gender: true,
+          dateOfBirth: true,
+          photoUrl: true,
+          customFields: true,
+          user: {
+            select: {
+              id: true,
+            },
           },
         },
-      },
-      orderBy: {
-        firstName: 'asc',
-      },
-    });
+        orderBy: {
+          firstName: "asc",
+        },
+      });
 
-    directClassStudents.forEach(student => {
-      if (!uniqueStudentsMap.has(student.id)) {
-        uniqueStudentsMap.set(student.id, {
-          ...student,
-          nameKh: student.customFields
-            ? (student.customFields as any)?.regional?.khmerName || (student.customFields as any)?.khmerName
-            : undefined,
-          status: 'ACTIVE',
-        });
-      }
-    });
+      directClassStudents.forEach((student) => {
+        if (!uniqueStudentsMap.has(student.id)) {
+          uniqueStudentsMap.set(student.id, {
+            ...student,
+            nameKh: student.customFields
+              ? (student.customFields as any)?.regional?.khmerName ||
+                (student.customFields as any)?.khmerName
+              : undefined,
+            status: "ACTIVE",
+          });
+        }
+      });
 
-    const students = Array.from(uniqueStudentsMap.values());
+      const students = Array.from(uniqueStudentsMap.values());
 
-    console.log(`✅ [School ${schoolId}] Found ${students.length} unique students in class (from ${studentClasses.length} enrollments + ${directClassStudents.length} direct links)`);
+      console.log(
+        `✅ [School ${schoolId}] Found ${students.length} unique students in class (from ${studentClasses.length} enrollments + ${directClassStudents.length} direct links)`,
+      );
 
-    res.json({
-      success: true,
-      data: students,
-      count: students.length,
-    });
-  } catch (error: any) {
-    console.error('❌ Error fetching class students:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching class students',
-      error: error.message,
-    });
-  }
-});
+      res.json({
+        success: true,
+        data: students,
+        count: students.length,
+      });
+    } catch (error: any) {
+      console.error("❌ Error fetching class students:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching class students",
+        error: error.message,
+      });
+    }
+  },
+);
 
 // ===========================
 // POST /classes/:id/students
 // Assign a single student to class (using StudentClass junction)
 // ===========================
-app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { studentId, academicYearId } = req.body;
-    const schoolId = req.user!.schoolId;
-    console.log(`➕ [School ${schoolId}] Assigning student ${studentId} to class: ${id}`);
+app.post(
+  "/classes/:id/students",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { studentId, academicYearId } = req.body;
+      const schoolId = req.user!.schoolId;
+      console.log(
+        `➕ [School ${schoolId}] Assigning student ${studentId} to class: ${id}`,
+      );
 
-    if (!studentId) {
-      return res.status(400).json({
-        success: false,
-        message: 'studentId is required',
-      });
-    }
-
-    // Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // Verify student belongs to school
-    const student = await prisma.student.findFirst({
-      where: {
-        id: studentId,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found or does not belong to your school',
-      });
-    }
-
-    // Check if student is already in this class
-    const existingAssignment = await prisma.studentClass.findFirst({
-      where: {
-        studentId,
-        classId: id,
-        academicYearId: academicYearId || null,
-        status: 'ACTIVE',
-      },
-    });
-
-    if (existingAssignment) {
-      return res.status(400).json({
-        success: false,
-        message: 'Student is already assigned to this class',
-        code: 'DUPLICATE_IN_CLASS',
-      });
-    }
-
-    // Check if student is already in another class for the same academic year
-    // One student can only be in ONE class per academic year
-    if (academicYearId || classData.academicYearId) {
-      const yearId = academicYearId || classData.academicYearId;
-      const existingInOtherClass = await prisma.studentClass.findFirst({
-        where: {
-          studentId,
-          academicYearId: yearId,
-          status: 'ACTIVE',
-          classId: { not: id }, // Different class
-        },
-        include: {
-          class: {
-            select: { name: true }
-          }
-        }
-      });
-
-      if (existingInOtherClass) {
+      if (!studentId) {
         return res.status(400).json({
           success: false,
-          message: `Student is already assigned to "${existingInOtherClass.class.name}" for this academic year. A student can only be in one class per academic year.`,
-          code: 'DUPLICATE_IN_YEAR',
-          existingClass: existingInOtherClass.class.name,
+          message: "studentId is required",
         });
       }
-    }
 
-    // Create StudentClass assignment
-    const studentClass = await prisma.studentClass.create({
-      data: {
-        studentId,
-        classId: id,
-        academicYearId: academicYearId || classData.academicYearId || null,
-        status: 'ACTIVE',
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            englishFirstName: true,
-            englishLastName: true,
-            customFields: true,
+      // Verify class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id,
+          schoolId: schoolId,
+        },
+      });
+
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
+
+      // Verify student belongs to school
+      const student = await prisma.student.findFirst({
+        where: {
+          id: studentId,
+          schoolId: schoolId,
+        },
+      });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student not found or does not belong to your school",
+        });
+      }
+
+      // Check if student is already in this class
+      const existingAssignment = await prisma.studentClass.findFirst({
+        where: {
+          studentId,
+          classId: id,
+          academicYearId: academicYearId || null,
+          status: "ACTIVE",
+        },
+      });
+
+      if (existingAssignment) {
+        return res.status(400).json({
+          success: false,
+          message: "Student is already assigned to this class",
+          code: "DUPLICATE_IN_CLASS",
+        });
+      }
+
+      // Check if student is already in another class for the same academic year
+      // One student can only be in ONE class per academic year
+      if (academicYearId || classData.academicYearId) {
+        const yearId = academicYearId || classData.academicYearId;
+        const existingInOtherClass = await prisma.studentClass.findFirst({
+          where: {
+            studentId,
+            academicYearId: yearId,
+            status: "ACTIVE",
+            classId: { not: id }, // Different class
+          },
+          include: {
+            class: {
+              select: { name: true },
+            },
+          },
+        });
+
+        if (existingInOtherClass) {
+          return res.status(400).json({
+            success: false,
+            message: `Student is already assigned to "${existingInOtherClass.class.name}" for this academic year. A student can only be in one class per academic year.`,
+            code: "DUPLICATE_IN_YEAR",
+            existingClass: existingInOtherClass.class.name,
+          });
+        }
+      }
+
+      // Create StudentClass assignment
+      const studentClass = await prisma.studentClass.create({
+        data: {
+          studentId,
+          classId: id,
+          academicYearId: academicYearId || classData.academicYearId || null,
+          status: "ACTIVE",
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              englishFirstName: true,
+              englishLastName: true,
+              customFields: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    await prisma.student.update({
-      where: { id: studentId },
-      data: { classId: id },
-    });
+      await prisma.student.update({
+        where: { id: studentId },
+        data: { classId: id },
+      });
 
-    console.log(
-      `✅ [School ${schoolId}] Assigned student ${student.firstName} ${student.lastName} to class ${classData.name}`
-    );
-    cache.clear();
+      console.log(
+        `✅ [School ${schoolId}] Assigned student ${student.firstName} ${student.lastName} to class ${classData.name}`,
+      );
+      cache.clear();
 
-    res.json({
-      success: true,
-      message: 'Student assigned to class successfully',
-      data: studentClass,
-    });
-  } catch (error: any) {
-    console.error('❌ Error assigning student:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error assigning student to class',
-      error: error.message,
-    });
-  }
-});
+      res.json({
+        success: true,
+        message: "Student assigned to class successfully",
+        data: studentClass,
+      });
+    } catch (error: any) {
+      console.error("❌ Error assigning student:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error assigning student to class",
+        error: error.message,
+      });
+    }
+  },
+);
 
 // ===========================
 // POST /classes/:id/students/batch
 // Assign multiple students to class at once (OPTIMIZED - 100x faster!)
 // ===========================
-app.post('/classes/:id/students/batch', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { studentIds, academicYearId } = req.body;
-    const schoolId = req.user!.schoolId;
+app.post(
+  "/classes/:id/students/batch",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { studentIds, academicYearId } = req.body;
+      const schoolId = req.user!.schoolId;
 
-    console.log(`⚡ [School ${schoolId}] Batch assigning ${studentIds?.length || 0} students to class: ${id}`);
+      console.log(
+        `⚡ [School ${schoolId}] Batch assigning ${studentIds?.length || 0} students to class: ${id}`,
+      );
 
-    // Validation
-    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'studentIds array is required and must not be empty',
+      // Validation
+      if (
+        !studentIds ||
+        !Array.isArray(studentIds) ||
+        studentIds.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "studentIds array is required and must not be empty",
+        });
+      }
+
+      // Verify class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: { id, schoolId },
       });
-    }
 
-    // Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
 
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
+      const yearId = academicYearId || classData.academicYearId;
 
-    const yearId = academicYearId || classData.academicYearId;
-
-    // Verify all students belong to school (single query)
-    const students = await prisma.student.findMany({
-      where: {
-        id: { in: studentIds },
-        schoolId: schoolId,
-      },
-      select: { id: true, firstName: true, lastName: true },
-    });
-
-    if (students.length !== studentIds.length) {
-      return res.status(404).json({
-        success: false,
-        message: 'One or more students not found or do not belong to your school',
-        found: students.length,
-        requested: studentIds.length,
-      });
-    }
-
-    // Check for existing assignments in THIS class (single query)
-    const existingInThisClass = await prisma.studentClass.findMany({
-      where: {
-        studentId: { in: studentIds },
-        classId: id,
-        status: 'ACTIVE',
-      },
-      select: { studentId: true },
-    });
-
-    const existingInThisClassIds = new Set(existingInThisClass.map(a => a.studentId));
-
-    // Check for existing assignments in OTHER classes for same academic year
-    const existingInOtherClasses = yearId ? await prisma.studentClass.findMany({
-      where: {
-        studentId: { in: studentIds },
-        academicYearId: yearId,
-        status: 'ACTIVE',
-        classId: { not: id },
-      },
-      include: {
-        student: { select: { firstName: true, lastName: true } },
-        class: { select: { name: true } },
-      },
-    }) : [];
-
-    const studentsInOtherClasses = existingInOtherClasses.map(a => ({
-      studentId: a.studentId,
-      studentName: `${a.student.firstName} ${a.student.lastName}`,
-      existingClass: a.class.name,
-    }));
-
-    const studentsInOtherClassIds = new Set(studentsInOtherClasses.map(s => s.studentId));
-
-    // Filter to only new valid students
-    const newStudentIds = studentIds.filter(sid =>
-      !existingInThisClassIds.has(sid) && !studentsInOtherClassIds.has(sid)
-    );
-
-    if (newStudentIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No students can be assigned - all are either already in this class or enrolled in another class for this academic year',
-        skippedDuplicates: existingInThisClass.length,
-        alreadyInOtherClass: studentsInOtherClasses,
-      });
-    }
-
-    // Batch create all valid assignments in a single transaction
-    const result = await prisma.studentClass.createMany({
-      data: newStudentIds.map(studentId => ({
-        studentId,
-        classId: id,
-        academicYearId: yearId || null,
-        status: 'ACTIVE',
-      })),
-      skipDuplicates: true,
-    });
-
-    await prisma.student.updateMany({
-      where: { id: { in: newStudentIds } },
-      data: { classId: id },
-    });
-
-    console.log(`✅ [School ${schoolId}] Batch assigned ${result.count} students in one transaction!`);
-    cache.clear();
-
-    res.status(201).json({
-      success: true,
-      message: `Successfully assigned ${result.count} students to class`,
-      data: {
-        assigned: result.count,
-        skipped: studentIds.length - result.count,
-        total: studentIds.length,
-        class: {
-          id: classData.id,
-          name: classData.name,
-          grade: classData.grade,
+      // Verify all students belong to school (single query)
+      const students = await prisma.student.findMany({
+        where: {
+          id: { in: studentIds },
+          schoolId: schoolId,
         },
-      },
-    });
-  } catch (error: any) {
-    console.error('❌ Error in batch assign:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error assigning students to class',
-      error: error.message,
-    });
-  }
-});
+        select: { id: true, firstName: true, lastName: true },
+      });
+
+      if (students.length !== studentIds.length) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "One or more students not found or do not belong to your school",
+          found: students.length,
+          requested: studentIds.length,
+        });
+      }
+
+      // Check for existing assignments in THIS class (single query)
+      const existingInThisClass = await prisma.studentClass.findMany({
+        where: {
+          studentId: { in: studentIds },
+          classId: id,
+          status: "ACTIVE",
+        },
+        select: { studentId: true },
+      });
+
+      const existingInThisClassIds = new Set(
+        existingInThisClass.map((a) => a.studentId),
+      );
+
+      // Check for existing assignments in OTHER classes for same academic year
+      const existingInOtherClasses = yearId
+        ? await prisma.studentClass.findMany({
+            where: {
+              studentId: { in: studentIds },
+              academicYearId: yearId,
+              status: "ACTIVE",
+              classId: { not: id },
+            },
+            include: {
+              student: { select: { firstName: true, lastName: true } },
+              class: { select: { name: true } },
+            },
+          })
+        : [];
+
+      const studentsInOtherClasses = existingInOtherClasses.map((a) => ({
+        studentId: a.studentId,
+        studentName: `${a.student.firstName} ${a.student.lastName}`,
+        existingClass: a.class.name,
+      }));
+
+      const studentsInOtherClassIds = new Set(
+        studentsInOtherClasses.map((s) => s.studentId),
+      );
+
+      // Filter to only new valid students
+      const newStudentIds = studentIds.filter(
+        (sid) =>
+          !existingInThisClassIds.has(sid) && !studentsInOtherClassIds.has(sid),
+      );
+
+      if (newStudentIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "No students can be assigned - all are either already in this class or enrolled in another class for this academic year",
+          skippedDuplicates: existingInThisClass.length,
+          alreadyInOtherClass: studentsInOtherClasses,
+        });
+      }
+
+      // Batch create all valid assignments in a single transaction
+      const result = await prisma.studentClass.createMany({
+        data: newStudentIds.map((studentId) => ({
+          studentId,
+          classId: id,
+          academicYearId: yearId || null,
+          startedAt: new Date(),
+          entryReason: "ADMIN_PLACEMENT",
+          status: "ACTIVE",
+          createdById: req.user!.userId,
+        })),
+        skipDuplicates: true,
+      });
+
+      await prisma.student.updateMany({
+        where: { id: { in: newStudentIds } },
+        data: { classId: id },
+      });
+
+      console.log(
+        `✅ [School ${schoolId}] Batch assigned ${result.count} students in one transaction!`,
+      );
+      cache.clear();
+
+      res.status(201).json({
+        success: true,
+        message: `Successfully assigned ${result.count} students to class`,
+        data: {
+          assigned: result.count,
+          skipped: studentIds.length - result.count,
+          total: studentIds.length,
+          class: {
+            id: classData.id,
+            name: classData.name,
+            grade: classData.grade,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Error in batch assign:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error assigning students to class",
+        error: error.message,
+      });
+    }
+  },
+);
 
 // ===========================
 // DELETE /classes/:id/students/:studentId (UPDATED)
 // Remove student from class (using StudentClass junction)
 // ===========================
-app.delete('/classes/:id/students/:studentId', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id, studentId } = req.params;
-    const schoolId = req.user!.schoolId;
-    console.log(`➖ [School ${schoolId}] Removing student ${studentId} from class ${id}`);
+app.delete(
+  "/classes/:id/students/:studentId",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id, studentId } = req.params;
+      const schoolId = req.user!.schoolId;
+      console.log(
+        `➖ [School ${schoolId}] Removing student ${studentId} from class ${id}`,
+      );
 
-    // Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
+      // Verify class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id,
+          schoolId: schoolId,
+        },
       });
-    }
 
-    // Verify student belongs to school
-    const student = await prisma.student.findFirst({
-      where: {
-        id: studentId,
-        schoolId: schoolId,
-      },
-    });
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
 
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found or does not belong to your school',
+      // Verify student belongs to school
+      const student = await prisma.student.findFirst({
+        where: {
+          id: studentId,
+          schoolId: schoolId,
+        },
       });
-    }
 
-    // Find and delete the StudentClass assignment
-    const studentClass = await prisma.studentClass.findFirst({
-      where: {
-        studentId,
-        classId: id,
-        status: 'ACTIVE',
-      },
-    });
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student not found or does not belong to your school",
+        });
+      }
 
-    if (!studentClass) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student is not assigned to this class',
-      });
-    }
-
-    // Update status to DROPPED instead of deleting (for audit trail)
-    await prisma.studentClass.update({
-      where: { id: studentClass.id },
-      data: { status: 'DROPPED' },
-    });
-
-    if (student.classId === id) {
-      const nextEnrollment = await prisma.studentClass.findFirst({
+      // Find and delete the StudentClass assignment
+      const studentClass = await prisma.studentClass.findFirst({
         where: {
           studentId,
-          status: 'ACTIVE',
+          classId: id,
+          status: "ACTIVE",
         },
-        orderBy: { updatedAt: 'desc' },
       });
-      await prisma.student.update({
-        where: { id: studentId },
-        data: { classId: nextEnrollment?.classId ?? null },
+
+      if (!studentClass) {
+        return res.status(404).json({
+          success: false,
+          message: "Student is not assigned to this class",
+        });
+      }
+
+      // Update status to DROPPED instead of deleting (for audit trail)
+      await prisma.studentClass.update({
+        where: { id: studentClass.id },
+        data: {
+          status: "DROPPED",
+          endedAt: new Date(),
+          exitReason: "WITHDRAWN",
+          endedById: req.user!.userId,
+        },
+      });
+
+      if (student.classId === id) {
+        const nextEnrollment = await prisma.studentClass.findFirst({
+          where: {
+            studentId,
+            status: "ACTIVE",
+          },
+          orderBy: { updatedAt: "desc" },
+        });
+        await prisma.student.update({
+          where: { id: studentId },
+          data: { classId: nextEnrollment?.classId ?? null },
+        });
+      }
+
+      console.log(
+        `✅ [School ${schoolId}] Removed student ${student.firstName} ${student.lastName} from class ${classData.name}`,
+      );
+      cache.clear();
+
+      res.json({
+        success: true,
+        message: "Student removed from class successfully",
+      });
+    } catch (error: any) {
+      console.error("❌ Error removing student:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error removing student from class",
+        error: error.message,
       });
     }
-
-    console.log(
-      `✅ [School ${schoolId}] Removed student ${student.firstName} ${student.lastName} from class ${classData.name}`
-    );
-    cache.clear();
-
-    res.json({
-      success: true,
-      message: 'Student removed from class successfully',
-    });
-  } catch (error: any) {
-    console.error('❌ Error removing student:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error removing student from class',
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 // ===========================
 // POST /classes/:id/students/batch-remove
 // Remove multiple students from class (BATCH - much faster!)
 // ===========================
-app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { studentIds } = req.body;
-    const schoolId = req.user!.schoolId;
+app.post(
+  "/classes/:id/students/batch-remove",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { studentIds } = req.body;
+      const schoolId = req.user!.schoolId;
 
-    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'studentIds array is required',
+      if (
+        !studentIds ||
+        !Array.isArray(studentIds) ||
+        studentIds.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "studentIds array is required",
+        });
+      }
+
+      console.log(
+        `➖ [School ${schoolId}] Batch removing ${studentIds.length} students from class ${id}`,
+      );
+
+      // Verify class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: { id, schoolId },
       });
-    }
 
-    console.log(`➖ [School ${schoolId}] Batch removing ${studentIds.length} students from class ${id}`);
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
 
-    // Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // Batch update all StudentClass records to DROPPED status
-    const result = await prisma.studentClass.updateMany({
-      where: {
-        classId: id,
-        studentId: { in: studentIds },
-        status: 'ACTIVE',
-        student: { schoolId }, // Ensure students belong to same school
-      },
-      data: { status: 'DROPPED' },
-    });
-
-    const stillOnThisClass = await prisma.student.findMany({
-      where: {
-        id: { in: studentIds },
-        classId: id,
-        schoolId,
-      },
-      select: { id: true },
-    });
-
-    for (const row of stillOnThisClass) {
-      const nextEnrollment = await prisma.studentClass.findFirst({
+      // Batch update all StudentClass records to DROPPED status
+      const result = await prisma.studentClass.updateMany({
         where: {
-          studentId: row.id,
-          status: 'ACTIVE',
+          classId: id,
+          studentId: { in: studentIds },
+          status: "ACTIVE",
+          student: { schoolId }, // Ensure students belong to same school
         },
-        orderBy: { updatedAt: 'desc' },
+        data: {
+          status: "DROPPED",
+          endedAt: new Date(),
+          exitReason: "WITHDRAWN",
+          endedById: req.user!.userId,
+        },
       });
-      await prisma.student.update({
-        where: { id: row.id },
-        data: { classId: nextEnrollment?.classId ?? null },
+
+      const stillOnThisClass = await prisma.student.findMany({
+        where: {
+          id: { in: studentIds },
+          classId: id,
+          schoolId,
+        },
+        select: { id: true },
+      });
+
+      for (const row of stillOnThisClass) {
+        const nextEnrollment = await prisma.studentClass.findFirst({
+          where: {
+            studentId: row.id,
+            status: "ACTIVE",
+          },
+          orderBy: { updatedAt: "desc" },
+        });
+        await prisma.student.update({
+          where: { id: row.id },
+          data: { classId: nextEnrollment?.classId ?? null },
+        });
+      }
+
+      console.log(
+        `✅ [School ${schoolId}] Batch removed ${result.count} students from class ${classData.name}`,
+      );
+      cache.clear();
+
+      res.json({
+        success: true,
+        message: `${result.count} student(s) removed from class`,
+        count: result.count,
+      });
+    } catch (error: any) {
+      console.error("❌ Error in batch remove:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error removing students from class",
+        error: error.message,
       });
     }
-
-    console.log(`✅ [School ${schoolId}] Batch removed ${result.count} students from class ${classData.name}`);
-    cache.clear();
-
-    res.json({
-      success: true,
-      message: `${result.count} student(s) removed from class`,
-      count: result.count,
-    });
-  } catch (error: any) {
-    console.error('❌ Error in batch remove:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error removing students from class',
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 // ===========================
 // CLASS HUB ENTEPRISE FEATURES
 // ===========================
 
 // --- ANNOUNCEMENTS ---
-app.get('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
-    if (!access.canView) {
-      return res.status(403).json({ success: false, message: access.reason || 'You do not have access to this class' });
-    }
+app.get(
+  "/classes/:id/announcements",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      if (!access.canView) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: access.reason || "You do not have access to this class",
+          });
+      }
 
-    const announcements = await prisma.classAnnouncement.findMany({
-      where: { classId: id },
-      include: {
-        author: {
-          select: { id: true, firstName: true, lastName: true, profilePictureUrl: true },
+      const announcements = await prisma.classAnnouncement.findMany({
+        where: { classId: id },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true,
+            },
+          },
         },
-      },
-      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+      });
 
-    res.json({ success: true, data: announcements });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error fetching announcements', error: error.message });
-  }
-});
-
-app.post('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user!.userId;
-    const { content, mediaUrls = [], mediaKeys = [], isPinned = false } = req.body;
-
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
-    if (!access.canEdit) {
-      return res.status(403).json({ success: false, message: access.reason || 'You do not have permission to post announcements for this class' });
+      res.json({ success: true, data: announcements });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error fetching announcements",
+          error: error.message,
+        });
     }
-    if (!String(content || '').trim()) {
-      return res.status(400).json({ success: false, message: 'Announcement content is required' });
+  },
+);
+
+app.post(
+  "/classes/:id/announcements",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.userId;
+      const {
+        content,
+        mediaUrls = [],
+        mediaKeys = [],
+        isPinned = false,
+      } = req.body;
+
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      if (!access.canEdit) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message:
+              access.reason ||
+              "You do not have permission to post announcements for this class",
+          });
+      }
+      if (!String(content || "").trim()) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Announcement content is required",
+          });
+      }
+
+      // Validate academic year
+      const academicYear = await prisma.academicYear.findUnique({
+        where: { id: access.classData.academicYearId },
+      });
+      if (!academicYear?.isCurrent) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Cannot modify archived classes." });
+      }
+
+      const announcement = await prisma.classAnnouncement.create({
+        data: {
+          classId: id,
+          authorId: userId,
+          content: String(content).trim(),
+          mediaUrls,
+          mediaKeys,
+          isPinned,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true,
+            },
+          },
+        },
+      });
+
+      res.status(201).json({ success: true, data: announcement });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error creating announcement",
+          error: error.message,
+        });
     }
-
-    // Validate academic year
-    const academicYear = await prisma.academicYear.findUnique({ where: { id: access.classData.academicYearId } });
-    if (!academicYear?.isCurrent) {
-      return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
-    }
-
-    const announcement = await prisma.classAnnouncement.create({
-      data: {
-        classId: id,
-        authorId: userId,
-        content: String(content).trim(),
-        mediaUrls,
-        mediaKeys,
-        isPinned,
-      },
-      include: {
-        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
-      },
-    });
-
-    res.status(201).json({ success: true, data: announcement });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error creating announcement', error: error.message });
-  }
-});
+  },
+);
 
 // --- MATERIALS ---
-app.get('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
-    if (!access.canView) {
-      return res.status(403).json({ success: false, message: access.reason || 'You do not have access to this class' });
+app.get(
+  "/classes/:id/materials",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      if (!access.canView) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: access.reason || "You do not have access to this class",
+          });
+      }
+
+      const materials = await prisma.classMaterial.findMany({
+        where: { classId: id },
+        include: {
+          uploader: { select: { id: true, firstName: true, lastName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      res.json({ success: true, data: materials });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error fetching materials",
+          error: error.message,
+        });
     }
+  },
+);
 
-    const materials = await prisma.classMaterial.findMany({
-      where: { classId: id },
-      include: {
-        uploader: { select: { id: true, firstName: true, lastName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+app.post(
+  "/classes/:id/materials",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.userId;
+      const { title, description, fileUrl, fileKey, linkUrl, type } = req.body;
 
-    res.json({ success: true, data: materials });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error fetching materials', error: error.message });
-  }
-});
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      if (!access.canEdit) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message:
+              access.reason ||
+              "You do not have permission to add materials to this class",
+          });
+      }
+      if (!String(title || "").trim()) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Material title is required" });
+      }
+      if (!String(fileUrl || "").trim() && !String(linkUrl || "").trim()) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "A file URL or link URL is required",
+          });
+      }
 
-app.post('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user!.userId;
-    const { title, description, fileUrl, fileKey, linkUrl, type } = req.body;
+      const academicYear = await prisma.academicYear.findUnique({
+        where: { id: access.classData.academicYearId },
+      });
+      if (!academicYear?.isCurrent) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Cannot modify archived classes." });
+      }
 
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
-    if (!access.canEdit) {
-      return res.status(403).json({ success: false, message: access.reason || 'You do not have permission to add materials to this class' });
+      const material = await prisma.classMaterial.create({
+        data: {
+          classId: id,
+          uploaderId: userId,
+          title: String(title).trim(),
+          description,
+          fileUrl,
+          fileKey,
+          linkUrl,
+          type: type || "DOCUMENT",
+        },
+        include: {
+          uploader: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+
+      res.status(201).json({ success: true, data: material });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error uploading material",
+          error: error.message,
+        });
     }
-    if (!String(title || '').trim()) {
-      return res.status(400).json({ success: false, message: 'Material title is required' });
-    }
-    if (!String(fileUrl || '').trim() && !String(linkUrl || '').trim()) {
-      return res.status(400).json({ success: false, message: 'A file URL or link URL is required' });
-    }
-
-    const academicYear = await prisma.academicYear.findUnique({ where: { id: access.classData.academicYearId } });
-    if (!academicYear?.isCurrent) {
-      return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
-    }
-
-    const material = await prisma.classMaterial.create({
-      data: {
-        classId: id,
-        uploaderId: userId,
-        title: String(title).trim(),
-        description,
-        fileUrl,
-        fileKey,
-        linkUrl,
-        type: type || 'DOCUMENT',
-      },
-      include: {
-        uploader: { select: { id: true, firstName: true, lastName: true } },
-      },
-    });
-
-    res.status(201).json({ success: true, data: material });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error uploading material', error: error.message });
-  }
-});
+  },
+);
 
 // --- ASSIGNMENTS ---
-app.get('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
-    if (!access.canView) {
-      return res.status(403).json({ success: false, message: access.reason || 'You do not have access to this class' });
-    }
+app.get(
+  "/classes/:id/assignments",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      if (!access.canView) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message: access.reason || "You do not have access to this class",
+          });
+      }
 
-    const assignments = await prisma.classAssignment.findMany({
-      where: { classId: id },
-      include: {
-        creator: { select: { id: true, firstName: true, lastName: true } },
-        submissions: {
-          select: { studentId: true, status: true, score: true },
+      const assignments = await prisma.classAssignment.findMany({
+        where: { classId: id },
+        include: {
+          creator: { select: { id: true, firstName: true, lastName: true } },
+          submissions: {
+            select: { studentId: true, status: true, score: true },
+          },
         },
-      },
-      orderBy: { dueDate: 'asc' },
-    });
+        orderBy: { dueDate: "asc" },
+      });
 
-    res.json({ success: true, data: assignments });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error fetching assignments', error: error.message });
-  }
-});
+      res.json({ success: true, data: assignments });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error fetching assignments",
+          error: error.message,
+        });
+    }
+  },
+);
 
-app.post('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user!.userId;
-    const { title, description, dueDate, maxPoints, deepLinkUrl, quizId } = req.body;
+app.post(
+  "/classes/:id/assignments",
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.userId;
+      const { title, description, dueDate, maxPoints, deepLinkUrl, quizId } =
+        req.body;
 
-    const access = await resolveClassAccess(id, req.user!);
-    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
-    if (!access.canEdit) {
-      return res.status(403).json({ success: false, message: access.reason || 'You do not have permission to create assignments for this class' });
-    }
-    if (!String(title || '').trim()) {
-      return res.status(400).json({ success: false, message: 'Assignment title is required' });
-    }
-    if (maxPoints !== undefined && (Number.isNaN(Number(maxPoints)) || Number(maxPoints) <= 0)) {
-      return res.status(400).json({ success: false, message: 'maxPoints must be a positive number' });
-    }
-    if (dueDate && Number.isNaN(new Date(dueDate).getTime())) {
-      return res.status(400).json({ success: false, message: 'dueDate must be a valid date' });
-    }
+      const access = await resolveClassAccess(id, req.user!);
+      if (!access)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      if (!access.canEdit) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            message:
+              access.reason ||
+              "You do not have permission to create assignments for this class",
+          });
+      }
+      if (!String(title || "").trim()) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Assignment title is required" });
+      }
+      if (
+        maxPoints !== undefined &&
+        (Number.isNaN(Number(maxPoints)) || Number(maxPoints) <= 0)
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "maxPoints must be a positive number",
+          });
+      }
+      if (dueDate && Number.isNaN(new Date(dueDate).getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "dueDate must be a valid date" });
+      }
 
-    const academicYear = await prisma.academicYear.findUnique({ where: { id: access.classData.academicYearId } });
-    if (!academicYear?.isCurrent) {
-      return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
-    }
+      const academicYear = await prisma.academicYear.findUnique({
+        where: { id: access.classData.academicYearId },
+      });
+      if (!academicYear?.isCurrent) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Cannot modify archived classes." });
+      }
 
-    const assignment = await prisma.classAssignment.create({
-      data: {
-        classId: id,
-        creatorId: userId,
-        title: String(title).trim(),
-        description,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        maxPoints: maxPoints === undefined ? null : Number(maxPoints),
-        deepLinkUrl,
-        quizId,
-      },
-      include: {
-        creator: { select: { id: true, firstName: true, lastName: true } },
-        submissions: {
-          select: { studentId: true, status: true, score: true },
+      const assignment = await prisma.classAssignment.create({
+        data: {
+          classId: id,
+          creatorId: userId,
+          title: String(title).trim(),
+          description,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          maxPoints: maxPoints === undefined ? null : Number(maxPoints),
+          deepLinkUrl,
+          quizId,
         },
-      },
-    });
+        include: {
+          creator: { select: { id: true, firstName: true, lastName: true } },
+          submissions: {
+            select: { studentId: true, status: true, score: true },
+          },
+        },
+      });
 
-    res.status(201).json({ success: true, data: assignment });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error creating assignment', error: error.message });
-  }
-});
+      res.status(201).json({ success: true, data: assignment });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error creating assignment",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // ===========================
 // Start Server
@@ -2988,7 +3363,7 @@ app.listen(PORT, () => {
 ║   🎓 CLASS SERVICE RUNNING                                ║
 ║                                                            ║
 ║   Port: ${PORT}                                           ║
-║   Environment: ${process.env.NODE_ENV || 'development'}                                   ║
+║   Environment: ${process.env.NODE_ENV || "development"}                                   ║
 ║   Multi-Tenant: ✅ ENABLED                                ║
 ║   Authentication: ✅ JWT Required                         ║
 ║                                                            ║

@@ -50,6 +50,21 @@ export interface StudentDailyAttendance {
   afternoon: Attendance | null;
 }
 
+export interface MonthlyEntryGridItem {
+  studentId: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  attendance: Record<number, string>; // day -> status
+}
+
+export interface BulkMonthlyEntryItem {
+  studentId: string;
+  status: AttendanceStatus;
+  remarks?: string;
+}
+
 export interface BulkAttendanceItem {
   studentId: string;
   status: AttendanceStatus;
@@ -242,6 +257,57 @@ class AttendanceAPI {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to update attendance');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get monthly entry grid
+   */
+  async getMonthlyEntryGrid(
+    classId: string,
+    monthNumber: number,
+    year: number
+  ): Promise<MonthlyEntryGridItem[]> {
+    const response = await fetch(
+      `${API_BASE_URL}/attendance/monthly-entry/grid?classId=${classId}&monthNumber=${monthNumber}&year=${year}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch monthly entry grid');
+    }
+
+    const json = await response.json();
+    return json.data;
+  }
+
+  /**
+   * Update a single cell in monthly entry grid
+   */
+  async updateMonthlyEntryCell(
+    classId: string,
+    monthNumber: number,
+    year: number,
+    month: string,
+    studentId: string,
+    day: number,
+    status: string | null
+  ): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/attendance/monthly-entry/cell`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ classId, monthNumber, year, month, studentId, day, status }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update attendance cell');
     }
 
     return response.json();

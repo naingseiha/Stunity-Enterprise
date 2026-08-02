@@ -1,7 +1,11 @@
-import { TokenManager } from './auth';
-import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from "./auth";
+import {
+  readPersistentCache,
+  writePersistentCache,
+} from "@/lib/persistent-cache";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || "http://localhost:3007";
 const GRADE_REPORT_CACHE_TTL_MS = 60 * 1000;
 
 export interface Grade {
@@ -119,7 +123,11 @@ export interface MonthlyReportSemesterOne {
   finalGrade: string;
 }
 
-export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1' | 'semester-2';
+export type MonthlyReportFormat =
+  | "summary"
+  | "detailed"
+  | "semester-1"
+  | "semester-2";
 
 export interface KhmerMonthlyReportStudent {
   studentId: string;
@@ -144,9 +152,9 @@ export interface KhmerMonthlyReportStudent {
 }
 
 export interface KhmerMonthlyReportData {
-  template: 'KHM_MOEYS_MONTHLY' | string;
+  template: "KHM_MOEYS_MONTHLY" | string;
   format?: MonthlyReportFormat;
-  scope: 'class' | 'grade';
+  scope: "class" | "grade";
   school?: {
     id: string;
     name: string;
@@ -206,10 +214,10 @@ class GradeAPI {
   private getHeaders(): Record<string, string> {
     const token = TokenManager.getAccessToken();
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
     return headers;
   }
@@ -227,21 +235,25 @@ class GradeAPI {
   /**
    * Get all grades for a class
    */
-  async getClassGrades(classId: string, month?: string, subjectId?: string): Promise<Grade[]> {
+  async getClassGrades(
+    classId: string,
+    month?: string,
+    subjectId?: string,
+  ): Promise<Grade[]> {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (subjectId) params.append('subjectId', subjectId);
+    if (month) params.append("month", month);
+    if (subjectId) params.append("subjectId", subjectId);
 
-    const url = `${API_BASE_URL}/grades/class/${classId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const url = `${API_BASE_URL}/grades/class/${classId}${params.toString() ? `?${params.toString()}` : ""}`;
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: this.getHeaders(),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch grades');
+      throw new Error(error.message || "Failed to fetch grades");
     }
 
     return response.json();
@@ -253,19 +265,21 @@ class GradeAPI {
   async getGradeGrid(
     classId: string,
     subjectId: string,
-    month: string
+    month: string,
+    monthNumber?: number,
   ): Promise<GradeGridItem[]> {
+    const query = monthNumber ? `?monthNumber=${monthNumber}` : "";
     const response = await fetch(
-      `${API_BASE_URL}/grades/class/${classId}/subject/${subjectId}/month/${month}`,
+      `${API_BASE_URL}/grades/class/${classId}/subject/${subjectId}/month/${encodeURIComponent(month)}${query}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: this.getHeaders(),
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch grade grid');
+      throw new Error(error.message || "Failed to fetch grade grid");
     }
 
     return response.json();
@@ -274,21 +288,25 @@ class GradeAPI {
   /**
    * Get all grades for a student
    */
-  async getStudentGrades(studentId: string, month?: string, year?: number): Promise<Grade[]> {
+  async getStudentGrades(
+    studentId: string,
+    month?: string,
+    year?: number,
+  ): Promise<Grade[]> {
     const params = new URLSearchParams();
-    if (month) params.append('month', month);
-    if (year) params.append('year', year.toString());
+    if (month) params.append("month", month);
+    if (year) params.append("year", year.toString());
 
-    const url = `${API_BASE_URL}/grades/student/${studentId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const url = `${API_BASE_URL}/grades/student/${studentId}${params.toString() ? `?${params.toString()}` : ""}`;
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: this.getHeaders(),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch student grades');
+      throw new Error(error.message || "Failed to fetch student grades");
     }
 
     return response.json();
@@ -304,14 +322,14 @@ class GradeAPI {
     errors: any[];
   }> {
     const response = await fetch(`${API_BASE_URL}/grades/batch`, {
-      method: 'POST',
+      method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ grades }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to batch update grades');
+      throw new Error(error.message || "Failed to batch update grades");
     }
 
     return response.json();
@@ -322,17 +340,17 @@ class GradeAPI {
    */
   async updateGrade(
     id: string,
-    data: { score?: number; maxScore?: number; remarks?: string }
+    data: { score?: number; maxScore?: number; remarks?: string },
   ): Promise<Grade> {
     const response = await fetch(`${API_BASE_URL}/grades/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to update grade');
+      throw new Error(error.message || "Failed to update grade");
     }
 
     return response.json();
@@ -343,29 +361,32 @@ class GradeAPI {
    */
   async deleteGrade(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/grades/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: this.getHeaders(),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to delete grade');
+      throw new Error(error.message || "Failed to delete grade");
     }
   }
 
   /**
    * Calculate averages for a class
    */
-  async calculateAverages(classId: string, month: string): Promise<StudentAverage[]> {
+  async calculateAverages(
+    classId: string,
+    month: string,
+  ): Promise<StudentAverage[]> {
     const response = await fetch(`${API_BASE_URL}/grades/calculate/average`, {
-      method: 'POST',
+      method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ classId, month }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to calculate averages');
+      throw new Error(error.message || "Failed to calculate averages");
     }
 
     return response.json();
@@ -374,15 +395,21 @@ class GradeAPI {
   /**
    * Get student monthly summary
    */
-  async getStudentSummary(studentId: string, month: string): Promise<StudentMonthlySummary> {
-    const response = await fetch(`${API_BASE_URL}/grades/summary/${studentId}/${month}`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
+  async getStudentSummary(
+    studentId: string,
+    month: string,
+  ): Promise<StudentMonthlySummary> {
+    const response = await fetch(
+      `${API_BASE_URL}/grades/summary/${studentId}/${month}`,
+      {
+        method: "GET",
+        headers: this.getHeaders(),
+      },
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch summary');
+      throw new Error(error.message || "Failed to fetch summary");
     }
 
     return response.json();
@@ -395,24 +422,24 @@ class GradeAPI {
     studentId: string,
     classId: string,
     month: string,
-    monthNumber: number
+    monthNumber: number,
   ): Promise<StudentMonthlySummary> {
     const response = await fetch(`${API_BASE_URL}/grades/monthly-summary`, {
-      method: 'POST',
+      method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ studentId, classId, month, monthNumber }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to generate summary');
+      throw new Error(error.message || "Failed to generate summary");
     }
 
     return response.json();
   }
 
   async getMonthlyReport(params: {
-    scope: 'class' | 'grade';
+    scope: "class" | "grade";
     classId?: string;
     grade?: string | number;
     month?: string;
@@ -426,29 +453,37 @@ class GradeAPI {
     options?: { forceFresh?: boolean };
   }): Promise<KhmerMonthlyReportData> {
     const query = new URLSearchParams();
-    query.append('scope', params.scope);
-    query.append('monthNumber', params.monthNumber.toString());
-    if (params.classId) query.append('classId', params.classId);
-    if (params.grade) query.append('grade', params.grade.toString());
-    if (params.month) query.append('month', params.month);
-    if (params.year) query.append('year', params.year.toString());
-    if (params.periodYear) query.append('periodYear', params.periodYear.toString());
-    if (params.academicYearId) query.append('academicYearId', params.academicYearId);
-    if (params.format) query.append('format', params.format);
-    if (params.template) query.append('template', params.template);
+    query.append("scope", params.scope);
+    query.append("monthNumber", params.monthNumber.toString());
+    if (params.classId) query.append("classId", params.classId);
+    if (params.grade) query.append("grade", params.grade.toString());
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year.toString());
+    if (params.periodYear)
+      query.append("periodYear", params.periodYear.toString());
+    if (params.academicYearId)
+      query.append("academicYearId", params.academicYearId);
+    if (params.format) query.append("format", params.format);
+    if (params.template) query.append("template", params.template);
 
     const cacheKey = `grades:monthly-report:${query.toString()}`;
-    const cached = this.readCache<KhmerMonthlyReportData>(cacheKey, params.options?.forceFresh);
+    const cached = this.readCache<KhmerMonthlyReportData>(
+      cacheKey,
+      params.options?.forceFresh,
+    );
     if (cached) return cached;
 
-    const response = await fetch(`${API_BASE_URL}/grades/monthly-report?${query.toString()}`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/grades/monthly-report?${query.toString()}`,
+      {
+        method: "GET",
+        headers: this.getHeaders(),
+      },
+    );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch monthly report');
+      throw new Error(error.message || "Failed to fetch monthly report");
     }
 
     const data = await response.json();
@@ -457,7 +492,7 @@ class GradeAPI {
 
   /** @deprecated Use getMonthlyReport */
   async getKhmerMonthlyReport(params: {
-    scope: 'class' | 'grade';
+    scope: "class" | "grade";
     classId?: string;
     grade?: string | number;
     month?: string;
@@ -479,15 +514,15 @@ class GradeAPI {
     const response = await fetch(
       `${API_BASE_URL}/grades/export/template?classId=${classId}&subjectId=${subjectId}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${TokenManager.getAccessToken()}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error('Failed to download template');
+      throw new Error("Failed to download template");
     }
 
     return response.blob();
@@ -500,13 +535,16 @@ class GradeAPI {
     studentId: string,
     semester: number = 1,
     year?: number,
-    options?: { forceFresh?: boolean }
+    options?: { forceFresh?: boolean },
   ): Promise<StudentReportCard> {
     const params = new URLSearchParams();
-    params.append('semester', semester.toString());
-    if (year) params.append('year', year.toString());
-    const cacheKey = `grades:report-card:${studentId}:${semester}:${year || 'current'}`;
-    const cached = this.readCache<StudentReportCard>(cacheKey, options?.forceFresh);
+    params.append("semester", semester.toString());
+    if (year) params.append("year", year.toString());
+    const cacheKey = `grades:report-card:${studentId}:${semester}:${year || "current"}`;
+    const cached = this.readCache<StudentReportCard>(
+      cacheKey,
+      options?.forceFresh,
+    );
 
     if (cached) {
       return cached;
@@ -515,14 +553,14 @@ class GradeAPI {
     const response = await fetch(
       `${API_BASE_URL}/grades/report-card/${studentId}?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: this.getHeaders(),
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch report card');
+      throw new Error(error.message || "Failed to fetch report card");
     }
 
     const data = await response.json();
@@ -536,13 +574,16 @@ class GradeAPI {
     classId: string,
     semester: number = 1,
     year?: number,
-    options?: { forceFresh?: boolean }
+    options?: { forceFresh?: boolean },
   ): Promise<ClassReportSummary> {
     const params = new URLSearchParams();
-    params.append('semester', semester.toString());
-    if (year) params.append('year', year.toString());
-    const cacheKey = `grades:class-report:${classId}:${semester}:${year || 'current'}`;
-    const cached = this.readCache<ClassReportSummary>(cacheKey, options?.forceFresh);
+    params.append("semester", semester.toString());
+    if (year) params.append("year", year.toString());
+    const cacheKey = `grades:class-report:${classId}:${semester}:${year || "current"}`;
+    const cached = this.readCache<ClassReportSummary>(
+      cacheKey,
+      options?.forceFresh,
+    );
 
     if (cached) {
       return cached;
@@ -551,14 +592,14 @@ class GradeAPI {
     const response = await fetch(
       `${API_BASE_URL}/grades/class-report/${classId}?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: this.getHeaders(),
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch class report');
+      throw new Error(error.message || "Failed to fetch class report");
     }
 
     const data = await response.json();
@@ -572,12 +613,15 @@ class GradeAPI {
     classId: string,
     semester: number,
     year?: number,
-    options?: { forceFresh?: boolean }
+    options?: { forceFresh?: boolean },
   ): Promise<SemesterSummary> {
     const params = new URLSearchParams();
-    if (year) params.append('year', year.toString());
-    const cacheKey = `grades:semester-summary:${classId}:${semester}:${year || 'current'}`;
-    const cached = this.readCache<SemesterSummary>(cacheKey, options?.forceFresh);
+    if (year) params.append("year", year.toString());
+    const cacheKey = `grades:semester-summary:${classId}:${semester}:${year || "current"}`;
+    const cached = this.readCache<SemesterSummary>(
+      cacheKey,
+      options?.forceFresh,
+    );
 
     if (cached) {
       return cached;
@@ -586,14 +630,14 @@ class GradeAPI {
     const response = await fetch(
       `${API_BASE_URL}/grades/semester-summary/${classId}/${semester}?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: this.getHeaders(),
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch semester summary');
+      throw new Error(error.message || "Failed to fetch semester summary");
     }
 
     const data = await response.json();
@@ -604,13 +648,16 @@ class GradeAPI {
     classId: string,
     semester: number,
     year?: number,
-    options?: { forceFresh?: boolean }
+    options?: { forceFresh?: boolean },
   ): Promise<GradeAnalyticsData> {
     const params = new URLSearchParams();
-    params.append('semester', semester.toString());
-    if (year) params.append('year', year.toString());
-    const cacheKey = `grades:analytics:${classId}:${semester}:${year || 'current'}`;
-    const cached = this.readCache<GradeAnalyticsData>(cacheKey, options?.forceFresh);
+    params.append("semester", semester.toString());
+    if (year) params.append("year", year.toString());
+    const cacheKey = `grades:analytics:${classId}:${semester}:${year || "current"}`;
+    const cached = this.readCache<GradeAnalyticsData>(
+      cacheKey,
+      options?.forceFresh,
+    );
 
     if (cached) {
       return cached;
@@ -619,14 +666,14 @@ class GradeAPI {
     const response = await fetch(
       `${API_BASE_URL}/grades/analytics/${classId}?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: this.getHeaders(),
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch grade analytics');
+      throw new Error(error.message || "Failed to fetch grade analytics");
     }
 
     const data = await response.json();
@@ -832,20 +879,20 @@ export interface GradeAnalyticsData {
  */
 export const getGradeLevelColor = (gradeLevel: string): string => {
   switch (gradeLevel) {
-    case 'A':
-      return 'bg-green-100 text-green-700 border-green-300';
-    case 'B':
-      return 'bg-green-50 text-green-600 border-green-200';
-    case 'C':
-      return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    case 'D':
-      return 'bg-orange-100 text-orange-700 border-orange-300';
-    case 'E':
-      return 'bg-red-50 text-red-600 border-red-200';
-    case 'F':
-      return 'bg-red-100 text-red-700 border-red-300';
+    case "A":
+      return "bg-green-100 text-green-700 border-green-300";
+    case "B":
+      return "bg-green-50 text-green-600 border-green-200";
+    case "C":
+      return "bg-yellow-100 text-yellow-700 border-yellow-300";
+    case "D":
+      return "bg-orange-100 text-orange-700 border-orange-300";
+    case "E":
+      return "bg-red-50 text-red-600 border-red-200";
+    case "F":
+      return "bg-red-100 text-red-700 border-red-300";
     default:
-      return 'bg-gray-100 text-gray-600 border-gray-200';
+      return "bg-gray-100 text-gray-600 border-gray-200";
   }
 };
 
@@ -853,10 +900,10 @@ export const getGradeLevelColor = (gradeLevel: string): string => {
  * Helper to get score color
  */
 export const getScoreColor = (percentage: number): string => {
-  if (percentage >= 90) return 'text-green-600';
-  if (percentage >= 80) return 'text-green-500';
-  if (percentage >= 70) return 'text-yellow-600';
-  if (percentage >= 60) return 'text-orange-600';
-  if (percentage >= 50) return 'text-red-500';
-  return 'text-red-600';
+  if (percentage >= 90) return "text-green-600";
+  if (percentage >= 80) return "text-green-500";
+  if (percentage >= 70) return "text-yellow-600";
+  if (percentage >= 60) return "text-orange-600";
+  if (percentage >= 50) return "text-red-500";
+  return "text-red-600";
 };

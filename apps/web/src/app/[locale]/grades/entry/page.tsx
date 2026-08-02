@@ -145,7 +145,7 @@ export default function GradeEntryPage() {
       if (found) {
         monthLabelStr = getKhmerMonthDisplayName(found.number, found.label, found.isExamMonth, found.termNumber);
       }
-      const data = await gradeAPI.getGradeGrid(selectedClass, selectedSubject, monthLabelStr);
+      const data = await gradeAPI.getGradeGrid(selectedClass, selectedSubject, monthLabelStr, selectedMonth);
       setGridData(data);
       
       // Initialize grade entries

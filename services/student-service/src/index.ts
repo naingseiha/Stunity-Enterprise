@@ -1,46 +1,59 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { PrismaClient, Gender } from '@prisma/client';
-import jwt from 'jsonwebtoken';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import crypto from 'crypto';
-import dotenv from 'dotenv';
-import { generateStudentId } from './utils/studentIdGenerator';
-import { parseDate } from './utils/dateParser';
-import IdGenerator from './utils/idGenerator';
-import { studentPayloadSchema, getStudentValidationMessage } from './validators/student.validator';
-import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
+import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import { PrismaClient, Gender } from "@prisma/client";
+import jwt from "jsonwebtoken";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import crypto from "crypto";
+import dotenv from "dotenv";
+import { generateStudentId } from "./utils/studentIdGenerator";
+import { parseDate } from "./utils/dateParser";
+import IdGenerator from "./utils/idGenerator";
+import {
+  studentPayloadSchema,
+  getStudentValidationMessage,
+} from "./validators/student.validator";
+import {
+  withPrismaPoolParams,
+  scheduleDbKeepalive,
+  shouldRunDbStartupWarmup,
+} from "../../lib/prisma-pool-url";
 
 // Load environment variables from root .env
-dotenv.config({ path: '../../.env' });
+dotenv.config({ path: "../../.env" });
 
 // Simple in-memory cache with stale-while-revalidate
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const STALE_TTL = 10 * 60 * 1000; // 10 minutes (serve stale while refreshing)
-const TRANSCRIPT_FORMULA_VERSION = 'KHM_MOEYS_TRANSCRIPT_V1';
-const TRANSCRIPT_ISSUER_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+const TRANSCRIPT_FORMULA_VERSION = "KHM_MOEYS_TRANSCRIPT_V1";
+const TRANSCRIPT_ISSUER_ROLES = new Set([
+  "ADMIN",
+  "SUPER_ADMIN",
+  "SCHOOL_ADMIN",
+]);
 
 const app = express();
-app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
+app.set("trust proxy", 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  datasources: {
-    db: {
-      url: withPrismaPoolParams(process.env.DATABASE_URL),
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: withPrismaPoolParams(process.env.DATABASE_URL),
+      },
     },
-  },
-  log: ['error'],
-});
+    log: ["error"],
+  });
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
@@ -51,24 +64,27 @@ const warmUpDb = async () => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     isDbWarm = true;
-    console.log('✅ Database ready');
+    console.log("✅ Database ready");
   } catch (error) {
-    console.error('⚠️ Database warmup failed');
+    console.error("⚠️ Database warmup failed");
   }
 };
 if (shouldRunDbStartupWarmup()) {
   warmUpDb();
 }
-scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
+scheduleDbKeepalive(() => {
+  isDbWarm = false;
+  void warmUpDb();
+});
 
 const normalizeRegionalValue = (value: any) => {
-  if (typeof value === 'string') return value.trim() || null;
+  if (typeof value === "string") return value.trim() || null;
   return value ?? null;
 };
 
 const stableJson = (value: any): any => {
   if (Array.isArray(value)) return value.map(stableJson);
-  if (value && typeof value === 'object' && !(value instanceof Date)) {
+  if (value && typeof value === "object" && !(value instanceof Date)) {
     return Object.keys(value)
       .sort()
       .reduce((result: Record<string, any>, key) => {
@@ -80,34 +96,53 @@ const stableJson = (value: any): any => {
 };
 
 const createTranscriptChecksum = (payload: any) =>
-  crypto.createHash('sha256').update(JSON.stringify(stableJson(payload))).digest('hex');
+  crypto
+    .createHash("sha256")
+    .update(JSON.stringify(stableJson(payload)))
+    .digest("hex");
 
 const createTranscriptVerificationCode = () =>
-  `TR-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+  `TR-${crypto.randomBytes(5).toString("hex").toUpperCase()}`;
 
-const createTranscriptDocumentNumber = (schoolId: string, academicYearName: string | null | undefined, sequence: number) => {
-  const yearPart = (academicYearName || 'YEAR').replace(/[^0-9A-Za-z-]/g, '').slice(0, 16) || 'YEAR';
-  const schoolPart = schoolId.replace(/[^0-9A-Za-z]/g, '').slice(-6).toUpperCase() || 'SCHOOL';
-  return `TR-${schoolPart}-${yearPart}-${String(sequence).padStart(5, '0')}`;
+const createTranscriptDocumentNumber = (
+  schoolId: string,
+  academicYearName: string | null | undefined,
+  sequence: number,
+) => {
+  const yearPart =
+    (academicYearName || "YEAR").replace(/[^0-9A-Za-z-]/g, "").slice(0, 16) ||
+    "YEAR";
+  const schoolPart =
+    schoolId
+      .replace(/[^0-9A-Za-z]/g, "")
+      .slice(-6)
+      .toUpperCase() || "SCHOOL";
+  return `TR-${schoolPart}-${yearPart}-${String(sequence).padStart(5, "0")}`;
 };
 
 function collectRegionalFields(
   payload: Record<string, any>,
   regionalKeys: string[],
-  topLevelKeys: string[]
+  topLevelKeys: string[],
 ) {
   const regional: Record<string, any> = {
-    ...(payload.customFields?.regional && typeof payload.customFields.regional === 'object'
+    ...(payload.customFields?.regional &&
+    typeof payload.customFields.regional === "object"
       ? payload.customFields.regional
       : {}),
   };
-  const topLevel = new Set([...topLevelKeys, 'customFields']);
+  const topLevel = new Set([...topLevelKeys, "customFields"]);
 
   for (const key of regionalKeys) {
-    if (payload[key] !== undefined) regional[key] = normalizeRegionalValue(payload[key]);
+    if (payload[key] !== undefined)
+      regional[key] = normalizeRegionalValue(payload[key]);
   }
   for (const [key, value] of Object.entries(payload)) {
-    if (!topLevel.has(key) && !regionalKeys.includes(key) && value !== undefined) {
+    if (
+      !topLevel.has(key) &&
+      !regionalKeys.includes(key) &&
+      value !== undefined
+    ) {
       regional[key] = normalizeRegionalValue(value);
     }
   }
@@ -115,39 +150,62 @@ function collectRegionalFields(
   return regional;
 }
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error(
+    "FATAL: JWT_SECRET must be set in production. Refusing to start.",
+  );
 }
 
 // Middleware - CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "http://localhost:3003",
+      "http://localhost:3004",
+      "http://localhost:3005",
+    ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow all origins in production if CORS_ORIGIN is set to *
-    if (process.env.CORS_ORIGIN === '*') return callback(null, true);
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
-app.use(express.json({ limit: '1mb' }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow all origins in production if CORS_ORIGIN is set to *
+      if (process.env.CORS_ORIGIN === "*") return callback(null, true);
+
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+app.use(
+  helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }),
+);
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: "Too many requests" },
+  }),
+);
+app.use(express.json({ limit: "1mb" }));
 
 // Serve static files from public/uploads
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../public/uploads/students');
+    const uploadDir = path.join(__dirname, "../public/uploads/students");
     // Ensure directory exists
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -156,9 +214,9 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Generate unique filename: student-{timestamp}-{random}.ext
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'student-' + uniqueSuffix + path.extname(file.originalname));
-  }
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, "student-" + uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
 const upload = multer({
@@ -169,14 +227,16 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     // Accept images only
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase(),
+    );
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (mimetype && extname) {
       return cb(null, true);
     }
-    cb(new Error('Only image files are allowed!'));
-  }
+    cb(new Error("Only image files are allowed!"));
+  },
 });
 
 // JWT Authentication Middleware
@@ -189,19 +249,26 @@ interface AuthRequest extends Request {
   };
 }
 
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const authenticateToken = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Access token required',
+        message: "Access token required",
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'stunity-enterprise-secret-2026') as any;
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "stunity-enterprise-secret-2026",
+    ) as any;
 
     // OPTIMIZED: Use data from JWT token instead of database query
     // This reduces response time from ~200ms to <5ms
@@ -209,7 +276,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token format',
+        message: "Invalid token format",
       });
     }
 
@@ -217,7 +284,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     if (decoded.school && !decoded.school.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'School account is inactive',
+        message: "School account is inactive",
       });
     }
 
@@ -228,14 +295,14 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       if (now > trialEnd) {
         return res.status(403).json({
           success: false,
-          message: 'Trial period has expired',
+          message: "Trial period has expired",
         });
       }
     }
 
     req.user = {
       id: decoded.userId,
-      email: decoded.email || '',
+      email: decoded.email || "",
       role: decoded.role,
       schoolId: decoded.schoolId,
     };
@@ -244,7 +311,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
   } catch (error) {
     return res.status(403).json({
       success: false,
-      message: 'Invalid or expired token',
+      message: "Invalid or expired token",
     });
   }
 };
@@ -253,7 +320,7 @@ const ensureStudentClassEnrollment = async (
   studentId: string,
   classId: string,
   schoolId: string,
-  classYearCache?: Map<string, string>
+  classYearCache?: Map<string, string>,
 ) => {
   let academicYearId = classYearCache?.get(classId);
 
@@ -279,64 +346,96 @@ const ensureStudentClassEnrollment = async (
     return null;
   }
 
-  return prisma.studentClass.upsert({
+  const activeEnrollment = await prisma.studentClass.findFirst({
     where: {
-      studentId_classId_academicYearId: {
-        studentId,
-        classId,
-        academicYearId,
-      },
-    },
-    update: {
-      status: 'ACTIVE',
-    },
-    create: {
       studentId,
       classId,
       academicYearId,
-      status: 'ACTIVE',
+      status: { in: ENROLLMENT_ACTIVE_STATUSES },
+      endedAt: null,
+    },
+  });
+
+  if (activeEnrollment) return activeEnrollment;
+
+  return prisma.studentClass.create({
+    data: {
+      studentId,
+      classId,
+      academicYearId,
+      status: "ACTIVE",
+      startedAt: new Date(),
+      entryReason: "ADMIN_PLACEMENT",
     },
   });
 };
 
 const STUDENT_REGIONAL_KEYS = [
-  'khmerName', 'englishName', 'placeOfBirth', 'currentAddress',
-  'fatherName', 'motherName', 'parentPhone', 'parentOccupation',
-  'previousGrade', 'previousSchool', 'repeatingGrade', 'transferredFrom',
-  'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
-  'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
-  'grade12Track', 'remarks',
+  "khmerName",
+  "englishName",
+  "placeOfBirth",
+  "currentAddress",
+  "fatherName",
+  "motherName",
+  "parentPhone",
+  "parentOccupation",
+  "previousGrade",
+  "previousSchool",
+  "repeatingGrade",
+  "transferredFrom",
+  "grade9ExamSession",
+  "grade9ExamCenter",
+  "grade9ExamRoom",
+  "grade9ExamDesk",
+  "grade9PassStatus",
+  "grade12ExamSession",
+  "grade12ExamCenter",
+  "grade12ExamRoom",
+  "grade12ExamDesk",
+  "grade12PassStatus",
+  "grade12Track",
+  "remarks",
 ];
 
 const STUDENT_TOP_LEVEL_KEYS = [
-  'firstName', 'lastName', 'englishFirstName', 'englishLastName',
-  'email', 'dateOfBirth', 'gender', 'phoneNumber', 'classId',
-  'photoUrl', 'isAccountActive',
+  "firstName",
+  "lastName",
+  "englishFirstName",
+  "englishLastName",
+  "email",
+  "dateOfBirth",
+  "gender",
+  "phoneNumber",
+  "classId",
+  "photoUrl",
+  "isAccountActive",
 ];
 
 // ===========================
 // POST /students/batch
 // Batch create students (for onboarding - no auth required)
 // ===========================
-app.post('/students/batch', async (req: Request, res: Response) => {
+app.post("/students/batch", async (req: Request, res: Response) => {
   try {
     const { schoolId, students } = req.body;
 
     if (!schoolId) {
       return res.status(400).json({
         success: false,
-        message: 'schoolId is required',
+        message: "schoolId is required",
       });
     }
 
     if (!students || !Array.isArray(students) || students.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'students array is required',
+        message: "students array is required",
       });
     }
 
-    console.log(`➕ [Onboarding] Batch creating ${students.length} students for school ${schoolId}...`);
+    console.log(
+      `➕ [Onboarding] Batch creating ${students.length} students for school ${schoolId}...`,
+    );
 
     const createdStudents = [];
     const errors = [];
@@ -358,13 +457,17 @@ app.post('/students/batch', async (req: Request, res: Response) => {
         if (!firstName || !lastName) {
           errors.push({
             student: studentData,
-            error: 'Missing required fields (firstName, lastName)',
+            error: "Missing required fields (firstName, lastName)",
           });
           continue;
         }
 
-        const normalizedGender = gender === 'F' || gender === 'FEMALE' ? 'FEMALE' : 'MALE';
-        const generatedStudentId = await generateStudentId(classId || undefined, schoolId);
+        const normalizedGender =
+          gender === "F" || gender === "FEMALE" ? "FEMALE" : "MALE";
+        const generatedStudentId = await generateStudentId(
+          classId || undefined,
+          schoolId,
+        );
 
         // Create student
         const student = await prisma.student.create({
@@ -375,22 +478,29 @@ app.post('/students/batch', async (req: Request, res: Response) => {
             lastName,
             customFields: {
               regional: {
-                khmerName: `${firstName} ${lastName}`
-              }
+                khmerName: `${firstName} ${lastName}`,
+              },
             },
             gender: normalizedGender,
-            dateOfBirth: dateOfBirth || '2008-01-01',
+            dateOfBirth: dateOfBirth || "2008-01-01",
             classId: classId || null,
             phoneNumber: parentPhone || null,
           },
         });
 
         if (classId) {
-          await ensureStudentClassEnrollment(student.id, classId, schoolId, classYearCache);
+          await ensureStudentClassEnrollment(
+            student.id,
+            classId,
+            schoolId,
+            classYearCache,
+          );
         }
 
         createdStudents.push(student);
-        console.log(`✅ Created student: ${student.firstName} ${student.lastName}`);
+        console.log(
+          `✅ Created student: ${student.firstName} ${student.lastName}`,
+        );
       } catch (error: any) {
         console.error(`❌ Error creating student:`, error);
         errors.push({
@@ -421,53 +531,64 @@ app.post('/students/batch', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('❌ Batch create error:', error);
+    console.error("❌ Batch create error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error creating students',
+      message: "Error creating students",
       error: error.message,
     });
   }
 });
 
 // Health check endpoint (no auth required) - must be before auth middleware
-app.get('/health', (_req, res) => {
+app.get("/health", (_req, res) => {
   res.json({
     success: true,
-    service: 'student-service',
-    status: 'healthy',
+    service: "student-service",
+    status: "healthy",
     timestamp: new Date().toISOString(),
   });
 });
 
 // Public transcript verification. Returns document metadata only; score and
 // attendance details remain behind authenticated transcript views.
-app.get('/transcripts/verify/:code', async (req: Request, res: Response) => {
+app.get("/transcripts/verify/:code", async (req: Request, res: Response) => {
   try {
-    const verificationCode = String(req.params.code || '').trim().toUpperCase();
-    if (!verificationCode || !(prisma as any).studentTranscriptDocument?.findUnique) {
-      return res.status(404).json({ success: false, error: 'Transcript document not found' });
+    const verificationCode = String(req.params.code || "")
+      .trim()
+      .toUpperCase();
+    if (
+      !verificationCode ||
+      !(prisma as any).studentTranscriptDocument?.findUnique
+    ) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Transcript document not found" });
     }
 
-    const document = await (prisma as any).studentTranscriptDocument.findUnique({
-      where: { verificationCode },
-      select: {
-        schoolId: true,
-        studentId: true,
-        academicYearId: true,
-        status: true,
-        documentNumber: true,
-        verificationCode: true,
-        snapshotChecksum: true,
-        formulaVersion: true,
-        approvedAt: true,
-        issuedAt: true,
-        revokedAt: true,
+    const document = await (prisma as any).studentTranscriptDocument.findUnique(
+      {
+        where: { verificationCode },
+        select: {
+          schoolId: true,
+          studentId: true,
+          academicYearId: true,
+          status: true,
+          documentNumber: true,
+          verificationCode: true,
+          snapshotChecksum: true,
+          formulaVersion: true,
+          approvedAt: true,
+          issuedAt: true,
+          revokedAt: true,
+        },
       },
-    });
+    );
 
     if (!document) {
-      return res.status(404).json({ success: false, error: 'Transcript document not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Transcript document not found" });
     }
 
     const [student, school, academicYear] = await Promise.all([
@@ -489,7 +610,7 @@ app.get('/transcripts/verify/:code', async (req: Request, res: Response) => {
       success: true,
       data: {
         status: document.status,
-        isValid: document.status === 'OFFICIAL',
+        isValid: document.status === "OFFICIAL",
         documentNumber: document.documentNumber,
         verificationCode: document.verificationCode,
         issuedAt: document.issuedAt,
@@ -508,11 +629,13 @@ app.get('/transcripts/verify/:code', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Transcript verification error:', error);
+    console.error("Transcript verification error:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to verify transcript document',
-      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
+      error: "Failed to verify transcript document",
+      ...(process.env.NODE_ENV !== "production"
+        ? { details: error.message }
+        : {}),
     });
   }
 });
@@ -524,31 +647,64 @@ app.use(authenticateToken);
 // Admissions — application intake and review
 // ==========================================
 const ADMISSION_STATUSES = new Set([
-  'DRAFT', 'RECEIVED', 'UNDER_REVIEW', 'WAITLISTED', 'APPROVED',
-  'REJECTED', 'ENROLLED', 'WITHDRAWN',
+  "DRAFT",
+  "RECEIVED",
+  "UNDER_REVIEW",
+  "WAITLISTED",
+  "APPROVED",
+  "REJECTED",
+  "ENROLLED",
+  "WITHDRAWN",
 ]);
-const ADMISSION_TYPES = new Set(['NEW_STUDENT', 'RETURNING_STUDENT', 'TRANSFER_IN']);
-const ADMISSION_INTAKE_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'STAFF', 'TEACHER', 'SCHOOL_ADMIN']);
-const ADMISSION_REVIEW_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'STAFF', 'SCHOOL_ADMIN']);
+const ADMISSION_TYPES = new Set([
+  "NEW_STUDENT",
+  "RETURNING_STUDENT",
+  "TRANSFER_IN",
+]);
+const ADMISSION_INTAKE_ROLES = new Set([
+  "ADMIN",
+  "SUPER_ADMIN",
+  "STAFF",
+  "TEACHER",
+  "SCHOOL_ADMIN",
+]);
+const ADMISSION_REVIEW_ROLES = new Set([
+  "ADMIN",
+  "SUPER_ADMIN",
+  "STAFF",
+  "SCHOOL_ADMIN",
+]);
 const ADMISSION_TRANSITIONS: Record<string, Set<string>> = {
-  DRAFT: new Set(['RECEIVED', 'WITHDRAWN']),
-  RECEIVED: new Set(['UNDER_REVIEW', 'WAITLISTED', 'APPROVED', 'REJECTED', 'WITHDRAWN']),
-  UNDER_REVIEW: new Set(['WAITLISTED', 'APPROVED', 'REJECTED', 'WITHDRAWN']),
-  WAITLISTED: new Set(['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'WITHDRAWN']),
-  APPROVED: new Set(['UNDER_REVIEW', 'ENROLLED', 'WITHDRAWN']),
-  REJECTED: new Set(['UNDER_REVIEW']),
+  DRAFT: new Set(["RECEIVED", "WITHDRAWN"]),
+  RECEIVED: new Set([
+    "UNDER_REVIEW",
+    "WAITLISTED",
+    "APPROVED",
+    "REJECTED",
+    "WITHDRAWN",
+  ]),
+  UNDER_REVIEW: new Set(["WAITLISTED", "APPROVED", "REJECTED", "WITHDRAWN"]),
+  WAITLISTED: new Set(["UNDER_REVIEW", "APPROVED", "REJECTED", "WITHDRAWN"]),
+  APPROVED: new Set(["UNDER_REVIEW", "ENROLLED", "WITHDRAWN"]),
+  REJECTED: new Set(["UNDER_REVIEW"]),
   ENROLLED: new Set(),
-  WITHDRAWN: new Set(['RECEIVED']),
+  WITHDRAWN: new Set(["RECEIVED"]),
 };
 
 const admissionNumber = (academicYearName?: string | null) => {
-  const year = (academicYearName || String(new Date().getFullYear())).replace(/[^0-9A-Za-z]/g, '').slice(0, 10);
-  return `ADM-${year || new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+  const year = (academicYearName || String(new Date().getFullYear()))
+    .replace(/[^0-9A-Za-z]/g, "")
+    .slice(0, 10);
+  return `ADM-${year || new Date().getFullYear()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 };
 const cleanAdmissionText = (value: unknown, max = 250) =>
-  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) || null : null;
-const cleanAdmissionEmail = (value: unknown) => cleanAdmissionText(value, 160)?.toLowerCase() || null;
-const isValidAdmissionEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  typeof value === "string"
+    ? value.trim().replace(/\s+/g, " ").slice(0, max) || null
+    : null;
+const cleanAdmissionEmail = (value: unknown) =>
+  cleanAdmissionText(value, 160)?.toLowerCase() || null;
+const isValidAdmissionEmail = (value: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const isValidAdmissionBirthDate = (value: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;
@@ -556,43 +712,74 @@ const isValidAdmissionBirthDate = (value: string) => {
   const month = Number(match[2]);
   const day = Number(match[3]);
   const parsed = new Date(Date.UTC(year, month - 1, day));
-  return year >= 1900 && parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1
-    && parsed.getUTCDate() === day && parsed.getTime() <= Date.now();
+  return (
+    year >= 1900 &&
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day &&
+    parsed.getTime() <= Date.now()
+  );
 };
 
-app.use('/admissions', (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!ADMISSION_INTAKE_ROLES.has(req.user?.role || '')) {
-    return res.status(403).json({ success: false, message: 'Admission workspace permission required' });
-  }
-  next();
-});
+app.use(
+  "/admissions",
+  (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!ADMISSION_INTAKE_ROLES.has(req.user?.role || "")) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Admission workspace permission required",
+        });
+    }
+    next();
+  },
+);
 
-app.get('/admissions/summary', async (req: AuthRequest, res: Response) => {
+app.get("/admissions/summary", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const academicYearId = cleanAdmissionText(req.query.academicYearId, 64);
     const where = { schoolId, ...(academicYearId ? { academicYearId } : {}) };
     const [grouped, awaitingPlacement] = await Promise.all([
       (prisma as any).admissionApplication.groupBy({
-        by: ['status', 'applicantType'], where, _count: { _all: true },
+        by: ["status", "applicantType"],
+        where,
+        _count: { _all: true },
       }),
       (prisma as any).admissionApplication.count({
-        where: { ...where, status: 'ENROLLED', targetClassId: null },
+        where: { ...where, status: "ENROLLED", targetClassId: null },
       }),
     ]);
     const byStatus: Record<string, number> = {};
     const byType: Record<string, number> = {};
     for (const row of grouped) {
       byStatus[row.status] = (byStatus[row.status] || 0) + row._count._all;
-      byType[row.applicantType] = (byType[row.applicantType] || 0) + row._count._all;
+      byType[row.applicantType] =
+        (byType[row.applicantType] || 0) + row._count._all;
     }
-    res.json({ success: true, data: { total: grouped.reduce((n: number, row: any) => n + row._count._all, 0), byStatus, byType, awaitingPlacement } });
+    res.json({
+      success: true,
+      data: {
+        total: grouped.reduce((n: number, row: any) => n + row._count._all, 0),
+        byStatus,
+        byType,
+        awaitingPlacement,
+      },
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to load admission summary', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to load admission summary",
+        details:
+          process.env.NODE_ENV !== "production" ? error.message : undefined,
+      });
   }
 });
 
-app.get('/admissions', async (req: AuthRequest, res: Response) => {
+app.get("/admissions", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -605,213 +792,543 @@ app.get('/admissions', async (req: AuthRequest, res: Response) => {
       schoolId,
       ...(academicYearId ? { academicYearId } : {}),
       ...(status && ADMISSION_STATUSES.has(status) ? { status } : {}),
-      ...(applicantType && ADMISSION_TYPES.has(applicantType) ? { applicantType } : {}),
-      ...(search && search.length >= 2 ? {
-        OR: [
-          { applicationNumber: { contains: search, mode: 'insensitive' } },
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { englishFirstName: { contains: search, mode: 'insensitive' } },
-          { englishLastName: { contains: search, mode: 'insensitive' } },
-          { phoneNumber: { contains: search } },
-          { student: { studentId: { contains: search, mode: 'insensitive' } } },
-        ],
-      } : {}),
+      ...(applicantType && ADMISSION_TYPES.has(applicantType)
+        ? { applicantType }
+        : {}),
+      ...(search && search.length >= 2
+        ? {
+            OR: [
+              { applicationNumber: { contains: search, mode: "insensitive" } },
+              { firstName: { contains: search, mode: "insensitive" } },
+              { lastName: { contains: search, mode: "insensitive" } },
+              { englishFirstName: { contains: search, mode: "insensitive" } },
+              { englishLastName: { contains: search, mode: "insensitive" } },
+              { phoneNumber: { contains: search } },
+              {
+                student: {
+                  studentId: { contains: search, mode: "insensitive" },
+                },
+              },
+            ],
+          }
+        : {}),
     };
     const [applications, total] = await Promise.all([
       (prisma as any).admissionApplication.findMany({
-        where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' },
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
         include: {
           academicYear: { select: { id: true, name: true } },
           targetClass: { select: { id: true, name: true, grade: true } },
-          student: { select: { id: true, studentId: true, class: { select: { name: true, grade: true } } } },
+          student: {
+            select: {
+              id: true,
+              studentId: true,
+              class: { select: { name: true, grade: true } },
+            },
+          },
           createdBy: { select: { id: true, firstName: true, lastName: true } },
         },
       }),
       (prisma as any).admissionApplication.count({ where }),
     ]);
-    res.json({ success: true, data: { applications, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } } });
+    res.json({
+      success: true,
+      data: {
+        applications,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to load admission applications', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to load admission applications",
+        details:
+          process.env.NODE_ENV !== "production" ? error.message : undefined,
+      });
   }
 });
 
-app.get('/admissions/:id', async (req: AuthRequest, res: Response) => {
+app.get("/admissions/:id", async (req: AuthRequest, res: Response) => {
   try {
     const application = await (prisma as any).admissionApplication.findFirst({
       where: { id: req.params.id, schoolId: req.user!.schoolId },
       include: {
-        academicYear: true, targetClass: true,
-        student: { select: { id: true, studentId: true, firstName: true, lastName: true, class: true } },
+        academicYear: true,
+        targetClass: true,
+        student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            class: true,
+          },
+        },
         createdBy: { select: { id: true, firstName: true, lastName: true } },
         reviewedBy: { select: { id: true, firstName: true, lastName: true } },
-        events: { orderBy: { createdAt: 'asc' }, include: { actor: { select: { firstName: true, lastName: true } } } },
+        events: {
+          orderBy: { createdAt: "asc" },
+          include: { actor: { select: { firstName: true, lastName: true } } },
+        },
       },
     });
-    if (!application) return res.status(404).json({ success: false, message: 'Application not found' });
+    if (!application)
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
     res.json({ success: true, data: { application } });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to load application', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to load application",
+        details:
+          process.env.NODE_ENV !== "production" ? error.message : undefined,
+      });
   }
 });
 
-app.post('/admissions', async (req: AuthRequest, res: Response) => {
+app.post("/admissions", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const createdById = req.user!.id;
-    const applicantType = String(req.body.applicantType || 'NEW_STUDENT');
-    if (!ADMISSION_TYPES.has(applicantType) || applicantType === 'TRANSFER_IN') {
-      return res.status(400).json({ success: false, message: 'Applicant type is not available in this phase' });
+    const applicantType = String(req.body.applicantType || "NEW_STUDENT");
+    if (
+      !ADMISSION_TYPES.has(applicantType) ||
+      applicantType === "TRANSFER_IN"
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Applicant type is not available in this phase",
+        });
     }
     const academicYearId = cleanAdmissionText(req.body.academicYearId, 64);
-    if (!academicYearId) return res.status(400).json({ success: false, message: 'Academic year is required' });
-    const academicYear = await prisma.academicYear.findFirst({ where: { id: academicYearId, schoolId }, select: { id: true, name: true } });
-    if (!academicYear) return res.status(400).json({ success: false, message: 'Invalid academic year' });
+    if (!academicYearId)
+      return res
+        .status(400)
+        .json({ success: false, message: "Academic year is required" });
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: academicYearId, schoolId },
+      select: { id: true, name: true },
+    });
+    if (!academicYear)
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid academic year" });
 
     let source: any = req.body;
     let linkedStudent: any = null;
-    if (applicantType === 'RETURNING_STUDENT') {
+    if (applicantType === "RETURNING_STUDENT") {
       const studentId = cleanAdmissionText(req.body.studentId, 64);
-      linkedStudent = studentId ? await prisma.student.findFirst({ where: { id: studentId, schoolId, isAccountActive: true } }) : null;
-      if (!linkedStudent) return res.status(400).json({ success: false, message: 'Please select an existing student' });
+      linkedStudent = studentId
+        ? await prisma.student.findFirst({
+            where: { id: studentId, schoolId, isAccountActive: true },
+          })
+        : null;
+      if (!linkedStudent)
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Please select an existing student",
+          });
       source = {
         ...req.body,
-        firstName: linkedStudent.firstName, lastName: linkedStudent.lastName,
-        englishFirstName: linkedStudent.englishFirstName, englishLastName: linkedStudent.englishLastName,
-        gender: linkedStudent.gender, dateOfBirth: linkedStudent.dateOfBirth,
-        phoneNumber: linkedStudent.phoneNumber, email: linkedStudent.email,
+        firstName: linkedStudent.firstName,
+        lastName: linkedStudent.lastName,
+        englishFirstName: linkedStudent.englishFirstName,
+        englishLastName: linkedStudent.englishLastName,
+        gender: linkedStudent.gender,
+        dateOfBirth: linkedStudent.dateOfBirth,
+        phoneNumber: linkedStudent.phoneNumber,
+        email: linkedStudent.email,
       };
     }
     const firstName = cleanAdmissionText(source.firstName, 100);
     const lastName = cleanAdmissionText(source.lastName, 100);
     const dateOfBirth = cleanAdmissionText(source.dateOfBirth, 30);
-    const gender = String(source.gender || '');
-    if (!firstName || !lastName || !dateOfBirth || !['MALE', 'FEMALE'].includes(gender)) {
-      return res.status(400).json({ success: false, message: 'Name, date of birth, and gender are required' });
+    const gender = String(source.gender || "");
+    if (
+      !firstName ||
+      !lastName ||
+      !dateOfBirth ||
+      !["MALE", "FEMALE"].includes(gender)
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Name, date of birth, and gender are required",
+        });
     }
-    if (applicantType === 'NEW_STUDENT' && !isValidAdmissionBirthDate(dateOfBirth)) {
-      return res.status(400).json({ success: false, message: 'Date of birth must be a valid past date' });
+    if (
+      applicantType === "NEW_STUDENT" &&
+      !isValidAdmissionBirthDate(dateOfBirth)
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Date of birth must be a valid past date",
+        });
     }
     const email = cleanAdmissionEmail(source.email);
     if (email && !isValidAdmissionEmail(email)) {
-      return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Please enter a valid email address",
+        });
     }
     if (linkedStudent) {
-      const exists = await (prisma as any).admissionApplication.findFirst({ where: { schoolId, academicYearId, studentId: linkedStudent.id } });
-      if (exists) return res.status(409).json({ success: false, message: 'This student already has an application for the selected year', data: { applicationId: exists.id } });
+      const exists = await (prisma as any).admissionApplication.findFirst({
+        where: { schoolId, academicYearId, studentId: linkedStudent.id },
+      });
+      if (exists)
+        return res
+          .status(409)
+          .json({
+            success: false,
+            message:
+              "This student already has an application for the selected year",
+            data: { applicationId: exists.id },
+          });
     } else {
       const duplicate = await (prisma as any).admissionApplication.findFirst({
-        where: { schoolId, academicYearId, firstName: { equals: firstName, mode: 'insensitive' }, lastName: { equals: lastName, mode: 'insensitive' }, dateOfBirth, status: { notIn: ['REJECTED', 'WITHDRAWN'] } },
+        where: {
+          schoolId,
+          academicYearId,
+          firstName: { equals: firstName, mode: "insensitive" },
+          lastName: { equals: lastName, mode: "insensitive" },
+          dateOfBirth,
+          status: { notIn: ["REJECTED", "WITHDRAWN"] },
+        },
         select: { id: true, applicationNumber: true },
       });
-      if (duplicate) return res.status(409).json({ success: false, message: 'A matching active application already exists', data: duplicate });
+      if (duplicate)
+        return res
+          .status(409)
+          .json({
+            success: false,
+            message: "A matching active application already exists",
+            data: duplicate,
+          });
     }
     // A returning-student application is a receipt only. Placement remains in
     // the promotion/repeat workflow and must not be implied here.
-    const targetClassId = applicantType === 'NEW_STUDENT'
-      ? cleanAdmissionText(req.body.targetClassId, 64)
-      : null;
+    const targetClassId =
+      applicantType === "NEW_STUDENT"
+        ? cleanAdmissionText(req.body.targetClassId, 64)
+        : null;
     if (targetClassId) {
-      const targetClass = await prisma.class.findFirst({ where: { id: targetClassId, schoolId, academicYearId } });
-      if (!targetClass) return res.status(400).json({ success: false, message: 'Target class does not belong to this academic year' });
+      const targetClass = await prisma.class.findFirst({
+        where: { id: targetClassId, schoolId, academicYearId },
+      });
+      if (!targetClass)
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Target class does not belong to this academic year",
+          });
     }
     const data: any = {
-      schoolId, academicYearId, createdById, applicantType, source: 'STAFF_ENTRY',
-      applicationNumber: admissionNumber(academicYear.name), status: 'RECEIVED',
-      studentId: linkedStudent?.id || null, targetClassId,
-      requestedGrade: applicantType === 'NEW_STUDENT' ? cleanAdmissionText(req.body.requestedGrade, 30) : null,
-      firstName, lastName, gender, dateOfBirth,
-      englishFirstName: cleanAdmissionText(source.englishFirstName, 100), englishLastName: cleanAdmissionText(source.englishLastName, 100),
-      phoneNumber: cleanAdmissionText(source.phoneNumber, 40), email,
-      placeOfBirth: cleanAdmissionText(req.body.placeOfBirth, 500), currentAddress: cleanAdmissionText(req.body.currentAddress, 500),
-      fatherName: cleanAdmissionText(req.body.fatherName, 150), motherName: cleanAdmissionText(req.body.motherName, 150),
-      guardianName: cleanAdmissionText(req.body.guardianName, 150), guardianPhone: cleanAdmissionText(req.body.guardianPhone, 40),
-      previousSchool: cleanAdmissionText(req.body.previousSchool, 250), previousGrade: cleanAdmissionText(req.body.previousGrade, 30),
-      notes: cleanAdmissionText(req.body.notes, 2000), customFields: req.body.customFields && typeof req.body.customFields === 'object' ? req.body.customFields : undefined,
-      events: { create: { actorId: createdById, action: applicantType === 'RETURNING_STUDENT' ? 'RETURNING_APPLICATION_RECEIVED' : 'APPLICATION_RECEIVED', toStatus: 'RECEIVED', notes: cleanAdmissionText(req.body.notes, 2000) } },
+      schoolId,
+      academicYearId,
+      createdById,
+      applicantType,
+      source: "STAFF_ENTRY",
+      applicationNumber: admissionNumber(academicYear.name),
+      status: "RECEIVED",
+      studentId: linkedStudent?.id || null,
+      targetClassId,
+      requestedGrade:
+        applicantType === "NEW_STUDENT"
+          ? cleanAdmissionText(req.body.requestedGrade, 30)
+          : null,
+      firstName,
+      lastName,
+      gender,
+      dateOfBirth,
+      englishFirstName: cleanAdmissionText(source.englishFirstName, 100),
+      englishLastName: cleanAdmissionText(source.englishLastName, 100),
+      phoneNumber: cleanAdmissionText(source.phoneNumber, 40),
+      email,
+      placeOfBirth: cleanAdmissionText(req.body.placeOfBirth, 500),
+      currentAddress: cleanAdmissionText(req.body.currentAddress, 500),
+      fatherName: cleanAdmissionText(req.body.fatherName, 150),
+      motherName: cleanAdmissionText(req.body.motherName, 150),
+      guardianName: cleanAdmissionText(req.body.guardianName, 150),
+      guardianPhone: cleanAdmissionText(req.body.guardianPhone, 40),
+      previousSchool: cleanAdmissionText(req.body.previousSchool, 250),
+      previousGrade: cleanAdmissionText(req.body.previousGrade, 30),
+      notes: cleanAdmissionText(req.body.notes, 2000),
+      customFields:
+        req.body.customFields && typeof req.body.customFields === "object"
+          ? req.body.customFields
+          : undefined,
+      events: {
+        create: {
+          actorId: createdById,
+          action:
+            applicantType === "RETURNING_STUDENT"
+              ? "RETURNING_APPLICATION_RECEIVED"
+              : "APPLICATION_RECEIVED",
+          toStatus: "RECEIVED",
+          notes: cleanAdmissionText(req.body.notes, 2000),
+        },
+      },
     };
-    const application = await (prisma as any).admissionApplication.create({ data, include: { academicYear: true, student: true, targetClass: true } });
+    const application = await (prisma as any).admissionApplication.create({
+      data,
+      include: { academicYear: true, student: true, targetClass: true },
+    });
     res.status(201).json({ success: true, data: { application } });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to create admission application', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to create admission application",
+        details:
+          process.env.NODE_ENV !== "production" ? error.message : undefined,
+      });
   }
 });
 
-app.patch('/admissions/:id/status', async (req: AuthRequest, res: Response) => {
+app.patch("/admissions/:id/status", async (req: AuthRequest, res: Response) => {
   try {
-    if (!ADMISSION_REVIEW_ROLES.has(req.user!.role || '')) return res.status(403).json({ success: false, message: 'Admission review permission required' });
-    const status = String(req.body.status || '');
-    const current = await (prisma as any).admissionApplication.findFirst({ where: { id: req.params.id, schoolId: req.user!.schoolId } });
-    if (!current) return res.status(404).json({ success: false, message: 'Application not found' });
-    if (current.applicantType === 'RETURNING_STUDENT') {
-      return res.status(409).json({ success: false, message: 'Returning-student applications are receipt records only; use the promotion/repeat workflow' });
+    if (!ADMISSION_REVIEW_ROLES.has(req.user!.role || ""))
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Admission review permission required",
+        });
+    const status = String(req.body.status || "");
+    const current = await (prisma as any).admissionApplication.findFirst({
+      where: { id: req.params.id, schoolId: req.user!.schoolId },
+    });
+    if (!current)
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
+    if (current.applicantType === "RETURNING_STUDENT") {
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message:
+            "Returning-student applications are receipt records only; use the promotion/repeat workflow",
+        });
     }
-    if (!ADMISSION_STATUSES.has(status) || status === 'ENROLLED' || !ADMISSION_TRANSITIONS[current.status]?.has(status)) {
-      return res.status(409).json({ success: false, message: `Cannot move application from ${current.status} to ${status}` });
+    if (
+      !ADMISSION_STATUSES.has(status) ||
+      status === "ENROLLED" ||
+      !ADMISSION_TRANSITIONS[current.status]?.has(status)
+    ) {
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: `Cannot move application from ${current.status} to ${status}`,
+        });
     }
     const notes = cleanAdmissionText(req.body.notes, 2000);
-    if (['REJECTED', 'WITHDRAWN'].includes(status) && !notes) return res.status(400).json({ success: false, message: 'A reason is required for this status' });
+    if (["REJECTED", "WITHDRAWN"].includes(status) && !notes)
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "A reason is required for this status",
+        });
     const application = await (prisma as any).admissionApplication.update({
       where: { id: current.id },
       data: {
-        status, reviewedById: req.user!.id, reviewedAt: new Date(),
-        events: { create: { actorId: req.user!.id, action: 'STATUS_CHANGED', fromStatus: current.status, toStatus: status, notes } },
+        status,
+        reviewedById: req.user!.id,
+        reviewedAt: new Date(),
+        events: {
+          create: {
+            actorId: req.user!.id,
+            action: "STATUS_CHANGED",
+            fromStatus: current.status,
+            toStatus: status,
+            notes,
+          },
+        },
       },
     });
     res.json({ success: true, data: { application } });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to update application status', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to update application status",
+        details:
+          process.env.NODE_ENV !== "production" ? error.message : undefined,
+      });
   }
 });
 
-app.post('/admissions/:id/enroll', async (req: AuthRequest, res: Response) => {
+app.post("/admissions/:id/enroll", async (req: AuthRequest, res: Response) => {
   try {
-    if (!ADMISSION_REVIEW_ROLES.has(req.user!.role || '')) return res.status(403).json({ success: false, message: 'Admission enrollment permission required' });
+    if (!ADMISSION_REVIEW_ROLES.has(req.user!.role || ""))
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Admission enrollment permission required",
+        });
     const schoolId = req.user!.schoolId;
-    const application = await (prisma as any).admissionApplication.findFirst({ where: { id: req.params.id, schoolId }, include: { academicYear: true } });
-    if (!application) return res.status(404).json({ success: false, message: 'Application not found' });
-    if (application.applicantType !== 'NEW_STUDENT') return res.status(409).json({ success: false, message: 'Returning students remain linked to promotion/repeat workflow' });
-    if (application.status !== 'APPROVED') return res.status(409).json({ success: false, message: 'Only approved applications can be enrolled' });
+    const application = await (prisma as any).admissionApplication.findFirst({
+      where: { id: req.params.id, schoolId },
+      include: { academicYear: true },
+    });
+    if (!application)
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
+    if (application.applicantType !== "NEW_STUDENT")
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message:
+            "Returning students remain linked to promotion/repeat workflow",
+        });
+    if (application.status !== "APPROVED")
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "Only approved applications can be enrolled",
+        });
     const leaveUnassigned = req.body.leaveUnassigned === true;
-    const classId = leaveUnassigned ? null : (cleanAdmissionText(req.body.classId, 64) || application.targetClassId);
+    const classId = leaveUnassigned
+      ? null
+      : cleanAdmissionText(req.body.classId, 64) || application.targetClassId;
     let targetClass: any = null;
     if (classId) {
-      targetClass = await prisma.class.findFirst({ where: { id: classId, schoolId, academicYearId: application.academicYearId } });
-      if (!targetClass) return res.status(400).json({ success: false, message: 'Select a class from the application academic year' });
+      targetClass = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          schoolId,
+          academicYearId: application.academicYearId,
+        },
+      });
+      if (!targetClass)
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Select a class from the application academic year",
+          });
     }
-    const enrollmentYear = new Date(application.academicYear.startDate).getFullYear();
-    const generatedStudentId = await generateStudentId(classId || undefined, schoolId, enrollmentYear);
+    const enrollmentYear = new Date(
+      application.academicYear.startDate,
+    ).getFullYear();
+    const generatedStudentId = await generateStudentId(
+      classId || undefined,
+      schoolId,
+      enrollmentYear,
+    );
     const result = await prisma.$transaction(async (tx: any) => {
       // Claim the approved application inside the transaction. This prevents a
       // double click or two reviewers from creating two student records.
       const claim = await tx.admissionApplication.updateMany({
-        where: { id: application.id, schoolId, status: 'APPROVED', studentId: null },
-        data: { status: 'ENROLLED', enrolledAt: new Date(), reviewedById: req.user!.id },
+        where: {
+          id: application.id,
+          schoolId,
+          status: "APPROVED",
+          studentId: null,
+        },
+        data: {
+          status: "ENROLLED",
+          enrolledAt: new Date(),
+          reviewedById: req.user!.id,
+        },
       });
       if (claim.count !== 1) {
-        const conflict: any = new Error('Application has already been enrolled or changed');
-        conflict.code = 'ADMISSION_ALREADY_ENROLLED';
+        const conflict: any = new Error(
+          "Application has already been enrolled or changed",
+        );
+        conflict.code = "ADMISSION_ALREADY_ENROLLED";
         throw conflict;
       }
-      const student = await tx.student.create({ data: {
-        schoolId, studentId: generatedStudentId, firstName: application.firstName, lastName: application.lastName,
-        englishFirstName: application.englishFirstName, englishLastName: application.englishLastName,
-        gender: application.gender, dateOfBirth: application.dateOfBirth, phoneNumber: application.phoneNumber,
-        email: application.email, classId: classId || null, entryYear: enrollmentYear,
-        customFields: { regional: {
-          placeOfBirth: application.placeOfBirth, currentAddress: application.currentAddress,
-          fatherName: application.fatherName, motherName: application.motherName,
-          guardianName: application.guardianName, guardianPhone: application.guardianPhone,
-          previousSchool: application.previousSchool, previousGrade: application.previousGrade,
-          admissionApplicationNumber: application.applicationNumber,
-        } },
-      } });
-      if (classId) await tx.studentClass.create({ data: { studentId: student.id, classId, academicYearId: application.academicYearId } });
-      await tx.school.update({ where: { id: schoolId }, data: { currentStudents: { increment: 1 } } });
+      const student = await tx.student.create({
+        data: {
+          schoolId,
+          studentId: generatedStudentId,
+          firstName: application.firstName,
+          lastName: application.lastName,
+          englishFirstName: application.englishFirstName,
+          englishLastName: application.englishLastName,
+          gender: application.gender,
+          dateOfBirth: application.dateOfBirth,
+          phoneNumber: application.phoneNumber,
+          email: application.email,
+          classId: classId || null,
+          entryYear: enrollmentYear,
+          customFields: {
+            regional: {
+              placeOfBirth: application.placeOfBirth,
+              currentAddress: application.currentAddress,
+              fatherName: application.fatherName,
+              motherName: application.motherName,
+              guardianName: application.guardianName,
+              guardianPhone: application.guardianPhone,
+              previousSchool: application.previousSchool,
+              previousGrade: application.previousGrade,
+              admissionApplicationNumber: application.applicationNumber,
+            },
+          },
+        },
+      });
+      if (classId)
+        await tx.studentClass.create({
+          data: {
+            studentId: student.id,
+            classId,
+            academicYearId: application.academicYearId,
+          },
+        });
+      await tx.school.update({
+        where: { id: schoolId },
+        data: { currentStudents: { increment: 1 } },
+      });
       const updatedApplication = await tx.admissionApplication.update({
         where: { id: application.id },
-        data: { studentId: student.id, targetClassId: classId || null, status: 'ENROLLED', enrolledAt: new Date(), reviewedById: req.user!.id,
-          events: { create: { actorId: req.user!.id, action: 'STUDENT_ENROLLED', fromStatus: 'APPROVED', toStatus: 'ENROLLED', metadata: { studentId: student.id, classId } } },
+        data: {
+          studentId: student.id,
+          targetClassId: classId || null,
+          status: "ENROLLED",
+          enrolledAt: new Date(),
+          reviewedById: req.user!.id,
+          events: {
+            create: {
+              actorId: req.user!.id,
+              action: "STUDENT_ENROLLED",
+              fromStatus: "APPROVED",
+              toStatus: "ENROLLED",
+              metadata: { studentId: student.id, classId },
+            },
+          },
         },
       });
       return { student, application: updatedApplication };
@@ -819,9 +1336,24 @@ app.post('/admissions/:id/enroll', async (req: AuthRequest, res: Response) => {
     cache.clear();
     res.status(201).json({ success: true, data: result });
   } catch (error: any) {
-    if (error?.code === 'ADMISSION_ALREADY_ENROLLED') return res.status(409).json({ success: false, message: error.message });
-    if (error?.code === 'P2002') return res.status(409).json({ success: false, message: 'Student or application data conflicts with an existing record' });
-    res.status(500).json({ success: false, message: 'Failed to enroll student', details: process.env.NODE_ENV !== 'production' ? error.message : undefined });
+    if (error?.code === "ADMISSION_ALREADY_ENROLLED")
+      return res.status(409).json({ success: false, message: error.message });
+    if (error?.code === "P2002")
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message:
+            "Student or application data conflicts with an existing record",
+        });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to enroll student",
+        details:
+          process.env.NODE_ENV !== "production" ? error.message : undefined,
+      });
   }
 });
 
@@ -846,46 +1378,49 @@ const LIGHTWEIGHT_STUDENT_SELECT = {
   customFields: true,
 } as const;
 
-const ENROLLMENT_ACTIVE_STATUSES = ['ACTIVE', 'INACTIVE'];
+const ENROLLMENT_ACTIVE_STATUSES = ["ACTIVE", "INACTIVE"];
 
 function applyStudentSearchFilter(where: any, search?: string) {
-  const normalizedSearch = search?.trim().replace(/\s+/g, ' ');
+  const normalizedSearch = search?.trim().replace(/\s+/g, " ");
   if (!normalizedSearch || normalizedSearch.length < 2) return;
 
-  const searchTokens = normalizedSearch.split(' ').filter(Boolean).slice(0, 4);
-  const isIdentifierLike = /^[\p{L}\p{N}._/@-]+$/u.test(normalizedSearch) && searchTokens.length === 1;
+  const searchTokens = normalizedSearch.split(" ").filter(Boolean).slice(0, 4);
+  const isIdentifierLike =
+    /^[\p{L}\p{N}._/@-]+$/u.test(normalizedSearch) && searchTokens.length === 1;
   const tokenFilters = searchTokens.map((token) => ({
     OR: [
-      { firstName: { contains: token, mode: 'insensitive' } },
-      { lastName: { contains: token, mode: 'insensitive' } },
-      { englishFirstName: { contains: token, mode: 'insensitive' } },
-      { englishLastName: { contains: token, mode: 'insensitive' } },
-      { studentId: { contains: token, mode: 'insensitive' } },
+      { firstName: { contains: token, mode: "insensitive" } },
+      { lastName: { contains: token, mode: "insensitive" } },
+      { englishFirstName: { contains: token, mode: "insensitive" } },
+      { englishLastName: { contains: token, mode: "insensitive" } },
+      { studentId: { contains: token, mode: "insensitive" } },
     ],
   }));
 
   where.OR = [
     ...(isIdentifierLike
       ? [
-          { studentId: { startsWith: normalizedSearch, mode: 'insensitive' } },
-          { email: { startsWith: normalizedSearch, mode: 'insensitive' } },
-          { phoneNumber: { startsWith: normalizedSearch, mode: 'insensitive' } },
+          { studentId: { startsWith: normalizedSearch, mode: "insensitive" } },
+          { email: { startsWith: normalizedSearch, mode: "insensitive" } },
+          {
+            phoneNumber: { startsWith: normalizedSearch, mode: "insensitive" },
+          },
         ]
       : []),
-    { studentId: { contains: normalizedSearch, mode: 'insensitive' } },
-    { email: { contains: normalizedSearch, mode: 'insensitive' } },
-    { phoneNumber: { contains: normalizedSearch, mode: 'insensitive' } },
-    { firstName: { contains: normalizedSearch, mode: 'insensitive' } },
-    { lastName: { contains: normalizedSearch, mode: 'insensitive' } },
-    { englishFirstName: { contains: normalizedSearch, mode: 'insensitive' } },
-    { englishLastName: { contains: normalizedSearch, mode: 'insensitive' } },
+    { studentId: { contains: normalizedSearch, mode: "insensitive" } },
+    { email: { contains: normalizedSearch, mode: "insensitive" } },
+    { phoneNumber: { contains: normalizedSearch, mode: "insensitive" } },
+    { firstName: { contains: normalizedSearch, mode: "insensitive" } },
+    { lastName: { contains: normalizedSearch, mode: "insensitive" } },
+    { englishFirstName: { contains: normalizedSearch, mode: "insensitive" } },
+    { englishLastName: { contains: normalizedSearch, mode: "insensitive" } },
     { AND: tokenFilters },
   ];
 }
 
 function getStudentGenderFilter(gender?: string) {
-  if (!gender || gender === 'all') return undefined;
-  return gender === 'male' ? 'MALE' : 'FEMALE';
+  if (!gender || gender === "all") return undefined;
+  return gender === "male" ? "MALE" : "FEMALE";
 }
 
 async function getLightweightStudentsPayload({
@@ -910,7 +1445,10 @@ async function getLightweightStudentsPayload({
   search?: string;
 }) {
   const normalizedGender = getStudentGenderFilter(gender);
-  const normalizedPlacement = placement === 'assigned' || placement === 'unassigned' ? placement : undefined;
+  const normalizedPlacement =
+    placement === "assigned" || placement === "unassigned"
+      ? placement
+      : undefined;
 
   let students: any[] = [];
   let totalCount = 0;
@@ -919,7 +1457,7 @@ async function getLightweightStudentsPayload({
 
   if (!academicYearId) {
     const baseWhere: any = { schoolId, isAccountActive: true };
-    if (classId && classId !== 'all') {
+    if (classId && classId !== "all") {
       baseWhere.classId = classId;
     }
     if (normalizedGender) {
@@ -928,8 +1466,8 @@ async function getLightweightStudentsPayload({
     applyStudentSearchFilter(baseWhere, search);
 
     const where: any = { ...baseWhere };
-    if (normalizedPlacement === 'assigned') where.classId = { not: null };
-    if (normalizedPlacement === 'unassigned') where.classId = null;
+    if (normalizedPlacement === "assigned") where.classId = { not: null };
+    if (normalizedPlacement === "unassigned") where.classId = null;
 
     [totalCount, students, assignedCount, unassignedCount] = await Promise.all([
       prisma.student.count({ where }),
@@ -941,7 +1479,7 @@ async function getLightweightStudentsPayload({
             select: { id: true, name: true, grade: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
@@ -953,7 +1491,7 @@ async function getLightweightStudentsPayload({
       where: {
         schoolId,
         academicYearId,
-        ...(classId && classId !== 'all' ? { id: classId } : {}),
+        ...(classId && classId !== "all" ? { id: classId } : {}),
       },
       select: {
         id: true,
@@ -984,39 +1522,46 @@ async function getLightweightStudentsPayload({
       applyStudentSearchFilter(yearWhere, search);
       applyStudentSearchFilter(yearBaseWhere, search);
 
-      if (normalizedPlacement === 'unassigned') {
+      if (normalizedPlacement === "unassigned") {
         delete yearWhere.studentClasses;
         yearWhere.NOT = { studentClasses: { some: yearScopeFilter } };
       }
 
-      const assignedWhere = { ...yearBaseWhere, studentClasses: { some: yearScopeFilter } };
-      const unassignedWhere = { ...yearBaseWhere, NOT: { studentClasses: { some: yearScopeFilter } } };
+      const assignedWhere = {
+        ...yearBaseWhere,
+        studentClasses: { some: yearScopeFilter },
+      };
+      const unassignedWhere = {
+        ...yearBaseWhere,
+        NOT: { studentClasses: { some: yearScopeFilter } },
+      };
 
-      [totalCount, students, assignedCount, unassignedCount] = await Promise.all([
-        prisma.student.count({ where: yearWhere }),
-        prisma.student.findMany({
-          where: yearWhere,
-          select: {
-            ...LIGHTWEIGHT_STUDENT_SELECT,
-            studentClasses: {
-              where: yearScopeFilter,
-              select: {
-                status: true,
-                classId: true,
+      [totalCount, students, assignedCount, unassignedCount] =
+        await Promise.all([
+          prisma.student.count({ where: yearWhere }),
+          prisma.student.findMany({
+            where: yearWhere,
+            select: {
+              ...LIGHTWEIGHT_STUDENT_SELECT,
+              studentClasses: {
+                where: yearScopeFilter,
+                select: {
+                  status: true,
+                  classId: true,
+                },
+                orderBy: {
+                  updatedAt: "desc",
+                },
+                take: 1,
               },
-              orderBy: {
-                updatedAt: 'desc',
-              },
-              take: 1,
             },
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-        prisma.student.count({ where: assignedWhere }),
-        prisma.student.count({ where: unassignedWhere }),
-      ]);
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+          }),
+          prisma.student.count({ where: assignedWhere }),
+          prisma.student.count({ where: unassignedWhere }),
+        ]);
 
       const classById = new Map(
         yearClasses.map((entry) => [
@@ -1026,15 +1571,19 @@ async function getLightweightStudentsPayload({
             name: entry.name,
             grade: entry.grade,
           },
-        ])
+        ]),
       );
 
       students = students.map((student) => {
         const { studentClasses, ...studentWithoutEnrollments } = student as any;
-        const currentEnrollment = Array.isArray(studentClasses) ? studentClasses[0] : null;
+        const currentEnrollment = Array.isArray(studentClasses)
+          ? studentClasses[0]
+          : null;
         return {
           ...studentWithoutEnrollments,
-          class: currentEnrollment ? classById.get(currentEnrollment.classId) || null : null,
+          class: currentEnrollment
+            ? classById.get(currentEnrollment.classId) || null
+            : null,
           enrollmentStatus: currentEnrollment?.status || null,
         };
       });
@@ -1073,7 +1622,7 @@ async function refreshCache(
   gender?: string,
   academicYearId?: string,
   placement?: string,
-  search?: string
+  search?: string,
 ) {
   try {
     const response = await getLightweightStudentsPayload({
@@ -1091,7 +1640,7 @@ async function refreshCache(
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
     console.log(`🔄 Background cache refreshed for ${cacheKey}`);
   } catch (error) {
-    console.error('❌ Background refresh failed:', error);
+    console.error("❌ Background refresh failed:", error);
   }
 }
 
@@ -1103,7 +1652,7 @@ async function refreshCache(
  * GET /students/lightweight
  * ⚡ OPTIMIZED - Fast loading for grid/list views
  */
-app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
+app.get("/students/lightweight", async (req: AuthRequest, res: Response) => {
   try {
     const startTime = Date.now();
     const schoolId = req.user!.schoolId;
@@ -1121,13 +1670,13 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     const search = (req.query.search as string | undefined)?.trim();
 
     // Create cache key
-    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}:${placement || 'all'}:${search || 'all'}`;
+    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || "all"}:${gender || "all"}:${academicYearId || "all"}:${placement || "all"}:${search || "all"}`;
 
     // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
     const now = Date.now();
-    const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
-    const isStale = cached && (now - cached.timestamp) < STALE_TTL;
+    const isFresh = cached && now - cached.timestamp < CACHE_TTL;
+    const isStale = cached && now - cached.timestamp < STALE_TTL;
 
     if (isFresh) {
       console.log(`✅ Cache hit (${now - startTime}ms)`);
@@ -1138,7 +1687,18 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     if (isStale) {
       console.log(`⏳ Serving stale cache while refreshing...`);
       // Trigger background refresh (non-blocking)
-      refreshCache(cacheKey, schoolId, page, limit, skip, classId, gender, academicYearId, placement, search).catch(console.error);
+      refreshCache(
+        cacheKey,
+        schoolId,
+        page,
+        limit,
+        skip,
+        classId,
+        gender,
+        academicYearId,
+        placement,
+        search,
+      ).catch(console.error);
       return res.json(cached.data);
     }
 
@@ -1154,7 +1714,9 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
       search,
     });
     const queryTime = Date.now() - startTime;
-    console.log(`⚡ Fetched ${response.data.length} students in ${queryTime}ms`);
+    console.log(
+      `⚡ Fetched ${response.data.length} students in ${queryTime}ms`,
+    );
 
     // Store in cache
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
@@ -1174,7 +1736,7 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
  * GET /students
  * Get all students (full data)
  */
-app.get('/students', async (req: AuthRequest, res: Response) => {
+app.get("/students", async (req: AuthRequest, res: Response) => {
   try {
     console.log("📋 Fetching all students (full data)...");
     const schoolId = req.user!.schoolId; // Multi-tenant filter
@@ -1211,7 +1773,9 @@ app.get('/students', async (req: AuthRequest, res: Response) => {
       },
     });
 
-    console.log(`✅ Fetched ${students.length} students for school ${schoolId}`);
+    console.log(
+      `✅ Fetched ${students.length} students for school ${schoolId}`,
+    );
 
     res.json({
       success: true,
@@ -1230,105 +1794,114 @@ app.get('/students', async (req: AuthRequest, res: Response) => {
  * GET /students/promote/eligible/:yearId
  * Must be registered BEFORE /students/:id to avoid route conflict
  */
-app.get('/students/promote/eligible/:yearId', async (req: AuthRequest, res: Response) => {
-  try {
-    const { yearId } = req.params;
-    const schoolId = req.user?.schoolId;
+app.get(
+  "/students/promote/eligible/:yearId",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { yearId } = req.params;
+      const schoolId = req.user?.schoolId;
 
-    if (!schoolId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!schoolId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
 
-    const academicYear = await prisma.academicYear.findFirst({
-      where: { id: yearId, schoolId },
-    });
-
-    if (!academicYear) {
-      return res.status(404).json({
-        success: false,
-        message: 'Academic year not found',
+      const academicYear = await prisma.academicYear.findFirst({
+        where: { id: yearId, schoolId },
       });
-    }
 
-    const classes = await prisma.class.findMany({
-      where: {
-        academicYearId: yearId,
-        schoolId,
-      },
-      include: {
-        studentClasses: {
-          where: {
-            status: 'ACTIVE',
-          },
-          include: {
-            student: {
-              select: {
-                id: true,
-                studentId: true,
-                firstName: true,
-                lastName: true,
-                customFields: true,
-                gender: true,
-                dateOfBirth: true,
-                photoUrl: true,
+      if (!academicYear) {
+        return res.status(404).json({
+          success: false,
+          message: "Academic year not found",
+        });
+      }
+
+      const classes = await prisma.class.findMany({
+        where: {
+          academicYearId: yearId,
+          schoolId,
+        },
+        include: {
+          studentClasses: {
+            where: {
+              status: "ACTIVE",
+            },
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  studentId: true,
+                  firstName: true,
+                  lastName: true,
+                  customFields: true,
+                  gender: true,
+                  dateOfBirth: true,
+                  photoUrl: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        grade: 'asc',
-      },
-    });
-
-    const eligibleStudents = classes.map((cls) => ({
-      classId: cls.id,
-      className: cls.name,
-      grade: cls.grade,
-      section: cls.section,
-      track: cls.track,
-      studentCount: cls.studentClasses.length,
-      students: cls.studentClasses.map((sc) => ({
-        id: sc.student.id,
-        studentId: sc.student.studentId,
-        firstName: sc.student.firstName,
-        lastName: sc.student.lastName,
-        khmerName: (sc.student.customFields as any)?.regional?.khmerName || null,
-        gender: sc.student.gender,
-        dateOfBirth: sc.student.dateOfBirth,
-        photoUrl: sc.student.photoUrl,
-      })),
-    }));
-
-    const totalStudents = eligibleStudents.reduce((sum, cls) => sum + cls.studentCount, 0);
-
-    res.json({
-      success: true,
-      data: {
-        academicYear: {
-          id: academicYear.id,
-          name: academicYear.name,
-          status: academicYear.status,
+        orderBy: {
+          grade: "asc",
         },
-        classes: eligibleStudents,
-        totalStudents,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching eligible students:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch eligible students',
-      error: error.message,
-    });
-  }
-});
+      });
+
+      const eligibleStudents = classes.map((cls) => ({
+        classId: cls.id,
+        className: cls.name,
+        grade: cls.grade,
+        section: cls.section,
+        track: cls.track,
+        studentCount: cls.studentClasses.length,
+        students: cls.studentClasses.map((sc) => ({
+          id: sc.student.id,
+          studentId: sc.student.studentId,
+          firstName: sc.student.firstName,
+          lastName: sc.student.lastName,
+          khmerName:
+            (sc.student.customFields as any)?.regional?.khmerName || null,
+          gender: sc.student.gender,
+          dateOfBirth: sc.student.dateOfBirth,
+          photoUrl: sc.student.photoUrl,
+        })),
+      }));
+
+      const totalStudents = eligibleStudents.reduce(
+        (sum, cls) => sum + cls.studentCount,
+        0,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          academicYear: {
+            id: academicYear.id,
+            name: academicYear.name,
+            status: academicYear.status,
+          },
+          classes: eligibleStudents,
+          totalStudents,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching eligible students:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch eligible students",
+        error: error.message,
+      });
+    }
+  },
+);
 
 /**
  * GET /students/:id
  * Get student by ID
  */
-app.get('/students/:id', async (req: AuthRequest, res: Response) => {
+app.get("/students/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId; // Multi-tenant filter
@@ -1345,7 +1918,7 @@ app.get('/students/:id', async (req: AuthRequest, res: Response) => {
           },
         },
         studentClasses: {
-          where: { status: 'ACTIVE' },
+          where: { status: "ACTIVE" },
           include: {
             class: {
               include: {
@@ -1353,7 +1926,7 @@ app.get('/students/:id', async (req: AuthRequest, res: Response) => {
               },
             },
           },
-          orderBy: { enrolledAt: 'desc' },
+          orderBy: { enrolledAt: "desc" },
         },
       },
     });
@@ -1382,23 +1955,24 @@ app.get('/students/:id', async (req: AuthRequest, res: Response) => {
  * POST /students/import
  * Bulk import students using the same payload shape as POST /students.
  */
-app.post('/students/import', async (req: AuthRequest, res: Response) => {
+app.post("/students/import", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const rows = Array.isArray(req.body?.students) ? req.body.students : [];
-    const commonClassId = typeof req.body?.classId === 'string' ? req.body.classId.trim() : '';
+    const commonClassId =
+      typeof req.body?.classId === "string" ? req.body.classId.trim() : "";
 
     if (rows.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'students array is required',
+        message: "students array is required",
       });
     }
 
     if (rows.length > 500) {
       return res.status(400).json({
         success: false,
-        message: 'Import is limited to 500 students per request',
+        message: "Import is limited to 500 students per request",
       });
     }
 
@@ -1416,7 +1990,7 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
     if (!school) {
       return res.status(404).json({
         success: false,
-        message: 'School not found',
+        message: "School not found",
       });
     }
 
@@ -1444,20 +2018,38 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
       }
 
       const data = validationResult.data;
-      if (!data.firstName || data.firstName.trim() === '') {
-        validationErrors.push({ row: index + 1, message: 'គោត្តនាម (First name) ជាទិន្នន័យចាំបាច់' });
+      if (!data.firstName || data.firstName.trim() === "") {
+        validationErrors.push({
+          row: index + 1,
+          message: "គោត្តនាម (First name) ជាទិន្នន័យចាំបាច់",
+        });
       }
-      if (!data.lastName || data.lastName.trim() === '') {
-        validationErrors.push({ row: index + 1, message: 'នាម (Last name) ជាទិន្នន័យចាំបាច់' });
+      if (!data.lastName || data.lastName.trim() === "") {
+        validationErrors.push({
+          row: index + 1,
+          message: "នាម (Last name) ជាទិន្នន័យចាំបាច់",
+        });
       }
-      if (!data.khmerName || data.khmerName.trim() === '') {
-        validationErrors.push({ row: index + 1, message: 'ឈ្មោះជាអក្សរខ្មែរ (Khmer name) ជាទិន្នន័យចាំបាច់' });
+      if (!data.khmerName || data.khmerName.trim() === "") {
+        validationErrors.push({
+          row: index + 1,
+          message: "ឈ្មោះជាអក្សរខ្មែរ (Khmer name) ជាទិន្នន័យចាំបាច់",
+        });
       }
       if (!data.dateOfBirth) {
-        validationErrors.push({ row: index + 1, message: 'ថ្ងៃខែឆ្នាំកំណើត (Date of birth) ជាទិន្នន័យចាំបាច់' });
+        validationErrors.push({
+          row: index + 1,
+          message: "ថ្ងៃខែឆ្នាំកំណើត (Date of birth) ជាទិន្នន័យចាំបាច់",
+        });
       }
-      if (!data.gender || (data.gender !== 'MALE' && data.gender !== 'FEMALE')) {
-        validationErrors.push({ row: index + 1, message: 'ភេទត្រូវតែជា MALE ឬ FEMALE' });
+      if (
+        !data.gender ||
+        (data.gender !== "MALE" && data.gender !== "FEMALE")
+      ) {
+        validationErrors.push({
+          row: index + 1,
+          message: "ភេទត្រូវតែជា MALE ឬ FEMALE",
+        });
       }
 
       return data;
@@ -1466,13 +2058,17 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
     if (validationErrors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Import validation failed',
+        message: "Import validation failed",
         errors: validationErrors,
       });
     }
 
     const classIds = Array.from(
-      new Set(parsedRows.map(row => row?.classId?.trim()).filter(Boolean) as string[])
+      new Set(
+        parsedRows
+          .map((row) => row?.classId?.trim())
+          .filter(Boolean) as string[],
+      ),
     );
     const classYearById = new Map<string, string | null>();
 
@@ -1491,11 +2087,11 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
       if (classRecords.length !== classIds.length) {
         return res.status(400).json({
           success: false,
-          message: 'One or more classes were not found in your school',
+          message: "One or more classes were not found in your school",
         });
       }
 
-      classRecords.forEach(classRecord => {
+      classRecords.forEach((classRecord) => {
         classYearById.set(classRecord.id, classRecord.academicYearId);
       });
     }
@@ -1506,12 +2102,14 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
         data: { nextStudentNumber: { increment: parsedRows.length } },
         select: { nextStudentNumber: true },
       });
-      const firstSequentialNumber = updatedSchool.nextStudentNumber - parsedRows.length + 1;
+      const firstSequentialNumber =
+        updatedSchool.nextStudentNumber - parsedRows.length + 1;
 
       const prepared = parsedRows.map((row, index) => {
         const data = row!;
         const sequentialNumber = firstSequentialNumber + index;
-        const assignedClassId = data.classId && data.classId.trim() !== '' ? data.classId : null;
+        const assignedClassId =
+          data.classId && data.classId.trim() !== "" ? data.classId : null;
         const studentParams = {
           gender: data.gender as Gender,
           entryYear: new Date().getFullYear(),
@@ -1520,30 +2118,32 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
         };
         const studentId = IdGenerator.generateStudentId(
           school.idFormat,
-          school.idPrefix || '01',
+          school.idPrefix || "01",
           studentParams,
-          sequentialNumber
+          sequentialNumber,
         );
         const regionalData = collectRegionalFields(
           data as any,
           STUDENT_REGIONAL_KEYS,
-          STUDENT_TOP_LEVEL_KEYS
+          STUDENT_TOP_LEVEL_KEYS,
         );
         regionalData.khmerName = data.khmerName?.trim() || null;
-        regionalData.englishName = data.englishName?.trim() || [
-          data.englishFirstName?.trim(),
-          data.englishLastName?.trim(),
-        ].filter(Boolean).join(' ') || null;
+        regionalData.englishName =
+          data.englishName?.trim() ||
+          [data.englishFirstName?.trim(), data.englishLastName?.trim()]
+            .filter(Boolean)
+            .join(" ") ||
+          null;
 
         return {
           row: index + 1,
           studentId,
-          permanentId: IdGenerator.generatePermanentId('STU'),
+          permanentId: IdGenerator.generatePermanentId("STU"),
           studentIdFormat: school.idFormat,
           studentIdMeta: IdGenerator.generateStudentMetadata(
             school.idFormat,
             studentParams,
-            sequentialNumber
+            sequentialNumber,
           ),
           entryYear: new Date().getFullYear(),
           firstName: data.firstName!.trim(),
@@ -1558,10 +2158,11 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
             data.englishLastName !== undefined
               ? data.englishLastName?.trim() || null
               : data.englishName?.trim()
-                ? data.englishName.trim().split(/\s+/).slice(1).join(' ') || null
+                ? data.englishName.trim().split(/\s+/).slice(1).join(" ") ||
+                  null
                 : null,
           email:
-            data.email && data.email.trim() !== ''
+            data.email && data.email.trim() !== ""
               ? data.email.trim()
               : `${studentId}@student.edu.kh`,
           dateOfBirth: data.dateOfBirth!,
@@ -1589,9 +2190,11 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
         },
       });
 
-      const createdByStudentId = new Map(createdStudents.map(student => [student.studentId, student]));
+      const createdByStudentId = new Map(
+        createdStudents.map((student) => [student.studentId, student]),
+      );
       const enrollmentRows = prepared
-        .map(student => {
+        .map((student) => {
           if (!student.classId) return null;
           const createdStudent = createdByStudentId.get(student.studentId);
           const academicYearId = classYearById.get(student.classId);
@@ -1600,10 +2203,15 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
             studentId: createdStudent.id,
             classId: student.classId,
             academicYearId,
-            status: 'ACTIVE',
+            status: "ACTIVE",
           };
         })
-        .filter(Boolean) as Array<{ studentId: string; classId: string; academicYearId: string; status: string }>;
+        .filter(Boolean) as Array<{
+        studentId: string;
+        classId: string;
+        academicYearId: string;
+        status: string;
+      }>;
 
       if (enrollmentRows.length > 0) {
         await tx.studentClass.createMany({
@@ -1618,10 +2226,10 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
       });
 
       await tx.idGenerationLog.createMany({
-        data: prepared.map(student => ({
+        data: prepared.map((student) => ({
           schoolId,
-          entityType: 'STUDENT',
-          entityId: createdByStudentId.get(student.studentId)?.id || '',
+          entityType: "STUDENT",
+          entityId: createdByStudentId.get(student.studentId)?.id || "",
           generatedId: student.studentId,
           format: school.idFormat,
           metadata: student.studentIdMeta,
@@ -1644,10 +2252,10 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Bulk import students error:', error);
+    console.error("Bulk import students error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to import students',
+      message: "Failed to import students",
       error: error.message,
     });
   }
@@ -1657,7 +2265,7 @@ app.post('/students/import', async (req: AuthRequest, res: Response) => {
  * POST /students
  * Create new student
  */
-app.post('/students', async (req: AuthRequest, res: Response) => {
+app.post("/students", async (req: AuthRequest, res: Response) => {
   try {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("📥 CREATE STUDENT REQUEST");
@@ -1808,19 +2416,19 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     // Generate student ID using configured format
     const studentId = IdGenerator.generateStudentId(
       schoolConfig.idFormat,
-      schoolConfig.idPrefix || '01',
+      schoolConfig.idPrefix || "01",
       studentParams,
-      sequentialNumber
+      sequentialNumber,
     );
 
     // Generate permanent ID
-    const permanentId = IdGenerator.generatePermanentId('STU');
+    const permanentId = IdGenerator.generatePermanentId("STU");
 
     // Generate metadata for audit trail
     const studentIdMeta = IdGenerator.generateStudentMetadata(
       schoolConfig.idFormat,
       studentParams,
-      sequentialNumber
+      sequentialNumber,
     );
 
     console.log(`🎯 Generated Student ID: ${studentId}`);
@@ -1853,24 +2461,52 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     const regionalData = collectRegionalFields(
       validationResult.data as any,
       [
-        'khmerName', 'englishName', 'placeOfBirth', 'currentAddress',
-        'fatherName', 'motherName', 'parentPhone', 'parentOccupation',
-        'previousGrade', 'previousSchool', 'repeatingGrade', 'transferredFrom',
-        'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
-        'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
-        'grade12Track', 'remarks',
+        "khmerName",
+        "englishName",
+        "placeOfBirth",
+        "currentAddress",
+        "fatherName",
+        "motherName",
+        "parentPhone",
+        "parentOccupation",
+        "previousGrade",
+        "previousSchool",
+        "repeatingGrade",
+        "transferredFrom",
+        "grade9ExamSession",
+        "grade9ExamCenter",
+        "grade9ExamRoom",
+        "grade9ExamDesk",
+        "grade9PassStatus",
+        "grade12ExamSession",
+        "grade12ExamCenter",
+        "grade12ExamRoom",
+        "grade12ExamDesk",
+        "grade12PassStatus",
+        "grade12Track",
+        "remarks",
       ],
       [
-        'firstName', 'lastName', 'englishFirstName', 'englishLastName',
-        'email', 'dateOfBirth', 'gender', 'phoneNumber', 'classId',
-        'photoUrl', 'isAccountActive',
-      ]
+        "firstName",
+        "lastName",
+        "englishFirstName",
+        "englishLastName",
+        "email",
+        "dateOfBirth",
+        "gender",
+        "phoneNumber",
+        "classId",
+        "photoUrl",
+        "isAccountActive",
+      ],
     );
     regionalData.khmerName = khmerName?.trim() || null;
-    regionalData.englishName = englishName?.trim() || [
-      englishFirstName?.trim(),
-      englishLastName?.trim(),
-    ].filter(Boolean).join(' ') || null;
+    regionalData.englishName =
+      englishName?.trim() ||
+      [englishFirstName?.trim(), englishLastName?.trim()]
+        .filter(Boolean)
+        .join(" ") ||
+      null;
 
     const studentData: any = {
       schoolId, // Multi-tenant
@@ -1891,16 +2527,16 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
         englishLastName !== undefined
           ? englishLastName?.trim() || null
           : englishName?.trim()
-            ? englishName.trim().split(/\s+/).slice(1).join(' ') || null
+            ? englishName.trim().split(/\s+/).slice(1).join(" ") || null
             : null,
       email: studentEmail,
       dateOfBirth,
       gender: gender as Gender,
       phoneNumber: phoneNumber?.trim() || null,
-      classId: (classId && classId.trim() !== "") ? classId : null,
+      classId: classId && classId.trim() !== "" ? classId : null,
       customFields: {
-        regional: regionalData
-      }
+        regional: regionalData,
+      },
     };
 
     console.log("💾 Creating student in database...");
@@ -1932,7 +2568,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     await prisma.idGenerationLog.create({
       data: {
         schoolId,
-        entityType: 'STUDENT',
+        entityType: "STUDENT",
         entityId: student.id,
         generatedId: studentId,
         format: schoolConfig.idFormat,
@@ -1945,7 +2581,9 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     console.log(`   ID: ${student.id}`);
     console.log(`   Student ID: ${student.studentId}`);
     console.log(`   Permanent ID: ${student.permanentId}`);
-    console.log(`   Name: ${(student.customFields as any)?.regional?.khmerName || student.firstName}`);
+    console.log(
+      `   Name: ${(student.customFields as any)?.regional?.khmerName || student.firstName}`,
+    );
     console.log(`   School: ${schoolId}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     cache.clear();
@@ -1969,7 +2607,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
  * POST /students/bulk
  * Bulk create students
  */
-app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
+app.post("/students/bulk", async (req: AuthRequest, res: Response) => {
   try {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("📥 BULK CREATE STUDENTS");
@@ -2061,7 +2699,9 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
             throw new Error("Date of birth is required");
           }
           dateOfBirth = parseDate(studentData.dateOfBirth);
-          console.log(`  📅 Row ${rowNumber}: ${studentData.dateOfBirth} → ${dateOfBirth}`);
+          console.log(
+            `  📅 Row ${rowNumber}: ${studentData.dateOfBirth} → ${dateOfBirth}`,
+          );
         } catch (dateError: any) {
           throw new Error(`Invalid date: ${dateError.message}`);
         }
@@ -2083,8 +2723,8 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
               regional: {
                 khmerName: fullName,
                 parentOccupation: "កសិករ",
-              }
-            }
+              },
+            },
           },
           include: {
             class: {
@@ -2096,10 +2736,13 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
         results.success.push({
           row: rowNumber,
           studentId: newStudent.studentId,
-          name: (newStudent.customFields as any)?.regional?.khmerName || fullName,
+          name:
+            (newStudent.customFields as any)?.regional?.khmerName || fullName,
         });
 
-        console.log(`  ✅ Row ${rowNumber}: ${(newStudent.customFields as any)?.regional?.khmerName || newStudent.firstName} (${newStudent.studentId})`);
+        console.log(
+          `  ✅ Row ${rowNumber}: ${(newStudent.customFields as any)?.regional?.khmerName || newStudent.firstName} (${newStudent.studentId})`,
+        );
       } catch (error: any) {
         results.failed.push({
           row: rowNumber,
@@ -2145,7 +2788,7 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
  * PUT /students/:id
  * Update student
  */
-app.put('/students/:id', async (req: AuthRequest, res: Response) => {
+app.put("/students/:id", async (req: AuthRequest, res: Response) => {
   try {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("📝 UPDATE STUDENT REQUEST");
@@ -2234,55 +2877,90 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
     const regionalData = collectRegionalFields(
       validationResult.data as any,
       [
-        'khmerName', 'englishName', 'placeOfBirth', 'currentAddress',
-        'fatherName', 'motherName', 'parentPhone', 'parentOccupation',
-        'previousGrade', 'previousSchool', 'repeatingGrade', 'transferredFrom',
-        'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
-        'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
-        'grade12Track', 'remarks',
+        "khmerName",
+        "englishName",
+        "placeOfBirth",
+        "currentAddress",
+        "fatherName",
+        "motherName",
+        "parentPhone",
+        "parentOccupation",
+        "previousGrade",
+        "previousSchool",
+        "repeatingGrade",
+        "transferredFrom",
+        "grade9ExamSession",
+        "grade9ExamCenter",
+        "grade9ExamRoom",
+        "grade9ExamDesk",
+        "grade9PassStatus",
+        "grade12ExamSession",
+        "grade12ExamCenter",
+        "grade12ExamRoom",
+        "grade12ExamDesk",
+        "grade12PassStatus",
+        "grade12Track",
+        "remarks",
       ],
       [
-        'firstName', 'lastName', 'englishFirstName', 'englishLastName',
-        'gender', 'dateOfBirth', 'phoneNumber', 'email', 'classId',
-        'photoUrl', 'isAccountActive',
-      ]
+        "firstName",
+        "lastName",
+        "englishFirstName",
+        "englishLastName",
+        "gender",
+        "dateOfBirth",
+        "phoneNumber",
+        "email",
+        "classId",
+        "photoUrl",
+        "isAccountActive",
+      ],
     );
 
     const updateData: any = {};
     if (firstName !== undefined) updateData.firstName = firstName.trim();
     if (lastName !== undefined) updateData.lastName = lastName.trim();
     if (englishFirstName !== undefined) {
-      updateData.englishFirstName = englishFirstName?.trim() === "" ? null : englishFirstName?.trim();
+      updateData.englishFirstName =
+        englishFirstName?.trim() === "" ? null : englishFirstName?.trim();
     } else if (englishName !== undefined) {
       updateData.englishFirstName = englishName?.trim()
         ? englishName.trim().split(/\s+/)[0] || null
         : null;
     }
     if (englishLastName !== undefined) {
-      updateData.englishLastName = englishLastName?.trim() === "" ? null : englishLastName?.trim();
+      updateData.englishLastName =
+        englishLastName?.trim() === "" ? null : englishLastName?.trim();
     } else if (englishName !== undefined) {
       updateData.englishLastName = englishName?.trim()
-        ? englishName.trim().split(/\s+/).slice(1).join(' ') || null
+        ? englishName.trim().split(/\s+/).slice(1).join(" ") || null
         : null;
     }
     if (englishFirstName !== undefined || englishLastName !== undefined) {
-      regionalData.englishName = [
-        englishFirstName?.trim(),
-        englishLastName?.trim(),
-      ].filter(Boolean).join(' ') || null;
+      regionalData.englishName =
+        [englishFirstName?.trim(), englishLastName?.trim()]
+          .filter(Boolean)
+          .join(" ") || null;
     }
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
     if (gender !== undefined) updateData.gender = gender;
-    if (email !== undefined) updateData.email = email?.trim() === "" ? null : email?.trim();
-    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber?.trim() === "" ? null : phoneNumber?.trim();
-    if (classId !== undefined) updateData.classId = classId?.trim() === "" ? null : classId?.trim();
-    if (photoUrl !== undefined) updateData.photoUrl = photoUrl?.trim() === "" ? null : photoUrl?.trim();
+    if (email !== undefined)
+      updateData.email = email?.trim() === "" ? null : email?.trim();
+    if (phoneNumber !== undefined)
+      updateData.phoneNumber =
+        phoneNumber?.trim() === "" ? null : phoneNumber?.trim();
+    if (classId !== undefined)
+      updateData.classId = classId?.trim() === "" ? null : classId?.trim();
+    if (photoUrl !== undefined)
+      updateData.photoUrl = photoUrl?.trim() === "" ? null : photoUrl?.trim();
 
     // Add regional fields to customFields
     if (Object.keys(regionalData).length > 0) {
       const existingCustomFields =
-        existingStudent.customFields && typeof existingStudent.customFields === 'object' && !Array.isArray(existingStudent.customFields)
-          ? existingStudent.customFields as any
+        existingStudent.customFields &&
+        typeof existingStudent.customFields === "object" &&
+        !Array.isArray(existingStudent.customFields)
+          ? (existingStudent.customFields as any)
           : {};
       updateData.customFields = {
         ...existingCustomFields,
@@ -2326,7 +3004,7 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
  * DELETE /students/:id
  * Delete student
  */
-app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
+app.delete("/students/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = req.user!.schoolId; // Multi-tenant context
@@ -2352,7 +3030,7 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
         data: {
           isAccountActive: false,
           accountDeactivatedAt: new Date(),
-          deactivationReason: 'Archived from student directory',
+          deactivationReason: "Archived from student directory",
           classId: null,
         },
       });
@@ -2362,7 +3040,7 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
           studentId: id,
           status: { in: ENROLLMENT_ACTIVE_STATUSES },
         },
-        data: { status: 'DROPPED' },
+        data: { status: "DROPPED" },
       });
 
       const currentCount = await tx.student.count({
@@ -2390,100 +3068,203 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /students/reassign - Atomically move one or more students into a class
-app.post('/students/reassign', async (req: AuthRequest, res: Response) => {
+app.post("/students/reassign", async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
-    const { studentId, studentIds, targetClassId } = req.body || {};
+    const { studentId, studentIds, targetClassId, effectiveDate, reason } =
+      req.body || {};
     const ids = Array.isArray(studentIds)
-      ? studentIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
-      : (typeof studentId === 'string' && studentId.trim() ? [studentId] : []);
+      ? studentIds.filter(
+          (id: unknown): id is string =>
+            typeof id === "string" && id.trim().length > 0,
+        )
+      : typeof studentId === "string" && studentId.trim()
+        ? [studentId]
+        : [];
 
-    if (ids.length === 0 || typeof targetClassId !== 'string' || !targetClassId.trim()) {
+    if (
+      ids.length === 0 ||
+      typeof targetClassId !== "string" ||
+      !targetClassId.trim()
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'studentId/studentIds and targetClassId are required',
+        message: "studentId/studentIds and targetClassId are required",
       });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const targetClass = await tx.class.findFirst({
-        where: { id: targetClassId, schoolId },
-        select: { id: true, name: true, grade: true, academicYearId: true },
-      });
+    const effectiveAt = effectiveDate
+      ? new Date(String(effectiveDate))
+      : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "effectiveDate must be a valid date",
+        });
+    }
+    const transferReason =
+      typeof reason === "string" && reason.trim()
+        ? reason.trim().slice(0, 500)
+        : null;
+    const actorId = req.user!.id;
 
-      if (!targetClass) {
-        throw new Error('Target class not found in your school');
-      }
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const targetClass = await tx.class.findFirst({
+          where: { id: targetClassId, schoolId },
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+            academicYearId: true,
+            academicYear: { select: { startDate: true, endDate: true } },
+          },
+        });
 
-      const students = await tx.student.findMany({
-        where: { id: { in: ids }, schoolId, isAccountActive: true },
-        select: { id: true },
-      });
-      const validIds = students.map((student) => student.id);
+        if (!targetClass) {
+          throw new Error("Target class not found in your school");
+        }
 
-      if (validIds.length !== ids.length) {
-        throw new Error('One or more students were not found in your school');
-      }
+        if (
+          effectiveAt < targetClass.academicYear.startDate ||
+          effectiveAt > targetClass.academicYear.endDate
+        ) {
+          throw new Error(
+            "VALIDATION: Transfer date must fall within the target academic year",
+          );
+        }
 
-      await tx.studentClass.updateMany({
-        where: {
-          studentId: { in: validIds },
-          status: { in: ENROLLMENT_ACTIVE_STATUSES },
-          OR: [
-            { academicYearId: targetClass.academicYearId },
-            { class: { academicYearId: targetClass.academicYearId } },
-          ],
-        },
-        data: { status: 'DROPPED' },
-      });
+        const students = await tx.student.findMany({
+          where: { id: { in: ids }, schoolId, isAccountActive: true },
+          select: { id: true },
+        });
+        const validIds = students.map((student) => student.id);
 
-      for (const id of validIds) {
-        await tx.studentClass.upsert({
-          where: {
-            studentId_classId_academicYearId: {
+        if (validIds.length !== ids.length) {
+          throw new Error("One or more students were not found in your school");
+        }
+
+        const transferIds: string[] = [];
+        let unchanged = 0;
+        for (const id of validIds) {
+          const sourceEnrollment = await tx.studentClass.findFirst({
+            where: {
+              studentId: id,
+              status: { in: ENROLLMENT_ACTIVE_STATUSES },
+              endedAt: null,
+              OR: [
+                { academicYearId: targetClass.academicYearId },
+                { class: { academicYearId: targetClass.academicYearId } },
+              ],
+            },
+            orderBy: { startedAt: "desc" },
+          });
+
+          if (sourceEnrollment?.classId === targetClass.id) {
+            unchanged += 1;
+            continue;
+          }
+
+          if (sourceEnrollment && effectiveAt < sourceEnrollment.startedAt) {
+            throw new Error(
+              "VALIDATION: Transfer date cannot be before the current enrollment start date",
+            );
+          }
+
+          if (sourceEnrollment) {
+            await tx.studentClass.update({
+              where: { id: sourceEnrollment.id },
+              data: {
+                status: "DROPPED",
+                endedAt: effectiveAt,
+                exitReason: "CLASS_TRANSFER",
+                endedById: actorId,
+              },
+            });
+          }
+
+          const destinationEnrollment = await tx.studentClass.create({
+            data: {
               studentId: id,
               classId: targetClass.id,
               academicYearId: targetClass.academicYearId,
+              status: "ACTIVE",
+              enrolledAt: effectiveAt,
+              startedAt: effectiveAt,
+              entryReason: sourceEnrollment
+                ? "CLASS_TRANSFER"
+                : "ADMIN_PLACEMENT",
+              createdById: actorId,
             },
-          },
-          update: { status: 'ACTIVE' },
-          create: {
-            studentId: id,
-            classId: targetClass.id,
-            academicYearId: targetClass.academicYearId,
-            status: 'ACTIVE',
-          },
+          });
+
+          if (sourceEnrollment) {
+            const transfer = await tx.studentTransfer.create({
+              data: {
+                studentId: id,
+                schoolId,
+                academicYearId: targetClass.academicYearId,
+                fromClassId: sourceEnrollment.classId,
+                toClassId: targetClass.id,
+                sourceEnrollmentId: sourceEnrollment.id,
+                destinationEnrollmentId: destinationEnrollment.id,
+                type: "INTRA_SCHOOL",
+                status: "COMPLETED",
+                effectiveAt,
+                reason: transferReason,
+                initiatedById: actorId,
+                approvedById: actorId,
+                completedAt: new Date(),
+              },
+            });
+            transferIds.push(transfer.id);
+          }
+        }
+
+        await tx.student.updateMany({
+          where: { id: { in: validIds }, schoolId },
+          data: { classId: targetClass.id },
         });
-      }
 
-      await tx.student.updateMany({
-        where: { id: { in: validIds }, schoolId },
-        data: { classId: targetClass.id },
-      });
+        await (tx as any).admissionApplication.updateMany({
+          where: {
+            schoolId,
+            academicYearId: targetClass.academicYearId,
+            studentId: { in: validIds },
+            status: "ENROLLED",
+          },
+          data: { targetClassId: targetClass.id },
+        });
 
-      await (tx as any).admissionApplication.updateMany({
-        where: {
-          schoolId,
-          academicYearId: targetClass.academicYearId,
-          studentId: { in: validIds },
-          status: 'ENROLLED',
-        },
-        data: { targetClassId: targetClass.id },
-      });
-
-      return {
-        assigned: validIds.length,
-        class: targetClass,
-      };
-    });
+        return {
+          assigned: validIds.length - unchanged,
+          unchanged,
+          transferIds,
+          effectiveAt,
+          class: targetClass,
+        };
+      },
+      { isolationLevel: "Serializable" },
+    );
 
     cache.clear();
-    res.json({ success: true, data: result, message: 'Students reassigned successfully' });
+    res.json({
+      success: true,
+      data: result,
+      message: "Students reassigned successfully",
+    });
   } catch (error: any) {
-    console.error('Student reassignment error:', error);
-    res.status(500).json({
+    console.error("Student reassignment error:", error);
+    const isValidationError = String(error.message || "").startsWith(
+      "VALIDATION:",
+    );
+    res.status(isValidationError ? 400 : 500).json({
       success: false,
-      message: error.message || 'Failed to reassign students',
+      message: isValidationError
+        ? String(error.message).replace(/^VALIDATION:\s*/, "")
+        : error.message || "Failed to reassign students",
     });
   }
 });
@@ -2492,68 +3273,76 @@ app.post('/students/reassign', async (req: AuthRequest, res: Response) => {
  * POST /students/:id/photo
  * Upload photo for a student
  */
-app.post('/students/:id/photo', upload.single('photo'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.user!.schoolId;
+app.post(
+  "/students/:id/photo",
+  upload.single("photo"),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.user!.schoolId;
 
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No photo file provided',
-      });
-    }
-
-    // Verify student belongs to school
-    const student = await prisma.student.findFirst({
-      where: { id, schoolId },
-    });
-
-    if (!student) {
-      // Delete uploaded file if student not found
-      fs.unlinkSync(req.file.path);
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found in your school',
-      });
-    }
-
-    // Delete old photo if exists
-    if (student.photoUrl) {
-      const oldPhotoPath = path.join(__dirname, '../public', student.photoUrl);
-      if (fs.existsSync(oldPhotoPath)) {
-        fs.unlinkSync(oldPhotoPath);
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No photo file provided",
+        });
       }
-    }
 
-    // Update student with new photo URL
-    const photoUrl = `/uploads/students/${req.file.filename}`;
-    const updatedStudent = await prisma.student.update({
-      where: { id },
-      data: { photoUrl },
-    });
+      // Verify student belongs to school
+      const student = await prisma.student.findFirst({
+        where: { id, schoolId },
+      });
 
-    res.json({
-      success: true,
-      message: 'Photo uploaded successfully',
-      data: {
-        photoUrl,
-        student: updatedStudent,
-      },
-    });
-  } catch (error: any) {
-    // Clean up uploaded file on error
-    if ((req as any).file) {
-      fs.unlinkSync((req as any).file.path);
+      if (!student) {
+        // Delete uploaded file if student not found
+        fs.unlinkSync(req.file.path);
+        return res.status(404).json({
+          success: false,
+          message: "Student not found in your school",
+        });
+      }
+
+      // Delete old photo if exists
+      if (student.photoUrl) {
+        const oldPhotoPath = path.join(
+          __dirname,
+          "../public",
+          student.photoUrl,
+        );
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+        }
+      }
+
+      // Update student with new photo URL
+      const photoUrl = `/uploads/students/${req.file.filename}`;
+      const updatedStudent = await prisma.student.update({
+        where: { id },
+        data: { photoUrl },
+      });
+
+      res.json({
+        success: true,
+        message: "Photo uploaded successfully",
+        data: {
+          photoUrl,
+          student: updatedStudent,
+        },
+      });
+    } catch (error: any) {
+      // Clean up uploaded file on error
+      if ((req as any).file) {
+        fs.unlinkSync((req as any).file.path);
+      }
+      console.error("Error uploading photo:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to upload photo",
+        error: error.message,
+      });
     }
-    console.error('Error uploading photo:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upload photo',
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 // ============================================
 // STUDENT PROMOTION & PROGRESSION ENDPOINTS
@@ -2563,561 +3352,692 @@ app.post('/students/:id/photo', upload.single('photo'), async (req: AuthRequest,
  * Preview automatic promotion
  * Shows which students will be promoted from current year to next
  */
-app.post('/students/promote/preview', async (req: AuthRequest, res: Response) => {
-  try {
-    const { fromAcademicYearId, toAcademicYearId } = req.body;
-    const schoolId = req.user?.schoolId;
+app.post(
+  "/students/promote/preview",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { fromAcademicYearId, toAcademicYearId } = req.body;
+      const schoolId = req.user?.schoolId;
 
-    if (!schoolId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!schoolId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
 
-    if (!fromAcademicYearId || !toAcademicYearId) {
-      return res.status(400).json({
-        success: false,
-        message: 'fromAcademicYearId and toAcademicYearId are required',
-      });
-    }
+      if (!fromAcademicYearId || !toAcademicYearId) {
+        return res.status(400).json({
+          success: false,
+          message: "fromAcademicYearId and toAcademicYearId are required",
+        });
+      }
 
-    // Get all classes from source year
-    const fromClasses = await prisma.class.findMany({
-      where: {
-        academicYearId: fromAcademicYearId,
-        schoolId,
-      },
-      include: {
-        studentClasses: {
-          include: {
-            student: {
-              select: {
-                id: true,
-                studentId: true,
-                firstName: true,
-                lastName: true,
-                customFields: true,
-                gender: true,
-                photoUrl: true,
+      // Get all classes from source year
+      const fromClasses = await prisma.class.findMany({
+        where: {
+          academicYearId: fromAcademicYearId,
+          schoolId,
+        },
+        include: {
+          studentClasses: {
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  studentId: true,
+                  firstName: true,
+                  lastName: true,
+                  customFields: true,
+                  gender: true,
+                  photoUrl: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    // Get target year classes
-    const toClasses = await prisma.class.findMany({
-      where: {
-        academicYearId: toAcademicYearId,
-        schoolId,
-      },
-      select: {
-        id: true,
-        name: true,
-        grade: true,
-        section: true,
-      },
-    });
-
-    // Build promotion preview
-    const promotionPreview = fromClasses.map((fromClass) => {
-      // Find matching class in next year (same grade + 1)
-      const nextGrade = (parseInt(fromClass.grade) + 1).toString();
-      const suggestedToClass = toClasses.find(
-        (c) => c.grade === nextGrade && c.section === fromClass.section
-      );
-
-      return {
-        fromClass: {
-          id: fromClass.id,
-          name: fromClass.name,
-          grade: fromClass.grade,
-          section: fromClass.section,
-          studentCount: fromClass.studentClasses.length,
+      // Get target year classes
+      const toClasses = await prisma.class.findMany({
+        where: {
+          academicYearId: toAcademicYearId,
+          schoolId,
         },
-        toClass: suggestedToClass || null,
-        students: fromClass.studentClasses.map((sc) => ({
-          id: sc.student.id,
-          studentId: sc.student.studentId,
-          name: {
-            latin: `${sc.student.firstName} ${sc.student.lastName}`,
-            khmer: (sc.student.customFields as any)?.regional?.khmerName || null,
-          },
-          gender: sc.student.gender,
-          photo: sc.student.photoUrl,
-          canPromote: !!suggestedToClass,
-        })),
-      };
-    });
+        select: {
+          id: true,
+          name: true,
+          grade: true,
+          section: true,
+        },
+      });
 
-    res.json({
-      success: true,
-      data: {
-        fromAcademicYearId,
-        toAcademicYearId,
-        totalStudents: promotionPreview.reduce((sum, p) => sum + p.students.length, 0),
-        promotableStudents: promotionPreview
-          .filter((p) => p.toClass)
-          .reduce((sum, p) => sum + p.students.length, 0),
-        preview: promotionPreview,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error previewing promotion:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to preview promotion',
-      error: error.message,
-    });
-  }
-});
+      // Build promotion preview
+      const promotionPreview = fromClasses.map((fromClass) => {
+        // Find matching class in next year (same grade + 1)
+        const nextGrade = (parseInt(fromClass.grade) + 1).toString();
+        const suggestedToClass = toClasses.find(
+          (c) => c.grade === nextGrade && c.section === fromClass.section,
+        );
+
+        return {
+          fromClass: {
+            id: fromClass.id,
+            name: fromClass.name,
+            grade: fromClass.grade,
+            section: fromClass.section,
+            studentCount: fromClass.studentClasses.length,
+          },
+          toClass: suggestedToClass || null,
+          students: fromClass.studentClasses.map((sc) => ({
+            id: sc.student.id,
+            studentId: sc.student.studentId,
+            name: {
+              latin: `${sc.student.firstName} ${sc.student.lastName}`,
+              khmer:
+                (sc.student.customFields as any)?.regional?.khmerName || null,
+            },
+            gender: sc.student.gender,
+            photo: sc.student.photoUrl,
+            canPromote: !!suggestedToClass,
+          })),
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          fromAcademicYearId,
+          toAcademicYearId,
+          totalStudents: promotionPreview.reduce(
+            (sum, p) => sum + p.students.length,
+            0,
+          ),
+          promotableStudents: promotionPreview
+            .filter((p) => p.toClass)
+            .reduce((sum, p) => sum + p.students.length, 0),
+          preview: promotionPreview,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error previewing promotion:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to preview promotion",
+        error: error.message,
+      });
+    }
+  },
+);
 
 /**
  * Execute automatic promotion
  * Promotes students from one academic year to the next automatically
  */
-app.post('/students/promote/automatic', async (req: AuthRequest, res: Response) => {
-  try {
-    const { fromAcademicYearId, toAcademicYearId, promotions } = req.body;
-    const schoolId = req.user?.schoolId;
-    const userId = req.user?.id;
+app.post(
+  "/students/promote/automatic",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { fromAcademicYearId, toAcademicYearId, promotions } = req.body;
+      const schoolId = req.user?.schoolId;
+      const userId = req.user?.id;
 
-    if (!schoolId || !userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    if (!fromAcademicYearId || !toAcademicYearId || !Array.isArray(promotions)) {
-      return res.status(400).json({
-        success: false,
-        message: 'fromAcademicYearId, toAcademicYearId, and promotions array are required',
-      });
-    }
-
-    // Validate academic years exist
-    const [fromYear, toYear] = await Promise.all([
-      prisma.academicYear.findFirst({
-        where: { id: fromAcademicYearId, schoolId },
-      }),
-      prisma.academicYear.findFirst({
-        where: { id: toAcademicYearId, schoolId },
-      }),
-    ]);
-
-    if (!fromYear || !toYear) {
-      return res.status(404).json({
-        success: false,
-        message: 'Academic year not found',
-      });
-    }
-
-    const results = {
-      successful: [] as any[],
-      failed: [] as any[],
-    };
-
-    // Batch validation - fetch all required data in parallel
-    const studentIds = promotions.map((p: any) => p.studentId);
-    const fromClassIds = Array.from(new Set(promotions.map((p: any) => p.fromClassId)));
-
-    const [sourceEnrollments, existingProgressions] = await Promise.all([
-      prisma.studentClass.findMany({
-        where: {
-          studentId: { in: studentIds },
-          classId: { in: fromClassIds },
-          status: 'ACTIVE',
-        },
-        select: { studentId: true, classId: true },
-      }),
-      prisma.studentProgression.findMany({
-        where: {
-          studentId: { in: studentIds },
-          fromAcademicYearId,
-          toAcademicYearId,
-        },
-        select: { studentId: true },
-      }),
-    ]);
-
-    const sourceSet = new Set(sourceEnrollments.map((e) => `${e.studentId}:${e.classId}`));
-    const alreadyPromotedSet = new Set(existingProgressions.map((p) => p.studentId));
-
-    // Build valid promotions list
-    const validPromotions: Array<{ studentId: string; fromClassId: string; toClassId: string }> = [];
-    for (const promo of promotions) {
-      const { studentId, fromClassId, toClassId } = promo;
-      if (!sourceSet.has(`${studentId}:${fromClassId}`)) {
-        results.failed.push({ studentId, reason: 'Student not found in source class' });
-        continue;
+      if (!schoolId || !userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
       }
-      if (alreadyPromotedSet.has(studentId)) {
-        results.failed.push({ studentId, reason: 'Already promoted to this academic year' });
-        continue;
+
+      if (
+        !fromAcademicYearId ||
+        !toAcademicYearId ||
+        !Array.isArray(promotions)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "fromAcademicYearId, toAcademicYearId, and promotions array are required",
+        });
       }
-      validPromotions.push({ studentId, fromClassId, toClassId });
-    }
 
-    const promotionDate = new Date();
+      // Validate academic years exist
+      const [fromYear, toYear] = await Promise.all([
+        prisma.academicYear.findFirst({
+          where: { id: fromAcademicYearId, schoolId },
+        }),
+        prisma.academicYear.findFirst({
+          where: { id: toAcademicYearId, schoolId },
+        }),
+      ]);
 
-    // Single transaction - batch create progressions and class enrollments
-    if (validPromotions.length > 0) {
-      await prisma.$transaction(
-        async (tx) => {
-          await tx.studentProgression.createMany({
-            data: validPromotions.map((p) => ({
-              studentId: p.studentId,
-              fromAcademicYearId,
-              toAcademicYearId,
-              fromClassId: p.fromClassId,
-              toClassId: p.toClassId,
-              promotionType: 'AUTOMATIC',
-              promotionDate,
-              promotedBy: userId,
-            })),
-            skipDuplicates: true,
-          });
+      if (!fromYear || !toYear) {
+        return res.status(404).json({
+          success: false,
+          message: "Academic year not found",
+        });
+      }
 
-          await tx.studentClass.createMany({
-            data: validPromotions.map((p) => ({
-              studentId: p.studentId,
-              classId: p.toClassId,
-              academicYearId: toAcademicYearId,
-              enrolledAt: promotionDate,
-              status: 'ACTIVE',
-            })),
-            skipDuplicates: true,
-          });
-        },
-        { maxWait: 30000, timeout: 60000 }
+      const results = {
+        successful: [] as any[],
+        failed: [] as any[],
+      };
+
+      // Batch validation - fetch all required data in parallel
+      const studentIds = promotions.map((p: any) => p.studentId);
+      const fromClassIds = Array.from(
+        new Set(promotions.map((p: any) => p.fromClassId)),
       );
 
-      for (const p of validPromotions) {
-        results.successful.push({ studentId: p.studentId, fromClassId: p.fromClassId, toClassId: p.toClassId });
-      }
-    }
+      const [sourceEnrollments, existingProgressions] = await Promise.all([
+        prisma.studentClass.findMany({
+          where: {
+            studentId: { in: studentIds },
+            classId: { in: fromClassIds },
+            status: "ACTIVE",
+          },
+          select: { studentId: true, classId: true },
+        }),
+        prisma.studentProgression.findMany({
+          where: {
+            studentId: { in: studentIds },
+            fromAcademicYearId,
+            toAcademicYearId,
+          },
+          select: { studentId: true },
+        }),
+      ]);
 
-    res.json({
-      success: true,
-      message: `Promoted ${results.successful.length} students successfully`,
-      data: {
-        successCount: results.successful.length,
-        failureCount: results.failed.length,
-        results,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error executing automatic promotion:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to execute promotion',
-      error: error.message,
-    });
-  }
-});
+      const sourceSet = new Set(
+        sourceEnrollments.map((e) => `${e.studentId}:${e.classId}`),
+      );
+      const alreadyPromotedSet = new Set(
+        existingProgressions.map((p) => p.studentId),
+      );
+
+      // Build valid promotions list
+      const validPromotions: Array<{
+        studentId: string;
+        fromClassId: string;
+        toClassId: string;
+      }> = [];
+      for (const promo of promotions) {
+        const { studentId, fromClassId, toClassId } = promo;
+        if (!sourceSet.has(`${studentId}:${fromClassId}`)) {
+          results.failed.push({
+            studentId,
+            reason: "Student not found in source class",
+          });
+          continue;
+        }
+        if (alreadyPromotedSet.has(studentId)) {
+          results.failed.push({
+            studentId,
+            reason: "Already promoted to this academic year",
+          });
+          continue;
+        }
+        validPromotions.push({ studentId, fromClassId, toClassId });
+      }
+
+      const promotionDate = new Date();
+
+      // Single transaction - batch create progressions and class enrollments
+      if (validPromotions.length > 0) {
+        await prisma.$transaction(
+          async (tx) => {
+            await tx.studentProgression.createMany({
+              data: validPromotions.map((p) => ({
+                studentId: p.studentId,
+                fromAcademicYearId,
+                toAcademicYearId,
+                fromClassId: p.fromClassId,
+                toClassId: p.toClassId,
+                promotionType: "AUTOMATIC",
+                promotionDate,
+                promotedBy: userId,
+              })),
+              skipDuplicates: true,
+            });
+
+            await Promise.all(
+              validPromotions.map((promotion) =>
+                tx.studentClass.updateMany({
+                  where: {
+                    studentId: promotion.studentId,
+                    classId: promotion.fromClassId,
+                    status: { in: ENROLLMENT_ACTIVE_STATUSES },
+                    endedAt: null,
+                  },
+                  data: {
+                    status: "PROMOTED",
+                    endedAt: fromYear.endDate,
+                    exitReason: "PROMOTED",
+                    endedById: userId,
+                  },
+                }),
+              ),
+            );
+
+            await tx.studentClass.createMany({
+              data: validPromotions.map((p) => ({
+                studentId: p.studentId,
+                classId: p.toClassId,
+                academicYearId: toAcademicYearId,
+                enrolledAt: toYear.startDate,
+                startedAt: toYear.startDate,
+                entryReason: "YEAR_PROMOTION",
+                createdById: userId,
+                status: "ACTIVE",
+              })),
+              skipDuplicates: true,
+            });
+          },
+          { maxWait: 30000, timeout: 60000 },
+        );
+
+        for (const p of validPromotions) {
+          results.successful.push({
+            studentId: p.studentId,
+            fromClassId: p.fromClassId,
+            toClassId: p.toClassId,
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Promoted ${results.successful.length} students successfully`,
+        data: {
+          successCount: results.successful.length,
+          failureCount: results.failed.length,
+          results,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error executing automatic promotion:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to execute promotion",
+        error: error.message,
+      });
+    }
+  },
+);
 
 /**
  * Manual promotion - promote individual student to specific class
  */
-app.post('/students/promote/manual', async (req: AuthRequest, res: Response) => {
-  try {
-    const {
-      studentId,
-      fromAcademicYearId,
-      toAcademicYearId,
-      fromClassId,
-      toClassId,
-      notes,
-    } = req.body;
-    const schoolId = req.user?.schoolId;
-    const userId = req.user?.id;
-
-    if (!schoolId || !userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    if (!studentId || !fromAcademicYearId || !toAcademicYearId || !fromClassId || !toClassId) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required',
-      });
-    }
-
-    // Validate student belongs to school
-    const student = await prisma.student.findFirst({
-      where: { id: studentId, schoolId },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found',
-      });
-    }
-
-    // Check if already promoted
-    const existingProgression = await prisma.studentProgression.findFirst({
-      where: {
+app.post(
+  "/students/promote/manual",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const {
         studentId,
         fromAcademicYearId,
         toAcademicYearId,
-      },
-    });
+        fromClassId,
+        toClassId,
+        notes,
+      } = req.body;
+      const schoolId = req.user?.schoolId;
+      const userId = req.user?.id;
 
-    if (existingProgression) {
-      return res.status(400).json({
-        success: false,
-        message: 'Student already promoted to this academic year',
-      });
-    }
+      if (!schoolId || !userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
 
-    // Create progression and assign to class
-    const progression = await prisma.$transaction(async (tx) => {
-      // Create progression record
-      const prog = await tx.studentProgression.create({
-        data: {
-          studentId,
-          fromAcademicYearId,
-          toAcademicYearId,
-          fromClassId,
-          toClassId,
-          promotionType: 'MANUAL',
-          promotionDate: new Date(),
-          promotedBy: userId,
-          notes,
-        },
-        include: {
-          student: {
-            select: {
-              studentId: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-          fromClass: {
-            select: {
-              name: true,
-              grade: true,
-            },
-          },
-          toClass: {
-            select: {
-              name: true,
-              grade: true,
-            },
-          },
-        },
-      });
-
-      // Assign to new class if not already assigned
-      const existingAssignment = await tx.studentClass.findFirst({
-        where: {
-          studentId,
-          classId: toClassId,
-        },
-      });
-
-      if (!existingAssignment) {
-        await tx.studentClass.create({
-          data: {
-            studentId,
-            classId: toClassId,
-            enrolledAt: new Date(),
-          },
+      if (
+        !studentId ||
+        !fromAcademicYearId ||
+        !toAcademicYearId ||
+        !fromClassId ||
+        !toClassId
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "All fields are required",
         });
       }
 
-      return prog;
-    });
+      // Validate student belongs to school
+      const student = await prisma.student.findFirst({
+        where: { id: studentId, schoolId },
+      });
 
-    res.json({
-      success: true,
-      message: 'Student promoted successfully',
-      data: progression,
-    });
-  } catch (error: any) {
-    console.error('Error executing manual promotion:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to promote student',
-      error: error.message,
-    });
-  }
-});
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student not found",
+        });
+      }
+
+      // Check if already promoted
+      const existingProgression = await prisma.studentProgression.findFirst({
+        where: {
+          studentId,
+          fromAcademicYearId,
+          toAcademicYearId,
+        },
+      });
+
+      if (existingProgression) {
+        return res.status(400).json({
+          success: false,
+          message: "Student already promoted to this academic year",
+        });
+      }
+
+      // Create progression and assign to class
+      const progression = await prisma.$transaction(async (tx) => {
+        // Create progression record
+        const prog = await tx.studentProgression.create({
+          data: {
+            studentId,
+            fromAcademicYearId,
+            toAcademicYearId,
+            fromClassId,
+            toClassId,
+            promotionType: "MANUAL",
+            promotionDate: new Date(),
+            promotedBy: userId,
+            notes,
+          },
+          include: {
+            student: {
+              select: {
+                studentId: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            fromClass: {
+              select: {
+                name: true,
+                grade: true,
+              },
+            },
+            toClass: {
+              select: {
+                name: true,
+                grade: true,
+              },
+            },
+            fromAcademicYear: {
+              select: { startDate: true, endDate: true },
+            },
+            toAcademicYear: {
+              select: { startDate: true, endDate: true },
+            },
+          },
+        });
+
+        await tx.studentClass.updateMany({
+          where: {
+            studentId,
+            classId: fromClassId,
+            status: { in: ENROLLMENT_ACTIVE_STATUSES },
+            endedAt: null,
+          },
+          data: {
+            status: "PROMOTED",
+            endedAt: prog.fromAcademicYear.endDate,
+            exitReason: "PROMOTED",
+            endedById: userId,
+          },
+        });
+
+        // Assign to new class if not already assigned
+        const existingAssignment = await tx.studentClass.findFirst({
+          where: {
+            studentId,
+            classId: toClassId,
+          },
+        });
+
+        if (!existingAssignment) {
+          await tx.studentClass.create({
+            data: {
+              studentId,
+              classId: toClassId,
+              academicYearId: toAcademicYearId,
+              enrolledAt: prog.toAcademicYear.startDate,
+              startedAt: prog.toAcademicYear.startDate,
+              entryReason: "YEAR_PROMOTION",
+              createdById: userId,
+            },
+          });
+        }
+
+        return prog;
+      });
+
+      res.json({
+        success: true,
+        message: "Student promoted successfully",
+        data: progression,
+      });
+    } catch (error: any) {
+      console.error("Error executing manual promotion:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to promote student",
+        error: error.message,
+      });
+    }
+  },
+);
 
 /**
  * Get student progression history
  */
-app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.user?.schoolId;
+app.get(
+  "/students/:id/progression",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.user?.schoolId;
 
-    if (!schoolId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+      if (!schoolId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
 
-    // Verify student belongs to school
-    const student = await prisma.student.findFirst({
-      where: { id, schoolId },
-      include: {
-        studentClasses: {
-          include: {
-            class: {
-              include: { academicYear: true },
+      // Verify student belongs to school
+      const student = await prisma.student.findFirst({
+        where: { id, schoolId },
+        include: {
+          studentClasses: {
+            include: {
+              class: {
+                include: { academicYear: true },
+              },
             },
+            orderBy: { enrolledAt: "desc" },
           },
-          orderBy: { enrolledAt: 'desc' },
-        },
-        StudentProgression: {
-          include: {
-            fromAcademicYear: {
-              select: { id: true, name: true, startDate: true, endDate: true },
+          StudentProgression: {
+            include: {
+              fromAcademicYear: {
+                select: {
+                  id: true,
+                  name: true,
+                  startDate: true,
+                  endDate: true,
+                },
+              },
+              toAcademicYear: {
+                select: {
+                  id: true,
+                  name: true,
+                  startDate: true,
+                  endDate: true,
+                },
+              },
+              fromClass: {
+                select: { id: true, name: true, grade: true, section: true },
+              },
+              toClass: {
+                select: { id: true, name: true, grade: true, section: true },
+              },
             },
-            toAcademicYear: {
-              select: { id: true, name: true, startDate: true, endDate: true },
-            },
-            fromClass: {
-              select: { id: true, name: true, grade: true, section: true },
-            },
-            toClass: {
-              select: { id: true, name: true, grade: true, section: true },
-            },
+            orderBy: { promotionDate: "asc" },
           },
-          orderBy: { promotionDate: 'asc' },
+          transfers: {
+            include: {
+              fromClass: {
+                select: { id: true, name: true, grade: true, section: true },
+              },
+              toClass: {
+                select: { id: true, name: true, grade: true, section: true },
+              },
+            },
+            orderBy: { effectiveAt: "asc" },
+          },
         },
-      },
-    });
+      });
 
-    if (!student) {
-      return res.status(404).json({
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student not found",
+        });
+      }
+
+      const progressions = student.StudentProgression;
+
+      const currentEnrollment =
+        student.studentClasses.find(
+          (enrollment) =>
+            enrollment.status === "ACTIVE" &&
+            enrollment.class.academicYear?.status === "ACTIVE",
+        ) ||
+        student.studentClasses.find(
+          (enrollment) => enrollment.status === "ACTIVE",
+        ) ||
+        student.studentClasses[0] ||
+        null;
+
+      // Every effective-dated enrollment period is history. Do not collapse a
+      // legitimate re-entry into the same class later in the same school year.
+      const uniqueClassEnrollments = [...student.studentClasses].sort(
+        (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
+      );
+
+      const classHistory = uniqueClassEnrollments.map((enrollment) => ({
+        id: enrollment.id,
+        academicYear: enrollment.class.academicYear
+          ? {
+              id: enrollment.class.academicYear.id,
+              name: enrollment.class.academicYear.name,
+              status: enrollment.class.academicYear.status,
+            }
+          : {
+              id: enrollment.academicYearId || "",
+              name: "Unknown academic year",
+              status: "UNKNOWN",
+            },
+        class: {
+          id: enrollment.class.id,
+          name: enrollment.class.name,
+          grade: enrollment.class.grade,
+          section: enrollment.class.section,
+        },
+        enrolledAt: enrollment.enrolledAt,
+        startedAt: enrollment.startedAt,
+        endedAt: enrollment.endedAt,
+        entryReason: enrollment.entryReason,
+        exitReason: enrollment.exitReason,
+        status: enrollment.status,
+      }));
+
+      const progressionItems = progressions.map((progression) => ({
+        ...progression,
+        // Compatibility aliases for the dedicated history page. Existing detail
+        // consumers continue to use fromAcademicYear/toAcademicYear.
+        fromYear: progression.fromAcademicYear,
+        toYear: progression.toAcademicYear,
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          student: {
+            id: student.id,
+            studentId: student.studentId,
+            name: `${student.firstName} ${student.lastName}`.trim(),
+            khmerName:
+              (student.customFields as any)?.regional?.khmerName || null,
+            gender: student.gender,
+            dateOfBirth: student.dateOfBirth,
+            photoUrl: student.photoUrl,
+            currentClass: currentEnrollment
+              ? {
+                  id: currentEnrollment.class.id,
+                  name: currentEnrollment.class.name,
+                  grade: currentEnrollment.class.grade,
+                }
+              : null,
+            currentYear: currentEnrollment?.class.academicYear
+              ? {
+                  id: currentEnrollment.class.academicYear.id,
+                  name: currentEnrollment.class.academicYear.name,
+                }
+              : null,
+          },
+          progressions: progressionItems,
+          transfers: student.transfers,
+          classHistory,
+          summary: {
+            totalYears: new Set(
+              uniqueClassEnrollments
+                .map(
+                  (enrollment) =>
+                    enrollment.class.academicYear?.id ||
+                    enrollment.academicYearId,
+                )
+                .filter(Boolean),
+            ).size,
+            totalProgressions: progressions.length,
+            currentGrade: currentEnrollment?.class.grade || null,
+            firstEnrolledYear:
+              classHistory.length > 0
+                ? classHistory[classHistory.length - 1].academicYear.name
+                : null,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching progression history:", error);
+      res.status(500).json({
         success: false,
-        message: 'Student not found',
+        message: "Failed to fetch progression history",
+        ...(process.env.NODE_ENV !== "production"
+          ? { error: error.message }
+          : {}),
       });
     }
-
-    const progressions = student.StudentProgression;
-
-    const currentEnrollment =
-      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE' && enrollment.class.academicYear?.status === 'ACTIVE') ||
-      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE') ||
-      student.studentClasses[0] ||
-      null;
-
-    // Historical imports can leave two StudentClass rows for the same
-    // placement (most commonly one row with academicYearId and one without).
-    // Present one authoritative placement and prefer the active row so the
-    // student timeline does not imply that they enrolled twice.
-    const uniqueClassEnrollments = Array.from(
-      student.studentClasses.reduce((placements, enrollment) => {
-        const academicYearId = enrollment.class.academicYear?.id || enrollment.academicYearId || 'unknown';
-        const placementKey = `${enrollment.classId}:${academicYearId}`;
-        const existing = placements.get(placementKey);
-
-        if (!existing || (existing.status !== 'ACTIVE' && enrollment.status === 'ACTIVE')) {
-          placements.set(placementKey, enrollment);
-        }
-
-        return placements;
-      }, new Map<string, (typeof student.studentClasses)[number]>()).values()
-    );
-
-    const classHistory = uniqueClassEnrollments.map((enrollment) => ({
-      id: enrollment.id,
-      academicYear: enrollment.class.academicYear
-        ? {
-            id: enrollment.class.academicYear.id,
-            name: enrollment.class.academicYear.name,
-            status: enrollment.class.academicYear.status,
-          }
-        : {
-            id: enrollment.academicYearId || '',
-            name: 'Unknown academic year',
-            status: 'UNKNOWN',
-          },
-      class: {
-        id: enrollment.class.id,
-        name: enrollment.class.name,
-        grade: enrollment.class.grade,
-        section: enrollment.class.section,
-      },
-      enrolledAt: enrollment.enrolledAt,
-      status: enrollment.status,
-    }));
-
-    const progressionItems = progressions.map((progression) => ({
-      ...progression,
-      // Compatibility aliases for the dedicated history page. Existing detail
-      // consumers continue to use fromAcademicYear/toAcademicYear.
-      fromYear: progression.fromAcademicYear,
-      toYear: progression.toAcademicYear,
-    }));
-
-    res.json({
-      success: true,
-      data: {
-        student: {
-          id: student.id,
-          studentId: student.studentId,
-          name: `${student.firstName} ${student.lastName}`.trim(),
-          khmerName: (student.customFields as any)?.regional?.khmerName || null,
-          gender: student.gender,
-          dateOfBirth: student.dateOfBirth,
-          photoUrl: student.photoUrl,
-          currentClass: currentEnrollment
-            ? {
-                id: currentEnrollment.class.id,
-                name: currentEnrollment.class.name,
-                grade: currentEnrollment.class.grade,
-              }
-            : null,
-          currentYear: currentEnrollment?.class.academicYear
-            ? {
-                id: currentEnrollment.class.academicYear.id,
-                name: currentEnrollment.class.academicYear.name,
-              }
-            : null,
-        },
-        progressions: progressionItems,
-        classHistory,
-        summary: {
-          totalYears: new Set(
-            uniqueClassEnrollments
-              .map((enrollment) => enrollment.class.academicYear?.id || enrollment.academicYearId)
-              .filter(Boolean)
-          ).size,
-          totalProgressions: progressions.length,
-          currentGrade: currentEnrollment?.class.grade || null,
-          firstEnrolledYear: classHistory.length > 0
-            ? classHistory[classHistory.length - 1].academicYear.name
-            : null,
-        },
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching progression history:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch progression history',
-      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
-    });
-  }
-});
+  },
+);
 
 // Mark students as failed (repeat same grade)
-app.post('/students/mark-failed', async (req: any, res: Response) => {
+app.post("/students/mark-failed", async (req: any, res: Response) => {
   try {
-    const { studentIds, fromAcademicYearId, toAcademicYearId, notes } = req.body;
+    const { studentIds, fromAcademicYearId, toAcademicYearId, notes } =
+      req.body;
     const schoolId = req.user.schoolId;
 
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'studentIds array is required',
+        error: "studentIds array is required",
       });
     }
 
     if (!fromAcademicYearId || !toAcademicYearId) {
       return res.status(400).json({
         success: false,
-        error: 'fromAcademicYearId and toAcademicYearId are required',
+        error: "fromAcademicYearId and toAcademicYearId are required",
       });
     }
 
@@ -3134,7 +4054,7 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
     if (!fromYear || !toYear) {
       return res.status(404).json({
         success: false,
-        error: 'Academic year not found',
+        error: "Academic year not found",
       });
     }
 
@@ -3151,11 +4071,11 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
           where: { id: studentId, schoolId },
           include: {
             studentClasses: {
-              where: { status: 'ACTIVE' },
+              where: { status: "ACTIVE" },
               include: {
                 class: true,
               },
-              orderBy: { enrolledAt: 'desc' },
+              orderBy: { enrolledAt: "desc" },
               take: 1,
             },
           },
@@ -3164,7 +4084,7 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
         if (!student || student.studentClasses.length === 0) {
           results.failed.push({
             studentId,
-            error: 'Student not found or not enrolled in any class',
+            error: "Student not found or not enrolled in any class",
           });
           continue;
         }
@@ -3196,10 +4116,25 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
             toAcademicYearId,
             fromClassId: currentClass.id,
             toClassId: repeatClass.id,
-            promotionType: 'REPEAT',
+            promotionType: "REPEAT",
             promotionDate: new Date(),
             promotedBy: req.user.userId,
-            notes: notes || 'Student marked as failed - repeating grade',
+            notes: notes || "Student marked as failed - repeating grade",
+          },
+        });
+
+        await prisma.studentClass.updateMany({
+          where: {
+            studentId,
+            classId: currentClass.id,
+            status: { in: ENROLLMENT_ACTIVE_STATUSES },
+            endedAt: null,
+          },
+          data: {
+            status: "REPEATED",
+            endedAt: fromYear.endDate,
+            exitReason: "REPEATED",
+            endedById: req.user!.id,
           },
         });
 
@@ -3208,7 +4143,12 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
           data: {
             studentId,
             classId: repeatClass.id,
-            status: 'ACTIVE',
+            academicYearId: toAcademicYearId,
+            enrolledAt: toYear.startDate,
+            startedAt: toYear.startDate,
+            entryReason: "YEAR_PROMOTION",
+            createdById: req.user!.id,
+            status: "ACTIVE",
           },
         });
 
@@ -3228,10 +4168,10 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
       data: results,
     });
   } catch (error: any) {
-    console.error('Mark failed error:', error);
+    console.error("Mark failed error:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to mark students as failed',
+      error: "Failed to mark students as failed",
       details: error.message,
     });
   }
@@ -3242,608 +4182,866 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
 // ========================================
 
 // GET /students/:id/transcript - Get complete academic transcript
-app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.user?.schoolId;
+app.get(
+  "/students/:id/transcript",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.user?.schoolId;
 
-    if (!schoolId) {
-      return res.status(400).json({ success: false, error: 'School ID required' });
-    }
-
-    // Get student with school validation
-    const student = await prisma.student.findFirst({
-      where: { id, schoolId },
-      include: {
-        studentClasses: {
-          include: {
-            class: {
-              include: {
-                academicYear: true,
-              }
-            }
-          },
-          orderBy: { enrolledAt: 'desc' }
-        },
-        StudentProgression: {
-          include: {
-            fromClass: true,
-            toClass: true,
-            fromAcademicYear: true,
-            toAcademicYear: true,
-          },
-          orderBy: { createdAt: 'desc' }
-        },
+      if (!schoolId) {
+        return res
+          .status(400)
+          .json({ success: false, error: "School ID required" });
       }
-    });
 
-    if (!student) {
-      return res.status(404).json({ success: false, error: 'Student not found' });
-    }
-
-    // Fetch the independent transcript sources concurrently. Attendance is
-    // loaded in one query and aggregated in memory, avoiding an N+1 query for
-    // every historical class enrollment.
-    const classIds = [...new Set(student.studentClasses.map((sc) => sc.classId))];
-    const [grades, monthlySummaries, attendanceRows, officialDocuments] = await Promise.all([
-      prisma.grade.findMany({
-        where: { studentId: id },
+      // Get student with school validation
+      const student = await prisma.student.findFirst({
+        where: { id, schoolId },
         include: {
-          subject: true,
-          class: {
+          studentClasses: {
             include: {
-              academicYear: true,
-            }
-          }
-        },
-        orderBy: [
-          { year: 'desc' },
-          { monthNumber: 'desc' }
-        ]
-      }),
-      prisma.studentMonthlySummary.findMany({
-        where: { studentId: id },
-        orderBy: [
-          { year: 'desc' },
-          { monthNumber: 'desc' }
-        ]
-      }),
-      classIds.length > 0
-        ? prisma.attendance.findMany({
-            where: { studentId: id, classId: { in: classIds } },
-            select: { classId: true, status: true },
-          })
-        : Promise.resolve([]),
-      (prisma as any).studentTranscriptDocument?.findMany
-        ? (prisma as any).studentTranscriptDocument.findMany({
-            where: { studentId: id, schoolId, status: { not: 'REVOKED' } },
-            orderBy: { issuedAt: 'desc' },
-            select: {
-              id: true,
-              academicYearId: true,
-              status: true,
-              documentNumber: true,
-              verificationCode: true,
-              snapshotChecksum: true,
-              formulaVersion: true,
-              approvedAt: true,
-              issuedAt: true,
-              approvedById: true,
+              class: {
+                include: {
+                  academicYear: true,
+                },
+              },
             },
-          })
-        : Promise.resolve([]),
-    ]);
-    const latestOfficialByYear = new Map<string, any>();
-    (officialDocuments as any[]).forEach((document) => {
-      if (!latestOfficialByYear.has(document.academicYearId)) {
-        latestOfficialByYear.set(document.academicYearId, {
-          status: document.status,
-          isOfficial: document.status === 'OFFICIAL',
-          documentNumber: document.documentNumber,
-          verificationCode: document.verificationCode,
-          snapshotChecksum: document.snapshotChecksum,
-          formulaVersion: document.formulaVersion,
-          approvedAt: document.approvedAt,
-          approvedById: document.approvedById,
-          issuedAt: document.issuedAt,
-          generatedAt: document.issuedAt,
-        });
+            orderBy: { enrolledAt: "desc" },
+          },
+          StudentProgression: {
+            include: {
+              fromClass: true,
+              toClass: true,
+              fromAcademicYear: true,
+              toAcademicYear: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
+          transfers: {
+            include: {
+              fromClass: { select: { id: true, name: true, grade: true } },
+              toClass: { select: { id: true, name: true, grade: true } },
+            },
+            orderBy: { effectiveAt: "desc" },
+          },
+        },
+      });
+
+      if (!student) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Student not found" });
       }
-    });
 
-    const attendanceByClass: Record<string, { total: number; present: number; absent: number; late: number; excused: number; rate: number }> = {};
-    classIds.forEach((classId) => {
-      attendanceByClass[classId] = { total: 0, present: 0, absent: 0, late: 0, excused: 0, rate: 0 };
-    });
-    attendanceRows.forEach((attendance) => {
-      if (!attendance.classId || !attendanceByClass[attendance.classId]) return;
-      const bucket = attendanceByClass[attendance.classId];
-      bucket.total += 1;
-      if (attendance.status === 'PRESENT') bucket.present += 1;
-      if (attendance.status === 'ABSENT') bucket.absent += 1;
-      if (attendance.status === 'LATE') bucket.late += 1;
-      if (attendance.status === 'EXCUSED' || attendance.status === 'PERMISSION') bucket.excused += 1;
-    });
-    Object.values(attendanceByClass).forEach((bucket) => {
-      bucket.rate = bucket.total > 0 ? Math.round((bucket.present / bucket.total) * 100) : 0;
-    });
+      // Fetch the independent transcript sources concurrently. Attendance is
+      // loaded in one query and aggregated in memory, avoiding an N+1 query for
+      // every historical class enrollment.
+      const classIds = [
+        ...new Set(student.studentClasses.map((sc) => sc.classId)),
+      ];
+      const [grades, monthlySummaries, attendanceRows, officialDocuments] =
+        await Promise.all([
+          prisma.grade.findMany({
+            where: { studentId: id },
+            include: {
+              subject: true,
+              class: {
+                include: {
+                  academicYear: true,
+                },
+              },
+            },
+            orderBy: [{ year: "desc" }, { monthNumber: "desc" }],
+          }),
+          prisma.studentMonthlySummary.findMany({
+            where: { studentId: id },
+            orderBy: [{ year: "desc" }, { monthNumber: "desc" }],
+          }),
+          classIds.length > 0
+            ? prisma.attendance.findMany({
+                where: { studentId: id, classId: { in: classIds } },
+                select: { classId: true, status: true },
+              })
+            : Promise.resolve([]),
+          (prisma as any).studentTranscriptDocument?.findMany
+            ? (prisma as any).studentTranscriptDocument.findMany({
+                where: { studentId: id, schoolId, status: { not: "REVOKED" } },
+                orderBy: { issuedAt: "desc" },
+                select: {
+                  id: true,
+                  academicYearId: true,
+                  status: true,
+                  documentNumber: true,
+                  verificationCode: true,
+                  snapshotChecksum: true,
+                  formulaVersion: true,
+                  approvedAt: true,
+                  issuedAt: true,
+                  approvedById: true,
+                },
+              })
+            : Promise.resolve([]),
+        ]);
+      const latestOfficialByYear = new Map<string, any>();
+      (officialDocuments as any[]).forEach((document) => {
+        if (!latestOfficialByYear.has(document.academicYearId)) {
+          latestOfficialByYear.set(document.academicYearId, {
+            status: document.status,
+            isOfficial: document.status === "OFFICIAL",
+            documentNumber: document.documentNumber,
+            verificationCode: document.verificationCode,
+            snapshotChecksum: document.snapshotChecksum,
+            formulaVersion: document.formulaVersion,
+            approvedAt: document.approvedAt,
+            approvedById: document.approvedById,
+            issuedAt: document.issuedAt,
+            generatedAt: document.issuedAt,
+          });
+        }
+      });
 
-    // Group grades by academic year
-    const gradesByYear: Record<string, any> = {};
+      const attendanceByClass: Record<
+        string,
+        {
+          total: number;
+          present: number;
+          absent: number;
+          late: number;
+          excused: number;
+          rate: number;
+        }
+      > = {};
+      classIds.forEach((classId) => {
+        attendanceByClass[classId] = {
+          total: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0,
+          rate: 0,
+        };
+      });
+      attendanceRows.forEach((attendance) => {
+        if (!attendance.classId || !attendanceByClass[attendance.classId])
+          return;
+        const bucket = attendanceByClass[attendance.classId];
+        bucket.total += 1;
+        if (attendance.status === "PRESENT") bucket.present += 1;
+        if (attendance.status === "ABSENT") bucket.absent += 1;
+        if (attendance.status === "LATE") bucket.late += 1;
+        if (
+          attendance.status === "EXCUSED" ||
+          attendance.status === "PERMISSION"
+        )
+          bucket.excused += 1;
+      });
+      Object.values(attendanceByClass).forEach((bucket) => {
+        bucket.rate =
+          bucket.total > 0
+            ? Math.round((bucket.present / bucket.total) * 100)
+            : 0;
+      });
 
-    // An enrollment year remains a valid transcript period even when grades
-    // have not been entered yet. Keeping it in the response lets the client
-    // show an explicit incomplete state instead of a blank document.
-    student.studentClasses.forEach((enrollment) => {
-      const academicYear = enrollment.class?.academicYear;
-      if (!academicYear || gradesByYear[academicYear.id]) return;
-      gradesByYear[academicYear.id] = {
-        yearId: academicYear.id,
-        yearName: academicYear.name,
-        classId: enrollment.classId,
-        startDate: academicYear.startDate,
-        endDate: academicYear.endDate,
-        className: enrollment.class?.name,
-        gradeLevel: enrollment.class?.grade,
-        subjects: {},
-      };
-    });
-    const normalizeSubjectIdentity = (value?: string | null) => value
-      ?.normalize('NFKC')
-      .trim()
-      .replace(/\s+/g, ' ')
-      .toLocaleLowerCase();
+      // Group grades by academic year
+      const gradesByYear: Record<string, any> = {};
 
-    grades.forEach((grade: any) => {
-      const yearId = grade.class?.academicYear?.id || 'unknown';
-      const yearName = grade.class?.academicYear?.name || 'Unknown Year';
-
-      if (!gradesByYear[yearId]) {
-        gradesByYear[yearId] = {
-          yearId,
-          yearName,
-          classId: grade.classId,
-          startDate: grade.class?.academicYear?.startDate,
-          endDate: grade.class?.academicYear?.endDate,
-          className: grade.class?.name,
-          gradeLevel: grade.class?.grade,
+      // An enrollment year remains a valid transcript period even when grades
+      // have not been entered yet. Keeping it in the response lets the client
+      // show an explicit incomplete state instead of a blank document.
+      student.studentClasses.forEach((enrollment) => {
+        const academicYear = enrollment.class?.academicYear;
+        if (!academicYear || gradesByYear[academicYear.id]) return;
+        gradesByYear[academicYear.id] = {
+          yearId: academicYear.id,
+          yearName: academicYear.name,
+          classId: enrollment.classId,
+          startDate: academicYear.startDate,
+          endDate: academicYear.endDate,
+          className: enrollment.class?.name,
+          gradeLevel: enrollment.class?.grade,
           subjects: {},
         };
-      }
+      });
+      const normalizeSubjectIdentity = (value?: string | null) =>
+        value
+          ?.normalize("NFKC")
+          .trim()
+          .replace(/\s+/g, " ")
+          .toLocaleLowerCase();
 
-      // Some legacy imports created multiple Subject rows for the same
-      // human-readable subject. Canonicalise by the Khmer name first (the
-      // school's primary label), then code/name, so a transcript contains one
-      // row per real subject rather than one row per database identifier.
-      const subjectKey = normalizeSubjectIdentity(grade.subject?.nameKh)
-        || normalizeSubjectIdentity(grade.subject?.code)
-        || normalizeSubjectIdentity(grade.subject?.name)
-        || grade.subjectId;
+      grades.forEach((grade: any) => {
+        const yearId = grade.class?.academicYear?.id || "unknown";
+        const yearName = grade.class?.academicYear?.name || "Unknown Year";
 
-      if (!gradesByYear[yearId].subjects[subjectKey]) {
-        gradesByYear[yearId].subjects[subjectKey] = {
-          subjectId: grade.subjectId,
-          subjectName: grade.subject?.name,
-          subjectNameKh: grade.subject?.nameKh || null,
-          subjectCode: grade.subject?.code,
-          grades: [],
-        };
-      }
-
-      const subjectGrades = gradesByYear[yearId].subjects[subjectKey].grades;
-      const assessmentKey = `${grade.year ?? 'unknown'}:${grade.monthNumber ?? normalizeSubjectIdentity(grade.month) ?? grade.id}`;
-      const duplicateIndex = subjectGrades.findIndex((item: any) => item.assessmentKey === assessmentKey);
-      const gradeItem = {
-        id: grade.id,
-        score: grade.score,
-        maxScore: grade.maxScore,
-        percentage: grade.percentage,
-        month: grade.month,
-        monthNumber: grade.monthNumber,
-        year: grade.year,
-        remarks: grade.remarks,
-        assessmentKey,
-        updatedAt: grade.updatedAt,
-      };
-
-      if (duplicateIndex === -1) {
-        subjectGrades.push(gradeItem);
-      } else if (new Date(grade.updatedAt).getTime() > new Date(subjectGrades[duplicateIndex].updatedAt).getTime()) {
-        subjectGrades[duplicateIndex] = gradeItem;
-      }
-    });
-
-    // Calculate yearly averages
-    Object.keys(gradesByYear).forEach(yearId => {
-      const yearData = gradesByYear[yearId];
-      const subjects = Object.values(yearData.subjects) as any[];
-
-      let totalAvg = 0;
-      let subjectCount = 0;
-
-      subjects.forEach((subject: any) => {
-        const subjectGrades = subject.grades;
-        const percentages = subjectGrades
-          .map((grade: any) => {
-            if (Number.isFinite(grade.percentage)) return grade.percentage;
-            if (Number.isFinite(grade.score) && Number.isFinite(grade.maxScore) && grade.maxScore > 0) {
-              return (grade.score / grade.maxScore) * 100;
-            }
-            return null;
-          })
-          .filter((percentage: number | null): percentage is number => percentage !== null);
-        if (percentages.length > 0) {
-          const avg = percentages.reduce((sum: number, percentage: number) => sum + percentage, 0) / percentages.length;
-          subject.average = Math.round(avg * 100) / 100;
-          subject.letterGrade = getLetterGrade(avg);
-          totalAvg += avg;
-          subjectCount++;
+        if (!gradesByYear[yearId]) {
+          gradesByYear[yearId] = {
+            yearId,
+            yearName,
+            classId: grade.classId,
+            startDate: grade.class?.academicYear?.startDate,
+            endDate: grade.class?.academicYear?.endDate,
+            className: grade.class?.name,
+            gradeLevel: grade.class?.grade,
+            subjects: {},
+          };
         }
 
-        subject.grades = subjectGrades.map(({ assessmentKey, updatedAt, ...gradeItem }: any) => gradeItem);
+        // Some legacy imports created multiple Subject rows for the same
+        // human-readable subject. Canonicalise by the Khmer name first (the
+        // school's primary label), then code/name, so a transcript contains one
+        // row per real subject rather than one row per database identifier.
+        const subjectKey =
+          normalizeSubjectIdentity(grade.subject?.nameKh) ||
+          normalizeSubjectIdentity(grade.subject?.code) ||
+          normalizeSubjectIdentity(grade.subject?.name) ||
+          grade.subjectId;
+
+        if (!gradesByYear[yearId].subjects[subjectKey]) {
+          gradesByYear[yearId].subjects[subjectKey] = {
+            subjectId: grade.subjectId,
+            subjectName: grade.subject?.name,
+            subjectNameKh: grade.subject?.nameKh || null,
+            subjectCode: grade.subject?.code,
+            grades: [],
+          };
+        }
+
+        const subjectGrades = gradesByYear[yearId].subjects[subjectKey].grades;
+        const assessmentKey = `${grade.classId}:${grade.year ?? "unknown"}:${grade.monthNumber ?? normalizeSubjectIdentity(grade.month) ?? grade.id}`;
+        const duplicateIndex = subjectGrades.findIndex(
+          (item: any) => item.assessmentKey === assessmentKey,
+        );
+        const gradeItem = {
+          id: grade.id,
+          score: grade.score,
+          maxScore: grade.maxScore,
+          percentage: grade.percentage,
+          month: grade.month,
+          monthNumber: grade.monthNumber,
+          year: grade.year,
+          remarks: grade.remarks,
+          classId: grade.classId,
+          className: grade.class?.name || null,
+          assessmentKey,
+          updatedAt: grade.updatedAt,
+        };
+
+        if (duplicateIndex === -1) {
+          subjectGrades.push(gradeItem);
+        } else if (
+          new Date(grade.updatedAt).getTime() >
+          new Date(subjectGrades[duplicateIndex].updatedAt).getTime()
+        ) {
+          subjectGrades[duplicateIndex] = gradeItem;
+        }
       });
 
-      yearData.overallAverage = subjectCount > 0 ? Math.round((totalAvg / subjectCount) * 100) / 100 : null;
-      yearData.overallGrade = yearData.overallAverage !== null ? getLetterGrade(yearData.overallAverage) : null;
-      yearData.subjectCount = subjectCount;
-    });
+      // Calculate yearly averages
+      Object.keys(gradesByYear).forEach((yearId) => {
+        const yearData = gradesByYear[yearId];
+        const subjects = Object.values(yearData.subjects) as any[];
 
-    // Format progressions
-    const progressions = student.StudentProgression.map((p) => ({
-      id: p.id,
-      fromYear: p.fromAcademicYear?.name,
-      toYear: p.toAcademicYear?.name,
-      fromClass: p.fromClass?.name,
-      toClass: p.toClass?.name,
-      promotionType: p.promotionType,
-      notes: p.notes,
-      createdAt: p.createdAt,
-    }));
+        let totalAvg = 0;
+        let subjectCount = 0;
 
-    // Calculate overall statistics
-    const allYears = Object.values(gradesByYear);
-    const totalYears = allYears.length;
-    const automaticPromoCount = progressions.filter((p) => p.promotionType === 'AUTOMATIC').length;
-    const repeatCount = progressions.filter((p) => p.promotionType === 'REPEAT').length;
-    const manualPromoCount = progressions.filter((p) => p.promotionType === 'MANUAL').length;
+        subjects.forEach((subject: any) => {
+          const subjectGrades = subject.grades;
+          const percentages = subjectGrades
+            .map((grade: any) => {
+              if (Number.isFinite(grade.percentage)) return grade.percentage;
+              if (
+                Number.isFinite(grade.score) &&
+                Number.isFinite(grade.maxScore) &&
+                grade.maxScore > 0
+              ) {
+                return (grade.score / grade.maxScore) * 100;
+              }
+              return null;
+            })
+            .filter(
+              (percentage: number | null): percentage is number =>
+                percentage !== null,
+            );
+          if (percentages.length > 0) {
+            const avg =
+              percentages.reduce(
+                (sum: number, percentage: number) => sum + percentage,
+                0,
+              ) / percentages.length;
+            subject.average = Math.round(avg * 100) / 100;
+            subject.letterGrade = getLetterGrade(avg);
+            totalAvg += avg;
+            subjectCount++;
+          }
 
-    let overallGPA = 0;
-    let gpaCount = 0;
-    allYears.forEach((year: any) => {
-      if (typeof year.overallAverage === 'number' && Number.isFinite(year.overallAverage)) {
-        overallGPA += year.overallAverage;
-        gpaCount++;
-      }
-    });
+          subject.grades = subjectGrades.map(
+            ({ assessmentKey, updatedAt, ...gradeItem }: any) => gradeItem,
+          );
+        });
 
-    const currentEnrollment =
-      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE' && enrollment.class.academicYear?.status === 'ACTIVE') ||
-      student.studentClasses.find((enrollment) => enrollment.status === 'ACTIVE') ||
-      student.studentClasses[0] ||
-      null;
+        yearData.overallAverage =
+          subjectCount > 0
+            ? Math.round((totalAvg / subjectCount) * 100) / 100
+            : null;
+        yearData.overallGrade =
+          yearData.overallAverage !== null
+            ? getLetterGrade(yearData.overallAverage)
+            : null;
+        yearData.subjectCount = subjectCount;
+      });
 
-    // Build transcript response
-    const transcript = {
-      student: {
-        id: student.id,
-        studentId: student.studentId,
-        firstName: student.firstName,
-        lastName: student.lastName,
-        englishFirstName: student.englishFirstName,
-        englishLastName: student.englishLastName,
-        khmerName: (student.customFields as any)?.regional?.khmerName || null,
-        dateOfBirth: student.dateOfBirth,
-        gender: student.gender,
-        photo: student.photoUrl,
-        enrolledAt: student.createdAt,
-        status: student.isAccountActive ? 'ACTIVE' : 'INACTIVE',
-      },
-      summary: {
-        totalYears,
-        currentClass: currentEnrollment?.class?.name || null,
-        currentGrade: currentEnrollment?.class?.grade || null,
-        cumulativeAverage: gpaCount > 0 ? Math.round((overallGPA / gpaCount) * 100) / 100 : null,
-        cumulativeGrade: gpaCount > 0 ? getLetterGrade(overallGPA / gpaCount) : null,
-        promotions: automaticPromoCount + manualPromoCount,
-        repeats: repeatCount,
-        totalProgressions: progressions.length,
-      },
-      academicYears: Object.values(gradesByYear).map((year: any) => ({
-        ...year,
-        subjects: Object.values(year.subjects),
-        classId: student.studentClasses.find((sc) =>
-          sc.class?.academicYearId === year.yearId)?.classId || year.classId || null,
-        attendance: attendanceByClass[student.studentClasses.find((sc) =>
-          sc.class?.academicYearId === year.yearId)?.classId || ''] || null,
-      })).sort((a: any, b: any) => {
-        return new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime();
-      }),
-      progressions,
-      monthlySummaries: monthlySummaries.map((ms) => ({
-        month: ms.month,
-        monthNumber: ms.monthNumber,
-        year: ms.year,
-        classId: ms.classId,
-        totalScore: ms.totalScore,
-        totalMaxScore: ms.totalMaxScore,
-        average: ms.average,
-        classRank: ms.classRank,
-        gradeLevel: ms.gradeLevel,
-      })),
-      documentMetaByYear: Object.fromEntries(latestOfficialByYear),
-      documentMeta: {
-        status: officialDocuments.length > 0 ? 'OFFICIAL' : 'DRAFT',
-        isOfficial: officialDocuments.length > 0,
-        generatedAt: new Date().toISOString(),
-        formulaVersion: TRANSCRIPT_FORMULA_VERSION,
-        hasGrades: grades.length > 0,
-        hasAttendance: attendanceRows.length > 0,
-      },
-    };
+      // Format progressions
+      const progressions = student.StudentProgression.map((p) => ({
+        id: p.id,
+        fromYear: p.fromAcademicYear?.name,
+        toYear: p.toAcademicYear?.name,
+        fromClass: p.fromClass?.name,
+        toClass: p.toClass?.name,
+        promotionType: p.promotionType,
+        notes: p.notes,
+        createdAt: p.createdAt,
+      }));
 
-    res.json({ success: true, data: transcript });
+      // Calculate overall statistics
+      const allYears = Object.values(gradesByYear);
+      const totalYears = allYears.length;
+      const automaticPromoCount = progressions.filter(
+        (p) => p.promotionType === "AUTOMATIC",
+      ).length;
+      const repeatCount = progressions.filter(
+        (p) => p.promotionType === "REPEAT",
+      ).length;
+      const manualPromoCount = progressions.filter(
+        (p) => p.promotionType === "MANUAL",
+      ).length;
 
-  } catch (error: any) {
-    console.error('Transcript error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get student transcript',
-      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
-    });
-  }
-});
+      let overallGPA = 0;
+      let gpaCount = 0;
+      allYears.forEach((year: any) => {
+        if (
+          typeof year.overallAverage === "number" &&
+          Number.isFinite(year.overallAverage)
+        ) {
+          overallGPA += year.overallAverage;
+          gpaCount++;
+        }
+      });
+
+      const currentEnrollment =
+        student.studentClasses.find(
+          (enrollment) =>
+            enrollment.status === "ACTIVE" &&
+            enrollment.class.academicYear?.status === "ACTIVE",
+        ) ||
+        student.studentClasses.find(
+          (enrollment) => enrollment.status === "ACTIVE",
+        ) ||
+        student.studentClasses[0] ||
+        null;
+
+      const combineAttendance = (classIdsForPeriod: string[]) => {
+        const combined = {
+          total: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0,
+          rate: 0,
+        };
+        classIdsForPeriod.forEach((classId) => {
+          const bucket = attendanceByClass[classId];
+          if (!bucket) return;
+          combined.total += bucket.total;
+          combined.present += bucket.present;
+          combined.absent += bucket.absent;
+          combined.late += bucket.late;
+          combined.excused += bucket.excused;
+        });
+        combined.rate =
+          combined.total > 0
+            ? Math.round((combined.present / combined.total) * 100)
+            : 0;
+        return combined.total > 0 ? combined : null;
+      };
+
+      // Build transcript response
+      const transcript = {
+        student: {
+          id: student.id,
+          studentId: student.studentId,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          englishFirstName: student.englishFirstName,
+          englishLastName: student.englishLastName,
+          khmerName: (student.customFields as any)?.regional?.khmerName || null,
+          dateOfBirth: student.dateOfBirth,
+          gender: student.gender,
+          photo: student.photoUrl,
+          enrolledAt: student.createdAt,
+          status: student.isAccountActive ? "ACTIVE" : "INACTIVE",
+        },
+        summary: {
+          totalYears,
+          currentClass: currentEnrollment?.class?.name || null,
+          currentGrade: currentEnrollment?.class?.grade || null,
+          cumulativeAverage:
+            gpaCount > 0
+              ? Math.round((overallGPA / gpaCount) * 100) / 100
+              : null,
+          cumulativeGrade:
+            gpaCount > 0 ? getLetterGrade(overallGPA / gpaCount) : null,
+          promotions: automaticPromoCount + manualPromoCount,
+          repeats: repeatCount,
+          totalProgressions: progressions.length,
+        },
+        academicYears: Object.values(gradesByYear)
+          .map((year: any) => {
+            const yearEnrollments = student.studentClasses
+              .filter(
+                (enrollment) =>
+                  enrollment.class?.academicYearId === year.yearId,
+              )
+              .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+            const yearClassIds = [
+              ...new Set(
+                yearEnrollments.map((enrollment) => enrollment.classId),
+              ),
+            ];
+            const currentYearEnrollment =
+              [...yearEnrollments]
+                .reverse()
+                .find((enrollment) => enrollment.status === "ACTIVE") ||
+              yearEnrollments[yearEnrollments.length - 1];
+
+            return {
+              ...year,
+              subjects: Object.values(year.subjects),
+              classId: currentYearEnrollment?.classId || year.classId || null,
+              className:
+                yearEnrollments
+                  .map((enrollment) => enrollment.class?.name)
+                  .filter(Boolean)
+                  .join(" → ") || year.className,
+              classHistory: yearEnrollments.map((enrollment) => ({
+                enrollmentId: enrollment.id,
+                classId: enrollment.classId,
+                className: enrollment.class?.name || null,
+                gradeLevel: enrollment.class?.grade || null,
+                startedAt: enrollment.startedAt,
+                endedAt: enrollment.endedAt,
+                status: enrollment.status,
+                entryReason: enrollment.entryReason,
+                exitReason: enrollment.exitReason,
+              })),
+              attendance: combineAttendance(yearClassIds),
+            };
+          })
+          .sort((a: any, b: any) => {
+            return (
+              new Date(b.startDate || 0).getTime() -
+              new Date(a.startDate || 0).getTime()
+            );
+          }),
+        progressions,
+        transfers: student.transfers.map((transfer) => ({
+          id: transfer.id,
+          type: transfer.type,
+          status: transfer.status,
+          effectiveAt: transfer.effectiveAt,
+          reason: transfer.reason,
+          fromClass: transfer.fromClass,
+          toClass: transfer.toClass,
+        })),
+        monthlySummaries: monthlySummaries.map((ms) => ({
+          month: ms.month,
+          monthNumber: ms.monthNumber,
+          year: ms.year,
+          classId: ms.classId,
+          totalScore: ms.totalScore,
+          totalMaxScore: ms.totalMaxScore,
+          average: ms.average,
+          classRank: ms.classRank,
+          gradeLevel: ms.gradeLevel,
+        })),
+        documentMetaByYear: Object.fromEntries(latestOfficialByYear),
+        documentMeta: {
+          status: officialDocuments.length > 0 ? "OFFICIAL" : "DRAFT",
+          isOfficial: officialDocuments.length > 0,
+          generatedAt: new Date().toISOString(),
+          formulaVersion: TRANSCRIPT_FORMULA_VERSION,
+          hasGrades: grades.length > 0,
+          hasAttendance: attendanceRows.length > 0,
+        },
+      };
+
+      res.json({ success: true, data: transcript });
+    } catch (error: any) {
+      console.error("Transcript error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to get student transcript",
+        ...(process.env.NODE_ENV !== "production"
+          ? { details: error.message }
+          : {}),
+      });
+    }
+  },
+);
 
 // POST /students/:id/transcript/issue - Lock an official transcript record
-app.post('/students/:id/transcript/issue', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.user?.schoolId;
-    const userId = req.user?.id;
-    const role = req.user?.role || '';
-    const academicYearId = String(req.body?.academicYearId || '');
+app.post(
+  "/students/:id/transcript/issue",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.user?.schoolId;
+      const userId = req.user?.id;
+      const role = req.user?.role || "";
+      const academicYearId = String(req.body?.academicYearId || "");
 
-    if (!schoolId || !userId) {
-      return res.status(400).json({ success: false, error: 'School ID required' });
-    }
-    if (!TRANSCRIPT_ISSUER_ROLES.has(role)) {
-      return res.status(403).json({ success: false, error: 'Administrator access required to issue official transcripts' });
-    }
-    if (!academicYearId) {
-      return res.status(400).json({ success: false, error: 'Academic year is required' });
-    }
-    if (!(prisma as any).studentTranscriptDocument?.create) {
-      return res.status(501).json({ success: false, error: 'Transcript issuance storage is not available. Apply the latest database migration first.' });
-    }
+      if (!schoolId || !userId) {
+        return res
+          .status(400)
+          .json({ success: false, error: "School ID required" });
+      }
+      if (!TRANSCRIPT_ISSUER_ROLES.has(role)) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            error:
+              "Administrator access required to issue official transcripts",
+          });
+      }
+      if (!academicYearId) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Academic year is required" });
+      }
+      if (!(prisma as any).studentTranscriptDocument?.create) {
+        return res
+          .status(501)
+          .json({
+            success: false,
+            error:
+              "Transcript issuance storage is not available. Apply the latest database migration first.",
+          });
+      }
 
-    const existingOfficial = await (prisma as any).studentTranscriptDocument.findFirst({
-      where: { schoolId, studentId: id, academicYearId, status: 'OFFICIAL' },
-      select: { documentNumber: true, verificationCode: true, issuedAt: true },
-    });
-    if (existingOfficial) {
-      return res.status(409).json({
-        success: false,
-        error: 'An official transcript already exists for this academic year. Revoke it before issuing a replacement.',
-        data: existingOfficial,
+      const existingOfficial = await (
+        prisma as any
+      ).studentTranscriptDocument.findFirst({
+        where: { schoolId, studentId: id, academicYearId, status: "OFFICIAL" },
+        select: {
+          documentNumber: true,
+          verificationCode: true,
+          issuedAt: true,
+        },
       });
-    }
+      if (existingOfficial) {
+        return res.status(409).json({
+          success: false,
+          error:
+            "An official transcript already exists for this academic year. Revoke it before issuing a replacement.",
+          data: existingOfficial,
+        });
+      }
 
-    const student = await prisma.student.findFirst({
-      where: { id, schoolId },
-      select: {
-        id: true,
-        studentId: true,
-        firstName: true,
-        lastName: true,
-        englishFirstName: true,
-        englishLastName: true,
-        dateOfBirth: true,
-        gender: true,
-        customFields: true,
-        studentClasses: {
-          where: { OR: [{ academicYearId }, { class: { academicYearId } }] },
-          select: {
-            classId: true,
-            status: true,
-            class: {
-              select: {
-                id: true,
-                name: true,
-                grade: true,
-                academicYear: { select: { id: true, name: true, startDate: true, endDate: true } },
+      const student = await prisma.student.findFirst({
+        where: { id, schoolId },
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          englishFirstName: true,
+          englishLastName: true,
+          dateOfBirth: true,
+          gender: true,
+          customFields: true,
+          studentClasses: {
+            where: { OR: [{ academicYearId }, { class: { academicYearId } }] },
+            select: {
+              classId: true,
+              status: true,
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                  grade: true,
+                  academicYear: {
+                    select: {
+                      id: true,
+                      name: true,
+                      startDate: true,
+                      endDate: true,
+                    },
+                  },
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!student) {
-      return res.status(404).json({ success: false, error: 'Student not found' });
-    }
+      if (!student) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Student not found" });
+      }
 
-    const enrollment = student.studentClasses.find((item) => item.status === 'ACTIVE') || student.studentClasses[0];
-    if (!enrollment?.class?.academicYear) {
-      return res.status(404).json({ success: false, error: 'Academic year enrollment not found for this student' });
-    }
+      const enrollment =
+        student.studentClasses.find((item) => item.status === "ACTIVE") ||
+        student.studentClasses[0];
+      if (!enrollment?.class?.academicYear) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error: "Academic year enrollment not found for this student",
+          });
+      }
 
-    const [grades, monthlySummaries, attendanceRows, existingCount] = await Promise.all([
-      prisma.grade.findMany({
-        where: { studentId: id, class: { academicYearId } },
-        include: { subject: true },
-        orderBy: [{ year: 'asc' }, { monthNumber: 'asc' }, { subjectId: 'asc' }],
-      }),
-      prisma.studentMonthlySummary.findMany({
-        where: { studentId: id, classId: enrollment.classId },
-        orderBy: [{ year: 'asc' }, { monthNumber: 'asc' }],
-      }),
-      prisma.attendance.findMany({
-        where: { studentId: id, classId: enrollment.classId },
-        select: { date: true, status: true, session: true },
-        orderBy: { date: 'asc' },
-      }),
-      (prisma as any).studentTranscriptDocument.count({ where: { schoolId } }),
-    ]);
+      const [grades, monthlySummaries, attendanceRows, existingCount] =
+        await Promise.all([
+          prisma.grade.findMany({
+            where: { studentId: id, class: { academicYearId } },
+            include: { subject: true },
+            orderBy: [
+              { year: "asc" },
+              { monthNumber: "asc" },
+              { subjectId: "asc" },
+            ],
+          }),
+          prisma.studentMonthlySummary.findMany({
+            where: { studentId: id, classId: enrollment.classId },
+            orderBy: [{ year: "asc" }, { monthNumber: "asc" }],
+          }),
+          prisma.attendance.findMany({
+            where: { studentId: id, classId: enrollment.classId },
+            select: { date: true, status: true, session: true },
+            orderBy: { date: "asc" },
+          }),
+          (prisma as any).studentTranscriptDocument.count({
+            where: { schoolId },
+          }),
+        ]);
 
-    if (grades.length === 0) {
-      return res.status(409).json({ success: false, error: 'Cannot issue an official transcript before grades are recorded for this academic year' });
-    }
+      if (grades.length === 0) {
+        return res
+          .status(409)
+          .json({
+            success: false,
+            error:
+              "Cannot issue an official transcript before grades are recorded for this academic year",
+          });
+      }
 
-    const snapshotData = stableJson({
-      student: {
-        id: student.id,
-        studentId: student.studentId,
-        firstName: student.firstName,
-        lastName: student.lastName,
-        englishFirstName: student.englishFirstName,
-        englishLastName: student.englishLastName,
-        khmerName: (student.customFields as any)?.regional?.khmerName || null,
-        dateOfBirth: student.dateOfBirth,
-        gender: student.gender,
-      },
-      academicYear: enrollment.class.academicYear,
-      class: { id: enrollment.class.id, name: enrollment.class.name, grade: enrollment.class.grade },
-      gradeRecords: grades.map((grade: any) => ({
-        id: grade.id,
-        subjectId: grade.subjectId,
-        subjectCode: grade.subject?.code,
-        subjectName: grade.subject?.name,
-        subjectNameKh: grade.subject?.nameKh,
-        score: grade.score,
-        maxScore: grade.maxScore,
-        percentage: grade.percentage,
-        month: grade.month,
-        monthNumber: grade.monthNumber,
-        year: grade.year,
-        updatedAt: grade.updatedAt,
-      })),
-      monthlySummaries: monthlySummaries.map((summary) => ({
-        month: summary.month,
-        monthNumber: summary.monthNumber,
-        year: summary.year,
-        totalScore: summary.totalScore,
-        totalMaxScore: summary.totalMaxScore,
-        average: summary.average,
-        classRank: summary.classRank,
-        gradeLevel: summary.gradeLevel,
-        updatedAt: summary.updatedAt,
-      })),
-      attendance: attendanceRows,
-      formulaVersion: TRANSCRIPT_FORMULA_VERSION,
-    });
-
-    const issuedDocument = await (prisma as any).studentTranscriptDocument.create({
-      data: {
-        schoolId,
-        studentId: id,
-        academicYearId,
-        status: 'OFFICIAL',
-        documentNumber: createTranscriptDocumentNumber(schoolId, enrollment.class.academicYear.name, existingCount + 1),
-        verificationCode: createTranscriptVerificationCode(),
-        snapshotChecksum: createTranscriptChecksum(snapshotData),
-        snapshotData,
+      const snapshotData = stableJson({
+        student: {
+          id: student.id,
+          studentId: student.studentId,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          englishFirstName: student.englishFirstName,
+          englishLastName: student.englishLastName,
+          khmerName: (student.customFields as any)?.regional?.khmerName || null,
+          dateOfBirth: student.dateOfBirth,
+          gender: student.gender,
+        },
+        academicYear: enrollment.class.academicYear,
+        class: {
+          id: enrollment.class.id,
+          name: enrollment.class.name,
+          grade: enrollment.class.grade,
+        },
+        gradeRecords: grades.map((grade: any) => ({
+          id: grade.id,
+          subjectId: grade.subjectId,
+          subjectCode: grade.subject?.code,
+          subjectName: grade.subject?.name,
+          subjectNameKh: grade.subject?.nameKh,
+          score: grade.score,
+          maxScore: grade.maxScore,
+          percentage: grade.percentage,
+          month: grade.month,
+          monthNumber: grade.monthNumber,
+          year: grade.year,
+          updatedAt: grade.updatedAt,
+        })),
+        monthlySummaries: monthlySummaries.map((summary) => ({
+          month: summary.month,
+          monthNumber: summary.monthNumber,
+          year: summary.year,
+          totalScore: summary.totalScore,
+          totalMaxScore: summary.totalMaxScore,
+          average: summary.average,
+          classRank: summary.classRank,
+          gradeLevel: summary.gradeLevel,
+          updatedAt: summary.updatedAt,
+        })),
+        attendance: attendanceRows,
         formulaVersion: TRANSCRIPT_FORMULA_VERSION,
-        approvedById: userId,
-        approvedAt: new Date(),
-      },
-      select: {
-        id: true,
-        academicYearId: true,
-        status: true,
-        documentNumber: true,
-        verificationCode: true,
-        snapshotChecksum: true,
-        formulaVersion: true,
-        approvedAt: true,
-        issuedAt: true,
-        approvedById: true,
-      },
-    });
+      });
 
-    cache.clear();
-    res.status(201).json({ success: true, data: issuedDocument });
-  } catch (error: any) {
-    console.error('Issue transcript error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to issue official transcript',
-      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
-    });
-  }
-});
+      const issuedDocument = await (
+        prisma as any
+      ).studentTranscriptDocument.create({
+        data: {
+          schoolId,
+          studentId: id,
+          academicYearId,
+          status: "OFFICIAL",
+          documentNumber: createTranscriptDocumentNumber(
+            schoolId,
+            enrollment.class.academicYear.name,
+            existingCount + 1,
+          ),
+          verificationCode: createTranscriptVerificationCode(),
+          snapshotChecksum: createTranscriptChecksum(snapshotData),
+          snapshotData,
+          formulaVersion: TRANSCRIPT_FORMULA_VERSION,
+          approvedById: userId,
+          approvedAt: new Date(),
+        },
+        select: {
+          id: true,
+          academicYearId: true,
+          status: true,
+          documentNumber: true,
+          verificationCode: true,
+          snapshotChecksum: true,
+          formulaVersion: true,
+          approvedAt: true,
+          issuedAt: true,
+          approvedById: true,
+        },
+      });
+
+      cache.clear();
+      res.status(201).json({ success: true, data: issuedDocument });
+    } catch (error: any) {
+      console.error("Issue transcript error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to issue official transcript",
+        ...(process.env.NODE_ENV !== "production"
+          ? { details: error.message }
+          : {}),
+      });
+    }
+  },
+);
 
 // POST /students/:id/transcript/revoke - Revoke the active official transcript
-app.post('/students/:id/transcript/revoke', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.user?.schoolId;
-    const userId = req.user?.id;
-    const role = req.user?.role || '';
-    const academicYearId = String(req.body?.academicYearId || '');
-    const reason = String(req.body?.reason || '').trim();
+app.post(
+  "/students/:id/transcript/revoke",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.user?.schoolId;
+      const userId = req.user?.id;
+      const role = req.user?.role || "";
+      const academicYearId = String(req.body?.academicYearId || "");
+      const reason = String(req.body?.reason || "").trim();
 
-    if (!schoolId || !userId) {
-      return res.status(400).json({ success: false, error: 'School ID required' });
-    }
-    if (!TRANSCRIPT_ISSUER_ROLES.has(role)) {
-      return res.status(403).json({ success: false, error: 'Administrator access required to revoke official transcripts' });
-    }
-    if (!academicYearId) {
-      return res.status(400).json({ success: false, error: 'Academic year is required' });
-    }
-    if (!reason) {
-      return res.status(400).json({ success: false, error: 'Revocation reason is required' });
-    }
-    if (!(prisma as any).studentTranscriptDocument?.update) {
-      return res.status(501).json({ success: false, error: 'Transcript issuance storage is not available. Apply the latest database migration first.' });
-    }
+      if (!schoolId || !userId) {
+        return res
+          .status(400)
+          .json({ success: false, error: "School ID required" });
+      }
+      if (!TRANSCRIPT_ISSUER_ROLES.has(role)) {
+        return res
+          .status(403)
+          .json({
+            success: false,
+            error:
+              "Administrator access required to revoke official transcripts",
+          });
+      }
+      if (!academicYearId) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Academic year is required" });
+      }
+      if (!reason) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Revocation reason is required" });
+      }
+      if (!(prisma as any).studentTranscriptDocument?.update) {
+        return res
+          .status(501)
+          .json({
+            success: false,
+            error:
+              "Transcript issuance storage is not available. Apply the latest database migration first.",
+          });
+      }
 
-    const existingOfficial = await (prisma as any).studentTranscriptDocument.findFirst({
-      where: { schoolId, studentId: id, academicYearId, status: 'OFFICIAL' },
-      select: { id: true },
-    });
-    if (!existingOfficial) {
-      return res.status(404).json({ success: false, error: 'No active official transcript found for this academic year' });
+      const existingOfficial = await (
+        prisma as any
+      ).studentTranscriptDocument.findFirst({
+        where: { schoolId, studentId: id, academicYearId, status: "OFFICIAL" },
+        select: { id: true },
+      });
+      if (!existingOfficial) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            error: "No active official transcript found for this academic year",
+          });
+      }
+
+      const revokedDocument = await (
+        prisma as any
+      ).studentTranscriptDocument.update({
+        where: { id: existingOfficial.id },
+        data: {
+          status: "REVOKED",
+          revokedAt: new Date(),
+          revokedById: userId,
+          revocationReason: reason,
+        },
+        select: {
+          id: true,
+          academicYearId: true,
+          status: true,
+          documentNumber: true,
+          verificationCode: true,
+          revokedAt: true,
+          revocationReason: true,
+        },
+      });
+
+      cache.clear();
+      res.json({ success: true, data: revokedDocument });
+    } catch (error: any) {
+      console.error("Revoke transcript error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to revoke official transcript",
+        ...(process.env.NODE_ENV !== "production"
+          ? { details: error.message }
+          : {}),
+      });
     }
-
-    const revokedDocument = await (prisma as any).studentTranscriptDocument.update({
-      where: { id: existingOfficial.id },
-      data: {
-        status: 'REVOKED',
-        revokedAt: new Date(),
-        revokedById: userId,
-        revocationReason: reason,
-      },
-      select: {
-        id: true,
-        academicYearId: true,
-        status: true,
-        documentNumber: true,
-        verificationCode: true,
-        revokedAt: true,
-        revocationReason: true,
-      },
-    });
-
-    cache.clear();
-    res.json({ success: true, data: revokedDocument });
-  } catch (error: any) {
-    console.error('Revoke transcript error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to revoke official transcript',
-      ...(process.env.NODE_ENV !== 'production' ? { details: error.message } : {}),
-    });
-  }
-});
+  },
+);
 
 // Helper function for letter grades
 function getLetterGrade(percentage: number): string {
-  if (percentage >= 90) return 'A';
-  if (percentage >= 80) return 'B';
-  if (percentage >= 70) return 'C';
-  if (percentage >= 60) return 'D';
-  if (percentage >= 50) return 'E';
-  return 'F';
+  if (percentage >= 90) return "A";
+  if (percentage >= 80) return "B";
+  if (percentage >= 70) return "C";
+  if (percentage >= 60) return "D";
+  if (percentage >= 50) return "E";
+  return "F";
 }
 
 // Start server
@@ -3880,21 +5078,25 @@ export default app;
  * PUT /students/:id/lock
  * Toggle profile lock for a student
  */
-app.put('/students/:id/lock', async (req: AuthRequest, res: Response) => {
+app.put("/students/:id/lock", async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
+      return res.status(401).json({ success: false, error: "Unauthorized" });
     }
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!["ADMIN", "SUPER_ADMIN"].includes(req.user.role || "")) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Admin access required" });
     }
 
     const { id } = req.params;
     const { isProfileLocked } = req.body;
     const schoolId = req.user.schoolId;
 
-    if (typeof isProfileLocked !== 'boolean') {
-      return res.status(400).json({ success: false, error: 'isProfileLocked must be a boolean' });
+    if (typeof isProfileLocked !== "boolean") {
+      return res
+        .status(400)
+        .json({ success: false, error: "isProfileLocked must be a boolean" });
     }
 
     const existingStudent = await prisma.student.findFirst({
@@ -3902,7 +5104,9 @@ app.put('/students/:id/lock', async (req: AuthRequest, res: Response) => {
       select: { id: true },
     });
     if (!existingStudent) {
-      return res.status(404).json({ success: false, error: 'Student not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Student not found" });
     }
 
     const student = await prisma.student.update({
@@ -3912,7 +5116,7 @@ app.put('/students/:id/lock', async (req: AuthRequest, res: Response) => {
 
     res.json({ success: true, data: student });
   } catch (error: any) {
-    console.error('Lock student profile error:', error);
-    res.status(500).json({ success: false, error: 'Failed to lock profile' });
+    console.error("Lock student profile error:", error);
+    res.status(500).json({ success: false, error: "Failed to lock profile" });
   }
 });

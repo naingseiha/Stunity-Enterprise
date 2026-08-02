@@ -2377,7 +2377,8 @@
       "school": "សាលារៀន",
       "platformAdmin": "អ្នកគ្រប់គ្រងប្រព័ន្ធ",
       "superAdmin": "អ្នកគ្រប់គ្រងជាន់ខ្ពស់",
-      "logout": "ចាកចេញ"
+      "logout": "ចាកចេញ",
+      "monthlyAttendanceEntry": "បញ្ចុលអវត្តមានប្រចាំខែ"
     }
   },
   "auto": {

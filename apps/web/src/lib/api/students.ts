@@ -140,7 +140,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   return {
     'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...(token && { Authorization: `Bearer ${token}` }),
   };
 }
 
@@ -167,10 +167,9 @@ export async function getStudents(params?: {
   const result = await cachedFetch(
     cacheKey,
     async () => {
-      const response = await fetch(
-        `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`,
-        { headers: await getAuthHeaders() }
-      );
+      const response = await fetch(`${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`, {
+        headers: await getAuthHeaders(),
+      });
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Failed to fetch students' }));
         throw new Error(error.message || 'Failed to fetch students');
@@ -180,14 +179,16 @@ export async function getStudents(params?: {
     2 * 60 * 1000
   );
 
-  const transformedStudents = (result.data || []).map((student: any): Student => ({
-    ...student,
-    studentId: student.studentId || student.id,
-    firstName: student.firstName || '',
-    lastName: student.lastName || '',
-    englishFirstName: student.englishFirstName || null,
-    englishLastName: student.englishLastName || null,
-  }));
+  const transformedStudents = (result.data || []).map(
+    (student: any): Student => ({
+      ...student,
+      studentId: student.studentId || student.id,
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      englishFirstName: student.englishFirstName || null,
+      englishLastName: student.englishLastName || null,
+    })
+  );
 
   return {
     success: result.success,
@@ -251,12 +252,28 @@ function buildStudentPayload(data: Partial<CreateStudentInput>): Record<string, 
 
   // Regional / custom fields (backend validator accepts all via passthrough)
   const regionalKeys: string[] = [
-    'placeOfBirth', 'currentAddress', 'fatherName', 'motherName',
-    'parentPhone', 'parentOccupation', 'previousGrade', 'previousSchool',
-    'repeatingGrade', 'transferredFrom',
-    'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
-    'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
-    'grade12Track', 'remarks',
+    'placeOfBirth',
+    'currentAddress',
+    'fatherName',
+    'motherName',
+    'parentPhone',
+    'parentOccupation',
+    'previousGrade',
+    'previousSchool',
+    'repeatingGrade',
+    'transferredFrom',
+    'grade9ExamSession',
+    'grade9ExamCenter',
+    'grade9ExamRoom',
+    'grade9ExamDesk',
+    'grade9PassStatus',
+    'grade12ExamSession',
+    'grade12ExamCenter',
+    'grade12ExamRoom',
+    'grade12ExamDesk',
+    'grade12PassStatus',
+    'grade12Track',
+    'remarks',
   ];
   for (const key of regionalKeys) {
     if (data[key] !== undefined) payload[key] = data[key];
@@ -267,8 +284,15 @@ function buildStudentPayload(data: Partial<CreateStudentInput>): Record<string, 
   }
 
   const knownKeys = new Set<string>([
-    'firstName', 'lastName', 'englishFirstName', 'englishLastName',
-    'gender', 'dateOfBirth', 'phoneNumber', 'email', 'classId',
+    'firstName',
+    'lastName',
+    'englishFirstName',
+    'englishLastName',
+    'gender',
+    'dateOfBirth',
+    'phoneNumber',
+    'email',
+    'classId',
     'customFields',
     ...regionalKeys,
   ]);
@@ -303,8 +327,11 @@ export async function createStudent(data: CreateStudentInput): Promise<{ success
   };
 }
 
-export async function importStudents(data: CreateStudentInput[]): Promise<{ success: boolean; data: { students: Student[]; count: number; assignedCount: number } }> {
-  const payload = data.map(row => buildStudentPayload(row));
+export async function importStudents(data: CreateStudentInput[]): Promise<{
+  success: boolean;
+  data: { students: Student[]; count: number; assignedCount: number };
+}> {
+  const payload = data.map((row) => buildStudentPayload(row));
 
   const response = await fetch(`${STUDENT_SERVICE_URL}/students/import`, {
     method: 'POST',
@@ -314,13 +341,8 @@ export async function importStudents(data: CreateStudentInput[]): Promise<{ succ
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to import students' }));
-    const rowErrors = Array.isArray(error.errors)
-      ? error.errors.map((rowError: any) => `Row ${rowError.row}: ${rowError.message}`)
-      : [];
-    throw new StudentImportError(
-      rowErrors[0] || error.message || 'Failed to import students',
-      rowErrors
-    );
+    const rowErrors = Array.isArray(error.errors) ? error.errors.map((rowError: any) => `Row ${rowError.row}: ${rowError.message}`) : [];
+    throw new StudentImportError(rowErrors[0] || error.message || 'Failed to import students', rowErrors);
   }
 
   const result = await response.json();
@@ -375,11 +397,24 @@ export async function deleteStudent(id: string): Promise<{ success: boolean; mes
   return result;
 }
 
-export async function reassignStudents(studentIds: string[], targetClassId: string): Promise<{ success: boolean; data: { assigned: number; class: any }; message: string }> {
+export async function reassignStudents(
+  studentIds: string[],
+  targetClassId: string,
+  options?: { effectiveDate?: string; reason?: string }
+): Promise<{
+  success: boolean;
+  data: {
+    assigned: number;
+    unchanged?: number;
+    transferIds?: string[];
+    class: any;
+  };
+  message: string;
+}> {
   const response = await fetch(`${STUDENT_SERVICE_URL}/students/reassign`, {
     method: 'POST',
     headers: await getAuthHeaders(),
-    body: JSON.stringify({ studentIds, targetClassId }),
+    body: JSON.stringify({ studentIds, targetClassId, ...options }),
   });
 
   if (!response.ok) {
@@ -399,7 +434,7 @@ export async function uploadStudentPhoto(id: string, file: File): Promise<{ succ
 
   const response = await fetch(`${STUDENT_SERVICE_URL}/students/${id}/photo`, {
     method: 'POST',
-    headers: { ...(token && { 'Authorization': `Bearer ${token}` }) },
+    headers: { ...(token && { Authorization: `Bearer ${token}` }) },
     body: formData,
   });
 

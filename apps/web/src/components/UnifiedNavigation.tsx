@@ -542,6 +542,13 @@ export default function UnifiedNavigation({
             skeleton: "table" as const,
           },
           {
+            name: tNav("items.monthlyAttendanceEntry"),
+            icon: ClipboardCheck,
+            path: `/${locale}/attendance/monthly-entry`,
+            prefetch: "attendance-core",
+            skeleton: "table" as const,
+          },
+          {
             name: tNav("items.gradeAnalytics"),
             icon: TrendingUp,
             path: `/${locale}/grades/analytics`,

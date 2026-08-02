@@ -49,6 +49,7 @@ Long-form guides live in **[guides/](guides/README.md)** (education model, onboa
 - [SCHOOL_SOCIAL_INTEGRATION.md](SCHOOL_SOCIAL_INTEGRATION.md)
 - [TIMETABLE_SYSTEM.md](TIMETABLE_SYSTEM.md)
 - [poster-studio/design-collection-2-graphic-prompts.md](poster-studio/design-collection-2-graphic-prompts.md) — Index for Poster Studio Collection 2 prompt packs: Heritage Khmer and Modern White.
+- [poster-studio/modern-khmer-excellence-future-background-prompts.md](poster-studio/modern-khmer-excellence-future-background-prompts.md) — Prompt pack for future large wall-print group posters and mobile profile/leaderboard wallpaper backgrounds.
 
 ### Admin and enterprise
 

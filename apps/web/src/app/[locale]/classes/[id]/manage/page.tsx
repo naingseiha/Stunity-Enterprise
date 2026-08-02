@@ -30,6 +30,7 @@ import AnimatedContent from '@/components/AnimatedContent';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 import { CLASS_SERVICE_URL, STUDENT_SERVICE_URL } from '@/lib/api/config';
+import { reassignStudents } from '@/lib/api/students';
 
 import { useTranslations } from 'next-intl';
 interface ManagedStudent {
@@ -74,6 +75,10 @@ interface OtherClass {
 type GenderFilter = 'all' | 'MALE' | 'FEMALE';
 type MessageTone = 'success' | 'warning' | 'error';
 type DragSource = 'enrolled' | 'unassigned' | null;
+
+function todayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function buildPhotoUrl(photoUrl?: string | null) {
   if (!photoUrl) return null;
@@ -331,6 +336,8 @@ export default function ClassManagePage() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferTargetClass, setTransferTargetClass] = useState('');
+  const [transferEffectiveDate, setTransferEffectiveDate] = useState(todayInputValue);
+  const [transferReason, setTransferReason] = useState('');
   const [isTransferring, setIsTransferring] = useState(false);
   const [draggedStudentId, setDraggedStudentId] = useState<string | null>(null);
   const [dragSource, setDragSource] = useState<DragSource>(null);
@@ -609,24 +616,16 @@ export default function ClassManagePage() {
   );
 
   const handleTransferStudents = useCallback(async () => {
-    if (!classData?.academicYearId || selectedEnrolled.size === 0 || !transferTargetClass) return;
+    if (!classData?.academicYearId || selectedEnrolled.size === 0 || !transferTargetClass || !transferEffectiveDate) return;
 
     const studentIds = Array.from(selectedEnrolled);
     setIsTransferring(true);
     setActionMessage(null);
 
     try {
-      await fetchAuthedJson(`${CLASS_SERVICE_URL}/classes/${classId}/students/batch-remove`, {
-        method: 'POST',
-        body: JSON.stringify({ studentIds }),
-      });
-
-      await fetchAuthedJson(`${CLASS_SERVICE_URL}/classes/${transferTargetClass}/students/batch`, {
-        method: 'POST',
-        body: JSON.stringify({
-          studentIds,
-          academicYearId: classData.academicYearId,
-        }),
+      await reassignStudents(studentIds, transferTargetClass, {
+        effectiveDate: transferEffectiveDate,
+        reason: transferReason.trim() || undefined,
       });
 
       const targetLabel = otherClasses.find((item) => item.id === transferTargetClass)?.name || 'the target class';
@@ -637,24 +636,14 @@ export default function ClassManagePage() {
       setSelectedEnrolled(new Set());
       setShowTransferModal(false);
       setTransferTargetClass('');
+      setTransferReason('');
       await fetchClassData(false);
     } catch (error: any) {
-      try {
-        await fetchAuthedJson(`${CLASS_SERVICE_URL}/classes/${classId}/students/batch`, {
-          method: 'POST',
-          body: JSON.stringify({
-            studentIds,
-            academicYearId: classData.academicYearId,
-          }),
-        });
-        setActionMessage({ tone: 'error', text: `${error.message || 'Transfer failed'}. The original roster was restored.` });
-      } catch {
-        setActionMessage({ tone: 'error', text: `${error.message || 'Transfer failed'}. Please refresh and verify the roster.` });
-      }
+      setActionMessage({ tone: 'error', text: error.message || 'Transfer failed. Please refresh and verify the roster.' });
     } finally {
       setIsTransferring(false);
     }
-  }, [classData, classId, fetchAuthedJson, fetchClassData, otherClasses, selectedEnrolled, transferTargetClass]);
+  }, [classData, fetchClassData, otherClasses, selectedEnrolled, transferEffectiveDate, transferReason, transferTargetClass]);
 
   const handleDragStart = (studentId: string, source: DragSource) => {
     setDraggedStudentId(studentId);
@@ -1223,6 +1212,7 @@ export default function ClassManagePage() {
                   onClick={() => {
                     setShowTransferModal(false);
                     setTransferTargetClass('');
+                    setTransferReason('');
                   }}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 text-slate-500 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
                 >
@@ -1260,6 +1250,27 @@ export default function ClassManagePage() {
                   ))}
                 </select>
               </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Effective date</span>
+                  <input
+                    type="date"
+                    value={transferEffectiveDate}
+                    onChange={(event) => setTransferEffectiveDate(event.target.value)}
+                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Reason</span>
+                  <input
+                    type="text"
+                    value={transferReason}
+                    onChange={(event) => setTransferReason(event.target.value)}
+                    placeholder="Optional note"
+                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </label>
+              </div>
               <div className="rounded-[1rem] border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm font-medium text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
                 <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_11683626" />
               </div>
@@ -1270,6 +1281,7 @@ export default function ClassManagePage() {
                 onClick={() => {
                   setShowTransferModal(false);
                   setTransferTargetClass('');
+                  setTransferReason('');
                 }}
                 className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
               >
@@ -1278,7 +1290,7 @@ export default function ClassManagePage() {
               <button
                 type="button"
                 onClick={() => void handleTransferStudents()}
-                disabled={isTransferring || !transferTargetClass}
+                disabled={isTransferring || !transferTargetClass || !transferEffectiveDate}
                 className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isTransferring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}

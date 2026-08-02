@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Attendance {
+  id        String            @id @default(cuid())
+  studentId String
+  classId   String?
+  date      DateTime
+  status    AttendanceStatus
+  remarks   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  session   AttendanceSession @default(MORNING)
+  class     Class?            @relation(fields: [classId], references: [id])
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId, date, session])
+  @@index([classId, date])
+  @@index([studentId, date])
+  @@index([date, status])
+  @@map("attendance")
+}
+
+model Class {
+  id                      String                  @id @default(cuid())
+  classId                 String?                 @unique
+  name                    String
+  grade                   String
+  section                 String?
+  academicYear            String                  @default("2024-2025")
+  capacity                Int?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  track                   String?
+  homeroomTeacherId       String?                 @unique
+  attendance              Attendance[]
+  grades                  Grade[]
+  studentMonthlySummaries StudentMonthlySummary[]
+  students                Student[]
+  teacherClasses          TeacherClass[]
+  homeroomTeacher         Teacher?
+
+  @@index([grade])
+  @@map("classes")
+}
+
+model Grade {
+  id            String   @id @default(cuid())
+  studentId     String
+  subjectId     String
+  classId       String
+  score         Float
+  maxScore      Float
+  month         String?
+  monthNumber   Int?
+  year          Int?
+  percentage    Float?
+  weightedScore Float?
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId, classId, month, year])
+  @@index([classId, month, year])
+  @@index([studentId, month, year])
+  @@index([subjectId, classId])
+  @@map("grades")
+}
+
+model GradeConfirmation {
+  id          String   @id @default(cuid())
+  classId     String
+  subjectId   String
+  month       String
+  year        Int
+  isConfirmed Boolean  @default(false)
+  confirmedBy String
+  confirmedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [confirmedBy], references: [id], onDelete: Cascade)
+
+  @@unique([classId, subjectId, month, year])
+  @@index([classId, month, year])
+  @@index([confirmedBy])
+  @@map("grade_confirmations")
+}
+
+model StudentMonthlySummary {
+  id                 String   @id @default(cuid())
+  studentId          String
+  classId            String
+  month              String
+  monthNumber        Int
+  year               Int
+  totalScore         Float
+  totalMaxScore      Float
+  totalWeightedScore Float
+  totalCoefficient   Float
+  average            Float
+  classRank          Int?
+  gradeLevel         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  class              Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId, month, year])
+  @@index([classId, month, year])
+  @@index([studentId, year])
+  @@index([month, year, average])
+  @@map("student_monthly_summaries")
+}
+
+model Student {
+  id                   String                  @id @default(cuid())
+  studentId            String?                 @unique
+  firstName            String
+  lastName             String
+  khmerName            String
+  dateOfBirth          String
+  gender               Gender
+  englishName          String?
+  email                String?                 @unique
+  placeOfBirth         String?                 @default("ភ្នំពេញ")
+  currentAddress       String?                 @default("ភ្នំពេញ")
+  phoneNumber          String?
+  classId              String?
+  fatherName           String?                 @default("ឪពុក")
+  motherName           String?                 @default("ម្តាយ")
+  parentPhone          String?
+  parentOccupation     String?                 @default("កសិករ")
+  previousGrade        String?
+  remarks              String?
+  photoUrl             String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  grade12ExamCenter    String?
+  grade12ExamDesk      String?
+  grade12ExamRoom      String?
+  grade12ExamSession   String?
+  grade12PassStatus    String?
+  grade12Track         String?
+  grade9ExamCenter     String?
+  grade9ExamDesk       String?
+  grade9ExamRoom       String?
+  grade9ExamSession    String?
+  grade9PassStatus     String?
+  previousSchool       String?
+  repeatingGrade       String?
+  transferredFrom      String?
+  accountDeactivatedAt DateTime?
+  deactivationReason   String?
+  isAccountActive      Boolean                 @default(true)
+  studentRole          StudentRole             @default(GENERAL)
+  attendance           Attendance[]
+  grades               Grade[]
+  monthlySummaries     StudentMonthlySummary[]
+  studentParents       StudentParent[]
+  class                Class?                  @relation(fields: [classId], references: [id])
+  user                 User?
+
+  @@index([classId])
+  @@index([grade12PassStatus])
+  @@index([gender])
+  @@index([isAccountActive])
+  @@index([classId, studentRole])
+  @@map("students")
+}
+
+model Parent {
+  id              String             @id @default(cuid())
+  parentId        String?            @unique
+  firstName       String
+  lastName        String
+  khmerName       String
+  englishName     String?
+  gender          Gender?
+  email           String?            @unique
+  phone           String             @unique
+  address         String?
+  relationship    ParentRelationship
+  occupation      String?            @default("កសិករ")
+  emergencyPhone  String?
+  isAccountActive Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  studentParents  StudentParent[]
+  user            User?
+
+  @@index([phone, isAccountActive])
+  @@index([email, isAccountActive])
+  @@map("parents")
+}
+
+model StudentParent {
+  id           String             @id @default(cuid())
+  studentId    String
+  parentId     String
+  isPrimary    Boolean            @default(false)
+  relationship ParentRelationship
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  parent       Parent             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, parentId])
+  @@index([studentId])
+  @@index([parentId])
+  @@map("student_parents")
+}
+
+model SubjectTeacher {
+  id        String   @id @default(cuid())
+  subjectId String
+  teacherId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, teacherId])
+  @@map("subject_teachers")
+}
+
+model Subject {
+  id              String           @id @default(cuid())
+  name            String
+  nameKh          String
+  nameEn          String?
+  code            String           @unique
+  description     String?
+  grade           String
+  track           String?
+  category        String
+  weeklyHours     Float            @default(0)
+  annualHours     Int              @default(0)
+  maxScore        Int              @default(100)
+  coefficient     Float            @default(1.0)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  grades          Grade[]
+  subjectTeachers SubjectTeacher[]
+
+  @@index([grade, isActive])
+  @@index([grade, track, isActive])
+  @@map("subjects")
+}
+
+model TeacherClass {
+  id        String   @id @default(cuid())
+  teacherId String
+  classId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId])
+  @@map("teacher_classes")
+}
+
+model Teacher {
+  id               String           @id @default(cuid())
+  teacherId        String?          @unique
+  firstName        String
+  lastName         String
+  khmerName        String?
+  email            String?          @unique
+  phone            String           @unique
+  employeeId       String?          @unique
+  gender           Gender?
+  dateOfBirth      String?
+  position         String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  address          String?
+  hireDate         String?
+  homeroomClassId  String?          @unique
+  role             TeacherRole      @default(TEACHER)
+  englishName      String?
+  degree           DegreeLevel?
+  emergencyContact String?
+  emergencyPhone   String?
+  idCard           String?
+  major1           String?
+  major2           String?
+  nationality      String?
+  passport         String?
+  phoneNumber      String?
+  salaryRange      String?
+  workingLevel     WorkingLevel?
+  subjectTeachers  SubjectTeacher[]
+  teacherClasses   TeacherClass[]
+  homeroomClass    Class?           @relation(fields: [homeroomClassId], references: [id])
+  user             User?
+
+  @@map("teachers")
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String?             @unique
+  password            String
+  firstName           String
+  lastName            String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  failedAttempts      Int                 @default(0)
+  isActive            Boolean             @default(true)
+  lastLogin           DateTime?
+  lockedUntil         DateTime?
+  loginCount          Int                 @default(0)
+  permissions         Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone               String?             @unique
+  studentId           String?             @unique
+  teacherId           String?             @unique
+  role                UserRole            @default(TEACHER)
+  accountSuspendedAt  DateTime?
+  isDefaultPassword   Boolean             @default(true)
+  isSuperAdmin        Boolean             @default(false)
+  lastPasswordHashes  String[]
+  passwordChangedAt   DateTime?
+  passwordExpiresAt   DateTime?
+  passwordResetExpiry DateTime?
+  passwordResetToken  String?             @unique
+  suspensionReason    String?
+  parentId            String?             @unique
+  adminAuditLogs      AuditLog[]          @relation("AuditLogAdmin")
+  teacherAuditLogs    AuditLog[]          @relation("AuditLogTeacher")
+  gradeConfirmations  GradeConfirmation[]
+  parent              Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student             Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher             Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([email, isActive])
+  @@index([phone, isActive])
+  @@index([studentId, isActive])
+  @@index([parentId, isActive])
+  @@index([isDefaultPassword])
+  @@index([passwordExpiresAt])
+  @@map("users")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  teacherId String
+  action    String
+  reason    String?
+  details   Json?
+  createdAt DateTime @default(now())
+  admin     User     @relation("AuditLogAdmin", fields: [adminId], references: [id])
+  teacher   User     @relation("AuditLogTeacher", fields: [teacherId], references: [id])
+
+  @@index([adminId])
+  @@index([teacherId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum AttendanceSession {
+  MORNING
+  AFTERNOON
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  PERMISSION
+  LATE
+  EXCUSED
+}
+
+enum DegreeLevel {
+  CERTIFICATE
+  ASSOCIATE
+  BACHELOR
+  MASTER
+  DOCTORATE
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum TeacherRole {
+  TEACHER
+  INSTRUCTOR
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+  STAFF
+}
+
+enum WorkingLevel {
+  FRAMEWORK_A
+  FRAMEWORK_B
+  FRAMEWORK_C
+  CONTRACT
+  PROBATION
+}
+
+enum StudentRole {
+  GENERAL
+  CLASS_LEADER
+  VICE_LEADER_1
+  VICE_LEADER_2
+}
+
+enum ParentRelationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  STEP_FATHER
+  STEP_MOTHER
+  GRANDPARENT
+  OTHER
+}

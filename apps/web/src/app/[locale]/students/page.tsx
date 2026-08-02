@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { use, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from "@/components/i18n/I18nText";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   AlertCircle,
   ArrowRightLeft,
@@ -34,7 +34,7 @@ import {
   Download,
   FileSpreadsheet,
   ClipboardCheck,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -45,21 +45,25 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-} from 'recharts';
-import * as XLSX from 'xlsx';
-import { TokenManager } from '@/lib/api/auth';
-import { deleteStudent, reassignStudents, type Student } from '@/lib/api/students';
-import { useStudents } from '@/hooks/useStudents';
-import { useClasses } from '@/hooks/useClasses';
-import StudentModal from '@/components/students/StudentModal';
-import BulkImportModal from '@/components/shared/BulkImportModal';
-import BlurLoader from '@/components/BlurLoader';
-import AnimatedContent from '@/components/AnimatedContent';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import UnifiedNavigation from '@/components/UnifiedNavigation';
-import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
-import CompactHeroCard from '@/components/layout/CompactHeroCard';
+} from "recharts";
+import * as XLSX from "xlsx";
+import { TokenManager } from "@/lib/api/auth";
+import {
+  deleteStudent,
+  reassignStudents,
+  type Student,
+} from "@/lib/api/students";
+import { useStudents } from "@/hooks/useStudents";
+import { useClasses } from "@/hooks/useClasses";
+import StudentModal from "@/components/students/StudentModal";
+import BulkImportModal from "@/components/shared/BulkImportModal";
+import BlurLoader from "@/components/BlurLoader";
+import AnimatedContent from "@/components/AnimatedContent";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
+import UnifiedNavigation from "@/components/UnifiedNavigation";
+import AdminResetPasswordModal from "@/components/AdminResetPasswordModal";
+import CompactHeroCard from "@/components/layout/CompactHeroCard";
 
 interface ClassOption {
   id: string;
@@ -69,35 +73,36 @@ interface ClassOption {
   studentCount?: number;
 }
 
-type MetricTone = 'blue' | 'emerald' | 'amber' | 'violet';
+type MetricTone = "blue" | "emerald" | "amber" | "violet";
 
 const ITEMS_PER_PAGE = 20;
-const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
+const STUDENT_SERVICE_URL =
+  process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || "http://localhost:3003";
 const MAX_EXPORT_ROWS = 10000;
 
 function isKhmerLocale(locale: string) {
-  return locale.toLowerCase().startsWith('km');
+  return locale.toLowerCase().startsWith("km");
 }
 
 function localLabel(locale: string, en: string, km: string) {
   return isKhmerLocale(locale) ? km : en;
 }
 
-function formatDisplayDate(value?: string | null, locale = 'en') {
-  const unknownLabel = localLabel(locale, 'Unknown', 'មិនមានទិន្នន័យ');
+function formatDisplayDate(value?: string | null, locale = "en") {
+  const unknownLabel = localLabel(locale, "Unknown", "មិនមានទិន្នន័យ");
   if (!value) return unknownLabel;
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return unknownLabel;
 
-  return new Intl.DateTimeFormat(isKhmerLocale(locale) ? 'km-KH' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return new Intl.DateTimeFormat(isKhmerLocale(locale) ? "km-KH" : "en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 
-function formatAgeLabel(value?: string | null, locale = 'en') {
+function formatAgeLabel(value?: string | null, locale = "en") {
   if (!value) return null;
 
   const birthDate = new Date(value);
@@ -107,7 +112,8 @@ function formatAgeLabel(value?: string | null, locale = 'en') {
   let age = today.getFullYear() - birthDate.getFullYear();
   const hasBirthdayPassed =
     today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+    (today.getMonth() === birthDate.getMonth() &&
+      today.getDate() >= birthDate.getDate());
 
   if (!hasBirthdayPassed) {
     age -= 1;
@@ -116,38 +122,51 @@ function formatAgeLabel(value?: string | null, locale = 'en') {
   if (age < 0) return null;
 
   return isKhmerLocale(locale)
-    ? `${new Intl.NumberFormat('km-KH').format(age)} ឆ្នាំ`
+    ? `${new Intl.NumberFormat("km-KH").format(age)} ឆ្នាំ`
     : `${age} yrs`;
 }
 
 function resolvePhotoUrl(photoUrl?: string | null) {
   if (!photoUrl) return null;
-  if (/^https?:\/\//i.test(photoUrl) || photoUrl.startsWith('data:') || photoUrl.startsWith('blob:')) {
+  if (
+    /^https?:\/\//i.test(photoUrl) ||
+    photoUrl.startsWith("data:") ||
+    photoUrl.startsWith("blob:")
+  ) {
     return photoUrl;
   }
-  return `${STUDENT_SERVICE_URL}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}`;
+  return `${STUDENT_SERVICE_URL}${photoUrl.startsWith("/") ? "" : "/"}${photoUrl}`;
 }
 
-function getStudentInitials(student: Pick<Student, 'firstName' | 'lastName'>) {
-  const first = student.firstName?.charAt(0) ?? '';
-  const last = student.lastName?.charAt(0) ?? '';
-  return `${first}${last}`.toUpperCase() || 'ST';
+function getStudentInitials(student: Pick<Student, "firstName" | "lastName">) {
+  const first = student.firstName?.charAt(0) ?? "";
+  const last = student.lastName?.charAt(0) ?? "";
+  return `${first}${last}`.toUpperCase() || "ST";
 }
 
-function formatName(last: string | null | undefined, first: string | null | undefined) {
-  const name = `${last || ''} ${first || ''}`.trim();
-  return name || 'N/A';
+function formatName(
+  last: string | null | undefined,
+  first: string | null | undefined,
+) {
+  const name = `${last || ""} ${first || ""}`.trim();
+  return name || "N/A";
 }
 
-function getKhmerName(student: Pick<Student, 'lastName' | 'firstName'>) {
+function getKhmerName(student: Pick<Student, "lastName" | "firstName">) {
   // Native name is lastName + firstName (in Cambodia: family name first)
-  return [student.lastName, student.firstName].filter(Boolean).join(' ') || '';
+  return [student.lastName, student.firstName].filter(Boolean).join(" ") || "";
 }
 
-function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md' | 'lg' }) {
+function StudentAvatar({
+  student,
+  size = "md",
+}: {
+  student: Student;
+  size?: "md" | "lg";
+}) {
   const sizeClasses = {
-    md: 'h-11 w-11 text-sm',
-    lg: 'h-12 w-12 text-base',
+    md: "h-11 w-11 text-sm",
+    lg: "h-12 w-12 text-base",
   };
 
   if (student.photoUrl) {
@@ -163,9 +182,9 @@ function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md'
   }
 
   const gradientClass =
-    student.gender === 'MALE'
-      ? 'from-blue-500 to-cyan-500 shadow-blue-500/20'
-      : 'from-fuchsia-500 to-rose-500 shadow-fuchsia-500/20';
+    student.gender === "MALE"
+      ? "from-blue-500 to-cyan-500 shadow-blue-500/20"
+      : "from-fuchsia-500 to-rose-500 shadow-fuchsia-500/20";
 
   return (
     <div
@@ -177,33 +196,33 @@ function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md'
 }
 
 function GenderBadge({ gender }: { gender: string }) {
-  const t = useTranslations('students');
-  const isMale = gender === 'MALE';
+  const t = useTranslations("students");
+  const isMale = gender === "MALE";
 
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
         isMale
-          ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20'
-          : 'bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20'
+          ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20"
+          : "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20"
       }`}
     >
-      {isMale ? t('male') : t('female')}
+      {isMale ? t("male") : t("female")}
     </span>
   );
 }
 
 function PlacementBadge({ hasClass }: { hasClass: boolean }) {
-  const t = useTranslations('students');
+  const t = useTranslations("students");
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
         hasClass
-          ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20'
-          : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20'
+          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20"
+          : "bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20"
       }`}
     >
-      {hasClass ? t('placed') : t('needsClass')}
+      {hasClass ? t("placed") : t("needsClass")}
     </span>
   );
 }
@@ -223,24 +242,28 @@ function MetricCard({
 }) {
   const toneClasses = {
     blue: {
-      surface: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
+      surface:
+        "from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40",
+      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      glow: "from-white/30 via-white/10 to-transparent",
     },
     emerald: {
-      surface: 'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
+      surface:
+        "from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40",
+      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      glow: "from-white/30 via-white/10 to-transparent",
     },
     amber: {
-      surface: 'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
+      surface:
+        "from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40",
+      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      glow: "from-white/30 via-white/10 to-transparent",
     },
     violet: {
-      surface: 'from-violet-500 via-fuchsia-500 to-pink-500 shadow-violet-200/70 dark:shadow-violet-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
+      surface:
+        "from-violet-500 via-fuchsia-500 to-pink-500 shadow-violet-200/70 dark:shadow-violet-950/40",
+      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      glow: "from-white/30 via-white/10 to-transparent",
     },
   };
 
@@ -250,10 +273,16 @@ function MetricCard({
     <div
       className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] hover:shadow-2xl dark:border-white/5`}
     >
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
+      <div
+        className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`}
+      />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-white/30 via-white/10 to-transparent" />
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 opacity-30 transition-opacity group-hover:opacity-40">
-        <svg viewBox="0 0 100 40" className="h-full w-full" preserveAspectRatio="none">
+        <svg
+          viewBox="0 0 100 40"
+          className="h-full w-full"
+          preserveAspectRatio="none"
+        >
           <path
             d="M0 34 Q 18 28, 35 31 T 68 24 T 100 28 V 40 H 0 Z"
             fill="currentColor"
@@ -271,13 +300,19 @@ function MetricCard({
       </div>
       <div className="relative z-10 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
-          <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white">{value}</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">
+            {label}
+          </p>
+          <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white">
+            {value}
+          </p>
           <div className="mt-3 inline-flex items-center rounded-full bg-white/20 dark:bg-gray-900/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
             {helper}
           </div>
         </div>
-        <div className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
+        <div
+          className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}
+        >
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -289,22 +324,22 @@ function IconActionButton({
   icon: Icon,
   title,
   onClick,
-  tone = 'neutral',
+  tone = "neutral",
   disabled = false,
 }: {
   icon: LucideIcon;
   title: string;
   onClick: () => void;
-  tone?: 'neutral' | 'blue' | 'amber' | 'red';
+  tone?: "neutral" | "blue" | "amber" | "red";
   disabled?: boolean;
 }) {
   const toneClasses = {
     neutral:
-      'text-slate-500 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800',
-    blue: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-300 dark:hover:bg-blue-500/10',
+      "text-slate-500 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800",
+    blue: "text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-300 dark:hover:bg-blue-500/10",
     amber:
-      'text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-gray-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10',
-    red: 'text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-300 dark:hover:bg-red-500/10',
+      "text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-gray-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10",
+    red: "text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-300 dark:hover:bg-red-500/10",
   };
 
   return (
@@ -324,20 +359,20 @@ function MobileActionButton({
   icon: Icon,
   label,
   onClick,
-  tone = 'neutral',
+  tone = "neutral",
 }: {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
-  tone?: 'neutral' | 'blue' | 'amber' | 'red';
+  tone?: "neutral" | "blue" | "amber" | "red";
 }) {
   const toneClasses = {
     neutral:
-      'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-200 hover:border-slate-300 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800',
-    blue: 'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/10',
+      "border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-200 hover:border-slate-300 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800",
+    blue: "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/10",
     amber:
-      'border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/10',
-    red: 'border-red-100 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/10',
+      "border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/10",
+    red: "border-red-100 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/10",
   };
 
   return (
@@ -352,27 +387,42 @@ function MobileActionButton({
   );
 }
 
-export default function StudentsPage({ params }: { params: Promise<{ locale: string }> }) {
-    const autoT = useTranslations();
-  const t = useTranslations('students');
+export default function StudentsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const autoT = useTranslations();
+  const t = useTranslations("students");
   const { locale } = use(params);
   const router = useRouter();
   const { selectedYear } = useAcademicYear();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 220);
   const [showModal, setShowModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [page, setPage] = useState(1);
-  const [classFilter, setClassFilter] = useState<string>('all');
+  const [classFilter, setClassFilter] = useState<string>("all");
   const [showReassignModal, setShowReassignModal] = useState(false);
-  const [studentToReassign, setStudentToReassign] = useState<Student | null>(null);
-  const [targetClassId, setTargetClassId] = useState<string>('');
+  const [studentToReassign, setStudentToReassign] = useState<Student | null>(
+    null,
+  );
+  const [targetClassId, setTargetClassId] = useState<string>("");
+  const [reassignEffectiveDate, setReassignEffectiveDate] = useState(() =>
+    new Date().toLocaleDateString("en-CA"),
+  );
+  const [reassignReason, setReassignReason] = useState("");
   const [isReassigning, setIsReassigning] = useState(false);
-  const [reassignMessage, setReassignMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [reassignMessage, setReassignMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
+    new Set(),
+  );
   const [showBulkReassignModal, setShowBulkReassignModal] = useState(false);
   const [isCompactView, setIsCompactView] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
@@ -380,11 +430,17 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
 
   const { user, school } = TokenManager.getUserData();
-  const serverClassFilter = classFilter !== 'all' && classFilter !== 'unassigned' ? classFilter : undefined;
-  const placementFilter = classFilter === 'unassigned' ? 'unassigned' : undefined;
-  const normalizedSearchTerm = debouncedSearch.trim().replace(/\s+/g, ' ');
-  const effectiveSearch = normalizedSearchTerm.length >= 2 ? normalizedSearchTerm : '';
-  const isSearchWaitingForMoreInput = searchTerm.trim().length > 0 && searchTerm.trim().length < 2;
+  const serverClassFilter =
+    classFilter !== "all" && classFilter !== "unassigned"
+      ? classFilter
+      : undefined;
+  const placementFilter =
+    classFilter === "unassigned" ? "unassigned" : undefined;
+  const normalizedSearchTerm = debouncedSearch.trim().replace(/\s+/g, " ");
+  const effectiveSearch =
+    normalizedSearchTerm.length >= 2 ? normalizedSearchTerm : "";
+  const isSearchWaitingForMoreInput =
+    searchTerm.trim().length > 0 && searchTerm.trim().length < 2;
 
   const {
     students,
@@ -417,7 +473,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         section: cls.section ?? undefined,
         studentCount: cls._count?.students ?? 0,
       })),
-    [classOptionsSource]
+    [classOptionsSource],
   );
 
   useEffect(() => {
@@ -442,7 +498,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm(t('confirmDeleteSingle'))) return;
+      if (!confirm(t("confirmDeleteSingle"))) return;
 
       try {
         await deleteStudent(id);
@@ -456,7 +512,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         alert(error.message);
       }
     },
-    [mutate]
+    [mutate],
   );
 
   const handleEdit = useCallback((student: Student) => {
@@ -477,12 +533,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         mutate();
       }
     },
-    [mutate]
+    [mutate],
   );
 
   const handleOpenReassign = useCallback((student: Student) => {
     setStudentToReassign(student);
-    setTargetClassId('');
+    setTargetClassId("");
+    setReassignEffectiveDate(new Date().toLocaleDateString("en-CA"));
+    setReassignReason("");
     setReassignMessage(null);
     setShowReassignModal(true);
   }, []);
@@ -494,13 +552,25 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     setReassignMessage(null);
 
     try {
-      const data = await reassignStudents([studentToReassign.id], targetClassId);
+      const data = await reassignStudents(
+        [studentToReassign.id],
+        targetClassId,
+        {
+          effectiveDate: reassignEffectiveDate,
+          reason: reassignReason || undefined,
+        },
+      );
 
       if (data.success) {
-        const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
+        const targetClass = availableClasses.find(
+          (classItem) => classItem.id === targetClassId,
+        );
         setReassignMessage({
-          type: 'success',
-          text: t('movedToClass', { name: `${studentToReassign.firstName} ${studentToReassign.lastName}`, class: targetClass?.name || t('selectedClass') }),
+          type: "success",
+          text: t("movedToClass", {
+            name: `${studentToReassign.firstName} ${studentToReassign.lastName}`,
+            class: targetClass?.name || t("selectedClass"),
+          }),
         });
         setSelectedStudents((prev) => {
           const next = new Set(prev);
@@ -513,14 +583,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         }, 1200);
       } else {
         setReassignMessage({
-          type: 'error',
-          text: data.message || t('failedToReassign'),
+          type: "error",
+          text: data.message || t("failedToReassign"),
         });
       }
     } catch (error: any) {
       setReassignMessage({
-        type: 'error',
-        text: error.message || t('failedToReassign'),
+        type: "error",
+        text: error.message || t("failedToReassign"),
       });
     } finally {
       setIsReassigning(false);
@@ -535,13 +605,21 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
     try {
       const studentIds = Array.from(selectedStudents);
-      const data = await reassignStudents(studentIds, targetClassId);
+      const data = await reassignStudents(studentIds, targetClassId, {
+        effectiveDate: reassignEffectiveDate,
+        reason: reassignReason || undefined,
+      });
 
       if (data.success) {
-        const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
+        const targetClass = availableClasses.find(
+          (classItem) => classItem.id === targetClassId,
+        );
         setReassignMessage({
-          type: 'success',
-          text: t('studentsAssignedTo', { count: data.data?.assigned || studentIds.length, class: targetClass?.name || t('selectedClass') }),
+          type: "success",
+          text: t("studentsAssignedTo", {
+            count: data.data?.assigned || studentIds.length,
+            class: targetClass?.name || t("selectedClass"),
+          }),
         });
         setSelectedStudents(new Set());
         mutate();
@@ -550,14 +628,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         }, 1200);
       } else {
         setReassignMessage({
-          type: 'error',
-          text: data.message || t('failedToReassignBulk'),
+          type: "error",
+          text: data.message || t("failedToReassignBulk"),
         });
       }
     } catch (error: any) {
       setReassignMessage({
-        type: 'error',
-        text: error.message || t('failedToReassignBulk'),
+        type: "error",
+        text: error.message || t("failedToReassignBulk"),
       });
     } finally {
       setIsReassigning(false);
@@ -570,99 +648,134 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const totalCount = pagination.total || 0;
   const visibleAssignedCount = summary.assigned;
   const visibleUnassignedCount = summary.unassigned;
-  const assignmentRate = summary.total > 0 ? Math.round((visibleAssignedCount / summary.total) * 100) : 0;
+  const assignmentRate =
+    summary.total > 0
+      ? Math.round((visibleAssignedCount / summary.total) * 100)
+      : 0;
   const classesWithStudents = useMemo(
-    () => availableClasses.filter((classItem) => (classItem.studentCount ?? 0) > 0).length,
-    [availableClasses]
+    () =>
+      availableClasses.filter((classItem) => (classItem.studentCount ?? 0) > 0)
+        .length,
+    [availableClasses],
   );
   const selectedStudentsList = useMemo(
     () => students.filter((student) => selectedStudents.has(student.id)),
-    [selectedStudents, students]
+    [selectedStudents, students],
   );
   const selectedStudentsPlacedCount = useMemo(
-    () => selectedStudentsList.filter((student) => Boolean(student.class)).length,
-    [selectedStudentsList]
+    () =>
+      selectedStudentsList.filter((student) => Boolean(student.class)).length,
+    [selectedStudentsList],
   );
-  const selectedStudentsUnassignedCount = selectedStudentsList.length - selectedStudentsPlacedCount;
+  const selectedStudentsUnassignedCount =
+    selectedStudentsList.length - selectedStudentsPlacedCount;
   const reassignableClasses = useMemo(() => {
     if (!studentToReassign) return availableClasses;
-    return availableClasses.filter((classItem) => classItem.id !== studentToReassign.class?.id);
+    return availableClasses.filter(
+      (classItem) => classItem.id !== studentToReassign.class?.id,
+    );
   }, [availableClasses, studentToReassign]);
   const selectedTargetClass = useMemo(
-    () => availableClasses.find((classItem) => classItem.id === targetClassId) || null,
-    [availableClasses, targetClassId]
+    () =>
+      availableClasses.find((classItem) => classItem.id === targetClassId) ||
+      null,
+    [availableClasses, targetClassId],
   );
-  const allVisibleSelected = filteredStudents.length > 0 && filteredStudents.every((student) => selectedStudents.has(student.id));
-  const someVisibleSelected = filteredStudents.some((student) => selectedStudents.has(student.id));
-  const hasActiveFilter = effectiveSearch.length > 0 || classFilter !== 'all';
+  const allVisibleSelected =
+    filteredStudents.length > 0 &&
+    filteredStudents.every((student) => selectedStudents.has(student.id));
+  const someVisibleSelected = filteredStudents.some((student) =>
+    selectedStudents.has(student.id),
+  );
+  const hasActiveFilter = effectiveSearch.length > 0 || classFilter !== "all";
   const hasVisibleMatches = filteredStudents.length > 0;
   const showNoRoster = !isLoading && isEmpty && !hasActiveFilter;
   const showNoMatches = !isLoading && !showNoRoster && !hasVisibleMatches;
 
   const classScopeLabel = useMemo(() => {
-    if (classFilter === 'all') return t('allClasses');
-    if (classFilter === 'unassigned') return t('unassignedOnThisPage');
+    if (classFilter === "all") return t("allClasses");
+    if (classFilter === "unassigned") return t("unassignedOnThisPage");
 
-    return availableClasses.find((classItem) => classItem.id === classFilter)?.name || 'Selected class';
+    return (
+      availableClasses.find((classItem) => classItem.id === classFilter)
+        ?.name || "Selected class"
+    );
   }, [availableClasses, classFilter]);
 
   const directoryTitle = useMemo(() => {
-    if (classFilter === 'unassigned') return t('studentsNeedingPlacement');
-    if (classFilter !== 'all') return `${classScopeLabel} Roster`;
-    return t('studentDirectory');
+    if (classFilter === "unassigned") return t("studentsNeedingPlacement");
+    if (classFilter !== "all") return `${classScopeLabel} Roster`;
+    return t("studentDirectory");
   }, [classFilter, classScopeLabel]);
 
   const rosterHealth = useMemo(() => {
     if (summary.total === 0) {
       return {
-        label: t('awaitingFocus'),
-        helper: t('awaitingFocusHelper'),
+        label: t("awaitingFocus"),
+        helper: t("awaitingFocusHelper"),
         icon: Sparkles,
-        iconClass: 'text-cyan-500 dark:text-cyan-300',
+        iconClass: "text-cyan-500 dark:text-cyan-300",
       };
     }
 
     if (visibleUnassignedCount === 0) {
       return {
-        label: t('placementComplete'),
-        helper: t('placementCompleteHelper'),
+        label: t("placementComplete"),
+        helper: t("placementCompleteHelper"),
         icon: CheckCircle2,
-        iconClass: 'text-emerald-500 dark:text-emerald-300',
+        iconClass: "text-emerald-500 dark:text-emerald-300",
       };
     }
 
     if (assignmentRate >= 70) {
       return {
-        label: t('coverageHealthy'),
-        helper: t('studentsNeedPlacementHelper', { count: visibleUnassignedCount }),
+        label: t("coverageHealthy"),
+        helper: t("studentsNeedPlacementHelper", {
+          count: visibleUnassignedCount,
+        }),
         icon: Sparkles,
-        iconClass: 'text-blue-500 dark:text-blue-300',
+        iconClass: "text-blue-500 dark:text-blue-300",
       };
     }
 
     return {
-      label: t('needsAttention'),
-      helper: t('studentsNeedPlacementHelper', { count: visibleUnassignedCount }),
+      label: t("needsAttention"),
+      helper: t("studentsNeedPlacementHelper", {
+        count: visibleUnassignedCount,
+      }),
       icon: AlertCircle,
-      iconClass: 'text-amber-500 dark:text-amber-300',
+      iconClass: "text-amber-500 dark:text-amber-300",
     };
   }, [assignmentRate, summary.total, visibleUnassignedCount]);
 
-  const placementData = useMemo(() => [
-    { name: t('placed'), value: visibleAssignedCount, color: '#10B981' },
-    { name: t('unassigned'), value: visibleUnassignedCount, color: '#F59E0B' },
-  ], [visibleAssignedCount, visibleUnassignedCount]);
+  const placementData = useMemo(
+    () => [
+      { name: t("placed"), value: visibleAssignedCount, color: "#10B981" },
+      {
+        name: t("unassigned"),
+        value: visibleUnassignedCount,
+        color: "#F59E0B",
+      },
+    ],
+    [visibleAssignedCount, visibleUnassignedCount],
+  );
 
   const genderData = useMemo(() => {
     const counts = filteredStudents.reduce((acc: any, student) => {
-      const gender = student.gender || 'UNKNOWN';
+      const gender = student.gender || "UNKNOWN";
       acc[gender] = (acc[gender] || 0) + 1;
       return acc;
     }, {});
-    return Object.entries(counts).map(([name, value]) => ({ 
-      name: name === 'MALE' ? t('male') : name === 'FEMALE' ? t('female') : t('unknown'), 
+    return Object.entries(counts).map(([name, value]) => ({
+      name:
+        name === "MALE"
+          ? t("male")
+          : name === "FEMALE"
+            ? t("female")
+            : t("unknown"),
       value,
-      color: name === 'MALE' ? '#3B82F6' : name === 'FEMALE' ? '#D946EF' : '#64748B'
+      color:
+        name === "MALE" ? "#3B82F6" : name === "FEMALE" ? "#D946EF" : "#64748B",
     }));
   }, [filteredStudents]);
   const handleExport = useCallback(async () => {
@@ -674,81 +787,142 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       const token = TokenManager.getAccessToken();
       const exportLimit = Math.min(
         Math.max(summary.total || totalCount || ITEMS_PER_PAGE, ITEMS_PER_PAGE),
-        MAX_EXPORT_ROWS
+        MAX_EXPORT_ROWS,
       );
       const queryParams = new URLSearchParams({
-        page: '1',
+        page: "1",
         limit: String(exportLimit),
       });
 
-      if (effectiveSearch) queryParams.append('search', effectiveSearch);
-      if (serverClassFilter) queryParams.append('classId', serverClassFilter);
-      if (placementFilter) queryParams.append('placement', placementFilter);
-      if (selectedYear?.id) queryParams.append('academicYearId', selectedYear.id);
+      if (effectiveSearch) queryParams.append("search", effectiveSearch);
+      if (serverClassFilter) queryParams.append("classId", serverClassFilter);
+      if (placementFilter) queryParams.append("placement", placementFilter);
+      if (selectedYear?.id)
+        queryParams.append("academicYearId", selectedYear.id);
 
-      const response = await fetch(`${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      const response = await fetch(
+        `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      );
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || error.error || 'Failed to export students');
+        throw new Error(
+          error.message || error.error || "Failed to export students",
+        );
       }
 
       const payload = await response.json();
-      const exportStudents: Student[] = Array.isArray(payload.data) ? payload.data : [];
-      const unassignedLabel = localLabel(locale, 'Unassigned', 'មិនទាន់ចាត់ថ្នាក់');
+      const exportStudents: Student[] = Array.isArray(payload.data)
+        ? payload.data
+        : [];
+      const unassignedLabel = localLabel(
+        locale,
+        "Unassigned",
+        "មិនទាន់ចាត់ថ្នាក់",
+      );
 
       const exportData = exportStudents.map((student, index) => ({
-        [localLabel(locale, 'No.', 'ល.រ')]: index + 1,
-        [localLabel(locale, 'Student ID', 'លេខសម្គាល់សិស្ស')]: student.studentId,
-        [localLabel(locale, 'First Name', 'នាមខ្លួន')]: student.firstName,
-        [localLabel(locale, 'Last Name', 'នាមត្រកូល')]: student.lastName,
-        [localLabel(locale, 'English Name', 'ឈ្មោះអង់គ្លេស')]: `${student.englishLastName || ''} ${student.englishFirstName || ''}`.trim() || '-',
-        [localLabel(locale, 'Native Name', 'ឈ្មោះដើម')]: `${student.lastName || ''} ${student.firstName || ''}`.trim() || '-',
-        [localLabel(locale, 'Gender', 'ភេទ')]: student.gender,
-        [localLabel(locale, 'Date of Birth', 'ថ្ងៃខែឆ្នាំកំណើត')]: formatDisplayDate(student.dateOfBirth, locale),
-        [localLabel(locale, 'Class', 'ថ្នាក់')]: student.class?.name || unassignedLabel,
-        [localLabel(locale, 'Grade', 'កម្រិតថ្នាក់')]: student.class?.grade || '-',
-        [localLabel(locale, 'Email', 'អ៊ីមែល')]: student.email || '-',
-        [localLabel(locale, 'Phone', 'លេខទូរស័ព្ទ')]: student.phoneNumber || '-',
+        [localLabel(locale, "No.", "ល.រ")]: index + 1,
+        [localLabel(locale, "Student ID", "លេខសម្គាល់សិស្ស")]:
+          student.studentId,
+        [localLabel(locale, "First Name", "នាមខ្លួន")]: student.firstName,
+        [localLabel(locale, "Last Name", "នាមត្រកូល")]: student.lastName,
+        [localLabel(locale, "English Name", "ឈ្មោះអង់គ្លេស")]:
+          `${student.englishLastName || ""} ${student.englishFirstName || ""}`.trim() ||
+          "-",
+        [localLabel(locale, "Native Name", "ឈ្មោះដើម")]:
+          `${student.lastName || ""} ${student.firstName || ""}`.trim() || "-",
+        [localLabel(locale, "Gender", "ភេទ")]: student.gender,
+        [localLabel(locale, "Date of Birth", "ថ្ងៃខែឆ្នាំកំណើត")]:
+          formatDisplayDate(student.dateOfBirth, locale),
+        [localLabel(locale, "Class", "ថ្នាក់")]:
+          student.class?.name || unassignedLabel,
+        [localLabel(locale, "Grade", "កម្រិតថ្នាក់")]:
+          student.class?.grade || "-",
+        [localLabel(locale, "Email", "អ៊ីមែល")]: student.email || "-",
+        [localLabel(locale, "Phone", "លេខទូរស័ព្ទ")]:
+          student.phoneNumber || "-",
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Students');
-      XLSX.writeFile(wb, `Students_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Students");
+      XLSX.writeFile(
+        wb,
+        `Students_Export_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
 
       if ((summary.total || totalCount) > MAX_EXPORT_ROWS) {
-        alert(localLabel(locale, `Exported the first ${MAX_EXPORT_ROWS.toLocaleString()} matching students. Narrow your filters to export a smaller complete set.`, `បាននាំចេញសិស្ស ${MAX_EXPORT_ROWS.toLocaleString()} នាក់ដំបូង។ សូមបង្រួម filter ដើម្បីនាំចេញទិន្នន័យពេញលេញ។`));
+        alert(
+          localLabel(
+            locale,
+            `Exported the first ${MAX_EXPORT_ROWS.toLocaleString()} matching students. Narrow your filters to export a smaller complete set.`,
+            `បាននាំចេញសិស្ស ${MAX_EXPORT_ROWS.toLocaleString()} នាក់ដំបូង។ សូមបង្រួម filter ដើម្បីនាំចេញទិន្នន័យពេញលេញ។`,
+          ),
+        );
       }
     } catch (error: any) {
-      alert(error.message || localLabel(locale, 'Failed to export students', 'នាំចេញសិស្សមិនបានជោគជ័យ'));
+      alert(
+        error.message ||
+          localLabel(
+            locale,
+            "Failed to export students",
+            "នាំចេញសិស្សមិនបានជោគជ័យ",
+          ),
+      );
     } finally {
       setIsExporting(false);
     }
-  }, [effectiveSearch, isExporting, locale, placementFilter, selectedYear?.id, serverClassFilter, summary.total, totalCount]);
+  }, [
+    effectiveSearch,
+    isExporting,
+    locale,
+    placementFilter,
+    selectedYear?.id,
+    serverClassFilter,
+    summary.total,
+    totalCount,
+  ]);
 
   const handleBulkArchive = useCallback(async () => {
     if (selectedStudents.size === 0 || isBulkArchiving) return;
-    if (!confirm(t('confirmDeleteBulk', { count: selectedStudents.size }))) return;
+    if (!confirm(t("confirmDeleteBulk", { count: selectedStudents.size })))
+      return;
 
     setIsBulkArchiving(true);
 
     try {
       const results = await Promise.allSettled(
-        Array.from(selectedStudents).map((id) => deleteStudent(id))
+        Array.from(selectedStudents).map((id) => deleteStudent(id)),
       );
-      const failedCount = results.filter((result) => result.status === 'rejected').length;
+      const failedCount = results.filter(
+        (result) => result.status === "rejected",
+      ).length;
 
       setSelectedStudents(new Set());
       await mutate();
 
       if (failedCount > 0) {
-        alert(localLabel(locale, `${failedCount} selected students could not be archived. Please retry them.`, `សិស្សដែលបានជ្រើស ${failedCount} នាក់ មិនអាចរក្សាទុកជាបណ្ណសារបាន។ សូមសាកល្បងម្ដងទៀត។`));
+        alert(
+          localLabel(
+            locale,
+            `${failedCount} selected students could not be archived. Please retry them.`,
+            `សិស្សដែលបានជ្រើស ${failedCount} នាក់ មិនអាចរក្សាទុកជាបណ្ណសារបាន។ សូមសាកល្បងម្ដងទៀត។`,
+          ),
+        );
       }
     } catch (error: any) {
-      alert(error.message || localLabel(locale, 'Failed to archive selected students', 'រក្សាទុកសិស្សដែលបានជ្រើសជាបណ្ណសារមិនបានជោគជ័យ'));
+      alert(
+        error.message ||
+          localLabel(
+            locale,
+            "Failed to archive selected students",
+            "រក្សាទុកសិស្សដែលបានជ្រើសជាបណ្ណសារមិនបានជោគជ័យ",
+          ),
+      );
     } finally {
       setIsBulkArchiving(false);
     }
@@ -758,34 +932,52 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     () => [
       {
         icon: Users,
-        label: t('schoolRoster'),
+        label: t("schoolRoster"),
         value: summary.total,
-        helper: school?.name || t('totalRecordsLabel'),
-        tone: 'blue' as MetricTone,
+        helper: school?.name || t("totalRecordsLabel"),
+        tone: "blue" as MetricTone,
       },
       {
         icon: Search,
-        label: t('currentView'),
+        label: t("currentView"),
         value: filteredStudents.length,
-        helper: hasActiveFilter ? t('filteredResults') : t('visibleNow'),
-        tone: 'violet' as MetricTone,
+        helper: hasActiveFilter ? t("filteredResults") : t("visibleNow"),
+        tone: "violet" as MetricTone,
       },
       {
         icon: GraduationCap,
-        label: t('placedInClass'),
+        label: t("placedInClass"),
         value: visibleAssignedCount,
-        helper: summary.total > 0 ? t('placedPercentage', { rate: assignmentRate }) : t('noRecords'),
-        tone: 'emerald' as MetricTone,
+        helper:
+          summary.total > 0
+            ? t("placedPercentage", { rate: assignmentRate })
+            : t("noRecords"),
+        tone: "emerald" as MetricTone,
       },
       {
         icon: BookOpen,
-        label: t('activeClasses'),
+        label: t("activeClasses"),
         value: classesWithStudents,
-        helper: selectedYear ? t('classesInYear', { count: availableClasses.length, year: selectedYear.name }) : t('totalClasses', { count: availableClasses.length }),
-        tone: 'amber' as MetricTone,
+        helper: selectedYear
+          ? t("classesInYear", {
+              count: availableClasses.length,
+              year: selectedYear.name,
+            })
+          : t("totalClasses", { count: availableClasses.length }),
+        tone: "amber" as MetricTone,
       },
     ],
-    [assignmentRate, availableClasses.length, classesWithStudents, filteredStudents.length, hasActiveFilter, school?.name, summary.total, visibleAssignedCount, selectedYear]
+    [
+      assignmentRate,
+      availableClasses.length,
+      classesWithStudents,
+      filteredStudents.length,
+      hasActiveFilter,
+      school?.name,
+      summary.total,
+      visibleAssignedCount,
+      selectedYear,
+    ],
   );
 
   const toggleStudentSelection = useCallback((studentId: string) => {
@@ -815,21 +1007,25 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   }, [allVisibleSelected, filteredStudents]);
 
   const resetFilters = useCallback(() => {
-    setSearchTerm('');
-    setClassFilter('all');
+    setSearchTerm("");
+    setClassFilter("all");
     setPage(1);
   }, []);
 
   const closeReassignModal = useCallback(() => {
     setShowReassignModal(false);
     setStudentToReassign(null);
-    setTargetClassId('');
+    setTargetClassId("");
+    setReassignEffectiveDate(new Date().toLocaleDateString("en-CA"));
+    setReassignReason("");
     setReassignMessage(null);
   }, []);
 
   const closeBulkReassignModal = useCallback(() => {
     setShowBulkReassignModal(false);
-    setTargetClassId('');
+    setTargetClassId("");
+    setReassignEffectiveDate(new Date().toLocaleDateString("en-CA"));
+    setReassignReason("");
     setReassignMessage(null);
   }, []);
 
@@ -852,19 +1048,21 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
               <div className="xl:col-span-8">
                 <CompactHeroCard
-                  eyebrow={t('schoolManagement')}
-                  title={t('title')}
-                  description={t('description')}
+                  eyebrow={t("schoolManagement")}
+                  title={t("title")}
+                  description={t("description")}
                   icon={Users}
                   chipsPosition="below"
                   breadcrumbs={
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
                       <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                         <Home className="h-3.5 w-3.5" />
-                        {localLabel(locale, 'Home', 'ទំព័រដើម')}
+                        {localLabel(locale, "Home", "ទំព័រដើម")}
                       </span>
                       <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-                      <span className="text-slate-900 dark:text-gray-100">{localLabel(locale, 'Students', 'សិស្ស')}</span>
+                      <span className="text-slate-900 dark:text-gray-100">
+                        {localLabel(locale, "Students", "សិស្ស")}
+                      </span>
                     </div>
                   }
                   backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -873,17 +1071,17 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   chips={
                     <>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {selectedYear?.name || t('noAcademicYear')}
+                        {selectedYear?.name || t("noAcademicYear")}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
                         {classScopeLabel}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        {t('needPlacement', { count: visibleUnassignedCount })}
+                        {t("needPlacement", { count: visibleUnassignedCount })}
                       </span>
                       {selectedStudents.size > 0 && (
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          {t('selected', { count: selectedStudents.size })}
+                          {t("selected", { count: selectedStudents.size })}
                         </span>
                       )}
                     </>
@@ -894,16 +1092,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         <button
                           type="button"
                           onClick={() => setIsCompactView(false)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
-                          title={t('comfortableView')}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${!isCompactView ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700" : "text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"}`}
+                          title={t("comfortableView")}
                         >
                           <LayoutGrid className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsCompactView(true)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
-                          title={t('compactView')}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${isCompactView ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700" : "text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"}`}
+                          title={t("compactView")}
                         >
                           <List className="h-4 w-4" />
                         </button>
@@ -912,7 +1110,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <button
                         type="button"
                         onClick={() => setShowAnalytics(!showAnalytics)}
-                        className={`inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200'}`}
+                        className={`inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20" : "bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200"}`}
                       >
                         <BarChart3 className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_81558f64" />
@@ -924,8 +1122,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         disabled={isExporting}
                         className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                       >
-                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        {isExporting ? localLabel(locale, 'Exporting…', 'កំពុងនាំចេញ…') : <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />}
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        {isExporting ? (
+                          localLabel(locale, "Exporting…", "កំពុងនាំចេញ…")
+                        ) : (
+                          <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
+                        )}
                       </button>
 
                       <button
@@ -934,7 +1140,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300"
                       >
                         <ClipboardCheck className="h-4 w-4" />
-                        {localLabel(locale, 'Admissions', 'ទទួលពាក្យចូលរៀន')}
+                        {localLabel(locale, "Admissions", "ទទួលពាក្យចូលរៀន")}
                       </button>
 
                       <button
@@ -943,7 +1149,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all hover:bg-indigo-100 hover:-translate-y-0.5 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
                       >
                         <FileSpreadsheet className="h-4 w-4" />
-                        {localLabel(locale, 'Bulk Import', 'នាំចូលច្រើន')}
+                        {localLabel(locale, "Bulk Import", "នាំចូលច្រើន")}
                       </button>
 
                       <button
@@ -952,7 +1158,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
-                        {localLabel(locale, 'Add Student', 'បន្ថែមសិស្ស')}
+                        {localLabel(locale, "Add Student", "បន្ថែមសិស្ស")}
                       </button>
                     </>
                   }
@@ -965,13 +1171,21 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 <div className="relative z-10 flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">{t('placement')}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+                        {t("placement")}
+                      </p>
                       <div className="mt-3 flex items-end gap-2">
-                        <span className="text-4xl font-black tracking-tight">{assignmentRate}%</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{t('ready')}</span>
+                        <span className="text-4xl font-black tracking-tight">
+                          {assignmentRate}%
+                        </span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                          {t("ready")}
+                        </span>
                       </div>
                     </div>
-                    <div className={`rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/75 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70 ${rosterHealth.iconClass}`}>
+                    <div
+                      className={`rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/75 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70 ${rosterHealth.iconClass}`}
+                    >
                       <RosterHealthIcon className="h-5 w-5" />
                     </div>
                   </div>
@@ -979,22 +1193,36 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-cyan-200/75 dark:bg-gray-900/10">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 transition-all duration-700"
-                      style={{ width: `${Math.max(summary.total ? assignmentRate : 0, summary.total > 0 ? 8 : 0)}%` }}
+                      style={{
+                        width: `${Math.max(summary.total ? assignmentRate : 0, summary.total > 0 ? 8 : 0)}%`,
+                      }}
                     />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
-                      <p className="text-xl font-black tracking-tight">{filteredStudents.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('visible')}</p>
+                      <p className="text-xl font-black tracking-tight">
+                        {filteredStudents.length}
+                      </p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        {t("visible")}
+                      </p>
                     </div>
                     <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
-                      <p className="text-xl font-black tracking-tight">{visibleUnassignedCount}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('open')}</p>
+                      <p className="text-xl font-black tracking-tight">
+                        {visibleUnassignedCount}
+                      </p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        {t("open")}
+                      </p>
                     </div>
                     <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
-                      <p className="text-xl font-black tracking-tight">{selectedStudents.size}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('selected', { count: '' }).trim()}</p>
+                      <p className="text-xl font-black tracking-tight">
+                        {selectedStudents.size}
+                      </p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        {t("selected", { count: "" }).trim()}
+                      </p>
                     </div>
                   </div>
 
@@ -1014,10 +1242,17 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('placementDistribution')}</h3>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('assignedVsUnassigned')}</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        {t("placementDistribution")}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                        {t("assignedVsUnassigned")}
+                      </p>
                     </div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleAssignedCount + visibleUnassignedCount} {t('records')}</div>
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                      {visibleAssignedCount + visibleUnassignedCount}{" "}
+                      {t("records")}
+                    </div>
                   </div>
                   <div className="flex items-center gap-8">
                     <div className="h-32 w-32 flex-shrink-0">
@@ -1042,15 +1277,31 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     </div>
                     <div className="flex-1 space-y-3">
                       {placementData.map((item) => (
-                        <div key={item.name} className="flex items-center justify-between gap-4">
+                        <div
+                          key={item.name}
+                          className="flex items-center justify-between gap-4"
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">{item.name}</span>
+                            <div
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                            />
+                            <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">
+                              {item.name}
+                            </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-sm font-black text-slate-900 dark:text-white">{item.value}</span>
+                            <span className="text-sm font-black text-slate-900 dark:text-white">
+                              {item.value}
+                            </span>
                             <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-gray-800 px-1.5 py-0.5 rounded dark:bg-gray-800">
-                              {Math.round((item.value / (visibleAssignedCount + visibleUnassignedCount || 1)) * 100)}%
+                              {Math.round(
+                                (item.value /
+                                  (visibleAssignedCount +
+                                    visibleUnassignedCount || 1)) *
+                                  100,
+                              )}
+                              %
                             </span>
                           </div>
                         </div>
@@ -1062,34 +1313,48 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('genderDiversity')}</h3>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('genderBreakdown')}</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        {t("genderDiversity")}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                        {t("genderBreakdown")}
+                      </p>
                     </div>
                     <Users className="h-4 w-4 text-slate-400" />
                   </div>
                   <div className="h-32 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={genderData} layout="vertical" margin={{ left: -20, right: 20 }}>
+                      <BarChart
+                        data={genderData}
+                        layout="vertical"
+                        margin={{ left: -20, right: 20 }}
+                      >
                         <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: '#64748b' }} />
-                        <Tooltip 
-                          cursor={{ fill: 'transparent' }}
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            fill: "#64748b",
+                          }}
+                        />
+                        <Tooltip
+                          cursor={{ fill: "transparent" }}
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               return (
                                 <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xl border border-white/10">
-                                  {payload[0].value} {t('student')}
+                                  {payload[0].value} {t("student")}
                                 </div>
                               );
                             }
-                              return null;
+                            return null;
                           }}
                         />
-                        <Bar 
-                          dataKey="value" 
-                          radius={[0, 4, 4, 0]} 
-                          barSize={20}
-                        >
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                           {genderData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -1122,7 +1387,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">{t('directoryWorkspace')}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      {t("directoryWorkspace")}
+                    </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                       {directoryTitle}
                     </h2>
@@ -1130,14 +1397,23 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {selectedYear?.name || localLabel(locale, 'Academic year not set', 'មិនទាន់កំណត់ឆ្នាំសិក្សា')}
+                      {selectedYear?.name ||
+                        localLabel(
+                          locale,
+                          "Academic year not set",
+                          "មិនទាន់កំណត់ឆ្នាំសិក្សា",
+                        )}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {effectiveSearch ? t('search', { term: effectiveSearch }) : t('noKeywordFilter')}
+                      {effectiveSearch
+                        ? t("search", { term: effectiveSearch })
+                        : t("noKeywordFilter")}
                     </span>
                     {hasActiveFilter && hasVisibleMatches && (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-2 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_7473d27a" /> {filteredStudents.length} <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1009414b" />
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_7473d27a" />{" "}
+                        {filteredStudents.length}{" "}
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1009414b" />
                       </span>
                     )}
                   </div>
@@ -1153,15 +1429,19 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         type="text"
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder={t('searchPlaceholder')}
+                        placeholder={t("searchPlaceholder")}
                         className="h-14 w-full rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 pl-14 pr-12 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                       />
                       {searchTerm ? (
                         <button
                           type="button"
-                          onClick={() => setSearchTerm('')}
+                          onClick={() => setSearchTerm("")}
                           className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                          aria-label={localLabel(locale, 'Clear search', 'សម្អាតការស្វែងរក')}
+                          aria-label={localLabel(
+                            locale,
+                            "Clear search",
+                            "សម្អាតការស្វែងរក",
+                          )}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -1169,11 +1449,19 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     </label>
                     {isSearchWaitingForMoreInput ? (
                       <p className="pl-4 text-xs font-medium text-amber-600 dark:text-amber-300">
-                        {localLabel(locale, 'Type at least 2 characters to search quickly.', 'សូមវាយយ៉ាងហោចណាស់ ២ តួអក្សរ ដើម្បីស្វែងរកបានលឿន។')}
+                        {localLabel(
+                          locale,
+                          "Type at least 2 characters to search quickly.",
+                          "សូមវាយយ៉ាងហោចណាស់ ២ តួអក្សរ ដើម្បីស្វែងរកបានលឿន។",
+                        )}
                       </p>
                     ) : (
                       <p className="pl-4 text-xs font-medium text-slate-400 dark:text-gray-500">
-                        {localLabel(locale, 'Search by student ID, Khmer/English name, email, or phone.', 'ស្វែងរកតាមលេខសិស្ស ឈ្មោះខ្មែរ/អង់គ្លេស អ៊ីមែល ឬលេខទូរស័ព្ទ។')}
+                        {localLabel(
+                          locale,
+                          "Search by student ID, Khmer/English name, email, or phone.",
+                          "ស្វែងរកតាមលេខសិស្ស ឈ្មោះខ្មែរ/អង់គ្លេស អ៊ីមែល ឬលេខទូរស័ព្ទ។",
+                        )}
                       </p>
                     )}
                   </div>
@@ -1183,8 +1471,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     onChange={(event) => setClassFilter(event.target.value)}
                     className="h-14 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                   >
-                    <option value="all">{t('allClasses')}</option>
-                    <option value="unassigned">{t('unassigned')}</option>
+                    <option value="all">{t("allClasses")}</option>
+                    <option value="unassigned">{t("unassigned")}</option>
                     {availableClasses.map((classItem) => (
                       <option key={classItem.id} value={classItem.id}>
                         {classItem.name}
@@ -1287,7 +1575,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 text-slate-500 dark:bg-none dark:bg-gray-800 dark:text-gray-400">
                         <Users className="h-8 w-8" />
                       </div>
-                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('noStudentsYet')}</h3>
+                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
+                        {t("noStudentsYet")}
+                      </h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500 dark:text-gray-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_e3fd4ba2" />
                       </p>
@@ -1305,7 +1595,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
                         <AlertCircle className="h-8 w-8" />
                       </div>
-                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('noStudentsMatch')}</h3>
+                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
+                        {t("noStudentsMatch")}
+                      </h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500 dark:text-gray-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_eed70612" />
                       </p>
@@ -1323,12 +1615,18 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="hidden overflow-x-auto lg:block">
                         <table className="min-w-full">
                           <thead>
-                            <tr className={`border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/40 ${isCompactView ? 'h-10' : ''}`}>
-                              <th className={`w-14 px-6 ${isCompactView ? 'py-2' : 'py-5'}`}>
+                            <tr
+                              className={`border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/40 ${isCompactView ? "h-10" : ""}`}
+                            >
+                              <th
+                                className={`w-14 px-6 ${isCompactView ? "py-2" : "py-5"}`}
+                              >
                                 <button
                                   type="button"
                                   onClick={toggleSelectAll}
-                                  aria-label={autoT("auto.web.app_locale_students_page.k_fc2489d1")}
+                                  aria-label={autoT(
+                                    "auto.web.app_locale_students_page.k_fc2489d1",
+                                  )}
                                   className="inline-flex items-center justify-center"
                                 >
                                   {allVisibleSelected ? (
@@ -1340,19 +1638,44 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   )}
                                 </button>
                               </th>
-                              <th className={`px-3 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                                {localLabel(locale, 'No.', 'ល.រ')}
+                              <th
+                                className={`px-3 ${isCompactView ? "py-2" : "py-5"} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}
+                              >
+                                {localLabel(locale, "No.", "ល.រ")}
                               </th>
-                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('student')}</th>
-                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('studentId')}</th>
-                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('currentClass')}</th>
-                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('birthDate')}</th>
-                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('actions')}</th>
+                              <th
+                                className={`px-6 ${isCompactView ? "py-2" : "py-5"} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}
+                              >
+                                {t("student")}
+                              </th>
+                              <th
+                                className={`px-4 ${isCompactView ? "py-2" : "py-5"} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}
+                              >
+                                {t("studentId")}
+                              </th>
+                              <th
+                                className={`px-4 ${isCompactView ? "py-2" : "py-5"} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}
+                              >
+                                {t("currentClass")}
+                              </th>
+                              <th
+                                className={`px-4 ${isCompactView ? "py-2" : "py-5"} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}
+                              >
+                                {t("birthDate")}
+                              </th>
+                              <th
+                                className={`px-6 ${isCompactView ? "py-2" : "py-5"} text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}
+                              >
+                                {t("actions")}
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100/80 dark:divide-gray-800/70">
                             {filteredStudents.map((student, index) => {
-                              const ageLabel = formatAgeLabel(student.dateOfBirth, locale);
+                              const ageLabel = formatAgeLabel(
+                                student.dateOfBirth,
+                                locale,
+                              );
                               const rowNumber = pageStart + index;
 
                               return (
@@ -1360,16 +1683,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   key={student.id}
                                   className={`group transition-colors ${
                                     selectedStudents.has(student.id)
-                                      ? 'bg-blue-50/40 dark:bg-blue-500/5'
-                                      : 'hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-950/30'
+                                      ? "bg-blue-50/40 dark:bg-blue-500/5"
+                                      : "hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-950/30"
                                   }`}
                                 >
-                                  <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                  <td
+                                    className={`px-6 ${isCompactView ? "py-2" : "py-4"} align-top`}
+                                  >
                                     <button
                                       type="button"
-                                      onClick={() => toggleStudentSelection(student.id)}
+                                      onClick={() =>
+                                        toggleStudentSelection(student.id)
+                                      }
                                       aria-label={`Select ${student.firstName} ${student.lastName}`}
-                                      className={`${isCompactView ? 'mt-0' : 'mt-2'} inline-flex items-center justify-center`}
+                                      className={`${isCompactView ? "mt-0" : "mt-2"} inline-flex items-center justify-center`}
                                     >
                                       {selectedStudents.has(student.id) ? (
                                         <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
@@ -1378,71 +1705,118 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       )}
                                     </button>
                                   </td>
-                                  <td className={`px-3 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
-                                    <span className={`inline-flex min-w-10 justify-center rounded-full bg-slate-50 font-mono font-bold text-slate-500 ring-1 ring-slate-200/70 dark:bg-gray-800/70 dark:text-gray-300 dark:ring-gray-700/70 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1.5 text-xs'}`}>
+                                  <td
+                                    className={`px-3 ${isCompactView ? "py-2" : "py-4"} align-top`}
+                                  >
+                                    <span
+                                      className={`inline-flex min-w-10 justify-center rounded-full bg-slate-50 font-mono font-bold text-slate-500 ring-1 ring-slate-200/70 dark:bg-gray-800/70 dark:text-gray-300 dark:ring-gray-700/70 ${isCompactView ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1.5 text-xs"}`}
+                                    >
                                       {rowNumber}
                                     </span>
                                   </td>
-                                  <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'}`}>
+                                  <td
+                                    className={`px-6 ${isCompactView ? "py-2" : "py-4"}`}
+                                  >
                                     <div className="flex items-start gap-4">
-                                      {isCompactView ? null : <StudentAvatar student={student} />}
+                                      {isCompactView ? null : (
+                                        <StudentAvatar student={student} />
+                                      )}
                                       <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <p className={`truncate font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
+                                          <p
+                                            className={`truncate font-semibold text-slate-900 dark:text-white ${isCompactView ? "text-xs" : "text-sm"}`}
+                                          >
                                             {(() => {
-                                              const name = formatName(student.lastName, student.firstName);
+                                              const name = formatName(
+                                                student.lastName,
+                                                student.firstName,
+                                              );
                                               // Save for deduplication logic if any
-                                              (student as any)._displayedTableName = name;
+                                              (
+                                                student as any
+                                              )._displayedTableName = name;
                                               return name;
                                             })()}
                                           </p>
-                                          <GenderBadge gender={student.gender} />
+                                          <GenderBadge
+                                            gender={student.gender}
+                                          />
                                         </div>
                                         {!isCompactView && (
                                           <div className="mt-0.5 flex flex-col gap-0.5">
                                             <p className="truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">
-                                              {formatName(student.englishLastName, student.englishFirstName)}
+                                              {formatName(
+                                                student.englishLastName,
+                                                student.englishFirstName,
+                                              )}
                                             </p>
                                           </div>
                                         )}
                                       </div>
                                     </div>
                                   </td>
-                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
-                                    <div className={`inline-flex rounded-[0.65rem] bg-slate-100 dark:bg-gray-800 font-mono font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-2 text-xs'}`}>
+                                  <td
+                                    className={`px-4 ${isCompactView ? "py-2" : "py-4"} align-top`}
+                                  >
+                                    <div
+                                      className={`inline-flex rounded-[0.65rem] bg-slate-100 dark:bg-gray-800 font-mono font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70 ${isCompactView ? "px-2 py-0.5 text-[10px]" : "px-3 py-2 text-xs"}`}
+                                    >
                                       {student.studentId}
                                     </div>
                                   </td>
-                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                  <td
+                                    className={`px-4 ${isCompactView ? "py-2" : "py-4"} align-top`}
+                                  >
                                     {student.class ? (
-                                      <div className={`inline-flex items-center gap-2 rounded-full bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1.5 text-xs'}`}>
+                                      <div
+                                        className={`inline-flex items-center gap-2 rounded-full bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20 ${isCompactView ? "px-2 py-0.5 text-[10px]" : "px-3 py-1.5 text-xs"}`}
+                                      >
                                         <span>{student.class.name}</span>
-                                        <span className="text-emerald-400 dark:text-emerald-500">•</span>
+                                        <span className="text-emerald-400 dark:text-emerald-500">
+                                          •
+                                        </span>
                                         <span>G{student.class.grade}</span>
                                       </div>
                                     ) : (
-                                      <div className={`inline-flex items-center rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1.5 text-xs'}`}>{t('unassigned')}</div>
+                                      <div
+                                        className={`inline-flex items-center rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20 ${isCompactView ? "px-2 py-0.5 text-[10px]" : "px-3 py-1.5 text-xs"}`}
+                                      >
+                                        {t("unassigned")}
+                                      </div>
                                     )}
                                   </td>
-                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
-                                    <p className={`font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
-                                      {formatDisplayDate(student.dateOfBirth, locale)}
+                                  <td
+                                    className={`px-4 ${isCompactView ? "py-2" : "py-4"} align-top`}
+                                  >
+                                    <p
+                                      className={`font-semibold text-slate-900 dark:text-white ${isCompactView ? "text-xs" : "text-sm"}`}
+                                    >
+                                      {formatDisplayDate(
+                                        student.dateOfBirth,
+                                        locale,
+                                      )}
                                     </p>
                                     {ageLabel && !isCompactView ? (
-                                      <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{ageLabel}</p>
+                                      <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">
+                                        {ageLabel}
+                                      </p>
                                     ) : null}
                                   </td>
-                                  <td className={`px-6 ${isCompactView ? 'py-1' : 'py-4'} align-top`}>
+                                  <td
+                                    className={`px-6 ${isCompactView ? "py-1" : "py-4"} align-top`}
+                                  >
                                     <div className="flex items-center justify-end gap-1 opacity-80 transition-opacity group-hover:opacity-100">
                                       <IconActionButton
                                         icon={ArrowRightLeft}
-                                        title={t('assignToClass')}
+                                        title={t("assignToClass")}
                                         tone="blue"
-                                        onClick={() => handleOpenReassign(student)}
+                                        onClick={() =>
+                                          handleOpenReassign(student)
+                                        }
                                       />
                                       <IconActionButton
                                         icon={Lock}
-                                        title={t('resetPassword')}
+                                        title={t("resetPassword")}
                                         tone="amber"
                                         onClick={() => {
                                           setSelectedStudent(student);
@@ -1451,18 +1825,22 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       />
                                       <IconActionButton
                                         icon={Trash2}
-                                        title={t('delete')}
+                                        title={t("delete")}
                                         tone="red"
                                         onClick={() => handleDelete(student.id)}
                                       />
                                       <IconActionButton
                                         icon={Eye}
-                                        title={t('view')}
-                                        onClick={() => router.push(`/${locale}/students/${student.id}`)}
+                                        title={t("view")}
+                                        onClick={() =>
+                                          router.push(
+                                            `/${locale}/students/${student.id}`,
+                                          )
+                                        }
                                       />
                                       <IconActionButton
                                         icon={Edit}
-                                        title={t('edit')}
+                                        title={t("edit")}
                                         onClick={() => handleEdit(student)}
                                       />
                                     </div>
@@ -1482,14 +1860,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                               key={student.id}
                               className={`rounded-[0.75rem] border p-4 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.10)] transition-colors dark:shadow-[0_4px_24px_-8px_rgba(0,0,0,0.40)] ${
                                 selectedStudents.has(student.id)
-                                  ? 'border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-500/5'
-                                  : 'border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 dark:border-gray-800/70 dark:bg-gray-950/50'
+                                  ? "border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-500/5"
+                                  : "border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 dark:border-gray-800/70 dark:bg-gray-950/50"
                               }`}
                             >
                               <div className="flex items-start gap-4">
                                 <button
                                   type="button"
-                                  onClick={() => toggleStudentSelection(student.id)}
+                                  onClick={() =>
+                                    toggleStudentSelection(student.id)
+                                  }
                                   aria-label={`Select ${student.lastName} ${student.firstName}`}
                                   className="mt-1 inline-flex items-center justify-center"
                                 >
@@ -1503,21 +1883,35 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex min-w-0 items-center gap-3">
-                                      <StudentAvatar student={student} size="lg" />
+                                      <StudentAvatar
+                                        student={student}
+                                        size="lg"
+                                      />
                                       <div className="min-w-0">
                                         <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                          {formatName(student.lastName, student.firstName)}
+                                          {formatName(
+                                            student.lastName,
+                                            student.firstName,
+                                          )}
                                         </p>
-                                        <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{student.studentId}</p>
+                                        <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">
+                                          {student.studentId}
+                                        </p>
                                         <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-gray-500">
-                                          {localLabel(locale, 'No.', 'ល.រ')} {rowNumber}
+                                          {localLabel(locale, "No.", "ល.រ")}{" "}
+                                          {rowNumber}
                                         </p>
                                         <p className="mt-0.5 truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">
-                                          {formatName(student.englishLastName, student.englishFirstName)}
+                                          {formatName(
+                                            student.englishLastName,
+                                            student.englishFirstName,
+                                          )}
                                         </p>
                                       </div>
                                     </div>
-                                    <PlacementBadge hasClass={Boolean(student.class)} />
+                                    <PlacementBadge
+                                      hasClass={Boolean(student.class)}
+                                    />
                                   </div>
 
                                   <div className="mt-4 flex flex-wrap gap-2">
@@ -1527,24 +1921,41 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                         {student.class.name}
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">{t('unassigned')}</span>
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                                        {t("unassigned")}
+                                      </span>
                                     )}
                                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70">
-                                      {formatAgeLabel(student.dateOfBirth, locale) || t('ageUnavailable')}
+                                      {formatAgeLabel(
+                                        student.dateOfBirth,
+                                        locale,
+                                      ) || t("ageUnavailable")}
                                     </span>
                                   </div>
 
                                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-[0.75rem] bg-slate-50 dark:bg-gray-800/50 p-3 text-xs dark:bg-gray-900/80">
                                     <div>
-                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{t('currentClass')}</p>
+                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">
+                                        {t("currentClass")}
+                                      </p>
                                       <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                        {student.class?.name || localLabel(locale, 'Unassigned', 'មិនទាន់ចាត់ថ្នាក់')}
+                                        {student.class?.name ||
+                                          localLabel(
+                                            locale,
+                                            "Unassigned",
+                                            "មិនទាន់ចាត់ថ្នាក់",
+                                          )}
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{t('birthDate')}</p>
+                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">
+                                        {t("birthDate")}
+                                      </p>
                                       <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                        {formatDisplayDate(student.dateOfBirth, locale)}
+                                        {formatDisplayDate(
+                                          student.dateOfBirth,
+                                          locale,
+                                        )}
                                       </p>
                                     </div>
                                   </div>
@@ -1552,23 +1963,29 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   <div className="mt-4 flex flex-wrap gap-2">
                                     <MobileActionButton
                                       icon={ArrowRightLeft}
-                                      label={t('assign')}
+                                      label={t("assign")}
                                       tone="blue"
-                                      onClick={() => handleOpenReassign(student)}
+                                      onClick={() =>
+                                        handleOpenReassign(student)
+                                      }
                                     />
                                     <MobileActionButton
                                       icon={Eye}
-                                      label={t('view')}
-                                      onClick={() => router.push(`/${locale}/students/${student.id}`)}
+                                      label={t("view")}
+                                      onClick={() =>
+                                        router.push(
+                                          `/${locale}/students/${student.id}`,
+                                        )
+                                      }
                                     />
                                     <MobileActionButton
                                       icon={Edit}
-                                      label={t('edit')}
+                                      label={t("edit")}
                                       onClick={() => handleEdit(student)}
                                     />
                                     <MobileActionButton
                                       icon={Lock}
-                                      label={t('reset')}
+                                      label={t("reset")}
                                       tone="amber"
                                       onClick={() => {
                                         setSelectedStudent(student);
@@ -1577,7 +1994,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                     />
                                     <MobileActionButton
                                       icon={Trash2}
-                                      label={t('delete')}
+                                      label={t("delete")}
                                       tone="red"
                                       onClick={() => handleDelete(student.id)}
                                     />
@@ -1596,16 +2013,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               {totalPages > 1 && !showNoRoster && !showNoMatches && (
                 <div className="flex flex-col gap-4 border-t border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                   <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
-                    {classFilter === 'unassigned' ? (
+                    {classFilter === "unassigned" ? (
                       <>
-                        {t('showingUnassigned', { count: filteredStudents.length, page })}
-                        
+                        {t("showingUnassigned", {
+                          count: filteredStudents.length,
+                          page,
+                        })}
                       </>
                     ) : (
                       <>
-                        {t('showingRange', { start: pageStart, end: pageEnd, total: totalCount })}
-                        
-                        
+                        {t("showingRange", {
+                          start: pageStart,
+                          end: pageEnd,
+                          total: totalCount,
+                        })}
                       </>
                     )}
                   </p>
@@ -1620,33 +2041,36 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <ChevronLeft className="h-4 w-4" />
                     </button>
 
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, index) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = index + 1;
-                      } else if (page <= 3) {
-                        pageNumber = index + 1;
-                      } else if (page >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + index;
-                      } else {
-                        pageNumber = page - 2 + index;
-                      }
+                    {Array.from(
+                      { length: Math.min(5, totalPages) },
+                      (_, index) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = index + 1;
+                        } else if (page <= 3) {
+                          pageNumber = index + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + index;
+                        } else {
+                          pageNumber = page - 2 + index;
+                        }
 
-                      return (
-                        <button
-                          type="button"
-                          key={pageNumber}
-                          onClick={() => setPage(pageNumber)}
-                          className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-[0.75rem] px-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
-                            page === pageNumber
-                              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-gray-900 dark:text-white dark:shadow-none'
-                              : 'border border-slate-200 dark:border-gray-800/70 text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-white'
-                          }`}
-                        >
-                          {pageNumber}
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            type="button"
+                            key={pageNumber}
+                            onClick={() => setPage(pageNumber)}
+                            className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-[0.75rem] px-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
+                              page === pageNumber
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-gray-900 dark:text-white dark:shadow-none"
+                                : "border border-slate-200 dark:border-gray-800/70 text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-white"
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      },
+                    )}
 
                     <button
                       type="button"
@@ -1671,14 +2095,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white shadow-lg shadow-blue-500/20">
                     {selectedStudents.size}
                   </div>
-                  <p className="text-sm font-bold">{t('selected', { count: '' }).trim()}</p>
+                  <p className="text-sm font-bold">
+                    {t("selected", { count: "" }).trim()}
+                  </p>
                 </div>
-                
+
                 <div className="flex items-center gap-2 px-2">
                   <button
                     type="button"
                     onClick={() => {
-                      setTargetClassId('');
+                      setTargetClassId("");
+                      setReassignEffectiveDate(
+                        new Date().toLocaleDateString("en-CA"),
+                      );
+                      setReassignReason("");
                       setReassignMessage(null);
                       setShowBulkReassignModal(true);
                     }}
@@ -1687,12 +2117,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <ArrowRightLeft className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f877445b" />
                   </button>
-                  
+
                   <button
                     type="button"
                     onClick={() => {
                       // Logic for bulk password reset would go here
-                      alert('Bulk Password Reset triggered for ' + selectedStudents.size + ' students.');
+                      alert(
+                        "Bulk Password Reset triggered for " +
+                          selectedStudents.size +
+                          " students.",
+                      );
                     }}
                     className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                   >
@@ -1706,8 +2140,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     disabled={isBulkArchiving}
                     className="inline-flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/30 hover:text-red-300"
                   >
-                    {isBulkArchiving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    {isBulkArchiving ? localLabel(locale, 'Archiving…', 'កំពុងរក្សាទុកជាបណ្ណសារ…') : <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8c3a97c1" />}
+                    {isBulkArchiving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    {isBulkArchiving ? (
+                      localLabel(
+                        locale,
+                        "Archiving…",
+                        "កំពុងរក្សាទុកជាបណ្ណសារ…",
+                      )
+                    ) : (
+                      <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8c3a97c1" />
+                    )}
                   </button>
                 </div>
 
@@ -1716,7 +2162,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     type="button"
                     onClick={() => setSelectedStudents(new Set())}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-                    title={t('clearSelection')}
+                    title={t("clearSelection")}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -1727,11 +2173,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         )}
       </div>
 
-      {showModal && <StudentModal student={selectedStudent} onClose={handleModalClose} />}
+      {showModal && (
+        <StudentModal student={selectedStudent} onClose={handleModalClose} />
+      )}
       {showBulkImportModal && (
         <BulkImportModal
           type="student"
-          educationModel={TokenManager.getUserData()?.school?.educationModel || 'DEFAULT'}
+          educationModel={
+            TokenManager.getUserData()?.school?.educationModel || "DEFAULT"
+          }
           academicYearId={selectedYear?.id}
           onClose={() => setShowBulkImportModal(false)}
           onSuccess={() => {
@@ -1760,9 +2210,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           <div className="animate-slideUp w-full max-w-xl overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)] dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">{t('changeClass')}</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{t('moveStudent')}</h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('moveStudentDesc')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
+                  {t("changeClass")}
+                </p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                  {t("moveStudent")}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">
+                  {t("moveStudentDesc")}
+                </p>
               </div>
               <button
                 type="button"
@@ -1776,35 +2232,55 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             <div className="space-y-4 px-6 py-5">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_a8da8471" /></p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_a8da8471" />
+                  </p>
                   <div className="mt-4 flex items-center gap-4">
                     <StudentAvatar student={studentToReassign} size="lg" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                        {studentToReassign.englishFirstName || studentToReassign.firstName} {studentToReassign.englishLastName || studentToReassign.lastName}
+                        {studentToReassign.englishFirstName ||
+                          studentToReassign.firstName}{" "}
+                        {studentToReassign.englishLastName ||
+                          studentToReassign.lastName}
                       </p>
                       {getKhmerName(studentToReassign) ? (
-                        <p className="mt-1 truncate text-xs text-slate-500 dark:text-gray-400">{getKhmerName(studentToReassign)}</p>
+                        <p className="mt-1 truncate text-xs text-slate-500 dark:text-gray-400">
+                          {getKhmerName(studentToReassign)}
+                        </p>
                       ) : null}
-                      <p className="mt-2 text-xs font-medium text-slate-500 dark:text-gray-400">{studentToReassign.studentId}</p>
+                      <p className="mt-2 text-xs font-medium text-slate-500 dark:text-gray-400">
+                        {studentToReassign.studentId}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_e98209d1" /></p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_e98209d1" />
+                  </p>
                   <div className="mt-4 flex items-start gap-3">
                     <div className="rounded-[0.75rem] bg-slate-100 dark:bg-gray-800 p-3 dark:bg-gray-900">
                       <GraduationCap className="h-5 w-5 text-slate-600 dark:text-gray-300" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {studentToReassign.class?.name || localLabel(locale, 'Unassigned', 'មិនទាន់ចាត់ថ្នាក់')}
+                        {studentToReassign.class?.name ||
+                          localLabel(locale, "Unassigned", "មិនទាន់ចាត់ថ្នាក់")}
                       </p>
                       <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">
                         {studentToReassign.class
-                          ? localLabel(locale, `Grade ${studentToReassign.class.grade}`, `កម្រិត ${studentToReassign.class.grade}`)
-                          : localLabel(locale, 'Ready for placement', 'រួចរាល់សម្រាប់ចាត់ថ្នាក់')}
+                          ? localLabel(
+                              locale,
+                              `Grade ${studentToReassign.class.grade}`,
+                              `កម្រិត ${studentToReassign.class.grade}`,
+                            )
+                          : localLabel(
+                              locale,
+                              "Ready for placement",
+                              "រួចរាល់សម្រាប់ចាត់ថ្នាក់",
+                            )}
                       </p>
                     </div>
                   </div>
@@ -1814,11 +2290,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('newClass')}</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('selectDestination')}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                      {t("newClass")}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">
+                      {t("selectDestination")}
+                    </p>
                   </div>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-gray-900 dark:text-gray-300">
-                    {reassignableClasses.length} <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f7a1882c" />
+                    {reassignableClasses.length}{" "}
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f7a1882c" />
                   </span>
                 </div>
 
@@ -1827,19 +2308,72 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   onChange={(event) => setTargetClassId(event.target.value)}
                   className="mt-4 h-12 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                 >
-                  <option value="">{t('selectClass')}</option>
+                  <option value="">{t("selectClass")}</option>
                   {reassignableClasses.map((classItem) => (
                     <option key={classItem.id} value={classItem.id}>
-                      {classItem.name} • {t('gradeStudents', { grade: classItem.grade, count: classItem.studentCount || 0 })}
+                      {classItem.name} •{" "}
+                      {t("gradeStudents", {
+                        grade: classItem.grade,
+                        count: classItem.studentCount || 0,
+                      })}
                     </option>
                   ))}
                 </select>
 
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-gray-300">
+                      {localLabel(
+                        locale,
+                        "Effective date",
+                        "ថ្ងៃចាប់ផ្តើមផ្ទេរ",
+                      )}
+                    </span>
+                    <input
+                      type="date"
+                      value={reassignEffectiveDate}
+                      onChange={(event) =>
+                        setReassignEffectiveDate(event.target.value)
+                      }
+                      className="h-12 w-full rounded-[0.75rem] border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-gray-300">
+                      {localLabel(
+                        locale,
+                        "Reason (optional)",
+                        "មូលហេតុ (មិនបង្ខំ)",
+                      )}
+                    </span>
+                    <input
+                      type="text"
+                      maxLength={500}
+                      value={reassignReason}
+                      onChange={(event) =>
+                        setReassignReason(event.target.value)
+                      }
+                      placeholder={localLabel(
+                        locale,
+                        "Example: schedule or learning-track change",
+                        "ឧ. ប្ដូរកាលវិភាគ ឬផែនការសិក្សា",
+                      )}
+                      className="h-12 w-full rounded-[0.75rem] border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                    />
+                  </label>
+                </div>
+
                 {selectedTargetClass && (
                   <div className="mt-4 rounded-[0.8rem] border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-500/20 dark:bg-blue-500/10">
-                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">{selectedTargetClass.name}</p>
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                      {selectedTargetClass.name}
+                    </p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-gray-300">
-                      {t('gradeStudents', { grade: selectedTargetClass.grade, count: selectedTargetClass.studentCount || 0 })} {t('enrolled')}
+                      {t("gradeStudents", {
+                        grade: selectedTargetClass.grade,
+                        count: selectedTargetClass.studentCount || 0,
+                      })}{" "}
+                      {t("enrolled")}
                     </p>
                   </div>
                 )}
@@ -1848,9 +2382,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               {reassignMessage && (
                 <div
                   className={`rounded-[0.8rem] border px-4 py-3 text-sm ${
-                    reassignMessage.type === 'success'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                      : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+                    reassignMessage.type === "success"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+                      : "border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
                   }`}
                 >
                   {reassignMessage.text}
@@ -1869,7 +2403,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <button
                 type="button"
                 onClick={handleReassignStudent}
-                disabled={!targetClassId || isReassigning}
+                disabled={
+                  !targetClassId || !reassignEffectiveDate || isReassigning
+                }
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[0.75rem] bg-slate-900 px-5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-gray-800"
               >
                 {isReassigning ? (
@@ -1878,7 +2414,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_af1b2dc6" />
                   </>
                 ) : (
-                  t('saveChange')
+                  t("saveChange")
                 )}
               </button>
             </div>
@@ -1891,9 +2427,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           <div className="animate-slideUp w-full max-w-2xl overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)] dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">{t('bulkChange')}</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{t('moveSelectedStudents')}</h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('moveSelectedDesc')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
+                  {t("bulkChange")}
+                </p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                  {t("moveSelectedStudents")}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">
+                  {t("moveSelectedDesc")}
+                </p>
               </div>
               <button
                 type="button"
@@ -1907,27 +2449,45 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             <div className="space-y-4 px-6 py-5">
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('selected', { count: '' }).trim()}</p>
-                  <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsList.length}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                    {t("selected", { count: "" }).trim()}
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                    {selectedStudentsList.length}
+                  </p>
                 </div>
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_c380f7c2" /></p>
-                  <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsPlacedCount}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_c380f7c2" />
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                    {selectedStudentsPlacedCount}
+                  </p>
                 </div>
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_0abe0aff" /></p>
-                  <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsUnassignedCount}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_0abe0aff" />
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
+                    {selectedStudentsUnassignedCount}
+                  </p>
                 </div>
               </div>
 
               <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('student')} {t('selected', { count: '' }).trim()}</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('quickPreview')}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                      {t("student")} {t("selected", { count: "" }).trim()}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">
+                      {t("quickPreview")}
+                    </p>
                   </div>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-gray-900 dark:text-gray-300">
-                    {t('selectedStudentsCount', { count: selectedStudentsList.length })}
+                    {t("selectedStudentsCount", {
+                      count: selectedStudentsList.length,
+                    })}
                   </span>
                 </div>
 
@@ -1942,42 +2502,102 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   ))}
                   {selectedStudents.size > 8 && (
                     <span className="inline-flex items-center rounded-full bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 dark:bg-gray-800 dark:text-gray-300">
-                      +{selectedStudents.size - 8} <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_ae82892d" />
+                      +{selectedStudents.size - 8}{" "}
+                      <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_ae82892d" />
                     </span>
                   )}
                 </div>
               </div>
 
               <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('targetClass')}</p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('targetClassDesc')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">
+                  {t("targetClass")}
+                </p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">
+                  {t("targetClassDesc")}
+                </p>
 
                 <select
                   value={targetClassId}
                   onChange={(event) => setTargetClassId(event.target.value)}
                   className="mt-4 h-12 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                 >
-                  <option value="">{t('selectClass')}</option>
+                  <option value="">{t("selectClass")}</option>
                   {(() => {
                     const currentClassIds = new Set(
-                      selectedStudentsList.filter((student) => student.class?.id).map((student) => student.class!.id)
+                      selectedStudentsList
+                        .filter((student) => student.class?.id)
+                        .map((student) => student.class!.id),
                     );
 
                     return availableClasses
                       .filter((classItem) => !currentClassIds.has(classItem.id))
                       .map((classItem) => (
                         <option key={classItem.id} value={classItem.id}>
-                          {classItem.name} • {t('gradeStudents', { grade: classItem.grade, count: classItem.studentCount || 0 })}
+                          {classItem.name} •{" "}
+                          {t("gradeStudents", {
+                            grade: classItem.grade,
+                            count: classItem.studentCount || 0,
+                          })}
                         </option>
                       ));
                   })()}
                 </select>
 
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-gray-300">
+                      {localLabel(
+                        locale,
+                        "Effective date",
+                        "ថ្ងៃចាប់ផ្តើមផ្ទេរ",
+                      )}
+                    </span>
+                    <input
+                      type="date"
+                      value={reassignEffectiveDate}
+                      onChange={(event) =>
+                        setReassignEffectiveDate(event.target.value)
+                      }
+                      className="h-12 w-full rounded-[0.75rem] border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-gray-300">
+                      {localLabel(
+                        locale,
+                        "Reason (optional)",
+                        "មូលហេតុ (មិនបង្ខំ)",
+                      )}
+                    </span>
+                    <input
+                      type="text"
+                      maxLength={500}
+                      value={reassignReason}
+                      onChange={(event) =>
+                        setReassignReason(event.target.value)
+                      }
+                      placeholder={localLabel(
+                        locale,
+                        "Applied to every selected student",
+                        "អនុវត្តចំពោះសិស្សដែលបានជ្រើសទាំងអស់",
+                      )}
+                      className="h-12 w-full rounded-[0.75rem] border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white"
+                    />
+                  </label>
+                </div>
+
                 {selectedTargetClass && (
                   <div className="mt-4 rounded-[0.8rem] border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-500/20 dark:bg-blue-500/10">
-                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">{selectedTargetClass.name}</p>
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                      {selectedTargetClass.name}
+                    </p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-gray-300">
-                      {t('gradeStudents', { grade: selectedTargetClass.grade, count: selectedTargetClass.studentCount || 0 })} {t('enrolled')}
+                      {t("gradeStudents", {
+                        grade: selectedTargetClass.grade,
+                        count: selectedTargetClass.studentCount || 0,
+                      })}{" "}
+                      {t("enrolled")}
                     </p>
                   </div>
                 )}
@@ -1986,9 +2606,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               {reassignMessage && (
                 <div
                   className={`rounded-[0.8rem] border px-4 py-3 text-sm ${
-                    reassignMessage.type === 'success'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                      : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+                    reassignMessage.type === "success"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+                      : "border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
                   }`}
                 >
                   {reassignMessage.text}
@@ -2007,7 +2627,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <button
                 type="button"
                 onClick={handleBulkReassign}
-                disabled={!targetClassId || isReassigning}
+                disabled={
+                  !targetClassId || !reassignEffectiveDate || isReassigning
+                }
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[0.75rem] bg-slate-900 px-5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-gray-800"
               >
                 {isReassigning ? (
@@ -2016,7 +2638,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_af1b2dc6" />
                   </>
                 ) : (
-                  t('saveBulkChange', { count: selectedStudents.size })
+                  t("saveBulkChange", { count: selectedStudents.size })
                 )}
               </button>
             </div>

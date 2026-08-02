@@ -2377,7 +2377,8 @@
       "school": "School",
       "platformAdmin": "Platform Admin",
       "superAdmin": "Super Admin",
-      "logout": "Log Out"
+      "logout": "Log Out",
+      "monthlyAttendanceEntry": "Monthly Attendance Entry"
     }
   },
   "auto": {

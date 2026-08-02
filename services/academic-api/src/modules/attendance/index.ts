@@ -1,10 +1,14 @@
-import path from 'path';
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { PrismaClient, AttendanceStatus, AttendanceSession } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import path from "path";
+import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import {
+  PrismaClient,
+  AttendanceStatus,
+  AttendanceSession,
+} from "@prisma/client";
+import jwt from "jsonwebtoken";
 import {
   startOfMonth,
   endOfMonth,
@@ -15,8 +19,8 @@ import {
   subMonths,
   isWeekend,
   eachDayOfInterval,
-  differenceInDays
-} from 'date-fns';
+  differenceInDays,
+} from "date-fns";
 import {
   getTeacherWeeklySchedule,
   buildExpectationsIndex,
@@ -27,13 +31,20 @@ import {
   teacherTeachesClassSessionOnDate,
   parseYmdUtc,
   serializeWeeklyPattern,
-} from './teacherSchedule';
-import { buildSessionMonitor, SESSION_MONITOR_LATE_GRACE_MINUTES } from './sessionMonitor';
-import { assertProductionEnv, getJwtSecret } from './env';
-import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
-import { getSharedPrisma } from '../../core/prisma';
-import { NOTIFICATION_SERVICE_AUTH_TOKEN } from '../../core/internalServiceAuth';
-
+} from "./teacherSchedule";
+import { registerMonthlyEntryRoutes } from "./monthly-entry";
+import {
+  buildSessionMonitor,
+  SESSION_MONITOR_LATE_GRACE_MINUTES,
+} from "./sessionMonitor";
+import { assertProductionEnv, getJwtSecret } from "./env";
+import {
+  withPrismaPoolParams,
+  scheduleDbKeepalive,
+  shouldRunDbStartupWarmup,
+} from "../../../../lib/prisma-pool-url";
+import { getSharedPrisma } from "../../core/prisma";
+import { NOTIFICATION_SERVICE_AUTH_TOKEN } from "../../core/internalServiceAuth";
 
 assertProductionEnv();
 const JWT_SECRET = getJwtSecret();
@@ -44,7 +55,6 @@ const app = express.Router();
 
 const prisma = getSharedPrisma();
 
-
 // Keep database connection warm (Supabase Pooler)
 let isDbWarm = false;
 const warmUpDb = async () => {
@@ -52,18 +62,27 @@ const warmUpDb = async () => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     isDbWarm = true;
-    console.log('✅ Attendance Service - Database ready');
+    console.log("✅ Attendance Service - Database ready");
   } catch (error: any) {
-    console.error('⚠️ Attendance Service - Database warmup failed details:', error?.message || error);
+    console.error(
+      "⚠️ Attendance Service - Database warmup failed details:",
+      error?.message || error,
+    );
     // Log stack trace in dev/debug if needed
-    if (process.env.NODE_ENV !== 'production') console.error(error);
+    if (process.env.NODE_ENV !== "production") console.error(error);
   }
 };
-scheduleDbKeepalive(() => { isDbWarm = false; void warmUpDb(); });
+scheduleDbKeepalive(() => {
+  isDbWarm = false;
+  void warmUpDb();
+});
 
 const schoolSummaryCache = new Map<string, { data: any; timestamp: number }>();
 const SCHOOL_SUMMARY_CACHE_TTL_MS = 60 * 1000;
-const schoolLocationsCache = new Map<string, { data: any; timestamp: number }>();
+const schoolLocationsCache = new Map<
+  string,
+  { data: any; timestamp: number }
+>();
 const SCHOOL_LOCATIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function readSchoolSummaryCache(cacheKey: string) {
@@ -121,8 +140,16 @@ function clearSchoolLocationsCache(schoolId?: string) {
 }
 
 // Middleware - CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
-
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "http://localhost:3003",
+      "http://localhost:3004",
+      "http://localhost:3005",
+    ];
 
 /** Stricter cap on teacher check-in / permission paths (abuse + accidental loops). */
 const teacherAttendanceWriteLimiter = rateLimit({
@@ -132,7 +159,8 @@ const teacherAttendanceWriteLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     success: false,
-    message: 'Too many attendance requests. Please wait a few minutes and try again.',
+    message:
+      "Too many attendance requests. Please wait a few minutes and try again.",
   },
 });
 
@@ -148,15 +176,19 @@ interface AuthRequest extends Request {
   schoolId?: string;
 }
 
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const authenticateToken = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Access token required',
+        message: "Access token required",
       });
     }
 
@@ -164,12 +196,15 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
 
     const userId = decoded.userId || decoded.user?.id || decoded.user?.userId;
     const schoolId = decoded.schoolId || decoded.user?.schoolId;
-    const tokenRole = decoded.role || decoded.user?.role || (decoded.isSuperAdmin ? 'SUPER_ADMIN' : undefined);
+    const tokenRole =
+      decoded.role ||
+      decoded.user?.role ||
+      (decoded.isSuperAdmin ? "SUPER_ADMIN" : undefined);
 
     if (!userId || !schoolId) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token format',
+        message: "Invalid token format",
       });
     }
 
@@ -177,7 +212,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     if (decoded.school && !decoded.school.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'School account is inactive',
+        message: "School account is inactive",
       });
     }
 
@@ -188,44 +223,58 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       if (now > trialEnd) {
         return res.status(403).json({
           success: false,
-          message: 'School trial has expired',
+          message: "School trial has expired",
         });
       }
     }
 
     req.user = {
       id: userId,
-      email: decoded.email || decoded.user?.email || '',
-      role: tokenRole || '',
+      email: decoded.email || decoded.user?.email || "",
+      role: tokenRole || "",
       schoolId,
-      isSuperAdmin: Boolean(decoded.isSuperAdmin || decoded.user?.isSuperAdmin || tokenRole === 'SUPER_ADMIN'),
+      isSuperAdmin: Boolean(
+        decoded.isSuperAdmin ||
+        decoded.user?.isSuperAdmin ||
+        tokenRole === "SUPER_ADMIN",
+      ),
     };
     req.schoolId = schoolId;
 
     next();
   } catch (error: any) {
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message: 'Token expired',
+        message: "Token expired",
       });
     }
     return res.status(403).json({
       success: false,
-      message: 'Invalid token',
+      message: "Invalid token",
     });
   }
 };
 
 /** School-level attendance dashboards, exports — not teachers/students/parents */
-const SCHOOL_ATTENDANCE_OPS_ROLES = new Set(['ADMIN', 'STAFF', 'SCHOOL_ADMIN', 'SUPER_ADMIN']);
+const SCHOOL_ATTENDANCE_OPS_ROLES = new Set([
+  "ADMIN",
+  "STAFF",
+  "SCHOOL_ADMIN",
+  "SUPER_ADMIN",
+]);
 
-function requireSchoolAttendanceOpsRole(req: AuthRequest, res: Response, next: NextFunction) {
+function requireSchoolAttendanceOpsRole(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   const role = req.user?.role;
   if (!role || !SCHOOL_ATTENDANCE_OPS_ROLES.has(role)) {
     return res.status(403).json({
       success: false,
-      message: 'Insufficient permissions for this attendance administration resource',
+      message:
+        "Insufficient permissions for this attendance administration resource",
     });
   }
   next();
@@ -234,9 +283,12 @@ function requireSchoolAttendanceOpsRole(req: AuthRequest, res: Response, next: N
 /** Who may read another teacher's combined summary (classes + own check-ins). */
 async function assertCanViewTeacherAttendanceSummary(
   req: AuthRequest,
-  teacherRow: { id: string; user: { id: string } | null }
-): Promise<{ ok: true } | { ok: false; status: number; body: { success: boolean; message: string } }> {
-  const role = req.user?.role ?? '';
+  teacherRow: { id: string; user: { id: string } | null },
+): Promise<
+  | { ok: true }
+  | { ok: false; status: number; body: { success: boolean; message: string } }
+> {
+  const role = req.user?.role ?? "";
   if (SCHOOL_ATTENDANCE_OPS_ROLES.has(role)) {
     return { ok: true };
   }
@@ -248,7 +300,8 @@ async function assertCanViewTeacherAttendanceSummary(
     status: 403,
     body: {
       success: false,
-      message: 'You do not have permission to view this teacher attendance summary',
+      message:
+        "You do not have permission to view this teacher attendance summary",
     },
   };
 }
@@ -261,25 +314,31 @@ async function assertCanViewStudentAttendanceSummary(
     id: string;
     classId: string | null;
     user: { id: string } | null;
-  }
-): Promise<{ ok: true } | { ok: false; status: number; body: { success: boolean; message: string } }> {
-  const role = req.user?.role ?? '';
+  },
+): Promise<
+  | { ok: true }
+  | { ok: false; status: number; body: { success: boolean; message: string } }
+> {
+  const role = req.user?.role ?? "";
   const userId = req.user!.id;
 
   if (SCHOOL_ATTENDANCE_OPS_ROLES.has(role)) {
     return { ok: true };
   }
 
-  if (role === 'STUDENT') {
+  if (role === "STUDENT") {
     if (student.user?.id === userId) return { ok: true };
     return {
       ok: false,
       status: 403,
-      body: { success: false, message: 'You can only view your own attendance summary' },
+      body: {
+        success: false,
+        message: "You can only view your own attendance summary",
+      },
     };
   }
 
-  if (role === 'PARENT') {
+  if (role === "PARENT") {
     const link = await prisma.studentParent.findFirst({
       where: {
         studentId: student.id,
@@ -293,12 +352,12 @@ async function assertCanViewStudentAttendanceSummary(
       status: 403,
       body: {
         success: false,
-        message: 'You do not have access to this student attendance summary',
+        message: "You do not have access to this student attendance summary",
       },
     };
   }
 
-  if (role === 'TEACHER') {
+  if (role === "TEACHER") {
     const teacher = await prisma.teacher.findFirst({
       where: { schoolId, user: { id: userId } },
       select: { id: true },
@@ -307,14 +366,14 @@ async function assertCanViewStudentAttendanceSummary(
       return {
         ok: false,
         status: 403,
-        body: { success: false, message: 'Teacher profile not found' },
+        body: { success: false, message: "Teacher profile not found" },
       };
     }
 
     const viaEnrollment = await prisma.studentClass.findFirst({
       where: {
         studentId: student.id,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         class: {
           schoolId,
           OR: [
@@ -344,7 +403,8 @@ async function assertCanViewStudentAttendanceSummary(
       status: 403,
       body: {
         success: false,
-        message: 'You do not have permission to view this student attendance summary',
+        message:
+          "You do not have permission to view this student attendance summary",
       },
     };
   }
@@ -352,12 +412,15 @@ async function assertCanViewStudentAttendanceSummary(
   return {
     ok: false,
     status: 403,
-    body: { success: false, message: 'Insufficient permissions for this resource' },
+    body: {
+      success: false,
+      message: "Insufficient permissions for this resource",
+    },
   };
 }
 
 function csvEscape(cell: unknown): string {
-  const s = cell === null || cell === undefined ? '' : String(cell);
+  const s = cell === null || cell === undefined ? "" : String(cell);
   if (/["\r\n,]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
@@ -366,35 +429,53 @@ function csvEscape(cell: unknown): string {
 // Notification Helper
 // ========================================
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+const AUTH_SERVICE_URL =
+  process.env.AUTH_SERVICE_URL || "http://localhost:3001";
 
 // Send notification to parent(s) of a student
-const notifyParents = async (studentId: string, type: string, title: string, message: string, link?: string) => {
+const notifyParents = async (
+  studentId: string,
+  type: string,
+  title: string,
+  message: string,
+  link?: string,
+) => {
   try {
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/notifications/parent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-service-token': NOTIFICATION_SERVICE_AUTH_TOKEN,
+    const response = await fetch(
+      `${AUTH_SERVICE_URL}/auth/notifications/parent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-service-token": NOTIFICATION_SERVICE_AUTH_TOKEN,
+        },
+        body: JSON.stringify({ studentId, type, title, message, link }),
       },
-      body: JSON.stringify({ studentId, type, title, message, link }),
-    });
+    );
     if (response.ok) {
       const result = await response.json();
-      console.log(`📧 Parent notification sent to ${result.parentsNotified} parent(s): ${title}`);
+      console.log(
+        `📧 Parent notification sent to ${result.parentsNotified} parent(s): ${title}`,
+      );
     }
   } catch (error) {
     // Silent fail - parent may not be registered
   }
 };
 
-const notifyStudent = async (studentId: string, type: string, title: string, message: string, link?: string) => {
+const notifyStudent = async (
+  studentId: string,
+  type: string,
+  title: string,
+  message: string,
+  link?: string,
+) => {
   try {
     await fetch(`${AUTH_SERVICE_URL}/auth/notifications/student`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-service-token': NOTIFICATION_SERVICE_AUTH_TOKEN,
+        "Content-Type": "application/json",
+        "x-service-token": NOTIFICATION_SERVICE_AUTH_TOKEN,
       },
       body: JSON.stringify({ studentId, type, title, message, link }),
     });
@@ -418,50 +499,87 @@ interface BulkAttendanceRequest {
   acknowledgeOffSchedule?: boolean;
 }
 
-const ATTENDANCE_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+const ATTENDANCE_ADMIN_ROLES = new Set([
+  "ADMIN",
+  "STAFF",
+  "SUPER_ADMIN",
+  "SCHOOL_ADMIN",
+]);
 
 function normalizeRole(role: string | undefined | null): string {
-  return String(role || '')
+  return String(role || "")
     .trim()
     .toUpperCase()
-    .replace(/[\s-]+/g, '_');
+    .replace(/[\s-]+/g, "_");
 }
 
-function hasAttendanceDelegationAdminAccess(role: string | undefined | null): boolean {
+function hasAttendanceDelegationAdminAccess(
+  role: string | undefined | null,
+): boolean {
   const normalized = normalizeRole(role);
   if (ATTENDANCE_ADMIN_ROLES.has(normalized)) return true;
   // Defensive fallback for legacy role naming variants.
-  return normalized.endsWith('_ADMIN') || normalized === 'ADMIN';
+  return normalized.endsWith("_ADMIN") || normalized === "ADMIN";
 }
-const ALL_ATTENDANCE_STATUSES = new Set(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'PERMISSION']);
+const ALL_ATTENDANCE_STATUSES = new Set([
+  "PRESENT",
+  "ABSENT",
+  "LATE",
+  "EXCUSED",
+  "PERMISSION",
+]);
 
-type DelegationScopeType = 'CLASS' | 'GRADE' | 'SCHOOL';
-type DisciplineCapabilityProfile = 'ATTENDANCE_APL' | 'DISCIPLINE_E' | 'FULL_ATTENDANCE';
+type DelegationScopeType = "CLASS" | "GRADE" | "SCHOOL";
+type DisciplineCapabilityProfile =
+  | "ATTENDANCE_APL"
+  | "DISCIPLINE_E"
+  | "FULL_ATTENDANCE";
 
-function allowedStatusesForCapability(profile: DisciplineCapabilityProfile): Set<string> {
-  if (profile === 'ATTENDANCE_APL') return new Set(['ABSENT', 'PERMISSION', 'LATE']);
+function allowedStatusesForCapability(
+  profile: DisciplineCapabilityProfile,
+): Set<string> {
+  if (profile === "ATTENDANCE_APL")
+    return new Set(["ABSENT", "PERMISSION", "LATE"]);
   // Allow PRESENT so delegated discipline users can clear an incorrect Excused mark.
-  if (profile === 'DISCIPLINE_E') return new Set(['EXCUSED', 'PRESENT']);
+  if (profile === "DISCIPLINE_E") return new Set(["EXCUSED", "PRESENT"]);
   return new Set(ALL_ATTENDANCE_STATUSES);
 }
 
 function isDelegationActiveOnDate(
-  delegation: { activeFrom: Date | null; activeUntil: Date | null; isActive: boolean },
-  date: Date
+  delegation: {
+    activeFrom: Date | null;
+    activeUntil: Date | null;
+    isActive: boolean;
+  },
+  date: Date,
 ): boolean {
   if (!delegation.isActive) return false;
-  if (delegation.activeFrom && date.getTime() < startOfDay(delegation.activeFrom).getTime()) return false;
-  if (delegation.activeUntil && date.getTime() > endOfDay(delegation.activeUntil).getTime()) return false;
+  if (
+    delegation.activeFrom &&
+    date.getTime() < startOfDay(delegation.activeFrom).getTime()
+  )
+    return false;
+  if (
+    delegation.activeUntil &&
+    date.getTime() > endOfDay(delegation.activeUntil).getTime()
+  )
+    return false;
   return true;
 }
 
 function delegationMatchesClass(
-  delegation: { scopeType: DelegationScopeType; classId: string | null; grade: string | null },
-  classData: { id: string; grade: string }
+  delegation: {
+    scopeType: DelegationScopeType;
+    classId: string | null;
+    grade: string | null;
+  },
+  classData: { id: string; grade: string },
 ): boolean {
-  if (delegation.scopeType === 'SCHOOL') return true;
-  if (delegation.scopeType === 'CLASS') return delegation.classId === classData.id;
-  if (delegation.scopeType === 'GRADE') return delegation.grade === classData.grade;
+  if (delegation.scopeType === "SCHOOL") return true;
+  if (delegation.scopeType === "CLASS")
+    return delegation.classId === classData.id;
+  if (delegation.scopeType === "GRADE")
+    return delegation.grade === classData.grade;
   return false;
 }
 
@@ -473,19 +591,23 @@ async function resolveDelegatedClassAttendanceAccess(opts: {
   statuses?: string[];
 }): Promise<{
   allowed: boolean;
-  source: 'admin' | 'homeroom' | 'delegation' | 'none';
+  source: "admin" | "homeroom" | "delegation" | "none";
   allowedStatuses: string[];
   message?: string;
 }> {
-  const role = opts.req.user?.role || '';
+  const role = opts.req.user?.role || "";
   if (ATTENDANCE_ADMIN_ROLES.has(role)) {
-    return { allowed: true, source: 'admin', allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES) };
+    return {
+      allowed: true,
+      source: "admin",
+      allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES),
+    };
   }
 
   const scopedKey = `delegated_attendance_enabled:${opts.schoolId}`;
   const delegatedFlag = await prisma.featureFlag.findFirst({
-    where: { key: { in: [scopedKey, 'delegated_attendance_enabled'] } },
-    orderBy: { key: 'desc' },
+    where: { key: { in: [scopedKey, "delegated_attendance_enabled"] } },
+    orderBy: { key: "desc" },
     select: { key: true, enabled: true },
   });
   const delegatedEnabled = delegatedFlag ? delegatedFlag.enabled : true;
@@ -495,16 +617,23 @@ async function resolveDelegatedClassAttendanceAccess(opts: {
     where: { schoolId: opts.schoolId, user: { id: opts.req.user!.id } },
     select: { id: true },
   });
-  if (rosterTeacherForHomeroom && opts.classData.homeroomTeacherId === rosterTeacherForHomeroom.id) {
-    return { allowed: true, source: 'homeroom', allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES) };
+  if (
+    rosterTeacherForHomeroom &&
+    opts.classData.homeroomTeacherId === rosterTeacherForHomeroom.id
+  ) {
+    return {
+      allowed: true,
+      source: "homeroom",
+      allowedStatuses: Array.from(ALL_ATTENDANCE_STATUSES),
+    };
   }
 
   if (!delegatedEnabled) {
     return {
       allowed: false,
-      source: 'none',
+      source: "none",
       allowedStatuses: [],
-      message: 'Delegated attendance is currently disabled for this school',
+      message: "Delegated attendance is currently disabled for this school",
     };
   }
 
@@ -517,7 +646,10 @@ async function resolveDelegatedClassAttendanceAccess(opts: {
         { activeFrom: null, activeUntil: null },
         { activeFrom: { lte: opts.targetDate }, activeUntil: null },
         { activeFrom: null, activeUntil: { gte: opts.targetDate } },
-        { activeFrom: { lte: opts.targetDate }, activeUntil: { gte: opts.targetDate } },
+        {
+          activeFrom: { lte: opts.targetDate },
+          activeUntil: { gte: opts.targetDate },
+        },
       ],
     },
     select: {
@@ -532,82 +664,105 @@ async function resolveDelegatedClassAttendanceAccess(opts: {
     },
   });
 
-  const matched = delegations.filter((d) =>
-    isDelegationActiveOnDate(d, opts.targetDate) && delegationMatchesClass(d as any, opts.classData)
+  const matched = delegations.filter(
+    (d) =>
+      isDelegationActiveOnDate(d, opts.targetDate) &&
+      delegationMatchesClass(d as any, opts.classData),
   );
   if (matched.length === 0) {
     return {
       allowed: false,
-      source: 'none',
+      source: "none",
       allowedStatuses: [],
-      message: 'You do not have delegated attendance permission for this class',
+      message: "You do not have delegated attendance permission for this class",
     };
   }
 
   const allowed = new Set<string>();
   for (const d of matched) {
-    for (const s of allowedStatusesForCapability(d.capabilityProfile as DisciplineCapabilityProfile)) {
+    for (const s of allowedStatusesForCapability(
+      d.capabilityProfile as DisciplineCapabilityProfile,
+    )) {
       allowed.add(s);
     }
   }
   // Undo mistaken Excused: anyone who may mark EXCUSED must also be able to return to PRESENT.
-  if (allowed.has('EXCUSED')) allowed.add('PRESENT');
+  if (allowed.has("EXCUSED")) allowed.add("PRESENT");
   if (opts.statuses && opts.statuses.length > 0) {
     const blocked = opts.statuses.find((s) => !allowed.has(s));
     if (blocked) {
       return {
         allowed: false,
-        source: 'delegation',
+        source: "delegation",
         allowedStatuses: Array.from(allowed),
         message: `Status ${blocked} is not permitted for your delegated role`,
       };
     }
   }
 
-  return { allowed: true, source: 'delegation', allowedStatuses: Array.from(allowed) };
+  return {
+    allowed: true,
+    source: "delegation",
+    allowedStatuses: Array.from(allowed),
+  };
 }
 
 // Utility Functions
-const calculateAttendancePercentage = (present: number, total: number): number => {
+const calculateAttendancePercentage = (
+  present: number,
+  total: number,
+): number => {
   if (total === 0) return 0;
   return Math.round((present / total) * 100);
 };
 
 const getSchoolDays = (startDate: Date, endDate: Date): number => {
   const days = eachDayOfInterval({ start: startDate, end: endDate });
-  return days.filter(day => !isWeekend(day)).length;
+  return days.filter((day) => !isWeekend(day)).length;
 };
 
 const validateAttendanceStatus = (status: string): boolean => {
-  const validStatuses = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'PERMISSION'];
+  const validStatuses = ["PRESENT", "ABSENT", "LATE", "EXCUSED", "PERMISSION"];
   return validStatuses.includes(status);
 };
 
-const validateAttendanceSession = (session: string): session is AttendanceSession => {
-  return session === 'MORNING' || session === 'AFTERNOON';
+const validateAttendanceSession = (
+  session: string,
+): session is AttendanceSession => {
+  return session === "MORNING" || session === "AFTERNOON";
 };
 
 /** When `true` (default), teacher check-in/out must match published timetable unless client sends acknowledgeOffSchedule */
-const TIMETABLE_ENFORCE_TEACHER = process.env.ATTENDANCE_TIMETABLE_ENFORCE !== '0';
+const TIMETABLE_ENFORCE_TEACHER =
+  process.env.ATTENDANCE_TIMETABLE_ENFORCE !== "0";
 
 function resolveTeacherLocalDate(req: AuthRequest): string {
-  const q = typeof req.query.localDate === 'string' ? req.query.localDate.trim() : '';
+  const q =
+    typeof req.query.localDate === "string" ? req.query.localDate.trim() : "";
   const b =
-    typeof (req.body as { localDate?: string } | undefined)?.localDate === 'string'
+    typeof (req.body as { localDate?: string } | undefined)?.localDate ===
+    "string"
       ? (req.body as { localDate: string }).localDate.trim()
-      : '';
-  const raw = (/^\d{4}-\d{2}-\d{2}$/.test(q) && q) || (/^\d{4}-\d{2}-\d{2}$/.test(b) && b) || '';
+      : "";
+  const raw =
+    (/^\d{4}-\d{2}-\d{2}$/.test(q) && q) ||
+    (/^\d{4}-\d{2}-\d{2}$/.test(b) && b) ||
+    "";
   if (raw) return raw;
   const n = new Date();
-  return `${n.getUTCFullYear()}-${String(n.getUTCMonth() + 1).padStart(2, '0')}-${String(n.getUTCDate()).padStart(2, '0')}`;
+  return `${n.getUTCFullYear()}-${String(n.getUTCMonth() + 1).padStart(2, "0")}-${String(n.getUTCDate()).padStart(2, "0")}`;
 }
 
-function requireAttendanceDelegationAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  const role = req.user?.role || '';
+function requireAttendanceDelegationAdmin(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  const role = req.user?.role || "";
   if (!hasAttendanceDelegationAdminAccess(role)) {
     return res.status(403).json({
       success: false,
-      message: 'Insufficient permissions for attendance delegation management',
+      message: "Insufficient permissions for attendance delegation management",
       role,
       normalizedRole: normalizeRole(role),
     });
@@ -639,7 +794,7 @@ async function verifyTeacherPersonalSessionScheduled(opts: {
   if (!dow) return { ok: true };
 
   const usesExplicitTimetable =
-    sched.source === 'timetable' &&
+    sched.source === "timetable" &&
     Array.isArray(sched.scheduledWeekdays) &&
     sched.scheduledWeekdays.length > 0;
 
@@ -647,45 +802,46 @@ async function verifyTeacherPersonalSessionScheduled(opts: {
 
   const p = sched.pattern[dow];
   const allowed =
-    opts.session === 'MORNING' ? Boolean(p?.morning) : Boolean(p?.afternoon);
+    opts.session === "MORNING" ? Boolean(p?.morning) : Boolean(p?.afternoon);
 
   if (allowed) return { ok: true };
 
   return {
     ok: false,
-    code: 'NOT_ON_TIMETABLE',
+    code: "NOT_ON_TIMETABLE",
     message:
-      opts.session === 'MORNING'
-        ? 'You have no scheduled morning periods today. Confirm an off-schedule check-in if you are working anyway.'
-        : 'You have no scheduled afternoon periods today. Confirm an off-schedule check-in if you are working anyway.',
+      opts.session === "MORNING"
+        ? "You have no scheduled morning periods today. Confirm an off-schedule check-in if you are working anyway."
+        : "You have no scheduled afternoon periods today. Confirm an off-schedule check-in if you are working anyway.",
   };
 }
 
 // Health Check (liveness — no DB)
-app.get('/health', (req: Request, res: Response) => {
+app.get("/health", (req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Attendance Service is running',
-    service: 'attendance-service',
+    message: "Attendance Service is running",
+    service: "attendance-service",
     port: process.env.PORT || process.env.ATTENDANCE_SERVICE_PORT || 3008,
   });
 });
 
 // Readiness — verifies database connectivity (use for orchestrators / load balancers)
-app.get('/health/ready', async (req: Request, res: Response) => {
+app.get("/health/ready", async (req: Request, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({
       success: true,
       ready: true,
-      service: 'attendance-service',
+      service: "attendance-service",
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Database check failed';
+    const message =
+      error instanceof Error ? error.message : "Database check failed";
     res.status(503).json({
       success: false,
       ready: false,
-      service: 'attendance-service',
+      service: "attendance-service",
       message,
     });
   }
@@ -695,363 +851,1428 @@ app.get('/health/ready', async (req: Request, res: Response) => {
 
 // ==================== A0. Delegations & Discipline Policy ====================
 
-app.get('/attendance/delegations', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const classId = typeof req.query.classId === 'string' ? req.query.classId : undefined;
-    const grade = typeof req.query.grade === 'string' ? req.query.grade : undefined;
-    const assigneeUserId = typeof req.query.assigneeUserId === 'string' ? req.query.assigneeUserId : undefined;
-    const rows = await prisma.attendanceDelegation.findMany({
-      where: {
-        schoolId,
-        ...(classId ? { classId } : {}),
-        ...(grade ? { grade } : {}),
-        ...(assigneeUserId ? { assigneeUserId } : {}),
-      },
-      include: {
-        assigneeUser: { select: { id: true, firstName: true, lastName: true, role: true, email: true } },
-        grantedByUser: { select: { id: true, firstName: true, lastName: true, role: true, email: true } },
-        class: { select: { id: true, name: true, grade: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return res.json({ success: true, data: rows });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch delegations', error: error.message });
-  }
-});
-
-app.get('/attendance/delegations/users', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
-    const rows = await prisma.user.findMany({
-      where: {
-        schoolId,
-        isActive: true,
-        ...(search
-          ? {
-              OR: [
-                { firstName: { contains: search, mode: 'insensitive' } },
-                { lastName: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-      },
-      take: 200,
-      orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
-    });
-    return res.json({ success: true, data: rows });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch delegation users', error: error.message });
-  }
-});
-
-app.post('/attendance/delegations', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const {
-      assigneeUserId,
-      responsibilityType,
-      capabilityProfile,
-      scopeType,
-      classId,
-      grade,
-      activeFrom,
-      activeUntil,
-      notes,
-      metadata,
-    } = req.body || {};
-
-    if (!assigneeUserId || !capabilityProfile || !scopeType) {
-      return res.status(400).json({ success: false, message: 'assigneeUserId, capabilityProfile, and scopeType are required' });
-    }
-
-    if (!['ATTENDANCE_APL', 'DISCIPLINE_E', 'FULL_ATTENDANCE'].includes(capabilityProfile)) {
-      return res.status(400).json({ success: false, message: 'Invalid capabilityProfile' });
-    }
-    if (!['CLASS', 'GRADE', 'SCHOOL'].includes(scopeType)) {
-      return res.status(400).json({ success: false, message: 'Invalid scopeType' });
-    }
-    if (scopeType === 'CLASS' && !classId) {
-      return res.status(400).json({ success: false, message: 'classId is required for CLASS scope' });
-    }
-    if (scopeType === 'GRADE' && !grade) {
-      return res.status(400).json({ success: false, message: 'grade is required for GRADE scope' });
-    }
-
-    const assignee = await prisma.user.findFirst({
-      where: { id: assigneeUserId, schoolId },
-      select: { id: true },
-    });
-    if (!assignee) {
-      return res.status(404).json({ success: false, message: 'Assignee user not found in your school' });
-    }
-    if (classId) {
-      const classRow = await prisma.class.findFirst({
-        where: { id: classId, schoolId },
-        select: { id: true },
+app.get(
+  "/attendance/delegations",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const classId =
+        typeof req.query.classId === "string" ? req.query.classId : undefined;
+      const grade =
+        typeof req.query.grade === "string" ? req.query.grade : undefined;
+      const assigneeUserId =
+        typeof req.query.assigneeUserId === "string"
+          ? req.query.assigneeUserId
+          : undefined;
+      const rows = await prisma.attendanceDelegation.findMany({
+        where: {
+          schoolId,
+          ...(classId ? { classId } : {}),
+          ...(grade ? { grade } : {}),
+          ...(assigneeUserId ? { assigneeUserId } : {}),
+        },
+        include: {
+          assigneeUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              email: true,
+            },
+          },
+          grantedByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              email: true,
+            },
+          },
+          class: { select: { id: true, name: true, grade: true } },
+        },
+        orderBy: { createdAt: "desc" },
       });
-      if (!classRow) {
-        return res.status(404).json({ success: false, message: 'Class not found in your school' });
-      }
+      return res.json({ success: true, data: rows });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch delegations",
+          error: error.message,
+        });
     }
+  },
+);
 
-    const created = await prisma.attendanceDelegation.create({
-      data: {
-        schoolId,
+app.get(
+  "/attendance/delegations/users",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const search =
+        typeof req.query.search === "string" ? req.query.search.trim() : "";
+      const rows = await prisma.user.findMany({
+        where: {
+          schoolId,
+          isActive: true,
+          ...(search
+            ? {
+                OR: [
+                  { firstName: { contains: search, mode: "insensitive" } },
+                  { lastName: { contains: search, mode: "insensitive" } },
+                  { email: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+        },
+        take: 200,
+        orderBy: [{ role: "asc" }, { firstName: "asc" }],
+      });
+      return res.json({ success: true, data: rows });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch delegation users",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.post(
+  "/attendance/delegations",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const {
         assigneeUserId,
-        grantedByUserId: req.user!.id,
-        responsibilityType: responsibilityType || 'CUSTOM',
+        responsibilityType,
         capabilityProfile,
         scopeType,
-        classId: classId || null,
-        grade: grade || null,
-        activeFrom: activeFrom ? new Date(activeFrom) : null,
-        activeUntil: activeUntil ? new Date(activeUntil) : null,
-        notes: notes || null,
-        metadata: metadata || null,
-        isActive: true,
-      },
-    });
+        classId,
+        grade,
+        activeFrom,
+        activeUntil,
+        notes,
+        metadata,
+      } = req.body || {};
 
-    await prisma.platformAuditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'ATTENDANCE_DELEGATION_CREATE',
-        resourceType: 'attendance_delegation',
-        resourceId: created.id,
-        details: { scopeType, capabilityProfile, classId: classId || null, grade: grade || null, assigneeUserId },
-      },
-    }).catch(() => {});
+      if (!assigneeUserId || !capabilityProfile || !scopeType) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "assigneeUserId, capabilityProfile, and scopeType are required",
+          });
+      }
 
-    return res.status(201).json({ success: true, data: created });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to create delegation', error: error.message });
-  }
-});
+      if (
+        !["ATTENDANCE_APL", "DISCIPLINE_E", "FULL_ATTENDANCE"].includes(
+          capabilityProfile,
+        )
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid capabilityProfile" });
+      }
+      if (!["CLASS", "GRADE", "SCHOOL"].includes(scopeType)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid scopeType" });
+      }
+      if (scopeType === "CLASS" && !classId) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "classId is required for CLASS scope",
+          });
+      }
+      if (scopeType === "GRADE" && !grade) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "grade is required for GRADE scope",
+          });
+      }
 
-app.patch('/attendance/delegations/:id', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const id = req.params.id;
-    const existing = await prisma.attendanceDelegation.findFirst({ where: { id, schoolId } });
-    if (!existing) return res.status(404).json({ success: false, message: 'Delegation not found' });
-
-    const patch: any = {};
-    const fields = ['responsibilityType', 'capabilityProfile', 'scopeType', 'classId', 'grade', 'notes', 'metadata', 'isActive'] as const;
-    for (const f of fields) {
-      if (req.body?.[f] !== undefined) patch[f] = req.body[f];
-    }
-    if (req.body?.activeFrom !== undefined) patch.activeFrom = req.body.activeFrom ? new Date(req.body.activeFrom) : null;
-    if (req.body?.activeUntil !== undefined) patch.activeUntil = req.body.activeUntil ? new Date(req.body.activeUntil) : null;
-    if (patch.scopeType === 'CLASS' && !patch.classId && !existing.classId) {
-      return res.status(400).json({ success: false, message: 'classId is required for CLASS scope' });
-    }
-    if (patch.scopeType === 'GRADE' && !patch.grade && !existing.grade) {
-      return res.status(400).json({ success: false, message: 'grade is required for GRADE scope' });
-    }
-
-    const updated = await prisma.attendanceDelegation.update({
-      where: { id },
-      data: patch,
-    });
-    await prisma.platformAuditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'ATTENDANCE_DELEGATION_UPDATE',
-        resourceType: 'attendance_delegation',
-        resourceId: id,
-        details: patch,
-      },
-    }).catch(() => {});
-    return res.json({ success: true, data: updated });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to update delegation', error: error.message });
-  }
-});
-
-app.get('/attendance/delegations/effective', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const classId = typeof req.query.classId === 'string' ? req.query.classId : '';
-    const dateParam = typeof req.query.date === 'string' ? req.query.date : format(new Date(), 'yyyy-MM-dd');
-    if (!classId) return res.status(400).json({ success: false, message: 'classId is required' });
-    const targetDate = startOfDay(parseISO(dateParam));
-    if (Number.isNaN(targetDate.getTime())) return res.status(400).json({ success: false, message: 'Invalid date' });
-
-    const classData = await prisma.class.findFirst({
-      where: { id: classId, schoolId },
-      select: { id: true, grade: true, homeroomTeacherId: true, name: true },
-    });
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
-
-    const access = await resolveDelegatedClassAttendanceAccess({
-      req,
-      classData,
-      schoolId,
-      targetDate,
-    });
-    return res.json({
-      success: true,
-      data: {
-        classId: classData.id,
-        className: classData.name,
-        grade: classData.grade,
-        date: format(targetDate, 'yyyy-MM-dd'),
-        canWrite: access.allowed,
-        source: access.source,
-        allowedStatuses: access.allowedStatuses,
-      },
-    });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to resolve effective delegation', error: error.message });
-  }
-});
-
-app.get('/attendance/discipline-policy', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const row = await prisma.disciplinePolicy.findUnique({ where: { schoolId } });
-    return res.json({ success: true, data: row });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch discipline policy', error: error.message });
-  }
-});
-
-app.put('/attendance/discipline-policy', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const {
-      allowedExcusedReasonTemplates,
-      mandatoryExcusedReasonMinLength,
-      requireEscalationForExcused,
-      metadata,
-    } = req.body || {};
-
-    const saved = await prisma.disciplinePolicy.upsert({
-      where: { schoolId },
-      update: {
-        ...(allowedExcusedReasonTemplates !== undefined ? { allowedExcusedReasonTemplates } : {}),
-        ...(mandatoryExcusedReasonMinLength !== undefined ? { mandatoryExcusedReasonMinLength: Number(mandatoryExcusedReasonMinLength) } : {}),
-        ...(requireEscalationForExcused !== undefined ? { requireEscalationForExcused: Boolean(requireEscalationForExcused) } : {}),
-        ...(metadata !== undefined ? { metadata } : {}),
-      },
-      create: {
-        schoolId,
-        allowedExcusedReasonTemplates: allowedExcusedReasonTemplates || [],
-        mandatoryExcusedReasonMinLength: Number(mandatoryExcusedReasonMinLength || 3),
-        requireEscalationForExcused: Boolean(requireEscalationForExcused),
-        metadata: metadata || null,
-      },
-    });
-    await prisma.platformAuditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'DISCIPLINE_POLICY_UPSERT',
-        resourceType: 'discipline_policy',
-        resourceId: saved.id,
-        details: {
-          mandatoryExcusedReasonMinLength: saved.mandatoryExcusedReasonMinLength,
-          requireEscalationForExcused: saved.requireEscalationForExcused,
-        },
-      },
-    }).catch(() => {});
-    return res.json({ success: true, data: saved });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to save discipline policy', error: error.message });
-  }
-});
-
-app.get('/attendance/delegations/rollout', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const scopedKey = `delegated_attendance_enabled:${schoolId}`;
-    const flag = await prisma.featureFlag.findFirst({
-      where: { key: { in: [scopedKey, 'delegated_attendance_enabled'] } },
-      orderBy: { key: 'desc' },
-    });
-    return res.json({ success: true, data: { enabled: flag ? flag.enabled : true } });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch rollout flag', error: error.message });
-  }
-});
-
-app.put('/attendance/delegations/rollout', authenticateToken, requireAttendanceDelegationAdmin, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const scopedKey = `delegated_attendance_enabled:${schoolId}`;
-    const enabled = Boolean(req.body?.enabled);
-    const existing = await prisma.featureFlag.findUnique({ where: { key: scopedKey } });
-    const saved = existing
-      ? await prisma.featureFlag.update({
-          where: { key: scopedKey },
-          data: { enabled, metadata: { managedBy: 'attendance-service', updatedBy: req.user?.id } },
-        })
-      : await prisma.featureFlag.create({
-          data: {
-            key: scopedKey,
-            schoolId,
-            enabled,
-            description: 'Enable delegated attendance and discipline workbench',
-            metadata: { managedBy: 'attendance-service', updatedBy: req.user?.id },
-          },
+      const assignee = await prisma.user.findFirst({
+        where: { id: assigneeUserId, schoolId },
+        select: { id: true },
+      });
+      if (!assignee) {
+        return res
+          .status(404)
+          .json({
+            success: false,
+            message: "Assignee user not found in your school",
+          });
+      }
+      if (classId) {
+        const classRow = await prisma.class.findFirst({
+          where: { id: classId, schoolId },
+          select: { id: true },
         });
-    await prisma.platformAuditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'ATTENDANCE_DELEGATION_ROLLOUT_UPDATE',
-        resourceType: 'feature_flag',
-        resourceId: saved.id,
-        details: { enabled },
-      },
-    }).catch(() => {});
-    return res.json({ success: true, data: { enabled: saved.enabled } });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: 'Failed to update rollout flag', error: error.message });
-  }
-});
+        if (!classRow) {
+          return res
+            .status(404)
+            .json({
+              success: false,
+              message: "Class not found in your school",
+            });
+        }
+      }
+
+      const created = await prisma.attendanceDelegation.create({
+        data: {
+          schoolId,
+          assigneeUserId,
+          grantedByUserId: req.user!.id,
+          responsibilityType: responsibilityType || "CUSTOM",
+          capabilityProfile,
+          scopeType,
+          classId: classId || null,
+          grade: grade || null,
+          activeFrom: activeFrom ? new Date(activeFrom) : null,
+          activeUntil: activeUntil ? new Date(activeUntil) : null,
+          notes: notes || null,
+          metadata: metadata || null,
+          isActive: true,
+        },
+      });
+
+      await prisma.platformAuditLog
+        .create({
+          data: {
+            actorId: req.user!.id,
+            action: "ATTENDANCE_DELEGATION_CREATE",
+            resourceType: "attendance_delegation",
+            resourceId: created.id,
+            details: {
+              scopeType,
+              capabilityProfile,
+              classId: classId || null,
+              grade: grade || null,
+              assigneeUserId,
+            },
+          },
+        })
+        .catch(() => {});
+
+      return res.status(201).json({ success: true, data: created });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to create delegation",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.patch(
+  "/attendance/delegations/:id",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const id = req.params.id;
+      const existing = await prisma.attendanceDelegation.findFirst({
+        where: { id, schoolId },
+      });
+      if (!existing)
+        return res
+          .status(404)
+          .json({ success: false, message: "Delegation not found" });
+
+      const patch: any = {};
+      const fields = [
+        "responsibilityType",
+        "capabilityProfile",
+        "scopeType",
+        "classId",
+        "grade",
+        "notes",
+        "metadata",
+        "isActive",
+      ] as const;
+      for (const f of fields) {
+        if (req.body?.[f] !== undefined) patch[f] = req.body[f];
+      }
+      if (req.body?.activeFrom !== undefined)
+        patch.activeFrom = req.body.activeFrom
+          ? new Date(req.body.activeFrom)
+          : null;
+      if (req.body?.activeUntil !== undefined)
+        patch.activeUntil = req.body.activeUntil
+          ? new Date(req.body.activeUntil)
+          : null;
+      if (patch.scopeType === "CLASS" && !patch.classId && !existing.classId) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "classId is required for CLASS scope",
+          });
+      }
+      if (patch.scopeType === "GRADE" && !patch.grade && !existing.grade) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "grade is required for GRADE scope",
+          });
+      }
+
+      const updated = await prisma.attendanceDelegation.update({
+        where: { id },
+        data: patch,
+      });
+      await prisma.platformAuditLog
+        .create({
+          data: {
+            actorId: req.user!.id,
+            action: "ATTENDANCE_DELEGATION_UPDATE",
+            resourceType: "attendance_delegation",
+            resourceId: id,
+            details: patch,
+          },
+        })
+        .catch(() => {});
+      return res.json({ success: true, data: updated });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to update delegation",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.get(
+  "/attendance/delegations/effective",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const classId =
+        typeof req.query.classId === "string" ? req.query.classId : "";
+      const dateParam =
+        typeof req.query.date === "string"
+          ? req.query.date
+          : format(new Date(), "yyyy-MM-dd");
+      if (!classId)
+        return res
+          .status(400)
+          .json({ success: false, message: "classId is required" });
+      const targetDate = startOfDay(parseISO(dateParam));
+      if (Number.isNaN(targetDate.getTime()))
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid date" });
+
+      const classData = await prisma.class.findFirst({
+        where: { id: classId, schoolId },
+        select: { id: true, grade: true, homeroomTeacherId: true, name: true },
+      });
+      if (!classData)
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+
+      const access = await resolveDelegatedClassAttendanceAccess({
+        req,
+        classData,
+        schoolId,
+        targetDate,
+      });
+      return res.json({
+        success: true,
+        data: {
+          classId: classData.id,
+          className: classData.name,
+          grade: classData.grade,
+          date: format(targetDate, "yyyy-MM-dd"),
+          canWrite: access.allowed,
+          source: access.source,
+          allowedStatuses: access.allowedStatuses,
+        },
+      });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to resolve effective delegation",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.get(
+  "/attendance/discipline-policy",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const row = await prisma.disciplinePolicy.findUnique({
+        where: { schoolId },
+      });
+      return res.json({ success: true, data: row });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch discipline policy",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.put(
+  "/attendance/discipline-policy",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const {
+        allowedExcusedReasonTemplates,
+        mandatoryExcusedReasonMinLength,
+        requireEscalationForExcused,
+        metadata,
+      } = req.body || {};
+
+      const saved = await prisma.disciplinePolicy.upsert({
+        where: { schoolId },
+        update: {
+          ...(allowedExcusedReasonTemplates !== undefined
+            ? { allowedExcusedReasonTemplates }
+            : {}),
+          ...(mandatoryExcusedReasonMinLength !== undefined
+            ? {
+                mandatoryExcusedReasonMinLength: Number(
+                  mandatoryExcusedReasonMinLength,
+                ),
+              }
+            : {}),
+          ...(requireEscalationForExcused !== undefined
+            ? {
+                requireEscalationForExcused: Boolean(
+                  requireEscalationForExcused,
+                ),
+              }
+            : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
+        },
+        create: {
+          schoolId,
+          allowedExcusedReasonTemplates: allowedExcusedReasonTemplates || [],
+          mandatoryExcusedReasonMinLength: Number(
+            mandatoryExcusedReasonMinLength || 3,
+          ),
+          requireEscalationForExcused: Boolean(requireEscalationForExcused),
+          metadata: metadata || null,
+        },
+      });
+      await prisma.platformAuditLog
+        .create({
+          data: {
+            actorId: req.user!.id,
+            action: "DISCIPLINE_POLICY_UPSERT",
+            resourceType: "discipline_policy",
+            resourceId: saved.id,
+            details: {
+              mandatoryExcusedReasonMinLength:
+                saved.mandatoryExcusedReasonMinLength,
+              requireEscalationForExcused: saved.requireEscalationForExcused,
+            },
+          },
+        })
+        .catch(() => {});
+      return res.json({ success: true, data: saved });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to save discipline policy",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.get(
+  "/attendance/delegations/rollout",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const scopedKey = `delegated_attendance_enabled:${schoolId}`;
+      const flag = await prisma.featureFlag.findFirst({
+        where: { key: { in: [scopedKey, "delegated_attendance_enabled"] } },
+        orderBy: { key: "desc" },
+      });
+      return res.json({
+        success: true,
+        data: { enabled: flag ? flag.enabled : true },
+      });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch rollout flag",
+          error: error.message,
+        });
+    }
+  },
+);
+
+app.put(
+  "/attendance/delegations/rollout",
+  authenticateToken,
+  requireAttendanceDelegationAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const scopedKey = `delegated_attendance_enabled:${schoolId}`;
+      const enabled = Boolean(req.body?.enabled);
+      const existing = await prisma.featureFlag.findUnique({
+        where: { key: scopedKey },
+      });
+      const saved = existing
+        ? await prisma.featureFlag.update({
+            where: { key: scopedKey },
+            data: {
+              enabled,
+              metadata: {
+                managedBy: "attendance-service",
+                updatedBy: req.user?.id,
+              },
+            },
+          })
+        : await prisma.featureFlag.create({
+            data: {
+              key: scopedKey,
+              schoolId,
+              enabled,
+              description:
+                "Enable delegated attendance and discipline workbench",
+              metadata: {
+                managedBy: "attendance-service",
+                updatedBy: req.user?.id,
+              },
+            },
+          });
+      await prisma.platformAuditLog
+        .create({
+          data: {
+            actorId: req.user!.id,
+            action: "ATTENDANCE_DELEGATION_ROLLOUT_UPDATE",
+            resourceType: "feature_flag",
+            resourceId: saved.id,
+            details: { enabled },
+          },
+        })
+        .catch(() => {});
+      return res.json({ success: true, data: { enabled: saved.enabled } });
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to update rollout flag",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // GET /attendance/class/:classId/date/:date - Fetch all students in class with their attendance
-app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { classId, date } = req.params;
-    const schoolId = req.schoolId!;
-    const includeTimetableContext = req.query.includeTimetableContext !== 'false';
+app.get(
+  "/attendance/class/:classId/date/:date",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { classId, date } = req.params;
+      const schoolId = req.schoolId!;
+      const includeTimetableContext =
+        req.query.includeTimetableContext !== "false";
 
-    // Validate class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id: classId,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
+      // Validate class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          schoolId: schoolId,
+        },
       });
-    }
 
-    // Parse date
-    const targetDate = parseISO(date);
-    const startDate = startOfDay(targetDate);
-    const endDate = endOfDay(targetDate);
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
 
-    // Get students via both direct classId and StudentClass junction table
-    const [directStudents, enrolledStudents] = await Promise.all([
-      prisma.student.findMany({
+      // Parse date
+      const targetDate = parseISO(date);
+      const startDate = startOfDay(targetDate);
+      const endDate = endOfDay(targetDate);
+
+      // Get students via both direct classId and StudentClass junction table
+      const [directStudents, enrolledStudents] = await Promise.all([
+        prisma.student.findMany({
+          where: {
+            classId: classId,
+            schoolId: schoolId,
+          },
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+          },
+        }),
+        prisma.studentClass.findMany({
+          where: {
+            classId: classId,
+            startedAt: { lte: endDate },
+            OR: [{ endedAt: null }, { endedAt: { gt: startDate } }],
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+                photoUrl: true,
+                schoolId: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      // Merge and deduplicate students from both sources
+      const studentMap = new Map<string, (typeof directStudents)[0]>();
+      for (const sc of enrolledStudents) {
+        if (
+          sc.student.schoolId === schoolId &&
+          !studentMap.has(sc.student.id)
+        ) {
+          studentMap.set(sc.student.id, {
+            id: sc.student.id,
+            studentId: sc.student.studentId,
+            firstName: sc.student.firstName,
+            lastName: sc.student.lastName,
+            photoUrl: sc.student.photoUrl,
+          });
+        }
+      }
+      // Legacy fallback only. Once enrollment history exists, the effective-date
+      // records are authoritative and Student.classId must not rewrite history.
+      if (enrolledStudents.length === 0) {
+        for (const s of directStudents) studentMap.set(s.id, s);
+      }
+      const students = Array.from(studentMap.values()).sort((a, b) =>
+        a.firstName.localeCompare(b.firstName),
+      );
+
+      // Get attendance records for the date
+      const attendanceRecords = await prisma.attendance.findMany({
         where: {
           classId: classId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      });
+
+      const attendanceByStudentSession = new Map<
+        string,
+        (typeof attendanceRecords)[number]
+      >();
+      for (const record of attendanceRecords) {
+        attendanceByStudentSession.set(
+          `${record.studentId}:${record.session}`,
+          record,
+        );
+      }
+
+      // Map attendance to students
+      const studentsWithAttendance = students.map((student) => {
+        const morningAttendance = attendanceByStudentSession.get(
+          `${student.id}:MORNING`,
+        );
+        const afternoonAttendance = attendanceByStudentSession.get(
+          `${student.id}:AFTERNOON`,
+        );
+
+        return {
+          studentId: student.id,
+          studentNumber: student.studentId,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          photo: student.photoUrl,
+          morning: morningAttendance
+            ? {
+                id: morningAttendance.id,
+                status: morningAttendance.status,
+                remarks: morningAttendance.remarks,
+              }
+            : null,
+          afternoon: afternoonAttendance
+            ? {
+                id: afternoonAttendance.id,
+                status: afternoonAttendance.status,
+                remarks: afternoonAttendance.remarks,
+              }
+            : null,
+        };
+      });
+
+      const dateKey = format(targetDate, "yyyy-MM-dd");
+      let timetableContext:
+        | {
+            teacherTeachingThisClassToday: boolean;
+            isHomeroomTeacher: boolean;
+            patternSource: "timetable" | "fallback";
+            academicYearId: string | null;
+            date: string;
+          }
+        | undefined;
+
+      // Any user linked to a Teacher row (including school admins who teach) needs timetable context for the mobile UI.
+      if (includeTimetableContext) {
+        const rosterTeacher = await prisma.teacher.findFirst({
+          where: { schoolId, user: { id: req.user!.id } },
+          select: { id: true },
+        });
+        if (rosterTeacher) {
+          const tctx = await teacherHasClassPeriodOnDay({
+            prisma,
+            teacherId: rosterTeacher.id,
+            classId,
+            schoolId,
+            localDateStr: dateKey,
+          });
+          timetableContext = {
+            teacherTeachingThisClassToday: tctx.linkedDay,
+            isHomeroomTeacher: classData.homeroomTeacherId === rosterTeacher.id,
+            patternSource: tctx.patternSource,
+            academicYearId: tctx.academicYearId,
+            date: dateKey,
+          };
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          classId,
+          date: dateKey,
+          students: studentsWithAttendance,
+          ...(timetableContext ? { timetableContext } : {}),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching attendance:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch attendance",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// POST /attendance/bulk - Bulk upsert attendance records
+app.post(
+  "/attendance/bulk",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { classId, date, session, attendance }: BulkAttendanceRequest =
+        req.body;
+      const schoolId = req.schoolId!;
+
+      // Validation
+      if (
+        !classId ||
+        !date ||
+        !session ||
+        !attendance ||
+        !Array.isArray(attendance)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Missing required fields: classId, date, session, attendance",
+        });
+      }
+
+      if (!validateAttendanceSession(session)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid session. Must be MORNING or AFTERNOON",
+        });
+      }
+
+      // Validate class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          schoolId: schoolId,
+        },
+      });
+
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
+
+      // Validate all statuses
+      for (const record of attendance) {
+        if (!validateAttendanceStatus(record.status)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid status: ${record.status}. Must be PRESENT, ABSENT, LATE, EXCUSED, or PERMISSION`,
+          });
+        }
+      }
+
+      // Parse date
+      const targetDate = startOfDay(parseISO(date));
+      if (Number.isNaN(targetDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format. Use YYYY-MM-DD",
+        });
+      }
+      const today = startOfDay(new Date());
+      if (targetDate.getTime() > today.getTime()) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot record attendance for a future date",
+        });
+      }
+
+      const access = await resolveDelegatedClassAttendanceAccess({
+        req,
+        classData: {
+          id: classData.id,
+          grade: classData.grade,
+          homeroomTeacherId: classData.homeroomTeacherId,
+        },
+        schoolId,
+        targetDate,
+        statuses: attendance.map((record) => record.status),
+      });
+      if (!access.allowed) {
+        return res.status(403).json({
+          success: false,
+          message:
+            access.message ||
+            "You do not have permission to record attendance for this class",
+          allowedStatuses: access.allowedStatuses,
+        });
+      }
+
+      // Validate students belong to class (via direct classId or StudentClass junction)
+      const studentIds = attendance.map((a) => a.studentId);
+      const [directStudents2, enrolledStudents2] = await Promise.all([
+        prisma.student.findMany({
+          where: {
+            id: { in: studentIds },
+            classId: classId,
+            schoolId: schoolId,
+          },
+          select: { id: true },
+        }),
+        prisma.studentClass.findMany({
+          where: {
+            studentId: { in: studentIds },
+            classId: classId,
+            startedAt: { lte: endOfDay(targetDate) },
+            OR: [{ endedAt: null }, { endedAt: { gt: targetDate } }],
+          },
+          select: { studentId: true },
+        }),
+      ]);
+      const validStudentIds = new Set(
+        enrolledStudents2.map((sc) => sc.studentId),
+      );
+      if (enrolledStudents2.length === 0) {
+        directStudents2.forEach((student) => validStudentIds.add(student.id));
+      }
+
+      const invalidIds = studentIds.filter((id) => !validStudentIds.has(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "One or more students do not belong to this class",
+        });
+      }
+
+      // Bulk upsert using transaction
+      let savedCount = 0;
+      await prisma.$transaction(async (tx) => {
+        for (const record of attendance) {
+          await tx.attendance.upsert({
+            where: {
+              studentId_classId_date_session: {
+                studentId: record.studentId,
+                classId: classId,
+                date: targetDate,
+                session: session,
+              },
+            },
+            update: {
+              status: record.status,
+              remarks: record.remarks || null,
+              updatedAt: new Date(),
+            },
+            create: {
+              studentId: record.studentId,
+              classId: classId,
+              date: targetDate,
+              session: session,
+              status: record.status,
+              remarks: record.remarks || null,
+            },
+          });
+          savedCount++;
+        }
+      });
+
+      // Send notifications to parents for absent/late students
+      const alertStatuses = ["ABSENT", "LATE"];
+      const alertRecords = attendance.filter((a) =>
+        alertStatuses.includes(a.status),
+      );
+
+      for (const record of alertRecords) {
+        const statusText = record.status === "ABSENT" ? "absent" : "late";
+        notifyParents(
+          record.studentId,
+          "ATTENDANCE_MARKED",
+          `Attendance Alert: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
+          `Your child was marked as ${statusText} on ${format(targetDate, "MMM dd, yyyy")} (${session})`,
+          `/parent/child/${record.studentId}/attendance`,
+        );
+        notifyStudent(
+          record.studentId,
+          "ATTENDANCE_MARKED",
+          `Attendance: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
+          `You were marked as ${statusText} on ${format(targetDate, "MMM dd, yyyy")} (${session})`,
+          `/attendance`,
+        );
+      }
+
+      clearSchoolSummaryCache(schoolId);
+      await prisma.platformAuditLog
+        .create({
+          data: {
+            actorId: req.user!.id,
+            action: "ATTENDANCE_BULK_MARK",
+            resourceType: "attendance",
+            resourceId: classId,
+            details: {
+              source: access.source,
+              allowedStatuses: access.allowedStatuses,
+              date: format(targetDate, "yyyy-MM-dd"),
+              session,
+              savedCount,
+            },
+          },
+        })
+        .catch(() => {});
+
+      res.status(201).json({
+        success: true,
+        message: "Attendance saved successfully",
+        data: {
+          savedCount,
+          classId,
+          date: format(targetDate, "yyyy-MM-dd"),
+          session,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error saving bulk attendance:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to save attendance",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// PUT /attendance/:id - Update single attendance record
+app.put(
+  "/attendance/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status, remarks } = req.body;
+      const schoolId = req.schoolId!;
+
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          message: "Status is required",
+        });
+      }
+
+      if (!validateAttendanceStatus(status)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid status. Must be PRESENT, ABSENT, LATE, EXCUSED, or PERMISSION",
+        });
+      }
+
+      // Check if attendance record exists and belongs to school
+      const existingAttendance = await prisma.attendance.findUnique({
+        where: { id },
+        include: {
+          student: {
+            select: { schoolId: true },
+          },
+        },
+      });
+
+      if (!existingAttendance) {
+        return res.status(404).json({
+          success: false,
+          message: "Attendance record not found",
+        });
+      }
+
+      if (existingAttendance.student.schoolId !== schoolId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      const classRow = existingAttendance.classId
+        ? await prisma.class.findFirst({
+            where: { id: existingAttendance.classId, schoolId },
+            select: { id: true, grade: true, homeroomTeacherId: true },
+          })
+        : null;
+      if (!classRow) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found for attendance record",
+        });
+      }
+      const access = await resolveDelegatedClassAttendanceAccess({
+        req,
+        classData: classRow,
+        schoolId,
+        targetDate: startOfDay(existingAttendance.date),
+        statuses: [status],
+      });
+      if (!access.allowed) {
+        return res.status(403).json({
+          success: false,
+          message:
+            access.message ||
+            "You do not have permission to update this attendance record",
+          allowedStatuses: access.allowedStatuses,
+        });
+      }
+
+      // Update attendance
+      const updatedAttendance = await prisma.attendance.update({
+        where: { id },
+        data: {
+          status,
+          remarks: remarks || null,
+          updatedAt: new Date(),
+        },
+      });
+
+      clearSchoolSummaryCache(schoolId);
+      await prisma.platformAuditLog
+        .create({
+          data: {
+            actorId: req.user!.id,
+            action: "ATTENDANCE_UPDATE",
+            resourceType: "attendance",
+            resourceId: id,
+            details: {
+              classId: classRow.id,
+              source: access.source,
+              status,
+            },
+          },
+        })
+        .catch(() => {});
+
+      res.json({
+        success: true,
+        message: "Attendance updated successfully",
+        data: updatedAttendance,
+      });
+    } catch (error: any) {
+      console.error("Error updating attendance:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update attendance",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// DELETE /attendance/:id - Delete attendance record
+app.delete(
+  "/attendance/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.schoolId!;
+
+      // Check if attendance record exists and belongs to school
+      const existingAttendance = await prisma.attendance.findUnique({
+        where: { id },
+        include: {
+          student: {
+            select: { schoolId: true },
+          },
+        },
+      });
+
+      if (!existingAttendance) {
+        return res.status(404).json({
+          success: false,
+          message: "Attendance record not found",
+        });
+      }
+
+      if (existingAttendance.student.schoolId !== schoolId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      // Delete attendance
+      await prisma.attendance.delete({
+        where: { id },
+      });
+
+      clearSchoolSummaryCache(schoolId);
+
+      res.json({
+        success: true,
+        message: "Attendance deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting attendance:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete attendance",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// ==================== B. Grid/Calendar View ====================
+
+// GET /attendance/class/:classId/month/:month/year/:year - Fetch entire month's attendance
+app.get(
+  "/attendance/class/:classId/month/:month/year/:year",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { classId, month, year } = req.params;
+      const schoolId = req.schoolId!;
+
+      // Validate parameters
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+
+      if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid month. Must be between 1 and 12",
+        });
+      }
+
+      if (isNaN(yearNum)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid year",
+        });
+      }
+
+      // Validate class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          schoolId: schoolId,
+        },
+      });
+
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
+
+      // Get date range for the month
+      const startDate = startOfMonth(new Date(yearNum, monthNum - 1, 1));
+      const endDate = endOfMonth(startDate);
+
+      // Get students via both direct classId and StudentClass junction table
+      const [directStu, enrolledStu] = await Promise.all([
+        prisma.student.findMany({
+          where: { classId: classId, schoolId: schoolId },
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+          },
+        }),
+        prisma.studentClass.findMany({
+          where: {
+            classId: classId,
+            startedAt: { lte: endDate },
+            OR: [{ endedAt: null }, { endedAt: { gt: startDate } }],
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+                photoUrl: true,
+                schoolId: true,
+              },
+            },
+          },
+        }),
+      ]);
+      const stuMap = new Map<string, (typeof directStu)[0]>();
+      for (const sc of enrolledStu) {
+        if (sc.student.schoolId === schoolId && !stuMap.has(sc.student.id)) {
+          stuMap.set(sc.student.id, {
+            id: sc.student.id,
+            studentId: sc.student.studentId,
+            firstName: sc.student.firstName,
+            lastName: sc.student.lastName,
+            photoUrl: sc.student.photoUrl,
+          });
+        }
+      }
+      if (enrolledStu.length === 0) {
+        for (const s of directStu) stuMap.set(s.id, s);
+      }
+      const students = Array.from(stuMap.values()).sort((a, b) =>
+        a.firstName.localeCompare(b.firstName),
+      );
+
+      // Get all attendance records for the month
+      const attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          classId: classId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        orderBy: {
+          date: "asc",
+        },
+      });
+
+      // Group attendance by student
+      const studentsWithAttendance = students.map((student) => {
+        // Filter records for this student
+        const studentRecords = attendanceRecords.filter(
+          (r) => r.studentId === student.id,
+        );
+
+        // Group by date and session
+        const attendanceByDate: { [key: string]: any } = {};
+        studentRecords.forEach((record) => {
+          const dateKey = format(record.date, "yyyy-MM-dd");
+          if (!attendanceByDate[dateKey]) {
+            attendanceByDate[dateKey] = {};
+          }
+          attendanceByDate[dateKey][record.session.toLowerCase()] = {
+            id: record.id,
+            status: record.status,
+            remarks: record.remarks,
+          };
+        });
+
+        // Calculate totals
+        const totals = {
+          present: studentRecords.filter((r) => r.status === "PRESENT").length,
+          absent: studentRecords.filter((r) => r.status === "ABSENT").length,
+          late: studentRecords.filter((r) => r.status === "LATE").length,
+          excused: studentRecords.filter((r) => r.status === "EXCUSED").length,
+          permission: studentRecords.filter((r) => r.status === "PERMISSION")
+            .length,
+        };
+
+        return {
+          studentId: student.id,
+          studentNumber: student.studentId,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          photo: student.photoUrl,
+          attendance: attendanceByDate,
+          totals,
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          classId,
+          month: monthNum,
+          year: yearNum,
+          students: studentsWithAttendance,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching month attendance:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch month attendance",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// ==================== C. Statistics ====================
+
+// GET /attendance/student/:studentId - Student attendance records (with startDate/endDate)
+app.get(
+  "/attendance/student/:studentId",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const { startDate, endDate } = req.query;
+      const schoolId = req.schoolId!;
+
+      const student = await prisma.student.findFirst({
+        where: { id: studentId, schoolId },
+      });
+      if (!student) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Student not found" });
+      }
+
+      let start: Date;
+      let end: Date;
+      if (startDate && endDate) {
+        start = startOfDay(parseISO(startDate as string));
+        end = endOfDay(parseISO(endDate as string));
+      } else {
+        const now = new Date();
+        start = startOfMonth(now);
+        end = endOfMonth(now);
+      }
+
+      const records = await prisma.attendance.findMany({
+        where: {
+          studentId,
+          date: { gte: start, lte: end },
+        },
+        orderBy: { date: "asc" },
+      });
+
+      const data = records.map((r) => ({
+        id: r.id,
+        date: format(r.date, "yyyy-MM-dd"),
+        status: r.status,
+        session: r.session,
+        remarks: r.remarks,
+      }));
+
+      res.json({ success: true, data });
+    } catch (error: any) {
+      console.error("Error fetching student attendance:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch attendance",
+          error: error.message,
+        });
+    }
+  },
+);
+
+// GET /attendance/student/:studentId/summary - Student attendance summary
+app.get(
+  "/attendance/student/:studentId/summary",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { studentId } = req.params;
+      const { startDate, endDate } = req.query;
+      const schoolId = req.schoolId!;
+
+      // Validate student belongs to school
+      const student = await prisma.student.findFirst({
+        where: {
+          id: studentId,
           schoolId: schoolId,
         },
         select: {
@@ -1059,1185 +2280,553 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
           studentId: true,
           firstName: true,
           lastName: true,
-          photoUrl: true,
+          classId: true,
+          user: { select: { id: true } },
         },
-      }),
-      prisma.studentClass.findMany({
-        where: {
-          classId: classId,
-          status: 'ACTIVE',
-        },
-        include: {
-          student: {
-            select: {
-              id: true,
-              studentId: true,
-              firstName: true,
-              lastName: true,
-              photoUrl: true,
-              schoolId: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    // Merge and deduplicate students from both sources
-    const studentMap = new Map<string, typeof directStudents[0]>();
-    for (const s of directStudents) {
-      studentMap.set(s.id, s);
-    }
-    for (const sc of enrolledStudents) {
-      if (sc.student.schoolId === schoolId && !studentMap.has(sc.student.id)) {
-        studentMap.set(sc.student.id, {
-          id: sc.student.id,
-          studentId: sc.student.studentId,
-          firstName: sc.student.firstName,
-          lastName: sc.student.lastName,
-          photoUrl: sc.student.photoUrl,
-        });
-      }
-    }
-    const students = Array.from(studentMap.values()).sort((a, b) =>
-      a.firstName.localeCompare(b.firstName)
-    );
-
-    // Get attendance records for the date
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: {
-        classId: classId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-    });
-
-    const attendanceByStudentSession = new Map<string, typeof attendanceRecords[number]>();
-    for (const record of attendanceRecords) {
-      attendanceByStudentSession.set(`${record.studentId}:${record.session}`, record);
-    }
-
-    // Map attendance to students
-    const studentsWithAttendance = students.map(student => {
-      const morningAttendance = attendanceByStudentSession.get(`${student.id}:MORNING`);
-      const afternoonAttendance = attendanceByStudentSession.get(`${student.id}:AFTERNOON`);
-
-      return {
-        studentId: student.id,
-        studentNumber: student.studentId,
-        firstName: student.firstName,
-        lastName: student.lastName,
-        photo: student.photoUrl,
-        morning: morningAttendance ? {
-          id: morningAttendance.id,
-          status: morningAttendance.status,
-          remarks: morningAttendance.remarks,
-        } : null,
-        afternoon: afternoonAttendance ? {
-          id: afternoonAttendance.id,
-          status: afternoonAttendance.status,
-          remarks: afternoonAttendance.remarks,
-        } : null,
-      };
-    });
-
-    const dateKey = format(targetDate, 'yyyy-MM-dd');
-    let timetableContext:
-      | {
-          teacherTeachingThisClassToday: boolean;
-          isHomeroomTeacher: boolean;
-          patternSource: 'timetable' | 'fallback';
-          academicYearId: string | null;
-          date: string;
-        }
-      | undefined;
-
-    // Any user linked to a Teacher row (including school admins who teach) needs timetable context for the mobile UI.
-    if (includeTimetableContext) {
-      const rosterTeacher = await prisma.teacher.findFirst({
-        where: { schoolId, user: { id: req.user!.id } },
-        select: { id: true },
       });
-      if (rosterTeacher) {
-        const tctx = await teacherHasClassPeriodOnDay({
-          prisma,
-          teacherId: rosterTeacher.id,
-          classId,
-          schoolId,
-          localDateStr: dateKey,
-        });
-        timetableContext = {
-          teacherTeachingThisClassToday: tctx.linkedDay,
-          isHomeroomTeacher: classData.homeroomTeacherId === rosterTeacher.id,
-          patternSource: tctx.patternSource,
-          academicYearId: tctx.academicYearId,
-          date: dateKey,
-        };
-      }
-    }
 
-    res.json({
-      success: true,
-      data: {
-        classId,
-        date: dateKey,
-        students: studentsWithAttendance,
-        ...(timetableContext ? { timetableContext } : {}),
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching attendance:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch attendance',
-      error: error.message,
-    });
-  }
-});
-
-// POST /attendance/bulk - Bulk upsert attendance records
-app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { classId, date, session, attendance }: BulkAttendanceRequest = req.body;
-    const schoolId = req.schoolId!;
-
-    // Validation
-    if (!classId || !date || !session || !attendance || !Array.isArray(attendance)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: classId, date, session, attendance',
-      });
-    }
-
-    if (!validateAttendanceSession(session)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid session. Must be MORNING or AFTERNOON',
-      });
-    }
-
-    // Validate class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id: classId,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // Validate all statuses
-    for (const record of attendance) {
-      if (!validateAttendanceStatus(record.status)) {
-        return res.status(400).json({
+      if (!student) {
+        return res.status(404).json({
           success: false,
-          message: `Invalid status: ${record.status}. Must be PRESENT, ABSENT, LATE, EXCUSED, or PERMISSION`,
+          message: "Student not found or does not belong to your school",
         });
       }
-    }
 
-    // Parse date
-    const targetDate = startOfDay(parseISO(date));
-    if (Number.isNaN(targetDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid date format. Use YYYY-MM-DD',
-      });
-    }
-    const today = startOfDay(new Date());
-    if (targetDate.getTime() > today.getTime()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot record attendance for a future date',
-      });
-    }
-
-    const access = await resolveDelegatedClassAttendanceAccess({
-      req,
-      classData: { id: classData.id, grade: classData.grade, homeroomTeacherId: classData.homeroomTeacherId },
-      schoolId,
-      targetDate,
-      statuses: attendance.map((record) => record.status),
-    });
-    if (!access.allowed) {
-      return res.status(403).json({
-        success: false,
-        message: access.message || 'You do not have permission to record attendance for this class',
-        allowedStatuses: access.allowedStatuses,
-      });
-    }
-
-    // Validate students belong to class (via direct classId or StudentClass junction)
-    const studentIds = attendance.map(a => a.studentId);
-    const [directStudents2, enrolledStudents2] = await Promise.all([
-      prisma.student.findMany({
-        where: {
-          id: { in: studentIds },
-          classId: classId,
-          schoolId: schoolId,
-        },
-        select: { id: true },
-      }),
-      prisma.studentClass.findMany({
-        where: {
-          studentId: { in: studentIds },
-          classId: classId,
-          status: 'ACTIVE',
-        },
-        select: { studentId: true },
-      }),
-    ]);
-    const validStudentIds = new Set([
-      ...directStudents2.map(s => s.id),
-      ...enrolledStudents2.map(sc => sc.studentId),
-    ]);
-
-    const invalidIds = studentIds.filter(id => !validStudentIds.has(id));
-    if (invalidIds.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'One or more students do not belong to this class',
-      });
-    }
-
-    // Bulk upsert using transaction
-    let savedCount = 0;
-    await prisma.$transaction(async (tx) => {
-      for (const record of attendance) {
-        await tx.attendance.upsert({
-          where: {
-            studentId_classId_date_session: {
-              studentId: record.studentId,
-              classId: classId,
-              date: targetDate,
-              session: session,
-            },
-          },
-          update: {
-            status: record.status,
-            remarks: record.remarks || null,
-            updatedAt: new Date(),
-          },
-          create: {
-            studentId: record.studentId,
-            classId: classId,
-            date: targetDate,
-            session: session,
-            status: record.status,
-            remarks: record.remarks || null,
-          },
-        });
-        savedCount++;
-      }
-    });
-
-    // Send notifications to parents for absent/late students
-    const alertStatuses = ['ABSENT', 'LATE'];
-    const alertRecords = attendance.filter(a => alertStatuses.includes(a.status));
-
-    for (const record of alertRecords) {
-      const statusText = record.status === 'ABSENT' ? 'absent' : 'late';
-      notifyParents(
-        record.studentId,
-        'ATTENDANCE_MARKED',
-        `Attendance Alert: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
-        `Your child was marked as ${statusText} on ${format(targetDate, 'MMM dd, yyyy')} (${session})`,
-        `/parent/child/${record.studentId}/attendance`
+      const access = await assertCanViewStudentAttendanceSummary(
+        req,
+        schoolId,
+        student,
       );
-      notifyStudent(
-        record.studentId,
-        'ATTENDANCE_MARKED',
-        `Attendance: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
-        `You were marked as ${statusText} on ${format(targetDate, 'MMM dd, yyyy')} (${session})`,
-        `/attendance`
-      );
-    }
+      if (access.ok === false) {
+        return res.status(access.status).json(access.body);
+      }
 
-    clearSchoolSummaryCache(schoolId);
-    await prisma.platformAuditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'ATTENDANCE_BULK_MARK',
-        resourceType: 'attendance',
-        resourceId: classId,
-        details: {
-          source: access.source,
-          allowedStatuses: access.allowedStatuses,
-          date: format(targetDate, 'yyyy-MM-dd'),
-          session,
-          savedCount,
-        },
-      },
-    }).catch(() => {});
+      // Determine date range (default: current month)
+      let start: Date;
+      let end: Date;
 
-    res.status(201).json({
-      success: true,
-      message: 'Attendance saved successfully',
-      data: {
-        savedCount,
-        classId,
-        date: format(targetDate, 'yyyy-MM-dd'),
-        session,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error saving bulk attendance:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save attendance',
-      error: error.message,
-    });
-  }
-});
+      if (startDate && endDate) {
+        start = startOfDay(parseISO(startDate as string));
+        end = endOfDay(parseISO(endDate as string));
+      } else {
+        const now = new Date();
+        start = startOfMonth(now);
+        end = endOfMonth(now);
+      }
 
-// PUT /attendance/:id - Update single attendance record
-app.put('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status, remarks } = req.body;
-    const schoolId = req.schoolId!;
-
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        message: 'Status is required',
-      });
-    }
-
-    if (!validateAttendanceStatus(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status. Must be PRESENT, ABSENT, LATE, EXCUSED, or PERMISSION',
-      });
-    }
-
-    // Check if attendance record exists and belongs to school
-    const existingAttendance = await prisma.attendance.findUnique({
-      where: { id },
-      include: {
-        student: {
-          select: { schoolId: true },
-        },
-      },
-    });
-
-    if (!existingAttendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found',
-      });
-    }
-
-    if (existingAttendance.student.schoolId !== schoolId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied',
-      });
-    }
-
-    const classRow = existingAttendance.classId
-      ? await prisma.class.findFirst({
-          where: { id: existingAttendance.classId, schoolId },
-          select: { id: true, grade: true, homeroomTeacherId: true },
-        })
-      : null;
-    if (!classRow) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found for attendance record',
-      });
-    }
-    const access = await resolveDelegatedClassAttendanceAccess({
-      req,
-      classData: classRow,
-      schoolId,
-      targetDate: startOfDay(existingAttendance.date),
-      statuses: [status],
-    });
-    if (!access.allowed) {
-      return res.status(403).json({
-        success: false,
-        message: access.message || 'You do not have permission to update this attendance record',
-        allowedStatuses: access.allowedStatuses,
-      });
-    }
-
-    // Update attendance
-    const updatedAttendance = await prisma.attendance.update({
-      where: { id },
-      data: {
-        status,
-        remarks: remarks || null,
-        updatedAt: new Date(),
-      },
-    });
-
-    clearSchoolSummaryCache(schoolId);
-    await prisma.platformAuditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'ATTENDANCE_UPDATE',
-        resourceType: 'attendance',
-        resourceId: id,
-        details: {
-          classId: classRow.id,
-          source: access.source,
-          status,
-        },
-      },
-    }).catch(() => {});
-
-    res.json({
-      success: true,
-      message: 'Attendance updated successfully',
-      data: updatedAttendance,
-    });
-  } catch (error: any) {
-    console.error('Error updating attendance:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update attendance',
-      error: error.message,
-    });
-  }
-});
-
-// DELETE /attendance/:id - Delete attendance record
-app.delete('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.schoolId!;
-
-    // Check if attendance record exists and belongs to school
-    const existingAttendance = await prisma.attendance.findUnique({
-      where: { id },
-      include: {
-        student: {
-          select: { schoolId: true },
-        },
-      },
-    });
-
-    if (!existingAttendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found',
-      });
-    }
-
-    if (existingAttendance.student.schoolId !== schoolId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied',
-      });
-    }
-
-    // Delete attendance
-    await prisma.attendance.delete({
-      where: { id },
-    });
-
-    clearSchoolSummaryCache(schoolId);
-
-    res.json({
-      success: true,
-      message: 'Attendance deleted successfully',
-    });
-  } catch (error: any) {
-    console.error('Error deleting attendance:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete attendance',
-      error: error.message,
-    });
-  }
-});
-
-// ==================== B. Grid/Calendar View ====================
-
-// GET /attendance/class/:classId/month/:month/year/:year - Fetch entire month's attendance
-app.get('/attendance/class/:classId/month/:month/year/:year', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { classId, month, year } = req.params;
-    const schoolId = req.schoolId!;
-
-    // Validate parameters
-    const monthNum = parseInt(month);
-    const yearNum = parseInt(year);
-
-    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid month. Must be between 1 and 12',
-      });
-    }
-
-    if (isNaN(yearNum)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid year',
-      });
-    }
-
-    // Validate class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id: classId,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // Get date range for the month
-    const startDate = startOfMonth(new Date(yearNum, monthNum - 1, 1));
-    const endDate = endOfMonth(startDate);
-
-    // Get students via both direct classId and StudentClass junction table
-    const [directStu, enrolledStu] = await Promise.all([
-      prisma.student.findMany({
-        where: { classId: classId, schoolId: schoolId },
-        select: { id: true, studentId: true, firstName: true, lastName: true, photoUrl: true },
-      }),
-      prisma.studentClass.findMany({
-        where: { classId: classId, status: 'ACTIVE' },
-        include: {
-          student: {
-            select: { id: true, studentId: true, firstName: true, lastName: true, photoUrl: true, schoolId: true },
+      // Get attendance records
+      const attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          studentId: studentId,
+          date: {
+            gte: start,
+            lte: end,
           },
         },
-      }),
-    ]);
-    const stuMap = new Map<string, typeof directStu[0]>();
-    for (const s of directStu) stuMap.set(s.id, s);
-    for (const sc of enrolledStu) {
-      if (sc.student.schoolId === schoolId && !stuMap.has(sc.student.id)) {
-        stuMap.set(sc.student.id, {
-          id: sc.student.id,
-          studentId: sc.student.studentId,
-          firstName: sc.student.firstName,
-          lastName: sc.student.lastName,
-          photoUrl: sc.student.photoUrl,
-        });
-      }
-    }
-    const students = Array.from(stuMap.values()).sort((a, b) =>
-      a.firstName.localeCompare(b.firstName)
-    );
-
-    // Get all attendance records for the month
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: {
-        classId: classId,
-        date: {
-          gte: startDate,
-          lte: endDate,
+        orderBy: {
+          date: "asc",
         },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
-
-    // Group attendance by student
-    const studentsWithAttendance = students.map(student => {
-      // Filter records for this student
-      const studentRecords = attendanceRecords.filter(r => r.studentId === student.id);
-
-      // Group by date and session
-      const attendanceByDate: { [key: string]: any } = {};
-      studentRecords.forEach(record => {
-        const dateKey = format(record.date, 'yyyy-MM-dd');
-        if (!attendanceByDate[dateKey]) {
-          attendanceByDate[dateKey] = {};
-        }
-        attendanceByDate[dateKey][record.session.toLowerCase()] = {
-          id: record.id,
-          status: record.status,
-          remarks: record.remarks,
-        };
       });
 
       // Calculate totals
       const totals = {
-        present: studentRecords.filter(r => r.status === 'PRESENT').length,
-        absent: studentRecords.filter(r => r.status === 'ABSENT').length,
-        late: studentRecords.filter(r => r.status === 'LATE').length,
-        excused: studentRecords.filter(r => r.status === 'EXCUSED').length,
-        permission: studentRecords.filter(r => r.status === 'PERMISSION').length,
+        present: attendanceRecords.filter((r) => r.status === "PRESENT").length,
+        absent: attendanceRecords.filter((r) => r.status === "ABSENT").length,
+        late: attendanceRecords.filter((r) => r.status === "LATE").length,
+        excused: attendanceRecords.filter((r) => r.status === "EXCUSED").length,
+        permission: attendanceRecords.filter((r) => r.status === "PERMISSION")
+          .length,
       };
 
-      return {
-        studentId: student.id,
-        studentNumber: student.studentId,
-        firstName: student.firstName,
-        lastName: student.lastName,
-        photo: student.photoUrl,
-        attendance: attendanceByDate,
-        totals,
-      };
-    });
+      // Calculate school days
+      const totalSchoolDays = getSchoolDays(start, end);
+      const totalSessions = totalSchoolDays * 2; // Morning + Afternoon
+      const attendedSessions = totals.present + totals.late;
+      const attendancePercentage = calculateAttendancePercentage(
+        attendedSessions,
+        totalSessions,
+      );
 
-    res.json({
-      success: true,
-      data: {
-        classId,
-        month: monthNum,
-        year: yearNum,
-        students: studentsWithAttendance,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching month attendance:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch month attendance',
-      error: error.message,
-    });
-  }
-});
-
-// ==================== C. Statistics ====================
-
-// GET /attendance/student/:studentId - Student attendance records (with startDate/endDate)
-app.get('/attendance/student/:studentId', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { studentId } = req.params;
-    const { startDate, endDate } = req.query;
-    const schoolId = req.schoolId!;
-
-    const student = await prisma.student.findFirst({
-      where: { id: studentId, schoolId },
-    });
-    if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
-    }
-
-    let start: Date;
-    let end: Date;
-    if (startDate && endDate) {
-      start = startOfDay(parseISO(startDate as string));
-      end = endOfDay(parseISO(endDate as string));
-    } else {
-      const now = new Date();
-      start = startOfMonth(now);
-      end = endOfMonth(now);
-    }
-
-    const records = await prisma.attendance.findMany({
-      where: {
-        studentId,
-        date: { gte: start, lte: end },
-      },
-      orderBy: { date: 'asc' },
-    });
-
-    const data = records.map((r) => ({
-      id: r.id,
-      date: format(r.date, 'yyyy-MM-dd'),
-      status: r.status,
-      session: r.session,
-      remarks: r.remarks,
-    }));
-
-    res.json({ success: true, data });
-  } catch (error: any) {
-    console.error('Error fetching student attendance:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch attendance', error: error.message });
-  }
-});
-
-// GET /attendance/student/:studentId/summary - Student attendance summary
-app.get('/attendance/student/:studentId/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { studentId } = req.params;
-    const { startDate, endDate } = req.query;
-    const schoolId = req.schoolId!;
-
-    // Validate student belongs to school
-    const student = await prisma.student.findFirst({
-      where: {
-        id: studentId,
-        schoolId: schoolId,
-      },
-      select: {
-        id: true,
-        studentId: true,
-        firstName: true,
-        lastName: true,
-        classId: true,
-        user: { select: { id: true } },
-      },
-    });
-
-    if (!student) {
-      return res.status(404).json({
+      res.json({
+        success: true,
+        data: {
+          student: {
+            id: student.id,
+            studentNumber: student.studentId,
+            firstName: student.firstName,
+            lastName: student.lastName,
+          },
+          period: {
+            startDate: format(start, "yyyy-MM-dd"),
+            endDate: format(end, "yyyy-MM-dd"),
+          },
+          totals,
+          summary: {
+            totalSchoolDays,
+            totalSessions,
+            attendedSessions,
+            attendancePercentage,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching student attendance summary:", error);
+      res.status(500).json({
         success: false,
-        message: 'Student not found or does not belong to your school',
+        message: "Failed to fetch attendance summary",
+        error: error.message,
       });
     }
-
-    const access = await assertCanViewStudentAttendanceSummary(req, schoolId, student);
-    if (access.ok === false) {
-      return res.status(access.status).json(access.body);
-    }
-
-    // Determine date range (default: current month)
-    let start: Date;
-    let end: Date;
-
-    if (startDate && endDate) {
-      start = startOfDay(parseISO(startDate as string));
-      end = endOfDay(parseISO(endDate as string));
-    } else {
-      const now = new Date();
-      start = startOfMonth(now);
-      end = endOfMonth(now);
-    }
-
-    // Get attendance records
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: {
-        studentId: studentId,
-        date: {
-          gte: start,
-          lte: end,
-        },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
-
-    // Calculate totals
-    const totals = {
-      present: attendanceRecords.filter(r => r.status === 'PRESENT').length,
-      absent: attendanceRecords.filter(r => r.status === 'ABSENT').length,
-      late: attendanceRecords.filter(r => r.status === 'LATE').length,
-      excused: attendanceRecords.filter(r => r.status === 'EXCUSED').length,
-      permission: attendanceRecords.filter(r => r.status === 'PERMISSION').length,
-    };
-
-    // Calculate school days
-    const totalSchoolDays = getSchoolDays(start, end);
-    const totalSessions = totalSchoolDays * 2; // Morning + Afternoon
-    const attendedSessions = totals.present + totals.late;
-    const attendancePercentage = calculateAttendancePercentage(attendedSessions, totalSessions);
-
-    res.json({
-      success: true,
-      data: {
-        student: {
-          id: student.id,
-          studentNumber: student.studentId,
-          firstName: student.firstName,
-          lastName: student.lastName,
-        },
-        period: {
-          startDate: format(start, 'yyyy-MM-dd'),
-          endDate: format(end, 'yyyy-MM-dd'),
-        },
-        totals,
-        summary: {
-          totalSchoolDays,
-          totalSessions,
-          attendedSessions,
-          attendancePercentage,
-        },
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching student attendance summary:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch attendance summary',
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 // GET /attendance/class/:classId/summary - Class-wide statistics
-app.get('/attendance/class/:classId/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { classId } = req.params;
-    const { startDate, endDate } = req.query;
-    const schoolId = req.schoolId!;
+app.get(
+  "/attendance/class/:classId/summary",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { classId } = req.params;
+      const { startDate, endDate } = req.query;
+      const schoolId = req.schoolId!;
 
-    // Validate required parameters
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'startDate and endDate are required',
-      });
-    }
-
-    // Validate class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id: classId,
-        schoolId: schoolId,
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // Parse dates
-    const start = startOfDay(parseISO(startDate as string));
-    const end = endOfDay(parseISO(endDate as string));
-
-    // Get all students in class
-    const studentCount = await prisma.student.count({
-      where: {
-        classId: classId,
-        schoolId: schoolId,
-      },
-    });
-
-    // Get attendance records
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: {
-        classId: classId,
-        date: {
-          gte: start,
-          lte: end,
-        },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
-
-    // Calculate overall totals
-    const totals = {
-      present: attendanceRecords.filter(r => r.status === 'PRESENT').length,
-      absent: attendanceRecords.filter(r => r.status === 'ABSENT').length,
-      late: attendanceRecords.filter(r => r.status === 'LATE').length,
-      excused: attendanceRecords.filter(r => r.status === 'EXCUSED').length,
-      permission: attendanceRecords.filter(r => r.status === 'PERMISSION').length,
-    };
-
-    // Day-by-day breakdown
-    const dayByDay: { [key: string]: any } = {};
-    attendanceRecords.forEach(record => {
-      const dateKey = format(record.date, 'yyyy-MM-dd');
-      if (!dayByDay[dateKey]) {
-        dayByDay[dateKey] = {
-          date: dateKey,
-          present: 0,
-          absent: 0,
-          late: 0,
-          excused: 0,
-          permission: 0,
-        };
+      // Validate required parameters
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          message: "startDate and endDate are required",
+        });
       }
-      dayByDay[dateKey][record.status.toLowerCase()]++;
-    });
 
-    // Calculate attendance rate
-    const totalSchoolDays = getSchoolDays(start, end);
-    const totalPossibleSessions = totalSchoolDays * 2 * studentCount;
-    const attendedSessions = totals.present + totals.late;
-    const averageAttendanceRate = calculateAttendancePercentage(attendedSessions, totalPossibleSessions);
+      // Validate class belongs to school
+      const classData = await prisma.class.findFirst({
+        where: {
+          id: classId,
+          schoolId: schoolId,
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
 
-    res.json({
-      success: true,
-      data: {
-        class: {
-          id: classData.id,
-          name: classData.name,
-          studentCount,
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or does not belong to your school",
+        });
+      }
+
+      // Parse dates
+      const start = startOfDay(parseISO(startDate as string));
+      const end = endOfDay(parseISO(endDate as string));
+
+      // Get all students in class
+      const studentCount = await prisma.student.count({
+        where: {
+          classId: classId,
+          schoolId: schoolId,
         },
-        period: {
-          startDate: format(start, 'yyyy-MM-dd'),
-          endDate: format(end, 'yyyy-MM-dd'),
+      });
+
+      // Get attendance records
+      const attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          classId: classId,
+          date: {
+            gte: start,
+            lte: end,
+          },
         },
-        totals,
-        summary: {
-          totalSchoolDays,
-          totalPossibleSessions,
-          attendedSessions,
-          averageAttendanceRate,
+        orderBy: {
+          date: "asc",
         },
-        dayByDay: Object.values(dayByDay),
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching class attendance summary:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch class attendance summary',
-      error: error.message,
-    });
-  }
-});
+      });
+
+      // Calculate overall totals
+      const totals = {
+        present: attendanceRecords.filter((r) => r.status === "PRESENT").length,
+        absent: attendanceRecords.filter((r) => r.status === "ABSENT").length,
+        late: attendanceRecords.filter((r) => r.status === "LATE").length,
+        excused: attendanceRecords.filter((r) => r.status === "EXCUSED").length,
+        permission: attendanceRecords.filter((r) => r.status === "PERMISSION")
+          .length,
+      };
+
+      // Day-by-day breakdown
+      const dayByDay: { [key: string]: any } = {};
+      attendanceRecords.forEach((record) => {
+        const dateKey = format(record.date, "yyyy-MM-dd");
+        if (!dayByDay[dateKey]) {
+          dayByDay[dateKey] = {
+            date: dateKey,
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            permission: 0,
+          };
+        }
+        dayByDay[dateKey][record.status.toLowerCase()]++;
+      });
+
+      // Calculate attendance rate
+      const totalSchoolDays = getSchoolDays(start, end);
+      const totalPossibleSessions = totalSchoolDays * 2 * studentCount;
+      const attendedSessions = totals.present + totals.late;
+      const averageAttendanceRate = calculateAttendancePercentage(
+        attendedSessions,
+        totalPossibleSessions,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          class: {
+            id: classData.id,
+            name: classData.name,
+            studentCount,
+          },
+          period: {
+            startDate: format(start, "yyyy-MM-dd"),
+            endDate: format(end, "yyyy-MM-dd"),
+          },
+          totals,
+          summary: {
+            totalSchoolDays,
+            totalPossibleSessions,
+            attendedSessions,
+            averageAttendanceRate,
+          },
+          dayByDay: Object.values(dayByDay),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching class attendance summary:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch class attendance summary",
+        error: error.message,
+      });
+    }
+  },
+);
 
 // GET /attendance/school/summary — School-wide aggregates (same RBAC as audit CSV)
-app.get('/attendance/school/summary', authenticateToken, requireSchoolAttendanceOpsRole, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const { startDate, endDate } = req.query;
+app.get(
+  "/attendance/school/summary",
+  authenticateToken,
+  requireSchoolAttendanceOpsRole,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const { startDate, endDate } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({ success: false, message: 'Missing date range' });
-    }
-
-    const bypassFresh =
-      req.query.fresh === '1' ||
-      req.query.fresh === 'true' ||
-      req.query.skipCache === '1';
-    const cacheKey = `${schoolId}:${startDate}:${endDate}`;
-    if (!bypassFresh) {
-      const cachedResponse = readSchoolSummaryCache(cacheKey);
-      if (cachedResponse) {
-        res.setHeader('Cache-Control', 'private, max-age=15');
-        return res.json(cachedResponse);
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing date range" });
       }
-    }
 
-    // Use literal dates from query to avoid timezone shifts during startOfDay/endOfDay
-    // We assume startDate and endDate are YYYY-MM-DD
-    const start = startOfDay(new Date(startDate as string));
-    const end = endOfDay(new Date(endDate as string));
+      const bypassFresh =
+        req.query.fresh === "1" ||
+        req.query.fresh === "true" ||
+        req.query.skipCache === "1";
+      const cacheKey = `${schoolId}:${startDate}:${endDate}`;
+      if (!bypassFresh) {
+        const cachedResponse = readSchoolSummaryCache(cacheKey);
+        if (cachedResponse) {
+          res.setHeader("Cache-Control", "private, max-age=15");
+          return res.json(cachedResponse);
+        }
+      }
 
-    // For database matching, we also check for the exact midnight UTC version
-    // because some records (TeacherAttendance) might be stored as midnight UTC
-    const dbStart = new Date(start);
-    const dbEnd = new Date(end);
+      // Use literal dates from query to avoid timezone shifts during startOfDay/endOfDay
+      // We assume startDate and endDate are YYYY-MM-DD
+      const start = startOfDay(new Date(startDate as string));
+      const end = endOfDay(new Date(endDate as string));
 
-    // Get all attendance records for the school in the date range
-    const [attendanceRecords, teacherRecords] = await Promise.all([
-      prisma.attendance.findMany({
-        where: {
-          student: { schoolId },
-          OR: [
-            { date: { gte: dbStart, lte: dbEnd } },
-            // Fallback for records stored as UTC midnight of the intended local day
-            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
-          ]
-        },
-      }),
-      prisma.teacherAttendance.findMany({
-        where: {
-          teacher: { schoolId },
-          OR: [
-            { date: { gte: dbStart, lte: dbEnd } },
-            // Fallback for records stored as UTC midnight of the intended local day
-            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
-          ]
-        },
-        include: {
-          teacher: {
-            select: {
-              firstName: true,
-              lastName: true,
-              photoUrl: true,
-              user: { select: { email: true } }
-            }
+      // For database matching, we also check for the exact midnight UTC version
+      // because some records (TeacherAttendance) might be stored as midnight UTC
+      const dbStart = new Date(start);
+      const dbEnd = new Date(end);
+
+      // Get all attendance records for the school in the date range
+      const [attendanceRecords, teacherRecords] = await Promise.all([
+        prisma.attendance.findMany({
+          where: {
+            student: { schoolId },
+            OR: [
+              { date: { gte: dbStart, lte: dbEnd } },
+              // Fallback for records stored as UTC midnight of the intended local day
+              {
+                date: {
+                  gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000),
+                  lte: dbEnd,
+                },
+              },
+            ],
+          },
+        }),
+        prisma.teacherAttendance.findMany({
+          where: {
+            teacher: { schoolId },
+            OR: [
+              { date: { gte: dbStart, lte: dbEnd } },
+              // Fallback for records stored as UTC midnight of the intended local day
+              {
+                date: {
+                  gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000),
+                  lte: dbEnd,
+                },
+              },
+            ],
+          },
+          include: {
+            teacher: {
+              select: {
+                firstName: true,
+                lastName: true,
+                photoUrl: true,
+                user: { select: { email: true } },
+              },
+            },
+          },
+        }),
+      ]);
+
+      const studentCount = await prisma.student.count({ where: { schoolId } });
+      const teacherCount = await prisma.teacher.count({ where: { schoolId } });
+      const totalSchoolDays = eachDayOfInterval({ start, end }).filter(
+        (date) => !isWeekend(date),
+      ).length;
+
+      // Calculate totals and session breakdown for students
+      const totals = {
+        present: 0,
+        absent: 0,
+        late: 0,
+        excused: 0,
+        permission: 0,
+      };
+
+      const sessions = {
+        MORNING: { present: 0, absent: 0, late: 0, total: 0 },
+        AFTERNOON: { present: 0, absent: 0, late: 0, total: 0 },
+      };
+
+      // Calculate totals for teachers (unique days present)
+      const uniqueTeacherPresence = new Set(
+        teacherRecords
+          .filter((r) => r.status === "PRESENT")
+          .map(
+            (r) =>
+              `${r.teacherId}_${new Date(r.date).toISOString().split("T")[0]}`,
+          ),
+      ).size;
+
+      const teacherTotals = {
+        present: uniqueTeacherPresence,
+        absent: teacherRecords.filter((r) => r.status === "ABSENT").length,
+      };
+
+      const attendanceRate =
+        totalSchoolDays * 2 * studentCount > 0
+          ? Number(
+              (
+                (attendanceRecords.filter(
+                  (r) => r.status === "PRESENT" || r.status === "LATE",
+                ).length /
+                  (totalSchoolDays * 2 * studentCount)) *
+                100
+              ).toFixed(1),
+            )
+          : 0;
+
+      const teacherAttendanceRate =
+        totalSchoolDays * teacherCount > 0
+          ? Math.min(
+              100,
+              Number(
+                (
+                  (teacherTotals.present / (totalSchoolDays * teacherCount)) *
+                  100
+                ).toFixed(1),
+              ),
+            )
+          : 0;
+
+      const classStats: {
+        [key: string]: { name: string; present: number; total: number };
+      } = {};
+
+      attendanceRecords.forEach((r) => {
+        // Global totals
+        if (r.status === "PRESENT") totals.present++;
+        else if (r.status === "ABSENT") totals.absent++;
+        else if (r.status === "LATE") totals.late++;
+        else if (r.status === "EXCUSED") totals.excused++;
+        else if (r.status === "PERMISSION") totals.permission++;
+
+        // Session breakdown
+        const session = r.session as "MORNING" | "AFTERNOON";
+        if (sessions[session]) {
+          sessions[session].total++;
+          if (r.status === "PRESENT") sessions[session].present++;
+          else if (r.status === "LATE") sessions[session].late++;
+          else if (r.status === "ABSENT") sessions[session].absent++;
+        }
+
+        // Class stats for "at risk" analysis
+        if (r.classId) {
+          if (!classStats[r.classId]) {
+            classStats[r.classId] = {
+              name: `Class ${r.classId}`,
+              present: 0,
+              total: 0,
+            };
+          }
+          classStats[r.classId].total++;
+          if (r.status === "PRESENT" || r.status === "LATE") {
+            classStats[r.classId].present++;
           }
         }
-      }),
-    ]);
-
-    const studentCount = await prisma.student.count({ where: { schoolId } });
-    const teacherCount = await prisma.teacher.count({ where: { schoolId } });
-    const totalSchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date)).length;
-
-    // Calculate totals and session breakdown for students
-    const totals = {
-      present: 0,
-      absent: 0,
-      late: 0,
-      excused: 0,
-      permission: 0,
-    };
-
-    const sessions = {
-      MORNING: { present: 0, absent: 0, late: 0, total: 0 },
-      AFTERNOON: { present: 0, absent: 0, late: 0, total: 0 },
-    };
-
-    // Calculate totals for teachers (unique days present)
-    const uniqueTeacherPresence = new Set(
-      teacherRecords
-        .filter(r => r.status === 'PRESENT')
-        .map(r => `${r.teacherId}_${new Date(r.date).toISOString().split('T')[0]}`)
-    ).size;
-
-    const teacherTotals = {
-      present: uniqueTeacherPresence,
-      absent: teacherRecords.filter(r => r.status === 'ABSENT').length,
-    };
-
-    const attendanceRate = (totalSchoolDays * 2 * studentCount) > 0
-      ? Number(((attendanceRecords.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length / (totalSchoolDays * 2 * studentCount)) * 100).toFixed(1))
-      : 0;
-
-    const teacherAttendanceRate = (totalSchoolDays * teacherCount) > 0
-      ? Math.min(100, Number(((teacherTotals.present / (totalSchoolDays * teacherCount)) * 100).toFixed(1)))
-      : 0;
-
-    const classStats: { [key: string]: { name: string, present: number, total: number } } = {};
-
-    attendanceRecords.forEach(r => {
-      // Global totals
-      if (r.status === 'PRESENT') totals.present++;
-      else if (r.status === 'ABSENT') totals.absent++;
-      else if (r.status === 'LATE') totals.late++;
-      else if (r.status === 'EXCUSED') totals.excused++;
-      else if (r.status === 'PERMISSION') totals.permission++;
-
-      // Session breakdown
-      const session = r.session as 'MORNING' | 'AFTERNOON';
-      if (sessions[session]) {
-        sessions[session].total++;
-        if (r.status === 'PRESENT') sessions[session].present++;
-        else if (r.status === 'LATE') sessions[session].late++;
-        else if (r.status === 'ABSENT') sessions[session].absent++;
-      }
-
-      // Class stats for "at risk" analysis
-      if (r.classId) {
-        if (!classStats[r.classId]) {
-          classStats[r.classId] = { name: `Class ${r.classId}`, present: 0, total: 0 };
-        }
-        classStats[r.classId].total++;
-        if (r.status === 'PRESENT' || r.status === 'LATE') {
-          classStats[r.classId].present++;
-        }
-      }
-    });
-
-    const classIdsForNames = Object.keys(classStats);
-    if (classIdsForNames.length > 0) {
-      const classRows = await prisma.class.findMany({
-        where: { schoolId, id: { in: classIdsForNames } },
-        select: { id: true, name: true },
       });
-      for (const row of classRows) {
-        if (classStats[row.id]) {
-          classStats[row.id].name = row.name;
+
+      const classIdsForNames = Object.keys(classStats);
+      if (classIdsForNames.length > 0) {
+        const classRows = await prisma.class.findMany({
+          where: { schoolId, id: { in: classIdsForNames } },
+          select: { id: true, name: true },
+        });
+        for (const row of classRows) {
+          if (classStats[row.id]) {
+            classStats[row.id].name = row.name;
+          }
         }
       }
-    }
 
-    // Day-by-day trend
-    const dailyTrend: { [key: string]: any } = {};
-    attendanceRecords.forEach(record => {
-      const dateKey = format(record.date, 'yyyy-MM-dd');
-      if (!dailyTrend[dateKey]) {
-        dailyTrend[dateKey] = {
-          date: dateKey,
-          present: 0,
-          absent: 0,
-          late: 0,
-        };
-      }
-      if (record.status === 'PRESENT' || record.status === 'LATE') dailyTrend[dateKey].present++;
-      if (record.status === 'ABSENT') dailyTrend[dateKey].absent++;
-    });
+      // Day-by-day trend
+      const dailyTrend: { [key: string]: any } = {};
+      attendanceRecords.forEach((record) => {
+        const dateKey = format(record.date, "yyyy-MM-dd");
+        if (!dailyTrend[dateKey]) {
+          dailyTrend[dateKey] = {
+            date: dateKey,
+            present: 0,
+            absent: 0,
+            late: 0,
+          };
+        }
+        if (record.status === "PRESENT" || record.status === "LATE")
+          dailyTrend[dateKey].present++;
+        if (record.status === "ABSENT") dailyTrend[dateKey].absent++;
+      });
 
-    // Top and Bottom performing classes
-    const performingClasses = Object.entries(classStats)
-      .map(([id, stats]) => ({
-        id,
-        name: stats.name,
-        rate: stats.total > 0 ? (stats.present / stats.total) * 100 : 0,
-      }))
-      .sort((a, b) => b.rate - a.rate);
+      // Top and Bottom performing classes
+      const performingClasses = Object.entries(classStats)
+        .map(([id, stats]) => ({
+          id,
+          name: stats.name,
+          rate: stats.total > 0 ? (stats.present / stats.total) * 100 : 0,
+        }))
+        .sort((a, b) => b.rate - a.rate);
 
-    const topClasses = performingClasses.slice(0, 5);
-    const atRiskClasses = performingClasses.slice(-5).filter(c => c.rate < 80);
+      const topClasses = performingClasses.slice(0, 5);
+      const atRiskClasses = performingClasses
+        .slice(-5)
+        .filter((c) => c.rate < 80);
 
-    const classCount = Object.keys(classStats).length;
+      const classCount = Object.keys(classStats).length;
 
-    const recentCheckIns = teacherRecords
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 40);
+      const recentCheckIns = teacherRecords
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 40);
 
-    const responseBody = {
-      success: true,
-      data: {
-        stats: {
-          studentCount,
-          teacherCount,
-          classCount,
-          attendanceRate,
-          teacherAttendanceRate,
-          totals,
-          teacherTotals,
-          sessions,
+      const responseBody = {
+        success: true,
+        data: {
+          stats: {
+            studentCount,
+            teacherCount,
+            classCount,
+            attendanceRate,
+            teacherAttendanceRate,
+            totals,
+            teacherTotals,
+            sessions,
+          },
+          trend: Object.values(dailyTrend),
+          topClasses,
+          atRiskClasses,
+          recentCheckIns,
         },
-        trend: Object.values(dailyTrend),
-        topClasses,
-        atRiskClasses,
-        recentCheckIns,
-      },
-    };
+      };
 
-    writeSchoolSummaryCache(cacheKey, responseBody);
-    res.setHeader(
-      'Cache-Control',
-      bypassFresh ? 'private, no-store, max-age=0' : 'private, max-age=15'
-    );
-    res.json(responseBody);
-  } catch (error: any) {
-    console.error('Error fetching school summary:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch school summary', error: error.message });
-  }
-});
+      writeSchoolSummaryCache(cacheKey, responseBody);
+      res.setHeader(
+        "Cache-Control",
+        bypassFresh ? "private, no-store, max-age=0" : "private, max-age=15",
+      );
+      res.json(responseBody);
+    } catch (error: any) {
+      console.error("Error fetching school summary:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch school summary",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // GET /attendance/school/session-monitor — First teaching period × teacher check-in coverage (school ops only)
 app.get(
-  '/attendance/school/session-monitor',
+  "/attendance/school/session-monitor",
   authenticateToken,
   requireSchoolAttendanceOpsRole,
   async (req: AuthRequest, res: Response) => {
     try {
       const schoolId = req.schoolId!;
       const dateStr =
-        typeof req.query.date === 'string' ? req.query.date.trim() : '';
+        typeof req.query.date === "string" ? req.query.date.trim() : "";
       const sessionRaw =
-        typeof req.query.session === 'string' ? req.query.session.trim() : '';
+        typeof req.query.session === "string" ? req.query.session.trim() : "";
 
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        return res.status(400).json({ success: false, message: 'date must be YYYY-MM-DD' });
+        return res
+          .status(400)
+          .json({ success: false, message: "date must be YYYY-MM-DD" });
       }
 
-      const parts = dateStr.split('-').map((s) => parseInt(s, 10));
+      const parts = dateStr.split("-").map((s) => parseInt(s, 10));
       const [yy, mm, dd] = parts;
       if (parts.some((n) => Number.isNaN(n))) {
-        return res.status(400).json({ success: false, message: 'Invalid calendar date' });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid calendar date" });
       }
       const cal = new Date(yy, mm - 1, dd);
-      if (cal.getFullYear() !== yy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) {
-        return res.status(400).json({ success: false, message: 'Invalid calendar date' });
+      if (
+        cal.getFullYear() !== yy ||
+        cal.getMonth() !== mm - 1 ||
+        cal.getDate() !== dd
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid calendar date" });
       }
 
       const sessionUpper = sessionRaw.toUpperCase();
-      if (sessionUpper !== 'MORNING' && sessionUpper !== 'AFTERNOON') {
+      if (sessionUpper !== "MORNING" && sessionUpper !== "AFTERNOON") {
         return res
           .status(400)
-          .json({ success: false, message: 'session must be MORNING or AFTERNOON' });
+          .json({
+            success: false,
+            message: "session must be MORNING or AFTERNOON",
+          });
       }
 
       const result = await buildSessionMonitor({
@@ -2247,7 +2836,7 @@ app.get(
         session: sessionUpper as AttendanceSession,
       });
 
-      res.setHeader('Cache-Control', 'private, max-age=15');
+      res.setHeader("Cache-Control", "private, max-age=15");
       return res.json({
         success: true,
         data: {
@@ -2256,37 +2845,55 @@ app.get(
         },
       });
     } catch (error: any) {
-      console.error('Error fetching session monitor:', error);
+      console.error("Error fetching session monitor:", error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to fetch session monitor',
+        message: "Failed to fetch session monitor",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 const MAX_AUDIT_EXPORT_SPAN_DAYS = 120;
 
 // GET /attendance/school/audit-export — Combined teacher + learner attendance rows (CSV), school ops only
 app.get(
-  '/attendance/school/audit-export',
+  "/attendance/school/audit-export",
   authenticateToken,
   requireSchoolAttendanceOpsRole,
   async (req: AuthRequest, res: Response) => {
     try {
       const schoolId = req.schoolId!;
-      const startDate = typeof req.query.startDate === 'string' ? req.query.startDate.trim() : '';
-      const endDate = typeof req.query.endDate === 'string' ? req.query.endDate.trim() : '';
+      const startDate =
+        typeof req.query.startDate === "string"
+          ? req.query.startDate.trim()
+          : "";
+      const endDate =
+        typeof req.query.endDate === "string" ? req.query.endDate.trim() : "";
 
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-        return res.status(400).json({ success: false, message: 'startDate and endDate must be YYYY-MM-DD' });
+      if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(endDate)
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "startDate and endDate must be YYYY-MM-DD",
+          });
       }
 
       const start = startOfDay(parseISO(startDate));
       const end = endOfDay(parseISO(endDate));
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end.getTime() < start.getTime()) {
-        return res.status(400).json({ success: false, message: 'Invalid date range' });
+      if (
+        Number.isNaN(start.getTime()) ||
+        Number.isNaN(end.getTime()) ||
+        end.getTime() < start.getTime()
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid date range" });
       }
 
       const spanDays = differenceInDays(end, start) + 1;
@@ -2302,14 +2909,19 @@ app.get(
 
       const dateOr = [
         { date: { gte: dbStart, lte: dbEnd } },
-        { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } },
+        {
+          date: {
+            gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000),
+            lte: dbEnd,
+          },
+        },
       ];
 
       const [teacherRows, studentRows] = await Promise.all([
         prisma.teacherAttendance.findMany({
           where: { teacher: { schoolId }, OR: dateOr },
           take: 75000,
-          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          orderBy: [{ date: "desc" }, { updatedAt: "desc" }],
           include: {
             teacher: {
               select: {
@@ -2328,7 +2940,7 @@ app.get(
         prisma.attendance.findMany({
           where: { student: { schoolId }, OR: dateOr },
           take: 75000,
-          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          orderBy: [{ date: "desc" }, { updatedAt: "desc" }],
           include: {
             student: {
               select: {
@@ -2344,459 +2956,609 @@ app.get(
       ]);
 
       const header = [
-        'record_type',
-        'record_id',
-        'school_calendar_date',
-        'session',
-        'status',
-        'internal_person_id',
-        'external_id',
-        'full_name',
-        'email',
-        'class_id',
-        'class_name',
-        'remarks',
-        'teacher_time_in_utc',
-        'teacher_time_out_utc',
-        'campus_location_name',
-        'created_at_utc',
-        'updated_at_utc',
+        "record_type",
+        "record_id",
+        "school_calendar_date",
+        "session",
+        "status",
+        "internal_person_id",
+        "external_id",
+        "full_name",
+        "email",
+        "class_id",
+        "class_name",
+        "remarks",
+        "teacher_time_in_utc",
+        "teacher_time_out_utc",
+        "campus_location_name",
+        "created_at_utc",
+        "updated_at_utc",
       ];
 
-      const lines: string[] = [header.join(',')];
+      const lines: string[] = [header.join(",")];
 
       for (const r of teacherRows) {
         const tchr = r.teacher;
-        const name = `${tchr.firstName || ''} ${tchr.lastName || ''}`.trim();
-        const email = tchr.user?.email || tchr.email || '';
-        const externalId = tchr.teacherId || tchr.employeeId || '';
+        const name = `${tchr.firstName || ""} ${tchr.lastName || ""}`.trim();
+        const email = tchr.user?.email || tchr.email || "";
+        const externalId = tchr.teacherId || tchr.employeeId || "";
         lines.push(
           [
-            'TEACHER_ATTENDANCE',
+            "TEACHER_ATTENDANCE",
             r.id,
-            format(r.date, 'yyyy-MM-dd'),
+            format(r.date, "yyyy-MM-dd"),
             r.session,
             r.status,
             tchr.id,
             externalId,
             name,
             email,
-            '',
-            '',
-            '',
-            r.timeIn ? r.timeIn.toISOString() : '',
-            r.timeOut ? r.timeOut.toISOString() : '',
-            r.location?.name || '',
+            "",
+            "",
+            "",
+            r.timeIn ? r.timeIn.toISOString() : "",
+            r.timeOut ? r.timeOut.toISOString() : "",
+            r.location?.name || "",
             r.createdAt.toISOString(),
             r.updatedAt.toISOString(),
           ]
             .map(csvEscape)
-            .join(',')
+            .join(","),
         );
       }
 
       for (const r of studentRows) {
         const st = r.student;
-        const name = `${st.firstName || ''} ${st.lastName || ''}`.trim();
+        const name = `${st.firstName || ""} ${st.lastName || ""}`.trim();
         lines.push(
           [
-            'STUDENT_ATTENDANCE',
+            "STUDENT_ATTENDANCE",
             r.id,
-            format(r.date, 'yyyy-MM-dd'),
+            format(r.date, "yyyy-MM-dd"),
             r.session,
             r.status,
             st.id,
-            st.studentId || '',
+            st.studentId || "",
             name,
-            '',
-            r.classId || '',
-            r.class?.name || '',
-            r.remarks || '',
-            '',
-            '',
-            '',
+            "",
+            r.classId || "",
+            r.class?.name || "",
+            r.remarks || "",
+            "",
+            "",
+            "",
             r.createdAt.toISOString(),
             r.updatedAt.toISOString(),
           ]
             .map(csvEscape)
-            .join(',')
+            .join(","),
         );
       }
 
-      const csvBody = `\uFEFF${lines.join('\n')}\n`;
-      const filename = `attendance-audit_${format(start, 'yyyy-MM-dd')}_${format(end, 'yyyy-MM-dd')}_${Date.now()}.csv`;
+      const csvBody = `\uFEFF${lines.join("\n")}\n`;
+      const filename = `attendance-audit_${format(start, "yyyy-MM-dd")}_${format(end, "yyyy-MM-dd")}_${Date.now()}.csv`;
 
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
+      res.setHeader("Cache-Control", "private, no-store, max-age=0");
       res.status(200).send(csvBody);
     } catch (error: any) {
-      console.error('Error exporting attendance audit:', error);
-      res.status(500).json({ success: false, message: 'Failed to export attendance audit', error: error.message });
+      console.error("Error exporting attendance audit:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to export attendance audit",
+          error: error.message,
+        });
     }
-  }
+  },
 );
 
 // GET /attendance/teacher/:teacherId/summary - Summary of attendance recorded by a teacher (for their classes)
-app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { teacherId: teacherIdParam } = req.params;
-    const { startDate, endDate } = req.query;
+app.get(
+  "/attendance/teacher/:teacherId/summary",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { teacherId: teacherIdParam } = req.params;
+      const { startDate, endDate } = req.query;
 
-    const start = startDate ? startOfDay(new Date(startDate as string)) : startOfDay(subMonths(new Date(), 1));
-    const end = endDate ? endOfDay(new Date(endDate as string)) : endOfDay(new Date());
+      const start = startDate
+        ? startOfDay(new Date(startDate as string))
+        : startOfDay(subMonths(new Date(), 1));
+      const end = endDate
+        ? endOfDay(new Date(endDate as string))
+        : endOfDay(new Date());
 
-    const dbStart = new Date(start);
-    const dbEnd = new Date(end);
+      const dbStart = new Date(start);
+      const dbEnd = new Date(end);
 
-    const schoolId = req.schoolId!;
+      const schoolId = req.schoolId!;
 
-    const teacherRow = await prisma.teacher.findFirst({
-      where: {
-        schoolId,
-        OR: [{ id: teacherIdParam }, { user: { id: teacherIdParam } }],
-      },
-      select: {
-        id: true,
-        user: { select: { id: true } },
-      },
-    });
-
-    if (!teacherRow) {
-      return res.status(404).json({ success: false, message: 'Teacher not found' });
-    }
-
-    const summaryGate = await assertCanViewTeacherAttendanceSummary(req, teacherRow);
-    if (summaryGate.ok === false) {
-      return res.status(summaryGate.status).json(summaryGate.body);
-    }
-
-    const teacherId = teacherRow.id;
-
-    // Find all classes for this teacher
-    const classes = await prisma.class.findMany({
-      where: {
-        OR: [
-          { homeroomTeacherId: teacherId },
-          { teacherClasses: { some: { teacherId } } }
-        ]
-      },
-      select: { id: true, name: true }
-    });
-
-    const classIds = classes.map(c => c.id);
-
-    // Get attendance records for these classes (Student Attendance)
-    const [attendanceRecords, teacherAttendances] = await Promise.all([
-      prisma.attendance.findMany({
+      const teacherRow = await prisma.teacher.findFirst({
         where: {
-          classId: { in: classIds },
-          OR: [
-            { date: { gte: dbStart, lte: dbEnd } },
-            // Fallback for midnight UTC storage
-            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
-          ]
+          schoolId,
+          OR: [{ id: teacherIdParam }, { user: { id: teacherIdParam } }],
         },
-      }),
-      prisma.teacherAttendance.findMany({
+        select: {
+          id: true,
+          user: { select: { id: true } },
+        },
+      });
+
+      if (!teacherRow) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Teacher not found" });
+      }
+
+      const summaryGate = await assertCanViewTeacherAttendanceSummary(
+        req,
+        teacherRow,
+      );
+      if (summaryGate.ok === false) {
+        return res.status(summaryGate.status).json(summaryGate.body);
+      }
+
+      const teacherId = teacherRow.id;
+
+      // Find all classes for this teacher
+      const classes = await prisma.class.findMany({
         where: {
-          teacherId,
           OR: [
-            { date: { gte: dbStart, lte: dbEnd } },
-            // Fallback for midnight UTC storage
-            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
-          ]
+            { homeroomTeacherId: teacherId },
+            { teacherClasses: { some: { teacherId } } },
+          ],
         },
-      }),
-    ]);
+        select: { id: true, name: true },
+      });
 
-    // Aggregate stats
-    const totals = {
-      present: attendanceRecords.filter(r => r.status === 'PRESENT').length,
-      absent: attendanceRecords.filter(r => r.status === 'ABSENT').length,
-      late: attendanceRecords.filter(r => r.status === 'LATE').length,
-      excused: attendanceRecords.filter(r => r.status === 'EXCUSED').length,
-      permission: attendanceRecords.filter(r => r.status === 'PERMISSION').length,
-    };
+      const classIds = classes.map((c) => c.id);
 
-    // Staff stats (unique days present)
-    const uniqueStaffPresence = new Set(
-      teacherAttendances
-        .filter(r => r.status === 'PRESENT')
-        .map(r => new Date(r.date).toISOString().split('T')[0])
-    ).size;
-
-    const staffTotals = {
-      present: uniqueStaffPresence,
-      late: teacherAttendances.filter(r => r.status === 'LATE').length,
-      absent: teacherAttendances.filter(r => r.status === 'ABSENT').length,
-      permission: teacherAttendances.filter(r => r.status === 'PERMISSION').length,
-    };
-
-    const weeklyInfo = await getTeacherWeeklySchedule(
-      prisma,
-      teacherId,
-      schoolId,
-      dbStart,
-      dbEnd
-    );
-    const ay = await findAcademicYearForRange(prisma, schoolId, dbStart, dbEnd);
-    const expectations = buildExpectationsIndex(
-      weeklyInfo.pattern,
-      ay,
-      start,
-      end
-    );
-    const compliance = tallyTimetableCompliance(expectations, teacherAttendances);
-
-    const legacyWeekdaySchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date))
-      .length;
-
-    const usesTimetableDenominator =
-      weeklyInfo.source === 'timetable' &&
-      weeklyInfo.scheduledWeekdays?.length > 0 &&
-      compliance.expectedSessions > 0;
-
-    const totalSchoolDays = usesTimetableDenominator
-      ? compliance.scheduledWorkDaysInRange
-      : legacyWeekdaySchoolDays;
-
-    const recordedSessions = teacherAttendances.filter(r =>
-      r.status === 'PRESENT' || r.status === 'LATE' || r.status === 'PERMISSION'
-    ).length;
-
-    const totalRecords = attendanceRecords.length;
-    const attendanceRate = totalRecords > 0
-      ? Number(((totals.present + totals.late) / totalRecords * 100).toFixed(1))
-      : 0;
-
-    let personalAttendanceRate = 0;
-    if (usesTimetableDenominator) {
-      personalAttendanceRate = Math.min(
-        100,
-        Number(
-          (
-            (compliance.fulfilledScheduledSessions / compliance.expectedSessions) *
-            100
-          ).toFixed(1)
-        )
-      );
-    } else if (legacyWeekdaySchoolDays > 0) {
-      personalAttendanceRate = Math.min(
-        100,
-        Number(((staffTotals.present / legacyWeekdaySchoolDays) * 100).toFixed(1))
-      );
-    }
-
-    // Breakdown by class
-    const classBreakdown = classes.map(c => {
-      const records = attendanceRecords.filter(r => r.classId === c.id);
-      const p = records.filter(r => r.status === 'PRESENT').length;
-      const l = records.filter(r => r.status === 'LATE').length;
-      return {
-        id: c.id,
-        name: c.name,
-        total: records.length,
-        present: p,
-        late: l,
-        rate: records.length > 0 ? calculateAttendancePercentage(p + l, records.length) : 0
-      };
-    });
-
-    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
-    res.json({
-      success: true,
-      data: {
-        stats: {
-          attendanceRate,
-          totals,
-          totalRecords,
-          staffTotals,
-          recordedSessions,
-          personalAttendanceRate,
-          totalSchoolDays,
-          timetable: {
-            source: weeklyInfo.source,
-            academicYearId: weeklyInfo.academicYearId,
-            weeklyPattern: serializeWeeklyPattern(weeklyInfo.pattern),
-            scheduledWeekdays: weeklyInfo.scheduledWeekdays,
-            expectedSessionsInRange: compliance.expectedSessions,
-            fulfilledScheduledSessions: compliance.fulfilledScheduledSessions,
-            missedScheduledSessions: compliance.missedScheduledSessions,
-            legacyWeekdayDaysInRange: legacyWeekdaySchoolDays,
+      // Get attendance records for these classes (Student Attendance)
+      const [attendanceRecords, teacherAttendances] = await Promise.all([
+        prisma.attendance.findMany({
+          where: {
+            classId: { in: classIds },
+            OR: [
+              { date: { gte: dbStart, lte: dbEnd } },
+              // Fallback for midnight UTC storage
+              {
+                date: {
+                  gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000),
+                  lte: dbEnd,
+                },
+              },
+            ],
           },
+        }),
+        prisma.teacherAttendance.findMany({
+          where: {
+            teacherId,
+            OR: [
+              { date: { gte: dbStart, lte: dbEnd } },
+              // Fallback for midnight UTC storage
+              {
+                date: {
+                  gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000),
+                  lte: dbEnd,
+                },
+              },
+            ],
+          },
+        }),
+      ]);
+
+      // Aggregate stats
+      const totals = {
+        present: attendanceRecords.filter((r) => r.status === "PRESENT").length,
+        absent: attendanceRecords.filter((r) => r.status === "ABSENT").length,
+        late: attendanceRecords.filter((r) => r.status === "LATE").length,
+        excused: attendanceRecords.filter((r) => r.status === "EXCUSED").length,
+        permission: attendanceRecords.filter((r) => r.status === "PERMISSION")
+          .length,
+      };
+
+      // Staff stats (unique days present)
+      const uniqueStaffPresence = new Set(
+        teacherAttendances
+          .filter((r) => r.status === "PRESENT")
+          .map((r) => new Date(r.date).toISOString().split("T")[0]),
+      ).size;
+
+      const staffTotals = {
+        present: uniqueStaffPresence,
+        late: teacherAttendances.filter((r) => r.status === "LATE").length,
+        absent: teacherAttendances.filter((r) => r.status === "ABSENT").length,
+        permission: teacherAttendances.filter((r) => r.status === "PERMISSION")
+          .length,
+      };
+
+      const weeklyInfo = await getTeacherWeeklySchedule(
+        prisma,
+        teacherId,
+        schoolId,
+        dbStart,
+        dbEnd,
+      );
+      const ay = await findAcademicYearForRange(
+        prisma,
+        schoolId,
+        dbStart,
+        dbEnd,
+      );
+      const expectations = buildExpectationsIndex(
+        weeklyInfo.pattern,
+        ay,
+        start,
+        end,
+      );
+      const compliance = tallyTimetableCompliance(
+        expectations,
+        teacherAttendances,
+      );
+
+      const legacyWeekdaySchoolDays = eachDayOfInterval({ start, end }).filter(
+        (date) => !isWeekend(date),
+      ).length;
+
+      const usesTimetableDenominator =
+        weeklyInfo.source === "timetable" &&
+        weeklyInfo.scheduledWeekdays?.length > 0 &&
+        compliance.expectedSessions > 0;
+
+      const totalSchoolDays = usesTimetableDenominator
+        ? compliance.scheduledWorkDaysInRange
+        : legacyWeekdaySchoolDays;
+
+      const recordedSessions = teacherAttendances.filter(
+        (r) =>
+          r.status === "PRESENT" ||
+          r.status === "LATE" ||
+          r.status === "PERMISSION",
+      ).length;
+
+      const totalRecords = attendanceRecords.length;
+      const attendanceRate =
+        totalRecords > 0
+          ? Number(
+              (((totals.present + totals.late) / totalRecords) * 100).toFixed(
+                1,
+              ),
+            )
+          : 0;
+
+      let personalAttendanceRate = 0;
+      if (usesTimetableDenominator) {
+        personalAttendanceRate = Math.min(
+          100,
+          Number(
+            (
+              (compliance.fulfilledScheduledSessions /
+                compliance.expectedSessions) *
+              100
+            ).toFixed(1),
+          ),
+        );
+      } else if (legacyWeekdaySchoolDays > 0) {
+        personalAttendanceRate = Math.min(
+          100,
+          Number(
+            ((staffTotals.present / legacyWeekdaySchoolDays) * 100).toFixed(1),
+          ),
+        );
+      }
+
+      // Breakdown by class
+      const classBreakdown = classes.map((c) => {
+        const records = attendanceRecords.filter((r) => r.classId === c.id);
+        const p = records.filter((r) => r.status === "PRESENT").length;
+        const l = records.filter((r) => r.status === "LATE").length;
+        return {
+          id: c.id,
+          name: c.name,
+          total: records.length,
+          present: p,
+          late: l,
+          rate:
+            records.length > 0
+              ? calculateAttendancePercentage(p + l, records.length)
+              : 0,
+        };
+      });
+
+      res.setHeader("Cache-Control", "private, no-store, max-age=0");
+      res.json({
+        success: true,
+        data: {
+          stats: {
+            attendanceRate,
+            totals,
+            totalRecords,
+            staffTotals,
+            recordedSessions,
+            personalAttendanceRate,
+            totalSchoolDays,
+            timetable: {
+              source: weeklyInfo.source,
+              academicYearId: weeklyInfo.academicYearId,
+              weeklyPattern: serializeWeeklyPattern(weeklyInfo.pattern),
+              scheduledWeekdays: weeklyInfo.scheduledWeekdays,
+              expectedSessionsInRange: compliance.expectedSessions,
+              fulfilledScheduledSessions: compliance.fulfilledScheduledSessions,
+              missedScheduledSessions: compliance.missedScheduledSessions,
+              legacyWeekdayDaysInRange: legacyWeekdaySchoolDays,
+            },
+          },
+          classBreakdown,
+          checkInHistory: teacherAttendances.sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          ),
         },
-        classBreakdown,
-        checkInHistory: teacherAttendances.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching teacher summary:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch teacher summary', error: error.message });
-  }
-});
+      });
+    } catch (error: any) {
+      console.error("Error fetching teacher summary:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch teacher summary",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // ==================== D. Geofenced Location Management ====================
 
 // GET /attendance/locations - Get all school locations
-app.get('/attendance/locations', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const cacheKey = `${schoolId}:locations`;
-    const cachedResponse = readSchoolLocationsCache(cacheKey);
+app.get(
+  "/attendance/locations",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const cacheKey = `${schoolId}:locations`;
+      const cachedResponse = readSchoolLocationsCache(cacheKey);
 
-    if (cachedResponse) {
-      return res.json(cachedResponse);
+      if (cachedResponse) {
+        return res.json(cachedResponse);
+      }
+
+      const locations = await prisma.schoolLocation.findMany({
+        where: { schoolId, isActive: true },
+        orderBy: { createdAt: "desc" },
+      });
+      const responseBody = { success: true, data: locations };
+      writeSchoolLocationsCache(cacheKey, responseBody);
+      res.json(responseBody);
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch locations",
+          error: error.message,
+        });
     }
-
-    const locations = await prisma.schoolLocation.findMany({
-      where: { schoolId, isActive: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    const responseBody = { success: true, data: locations };
-    writeSchoolLocationsCache(cacheKey, responseBody);
-    res.json(responseBody);
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to fetch locations', error: error.message });
-  }
-});
+  },
+);
 
 // POST /attendance/locations - Create a new location
-app.post('/attendance/locations', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const { name, latitude, longitude, radius } = req.body;
+app.post(
+  "/attendance/locations",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const { name, latitude, longitude, radius } = req.body;
 
-    if (!name || latitude === undefined || longitude === undefined) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+      if (!name || latitude === undefined || longitude === undefined) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing required fields" });
+      }
+
+      const newLocation = await prisma.schoolLocation.create({
+        data: {
+          schoolId,
+          name,
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+          radius: radius ? parseFloat(radius) : 50,
+        },
+      });
+
+      clearSchoolLocationsCache(schoolId);
+
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: "Location created",
+          data: newLocation,
+        });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to create location",
+          error: error.message,
+        });
     }
-
-    const newLocation = await prisma.schoolLocation.create({
-      data: {
-        schoolId,
-        name,
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radius: radius ? parseFloat(radius) : 50,
-      },
-    });
-
-    clearSchoolLocationsCache(schoolId);
-
-    res.status(201).json({ success: true, message: 'Location created', data: newLocation });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to create location', error: error.message });
-  }
-});
+  },
+);
 
 // DELETE /attendance/locations/:id - Delete a location
-app.delete('/attendance/locations/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.schoolId!;
+app.delete(
+  "/attendance/locations/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.schoolId!;
 
-    const location = await prisma.schoolLocation.findFirst({
-      where: { id, schoolId },
-    });
+      const location = await prisma.schoolLocation.findFirst({
+        where: { id, schoolId },
+      });
 
-    if (!location) {
-      return res.status(404).json({ success: false, message: 'Location not found' });
+      if (!location) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Location not found" });
+      }
+
+      await prisma.schoolLocation.update({
+        where: { id },
+        data: { isActive: false },
+      });
+
+      clearSchoolLocationsCache(schoolId);
+
+      res.json({ success: true, message: "Location deleted successfully" });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to delete location",
+          error: error.message,
+        });
     }
-
-    await prisma.schoolLocation.update({
-      where: { id },
-      data: { isActive: false },
-    });
-
-    clearSchoolLocationsCache(schoolId);
-
-    res.json({ success: true, message: 'Location deleted successfully' });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to delete location', error: error.message });
-  }
-});
+  },
+);
 
 // PATCH /attendance/locations/:id - Update a location's name, coordinates, and/or radius
-app.patch('/attendance/locations/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const schoolId = req.schoolId!;
+app.patch(
+  "/attendance/locations/:id",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const schoolId = req.schoolId!;
 
-    const location = await prisma.schoolLocation.findFirst({
-      where: { id, schoolId, isActive: true },
-    });
+      const location = await prisma.schoolLocation.findFirst({
+        where: { id, schoolId, isActive: true },
+      });
 
-    if (!location) {
-      return res.status(404).json({ success: false, message: 'Location not found' });
-    }
-
-    const { name, latitude, longitude, radius } = req.body;
-
-    const updatedData: {
-      name?: string;
-      latitude?: number;
-      longitude?: number;
-      radius?: number;
-    } = {};
-
-    if (name !== undefined) {
-      if (typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ success: false, message: 'Name must be a non-empty string' });
+      if (!location) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Location not found" });
       }
-      updatedData.name = name.trim();
-    }
 
-    if (latitude !== undefined) {
-      const lat = parseFloat(latitude);
-      if (Number.isNaN(lat) || lat < -90 || lat > 90) {
-        return res.status(400).json({ success: false, message: 'Latitude must be a valid number between -90 and 90' });
+      const { name, latitude, longitude, radius } = req.body;
+
+      const updatedData: {
+        name?: string;
+        latitude?: number;
+        longitude?: number;
+        radius?: number;
+      } = {};
+
+      if (name !== undefined) {
+        if (typeof name !== "string" || name.trim().length === 0) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: "Name must be a non-empty string",
+            });
+        }
+        updatedData.name = name.trim();
       }
-      updatedData.latitude = lat;
-    }
 
-    if (longitude !== undefined) {
-      const lng = parseFloat(longitude);
-      if (Number.isNaN(lng) || lng < -180 || lng > 180) {
-        return res.status(400).json({ success: false, message: 'Longitude must be a valid number between -180 and 180' });
+      if (latitude !== undefined) {
+        const lat = parseFloat(latitude);
+        if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: "Latitude must be a valid number between -90 and 90",
+            });
+        }
+        updatedData.latitude = lat;
       }
-      updatedData.longitude = lng;
-    }
 
-    if (radius !== undefined) {
-      const rad = parseFloat(radius);
-      if (Number.isNaN(rad) || rad < 10) {
-        return res.status(400).json({ success: false, message: 'Radius must be a valid number of at least 10 meters' });
+      if (longitude !== undefined) {
+        const lng = parseFloat(longitude);
+        if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: "Longitude must be a valid number between -180 and 180",
+            });
+        }
+        updatedData.longitude = lng;
       }
-      updatedData.radius = rad;
+
+      if (radius !== undefined) {
+        const rad = parseFloat(radius);
+        if (Number.isNaN(rad) || rad < 10) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: "Radius must be a valid number of at least 10 meters",
+            });
+        }
+        updatedData.radius = rad;
+      }
+
+      if (Object.keys(updatedData).length === 0) {
+        return res
+          .status(400)
+          .json({ success: false, message: "No valid fields to update" });
+      }
+
+      const updated = await prisma.schoolLocation.update({
+        where: { id },
+        data: updatedData,
+      });
+
+      clearSchoolLocationsCache(schoolId);
+
+      res.json({
+        success: true,
+        message: "Location updated successfully",
+        data: updated,
+      });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to update location",
+          error: error.message,
+        });
     }
-
-    if (Object.keys(updatedData).length === 0) {
-      return res.status(400).json({ success: false, message: 'No valid fields to update' });
-    }
-
-    const updated = await prisma.schoolLocation.update({
-      where: { id },
-      data: updatedData,
-    });
-
-    clearSchoolLocationsCache(schoolId);
-
-    res.json({ success: true, message: 'Location updated successfully', data: updated });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to update location', error: error.message });
-  }
-});
+  },
+);
 
 // ==================== E. Geofenced Teacher Attendance ====================
 
-function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
+function getDistanceFromLatLonInM(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c;
   return d;
@@ -2805,14 +3567,14 @@ function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2
 const getTeacherPermissionLocation = async (schoolId: string) => {
   const activeLocation = await prisma.schoolLocation.findFirst({
     where: { schoolId, isActive: true },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: "asc" },
   });
   if (activeLocation) return activeLocation;
 
   const existingSystemLocation = await prisma.schoolLocation.findFirst({
     where: {
       schoolId,
-      name: 'Online Permission (System)',
+      name: "Online Permission (System)",
       isActive: false,
     },
   });
@@ -2821,7 +3583,7 @@ const getTeacherPermissionLocation = async (schoolId: string) => {
   return prisma.schoolLocation.create({
     data: {
       schoolId,
-      name: 'Online Permission (System)',
+      name: "Online Permission (System)",
       latitude: 0,
       longitude: 0,
       radius: 1,
@@ -2831,433 +3593,557 @@ const getTeacherPermissionLocation = async (schoolId: string) => {
 };
 
 // POST /attendance/teacher/check-in - Record teacher time in
-app.post('/attendance/teacher/check-in', teacherAttendanceWriteLimiter, authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const userId = req.user?.id;
-    const { latitude, longitude, session } = req.body;
-    const numericLatitude = Number(latitude);
-    const numericLongitude = Number(longitude);
+app.post(
+  "/attendance/teacher/check-in",
+  teacherAttendanceWriteLimiter,
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const userId = req.user?.id;
+      const { latitude, longitude, session } = req.body;
+      const numericLatitude = Number(latitude);
+      const numericLongitude = Number(longitude);
 
-    if (!Number.isFinite(numericLatitude) || !Number.isFinite(numericLongitude)) {
-      return res.status(400).json({ success: false, message: 'Location coordinates required' });
-    }
-
-    if (session && !validateAttendanceSession(session)) {
-      return res.status(400).json({ success: false, message: 'Invalid session. Must be MORNING or AFTERNOON' });
-    }
-
-    const targetSession: AttendanceSession = session && validateAttendanceSession(session)
-      ? session
-      : (new Date().getHours() < 12 ? 'MORNING' : 'AFTERNOON');
-
-    const teacher = await prisma.teacher.findFirst({
-      where: { schoolId, user: { id: userId } },
-    });
-
-    if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
-    }
-
-    const localDateStr = resolveTeacherLocalDate(req);
-    const bypass = Boolean(
-      (req.body as { acknowledgeOffSchedule?: boolean }).acknowledgeOffSchedule
-    );
-    const sessionGate = await verifyTeacherPersonalSessionScheduled({
-      teacherId: teacher.id,
-      schoolId,
-      localDateStr,
-      session: targetSession,
-      bypassOffSchedule: bypass,
-    });
-    if (!sessionGate.ok) {
-      const sg = sessionGate as { ok: false; code: string; message: string };
-      return res.status(403).json({
-        success: false,
-        code: sg.code,
-        message: sg.message,
-      });
-    }
-
-    const locations = await prisma.schoolLocation.findMany({
-      where: { schoolId, isActive: true },
-    });
-
-    if (locations.length === 0) {
-      return res.status(400).json({ success: false, message: 'No school locations configured by admin' });
-    }
-
-    let matchedLocation = null;
-    let shortestDistance = Infinity;
-
-    for (const loc of locations) {
-      const distance = getDistanceFromLatLonInM(numericLatitude, numericLongitude, loc.latitude, loc.longitude);
-      if (distance <= loc.radius) {
-        if (distance < shortestDistance) {
-          shortestDistance = distance;
-          matchedLocation = loc;
-        }
+      if (
+        !Number.isFinite(numericLatitude) ||
+        !Number.isFinite(numericLongitude)
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Location coordinates required" });
       }
-    }
 
-    if (!matchedLocation) {
-      return res.status(400).json({
-        success: false,
-        message: 'You are outside the allowed school area.',
-        code: 'OUT_OF_BOUNDS'
-      });
-    }
-
-    const todayDate = startOfDay(new Date());
-    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-    const utcStart = new Date(utcStartStr);
-
-    const activeAttendance = await prisma.teacherAttendance.findFirst({
-      where: {
-        teacherId: teacher.id,
-        OR: [{ date: todayDate }, { date: utcStart }],
-        timeOut: null
+      if (session && !validateAttendanceSession(session)) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Invalid session. Must be MORNING or AFTERNOON",
+          });
       }
-    });
 
-    if (activeAttendance) {
-      return res.status(400).json({ success: false, message: `You are already checked in without checking out.` });
-    }
+      const targetSession: AttendanceSession =
+        session && validateAttendanceSession(session)
+          ? session
+          : new Date().getHours() < 12
+            ? "MORNING"
+            : "AFTERNOON";
 
-    const existingSessionAttendance = await prisma.teacherAttendance.findFirst({
-      where: {
-        teacherId: teacher.id,
-        OR: [{ date: todayDate }, { date: utcStart }],
-        session: targetSession
-      }
-    });
-
-    if (existingSessionAttendance) {
-      return res.status(400).json({
-        success: false,
-        message: `Attendance already recorded for ${targetSession} session today.`
+      const teacher = await prisma.teacher.findFirst({
+        where: { schoolId, user: { id: userId } },
       });
-    }
 
-    const attendance = await prisma.teacherAttendance.create({
-      data: {
+      if (!teacher) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Teacher profile not found" });
+      }
+
+      const localDateStr = resolveTeacherLocalDate(req);
+      const bypass = Boolean(
+        (req.body as { acknowledgeOffSchedule?: boolean })
+          .acknowledgeOffSchedule,
+      );
+      const sessionGate = await verifyTeacherPersonalSessionScheduled({
         teacherId: teacher.id,
-        locationId: matchedLocation.id,
-        date: todayDate,
-        timeIn: new Date(),
+        schoolId,
+        localDateStr,
         session: targetSession,
-        status: 'PRESENT',
-      }
-    });
-
-    clearSchoolSummaryCache(schoolId);
-
-    res.status(201).json({
-      success: true,
-      message: `Checked in successfully for ${targetSession} session`,
-      data: attendance,
-      locationName: matchedLocation.name
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Check-in failed', error: error.message });
-  }
-});
-
-// POST /attendance/teacher/check-out - Record teacher time out
-app.post('/attendance/teacher/check-out', teacherAttendanceWriteLimiter, authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const userId = req.user?.id;
-    const { latitude, longitude, session } = req.body;
-    const numericLatitude = Number(latitude);
-    const numericLongitude = Number(longitude);
-
-    if (!Number.isFinite(numericLatitude) || !Number.isFinite(numericLongitude)) {
-      return res.status(400).json({ success: false, message: 'Location coordinates required' });
-    }
-
-    if (session && !validateAttendanceSession(session)) {
-      return res.status(400).json({ success: false, message: 'Invalid session. Must be MORNING or AFTERNOON' });
-    }
-
-    const teacher = await prisma.teacher.findFirst({
-      where: { schoolId, user: { id: userId } },
-    });
-
-    if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
-    }
-
-    const locations = await prisma.schoolLocation.findMany({
-      where: { schoolId, isActive: true },
-    });
-
-    if (locations.length === 0) {
-      return res.status(400).json({ success: false, message: 'No school locations configured by admin' });
-    }
-
-    let matchedLocation = null;
-
-    for (const loc of locations) {
-      const distance = getDistanceFromLatLonInM(numericLatitude, numericLongitude, loc.latitude, loc.longitude);
-      if (distance <= loc.radius) {
-        matchedLocation = loc;
-        break;
-      }
-    }
-
-    if (!matchedLocation) {
-      return res.status(400).json({
-        success: false,
-        message: 'You are outside the allowed school area.',
-        code: 'OUT_OF_BOUNDS'
+        bypassOffSchedule: bypass,
       });
-    }
-
-    const todayDate = startOfDay(new Date());
-    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-    const utcStart = new Date(utcStartStr);
-
-    const targetSession: AttendanceSession | undefined = session && validateAttendanceSession(session)
-      ? session
-      : undefined;
-
-    // Find active check-in session that isn't checked out
-    const activeSession = await prisma.teacherAttendance.findFirst({
-      where: {
-        teacherId: teacher.id,
-        OR: [{ date: todayDate }, { date: utcStart }],
-        ...(targetSession ? { session: targetSession } : {}),
-        timeOut: null,
-      },
-      orderBy: { timeIn: 'desc' }
-    });
-
-    if (!activeSession) {
-      return res.status(400).json({
-        success: false,
-        message: targetSession
-          ? `No active ${targetSession} check-in found to check out`
-          : 'No active check-in found to check out'
-      });
-    }
-
-    const updatedAttendance = await prisma.teacherAttendance.update({
-      where: { id: activeSession.id },
-      data: {
-        timeOut: new Date(),
-      }
-    });
-
-    clearSchoolSummaryCache(schoolId);
-
-    res.json({
-      success: true,
-      message: `Checked out successfully for ${activeSession.session} session`,
-      data: updatedAttendance
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Check-out failed', error: error.message });
-  }
-});
-
-// POST /attendance/teacher/permission-request - Request online permission (no geofence required)
-app.post('/attendance/teacher/permission-request', teacherAttendanceWriteLimiter, authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const userId = req.user?.id;
-    const { session, reason } = req.body as { session?: string; reason?: string };
-
-    if (session && !validateAttendanceSession(session)) {
-      return res.status(400).json({ success: false, message: 'Invalid session. Must be MORNING or AFTERNOON' });
-    }
-
-    const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
-    if (normalizedReason.length > 500) {
-      return res.status(400).json({ success: false, message: 'Reason must be 500 characters or less' });
-    }
-
-    const targetSession: AttendanceSession = session && validateAttendanceSession(session)
-      ? session
-      : (new Date().getHours() < 12 ? 'MORNING' : 'AFTERNOON');
-
-    const teacher = await prisma.teacher.findFirst({
-      where: { schoolId, user: { id: userId } },
-    });
-
-    if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
-    }
-
-    const localDateStrPm = resolveTeacherLocalDate(req);
-    const bypassPm = Boolean(
-      (req.body as { acknowledgeOffSchedule?: boolean }).acknowledgeOffSchedule
-    );
-    const permGate = await verifyTeacherPersonalSessionScheduled({
-      teacherId: teacher.id,
-      schoolId,
-      localDateStr: localDateStrPm,
-      session: targetSession,
-      bypassOffSchedule: bypassPm,
-    });
-    if (!permGate.ok) {
-      const pg = permGate as { ok: false; code: string; message: string };
-      return res.status(403).json({
-        success: false,
-        code: pg.code,
-        message: pg.message,
-      });
-    }
-
-    const todayDate = startOfDay(new Date());
-    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-    const utcStart = new Date(utcStartStr);
-
-    const existingSessionAttendance = await prisma.teacherAttendance.findFirst({
-      where: {
-        teacherId: teacher.id,
-        OR: [{ date: todayDate }, { date: utcStart }],
-        session: targetSession,
-      },
-    });
-
-    if (existingSessionAttendance) {
-      if (existingSessionAttendance.status === 'PERMISSION') {
-        return res.status(400).json({
+      if (!sessionGate.ok) {
+        const sg = sessionGate as { ok: false; code: string; message: string };
+        return res.status(403).json({
           success: false,
-          message: `Permission already requested for ${targetSession} session today.`,
+          code: sg.code,
+          message: sg.message,
         });
       }
 
-      return res.status(400).json({
-        success: false,
-        message: `Attendance already recorded for ${targetSession} session today.`,
+      const locations = await prisma.schoolLocation.findMany({
+        where: { schoolId, isActive: true },
       });
+
+      if (locations.length === 0) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "No school locations configured by admin",
+          });
+      }
+
+      let matchedLocation = null;
+      let shortestDistance = Infinity;
+
+      for (const loc of locations) {
+        const distance = getDistanceFromLatLonInM(
+          numericLatitude,
+          numericLongitude,
+          loc.latitude,
+          loc.longitude,
+        );
+        if (distance <= loc.radius) {
+          if (distance < shortestDistance) {
+            shortestDistance = distance;
+            matchedLocation = loc;
+          }
+        }
+      }
+
+      if (!matchedLocation) {
+        return res.status(400).json({
+          success: false,
+          message: "You are outside the allowed school area.",
+          code: "OUT_OF_BOUNDS",
+        });
+      }
+
+      const todayDate = startOfDay(new Date());
+      const utcStartStr =
+        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+      const utcStart = new Date(utcStartStr);
+
+      const activeAttendance = await prisma.teacherAttendance.findFirst({
+        where: {
+          teacherId: teacher.id,
+          OR: [{ date: todayDate }, { date: utcStart }],
+          timeOut: null,
+        },
+      });
+
+      if (activeAttendance) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: `You are already checked in without checking out.`,
+          });
+      }
+
+      const existingSessionAttendance =
+        await prisma.teacherAttendance.findFirst({
+          where: {
+            teacherId: teacher.id,
+            OR: [{ date: todayDate }, { date: utcStart }],
+            session: targetSession,
+          },
+        });
+
+      if (existingSessionAttendance) {
+        return res.status(400).json({
+          success: false,
+          message: `Attendance already recorded for ${targetSession} session today.`,
+        });
+      }
+
+      const attendance = await prisma.teacherAttendance.create({
+        data: {
+          teacherId: teacher.id,
+          locationId: matchedLocation.id,
+          date: todayDate,
+          timeIn: new Date(),
+          session: targetSession,
+          status: "PRESENT",
+        },
+      });
+
+      clearSchoolSummaryCache(schoolId);
+
+      res.status(201).json({
+        success: true,
+        message: `Checked in successfully for ${targetSession} session`,
+        data: attendance,
+        locationName: matchedLocation.name,
+      });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Check-in failed",
+          error: error.message,
+        });
     }
+  },
+);
 
-    const permissionLocation = await getTeacherPermissionLocation(schoolId);
-    const requestedAt = new Date();
+// POST /attendance/teacher/check-out - Record teacher time out
+app.post(
+  "/attendance/teacher/check-out",
+  teacherAttendanceWriteLimiter,
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const userId = req.user?.id;
+      const { latitude, longitude, session } = req.body;
+      const numericLatitude = Number(latitude);
+      const numericLongitude = Number(longitude);
 
-    const permissionRecord = await prisma.teacherAttendance.create({
-      data: {
+      if (
+        !Number.isFinite(numericLatitude) ||
+        !Number.isFinite(numericLongitude)
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Location coordinates required" });
+      }
+
+      if (session && !validateAttendanceSession(session)) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Invalid session. Must be MORNING or AFTERNOON",
+          });
+      }
+
+      const teacher = await prisma.teacher.findFirst({
+        where: { schoolId, user: { id: userId } },
+      });
+
+      if (!teacher) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Teacher profile not found" });
+      }
+
+      const locations = await prisma.schoolLocation.findMany({
+        where: { schoolId, isActive: true },
+      });
+
+      if (locations.length === 0) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "No school locations configured by admin",
+          });
+      }
+
+      let matchedLocation = null;
+
+      for (const loc of locations) {
+        const distance = getDistanceFromLatLonInM(
+          numericLatitude,
+          numericLongitude,
+          loc.latitude,
+          loc.longitude,
+        );
+        if (distance <= loc.radius) {
+          matchedLocation = loc;
+          break;
+        }
+      }
+
+      if (!matchedLocation) {
+        return res.status(400).json({
+          success: false,
+          message: "You are outside the allowed school area.",
+          code: "OUT_OF_BOUNDS",
+        });
+      }
+
+      const todayDate = startOfDay(new Date());
+      const utcStartStr =
+        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+      const utcStart = new Date(utcStartStr);
+
+      const targetSession: AttendanceSession | undefined =
+        session && validateAttendanceSession(session) ? session : undefined;
+
+      // Find active check-in session that isn't checked out
+      const activeSession = await prisma.teacherAttendance.findFirst({
+        where: {
+          teacherId: teacher.id,
+          OR: [{ date: todayDate }, { date: utcStart }],
+          ...(targetSession ? { session: targetSession } : {}),
+          timeOut: null,
+        },
+        orderBy: { timeIn: "desc" },
+      });
+
+      if (!activeSession) {
+        return res.status(400).json({
+          success: false,
+          message: targetSession
+            ? `No active ${targetSession} check-in found to check out`
+            : "No active check-in found to check out",
+        });
+      }
+
+      const updatedAttendance = await prisma.teacherAttendance.update({
+        where: { id: activeSession.id },
+        data: {
+          timeOut: new Date(),
+        },
+      });
+
+      clearSchoolSummaryCache(schoolId);
+
+      res.json({
+        success: true,
+        message: `Checked out successfully for ${activeSession.session} session`,
+        data: updatedAttendance,
+      });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Check-out failed",
+          error: error.message,
+        });
+    }
+  },
+);
+
+// POST /attendance/teacher/permission-request - Request online permission (no geofence required)
+app.post(
+  "/attendance/teacher/permission-request",
+  teacherAttendanceWriteLimiter,
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const userId = req.user?.id;
+      const { session, reason } = req.body as {
+        session?: string;
+        reason?: string;
+      };
+
+      if (session && !validateAttendanceSession(session)) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Invalid session. Must be MORNING or AFTERNOON",
+          });
+      }
+
+      const normalizedReason = typeof reason === "string" ? reason.trim() : "";
+      if (normalizedReason.length > 500) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Reason must be 500 characters or less",
+          });
+      }
+
+      const targetSession: AttendanceSession =
+        session && validateAttendanceSession(session)
+          ? session
+          : new Date().getHours() < 12
+            ? "MORNING"
+            : "AFTERNOON";
+
+      const teacher = await prisma.teacher.findFirst({
+        where: { schoolId, user: { id: userId } },
+      });
+
+      if (!teacher) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Teacher profile not found" });
+      }
+
+      const localDateStrPm = resolveTeacherLocalDate(req);
+      const bypassPm = Boolean(
+        (req.body as { acknowledgeOffSchedule?: boolean })
+          .acknowledgeOffSchedule,
+      );
+      const permGate = await verifyTeacherPersonalSessionScheduled({
         teacherId: teacher.id,
-        locationId: permissionLocation.id,
-        date: todayDate,
-        timeIn: requestedAt,
-        timeOut: requestedAt,
+        schoolId,
+        localDateStr: localDateStrPm,
         session: targetSession,
-        status: 'PERMISSION',
-      },
-    });
+        bypassOffSchedule: bypassPm,
+      });
+      if (!permGate.ok) {
+        const pg = permGate as { ok: false; code: string; message: string };
+        return res.status(403).json({
+          success: false,
+          code: pg.code,
+          message: pg.message,
+        });
+      }
 
-    clearSchoolSummaryCache(schoolId);
+      const todayDate = startOfDay(new Date());
+      const utcStartStr =
+        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+      const utcStart = new Date(utcStartStr);
 
-    res.status(201).json({
-      success: true,
-      message: `Permission requested successfully for ${targetSession} session`,
-      data: permissionRecord,
-      requestedAnywhere: true,
-      reason: normalizedReason || null,
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Permission request failed', error: error.message });
-  }
-});
+      const existingSessionAttendance =
+        await prisma.teacherAttendance.findFirst({
+          where: {
+            teacherId: teacher.id,
+            OR: [{ date: todayDate }, { date: utcStart }],
+            session: targetSession,
+          },
+        });
+
+      if (existingSessionAttendance) {
+        if (existingSessionAttendance.status === "PERMISSION") {
+          return res.status(400).json({
+            success: false,
+            message: `Permission already requested for ${targetSession} session today.`,
+          });
+        }
+
+        return res.status(400).json({
+          success: false,
+          message: `Attendance already recorded for ${targetSession} session today.`,
+        });
+      }
+
+      const permissionLocation = await getTeacherPermissionLocation(schoolId);
+      const requestedAt = new Date();
+
+      const permissionRecord = await prisma.teacherAttendance.create({
+        data: {
+          teacherId: teacher.id,
+          locationId: permissionLocation.id,
+          date: todayDate,
+          timeIn: requestedAt,
+          timeOut: requestedAt,
+          session: targetSession,
+          status: "PERMISSION",
+        },
+      });
+
+      clearSchoolSummaryCache(schoolId);
+
+      res.status(201).json({
+        success: true,
+        message: `Permission requested successfully for ${targetSession} session`,
+        data: permissionRecord,
+        requestedAnywhere: true,
+        reason: normalizedReason || null,
+      });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Permission request failed",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // GET /attendance/teacher/today - Get today's attendance status
-app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.schoolId!;
-    const userId = req.user?.id;
+app.get(
+  "/attendance/teacher/today",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const userId = req.user?.id;
 
-    const teacher = await prisma.teacher.findFirst({
-      where: { schoolId, user: { id: userId } },
-    });
+      const teacher = await prisma.teacher.findFirst({
+        where: { schoolId, user: { id: userId } },
+      });
 
-    if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
-    }
-
-    const todayDate = startOfDay(new Date());
-    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-    const utcStart = new Date(utcStartStr);
-
-    const attendanceRecords = await prisma.teacherAttendance.findMany({
-      where: {
-        teacherId: teacher.id,
-        OR: [{ date: todayDate }, { date: utcStart }],
-      },
-      include: {
-        location: true,
-      },
-      orderBy: { timeIn: 'asc' }
-    });
-
-    // Structure result by explicit session selection from check-in.
-    const sessions = {
-      MORNING: null as any,
-      AFTERNOON: null as any,
-    };
-
-    attendanceRecords.forEach(record => {
-      if (record.session === 'MORNING' && !sessions.MORNING) {
-        sessions.MORNING = record;
-      } else if (record.session === 'AFTERNOON' && !sessions.AFTERNOON) {
-        sessions.AFTERNOON = record;
-      } else {
-        // Backward-compatible fallback for unexpected duplicate/session-less data.
-        if (!sessions.MORNING) sessions.MORNING = record;
-        else if (!sessions.AFTERNOON) sessions.AFTERNOON = record;
+      if (!teacher) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Teacher profile not found" });
       }
-    });
 
-    const localDateToday = resolveTeacherLocalDate(req);
-    const dayKey = utcDateStringToDayOfWeek(localDateToday);
-    const schedDay =
-      dayKey &&
-      (
-        await getTeacherWeeklySchedule(
+      const todayDate = startOfDay(new Date());
+      const utcStartStr =
+        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+      const utcStart = new Date(utcStartStr);
+
+      const attendanceRecords = await prisma.teacherAttendance.findMany({
+        where: {
+          teacherId: teacher.id,
+          OR: [{ date: todayDate }, { date: utcStart }],
+        },
+        include: {
+          location: true,
+        },
+        orderBy: { timeIn: "asc" },
+      });
+
+      // Structure result by explicit session selection from check-in.
+      const sessions = {
+        MORNING: null as any,
+        AFTERNOON: null as any,
+      };
+
+      attendanceRecords.forEach((record) => {
+        if (record.session === "MORNING" && !sessions.MORNING) {
+          sessions.MORNING = record;
+        } else if (record.session === "AFTERNOON" && !sessions.AFTERNOON) {
+          sessions.AFTERNOON = record;
+        } else {
+          // Backward-compatible fallback for unexpected duplicate/session-less data.
+          if (!sessions.MORNING) sessions.MORNING = record;
+          else if (!sessions.AFTERNOON) sessions.AFTERNOON = record;
+        }
+      });
+
+      const localDateToday = resolveTeacherLocalDate(req);
+      const dayKey = utcDateStringToDayOfWeek(localDateToday);
+      const schedDay =
+        dayKey &&
+        (await getTeacherWeeklySchedule(
           prisma,
           teacher.id,
           schoolId,
           parseYmdUtc(localDateToday),
-          parseYmdUtc(localDateToday)
-        )
-      );
-    const dayPattern =
-      dayKey && schedDay ? schedDay.pattern[dayKey] : { morning: true, afternoon: true };
+          parseYmdUtc(localDateToday),
+        ));
+      const dayPattern =
+        dayKey && schedDay
+          ? schedDay.pattern[dayKey]
+          : { morning: true, afternoon: true };
 
-    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
-    res.json({
-      success: true,
-      data: {
-        ...sessions,
-        scheduleContext: {
-          localDate: localDateToday,
-          timetableSource: schedDay?.source ?? 'fallback',
-          academicYearId: schedDay?.academicYearId ?? null,
-          weekday: dayKey,
-          expectsMorning: Boolean(dayPattern?.morning),
-          expectsAfternoon: Boolean(dayPattern?.afternoon),
-          isScheduledTeachingDay:
-            Boolean(dayPattern?.morning || dayPattern?.afternoon),
-          timetableEnforcement: TIMETABLE_ENFORCE_TEACHER,
-          weeklyPattern: schedDay
-            ? serializeWeeklyPattern(schedDay.pattern)
-            : undefined,
+      res.setHeader("Cache-Control", "private, no-store, max-age=0");
+      res.json({
+        success: true,
+        data: {
+          ...sessions,
+          scheduleContext: {
+            localDate: localDateToday,
+            timetableSource: schedDay?.source ?? "fallback",
+            academicYearId: schedDay?.academicYearId ?? null,
+            weekday: dayKey,
+            expectsMorning: Boolean(dayPattern?.morning),
+            expectsAfternoon: Boolean(dayPattern?.afternoon),
+            isScheduledTeachingDay: Boolean(
+              dayPattern?.morning || dayPattern?.afternoon,
+            ),
+            timetableEnforcement: TIMETABLE_ENFORCE_TEACHER,
+            weeklyPattern: schedDay
+              ? serializeWeeklyPattern(schedDay.pattern)
+              : undefined,
+          },
         },
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to fetch attendance status', error: error.message });
-  }
-});
+      });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to fetch attendance status",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // Start server
 const PORT = process.env.PORT || process.env.ATTENDANCE_SERVICE_PORT || 3008;
 
 // Graceful shutdown
 
-
+// Register Monthly Entry routes
+registerMonthlyEntryRoutes(app, prisma, authenticateToken);
 
 export default app;
