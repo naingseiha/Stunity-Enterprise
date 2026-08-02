@@ -6516,6 +6516,8 @@
     "empty": "Select class or grade and month, then generate.",
     "previewOverflow": "Showing first 25 students. Print includes all {count}.",
     "generate": "Generate",
+    "generateTitle": "Ready to generate report",
+    "generateDesc": "Select your filters above and click generate to view the official print-ready report.",
     "refresh": "Refresh",
     "print": "Print",
     "error501": "This report template is not available for your school model yet. Try template override KHM_MOEYS if applicable.",
