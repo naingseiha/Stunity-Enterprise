@@ -48,7 +48,7 @@ export function registerMonthlyEntryRoutes(
         const dateEnd = endOfMonth(dateStart);
 
         // Get students in this class
-        const classRoster = await prisma.studentClass.findMany({
+        const rawClassRoster = await prisma.studentClass.findMany({
           where: {
             classId: String(classId),
             startedAt: { lte: dateEnd },
@@ -62,6 +62,16 @@ export function registerMonthlyEntryRoutes(
             { student: { lastName: "asc" } },
           ],
         });
+
+        // Deduplicate students by student.id (preferring ACTIVE status)
+        const uniqueMap = new Map<string, typeof rawClassRoster[0]>();
+        for (const r of rawClassRoster) {
+          const existing = uniqueMap.get(r.student.id);
+          if (!existing || (existing.status !== "ACTIVE" && r.status === "ACTIVE")) {
+            uniqueMap.set(r.student.id, r);
+          }
+        }
+        const classRoster = Array.from(uniqueMap.values());
 
         const studentIds = classRoster.map((r) => r.student.id);
 
