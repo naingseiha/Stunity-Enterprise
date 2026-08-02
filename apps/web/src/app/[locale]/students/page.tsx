@@ -63,7 +63,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useAcademicYear } from "@/contexts/AcademicYearContext";
 import UnifiedNavigation from "@/components/UnifiedNavigation";
 import AdminResetPasswordModal from "@/components/AdminResetPasswordModal";
-import CompactHeroCard from "@/components/layout/CompactHeroCard";
 
 interface ClassOption {
   id: string;
@@ -176,19 +175,17 @@ function StudentAvatar({
       <img
         src={photoSrc || undefined}
         alt={`${student.lastName} ${student.firstName}`}
-        className={`${sizeClasses[size]} rounded-2xl object-cover ring-1 ring-slate-200/70 shadow-sm dark:ring-gray-700/70`}
+        className={`${sizeClasses[size]} rounded-2xl object-cover ring-1 ring-slate-200/70 dark:ring-gray-700/70`}
       />
     );
   }
 
-  const gradientClass =
-    student.gender === "MALE"
-      ? "from-blue-500 to-cyan-500 shadow-blue-500/20"
-      : "from-fuchsia-500 to-rose-500 shadow-fuchsia-500/20";
+  const avatarClass =
+    student.gender === "MALE" ? "bg-blue-600" : "bg-fuchsia-600";
 
   return (
     <div
-      className={`${sizeClasses[size]} flex items-center justify-center rounded-2xl bg-gradient-to-br font-bold text-white shadow-sm shadow-blue-500/10 ${gradientClass}`}
+      className={`${sizeClasses[size]} flex items-center justify-center rounded-2xl font-bold text-white ${avatarClass}`}
     >
       {student.firstName[0]}
     </div>
@@ -242,27 +239,23 @@ function MetricCard({
 }) {
   const toneClasses = {
     blue: {
-      surface:
-        "from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40",
-      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      surface: "from-blue-500 via-cyan-500 to-sky-500",
+      icon: "bg-white/20 text-white ring-1 ring-white/20",
       glow: "from-white/30 via-white/10 to-transparent",
     },
     emerald: {
-      surface:
-        "from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40",
-      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      surface: "from-emerald-500 via-teal-500 to-cyan-500",
+      icon: "bg-white/20 text-white ring-1 ring-white/20",
       glow: "from-white/30 via-white/10 to-transparent",
     },
     amber: {
-      surface:
-        "from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40",
-      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      surface: "from-amber-400 via-orange-500 to-rose-500",
+      icon: "bg-white/20 text-white ring-1 ring-white/20",
       glow: "from-white/30 via-white/10 to-transparent",
     },
     violet: {
-      surface:
-        "from-violet-500 via-fuchsia-500 to-pink-500 shadow-violet-200/70 dark:shadow-violet-950/40",
-      icon: "bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20",
+      surface: "from-violet-500 via-fuchsia-500 to-pink-500",
+      icon: "bg-white/20 text-white ring-1 ring-white/20",
       glow: "from-white/30 via-white/10 to-transparent",
     },
   };
@@ -271,13 +264,13 @@ function MetricCard({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] hover:shadow-2xl dark:border-white/5`}
+      className={`group relative overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-br ${classes.surface} p-5 text-white dark:border-white/10`}
     >
       <div
         className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`}
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-white/30 via-white/10 to-transparent" />
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 opacity-30 transition-opacity group-hover:opacity-40">
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 opacity-30">
         <svg
           viewBox="0 0 100 40"
           className="h-full w-full"
@@ -299,19 +292,19 @@ function MetricCard({
         </svg>
       </div>
       <div className="relative z-10 flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">
             {label}
           </p>
           <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white">
             {value}
           </p>
-          <div className="mt-3 inline-flex items-center rounded-full bg-white/20 dark:bg-gray-900/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
-            {helper}
+          <div className="mt-3 inline-flex max-w-full items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
+            <span className="truncate">{helper}</span>
           </div>
         </div>
         <div
-          className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}
+          className={`rounded-[1rem] p-3.5 backdrop-blur-md ${classes.icon}`}
         >
           <Icon className="h-5 w-5" />
         </div>
@@ -1037,200 +1030,204 @@ export default function StudentsPage({
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
-        <div className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
-        <div className="pointer-events-none absolute right-0 top-12 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
-        <div className="pointer-events-none absolute bottom-10 right-10 h-72 w-72 rounded-full bg-amber-300/10 blur-3xl dark:bg-amber-500/10" />
-
+      <div className="relative min-h-screen overflow-hidden bg-slate-50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
         <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
           <AnimatedContent animation="fade" delay={0}>
-            <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
-              <div className="xl:col-span-8">
-                <CompactHeroCard
-                  eyebrow={t("schoolManagement")}
-                  title={t("title")}
-                  description={t("description")}
-                  icon={Users}
-                  chipsPosition="below"
-                  breadcrumbs={
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
-                        <Home className="h-3.5 w-3.5" />
-                        {localLabel(locale, "Home", "ទំព័រដើម")}
-                      </span>
-                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-                      <span className="text-slate-900 dark:text-gray-100">
-                        {localLabel(locale, "Students", "សិស្ស")}
+            <section className="relative mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+              <div className="relative flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-gray-500">
+                    <Home className="h-3.5 w-3.5" />
+                    <span>{localLabel(locale, "Home", "ទំព័រដើម")}</span>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-slate-600 dark:text-gray-300">
+                      {localLabel(locale, "Students", "សិស្ស")}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+                      <Users className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-[1.7rem]">
+                          {t("title")}
+                        </h1>
+                        <span className="hidden h-4 w-px bg-slate-200 dark:bg-gray-700 sm:block" />
+                        <p className="text-xs font-semibold text-cyan-700 dark:text-cyan-400">
+                          {t("schoolManagement")}
+                        </p>
+                      </div>
+                      <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-gray-400">
+                        {t("description")}
+                      </p>
+                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                          {selectedYear?.name || t("noAcademicYear")}
+                        </span>
+                        <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                          {classScopeLabel}
+                        </span>
+                        {visibleUnassignedCount > 0 && (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            {t("needPlacement", {
+                              count: visibleUnassignedCount,
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid w-full shrink-0 gap-2.5 sm:grid-cols-[1.15fr_1fr] xl:w-[500px]">
+                  <div className="rounded-xl border border-cyan-200 bg-cyan-50/70 p-3.5 dark:border-cyan-500/20 dark:bg-cyan-500/10">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-200 bg-white dark:border-cyan-500/20 dark:bg-gray-900 ${rosterHealth.iconClass}`}
+                        >
+                          <RosterHealthIcon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                              {assignmentRate}%
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-gray-400">
+                              {t("ready")}
+                            </span>
+                          </div>
+                          <p className="text-[10px] font-semibold text-slate-500 dark:text-gray-400">
+                            {rosterHealth.label}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-cyan-700 dark:text-cyan-300">
+                        {t("placement")}
                       </span>
                     </div>
-                  }
-                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.15),transparent_58%)]"
-                  eyebrowClassName="text-cyan-700 dark:text-cyan-400"
-                  chips={
-                    <>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {selectedYear?.name || t("noAcademicYear")}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {classScopeLabel}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        {t("needPlacement", { count: visibleUnassignedCount })}
-                      </span>
-                      {selectedStudents.size > 0 && (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          {t("selected", { count: selectedStudents.size })}
-                        </span>
-                      )}
-                    </>
-                  }
-                  actions={
-                    <>
-                      <div className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 p-1 dark:border-gray-800/60 dark:bg-gray-900/50">
-                        <button
-                          type="button"
-                          onClick={() => setIsCompactView(false)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${!isCompactView ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700" : "text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"}`}
-                          title={t("comfortableView")}
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-cyan-100 dark:bg-gray-800">
+                      <div
+                        className="h-full rounded-full bg-cyan-600 transition-all duration-700 dark:bg-cyan-400"
+                        style={{
+                          width: `${Math.max(summary.total ? assignmentRate : 0, summary.total > 0 ? 8 : 0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-slate-50 px-1 py-3 dark:divide-gray-700 dark:border-gray-800 dark:bg-gray-800/50">
+                    {[
+                      { value: filteredStudents.length, label: t("visible") },
+                      { value: visibleUnassignedCount, label: t("open") },
+                      {
+                        value: selectedStudents.size,
+                        label: t("selected", { count: "" }).trim(),
+                      },
+                    ].map((metric) => (
+                      <div
+                        key={metric.label}
+                        className="min-w-0 px-2 text-center"
+                      >
+                        <p className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
+                          {metric.value}
+                        </p>
+                        <p
+                          className="mt-0.5 truncate text-[9px] font-bold text-slate-500 dark:text-gray-400"
+                          title={metric.label}
                         >
-                          <LayoutGrid className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsCompactView(true)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${isCompactView ? "bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700" : "text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"}`}
-                          title={t("compactView")}
-                        >
-                          <List className="h-4 w-4" />
-                        </button>
+                          {metric.label}
+                        </p>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowAnalytics(!showAnalytics)}
-                        className={`inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20" : "bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200"}`}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_81558f64" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
-                      >
-                        {isExporting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Download className="h-4 w-4" />
-                        )}
-                        {isExporting ? (
-                          localLabel(locale, "Exporting…", "កំពុងនាំចេញ…")
-                        ) : (
-                          <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/${locale}/admissions`)}
-                        className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300"
-                      >
-                        <ClipboardCheck className="h-4 w-4" />
-                        {localLabel(locale, "Admissions", "ទទួលពាក្យចូលរៀន")}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowBulkImportModal(true)}
-                        className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all hover:bg-indigo-100 hover:-translate-y-0.5 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
-                      >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        {localLabel(locale, "Bulk Import", "នាំចូលច្រើន")}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleAdd}
-                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        <Plus className="h-4 w-4" />
-                        {localLabel(locale, "Add Student", "បន្ថែមសិស្ស")}
-                      </button>
-                    </>
-                  }
-                />
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-cyan-300/80 bg-gradient-to-br from-white via-sky-200/80 to-cyan-200/90 p-6 text-slate-900 dark:text-white shadow-[0_8px_32px_-8px_rgba(14,165,233,0.3)] ring-1 ring-cyan-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-sky-400/40 blur-3xl dark:bg-sky-500/20" />
-                <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-emerald-400/30 blur-3xl dark:bg-emerald-500/20" />
-                <div className="relative z-10 flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                        {t("placement")}
-                      </p>
-                      <div className="mt-3 flex items-end gap-2">
-                        <span className="text-4xl font-black tracking-tight">
-                          {assignmentRate}%
-                        </span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                          {t("ready")}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className={`rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/75 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70 ${rosterHealth.iconClass}`}
+              <div className="relative flex flex-col gap-3 border-t border-slate-200/80 bg-slate-50/70 px-4 py-3 dark:border-gray-800 dark:bg-gray-950/35 lg:flex-row lg:items-center lg:justify-between sm:px-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center rounded-xl border border-slate-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
+                    <button
+                      type="button"
+                      onClick={() => setIsCompactView(false)}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${!isCompactView ? "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300" : "text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"}`}
+                      title={t("comfortableView")}
                     >
-                      <RosterHealthIcon className="h-5 w-5" />
-                    </div>
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCompactView(true)}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${isCompactView ? "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300" : "text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"}`}
+                      title={t("compactView")}
+                    >
+                      <List className="h-4 w-4" />
+                    </button>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-cyan-200/75 dark:bg-gray-900/10">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 transition-all duration-700"
-                      style={{
-                        width: `${Math.max(summary.total ? assignmentRate : 0, summary.total > 0 ? 8 : 0)}%`,
-                      }}
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAnalytics(!showAnalytics)}
+                    className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors ${showAnalytics ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"}`}
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_81558f64" />
+                  </button>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
-                      <p className="text-xl font-black tracking-tight">
-                        {filteredStudents.length}
-                      </p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        {t("visible")}
-                      </p>
-                    </div>
-                    <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
-                      <p className="text-xl font-black tracking-tight">
-                        {visibleUnassignedCount}
-                      </p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        {t("open")}
-                      </p>
-                    </div>
-                    <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
-                      <p className="text-xl font-black tracking-tight">
-                        {selectedStudents.size}
-                      </p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        {t("selected", { count: "" }).trim()}
-                      </p>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    {isExporting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {isExporting ? (
+                      localLabel(locale, "Exporting…", "កំពុងនាំចេញ…")
+                    ) : (
+                      <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
+                    )}
+                  </button>
 
-                  <div className="mt-auto pt-4">
-                    <div className="inline-flex items-center rounded-full border border-cyan-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-gray-800/70 dark:bg-gray-900/50 dark:text-slate-300">
-                      {rosterHealth.label}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/${locale}/admissions`)}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-blue-500/20 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                  >
+                    <ClipboardCheck className="h-3.5 w-3.5" />
+                    {localLabel(locale, "Admissions", "ទទួលពាក្យចូលរៀន")}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkImportModal(true)}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-indigo-500/20 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" />
+                    {localLabel(locale, "Bulk Import", "នាំចូលច្រើន")}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {selectedStudents.size > 0 && (
+                    <span className="inline-flex h-9 items-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                      {t("selected", { count: selectedStudents.size })}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAdd}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {localLabel(locale, "Add Student", "បន្ថែមសិស្ស")}
+                  </button>
                 </div>
               </div>
             </section>
@@ -1239,7 +1236,7 @@ export default function StudentsPage({
           {showAnalytics && !isEmpty && (
             <AnimatedContent animation="slide-up" delay={25}>
               <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -1310,7 +1307,7 @@ export default function StudentsPage({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -1346,7 +1343,7 @@ export default function StudentsPage({
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               return (
-                                <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xl border border-white/10">
+                                <div className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs font-bold text-white">
                                   {payload[0].value} {t("student")}
                                 </div>
                               );
@@ -1383,7 +1380,7 @@ export default function StudentsPage({
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={100}>
-            <section className="overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-900">
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
@@ -1563,7 +1560,7 @@ export default function StudentsPage({
                 >
                   {isValidating && !isLoading && (
                     <div className="absolute right-4 top-4 z-10">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.55)] dark:bg-none dark:bg-gray-900 dark:text-white">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white dark:bg-gray-900 dark:text-white">
                         <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_c3c836f2" />
                       </div>
@@ -1584,7 +1581,7 @@ export default function StudentsPage({
                       <button
                         type="button"
                         onClick={handleAdd}
-                        className="mt-6 inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]"
+                        className="mt-6 inline-flex items-center gap-2 rounded-[0.75rem] bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                       >
                         <Plus className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1a08c62e" />
@@ -1632,7 +1629,7 @@ export default function StudentsPage({
                                   {allVisibleSelected ? (
                                     <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
                                   ) : someVisibleSelected ? (
-                                    <div className="h-[18px] w-[18px] rounded border-2 border-blue-500 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.25)]" />
+                                    <div className="h-[18px] w-[18px] rounded border-2 border-blue-500 bg-blue-500/10" />
                                   ) : (
                                     <Square className="h-[18px] w-[18px] text-slate-300 transition-colors hover:text-slate-500 dark:text-gray-700 dark:text-gray-200 dark:hover:text-gray-500" />
                                   )}
@@ -1858,7 +1855,7 @@ export default function StudentsPage({
                           return (
                             <article
                               key={student.id}
-                              className={`rounded-[0.75rem] border p-4 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.10)] transition-colors dark:shadow-[0_4px_24px_-8px_rgba(0,0,0,0.40)] ${
+                              className={`rounded-[0.75rem] border p-4 transition-colors ${
                                 selectedStudents.has(student.id)
                                   ? "border-blue-200 bg-blue-50/60 dark:border-blue-500/20 dark:bg-blue-500/5"
                                   : "border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 dark:border-gray-800/70 dark:bg-gray-950/50"
@@ -2062,7 +2059,7 @@ export default function StudentsPage({
                             onClick={() => setPage(pageNumber)}
                             className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-[0.75rem] px-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
                               page === pageNumber
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-gray-900 dark:text-white dark:shadow-none"
+                                ? "bg-slate-900 text-white dark:bg-gray-900 dark:text-white"
                                 : "border border-slate-200 dark:border-gray-800/70 text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-white"
                             }`}
                           >
@@ -2090,9 +2087,9 @@ export default function StudentsPage({
         {selectedStudents.size > 0 && (
           <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 lg:left-[calc(50%+128px)]">
             <AnimatedContent animation="slide-up" delay={0}>
-              <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-slate-900/90 px-6 py-4 text-white shadow-2xl backdrop-blur-xl ring-1 ring-white/20 dark:bg-slate-950/90">
+              <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-slate-700 bg-slate-900 px-6 py-4 text-white dark:bg-slate-950">
                 <div className="flex items-center gap-3 border-r border-white/10 pr-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white shadow-lg shadow-blue-500/20">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white">
                     {selectedStudents.size}
                   </div>
                   <p className="text-sm font-bold">
@@ -2207,7 +2204,7 @@ export default function StudentsPage({
 
       {showReassignModal && studentToReassign && (
         <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm dark:bg-black/60">
-          <div className="animate-slideUp w-full max-w-xl overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)] dark:border-gray-800 dark:bg-gray-950">
+          <div className="animate-slideUp w-full max-w-xl overflow-hidden rounded-[1rem] border border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
@@ -2424,7 +2421,7 @@ export default function StudentsPage({
 
       {showBulkReassignModal && (
         <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm dark:bg-black/60">
-          <div className="animate-slideUp w-full max-w-2xl overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)] dark:border-gray-800 dark:bg-gray-950">
+          <div className="animate-slideUp w-full max-w-2xl overflow-hidden rounded-[1rem] border border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
