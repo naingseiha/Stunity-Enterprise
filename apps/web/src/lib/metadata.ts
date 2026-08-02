@@ -48,7 +48,10 @@ export function constructMetadata({
       images: [image],
       creator: '@stunityapp',
     },
-    icons,
+    icons: {
+      icon: [{ url: icons }],
+      apple: [{ url: '/apple-touch-icon.png', type: 'image/png' }],
+    },
     metadataBase: new URL(siteConfig.url),
     ...(noIndex && {
       robots: {

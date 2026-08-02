@@ -25,7 +25,7 @@ type Props = {
   locale: string;
 };
 
-const cardClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900';
+const cardClass = 'rounded-[2rem] border border-slate-200 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-800/60 dark:bg-slate-900 dark:shadow-black/30';
 
 function MetricBox({
   label,
@@ -46,7 +46,7 @@ function MetricBox({
   }[tone];
 
   return (
-    <div className="rounded-xl border border-slate-200 p-3.5 dark:border-slate-800">
+    <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-950/40">
       <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{label}</p>
       <p className={`mt-2 text-xl font-black ${valueClass}`}>{value}</p>
       <p className="mt-1 text-[10px] leading-4 text-slate-500 dark:text-slate-400">{detail}</p>
@@ -83,14 +83,14 @@ export default function OperationalHealthSection({ data, locale }: Props) {
   const attendanceRateReliable = Boolean(attendance?.rateReliable);
 
   return (
-    <section className="space-y-5" aria-label={tx('លទ្ធផល វត្តមាន និងវិន័យ', 'Learning, attendance and discipline')}>
+    <section className="space-y-6" aria-label={tx('លទ្ធផល វត្តមាន និងវិន័យ', 'Learning, attendance and discipline')}>
       <article className={`${cardClass} p-5 sm:p-6`}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
               {tx('និន្នាការប្រចាំខែ', 'Monthly trend')}
             </p>
-            <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950 dark:text-white">
+            <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-950 dark:text-white">
               {tx('អត្រាជាប់ និងវត្តមានប្រចាំខែ', 'Monthly pass and attendance rates')}
             </h2>
             <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">

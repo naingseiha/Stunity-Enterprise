@@ -49,7 +49,7 @@ type Priority = {
   value: string;
 };
 
-const cardClass = 'rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900';
+const cardClass = 'rounded-[2rem] border border-slate-200 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] dark:border-slate-800/60 dark:bg-slate-900 dark:shadow-black/30';
 
 const GRADE_BAND_META = {
   A: { range: '90–100%', color: '#1d4ed8', lightClass: 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200' },
@@ -65,31 +65,80 @@ function MetricCard({
   value,
   detail,
   icon: Icon,
-  status = 'neutral',
+  accent = 'blue',
 }: {
   label: string;
   value: string;
   detail: string;
   icon: typeof Users;
-  status?: 'neutral' | 'good' | 'warning' | 'critical';
+  accent?: 'blue' | 'violet' | 'emerald' | 'amber' | 'rose' | 'cyan';
 }) {
-  const statusClass = {
-    neutral: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-    good: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
-    warning: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-    critical: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
-  }[status];
+  const themeClass = {
+    blue: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
+    violet: 'from-violet-500 via-fuchsia-500 to-pink-500 shadow-violet-200/70 dark:shadow-violet-950/40',
+    emerald: 'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
+    amber: 'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
+    rose: 'from-rose-500 via-pink-500 to-fuchsia-500 shadow-rose-200/70 dark:shadow-rose-950/40',
+    cyan: 'from-cyan-500 via-sky-500 to-blue-500 shadow-cyan-200/70 dark:shadow-cyan-950/40',
+  }[accent];
 
   return (
-    <article className={`${cardClass} p-4 sm:p-5`}>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">{label}</p>
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${statusClass}`}>
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
+    <article className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] hover:shadow-2xl dark:border-white/5 ${themeClass}`}>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/30 via-white/10 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-white/30 via-white/10 to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 opacity-30 transition-opacity group-hover:opacity-40">
+        <svg viewBox="0 0 100 40" className="h-full w-full" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 34 Q 18 28, 35 31 T 68 24 T 100 28 V 40 H 0 Z" fill="currentColor" className="text-white/20" />
+          <path d="M0 34 Q 18 28, 35 31 T 68 24 T 100 28" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-white/30" />
+        </svg>
       </div>
-      <p className="mt-4 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
-      <p className="mt-1 min-h-8 text-[11px] font-medium leading-4 text-slate-500 dark:text-slate-400">{detail}</p>
+
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
+          <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white tabular-nums">{value}</p>
+          <p className="mt-3 inline-flex max-w-full items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold leading-4 text-white/90 ring-1 ring-white/20 backdrop-blur-md dark:bg-gray-900/20">
+            {detail}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-8">
+          <span className="mt-3 flex gap-1.5" aria-hidden="true">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/45" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/45" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/45" />
+          </span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-white/20 text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md dark:bg-gray-900/20">
+            <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SupportingMetric({ label, value, detail, icon: Icon, accent }: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: typeof Users;
+  accent: 'violet' | 'cyan';
+}) {
+  const tone = accent === 'violet'
+    ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400'
+    : 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400';
+
+  return (
+    <article className={`${cardClass} flex items-center gap-4 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl`}>
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-5 w-5" strokeWidth={1.8} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <p className="text-xl font-semibold tracking-tight text-slate-950 tabular-nums dark:text-white">{value}</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">{detail}</p>
+        </div>
+      </div>
     </article>
   );
 }
@@ -97,8 +146,8 @@ function MetricCard({
 function SectionHeading({ title, description, eyebrow }: { title: string; description?: string; eyebrow?: string }) {
   return (
     <div>
-      {eyebrow && <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">{eyebrow}</p>}
-      <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950 dark:text-white">{title}</h2>
+      {eyebrow && <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">{eyebrow}</p>}
+      <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-950 dark:text-white">{title}</h2>
       {description && <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{description}</p>}
     </div>
   );
@@ -353,16 +402,17 @@ export default function CleanReportsDashboard({
   const classGapToPass = (average: number) => Math.round((data.scale.passingMark - average) * 10) / 10;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
-            <span className="h-2 w-2 rounded-full bg-blue-600" />
-            {tx('សេចក្តីសង្ខេបប្រតិបត្តិការ', 'Operational overview')}
-          </div>
-          <h1 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">{schoolName}</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
+            {tx('ទិដ្ឋភាពរបាយការណ៍', 'Reports overview')}
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+            {tx('ស្ថានភាព និងលទ្ធផលសិក្សា', 'School performance and outcomes')}
+          </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {data.period.khmerLabel || data.period.label}{className ? ` · ${tx('ថ្នាក់', 'Class')} ${className}` : ''}
+            {schoolName} · {data.period.khmerLabel || data.period.label}{className ? ` · ${tx('ថ្នាក់', 'Class')} ${className}` : ''}
           </p>
         </div>
         <div className="text-left sm:text-right">
@@ -371,26 +421,27 @@ export default function CleanReportsDashboard({
         </div>
       </header>
 
-      <section aria-label={tx('សូចនាករសំខាន់', 'Key indicators')} className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <section aria-label={tx('សូចនាករសំខាន់', 'Key indicators')} className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label={tx('សិស្សសរុប', 'Total students')}
           value={data.overview.totalStudents.toLocaleString()}
           detail={`${data.overview.totalClasses} ${tx('ថ្នាក់', 'classes')} · ${model.averageClassSize} ${tx('នាក់/ថ្នាក់', 'per class')}`}
           icon={Users}
+          accent="blue"
         />
         <MetricCard
           label={tx('អត្រាជាប់', 'Pass rate')}
           value={`${data.passRate.passRatePercent}%`}
           detail={`${data.passRate.passing.toLocaleString()} / ${model.graded.toLocaleString()} ${tx('សិស្សមានពិន្ទុ', 'graded students')}`}
           icon={Target}
-          status={data.passRate.passRatePercent >= 80 ? 'good' : data.passRate.passRatePercent >= 60 ? 'warning' : 'critical'}
+          accent="emerald"
         />
         <MetricCard
           label={tx('សិស្សក្រោមកម្រិតជាប់', 'Below passing mark')}
           value={data.passRate.failing.toLocaleString()}
           detail={`${model.atRiskShare}% ${tx('នៃសិស្សដែលមានពិន្ទុ', 'of graded students')}`}
           icon={AlertTriangle}
-          status={data.passRate.failing > 0 ? 'critical' : 'good'}
+          accent="rose"
         />
         <MetricCard
           label={tx('វត្តមានសិស្ស', 'Student attendance')}
@@ -401,20 +452,24 @@ export default function CleanReportsDashboard({
               ? tx('កំណត់ត្រាមិនពេញលេញសម្រាប់គណនាភាគរយ', 'Partial records; rate withheld')
             : tx('មិនមានកំណត់ត្រាក្នុងរយៈពេលនេះ', 'No records for this period')}
           icon={ClipboardCheck}
-          status={!model.attendanceRateReliable ? 'warning' : data.overview.attendanceRate >= 90 ? 'good' : 'warning'}
+          accent="amber"
         />
-        <MetricCard
+      </section>
+
+      <section aria-label={tx('សូចនាករគាំទ្រ', 'Supporting indicators')} className="grid gap-5 sm:grid-cols-2">
+        <SupportingMetric
           label={tx('ការគ្របដណ្តប់ពិន្ទុ', 'Grade coverage')}
           value={`${model.coverage}%`}
           detail={`${model.graded.toLocaleString()} / ${data.overview.totalStudents.toLocaleString()} ${tx('សិស្ស', 'students')}`}
           icon={Database}
-          status={model.coverage >= 90 ? 'good' : model.coverage >= 70 ? 'warning' : 'critical'}
+          accent="violet"
         />
-        <MetricCard
+        <SupportingMetric
           label={tx('សមាមាត្រសិស្ស-គ្រូ', 'Student–teacher ratio')}
           value={data.overview.totalTeachers > 0 ? `${model.studentTeacherRatio}:1` : '—'}
           detail={`${data.overview.totalTeachers} ${tx('គ្រូ', 'teachers')} · ${data.overview.femaleTeachers} ${tx('ស្រី', 'female')}`}
           icon={GraduationCap}
+          accent="cyan"
         />
       </section>
 

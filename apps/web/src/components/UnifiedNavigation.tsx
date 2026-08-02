@@ -27,12 +27,12 @@ import {
   Users,
   Calendar,
   BarChart3,
-  FileText,
   TrendingUp,
   ClipboardList,
   ClipboardCheck,
   MessageCircle,
   ChevronRight,
+  ChevronDown,
   Ticket,
   MapPin,
   Loader2,
@@ -47,8 +47,9 @@ import {
   School,
   Brain,
   PieChart,
-  Award,
-  ScrollText,
+  Briefcase,
+  Clock3,
+  FolderKanban,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import AcademicYearSelector from "./AcademicYearSelector";
@@ -86,7 +87,6 @@ import {
 } from "@/lib/route-data-cache";
 import { formatEducationModelLabel } from "@/lib/educationModel";
 import { isSchoolAttendanceAdminRole } from "@/lib/permissions/schoolAttendance";
-import { canViewReportsDashboard } from "@/lib/permissions/reports";
 
 interface UnifiedNavProps {
   user?: any;
@@ -119,10 +119,13 @@ interface SchoolMenuItem {
   path: string;
   prefetch: SchoolPrefetchType;
   skeleton: SchoolSkeletonType;
+  activePaths?: string[];
 }
 
 interface SchoolMenuSection {
+  key: string;
   label: string;
+  icon: any;
   items: SchoolMenuItem[];
 }
 
@@ -148,10 +151,6 @@ export default function UnifiedNavigation({
   onLogout,
 }: UnifiedNavProps) {
   const autoT = useTranslations();
-  const tMonthlyReport = useTranslations("monthlyReport");
-  const tReportsDashboard = useTranslations("reportsDashboard");
-  const tPosterStudio = useTranslations("posterStudio");
-  const tCertificateStudio = useTranslations("certificateStudio");
   const tNav = useTranslations("navigation");
   const router = useRouter();
   const pathname = usePathname();
@@ -162,12 +161,11 @@ export default function UnifiedNavigation({
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [activeHover, setActiveHover] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [transitionSkeleton, setTransitionSkeleton] = useState<{
+  const [, setTransitionSkeleton] = useState<{
     type: SchoolSkeletonType;
     hasSidebar: boolean;
   } | null>(null);
@@ -290,6 +288,7 @@ export default function UnifiedNavigation({
     [school?.educationModel],
   );
   const showEducationModel = Boolean(school?.id);
+  const schoolLogoUrl = school?.logoUrl || school?.logo || school?.imageUrl || null;
 
   // Optimistic active state - uses pending path if navigating, otherwise actual path
   const getOptimisticActive = useCallback(
@@ -408,8 +407,6 @@ export default function UnifiedNavigation({
   );
 
   const canOpenAttendanceDashboard = isSchoolAttendanceAdminRole(user?.role);
-  const canOpenReportsDashboard = canViewReportsDashboard(user?.role);
-
   const canViewTeacherQuizAnalytics = useMemo(
     () =>
       ["TEACHER", "ADMIN", "STAFF", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
@@ -418,11 +415,14 @@ export default function UnifiedNavigation({
     [user?.isSuperAdmin, user?.role],
   );
 
-  // Memoized school menu sections with grouped items
+  // Task-oriented information architecture: the sidebar exposes work areas,
+  // while dense report destinations live in the Reports hub.
   const schoolMenuSections = useMemo<SchoolMenuSection[]>(
     () => [
       {
+        key: "overview",
         label: tNav("sections.overview"),
+        icon: LayoutDashboard,
         items: [
           {
             name: tNav("items.dashboard"),
@@ -441,7 +441,9 @@ export default function UnifiedNavigation({
         ],
       },
       {
-        label: tNav("sections.academic"),
+        key: "people",
+        label: tNav("sections.people"),
+        icon: Users,
         items: [
           {
             name: tNav("items.students"),
@@ -471,6 +473,13 @@ export default function UnifiedNavigation({
             prefetch: "teachers",
             skeleton: "table" as const,
           },
+        ],
+      },
+      {
+        key: "academic",
+        label: tNav("sections.academic"),
+        icon: GraduationCap,
+        items: [
           {
             name: tNav("items.classes"),
             icon: BookOpen,
@@ -484,6 +493,80 @@ export default function UnifiedNavigation({
             path: `/${locale}/settings/subjects`,
             prefetch: "subjects",
             skeleton: "table" as const,
+          },
+          {
+            name: tNav("items.timetable"),
+            icon: Calendar,
+            path: `/${locale}/timetable`,
+            prefetch: "timetable-core",
+            skeleton: "cards" as const,
+          },
+          {
+            name: tNav("items.masterTimetable"),
+            icon: Calendar,
+            path: `/${locale}/timetable/master`,
+            prefetch: "timetable-core",
+            skeleton: "table" as const,
+          },
+          {
+            name: tNav("items.gradeEntry"),
+            icon: ClipboardList,
+            path: `/${locale}/grades/entry`,
+            prefetch: "grades-core",
+            skeleton: "table" as const,
+          },
+        ],
+      },
+      {
+        key: "attendance",
+        label: tNav("sections.attendance"),
+        icon: ClipboardCheck,
+        items: [
+          {
+            name: tNav("items.markAttendance"),
+            icon: ClipboardCheck,
+            path: `/${locale}/attendance/mark`,
+            prefetch: "attendance-core",
+            skeleton: "table" as const,
+          },
+          {
+            name: tNav("items.monthlyAttendanceEntry"),
+            icon: ClipboardCheck,
+            path: `/${locale}/attendance/monthly-entry`,
+            prefetch: "attendance-core",
+            skeleton: "table" as const,
+          },
+          ...(canOpenAttendanceDashboard
+            ? [
+                {
+                  name: tNav("items.attendanceDashboard"),
+                  icon: BarChart3,
+                  path: `/${locale}/attendance/dashboard`,
+                  prefetch: "attendance-dashboard" as const,
+                  skeleton: "dashboard" as const,
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        key: "insights",
+        label: tNav("sections.insights"),
+        icon: PieChart,
+        items: [
+          {
+            name: tNav("items.reports"),
+            icon: FolderKanban,
+            path: `/${locale}/reports`,
+            prefetch: "grades-core",
+            skeleton: "dashboard" as const,
+            activePaths: [
+              `/${locale}/reports`,
+              `/${locale}/grades/reports`,
+              `/${locale}/grades/monthly-report`,
+              `/${locale}/grades/analytics`,
+              `/${locale}/attendance/reports`,
+            ],
           },
           ...(canViewTeacherQuizAnalytics
             ? [
@@ -499,116 +582,9 @@ export default function UnifiedNavigation({
         ],
       },
       {
-        label: tNav("sections.schedule"),
-        items: [
-          {
-            name: tNav("items.timetable"),
-            icon: Calendar,
-            path: `/${locale}/timetable`,
-            prefetch: "timetable-core",
-            skeleton: "cards" as const,
-          },
-          {
-            name: tNav("items.masterTimetable"),
-            icon: Calendar,
-            path: `/${locale}/timetable/master`,
-            prefetch: "timetable-core",
-            skeleton: "table" as const,
-          },
-        ],
-      },
-      {
-        label: tNav("sections.gradesAndAttendance"),
-        items: [
-          {
-            name: tNav("items.gradeEntry"),
-            icon: ClipboardList,
-            path: `/${locale}/grades/entry`,
-            prefetch: "grades-core",
-            skeleton: "table" as const,
-          },
-          {
-            name: tNav("items.reportCards"),
-            icon: FileText,
-            path: `/${locale}/grades/reports`,
-            prefetch: "grades-core",
-            skeleton: "table" as const,
-          },
-          {
-            name: tMonthlyReport("nav"),
-            icon: Calendar,
-            path: `/${locale}/grades/monthly-report`,
-            prefetch: "grades-core",
-            skeleton: "table" as const,
-          },
-          {
-            name: tNav("items.monthlyAttendanceEntry"),
-            icon: ClipboardCheck,
-            path: `/${locale}/attendance/monthly-entry`,
-            prefetch: "attendance-core",
-            skeleton: "table" as const,
-          },
-          {
-            name: tNav("items.gradeAnalytics"),
-            icon: TrendingUp,
-            path: `/${locale}/grades/analytics`,
-            prefetch: "grades-core",
-            skeleton: "dashboard" as const,
-          },
-          ...(canOpenReportsDashboard
-            ? [
-                {
-                  name: tReportsDashboard("nav"),
-                  icon: PieChart,
-                  path: `/${locale}/reports/dashboard`,
-                  prefetch: null,
-                  skeleton: "dashboard" as const,
-                },
-                {
-                  name: tPosterStudio("nav"),
-                  icon: Award,
-                  path: `/${locale}/reports/poster-studio`,
-                  prefetch: null,
-                  skeleton: "dashboard" as const,
-                },
-                {
-                  name: tCertificateStudio("nav"),
-                  icon: ScrollText,
-                  path: `/${locale}/reports/certificate-studio`,
-                  prefetch: null,
-                  skeleton: "dashboard" as const,
-                },
-              ]
-            : []),
-          ...(canOpenAttendanceDashboard
-            ? [
-                {
-                  name: tNav("items.attendanceDashboard"),
-                  icon: BarChart3,
-                  path: `/${locale}/attendance/dashboard`,
-                  prefetch: "attendance-dashboard" as const,
-                  skeleton: "dashboard" as const,
-                },
-              ]
-            : []),
-          {
-            name: tNav("items.markAttendance"),
-            icon: ClipboardCheck,
-            path: `/${locale}/attendance/mark`,
-            prefetch: "attendance-core",
-            skeleton: "table" as const,
-          },
-          {
-            name: tNav("items.attendanceReports"),
-            icon: ClipboardCheck,
-            path: `/${locale}/attendance/reports`,
-            prefetch: "attendance-core",
-            skeleton: "table" as const,
-          },
-        ],
-      },
-      {
+        key: "yearEnd",
         label: tNav("sections.yearEnd"),
+        icon: Clock3,
         items: [
           {
             name: tNav("items.promotion"),
@@ -634,7 +610,9 @@ export default function UnifiedNavigation({
         ],
       },
       {
-        label: tNav("sections.schoolSetup"),
+        key: "administration",
+        label: tNav("sections.administration"),
+        icon: Briefcase,
         items: [
           {
             name: tNav("items.claimCodes"),
@@ -680,7 +658,9 @@ export default function UnifiedNavigation({
       ...(canManageTranslations
         ? [
             {
+              key: "platform",
               label: tNav("sections.platform"),
+              icon: Shield,
               items: [
                 {
                   name: tNav("items.languageManagement"),
@@ -697,15 +677,20 @@ export default function UnifiedNavigation({
     [
       canManageTranslations,
       canOpenAttendanceDashboard,
-      canOpenReportsDashboard,
       canViewTeacherQuizAnalytics,
       locale,
-      tCertificateStudio,
-      tMonthlyReport,
-      tPosterStudio,
-      tReportsDashboard,
       tNav,
     ],
+  );
+
+  const isSchoolItemActive = useCallback(
+    (item: SchoolMenuItem) => {
+      if (item.activePaths?.some((activePath) => pathname.startsWith(activePath))) {
+        return true;
+      }
+      return pathname === item.path;
+    },
+    [pathname],
   );
 
   // Flatten for mobile menu compatibility
@@ -1137,21 +1122,21 @@ export default function UnifiedNavigation({
 
   return (
     <>
-      {/* Apple-inspired Navigation Bar */}
+      {/* Flat, Apple-inspired application menubar */}
       <nav
         className={`
-        sticky top-0 z-50 transition-all duration-300 ease-out
+        kh-navigation-font sticky top-0 z-50 border-b transition-colors duration-200
         ${
           scrolled
-            ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-800/50"
-            : "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800"
+            ? "border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/85"
+            : "border-slate-200/70 bg-white/95 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95"
         }
       `}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
+        <div className="mx-auto max-w-[1440px] px-3 sm:px-5 lg:px-6">
+          <div className="flex h-14 items-center justify-between gap-3">
             {/* Logo & Main Nav */}
-            <div className="flex items-center gap-10">
+            <div className="flex min-w-0 items-center gap-3 xl:gap-6">
               {/* Logo */}
               <Link
                 href={
@@ -1171,7 +1156,7 @@ export default function UnifiedNavigation({
                   );
                   router.push(targetPath);
                 }}
-                className="flex items-center gap-2 group relative"
+                className="group relative flex shrink-0 items-center gap-2"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
               >
                 <Image
@@ -1179,14 +1164,15 @@ export default function UnifiedNavigation({
                   alt={autoT(
                     "auto.web.components_UnifiedNavigation.k_afe8796c",
                   )}
-                  width={120}
-                  height={32}
-                  className="h-8 w-auto object-contain transition-all duration-200 group-hover:opacity-80"
+                  width={112}
+                  height={28}
+                  priority
+                  className="h-7 w-auto object-contain transition-opacity duration-200 group-hover:opacity-80"
                 />
               </Link>
 
-              {/* Main Navigation - Apple Style */}
-              <div className="hidden md:flex items-center">
+              {/* Workspace switcher */}
+              <div className="hidden items-center md:flex">
                 {navItems.map((item) => {
                   const isActive = getOptimisticActive(item.path, item.active);
                   const isNavigating =
@@ -1218,15 +1204,15 @@ export default function UnifiedNavigation({
                       }}
                       onMouseEnter={() => router.prefetch(item.path)}
                       onFocus={() => router.prefetch(item.path)}
-                      className="relative group px-4 py-2"
+                      className="relative px-3 py-2"
                     >
                       <span
                         className={`
-                        relative z-10 flex items-center gap-1.5 text-[13px] font-medium tracking-tight transition-colors duration-150
+                        relative z-10 flex items-center gap-1.5 text-[12px] font-medium tracking-tight transition-colors duration-150
                         ${
                           isActive
-                            ? "text-gray-900 dark:text-white"
-                            : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                            ? "text-slate-950 dark:text-white"
+                            : "text-slate-500 group-hover:text-slate-950 dark:text-slate-400 dark:group-hover:text-white"
                         }
                       `}
                       >
@@ -1235,17 +1221,6 @@ export default function UnifiedNavigation({
                         )}
                         {item.name}
                       </span>
-                      {/* Active indicator - subtle underline */}
-                      {isActive && (
-                        <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-150" />
-                      )}
-                      {/* Hover indicator */}
-                      <span
-                        className={`
-                        absolute inset-0 rounded-lg bg-gray-100 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-150
-                        ${isActive ? "opacity-0 group-hover:opacity-0" : ""}
-                      `}
-                      />
                       {/* Badge */}
                       {item.badge && (
                         <span className="absolute -top-0.5 -right-1 px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-[9px] font-semibold rounded-full uppercase tracking-wider">
@@ -1262,14 +1237,14 @@ export default function UnifiedNavigation({
             <div
               className={`
               hidden lg:flex items-center transition-all duration-300 ease-out
-              ${searchFocused ? "flex-1 max-w-xl mx-4" : "w-64"}
+              ${searchFocused ? "flex-1 max-w-md mx-2" : "w-44 xl:w-56"}
             `}
             >
               <div className="relative w-full group">
                 <Search
                   className={`
                   absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200
-                  ${searchFocused ? "text-orange-500" : "text-gray-400 group-hover:text-gray-500"}
+                  ${searchFocused ? "text-slate-700 dark:text-slate-200" : "text-slate-400 group-hover:text-slate-600"}
                 `}
                 />
                 <input
@@ -1283,11 +1258,10 @@ export default function UnifiedNavigation({
                   onBlur={() => setSearchFocused(false)}
                   onKeyDown={handleSearchKeyDown}
                   className={`
-                    w-full pl-9 pr-4 py-2 text-[13px] rounded-lg transition-all duration-200
-                    bg-gray-100/80 dark:bg-gray-800/80 border border-transparent
+                    w-full rounded-lg border border-transparent bg-transparent py-2 pl-9 pr-4 text-[12px] transition-all duration-200
                     placeholder:text-gray-400 dark:placeholder:text-gray-500
-                    focus:bg-white dark:focus:bg-gray-800 focus:border-gray-200 dark:focus:border-gray-700
-                    focus:ring-2 focus:ring-orange-500/20 focus:outline-none
+                    hover:bg-slate-100/80 dark:hover:bg-slate-900
+                    focus:border-slate-200 focus:bg-slate-50 focus:outline-none dark:focus:border-slate-800 dark:focus:bg-slate-900
                   `}
                 />
                 {searchFocused && (
@@ -1299,23 +1273,24 @@ export default function UnifiedNavigation({
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 shrink-0">
               {/* Language Switcher */}
               <div className="hidden sm:block">
-                <LanguageSwitcher />
+                <LanguageSwitcher variant="flat" />
               </div>
 
               {/* Academic Year Selector (only in school context) */}
               {isSchoolContext && (
-                <div className="hidden sm:block">
-                  <AcademicYearSelector />
+                <div className="hidden md:block">
+                  <AcademicYearSelector variant="flat" />
                 </div>
               )}
 
               {/* Messages */}
               <Link
                 href={`/${locale}/messages`}
-                className="relative p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200"
+                className="relative hidden h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white sm:grid"
+                title={tNav("items.messages")}
               >
                 <MessageCircle className="w-[18px] h-[18px]" />
               </Link>
@@ -1323,7 +1298,7 @@ export default function UnifiedNavigation({
               {/* Dark/Light mode toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200"
+                className="hidden h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white sm:grid"
                 title={
                   resolvedTheme === "dark"
                     ? "Switch to light mode"
@@ -1338,7 +1313,7 @@ export default function UnifiedNavigation({
               </button>
 
               {/* Notifications */}
-              <button className="relative p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200">
+              <button className="relative hidden h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white sm:grid">
                 <Bell className="w-[18px] h-[18px]" />
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
               </button>
@@ -1348,17 +1323,17 @@ export default function UnifiedNavigation({
                 <button
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                   className={`
-                    flex items-center gap-2 p-1 rounded-full transition-all duration-200
+                    flex items-center gap-2 rounded-lg p-1 transition-colors duration-200
                     ${
                       profileMenuOpen
-                        ? "ring-2 ring-orange-500/30 bg-gray-100 dark:bg-gray-800"
-                        : "hover:bg-gray-100/80 dark:hover:bg-gray-800"
+                        ? "bg-slate-100 dark:bg-slate-900"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-900"
                     }
                   `}
                 >
                   <div
                     suppressHydrationWarning
-                    className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden"
+                    className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   >
                     {isHydrated && user?.profilePictureUrl ? (
                       <Image
@@ -1375,6 +1350,15 @@ export default function UnifiedNavigation({
                       </>
                     )}
                   </div>
+                  <div className="hidden 2xl:block max-w-32 text-left leading-tight">
+                    <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="truncate text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                      {user?.role?.replaceAll("_", " ")}
+                    </p>
+                  </div>
+                  <ChevronDown className={`hidden 2xl:block h-3.5 w-3.5 text-slate-400 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {/* Profile Dropdown - Refined */}
@@ -1508,7 +1492,7 @@ export default function UnifiedNavigation({
 
         {/* Mobile Menu - Refined */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl">
+          <div className="md:hidden max-h-[calc(100vh-3.5rem)] overflow-y-auto border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-slate-950/98 backdrop-blur-xl">
             <div className="px-3 py-3 space-y-0.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -1570,82 +1554,170 @@ export default function UnifiedNavigation({
                   </Link>
                 );
               })}
+
+              {isSchoolContext && (
+                <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+                  <div className="mb-3 flex items-center justify-between px-3">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        {school?.name || tNav("adminWorkspace")}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                        {tNav("adminWorkspace")}
+                      </p>
+                    </div>
+                    <AcademicYearSelector />
+                  </div>
+                  {schoolMenuSections.map((section) => (
+                    <div key={section.key} className="mb-4">
+                      <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                        {section.label}
+                      </p>
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = isSchoolItemActive(item);
+                        return (
+                          <Link
+                            key={item.path}
+                            href={item.path}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                              isActive
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                                : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                            }`}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="flex-1">{item.name}</span>
+                            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
       </nav>
 
-      {/* School Context Sidebar - Clean, scannable */}
+      {/* School context sidebar: grouped work areas */}
       {isSchoolContext && (
-        <aside className="hidden lg:block fixed left-0 top-14 w-64 h-[calc(100vh-3.5rem)] bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 overflow-y-auto z-40 transition-all duration-300">
-          <div className="py-6 px-4 space-y-8">
-            <div className="px-3">
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-                <AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_4a7c3579" />
-              </p>
-              {showEducationModel && (
-                <p className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-900/25 dark:text-blue-300">
-                  {educationModelLabel}
+        <aside className="kh-navigation-font hidden lg:flex fixed left-0 top-14 w-64 h-[calc(100vh-3.5rem)] flex-col bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800 overflow-hidden z-40">
+          <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-900">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-50 to-cyan-50 text-blue-600 shadow-sm ring-1 ring-blue-100 dark:from-blue-950/60 dark:to-cyan-950/30 dark:text-blue-300 dark:ring-blue-900">
+                {schoolLogoUrl ? (
+                  <Image
+                    src={schoolLogoUrl}
+                    alt={school?.name || tNav("items.school")}
+                    width={44}
+                    height={44}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <School className="h-[19px] w-[19px]" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                  {tNav("adminWorkspace")}
                 </p>
-              )}
-            </div>
-
-            {schoolMenuSections.map((section) => (
-              <div key={section.label} className="space-y-1.5">
-                <p className="px-3 py-1 text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">
-                  {section.label}
+                <p className="mt-1 truncate text-sm font-black text-slate-950 dark:text-white">
+                  {school?.name || tNav("items.school")}
                 </p>
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = optimisticPath
-                    ? optimisticPath === item.path
-                    : pathname === item.path;
-                  const isNavigating =
-                    optimisticPath === item.path && pathname !== item.path;
-
-                  return (
-                    <Link
-                      key={item.path}
-                      href={item.path}
-                      prefetch={true}
-                      onMouseEnter={() => primeRoute(item.path, item.prefetch)}
-                      onFocus={() => primeRoute(item.path, item.prefetch)}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // Escape valve: if this item is already stuck in navigating state, clear it
-                        if (
-                          optimisticPath === item.path &&
-                          pathname !== item.path
-                        ) {
-                          setOptimisticPath(null);
-                          setTransitionSkeleton(null);
-                        }
-                        beginNavigationFeedback(item.path, item.skeleton, true);
-                        router.push(item.path);
-                      }}
-                      className={`
-                        flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300
-                        ${
-                          isActive
-                            ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
-                            : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                        }
-                      `}
-                    >
-                      <Icon
-                        className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? "text-blue-600" : ""}`}
-                      />
-                      <span className="flex-1 truncate tracking-tight">
-                        {item.name}
-                      </span>
-                      {isNavigating && (
-                        <Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin text-blue-500" />
-                      )}
-                    </Link>
-                  );
-                })}
               </div>
-            ))}
+            </div>
+            {showEducationModel && (
+              <p className="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+                {educationModelLabel}
+              </p>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 py-5">
+            <div>
+              {schoolMenuSections.map((section, sectionIndex) => {
+                return (
+                  <section key={section.key} className={sectionIndex > 0 ? "mt-8 border-t border-slate-200 pt-7 dark:border-slate-800" : ""}>
+                    <div className="mb-4">
+                      <p className="kh-navigation-section-title text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+                        {section.label}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = optimisticPath
+                          ? optimisticPath === item.path || Boolean(item.activePaths?.some((path) => optimisticPath.startsWith(path)))
+                          : isSchoolItemActive(item);
+                        const isNavigating =
+                          optimisticPath === item.path && pathname !== item.path;
+
+                        return (
+                          <Link
+                            key={item.path}
+                            href={item.path}
+                            prefetch={true}
+                            onMouseEnter={() => primeRoute(item.path, item.prefetch)}
+                            onFocus={() => primeRoute(item.path, item.prefetch)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // Escape valve: if this item is already stuck in navigating state, clear it
+                              if (
+                                optimisticPath === item.path &&
+                                pathname !== item.path
+                              ) {
+                                setOptimisticPath(null);
+                                setTransitionSkeleton(null);
+                              }
+                              beginNavigationFeedback(item.path, item.skeleton, true);
+                              router.push(item.path);
+                            }}
+                            className={`group relative flex items-center gap-3 rounded-xl px-0 py-2.5 text-[13px] font-semibold transition-all duration-200 ${
+                              isActive
+                                ? "text-blue-700 dark:text-blue-300"
+                                : "text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                            }`}
+                          >
+                            <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition-colors ${
+                              isActive
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                                : "bg-transparent text-slate-700 dark:text-slate-300"
+                            }`}>
+                              {isNavigating ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Icon className="h-4 w-4" />
+                              )}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">
+                              {item.name}
+                            </span>
+                            {isActive ? (
+                              <span className="h-2 w-2 rounded-full bg-blue-500" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-600" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-900">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-emerald-500" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{tNav("secureWorkspace")}</p>
+                <p className="kh-navigation-note text-[9px] text-slate-400">{tNav("roleBasedAccess")}</p>
+              </div>
+            </div>
           </div>
         </aside>
       )}

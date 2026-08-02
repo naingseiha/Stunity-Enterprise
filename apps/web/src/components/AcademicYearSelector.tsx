@@ -6,7 +6,11 @@ import { ChevronDown, Calendar, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-export default function AcademicYearSelector() {
+interface AcademicYearSelectorProps {
+  variant?: 'default' | 'flat';
+}
+
+export default function AcademicYearSelector({ variant = 'default' }: AcademicYearSelectorProps) {
   const { currentYear, selectedYear, allYears, setSelectedYear, loading } = useAcademicYear();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -26,7 +30,7 @@ export default function AcademicYearSelector() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg animate-pulse">
+      <div className={`flex items-center gap-2 px-3 py-2 animate-pulse ${variant === 'flat' ? 'bg-transparent' : 'bg-gray-100 rounded-lg'}`}>
         <Calendar className="w-4 h-4 text-gray-400" />
         <span className="text-sm text-gray-400"><AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_dee65802" /></span>
       </div>
@@ -38,7 +42,9 @@ export default function AcademicYearSelector() {
     return (
       <a
         href={`/${locale}/settings/academic-years`}
-        className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm dark:bg-amber-500/10 dark:border-amber-500/20 dark:hover:bg-amber-500/20"
+        className={variant === 'flat'
+          ? 'flex h-9 items-center gap-2 rounded-lg px-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10'
+          : 'flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm dark:bg-amber-500/10 dark:border-amber-500/20 dark:hover:bg-amber-500/20'}
       >
         <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-500" />
         <span className="font-medium text-amber-700 hidden md:inline dark:text-amber-400">
@@ -67,7 +73,9 @@ export default function AcademicYearSelector() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm dark:bg-gray-900/80 dark:border-gray-800 dark:hover:bg-gray-800/80"
+        className={variant === 'flat'
+          ? 'flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors hover:bg-slate-100 dark:hover:bg-slate-900'
+          : 'flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm dark:bg-gray-900/80 dark:border-gray-800 dark:hover:bg-gray-800/80'}
       >
         <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         <span className="font-medium text-gray-900 hidden md:inline dark:text-gray-200">

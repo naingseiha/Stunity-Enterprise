@@ -152,6 +152,22 @@ textarea {
   font-family: var(--font-metal);
 }
 
+[lang="km"] .kh-navigation-font :is(a, button, span, p, kbd) {
+  font-family: var(--font-koulen) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0;
+  line-height: 1.65;
+}
+
+[lang="km"] .kh-navigation-font .kh-navigation-note {
+  font-family: var(--font-metal) !important;
+}
+
+[lang="km"] .kh-navigation-font .kh-navigation-section-title {
+  font-family: var(--font-metal) !important;
+  letter-spacing: 0.03em;
+}
+
 /* Hide scrollbar globally for clean UI (like LinkedIn) */
 * {
   -ms-overflow-style: none;  /* IE and Edge */
