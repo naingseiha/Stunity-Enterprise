@@ -622,7 +622,10 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     </button>
                   </section>
                 ) : data ? (
-                  <div ref={exportRef} className="space-y-5">
+                  <div 
+                    ref={exportRef} 
+                    className={`space-y-5 ${viewMode === 'infographic' ? 'mx-auto w-full max-w-[210mm]' : 'w-full'}`}
+                  >
                     {viewMode === 'infographic' ? (
                       <PortraitInfographicSheet
                         data={data}
