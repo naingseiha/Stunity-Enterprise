@@ -90,15 +90,20 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   useEffect(() => {
     setIsClient(true);
     const token = TokenManager.getAccessToken();
-    const userData = TokenManager.getUserData();
-    if (!token || !userData) {
+    const authData = TokenManager.getUserData();
+    if (!token || !authData) {
       router.push(`/${locale}/login`);
       return;
     }
-    setUser(userData);
+    const currentUser = authData?.user || authData;
+    const currentSchool = authData?.school;
 
-    if (userData.school?.id) {
-      schoolAPI.getProfile(userData.school.id)
+    setUser(currentUser);
+    if (currentSchool) setSchool(currentSchool);
+
+    const schoolIdToFetch = currentSchool?.id || currentUser?.schoolId || currentUser?.school?.id;
+    if (schoolIdToFetch) {
+      schoolAPI.getProfile(schoolIdToFetch)
         .then((profile) => {
           if (profile) setSchool((previous: any) => ({ ...previous, ...profile }));
         })
