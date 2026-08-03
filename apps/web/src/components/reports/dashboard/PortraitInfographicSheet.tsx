@@ -70,11 +70,10 @@ export default function PortraitInfographicSheet({
     division === 'junior' ? 'junior' : division === 'senior' ? 'senior' : 'all_pages',
   );
 
-  // Period title helper
-  const periodTitle = useMemo(() => {
-    const label = data.period.khmerLabel || data.period.label || '';
-    if (label.startsWith('ខែ')) return `របាយការណ៍ប្រចាំ${label}`;
-    return `របាយការណ៍ប្រចាំខែ៖ ${label}`;
+  // Period label helper
+  const periodLabel = useMemo(() => {
+    const raw = data.period.khmerLabel || data.period.label || 'មិថុនា';
+    return raw.replace(/^របាយការណ៍ប្រចាំ/g, '').replace(/^ខែ/g, '').trim() || 'មិថុនា';
   }, [data.period]);
 
   // Compute metrics for a given level target ('all' | 'junior' | 'senior')
@@ -278,6 +277,17 @@ export default function PortraitInfographicSheet({
       : metrics.gradePassFailChartData;
     const xAxisKey = 'label';
 
+    const conciseScopeTitle = isClassView
+      ? displayClassName
+      : gradeFilter
+      ? `ថ្នាក់ទី ${toKhmerDigits(gradeFilter)}`
+      : targetLevel === 'junior'
+      ? 'អនុវិទ្យាល័យ'
+      : targetLevel === 'senior'
+      ? 'វិទ្យាល័យ'
+      : 'គ្រប់កម្រិត';
+
+    const headerTitle = `របាយការណ៍ប្រចាំខែ ${periodLabel} (${conciseScopeTitle})`;
     const chartATitle = gradeFilter
       ? `១. ចំនួនសិស្សជាប់ និង ធ្លាក់ តាមថ្នាក់រៀននៃកម្រិតថ្នាក់ទី ${toKhmerDigits(gradeFilter)}`
       : '១. ចំនួនសិស្សជាប់ និង ធ្លាក់ តាមកម្រិតថ្នាក់';
@@ -288,32 +298,28 @@ export default function PortraitInfographicSheet({
         className="mx-auto w-full max-w-[210mm] rounded-3xl border-2 border-slate-200 bg-white p-6 text-slate-900 shadow-xl dark:border-slate-800 dark:bg-slate-900 print:max-w-none print:rounded-none print:border-none print:p-0 print:shadow-none space-y-4"
       >
         {/* ------------------- BANNER HEADER ------------------- */}
-        <header className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-4 text-white shadow-md">
-          <div className="flex items-center justify-between border-b border-blue-700/60 pb-2.5">
+        <header className="rounded-2xl border border-amber-400/30 bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 p-4 text-white shadow-lg">
+          <div className="flex items-center justify-between border-b border-blue-800/60 pb-2.5">
             <div>
               <p className="text-[9px] font-extrabold tracking-widest text-amber-400 uppercase">
                 ក្រសួងអប់រំ យុវជន និងកីឡា
               </p>
               <h1 className="font-moul mt-0.5 text-xs font-bold text-white tracking-wide">{schoolName}</h1>
             </div>
-            <div className="text-right">
-              <p className="text-[9px] font-bold text-blue-200">ព្រះរាជាណាចក្រកម្ពុជា</p>
-              <p className="text-[8px] font-extrabold text-amber-300">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
+            <div className="font-moul text-center space-y-0.5 self-center">
+              <p className="text-[10px] font-bold text-amber-300 tracking-wide">ព្រះរាជាណាចក្រកម្ពុជា</p>
+              <p className="text-[8.5px] font-normal text-amber-200/90">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
             </div>
           </div>
 
           <div className="mt-2.5 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-black tracking-tight text-white">
-                របាយការណ៍ប្រចាំខែ៖ {periodTitle} ({titleSuffix})
+                {headerTitle}
               </h2>
-              <p className="text-[9px] font-medium text-blue-200">
+              <p className="text-[9px] font-medium text-blue-200/80">
                 ទម្រង់ក្រដាស A4 ផ្លូវការ · បង្កើតនៅ {generatedAtLabel}
               </p>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold text-amber-300 backdrop-blur-xs">
-              <Sparkles className="h-3 w-3" />
-              <span>A4 INFOGRAPHIC</span>
             </div>
           </div>
         </header>
