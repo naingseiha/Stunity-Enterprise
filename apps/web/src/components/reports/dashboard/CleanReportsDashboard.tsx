@@ -419,7 +419,7 @@ export default function CleanReportsDashboard({
             {tx('ស្ថានភាព និងលទ្ធផលសិក្សា', 'School performance and outcomes')}
           </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {schoolName} · {data.period.khmerLabel || data.period.label}{className ? ` · ${tx('ថ្នាក់', 'Class')} ${className}` : ''}
+            <span className="font-moul text-xs font-bold text-blue-950 dark:text-blue-200">{schoolName}</span> · {data.period.khmerLabel || data.period.label}{className ? ` · ថ្នាក់ ${className}` : ''}
           </p>
         </div>
         <div className="text-left sm:text-right">

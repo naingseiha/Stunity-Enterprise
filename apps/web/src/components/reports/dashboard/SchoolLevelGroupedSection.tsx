@@ -36,7 +36,7 @@ export default function SchoolLevelGroupedSection({
   onSelectStudent,
 }: SchoolLevelGroupedSectionProps) {
   const isKhmer = locale === 'km';
-  const tx = (kh: string, en: string) => (isKhmer ? kh : en);
+  const tx = (kh: string, en: string) => kh;
 
   const [activeTab, setActiveTab] = useState<'all' | 'junior' | 'senior'>('all');
 

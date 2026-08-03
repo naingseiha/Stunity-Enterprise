@@ -307,7 +307,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                       <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
                         <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                           <School className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                          {school?.name || (locale === 'km' ? 'សាលារៀន' : 'School')}
+                          <span className="font-moul text-xs">{displaySchoolNameKhmer}</span>
                         </span>
                         {activeYear?.name && (
                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
@@ -619,7 +619,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                       <PortraitInfographicSheet
                         data={data}
                         locale={locale}
-                        schoolName={school?.name || displaySchoolNameKhmer}
+                        schoolName={displaySchoolNameKhmer}
                         className={scopeClassName}
                         gradeFilter={appliedFilters?.gradeFilter}
                         generatedAtLabel={generatedAtLabel}
@@ -633,7 +633,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                       <CleanReportsDashboard
                         data={data}
                         locale={locale}
-                        schoolName={school?.name || displaySchoolNameKhmer}
+                        schoolName={displaySchoolNameKhmer}
                         className={scopeClassName}
                         generatedAtLabel={generatedAtLabel}
                         onSelectClass={(clsId) => {

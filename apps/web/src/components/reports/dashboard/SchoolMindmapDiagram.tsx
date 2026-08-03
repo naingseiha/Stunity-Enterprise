@@ -35,9 +35,6 @@ export default function SchoolMindmapDiagram({
   schoolName,
   onSelectClass,
 }: SchoolMindmapDiagramProps) {
-  const isKhmer = locale === 'km';
-  const tx = (kh: string, en: string) => (isKhmer ? kh : en);
-
   const [expandedBranch, setExpandedBranch] = useState<'all' | 'junior' | 'senior' | 'subjects'>('all');
 
   // Build node data grouped by school level
@@ -103,17 +100,14 @@ export default function SchoolMindmapDiagram({
               <Layers className="h-4 w-4" />
             </span>
             <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-              {tx('ទិដ្ឋភាព Mindmap / ដើមឈើរចនាសម្ព័ន្ធ', 'Mindmap Hierarchy Overview')}
+              ទិដ្ឋភាព Mindmap / ដើមឈើរចនាសម្ព័ន្ធ
             </span>
           </div>
           <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-            {tx('ផែនទីទិន្នន័យសិក្សាសាលារៀន', 'Interactive School Data Mindmap')}
+            ផែនទីទិន្នន័យសិក្សាសាលារៀន (School Data Mindmap)
           </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {tx(
-              'បង្ហាញទំនាក់ទំនងទិន្នន័យពី សាលារៀន ទៅកាន់ផ្នែក អនុវិទ្យាល័យ, វិទ្យាល័យ, និងមុខវិជ្ជាសិក្សា',
-              'Visual tree diagram mapping school structure into Junior High, High School, and Core Subjects',
-            )}
+            បង្ហាញទំនាក់ទំនងទិន្នន័យពី សាលារៀន ទៅកាន់ផ្នែក អនុវិទ្យាល័យ, វិទ្យាល័យ, និងមុខវិជ្ជាសិក្សា
           </p>
         </div>
 
@@ -128,7 +122,7 @@ export default function SchoolMindmapDiagram({
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
             }`}
           >
-            {tx('គ្រប់មែកធាង', 'All Branches')}
+            គ្រប់មែកធាង
           </button>
           <button
             type="button"
@@ -139,7 +133,7 @@ export default function SchoolMindmapDiagram({
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
             }`}
           >
-            {tx('អនុវិទ្យាល័យ', 'Junior High')}
+            ផ្នែក អនុវិទ្យាល័យ
           </button>
           <button
             type="button"
@@ -150,7 +144,7 @@ export default function SchoolMindmapDiagram({
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
             }`}
           >
-            {tx('វិទ្យាល័យ', 'High School')}
+            ផ្នែក វិទ្យាល័យ
           </button>
           <button
             type="button"
@@ -161,7 +155,7 @@ export default function SchoolMindmapDiagram({
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
             }`}
           >
-            {tx('មុខវិជ្ជា', 'Subjects')}
+            មុខវិជ្ជា
           </button>
         </div>
       </div>
@@ -177,14 +171,11 @@ export default function SchoolMindmapDiagram({
             </span>
             <div>
               <span className="rounded-full bg-purple-500/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-purple-200">
-                {tx('សាលារៀន', 'ROOT NODE')}
+                សាលារៀន
               </span>
-              <h3 className="text-base font-black tracking-tight">{schoolName}</h3>
-              <p className="text-[11px] text-purple-200">
-                {tx(
-                  `សិស្សសរុប ${data.overview.totalStudents} នាក់ · ${data.overview.totalClasses} ថ្នាក់ · អត្រាជាប់ ${data.passRate.passRatePercent}%`,
-                  `Total ${data.overview.totalStudents} students · ${data.overview.totalClasses} classes · ${data.passRate.passRatePercent}% pass rate`,
-                )}
+              <h3 className="font-moul text-sm font-bold tracking-tight text-amber-300 mt-0.5">{schoolName}</h3>
+              <p className="text-[11px] text-purple-200 mt-1">
+                សិស្សសរុប {toKhmerDigits(data.overview.totalStudents)} នាក់ · {toKhmerDigits(data.overview.totalClasses)} ថ្នាក់ · អត្រាជាប់ {toKhmerDigits(data.passRate.passRatePercent)}%
               </p>
             </div>
           </div>
@@ -205,12 +196,12 @@ export default function SchoolMindmapDiagram({
                       <BookOpen className="h-4 w-4" />
                     </span>
                     <div>
-                      <h4 className="text-sm font-black">{tx('ផ្នែក អនុវិទ្យាល័យ', 'Junior High School')}</h4>
-                      <p className="text-[10px] text-blue-100">{tx('ថ្នាក់ទី ៧, ៨ និង ៩', 'Grades 7, 8 & 9')}</p>
+                      <h4 className="text-sm font-black">ផ្នែក អនុវិទ្យាល័យ</h4>
+                      <p className="text-[10px] text-blue-100">ថ្នាក់ទី ៧, ៨ និង ៩</p>
                     </div>
                   </div>
                   <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black">
-                    3 {tx('កម្រិត', 'Grades')}
+                    ៣ កម្រិតថ្នាក់
                   </span>
                 </div>
               </div>
@@ -224,10 +215,10 @@ export default function SchoolMindmapDiagram({
                   >
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
-                        {tx(`ថ្នាក់ទី ${toKhmerDigits(gItem.grade)}`, `Grade ${gItem.grade}`)}
+                        ថ្នាក់ទី {toKhmerDigits(gItem.grade)}
                       </span>
                       <span className="text-xs font-black text-slate-900 dark:text-white">
-                        {tx(`មធ្យមភាគ៖ ${gItem.avg}`, `Avg: ${gItem.avg}`)}
+                        មធ្យមភាគ៖ {toKhmerDigits(gItem.avg)}
                       </span>
                     </div>
 
@@ -242,7 +233,7 @@ export default function SchoolMindmapDiagram({
                         >
                           <span>{cls.className}</span>
                           <span className="text-[10px] text-slate-400 group-hover:text-blue-500">
-                            ({cls.average})
+                            ({toKhmerDigits(cls.average)})
                           </span>
                         </button>
                       ))}
@@ -264,12 +255,12 @@ export default function SchoolMindmapDiagram({
                       <GraduationCap className="h-4 w-4" />
                     </span>
                     <div>
-                      <h4 className="text-sm font-black">{tx('ផ្នែក វិទ្យាល័យ', 'High School Division')}</h4>
-                      <p className="text-[10px] text-indigo-100">{tx('ថ្នាក់ទី ១០, ១១ និង ១២', 'Grades 10, 11 & 12')}</p>
+                      <h4 className="text-sm font-black">ផ្នែក វិទ្យាល័យ</h4>
+                      <p className="text-[10px] text-indigo-100">ថ្នាក់ទី ១០, ១១ និង ១២</p>
                     </div>
                   </div>
                   <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black">
-                    3 {tx('កម្រិត', 'Grades')}
+                    ៣ កម្រិតថ្នាក់
                   </span>
                 </div>
               </div>
@@ -283,10 +274,10 @@ export default function SchoolMindmapDiagram({
                   >
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-black text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-                        {tx(`ថ្នាក់ទី ${toKhmerDigits(gItem.grade)}`, `Grade ${gItem.grade}`)}
+                        ថ្នាក់ទី {toKhmerDigits(gItem.grade)}
                       </span>
                       <span className="text-xs font-black text-slate-900 dark:text-white">
-                        {tx(`មធ្យមភាគ៖ ${gItem.avg}`, `Avg: ${gItem.avg}`)}
+                        មធ្យមភាគ៖ {toKhmerDigits(gItem.avg)}
                       </span>
                     </div>
 
@@ -301,7 +292,7 @@ export default function SchoolMindmapDiagram({
                         >
                           <span>{cls.className}</span>
                           <span className="text-[10px] text-slate-400 group-hover:text-indigo-500">
-                            ({cls.average})
+                            ({toKhmerDigits(cls.average)})
                           </span>
                         </button>
                       ))}
@@ -323,12 +314,12 @@ export default function SchoolMindmapDiagram({
                       <Target className="h-4 w-4" />
                     </span>
                     <div>
-                      <h4 className="text-sm font-black">{tx('លទ្ធផល និង មុខវិជ្ជា', 'Academic Subjects')}</h4>
-                      <p className="text-[10px] text-emerald-100">{tx('មុខវិជ្ជាជួរមុខ និង មុខវិជ្ជាត្រូវកែលម្អ', 'High & Low Performing Subjects')}</p>
+                      <h4 className="text-sm font-black">លទ្ធផល និង មុខវិជ្ជា</h4>
+                      <p className="text-[10px] text-emerald-100">មុខវិជ្ជាជួរមុខ និង មុខវិជ្ជាត្រូវកែលម្អ</p>
                     </div>
                   </div>
                   <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black">
-                    {data.averageScoreBySubject.length} {tx('មុខវិជ្ជា', 'Subjects')}
+                    {toKhmerDigits(data.averageScoreBySubject.length)} មុខវិជ្ជា
                   </span>
                 </div>
               </div>
@@ -336,16 +327,16 @@ export default function SchoolMindmapDiagram({
               {/* TOP SUBJECTS SUB-NODE */}
               <div className="w-full rounded-2xl border border-emerald-100 bg-white p-3.5 shadow-xs dark:border-emerald-900/30 dark:bg-slate-900">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  {tx('🌟 មុខវិជ្ជាមានអត្រាជាប់ខ្ពស់', 'Top Performing Subjects')}
+                  🌟 មុខវិជ្ជាមានអត្រាជាប់ខ្ពស់
                 </p>
                 <div className="mt-2.5 space-y-2">
                   {treeData.topSubjects.map((sb) => (
                     <div key={sb.subject} className="flex items-center justify-between text-xs font-bold">
                       <span className="text-slate-800 dark:text-slate-200">
-                        {isKhmer ? sb.subjectKh : sb.subject}
+                        {sb.subjectKh || sb.subject}
                       </span>
                       <span className="text-emerald-600 dark:text-emerald-400">
-                        {sb.passRatePercent}%
+                        {toKhmerDigits(sb.passRatePercent)}%
                       </span>
                     </div>
                   ))}
@@ -355,16 +346,16 @@ export default function SchoolMindmapDiagram({
               {/* WEAK SUBJECTS SUB-NODE */}
               <div className="w-full rounded-2xl border border-rose-100 bg-rose-50/40 p-3.5 shadow-xs dark:border-rose-900/30 dark:bg-rose-950/20">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                  {tx('⚠️ មុខវិជ្ជាត្រូវការជំនួយបំប៉ន', 'Subjects Needing Support')}
+                  ⚠️ មុខវិជ្ជាត្រូវការជំនួយបំប៉ន
                 </p>
                 <div className="mt-2.5 space-y-2">
                   {treeData.weakSubjects.map((sb) => (
                     <div key={sb.subject} className="flex items-center justify-between text-xs font-bold">
                       <span className="text-slate-800 dark:text-slate-200">
-                        {isKhmer ? sb.subjectKh : sb.subject}
+                        {sb.subjectKh || sb.subject}
                       </span>
                       <span className="text-rose-600 dark:text-rose-400">
-                        {sb.passRatePercent}%
+                        {toKhmerDigits(sb.passRatePercent)}%
                       </span>
                     </div>
                   ))}

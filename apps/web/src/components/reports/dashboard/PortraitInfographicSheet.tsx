@@ -60,9 +60,6 @@ export default function PortraitInfographicSheet({
   onSelectClass,
   onSelectStudent,
 }: PortraitInfographicSheetProps) {
-  const isKhmer = locale === 'km';
-  const tx = (kh: string, en: string) => (isKhmer ? kh : en);
-
   const totalStudents = data.overview?.totalStudents ?? 0;
   const totalClasses = data.overview?.totalClasses ?? 0;
   const totalTeachers = data.overview?.totalTeachers ?? 0;
@@ -84,12 +81,12 @@ export default function PortraitInfographicSheet({
   // 1. Column Chart Data: Average score by Grade Level (7, 8, 9, 10, 11, 12)
   const gradeColumnData = useMemo(() => {
     return (data.averageScoreByGradeLevel || []).map((g) => ({
-      grade: tx(`ថ្នាក់ទី ${toKhmerDigits(g.grade)}`, `Grade ${g.grade}`),
+      grade: `ថ្នាក់ទី ${toKhmerDigits(g.grade)}`,
       average: g.average,
-      levelGroup: Number(g.grade) <= 9 ? tx('អនុវិទ្យាល័យ', 'Junior High') : tx('វិទ្យាល័យ', 'High School'),
+      levelGroup: Number(g.grade) <= 9 ? 'អនុវិទ្យាល័យ' : 'វិទ្យាល័យ',
       fill: Number(g.grade) <= 9 ? '#2563eb' : '#4f46e5',
     }));
-  }, [data.averageScoreByGradeLevel, isKhmer]);
+  }, [data.averageScoreByGradeLevel]);
 
   // 2. Junior High vs High School Summary
   const levelBreakdown = useMemo(() => {
@@ -142,23 +139,11 @@ export default function PortraitInfographicSheet({
     return Object.entries(counts)
       .filter(([_, value]) => value > 0)
       .map(([grade, value]) => ({
-        name: `${grade}`,
+        name: `និទ្ទេស ${grade}`,
         value,
         color: GRADE_COLORS[grade] || '#64748b',
       }));
   }, [data.averageScoreByClass]);
-
-  // 4. Column Chart Data: Top Subjects Performance
-  const subjectColumnData = useMemo(() => {
-    return [...(data.averageScoreBySubject || [])]
-      .sort((a, b) => b.passRatePercent - a.passRatePercent)
-      .slice(0, 6)
-      .map((s) => ({
-        name: isKhmer ? s.subjectKh : s.subject,
-        passRate: s.passRatePercent,
-        average: s.average,
-      }));
-  }, [data.averageScoreBySubject, isKhmer]);
 
   return (
     <div className="mx-auto w-full max-w-[850px] overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
@@ -166,13 +151,13 @@ export default function PortraitInfographicSheet({
       {/* ------------------- OFFICIAL A4 BANNER HEADER ------------------- */}
       <header className="border-b-2 border-slate-900 pb-4 dark:border-slate-200">
         <div className="flex items-start justify-between text-xs font-black text-slate-900 dark:text-white">
-          <div className="space-y-0.5">
-            <p className="text-[11px] uppercase tracking-wider text-slate-500">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p className="text-base font-black text-blue-900 dark:text-blue-300">{schoolName}</p>
+          <div className="space-y-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
+            <p className="font-moul text-base font-bold text-blue-950 dark:text-blue-200">{schoolName}</p>
           </div>
-          <div className="text-center">
-            <p className="text-xs font-black">ព្រះរាជាណាចក្រកម្ពុជា</p>
-            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
+          <div className="text-center font-moul">
+            <p className="text-xs font-bold text-slate-900 dark:text-white">ព្រះរាជាណាចក្រកម្ពុជា</p>
+            <p className="text-[10px] font-normal text-slate-700 dark:text-slate-300">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
           </div>
         </div>
 
@@ -180,19 +165,19 @@ export default function PortraitInfographicSheet({
           <div>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wide">
-                INFOGRAPHIC A4 SHEET
+                របាយការណ៍ព័ត៌មានវិទ្យា (A4 INFOGRAPHIC)
               </span>
               <span className="text-xs font-bold text-slate-300">
                 {data.period.khmerLabel || data.period.label}
               </span>
             </div>
-            <h1 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">
-              {tx('របាយការណ៍ស្ថានភាពសាលារៀន (សង្ខេប)', 'School Infographic Performance Summary')}
+            <h1 className="mt-1 font-moul text-lg font-normal tracking-wide text-amber-300 sm:text-xl">
+              របាយការណ៍ស្ថានភាពសាលារៀន (សង្ខេប)
             </h1>
           </div>
           <div className="text-left text-[11px] font-semibold text-slate-300 sm:text-right">
-            <p>{tx('កាលបរិច្ឆេទបង្កើត៖', 'Generated:')} {generatedAtLabel}</p>
-            <p>{tx('កម្រិតសិក្សា៖', 'Scope:')} {className ? `ថ្នាក់ ${className}` : gradeFilter ? `ថ្នាក់ទី ${toKhmerDigits(gradeFilter)}` : 'គ្រប់កម្រិត (៧–១២)'}</p>
+            <p>កាលបរិច្ឆេទបង្កើត៖ {generatedAtLabel}</p>
+            <p>កម្រិតសិក្សា៖ {className ? `ថ្នាក់ ${className}` : gradeFilter ? `ថ្នាក់ទី ${toKhmerDigits(gradeFilter)}` : 'គ្រប់កម្រិត (៧–១២)'}</p>
           </div>
         </div>
       </header>
@@ -202,45 +187,45 @@ export default function PortraitInfographicSheet({
         <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/30">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
             <Users className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase">{tx('សិស្សសរុប', 'Total Students')}</span>
+            <span className="text-[10px] font-black uppercase">សិស្សសរុប</span>
           </div>
           <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white tabular-nums">
-            {totalStudents.toLocaleString()}
+            {toKhmerDigits(totalStudents)}
           </p>
-          <p className="text-[10px] text-slate-500">{totalClasses} {tx('ថ្នាក់', 'classes')} · {totalTeachers} {tx('គ្រូ', 'teachers')}</p>
+          <p className="text-[10px] text-slate-500">{toKhmerDigits(totalClasses)} ថ្នាក់ · {toKhmerDigits(totalTeachers)} គ្រូ</p>
         </div>
 
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase">{tx('អត្រាជាប់', 'Pass Rate')}</span>
+            <span className="text-[10px] font-black uppercase">អត្រាជាប់</span>
           </div>
           <p className="mt-2 text-2xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
-            {passRatePercent}%
+            {toKhmerDigits(passRatePercent)}%
           </p>
-          <p className="text-[10px] text-emerald-600">{passingCount} {tx('ជាប់', 'pass')} · {failingCount} {tx('ធ្លាក់', 'fail')}</p>
+          <p className="text-[10px] text-emerald-600">{toKhmerDigits(passingCount)} ជាប់ · {toKhmerDigits(failingCount)} ធ្លាក់</p>
         </div>
 
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5 dark:border-indigo-900/40 dark:bg-indigo-950/30">
           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
             <Award className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase">{tx('មធ្យមភាគសរុប', 'Overall Avg')}</span>
+            <span className="text-[10px] font-black uppercase">មធ្យមភាគសរុប</span>
           </div>
           <p className="mt-2 text-2xl font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
-            {overallAvg} <span className="text-xs text-slate-400">/ 50</span>
+            {toKhmerDigits(overallAvg)} <span className="text-xs text-slate-400">/ ៥០</span>
           </p>
-          <p className="text-[10px] text-slate-500">{tx('មាត្រដ្ឋាន ៥០ ពិន្ទុ', '50-point scale')}</p>
+          <p className="text-[10px] text-slate-500">មាត្រដ្ឋាន ៥០ ពិន្ទុ</p>
         </div>
 
         <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3.5 dark:border-amber-900/40 dark:bg-amber-950/30">
           <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
             <Sparkles className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase">{tx('វត្តមានសិស្ស', 'Attendance')}</span>
+            <span className="text-[10px] font-black uppercase">វត្តមានសិស្ស</span>
           </div>
           <p className="mt-2 text-2xl font-black text-amber-700 dark:text-amber-400 tabular-nums">
-            {data.overview.attendanceRate > 0 ? `${Math.round(data.overview.attendanceRate)}%` : '—'}
+            {data.overview.attendanceRate > 0 ? `${toKhmerDigits(Math.round(data.overview.attendanceRate))}%` : '—'}
           </p>
-          <p className="text-[10px] text-slate-500">{tx('អត្រាវត្តមានសរុប', 'Attendance Rate')}</p>
+          <p className="text-[10px] text-slate-500">អត្រាវត្តមានសរុប</p>
         </div>
       </section>
 
@@ -252,10 +237,10 @@ export default function PortraitInfographicSheet({
               <School className="h-4 w-4" />
             </span>
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-              {tx('១. សង្ខេបលទ្ធផល ផ្នែកអនុវិទ្យាល័យ និង វិទ្យាល័យ', '1. Lower vs Upper Secondary Breakdown')}
+              ១. សង្ខេបលទ្ធផល ផ្នែកអនុវិទ្យាល័យ និង វិទ្យាល័យ
             </h3>
           </div>
-          <span className="text-[10px] font-bold text-slate-400">{tx('បែងចែកដាច់ដោយឡែក', 'Separated')}</span>
+          <span className="text-[10px] font-bold text-slate-400">បែងចែកដាច់ដោយឡែក</span>
         </div>
 
         <div className="mt-3.5 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -265,40 +250,40 @@ export default function PortraitInfographicSheet({
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-blue-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  {tx('ផ្នែក អនុវិទ្យាល័យ (ថ្នាក់ទី ៧–៩)', 'Junior High (Grades 7–9)')}
+                  ផ្នែក អនុវិទ្យាល័យ (ថ្នាក់ទី ៧–៩)
                 </h4>
               </div>
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-extrabold text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                {levelBreakdown.junior.classCount} {tx('ថ្នាក់', 'classes')}
+                {toKhmerDigits(levelBreakdown.junior.classCount)} ថ្នាក់
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between text-xs">
               <div>
-                <p className="text-[10px] text-slate-400">{tx('សិស្សសរុប', 'Students')}</p>
-                <p className="text-sm font-black text-slate-900 dark:text-white">{levelBreakdown.junior.studentCount}</p>
+                <p className="text-[10px] text-slate-400">សិស្សសរុប</p>
+                <p className="text-sm font-black text-slate-900 dark:text-white">{toKhmerDigits(levelBreakdown.junior.studentCount)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-400">{tx('ពិន្ទុមធ្យម', 'Avg Score')}</p>
-                <p className="text-sm font-black text-blue-600 dark:text-blue-400">{levelBreakdown.junior.avg}</p>
+                <p className="text-[10px] text-slate-400">ពិន្ទុមធ្យម</p>
+                <p className="text-sm font-black text-blue-600 dark:text-blue-400">{toKhmerDigits(levelBreakdown.junior.avg)}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-slate-400">{tx('អត្រាជាប់', 'Pass Rate')}</p>
-                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{levelBreakdown.junior.passRate}%</p>
+                <p className="text-[10px] text-slate-400">អត្រាជាប់</p>
+                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{toKhmerDigits(levelBreakdown.junior.passRate)}%</p>
               </div>
             </div>
 
             {/* TOP 3 CHAMPIONS */}
             {levelBreakdown.junior.top3.length > 0 && (
               <div className="mt-3 border-t border-slate-100 pt-2 text-[10px] dark:border-slate-800">
-                <p className="font-bold text-slate-500 mb-1">{tx('សិស្សពូកែ ៣ នាក់ដំបូង (Top 3):', 'Top 3 Students:')}</p>
+                <p className="font-bold text-slate-500 mb-1">សិស្សពូកែ ៣ នាក់ដំបូង (Top 3)៖</p>
                 <div className="space-y-1">
                   {levelBreakdown.junior.top3.map((st, idx) => (
                     <div key={st.studentId || idx} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
                       <span className="truncate font-semibold">
-                        {idx + 1}. {st.khmerName || st.name} ({st.className})
+                        {toKhmerDigits(idx + 1)}. {st.khmerName || st.name} ({st.className})
                       </span>
-                      <span className="font-black text-blue-600">{st.average}</span>
+                      <span className="font-black text-blue-600">{toKhmerDigits(st.average)}</span>
                     </div>
                   ))}
                 </div>
@@ -312,40 +297,40 @@ export default function PortraitInfographicSheet({
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-4 w-4 text-indigo-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  {tx('ផ្នែក វិទ្យាល័យ (ថ្នាក់ទី ១០–១២)', 'High School (Grades 10–12)')}
+                  ផ្នែក វិទ្យាល័យ (ថ្នាក់ទី ១០–១២)
                 </h4>
               </div>
               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-extrabold text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
-                {levelBreakdown.senior.classCount} {tx('ថ្នាក់', 'classes')}
+                {toKhmerDigits(levelBreakdown.senior.classCount)} ថ្នាក់
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between text-xs">
               <div>
-                <p className="text-[10px] text-slate-400">{tx('សិស្សសរុប', 'Students')}</p>
-                <p className="text-sm font-black text-slate-900 dark:text-white">{levelBreakdown.senior.studentCount}</p>
+                <p className="text-[10px] text-slate-400">សិស្សសរុប</p>
+                <p className="text-sm font-black text-slate-900 dark:text-white">{toKhmerDigits(levelBreakdown.senior.studentCount)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-400">{tx('ពិន្ទុមធ្យម', 'Avg Score')}</p>
-                <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{levelBreakdown.senior.avg}</p>
+                <p className="text-[10px] text-slate-400">ពិន្ទុមធ្យម</p>
+                <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{toKhmerDigits(levelBreakdown.senior.avg)}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-slate-400">{tx('អត្រាជាប់', 'Pass Rate')}</p>
-                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{levelBreakdown.senior.passRate}%</p>
+                <p className="text-[10px] text-slate-400">អត្រាជាប់</p>
+                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{toKhmerDigits(levelBreakdown.senior.passRate)}%</p>
               </div>
             </div>
 
             {/* TOP 3 CHAMPIONS */}
             {levelBreakdown.senior.top3.length > 0 && (
               <div className="mt-3 border-t border-slate-100 pt-2 text-[10px] dark:border-slate-800">
-                <p className="font-bold text-slate-500 mb-1">{tx('សិស្សពូកែ ៣ នាក់ដំបូង (Top 3):', 'Top 3 Students:')}</p>
+                <p className="font-bold text-slate-500 mb-1">សិស្សពូកែ ៣ នាក់ដំបូង (Top 3)៖</p>
                 <div className="space-y-1">
                   {levelBreakdown.senior.top3.map((st, idx) => (
                     <div key={st.studentId || idx} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
                       <span className="truncate font-semibold">
-                        {idx + 1}. {st.khmerName || st.name} ({st.className})
+                        {toKhmerDigits(idx + 1)}. {st.khmerName || st.name} ({st.className})
                       </span>
-                      <span className="font-black text-indigo-600">{st.average}</span>
+                      <span className="font-black text-indigo-600">{toKhmerDigits(st.average)}</span>
                     </div>
                   ))}
                 </div>
@@ -364,10 +349,10 @@ export default function PortraitInfographicSheet({
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-blue-600" />
               <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                {tx('២. មធ្យមភាគពិន្ទុតាមកម្រិតថ្នាក់ ៧-១២ (Column Chart)', '2. Grade Averages (Column Chart)')}
+                ២. មធ្យមភាគពិន្ទុតាមកម្រិតថ្នាក់ ៧-១២ (Column Chart)
               </h4>
             </div>
-            <span className="text-[10px] font-bold text-slate-400">/ 50.00</span>
+            <span className="text-[10px] font-bold text-slate-400">/ ៥០</span>
           </div>
 
           <div className="mt-3 h-44 w-full">
@@ -378,12 +363,12 @@ export default function PortraitInfographicSheet({
                   <XAxis dataKey="grade" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 50]} tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
                   <Tooltip />
-                  <Bar dataKey="average" name={tx('ពិន្ទុមធ្យម', 'Average')} fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="average" name="ពិន្ទុមធ្យម" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-xs font-semibold text-slate-400">
-                {tx('មិនមានទិន្នន័យ', 'No data')}
+                មិនមានទិន្នន័យ
               </div>
             )}
           </div>
@@ -395,7 +380,7 @@ export default function PortraitInfographicSheet({
             <div className="flex items-center gap-2">
               <PieChart className="h-4 w-4 text-purple-600" />
               <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                {tx('៣. ភាគរយបែងចែកនិទ្ទេស A ដល់ F (Pie Chart)', '3. Grade Band Distribution (Pie Chart)')}
+                ៣. ភាគរយបែងចែកនិទ្ទេស A ដល់ F (Pie Chart)
               </h4>
             </div>
             <span className="text-[10px] font-bold text-slate-400">A–F</span>
@@ -424,7 +409,7 @@ export default function PortraitInfographicSheet({
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center text-xs font-semibold text-slate-400">
-                  {tx('មិនមានទិន្នន័យ', 'No data')}
+                  មិនមានទិន្នន័យ
                 </div>
               )}
             </div>
@@ -434,7 +419,7 @@ export default function PortraitInfographicSheet({
                 <div key={item.name} className="flex items-center gap-1.5 rounded-lg bg-white p-1.5 shadow-2xs dark:bg-slate-900">
                   <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                   <span className="text-slate-700 dark:text-slate-300">{item.name}:</span>
-                  <span className="font-black text-slate-900 dark:text-white">{item.value}</span>
+                  <span className="font-black text-slate-900 dark:text-white">{toKhmerDigits(item.value)}</span>
                 </div>
               ))}
             </div>
@@ -449,33 +434,33 @@ export default function PortraitInfographicSheet({
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-purple-600" />
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-              {tx('៤. រចនាសម្ព័ន្ធដើមឈើ Mindmap (School Mindmap Branch)', '4. School Mindmap Hierarchy Summary')}
+              ៤. រចនាសម្ព័ន្ធដើមឈើ Mindmap សាលារៀន
             </h4>
           </div>
-          <span className="text-[10px] font-bold text-slate-400">Flow Map</span>
+          <span className="text-[10px] font-bold text-slate-400">រចនាសម្ព័ន្ធ</span>
         </div>
 
         <div className="mt-3 flex flex-col items-center justify-center gap-3 sm:flex-row">
           {/* ROOT */}
           <div className="rounded-xl bg-slate-900 px-3.5 py-2 text-white shadow-xs text-center text-xs font-black">
-            <p className="text-[9px] text-amber-400 uppercase">{tx('សាលារៀន', 'School')}</p>
-            <p>{schoolName}</p>
+            <p className="text-[9px] text-amber-400 uppercase">សាលារៀន</p>
+            <p className="font-moul text-xs">{schoolName}</p>
           </div>
 
           <div className="text-slate-400 font-black text-xs hidden sm:block">➔</div>
 
           {/* BRANCH 1: JUNIOR HIGH */}
           <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-2 text-center text-xs font-bold text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-            <p className="text-[9px] uppercase text-blue-600 font-extrabold">{tx('ផ្នែក អនុវិទ្យាល័យ', 'Junior High')}</p>
-            <p>{tx('ថ្នាក់ទី ៧, ៨, ៩', 'Grades 7, 8, 9')} · {levelBreakdown.junior.classCount} {tx('ថ្នាក់', 'classes')}</p>
+            <p className="text-[9px] uppercase text-blue-600 font-extrabold">ផ្នែក អនុវិទ្យាល័យ</p>
+            <p>ថ្នាក់ទី ៧, ៨, ៩ · {toKhmerDigits(levelBreakdown.junior.classCount)} ថ្នាក់</p>
           </div>
 
           <div className="text-slate-400 font-black text-xs hidden sm:block">➔</div>
 
           {/* BRANCH 2: HIGH SCHOOL */}
           <div className="rounded-xl border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-center text-xs font-bold text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
-            <p className="text-[9px] uppercase text-indigo-600 font-extrabold">{tx('ផ្នែក វិទ្យាល័យ', 'High School')}</p>
-            <p>{tx('ថ្នាក់ទី ១០, ១១, ១២', 'Grades 10, 11, 12')} · {levelBreakdown.senior.classCount} {tx('ថ្នាក់', 'classes')}</p>
+            <p className="text-[9px] uppercase text-indigo-600 font-extrabold">ផ្នែក វិទ្យាល័យ</p>
+            <p>ថ្នាក់ទី ១០, ១១, ១២ · {toKhmerDigits(levelBreakdown.senior.classCount)} ថ្នាក់</p>
           </div>
         </div>
       </section>
@@ -484,26 +469,26 @@ export default function PortraitInfographicSheet({
       <footer className="mt-6 border-t-2 border-dashed border-slate-300 pt-5 dark:border-slate-700">
         <div className="grid grid-cols-2 gap-8 text-center text-xs">
           <div className="space-y-1">
-            <p className="font-bold text-slate-600 dark:text-slate-400">{tx('បានឃើញ និងពិនិត្យត្រឹមត្រូវ', 'Verified & Approved')}</p>
-            <p className="text-[10px] text-slate-400">{tx('ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៦', 'Date: ...... / ...... / 2026')}</p>
-            <p className="mt-6 font-black text-slate-900 dark:text-white">{tx('នាយក/នាយិកាសាលារៀន', 'School Principal')}</p>
+            <p className="font-bold text-slate-600 dark:text-slate-400">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+            <p className="text-[10px] text-slate-400">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៦</p>
+            <p className="mt-6 font-moul text-xs font-bold text-slate-900 dark:text-white">នាយក/នាយិកាសាលារៀន</p>
             <div className="h-10 flex items-center justify-center text-[9px] text-slate-400 italic">
-              ({tx('ហត្ថលេខា និងត្រា', 'Signature & Seal')})
+              (ហត្ថលេខា និងត្រា)
             </div>
           </div>
 
           <div className="space-y-1">
-            <p className="font-bold text-slate-600 dark:text-slate-400">{tx('រៀបចំដោយ', 'Prepared By')}</p>
-            <p className="text-[10px] text-slate-400">{tx('ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៦', 'Date: ...... / ...... / 2026')}</p>
-            <p className="mt-6 font-black text-slate-900 dark:text-white">{tx('អ្នកគ្រូ/លោកគ្រូ ទទួលបន្ទុករបាយការណ៍', 'Report Coordinator')}</p>
+            <p className="font-bold text-slate-600 dark:text-slate-400">រៀបចំដោយ</p>
+            <p className="text-[10px] text-slate-400">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២៦</p>
+            <p className="mt-6 font-moul text-xs font-bold text-slate-900 dark:text-white">អ្នកគ្រូ/លោកគ្រូ ទទួលបន្ទុករបាយការណ៍</p>
             <div className="h-10 flex items-center justify-center text-[9px] text-slate-400 italic">
-              ({tx('ហត្ថលេខា', 'Signature')})
+              (ហត្ថលេខា)
             </div>
           </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-100 px-4 py-2 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-          <span>Stunity Enterprise Platform · A4 Printable Infographic Report</span>
+          <span>ប្រព័ន្ធគ្រប់គ្រងសាលារៀន Stunity Enterprise · របាយការណ៍ព័ត៌មានវិទ្យាបោះពុម្ព A4</span>
           <span>STUNITY 2026</span>
         </div>
       </footer>
