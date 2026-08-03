@@ -112,6 +112,15 @@ const detectExpoHost = (): string | null => {
 };
 
 const getApiHost = (): string => {
+  // Explicit escape hatch for unusual LAN/tunnel setups. Unlike the legacy
+  // EXPO_PUBLIC_API_HOST fallback below, this intentionally wins over Expo's
+  // runtime host detection.
+  const forcedHost = process.env.EXPO_PUBLIC_FORCE_API_HOST;
+  if (forcedHost) {
+    if (__DEV__) console.log('📡 [ENV] Using forced API host:', forcedHost);
+    return forcedHost;
+  }
+
   // Android emulator localhost is only safe after npm run mobile:start prepares adb reverse.
   if (
     Platform.OS === 'android' &&
@@ -148,18 +157,20 @@ const getApiHost = (): string => {
     return '10.0.2.2';
   }
 
-  // 4. Manual override via .env. Kept after simulator/emulator handling so stale
-  // LAN IPs cannot break local simulator runs when WiFi changes.
-  const envHost = process.env.EXPO_PUBLIC_API_HOST;
-  if (envHost) {
-    if (__DEV__) console.log('📡 [ENV] Using manual API host:', envHost);
-    return envHost;
-  }
-
-  // 5. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)
+  // 4. Physical dev devices should follow Metro's runtime host. This changes
+  // automatically when Metro is restarted on another Wi-Fi network and avoids
+  // pinning the app to a stale LAN address from .env.local.
   const autoHost = detectExpoHost();
   if (autoHost) {
     return autoHost;
+  }
+
+  // 5. Legacy/manual fallback for cases where Expo cannot expose a runtime
+  // host. Use EXPO_PUBLIC_FORCE_API_HOST above when an override must win.
+  const envHost = process.env.EXPO_PUBLIC_API_HOST;
+  if (envHost) {
+    if (__DEV__) console.log('📡 [ENV] Using fallback API host:', envHost);
+    return envHost;
   }
 
   // Android emulator uses 10.0.2.2 to reach host localhost.
@@ -184,15 +195,19 @@ const BUILD_TIME_API_HOST = getApiHost();
 
 const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
   const devAuthUrl = process.env.EXPO_PUBLIC_AUTH_URL || `http://${host}:3001`;
+  const academicUrl = `http://${host}:3021`;
   return {
     apiBaseUrl: `http://${host}:3001`,
     authUrl: devAuthUrl,
     feedUrl: `http://${host}:3010`,
     mediaUrl: `http://${host}:3010`,
-    clubUrl: `http://${host}:3012`,
-    classUrl: `http://${host}:3005`,
-    teacherUrl: `http://${host}:3004`,
-    timetableUrl: `http://${host}:3009`,
+    // Phase 0 consolidated every school-facing service into academic-api.
+    // Keep development aligned with production and quick-start.sh so the
+    // mobile app never falls back to the retired 3002-3009/3012 services.
+    clubUrl: `${academicUrl}/club`,
+    classUrl: academicUrl,
+    teacherUrl: academicUrl,
+    timetableUrl: academicUrl,
     notificationUrl: `http://${host}:3013`,
     quizUrl: `http://${host}:3010`,
     analyticsUrl: `http://${host}:3014`,
@@ -204,9 +219,9 @@ const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
     aiUrl: process.env.EXPO_PUBLIC_AI_URL || 'https://ai.stunity.app',
     wsUrl: `ws://${host}:3011`,
     messagingUrl: `http://${host}:3011`,
-    studentUrl: `http://${host}:3003`,
-    gradeUrl: `http://${host}:3007`,
-    attendanceUrl: `http://${host}:3008`,
+    studentUrl: academicUrl,
+    gradeUrl: academicUrl,
+    attendanceUrl: academicUrl,
     sentryDsn: '',
     analyticsKey: '',
     enableDebugMode: true,

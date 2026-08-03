@@ -1076,6 +1076,26 @@ export default function ClubsScreen() {
       );
     }
 
+    if (schoolClassesError) {
+      return (
+        <View style={[styles.container, { justifyContent: 'center', paddingHorizontal: 24 }]}>
+          <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: 0 }]}>
+            <Ionicons name="cloud-offline-outline" size={42} color="#DC2626" />
+            <Text style={styles.schoolClassesErrorText}>{schoolClassesError}</Text>
+            <TouchableOpacity
+              style={styles.schoolRetryBtn}
+              onPress={() => loadSchoolClasses(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.schoolRetryText, isKhmer && styles.khmerInlineText]}>
+                {t('common.tryAgain')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
     // Render Empty State if not loading and no selected class
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
