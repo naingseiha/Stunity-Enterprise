@@ -19,6 +19,7 @@ export interface SchoolReportsDashboardParams {
   monthNumber?: number;
   year?: number;
   classId?: string;
+  grade?: number;
 }
 
 export interface DashboardOverview {
@@ -52,6 +53,14 @@ export interface GradeLevelAverage {
   grade: string;
   average: number;
   studentCount: number;
+  femaleCount?: number;
+  maleCount?: number;
+  classCount?: number;
+  classesList?: string[];
+  passCount?: number;
+  failCount?: number;
+  passRatePercent?: number;
+  topStudent?: { name: string; khmerName: string | null; average: number } | null;
 }
 
 export interface SubjectGradeBand {
@@ -77,6 +86,7 @@ export interface HonorRollStudent {
   khmerName: string | null;
   average: number;
   rank: number;
+  className?: string;
 }
 
 export interface PosterRecipient {
@@ -171,7 +181,26 @@ export interface ClassAverage {
   grade: string;
   average: number;
   studentCount: number;
+  femaleCount?: number;
+  maleCount?: number;
+  homeroomTeacher?: string | null;
+  passCount?: number;
+  failCount?: number;
+  passRatePercent?: number;
   rank: number;
+  topStudents?: Array<{
+    rank: number;
+    studentId: string;
+    name: string;
+    khmerName: string | null;
+    average: number;
+  }>;
+  gradeDistribution?: Array<{
+    grade: "A" | "B" | "C" | "D" | "E" | "F";
+    total: number;
+    male: number;
+    female: number;
+  }>;
 }
 
 export interface DashboardTrendPoint {
@@ -219,6 +248,18 @@ export interface DashboardDisciplineSummary {
   untrackedCategories: Array<"UNIFORM" | "HAIR" | "OTHER">;
 }
 
+export interface SchoolSectionSummary {
+  key: string;
+  title: string;
+  classCount: number;
+  studentCount: number;
+  femaleCount: number;
+  femalePercent: number;
+  averageScore: number;
+  passRatePercent: number;
+  gradesList: string[];
+}
+
 export interface SchoolReportsDashboardResponse {
   period: {
     type: ReportPeriodType;
@@ -228,6 +269,10 @@ export interface SchoolReportsDashboardResponse {
     endDate: string;
   };
   overview: DashboardOverview;
+  schoolSections?: {
+    lowerSecondary: SchoolSectionSummary;
+    upperSecondary: SchoolSectionSummary;
+  };
   averageScoreByGradeLevel: GradeLevelAverage[];
   averageScoreBySubject: SubjectAverage[];
   averageScoreByClass: ClassAverage[];
@@ -271,10 +316,11 @@ export async function getSchoolReportsDashboard(
   if (params.monthNumber) query.set("monthNumber", String(params.monthNumber));
   if (params.year) query.set("year", String(params.year));
   if (params.classId) query.set("classId", params.classId);
+  if (params.grade) query.set("grade", String(params.grade));
 
   // Version the key because the dashboard aggregate schema evolves; otherwise
   // a tab can briefly reuse a structurally stale response after deployment.
-  const cacheKey = `reports:dashboard:v2:${params.schoolId}:${query.toString()}`;
+  const cacheKey = `reports:dashboard:v4:${params.schoolId}:${query.toString()}`;
   const cached = readPersistentCache<SchoolReportsDashboardResponse>(
     cacheKey,
     REPORTS_DASHBOARD_CACHE_TTL_MS,

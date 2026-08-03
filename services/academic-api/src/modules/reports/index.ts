@@ -35,6 +35,7 @@ import {
 const app = express.Router();
 const prisma = getSharedPrisma();
 const JWT_SECRET = getJwtSecret();
+const GRADE_LETTERS = ["A", "B", "C", "D", "E", "F"] as const;
 
 interface AuthRequest extends Request {
   user?: {
@@ -154,6 +155,7 @@ async function resolveAllowedClassIds(
   schoolId: string,
   yearId: string,
   requestedClassId?: string,
+  requestedGrade?: number,
 ): Promise<AccessResult> {
   const role = req.user?.role;
 
@@ -173,6 +175,18 @@ async function resolveAllowedClassIds(
         allowed: true,
         classIds: [requestedClassId],
         scopeClassId: requestedClassId,
+      };
+    }
+
+    if (requestedGrade !== undefined && !Number.isNaN(requestedGrade)) {
+      const classes = await prisma.class.findMany({
+        where: { schoolId, academicYearId: yearId, grade: String(requestedGrade) },
+        select: { id: true },
+      });
+      return {
+        allowed: true,
+        classIds: classes.map((c) => c.id),
+        scopeClassId: null,
       };
     }
 
@@ -295,10 +309,14 @@ async function resolvePeriod(
 
   if (period === "semester") {
     const semesterNumber = semester === "2" ? 2 : 1;
-    const matchingTerms = (academicYear?.terms || []).filter((term) =>
+    const isValidGrade = gradeLevel != null && !Number.isNaN(gradeLevel);
+    let matchingTerms = (academicYear?.terms || []).filter((term) =>
       term.termNumber === semesterNumber &&
-      (gradeLevel == null || term.gradeLevels.length === 0 || term.gradeLevels.includes(gradeLevel)),
+      (!isValidGrade || term.gradeLevels.length === 0 || term.gradeLevels.includes(gradeLevel)),
     );
+    if (!matchingTerms.length) {
+      matchingTerms = (academicYear?.terms || []).filter((term) => term.termNumber === semesterNumber);
+    }
     if (matchingTerms.length) {
       const startDate = new Date(Math.min(...matchingTerms.map((term) => term.startDate.getTime())));
       const endDate = new Date(Math.max(...matchingTerms.map((term) => term.endDate.getTime())));
@@ -785,6 +803,7 @@ app.get(
         monthNumber,
         year,
         classId,
+        grade,
       } = req.query as Record<string, string | undefined>;
       if (!yearId)
         return res
@@ -793,9 +812,11 @@ app.get(
       const periodType: PeriodType =
         period === "semester" || period === "year" ? period : "month";
 
+      const requestedGrade = grade ? Number(grade) : undefined;
+
       // Independent lookups — resolve in parallel instead of one after another.
       const [access, academicYear] = await Promise.all([
-        resolveAllowedClassIds(req, schoolId, yearId, classId),
+        resolveAllowedClassIds(req, schoolId, yearId, classId, requestedGrade),
         prisma.academicYear.findFirst({
           where: { id: yearId, schoolId },
           include: { terms: { orderBy: { termNumber: "asc" } } },
@@ -816,13 +837,17 @@ app.get(
         select: { grade: true },
         distinct: ['grade'],
       });
+      const rawGradeVal = scopedGrades.length === 1 && scopedGrades[0]?.grade ? String(scopedGrades[0].grade).replace(/\D/g, '') : '';
+      const parsedScopedGrade = rawGradeVal ? Number(rawGradeVal) : undefined;
+      const validScopedGrade = parsedScopedGrade && !Number.isNaN(parsedScopedGrade) ? parsedScopedGrade : undefined;
+
       const term = await resolvePeriod(
         academicYear,
         periodType,
         semester,
         monthNumber ? Number(monthNumber) : undefined,
         year ? Number(year) : undefined,
-        scopedGrades.length === 1 ? Number(scopedGrades[0].grade) : undefined,
+        validScopedGrade,
       );
 
       if (classIds.length === 0) {
@@ -919,6 +944,15 @@ app.get(
             name: true,
             grade: true,
             homeroomTeacherId: true,
+            homeroomTeacher: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                englishFirstName: true,
+                englishLastName: true,
+              },
+            },
             teacherClasses: { select: { teacherId: true } },
             timetableEntries: {
               select: { teacherId: true },
@@ -1181,12 +1215,61 @@ app.get(
         ]),
       );
 
+      // Helper for teacher display name
+      const getTeacherName = (tObj: any) => {
+        if (!tObj) return null;
+        const nameKh = [tObj.lastName, tObj.firstName].filter(Boolean).join(" ");
+        if (nameKh.trim()) return `លោក/អ្នកគ្រូ ${nameKh.trim()}`;
+        const nameEn = [tObj.englishLastName || tObj.lastName, tObj.englishFirstName || tObj.firstName].filter(Boolean).join(" ");
+        if (nameEn.trim()) return `លោក/អ្នកគ្រូ ${nameEn.trim()}`;
+        return null;
+      };
+
+      const classStudentCounts = new Map<string, { total: number; male: number; female: number }>();
+      const gradeLevelStudentCounts = new Map<string, { total: number; male: number; female: number }>();
+
+      students.forEach((s) => {
+        if (!s.classId) return;
+        const cInfo = classMap.get(s.classId);
+        const grade = cInfo?.grade || "unknown";
+
+        const cB = classStudentCounts.get(s.classId) || { total: 0, male: 0, female: 0 };
+        cB.total += 1;
+        if (s.gender === "FEMALE") cB.female += 1;
+        else if (s.gender === "MALE") cB.male += 1;
+        classStudentCounts.set(s.classId, cB);
+
+        const gB = gradeLevelStudentCounts.get(grade) || { total: 0, male: 0, female: 0 };
+        gB.total += 1;
+        if (s.gender === "FEMALE") gB.female += 1;
+        else if (s.gender === "MALE") gB.male += 1;
+        gradeLevelStudentCounts.set(grade, gB);
+      });
+
       const classTotals = new Map<string, { total: number; count: number }>();
+      const classPassCounts = new Map<string, number>();
+      const classFailCounts = new Map<string, number>();
+      const gradePassCounts = new Map<string, number>();
+      const gradeFailCounts = new Map<string, number>();
+      const classGradeDistributions = new Map<
+        string,
+        Map<string, { total: number; male: number; female: number }>
+      >();
+
       const gradeLevelTotals = new Map<
         string,
         { total: number; count: number }
       >();
       const gradeLevelStudents = new Map<
+        string,
+        Array<{
+          studentId: string;
+          name: string;
+          khmerName: string | null;
+          average: number;
+        }>
+      >();
+      const classStudentAverages = new Map<
         string,
         Array<{
           studentId: string;
@@ -1202,11 +1285,41 @@ app.get(
       let passing = 0;
       let failing = 0;
 
+      const calcLetter = (avg: number) => {
+        const pct = gradeScale.maxAverage > 0 ? (avg / gradeScale.maxAverage) * 100 : 0;
+        if (pct >= 90) return "A";
+        if (pct >= 80) return "B";
+        if (pct >= 70) return "C";
+        if (pct >= 60) return "D";
+        if (pct >= 50) return "E";
+        return "F";
+      };
+
       averageMap.forEach((average, studentId) => {
         const info = studentInfoMap.get(studentId);
         if (!info?.classId) return;
         const classInfo = classMap.get(info.classId);
         const isPassing = isPassingForScale(gradeScale, average);
+        const gradeLevel = classInfo?.grade || "unknown";
+
+        if (isPassing) {
+          classPassCounts.set(info.classId, (classPassCounts.get(info.classId) || 0) + 1);
+          gradePassCounts.set(gradeLevel, (gradePassCounts.get(gradeLevel) || 0) + 1);
+        } else {
+          classFailCounts.set(info.classId, (classFailCounts.get(info.classId) || 0) + 1);
+          gradeFailCounts.set(gradeLevel, (gradeFailCounts.get(gradeLevel) || 0) + 1);
+        }
+
+        const letter = calcLetter(average);
+        let classDist = classGradeDistributions.get(info.classId);
+        if (!classDist) {
+          classDist = new Map(GRADE_LETTERS.map((g) => [g, { total: 0, male: 0, female: 0 }]));
+          classGradeDistributions.set(info.classId, classDist);
+        }
+        const gBucket = classDist.get(letter)!;
+        gBucket.total += 1;
+        if (info.gender === "FEMALE") gBucket.female += 1;
+        else if (info.gender === "MALE") gBucket.male += 1;
 
         const classBucket = classTotals.get(info.classId) || {
           total: 0,
@@ -1216,7 +1329,6 @@ app.get(
         classBucket.count += 1;
         classTotals.set(info.classId, classBucket);
 
-        const gradeLevel = classInfo?.grade || "unknown";
         const gradeBucket = gradeLevelTotals.get(gradeLevel) || {
           total: 0,
           count: 0,
@@ -1234,6 +1346,18 @@ app.get(
         });
         gradeLevelStudents.set(gradeLevel, gradeStudents);
 
+        let classStList = classStudentAverages.get(info.classId);
+        if (!classStList) {
+          classStList = [];
+          classStudentAverages.set(info.classId, classStList);
+        }
+        classStList.push({
+          studentId,
+          name: info.name,
+          khmerName: info.khmerName,
+          average: Math.round(average * 100) / 100,
+        });
+
         const genderKey = info.gender || "UNKNOWN";
         const genderBucket = genderTotals.get(genderKey) || {
           count: 0,
@@ -1247,26 +1371,139 @@ app.get(
         else failing += 1;
       });
 
-      const averageScoreByClass = Array.from(classTotals.entries())
-        .map(([classId, data]) => ({
-          classId,
-          className: classMap.get(classId)?.name || classId,
-          grade: classMap.get(classId)?.grade || "",
-          average: Math.round((data.total / data.count) * 100) / 100,
-          studentCount: data.count,
-        }))
+      const averageScoreByClass = classes
+        .map((c) => {
+          const counts = classStudentCounts.get(c.id) || { total: 0, female: 0, male: 0 };
+          const avgData = classTotals.get(c.id);
+          const passC = classPassCounts.get(c.id) || 0;
+          const failC = classFailCounts.get(c.id) || 0;
+          const totalG = passC + failC;
+          const dist = classGradeDistributions.get(c.id);
+          const classSts = (classStudentAverages.get(c.id) || [])
+            .sort((a, b) => b.average - a.average)
+            .slice(0, 5)
+            .map((s, index) => ({ ...s, rank: index + 1 }));
+
+          return {
+            classId: c.id,
+            className: c.name,
+            grade: String(c.grade),
+            average: avgData && avgData.count > 0 ? Math.round((avgData.total / avgData.count) * 100) / 100 : 0,
+            studentCount: counts.total,
+            femaleCount: counts.female,
+            maleCount: counts.male,
+            homeroomTeacher: getTeacherName(c.homeroomTeacher),
+            passCount: passC,
+            failCount: failC,
+            passRatePercent: totalG > 0 ? Math.round((passC / totalG) * 100) : 0,
+            rank: 0,
+            topStudents: classSts,
+            gradeDistribution: GRADE_LETTERS.map((letter) => ({
+              grade: letter,
+              total: dist?.get(letter)?.total || 0,
+              female: dist?.get(letter)?.female || 0,
+              male: dist?.get(letter)?.male || 0,
+            })),
+          };
+        })
         .sort((a, b) => b.average - a.average)
         .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
-      const averageScoreByGradeLevel = Array.from(gradeLevelTotals.entries())
-        .map(([grade, data]) => ({
-          grade,
-          average: Math.round((data.total / data.count) * 100) / 100,
-          studentCount: data.count,
+      // ── Top 10 honor roll — per grade level ──
+      const topStudentsByGrade = Array.from(gradeLevelStudents.entries())
+        .map(([grade, list]) => ({
+          grade: String(grade),
+          students: list
+            .sort((a, b) => b.average - a.average)
+            .slice(0, 10)
+            .map((s, index) => ({ ...s, rank: index + 1 })),
         }))
         .sort((a, b) =>
-          a.grade.localeCompare(b.grade, undefined, { numeric: true }),
+          String(a.grade).localeCompare(String(b.grade), undefined, { numeric: true }),
         );
+
+      const uniqueGrades = Array.from(new Set(classes.map((c) => String(c.grade)))).sort((a, b) =>
+        String(a).localeCompare(String(b), undefined, { numeric: true }),
+      );
+
+      const averageScoreByGradeLevel = uniqueGrades.map((grade) => {
+        const gradeClasses = classes.filter((c) => String(c.grade) === grade);
+        const counts = gradeLevelStudentCounts.get(grade) || { total: 0, female: 0, male: 0 };
+        const avgData = gradeLevelTotals.get(grade);
+        const passC = gradePassCounts.get(grade) || 0;
+        const failC = gradeFailCounts.get(grade) || 0;
+        const totalG = passC + failC;
+        const topSt = topStudentsByGrade.find((g) => String(g.grade) === String(grade))?.students?.[0] || null;
+
+        return {
+          grade: String(grade),
+          average: avgData && avgData.count > 0 ? Math.round((avgData.total / avgData.count) * 100) / 100 : 0,
+          studentCount: counts.total,
+          femaleCount: counts.female,
+          maleCount: counts.male,
+          classCount: gradeClasses.length,
+          classesList: gradeClasses.map((c) => c.name),
+          passCount: passC,
+          failCount: failC,
+          passRatePercent: totalG > 0 ? Math.round((passC / totalG) * 100) : 0,
+          topStudent: topSt ? { name: topSt.name, khmerName: topSt.khmerName, average: topSt.average } : null,
+        };
+      });
+
+      // ── School level section summary (Lower & Upper Secondary) ──
+      const lowerGrades = ["7", "8", "9"];
+      const upperGrades = ["10", "11", "12"];
+      const lowerClasses = classes.filter((c) => lowerGrades.includes(String(c.grade)));
+      const upperClasses = classes.filter((c) => upperGrades.includes(String(c.grade)));
+
+      const calcSec = (secClasses: typeof classes, secGrades: string[]) => {
+        let stCount = 0;
+        let feCount = 0;
+        let passC = 0;
+        let totalG = 0;
+        let avgSum = 0;
+        let avgC = 0;
+
+        secClasses.forEach((c) => {
+          const counts = classStudentCounts.get(c.id) || { total: 0, female: 0, male: 0 };
+          stCount += counts.total;
+          feCount += counts.female;
+
+          const p = classPassCounts.get(c.id) || 0;
+          const f = classFailCounts.get(c.id) || 0;
+          passC += p;
+          totalG += (p + f);
+
+          const avgData = classTotals.get(c.id);
+          if (avgData && avgData.count > 0) {
+            avgSum += (avgData.total / avgData.count);
+            avgC += 1;
+          }
+        });
+
+        return {
+          classCount: secClasses.length,
+          studentCount: stCount,
+          femaleCount: feCount,
+          femalePercent: stCount > 0 ? Math.round((feCount / stCount) * 100) : 0,
+          averageScore: avgC > 0 ? Math.round((avgSum / avgC) * 100) / 100 : 0,
+          passRatePercent: totalG > 0 ? Math.round((passC / totalG) * 100) : 0,
+          gradesList: secGrades,
+        };
+      };
+
+      const schoolSections = {
+        lowerSecondary: {
+          key: "lower_secondary",
+          title: "អនុវិទ្យាល័យ (កម្រិត ៧ ដល់ ៩)",
+          ...calcSec(lowerClasses, lowerGrades),
+        },
+        upperSecondary: {
+          key: "upper_secondary",
+          title: "វិទ្យាល័យ (កម្រិត ១០ ដល់ ១២)",
+          ...calcSec(upperClasses, upperGrades),
+        },
+      };
 
       const totalGraded = passing + failing;
       const passRate = {
@@ -1276,22 +1513,9 @@ app.get(
           totalGraded > 0 ? Math.round((passing / totalGraded) * 100) : 0,
       };
 
-      // ── Top 5 honor roll — per grade level, and (when scoped to one class) in-class ──
-      const topStudentsByGrade = Array.from(gradeLevelStudents.entries())
-        .map(([grade, list]) => ({
-          grade,
-          students: list
-            .sort((a, b) => b.average - a.average)
-            .slice(0, 5)
-            .map((s, index) => ({ ...s, rank: index + 1 })),
-        }))
-        .sort((a, b) =>
-          a.grade.localeCompare(b.grade, undefined, { numeric: true }),
-        );
-
       const topStudentsInClass = scopeClassId
         ? (
-            gradeLevelStudents.get(classMap.get(scopeClassId)?.grade || "") ||
+            gradeLevelStudents.get(String(classMap.get(scopeClassId)?.grade || "")) ||
             []
           )
             .filter(
@@ -1356,7 +1580,6 @@ app.get(
       // regardless of the school's composite grading system: a single subject's
       // score/maxScore is always a 0–100 percentage, distinct from the MoEYS
       // 0–50 composite average used for overall pass/fail.
-      const GRADE_LETTERS = ["A", "B", "C", "D", "E", "F"] as const;
       const subjectAgg = new Map<
         string,
         {
@@ -1563,6 +1786,7 @@ app.get(
           endDate: term.endDate.toISOString(),
         },
         overview,
+        schoolSections,
         averageScoreByGradeLevel,
         averageScoreBySubject,
         averageScoreByClass,
@@ -1593,11 +1817,12 @@ app.get(
       writeDashboardCache(cacheKey, responseBody);
       res.json(responseBody);
     } catch (error: any) {
-      console.error("❌ Error building reports dashboard:", error);
+      console.error("❌ Error building reports dashboard:", error?.stack || error);
       res.status(500).json({
         success: false,
-        message: "Error building reports dashboard",
-        error: error.message,
+        message: error?.message || "Error building reports dashboard",
+        error: error?.message || String(error),
+        details: error?.stack || null,
       });
     }
   },

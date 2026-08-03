@@ -154,6 +154,9 @@ export async function resolveReportTermContext(
 }
 
 export function buildGradePeriodWhere(periods: ReportPeriod[]) {
+  if (!periods || periods.length === 0) {
+    return {};
+  }
   return {
     OR: periods.flatMap((period) => [
       { year: period.year, monthNumber: period.monthNumber },

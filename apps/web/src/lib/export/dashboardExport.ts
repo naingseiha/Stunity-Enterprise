@@ -24,12 +24,32 @@ export function downloadDashboardJpg(dataUrl: string, fileName: string): void {
   link.click();
 }
 
-/** Single-page PDF with the raster image embedded, sized to the captured node. */
+/** Single-page PDF formatted to standard A4 portrait with proportional scaling. */
 export async function downloadDashboardPdf(dataUrl: string, fileName: string, width: number, height: number): Promise<void> {
   const { default: jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ unit: 'px', format: [width, height], orientation: width >= height ? 'landscape' : 'portrait', compress: true });
-  doc.addImage(dataUrl, 'JPEG', 0, 0, width, height);
-  doc.save(fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  // Fit nicely on A4 portrait page with 5mm margins
+  const margin = 5;
+  const maxW = pdfWidth - margin * 2;
+  const maxH = pdfHeight - margin * 2;
+
+  const imgAspect = width / height;
+  let printW = maxW;
+  let printH = printW / imgAspect;
+
+  if (printH > maxH) {
+    printH = maxH;
+    printW = printH * imgAspect;
+  }
+
+  const x = (pdfWidth - printW) / 2;
+  const y = (pdfHeight - printH) / 2;
+
+  pdf.addImage(dataUrl, 'JPEG', x, y, printW, printH);
+  pdf.save(fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
 }
 
 /** Strip characters that are unsafe in a downloaded file name. */
