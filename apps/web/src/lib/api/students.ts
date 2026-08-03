@@ -21,6 +21,9 @@ export interface Student {
   schoolId: string;
   isActive?: boolean;
   isAccountActive?: boolean;
+  recordStatus?: 'ACTIVE' | 'ARCHIVED';
+  hasStunityAccount?: boolean;
+  stunityAccountStatus?: 'NOT_REGISTERED' | 'PENDING' | 'LINKED' | 'SUSPENDED';
   createdAt: string;
   updatedAt?: string;
   class?: {
@@ -161,6 +164,7 @@ export async function getStudents(params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
   if (params?.placement) queryParams.append('placement', params.placement);
+  queryParams.append('lifecycle', 'v3');
 
   const cacheKey = `students:${queryParams.toString()}`;
 

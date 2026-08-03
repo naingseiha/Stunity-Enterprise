@@ -16,6 +16,8 @@ import { sendBulkClaimCodeEmails } from './utils/emailService';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { getSharedPrisma } from '../../core/prisma';
 import { getJwtSecret } from '../../../../lib/jwt-secret';
+import { canAccessTargetSchool } from '../../../../lib/tenant-access';
+import { PERMISSIONS, canManageSchoolResource } from '../../../../lib/admin-permissions';
 import {
   getCambodianHolidays,
   STANDARD_GRADING_SCALE,
@@ -32,6 +34,12 @@ import {
   academicTermNeedsUpdate,
   normalizeAndValidateAcademicTerms,
 } from './utils/academic-year-terms';
+import { buildAcademicYearStudentScope } from './academic-year-student-scope';
+import {
+  canManageSchoolAdministration,
+  canManageSchoolClaimCodes,
+  isReadOnlyHttpMethod,
+} from './school-admin-access';
 
 // Load environment variables from root .env in local dev, and keep process env for deployed runtimes
 
@@ -39,21 +47,23 @@ const app = express.Router();
 const PORT = process.env.PORT || process.env.SCHOOL_SERVICE_PORT || 3002;
 const databaseUrl = process.env.DATABASE_URL;
 
-const requireSchoolAdminMutation = (req: Request, res: Response, next: NextFunction) => {
+const requireSchoolAdminMutation = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     return res.status(401).json({ success: false, error: 'Access token required' });
   }
 
   try {
-    const decoded = jwt.verify(token, getJwtSecret()) as { role?: string; schoolId?: string };
-    const role = decoded.role || '';
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string; role?: string; schoolId?: string };
     const schoolId = req.params.schoolId;
-    if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
-      return res.status(403).json({ success: false, error: 'School administrator access required' });
-    }
-    if (role !== 'SUPER_ADMIN' && (!schoolId || decoded.schoolId !== schoolId)) {
-      return res.status(403).json({ success: false, error: 'You can only manage your own school' });
+    const actor = decoded.userId
+      ? await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { role: true, schoolId: true, permissions: true, isActive: true },
+      })
+      : null;
+    if (!actor?.isActive || !canManageSchoolResource(actor, schoolId, PERMISSIONS.MANAGE_SCHOOL_SETTINGS)) {
+      return res.status(403).json({ success: false, error: 'School settings permission required' });
     }
     next();
   } catch {
@@ -1341,6 +1351,14 @@ interface AuthRequest extends Request {
   };
 }
 
+async function loadPermissionActor(req: AuthRequest) {
+  if (!req.user?.id) return null;
+  return prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: { role: true, schoolId: true, permissions: true, isActive: true },
+  });
+}
+
 const JWT_SECRET = getJwtSecret();
 
 const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1405,8 +1423,7 @@ app.use(['/schools', '/super-admin', '/api'], authenticateToken);
 const requireSchoolAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
   const schoolIdParam = (req.params as any).schoolId ?? (req.params as any).id;
   if (!schoolIdParam) return next();
-  if (req.user?.role === 'SUPER_ADMIN') return next();
-  if (req.user?.schoolId !== schoolIdParam) {
+  if (!canAccessTargetSchool(req.user, schoolIdParam)) {
     return res.status(403).json({
       success: false,
       error: 'Access denied',
@@ -1459,6 +1476,25 @@ const requireApprovedSchoolForHighRiskActions = async (req: AuthRequest, res: Re
 
 app.use('/schools/:schoolId', requireSchoolAccess);
 app.use('/schools/:id', requireSchoolAccess);
+app.use(
+  ['/schools/:schoolId/claim-codes', '/schools/:id/claim-codes'],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const schoolId = req.params.schoolId ?? req.params.id;
+      const actor = await loadPermissionActor(req);
+      if (actor?.isActive && canManageSchoolResource(actor, schoolId, PERMISSIONS.MANAGE_CLAIM_CODES)) {
+        return next();
+      }
+      return res.status(403).json({
+        success: false,
+        error: 'Claim-code credential permission required',
+      });
+    } catch (error) {
+      console.error('Claim-code permission guard failed:', error);
+      return res.status(500).json({ success: false, error: 'Failed to validate claim-code permission' });
+    }
+  },
+);
 app.use('/schools/:schoolId/claim-codes', requireApprovedSchoolForHighRiskActions);
 app.use('/schools/:id/claim-codes', requireApprovedSchoolForHighRiskActions);
 
@@ -2475,6 +2511,31 @@ app.delete('/super-admin/posts/:postId', requireSuperAdmin, async (req: Request,
 // ACADEMIC YEAR ENDPOINTS
 // ============================================================
 
+// Academic-year reads remain available to authenticated school members. Every
+// lifecycle mutation below this prefix requires an administrative role.
+app.use(
+  '/schools/:schoolId/academic-years',
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (isReadOnlyHttpMethod(req.method)) return next();
+    try {
+      const actor = await loadPermissionActor(req);
+      if (
+        actor?.isActive &&
+        canManageSchoolResource(actor, req.params.schoolId, PERMISSIONS.MANAGE_ACADEMIC_YEARS)
+      ) {
+        return next();
+      }
+      return res.status(403).json({
+        success: false,
+        error: 'Academic-year management permission required',
+      });
+    } catch (error) {
+      console.error('Academic-year permission guard failed:', error);
+      return res.status(500).json({ success: false, error: 'Failed to validate academic-year permission' });
+    }
+  }
+);
+
 // GET /schools/:schoolId/academic-years - Get all academic years for a school
 app.get('/schools/:schoolId/academic-years', async (req: Request, res: Response) => {
   try {
@@ -2814,14 +2875,10 @@ app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, 
           academicYearId: yearId,
         },
       }),
-      // Students count via class enrollments
+      // Student census is distinct from account access. Temporarily suspended
+      // accounts remain enrolled students and must not disappear from totals.
       prisma.student.count({
-        where: {
-          schoolId,
-          class: {
-            academicYearId: yearId,
-          },
-        },
+        where: buildAcademicYearStudentScope(schoolId, yearId),
       }),
       prisma.teacher.count({
         where: {

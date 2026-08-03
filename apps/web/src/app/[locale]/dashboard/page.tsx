@@ -99,7 +99,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     if (!token) return;
 
     const fetchStats = async () => {
-      const cacheKey = `dashboard:year-stats:${schoolId}:${activeYear.id}`;
+      const cacheKey = `dashboard:year-stats:v2:${schoolId}:${activeYear.id}`;
       const cachedStats = readPersistentCache<YearStats>(cacheKey, DASHBOARD_STATS_CACHE_TTL_MS);
       if (cachedStats) {
         setYearStats(cachedStats);

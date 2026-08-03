@@ -415,6 +415,7 @@ model Student {
   accountDeactivatedAt       DateTime?
   deactivationReason         String?
   isAccountActive            Boolean                     @default(true)
+  recordStatus               StudentRecordStatus         @default(ACTIVE)
   studentRole                StudentRole                 @default(GENERAL)
   entryYear                  Int?
   permanentId                String?                     @unique
@@ -444,6 +445,7 @@ model Student {
   @@index([classId, studentRole])
   @@index([schoolId, classId])
   @@index([schoolId, isAccountActive])
+  @@index([schoolId, recordStatus])
   @@index([schoolId, isAccountActive, studentId], map: "students_school_active_student_id_idx")
   @@index([schoolId, isAccountActive, email], map: "students_school_active_email_idx")
   @@index([schoolId, isAccountActive, phoneNumber], map: "students_school_active_phone_idx")
@@ -4309,6 +4311,11 @@ enum StudentRole {
   CLASS_LEADER
   VICE_LEADER_1
   VICE_LEADER_2
+}
+
+enum StudentRecordStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 enum DisciplineCapabilityProfile {

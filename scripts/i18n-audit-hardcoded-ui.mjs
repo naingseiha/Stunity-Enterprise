@@ -38,7 +38,9 @@ function isLikelyUserText(value) {
   if (!text || IGNORE_TEXT_RE.test(text)) return false;
   if (/^[A-Z0-9_ -]+$/.test(text) && text.length <= 3) return false;
   if (text.includes('{') || text.includes('}')) return false;
-  return /[A-Za-z]/.test(text);
+  // Detect both supported product scripts. Previously this only matched Latin
+  // text, so Khmer literals were invisible to the audit.
+  return /[A-Za-z\u1780-\u17FF]/.test(text);
 }
 
 function getAttributeValue(attribute) {
@@ -107,6 +109,8 @@ console.log('');
 
 const limitArg = process.argv.find((arg) => arg.startsWith('--limit='));
 const limit = limitArg ? Number(limitArg.split('=')[1]) : 120;
+const maxFindingsArg = process.argv.find((arg) => arg.startsWith('--max-findings='));
+const maxFindings = maxFindingsArg ? Number(maxFindingsArg.split('=')[1]) : null;
 
 for (const item of findings.slice(0, Number.isFinite(limit) ? limit : 120)) {
   console.log(`${item.file}:${item.line} [${item.kind}] ${item.value}`);
@@ -116,4 +120,11 @@ if (findings.length > limit) {
   console.log(`...and ${findings.length - limit} more. Re-run with --limit=${findings.length} for the full list.`);
 }
 
-process.exitCode = findings.length > 0 ? 1 : 0;
+if (maxFindings !== null && Number.isFinite(maxFindings)) {
+  console.log('');
+  console.log(`Hardcoded UI baseline: ${maxFindings}`);
+  console.log(findings.length > maxFindings ? 'Baseline gate: FAILED' : 'Baseline gate: PASSED');
+  process.exitCode = findings.length > maxFindings ? 1 : 0;
+} else {
+  process.exitCode = findings.length > 0 ? 1 : 0;
+}

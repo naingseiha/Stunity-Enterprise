@@ -8,7 +8,7 @@
 # =============================================
 
 # Stage 1: Build
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -37,7 +37,7 @@ COPY services/lib/ /lib/
 RUN npm run build
 
 # Stage 2: Production runtime
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 
 WORKDIR /app
 

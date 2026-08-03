@@ -201,6 +201,10 @@ export default function ClaimCodesPage() {
   const userData = TokenManager.getUserData();
   const user = userData.user;
   const school = userData.school;
+  const canManageClaimCodes = Boolean(
+    user?.isSuperAdmin ||
+      ['ADMIN', 'SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user?.role || ''),
+  );
   const filteredProfileRequests = useMemo(() => {
     const query = profileRequestSearch.trim().toLowerCase();
 
@@ -234,7 +238,7 @@ export default function ClaimCodesPage() {
   };
 
   const loadData = useCallback(async (refresh = false) => {
-    if (!schoolId) return;
+    if (!schoolId || !canManageClaimCodes) return;
 
     if (refresh) {
       setIsRefreshing(true);
@@ -286,7 +290,18 @@ export default function ClaimCodesPage() {
       setProfileRequestsLoading(false);
       if (refresh) setIsRefreshing(false);
     }
-  }, [activeTab, debouncedSearch, page, schoolId, statusFilter, typeFilter]);
+  }, [activeTab, canManageClaimCodes, debouncedSearch, page, schoolId, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    const token = TokenManager.getAccessToken();
+    if (!token) {
+      router.replace(`/${locale}/auth/login`);
+      return;
+    }
+    if (!canManageClaimCodes) {
+      router.replace(`/${locale}/dashboard`);
+    }
+  }, [canManageClaimCodes, locale, router]);
 
   useEffect(() => {
     void loadData();

@@ -124,6 +124,7 @@ export default function SettingsHubPage(props: {
             href: `/${locale}/admin/claim-codes`,
             icon: Ticket,
             tone: "violet",
+            roles: ["ADMIN", "SCHOOL_ADMIN", "SUPER_ADMIN"],
           },
           {
             key: "discipline",

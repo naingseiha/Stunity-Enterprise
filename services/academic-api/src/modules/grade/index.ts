@@ -992,7 +992,7 @@ async function getStudentsForClassGradeGrid(
           }
         : { status: "ACTIVE", endedAt: null }),
       student: {
-        isAccountActive: true,
+        recordStatus: "ACTIVE",
         ...(schoolId ? { schoolId } : {}),
       },
     },
@@ -1021,7 +1021,7 @@ async function getStudentsForClassGradeGrid(
   return prisma.student.findMany({
     where: {
       classId,
-      isAccountActive: true,
+      recordStatus: "ACTIVE",
       ...(schoolId ? { schoolId } : {}),
     },
     select: {

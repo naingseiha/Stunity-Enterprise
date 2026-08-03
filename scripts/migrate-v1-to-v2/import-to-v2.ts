@@ -892,6 +892,10 @@ async function main() {
           : null,
         deactivationReason: s.deactivationReason ?? null,
         isAccountActive: s.isAccountActive ?? true,
+        recordStatus:
+          s.deactivationReason === "Archived from student directory"
+            ? "ARCHIVED"
+            : "ACTIVE",
         studentRole: s.studentRole || "GENERAL",
         customFields: {
           regional: {
@@ -942,6 +946,10 @@ async function main() {
               : null,
             deactivationReason: s.deactivationReason ?? null,
             isAccountActive: s.isAccountActive ?? true,
+            recordStatus:
+              s.deactivationReason === "Archived from student directory"
+                ? "ARCHIVED"
+                : "ACTIVE",
             studentRole: s.studentRole || "GENERAL",
             customFields: studentData.customFields,
           },

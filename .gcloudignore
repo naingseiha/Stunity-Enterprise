@@ -32,6 +32,31 @@ android/
 apps/
 **/apps/
 
+# Cloud Run Dockerfiles only copy consolidated service sources, shared service
+# helpers, and the central Prisma schema. Migration exports and product docs can
+# be hundreds of MB and must never be uploaded as Cloud Build context.
+scripts/
+docs/
+/Ebooks/
+/*.png
+/*.jpg
+/*.jpeg
+/*.pdf
+/*.mp4
+/tsconfig.tsbuildinfo
+/package-lock.json
+
+/packages/*
+!/packages/database/
+/packages/database/*
+!/packages/database/prisma/
+
+/services/*
+!/services/academic-api/
+!/services/engagement-api/
+!/services/ai-service/
+!/services/lib/
+
 # Monorepo specific exclusions
 packages/database/node_modules/
 services/*/node_modules/

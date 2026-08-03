@@ -401,13 +401,17 @@ function csvEscape(cell: unknown): string {
 // ========================================
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+const NOTIFICATION_SERVICE_AUTH_TOKEN = process.env.NOTIFICATION_SERVICE_AUTH_TOKEN || '';
 
 // Send notification to parent(s) of a student
 const notifyParents = async (studentId: string, type: string, title: string, message: string, link?: string) => {
   try {
     const response = await fetch(`${AUTH_SERVICE_URL}/notifications/parent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-service-token': NOTIFICATION_SERVICE_AUTH_TOKEN,
+      },
       body: JSON.stringify({ studentId, type, title, message, link }),
     });
     if (response.ok) {
@@ -423,7 +427,10 @@ const notifyStudent = async (studentId: string, type: string, title: string, mes
   try {
     await fetch(`${AUTH_SERVICE_URL}/notifications/student`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-service-token': NOTIFICATION_SERVICE_AUTH_TOKEN,
+      },
       body: JSON.stringify({ studentId, type, title, message, link }),
     });
   } catch (error) {

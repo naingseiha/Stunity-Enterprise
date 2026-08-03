@@ -33,8 +33,16 @@ export const PERMISSIONS = {
   // Settings
   VIEW_SETTINGS: 'VIEW_SETTINGS',
   
-  // Admin Management (Super Admin only)
+  // Admin management
   MANAGE_ADMINS: 'MANAGE_ADMINS',
+
+  // Enterprise administration
+  MANAGE_SCHOOL_SETTINGS: 'MANAGE_SCHOOL_SETTINGS',
+  MANAGE_ACADEMIC_YEARS: 'MANAGE_ACADEMIC_YEARS',
+  MANAGE_CLAIM_CODES: 'MANAGE_CLAIM_CODES',
+  APPROVE_SCHOOL_LINKS: 'APPROVE_SCHOOL_LINKS',
+  RESET_USER_PASSWORDS: 'RESET_USER_PASSWORDS',
+  EXPORT_STUDENT_DATA: 'EXPORT_STUDENT_DATA',
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
@@ -183,6 +191,56 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
         label: 'Access Settings',
         labelKhmer: 'ចូលប្រើការកំណត់',
         description: 'Access system settings and configuration',
+      },
+      {
+        key: PERMISSIONS.MANAGE_SCHOOL_SETTINGS,
+        label: 'Manage School Settings',
+        labelKhmer: 'គ្រប់គ្រងការកំណត់សាលា',
+        description: 'Change school profile and onboarding settings',
+      },
+      {
+        key: PERMISSIONS.MANAGE_ACADEMIC_YEARS,
+        label: 'Manage Academic Years',
+        labelKhmer: 'គ្រប់គ្រងឆ្នាំសិក្សា',
+        description: 'Create, update, archive and promote academic years',
+      },
+    ],
+  },
+  {
+    id: 'security',
+    label: 'Security & Identity',
+    labelKhmer: 'សុវត្ថិភាព និងអត្តសញ្ញាណ',
+    icon: '🔐',
+    permissions: [
+      {
+        key: PERMISSIONS.MANAGE_ADMINS,
+        label: 'Manage Administrators',
+        labelKhmer: 'គ្រប់គ្រងអ្នកគ្រប់គ្រង',
+        description: 'View and assign administrator permissions',
+      },
+      {
+        key: PERMISSIONS.MANAGE_CLAIM_CODES,
+        label: 'Manage Claim Codes',
+        labelKhmer: 'គ្រប់គ្រងលេខកូដភ្ជាប់គណនី',
+        description: 'View, generate, export, revoke and distribute claim credentials',
+      },
+      {
+        key: PERMISSIONS.APPROVE_SCHOOL_LINKS,
+        label: 'Approve School Links',
+        labelKhmer: 'អនុម័តការភ្ជាប់គណនីសាលា',
+        description: 'Approve, reject and unlink school account requests',
+      },
+      {
+        key: PERMISSIONS.RESET_USER_PASSWORDS,
+        label: 'Reset User Passwords',
+        labelKhmer: 'កំណត់ពាក្យសម្ងាត់អ្នកប្រើឡើងវិញ',
+        description: 'Perform administrative password resets',
+      },
+      {
+        key: PERMISSIONS.EXPORT_STUDENT_DATA,
+        label: 'Export Student Data',
+        labelKhmer: 'នាំចេញទិន្នន័យសិស្ស',
+        description: 'Export student records and reports',
       },
     ],
   },

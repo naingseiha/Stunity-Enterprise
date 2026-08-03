@@ -11,7 +11,11 @@ import TeachersStep from './steps/TeachersStep';
 import ClassesStep from './steps/ClassesStep';
 import StudentsStep from './steps/StudentsStep';
 import CompleteStep from './steps/CompleteStep';
-import { TokenManager } from '@/lib/api/auth';
+import {
+  completeOnboarding,
+  getOnboardingStatus,
+  saveOnboardingStep,
+} from '@/lib/api/onboarding';
 
 import { useTranslations } from 'next-intl';
 const STEP_TITLES = [
@@ -68,20 +72,12 @@ export default function OnboardingPage() {
       
       console.log('Loading onboarding for school:', schoolId);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/status`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load onboarding status');
-      }
-      
-      const data = await response.json();
-
-      if (data.success) {
-        setOnboardingData(data.data);
+      const data = await getOnboardingStatus(schoolId);
+      setOnboardingData(data);
         
         // Determine completed steps from checklist
-        const checklist = data.data.checklist;
-        const completed = [];
+        const checklist = data.checklist;
+        const completed: number[] = [];
         
         if (checklist.registrationDone) completed.push(1);
         if (checklist.calendarDone) completed.push(2);
@@ -92,7 +88,6 @@ export default function OnboardingPage() {
         
         setCompletedSteps(completed);
         setCurrentStep(checklist.currentStep || 1);
-      }
     } catch (error: any) {
       console.error('Error loading onboarding status:', error);
       setError(error.message);
@@ -136,17 +131,10 @@ export default function OnboardingPage() {
       if (!schoolId) throw new Error('School ID is required to update onboarding progress');
       const stepNames = ['registration', 'calendar', 'subjects', 'teachers', 'classes', 'students', 'complete'];
       
-      await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/step`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
-        },
-        body: JSON.stringify({
-          step: stepNames[step - 1],
-          completed,
-          skipped,
-        }),
+      await saveOnboardingStep(schoolId, {
+        step: stepNames[step - 1],
+        completed,
+        skipped,
       });
     } catch (error) {
       console.error('Error updating onboarding step:', error);
@@ -158,19 +146,11 @@ export default function OnboardingPage() {
       const schoolId = resolveSchoolId();
       if (!schoolId) throw new Error('School ID is required to complete onboarding');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/complete`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${TokenManager.getAccessToken() || ''}`,
-        },
-      });
-
-      if (response.ok) {
-        // Redirect to dashboard
-        setTimeout(() => {
-          router.push(`/${locale}/dashboard`);
-        }, 2000);
-      }
+      await completeOnboarding(schoolId);
+      // Redirect to dashboard
+      setTimeout(() => {
+        router.push(`/${locale}/dashboard`);
+      }, 2000);
     } catch (error) {
       console.error('Error completing onboarding:', error);
     }

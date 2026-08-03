@@ -353,11 +353,13 @@ function MobileActionButton({
   label,
   onClick,
   tone = "neutral",
+  disabled = false,
 }: {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
   tone?: "neutral" | "blue" | "amber" | "red";
+  disabled?: boolean;
 }) {
   const toneClasses = {
     neutral:
@@ -372,11 +374,51 @@ function MobileActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 rounded-[0.75rem] border px-3 py-2.5 text-xs font-semibold transition-colors ${toneClasses[tone]}`}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-[0.75rem] border px-3 py-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
     >
       <Icon className="h-4 w-4" />
       {label}
     </button>
+  );
+}
+
+function StudentAccountBadge({
+  status = "NOT_REGISTERED",
+  locale,
+}: {
+  status?: "NOT_REGISTERED" | "PENDING" | "LINKED" | "SUSPENDED";
+  locale: string;
+}) {
+  const config = {
+    NOT_REGISTERED: {
+      label: localLabel(locale, "Not registered", "មិនទាន់ចុះឈ្មោះ"),
+      classes:
+        "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700",
+    },
+    PENDING: {
+      label: localLabel(locale, "Link pending", "កំពុងរង់ចាំភ្ជាប់"),
+      classes:
+        "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20",
+    },
+    LINKED: {
+      label: localLabel(locale, "Account linked", "បានភ្ជាប់គណនី"),
+      classes:
+        "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20",
+    },
+    SUSPENDED: {
+      label: localLabel(locale, "Account suspended", "គណនីត្រូវបានផ្អាក"),
+      classes:
+        "bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20",
+    },
+  }[status];
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${config.classes}`}
+    >
+      {config.label}
+    </span>
   );
 }
 
@@ -640,7 +682,9 @@ export default function StudentsPage({
   const totalPages = pagination.totalPages || 1;
   const totalCount = pagination.total || 0;
   const visibleAssignedCount = summary.assigned;
-  const visibleUnassignedCount = summary.unassigned;
+  const visibleUnassignedCount = selectedYear
+    ? summary.outsideAcademicYear
+    : summary.unassigned;
   const assignmentRate =
     summary.total > 0
       ? Math.round((visibleAssignedCount / summary.total) * 100)
@@ -662,6 +706,12 @@ export default function StudentsPage({
   );
   const selectedStudentsUnassignedCount =
     selectedStudentsList.length - selectedStudentsPlacedCount;
+  const selectedStudentsWithAccountsCount = useMemo(
+    () =>
+      selectedStudentsList.filter((student) => student.hasStunityAccount)
+        .length,
+    [selectedStudentsList],
+  );
   const reassignableClasses = useMemo(() => {
     if (!studentToReassign) return availableClasses;
     return availableClasses.filter(
@@ -687,19 +737,25 @@ export default function StudentsPage({
 
   const classScopeLabel = useMemo(() => {
     if (classFilter === "all") return t("allClasses");
-    if (classFilter === "unassigned") return t("unassignedOnThisPage");
+    if (classFilter === "unassigned")
+      return selectedYear
+        ? t("outsideSelectedYearOnThisPage")
+        : t("unassignedOnThisPage");
 
     return (
       availableClasses.find((classItem) => classItem.id === classFilter)
         ?.name || "Selected class"
     );
-  }, [availableClasses, classFilter]);
+  }, [availableClasses, classFilter, selectedYear, t]);
 
   const directoryTitle = useMemo(() => {
-    if (classFilter === "unassigned") return t("studentsNeedingPlacement");
+    if (classFilter === "unassigned")
+      return selectedYear
+        ? t("studentsOutsideSelectedYear")
+        : t("studentsNeedingPlacement");
     if (classFilter !== "all") return `${classScopeLabel} Roster`;
     return t("studentDirectory");
-  }, [classFilter, classScopeLabel]);
+  }, [classFilter, classScopeLabel, selectedYear, t]);
 
   const rosterHealth = useMemo(() => {
     if (summary.total === 0) {
@@ -745,12 +801,12 @@ export default function StudentsPage({
     () => [
       { name: t("placed"), value: visibleAssignedCount, color: "#10B981" },
       {
-        name: t("unassigned"),
+        name: selectedYear ? t("outsideSelectedYear") : t("unassigned"),
         value: visibleUnassignedCount,
         color: "#F59E0B",
       },
     ],
-    [visibleAssignedCount, visibleUnassignedCount],
+    [selectedYear, t, visibleAssignedCount, visibleUnassignedCount],
   );
 
   const genderData = useMemo(() => {
@@ -925,9 +981,9 @@ export default function StudentsPage({
     () => [
       {
         icon: Users,
-        label: t("schoolRoster"),
+        label: selectedYear ? t("academicYearRoster") : t("schoolRoster"),
         value: summary.total,
-        helper: school?.name || t("totalRecordsLabel"),
+        helper: selectedYear?.name || school?.name || t("totalRecordsLabel"),
         tone: "blue" as MetricTone,
       },
       {
@@ -1469,7 +1525,9 @@ export default function StudentsPage({
                     className="h-14 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                   >
                     <option value="all">{t("allClasses")}</option>
-                    <option value="unassigned">{t("unassigned")}</option>
+                    <option value="unassigned">
+                      {selectedYear ? t("outsideSelectedYear") : t("unassigned")}
+                    </option>
                     {availableClasses.map((classItem) => (
                       <option key={classItem.id} value={classItem.id}>
                         {classItem.name}
@@ -1738,6 +1796,10 @@ export default function StudentsPage({
                                           <GenderBadge
                                             gender={student.gender}
                                           />
+                                          <StudentAccountBadge
+                                            status={student.stunityAccountStatus}
+                                            locale={locale}
+                                          />
                                         </div>
                                         {!isCompactView && (
                                           <div className="mt-0.5 flex flex-col gap-0.5">
@@ -1813,8 +1875,17 @@ export default function StudentsPage({
                                       />
                                       <IconActionButton
                                         icon={Lock}
-                                        title={t("resetPassword")}
+                                        title={
+                                          student.hasStunityAccount
+                                            ? t("resetPassword")
+                                            : localLabel(
+                                                locale,
+                                                "No Stunity account yet",
+                                                "មិនទាន់មានគណនី Stunity",
+                                              )
+                                        }
                                         tone="amber"
+                                        disabled={!student.hasStunityAccount}
                                         onClick={() => {
                                           setSelectedStudent(student);
                                           setShowResetModal(true);
@@ -1913,6 +1984,10 @@ export default function StudentsPage({
 
                                   <div className="mt-4 flex flex-wrap gap-2">
                                     <GenderBadge gender={student.gender} />
+                                    <StudentAccountBadge
+                                      status={student.stunityAccountStatus}
+                                      locale={locale}
+                                    />
                                     {student.class ? (
                                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                                         {student.class.name}
@@ -1984,6 +2059,7 @@ export default function StudentsPage({
                                       icon={Lock}
                                       label={t("reset")}
                                       tone="amber"
+                                      disabled={!student.hasStunityAccount}
                                       onClick={() => {
                                         setSelectedStudent(student);
                                         setShowResetModal(true);
@@ -2115,21 +2191,21 @@ export default function StudentsPage({
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f877445b" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Logic for bulk password reset would go here
-                      alert(
-                        "Bulk Password Reset triggered for " +
-                          selectedStudents.size +
-                          " students.",
-                      );
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                  <div
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300"
+                    title={localLabel(
+                      locale,
+                      "Password resets are available per linked account",
+                      "ការកំណត់លេខសម្ងាត់ឡើងវិញអាចធ្វើបានតាមគណនីដែលបានភ្ជាប់នីមួយៗ",
+                    )}
                   >
                     <Lock className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1b7dea1c" />
-                  </button>
+                    {localLabel(
+                      locale,
+                      `${selectedStudentsWithAccountsCount} linked account${selectedStudentsWithAccountsCount === 1 ? "" : "s"}`,
+                      `គណនីបានភ្ជាប់ ${selectedStudentsWithAccountsCount}`,
+                    )}
+                  </div>
 
                   <button
                     type="button"

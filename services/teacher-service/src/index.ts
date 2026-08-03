@@ -12,6 +12,7 @@ import dotenv from 'dotenv';
 import IdGenerator from './utils/idGenerator';
 import { teacherPayloadSchema, getTeacherValidationMessage } from './validators/teacher.validator';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
+import { canManageTargetSchool } from '../../lib/tenant-access';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -224,6 +225,19 @@ const authMiddleware = async (
   }
 };
 
+const ONBOARDING_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+
+const requireOnboardingAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const schoolId = String(req.body?.schoolId || '');
+  if (!ONBOARDING_ADMIN_ROLES.has(req.user?.role || '')) {
+    return res.status(403).json({ success: false, message: 'School administrator access required' });
+  }
+  if (!canManageTargetSchool(req.user, schoolId, ONBOARDING_ADMIN_ROLES)) {
+    return res.status(403).json({ success: false, message: 'You can only manage your own school' });
+  }
+  next();
+};
+
 // ===========================
 // Health Check
 // ===========================
@@ -239,9 +253,9 @@ app.get('/health', (req: Request, res: Response) => {
 
 // ===========================
 // POST /teachers/batch
-// Batch create teachers (for onboarding - no auth required)
+// Batch create teachers for an authenticated, tenant-scoped onboarding admin.
 // ===========================
-app.post('/teachers/batch', async (req: Request, res: Response) => {
+app.post('/teachers/batch', authMiddleware, requireOnboardingAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId, teachers } = req.body;
 

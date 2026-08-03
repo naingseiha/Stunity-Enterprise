@@ -13,6 +13,7 @@ import { teacherPayloadSchema, getTeacherValidationMessage } from './validators/
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { getSharedPrisma } from '../../core/prisma';
 import { getJwtSecret } from '../../../../lib/jwt-secret';
+import { canManageTargetSchool } from '../../../../lib/tenant-access';
 
 // Load environment variables from root .env
 
@@ -191,10 +192,11 @@ async function authMiddleware(
 const requireOnboardingAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
   const role = req.user?.role || '';
   const schoolId = String(req.body?.schoolId || '');
-  if (!['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN'].includes(role)) {
+  const allowedRoles = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+  if (!allowedRoles.has(role)) {
     return res.status(403).json({ success: false, message: 'School administrator access required' });
   }
-  if (role !== 'SUPER_ADMIN' && (!schoolId || req.user?.schoolId !== schoolId)) {
+  if (!canManageTargetSchool(req.user, schoolId, allowedRoles)) {
     return res.status(403).json({ success: false, message: 'You can only manage your own school' });
   }
   next();

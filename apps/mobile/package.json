@@ -22,7 +22,7 @@
     "@sentry/react-native": "~6.10.0",
     "@shopify/flash-list": "1.7.3",
     "@supabase/supabase-js": "^2.96.0",
-    "axios": "^1.15.2",
+    "axios": "^1.18.0",
     "base64-js": "^1.5.1",
     "buffer": "^5.7.1",
     "date-fns": "^2.30.0",

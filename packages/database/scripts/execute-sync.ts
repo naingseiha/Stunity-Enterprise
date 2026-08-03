@@ -140,6 +140,7 @@ async function main() {
             classId: intendedClassId,
             photoUrl: oldStudent.photoUrl || null,
             isAccountActive: oldStudent.isAccountActive,
+            recordStatus: 'ACTIVE',
             studentRole: oldStudent.studentRole
           }
         });
@@ -163,6 +164,7 @@ async function main() {
               classId: intendedClassId,
               photoUrl: oldStudent.photoUrl || null,
               isAccountActive: oldStudent.isAccountActive,
+              recordStatus: 'ACTIVE',
               studentRole: oldStudent.studentRole
             }
           });

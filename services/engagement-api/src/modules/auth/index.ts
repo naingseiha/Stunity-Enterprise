@@ -31,6 +31,8 @@ import { requireNormalizedSchoolLinkRequestId } from './domain/legacySchoolLinkA
 import { publicPendingLinkData } from './security/publicAuthResponse';
 import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
 import { requireInternalServiceToken } from './security/internalServiceAuth';
+import { createAdminPermissionRouter } from './security/adminPermissionRoutes';
+import { PERMISSIONS, hasPermission } from '../../../../lib/admin-permissions';
 import {
   authDbSessionsEnabled,
   durationToMilliseconds,
@@ -96,6 +98,8 @@ const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split('
 // Security headers
 app.use('/auth', hpp());
 app.use('/auth', express.json({ limit: '10kb' }));
+app.use('/admin', hpp());
+app.use('/admin', express.json({ limit: '10kb' }));
 
 // Redis-backed in production so limits apply across all Cloud Run instances.
 const globalLimiter = rateLimit({
@@ -331,6 +335,7 @@ interface AuthRequest extends Request {
     email: string;
     role: string;
     schoolId: string;
+    permissions?: unknown;
   };
 }
 
@@ -426,6 +431,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       email: user.email || '',
       role: user.role,
       schoolId: user.schoolId || '',
+      permissions: user.permissions,
     };
 
     next();
@@ -481,7 +487,7 @@ app.post(
       // 1. Authorization: User must be a school/platform admin
       // SUPER_ADMIN = platform admin (full access), ADMIN/SCHOOL_ADMIN = school-scoped
       const isSuper = requester.role === 'SUPER_ADMIN';
-      const isAdmin = requester.role === 'ADMIN' || requester.role === 'SCHOOL_ADMIN' || isSuper;
+      const isAdmin = hasPermission(requester, PERMISSIONS.RESET_USER_PASSWORDS);
 
       if (!isAdmin) {
         return res.status(403).json({
@@ -1561,7 +1567,7 @@ app.get('/auth/parent/find-student', async (req: Request, res: Response) => {
               }
             }
           },
-          isAccountActive: true,
+          recordStatus: 'ACTIVE',
         },
         select: {
           id: true,
@@ -1582,7 +1588,7 @@ app.get('/auth/parent/find-student', async (req: Request, res: Response) => {
       students = await prisma.student.findMany({
         where: {
           studentId: studentId as string,
-          isAccountActive: true,
+          recordStatus: 'ACTIVE',
         },
         select: {
           id: true,
@@ -3254,8 +3260,8 @@ app.post('/auth/school-links/current/cancel', authenticateToken, async (req: Aut
 
 app.get('/auth/admin/school-links', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
     const schoolId = req.user?.role === 'SUPER_ADMIN'
       ? (typeof req.query.schoolId === 'string' ? req.query.schoolId : '')
@@ -3276,8 +3282,8 @@ app.get('/auth/admin/school-links', authenticateToken, async (req: AuthRequest, 
 
 app.post('/auth/admin/school-links/:requestId/approve', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
     const result = await approveSchoolLinkRequest(prisma, req.params.requestId, {
       userId: req.user!.id,
@@ -3310,8 +3316,8 @@ app.post('/auth/admin/school-links/:requestId/approve', authenticateToken, async
 
 app.post('/auth/admin/school-links/:requestId/reject', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
     const result = await rejectSchoolLinkRequest(prisma, req.params.requestId, {
       userId: req.user!.id,
@@ -3344,8 +3350,8 @@ app.post('/auth/admin/school-links/:requestId/reject', authenticateToken, async 
 
 app.post('/auth/admin/school-links/:requestId/unlink', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
     // Destructive school-access changes require fresh credential proof. This is
     // deliberately server-verified rather than trusting a client timestamp.
@@ -3394,8 +3400,8 @@ app.get('/auth/admin/pending-links', authenticateToken, async (req: AuthRequest,
     const { schoolId } = req.query;
 
     // Only ADMIN or SUPER_ADMIN can access
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
 
     const requestedSchoolId = req.user?.role === 'SUPER_ADMIN'
@@ -3433,8 +3439,8 @@ app.get('/auth/admin/pending-links', authenticateToken, async (req: AuthRequest,
  */
 app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
 
     const { userId } = req.params;
@@ -3482,8 +3488,8 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
  */
 app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
+    if (!hasPermission(req.user, PERMISSIONS.APPROVE_SCHOOL_LINKS)) {
+      return res.status(403).json({ success: false, error: 'School-link approval permission required' });
     }
 
     const { userId } = req.params;
@@ -3955,6 +3961,11 @@ app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
   }
   */
 });
+
+// Versioned granular permission management. Legacy administrators retain their
+// role defaults until an explicit rbacVersion=1 grant document is assigned.
+app.use('/auth/admin', authenticateToken as any, createAdminPermissionRouter(prisma));
+app.use('/admin', authenticateToken as any, createAdminPermissionRouter(prisma));
 
 // Start server
 

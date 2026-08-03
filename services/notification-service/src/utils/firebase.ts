@@ -1,13 +1,14 @@
 
-import admin from 'firebase-admin';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-if (!admin.apps.length) {
+if (getApps().length === 0) {
     try {
-        admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
+        initializeApp({
+            credential: applicationDefault(),
         });
         console.log('Firebase Admin initialized successfully');
     } catch (error) {
@@ -15,4 +16,4 @@ if (!admin.apps.length) {
     }
 }
 
-export const messaging = admin.messaging();
+export const messaging = getMessaging();

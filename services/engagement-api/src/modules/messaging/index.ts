@@ -983,7 +983,7 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
     const students = await prisma.student.findMany({
       where: {
         ...studentFilter,
-        isAccountActive: true,
+        recordStatus: "ACTIVE",
       },
       include: {
         studentParents: {

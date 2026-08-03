@@ -10,6 +10,7 @@ import {
 } from "../../../../lib/prisma-pool-url";
 import { getSharedPrisma } from "../../core/prisma";
 import { getJwtSecret } from "../../../../lib/jwt-secret";
+import { canManageTargetSchool } from "../../../../lib/tenant-access";
 
 // Load environment variables from root .env
 
@@ -133,10 +134,7 @@ const requireOnboardingAdmin = (
         message: "School administrator access required",
       });
   }
-  if (
-    role !== "SUPER_ADMIN" &&
-    (!schoolId || req.user?.schoolId !== schoolId)
-  ) {
+  if (!canManageTargetSchool(req.user, schoolId, CLASS_ADMIN_ROLES)) {
     return res
       .status(403)
       .json({ success: false, message: "You can only manage your own school" });
@@ -1584,7 +1582,7 @@ app.get(
       // Build where clause for unassigned students
       const where: any = {
         schoolId,
-        isAccountActive: true,
+        recordStatus: "ACTIVE",
       };
 
       if (assignedStudentIds.length > 0) {
@@ -2396,7 +2394,7 @@ app.get(
         where: {
           classId: id,
           schoolId,
-          isAccountActive: true,
+          recordStatus: "ACTIVE",
         },
         select: {
           id: true,

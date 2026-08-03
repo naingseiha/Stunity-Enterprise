@@ -21,6 +21,12 @@ import {
   scheduleDbKeepalive,
   shouldRunDbStartupWarmup,
 } from "../../lib/prisma-pool-url";
+import { canManageTargetSchool } from "../../lib/tenant-access";
+import {
+  buildAcademicYearAssignmentScope,
+  buildStudentDirectoryBaseScope,
+  deriveStunityAccountStatus,
+} from "./student-directory-scope";
 
 // Load environment variables from root .env
 dotenv.config({ path: "../../.env" });
@@ -316,6 +322,34 @@ const authenticateToken = async (
   }
 };
 
+const ONBOARDING_ADMIN_ROLES = new Set([
+  "ADMIN",
+  "STAFF",
+  "SUPER_ADMIN",
+  "SCHOOL_ADMIN",
+]);
+
+const requireOnboardingAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const schoolId = String(req.body?.schoolId || "");
+  if (!ONBOARDING_ADMIN_ROLES.has(req.user?.role || "")) {
+    return res.status(403).json({
+      success: false,
+      message: "School administrator access required",
+    });
+  }
+  if (!canManageTargetSchool(req.user, schoolId, ONBOARDING_ADMIN_ROLES)) {
+    return res.status(403).json({
+      success: false,
+      message: "You can only manage your own school",
+    });
+  }
+  next();
+};
+
 const ensureStudentClassEnrollment = async (
   studentId: string,
   classId: string,
@@ -408,14 +442,17 @@ const STUDENT_TOP_LEVEL_KEYS = [
   "phoneNumber",
   "classId",
   "photoUrl",
-  "isAccountActive",
 ];
 
 // ===========================
 // POST /students/batch
-// Batch create students (for onboarding - no auth required)
+// Batch create students for an authenticated, tenant-scoped onboarding admin.
 // ===========================
-app.post("/students/batch", async (req: Request, res: Response) => {
+app.post(
+  "/students/batch",
+  authenticateToken,
+  requireOnboardingAdmin,
+  async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId, students } = req.body;
 
@@ -538,7 +575,8 @@ app.post("/students/batch", async (req: Request, res: Response) => {
       error: error.message,
     });
   }
-});
+  },
+);
 
 // Health check endpoint (no auth required) - must be before auth middleware
 app.get("/health", (_req, res) => {
@@ -935,7 +973,7 @@ app.post("/admissions", async (req: AuthRequest, res: Response) => {
       const studentId = cleanAdmissionText(req.body.studentId, 64);
       linkedStudent = studentId
         ? await prisma.student.findFirst({
-            where: { id: studentId, schoolId, isAccountActive: true },
+            where: { id: studentId, schoolId, recordStatus: "ACTIVE" },
           })
         : null;
       if (!linkedStudent)
@@ -1374,6 +1412,13 @@ const LIGHTWEIGHT_STUDENT_SELECT = {
   classId: true,
   photoUrl: true,
   isAccountActive: true,
+  recordStatus: true,
+  user: {
+    select: {
+      id: true,
+      isActive: true,
+    },
+  },
   createdAt: true,
   customFields: true,
 } as const;
@@ -1456,7 +1501,7 @@ async function getLightweightStudentsPayload({
   let unassignedCount = 0;
 
   if (!academicYearId) {
-    const baseWhere: any = { schoolId, isAccountActive: true };
+    const baseWhere: any = buildStudentDirectoryBaseScope(schoolId);
     if (classId && classId !== "all") {
       baseWhere.classId = classId;
     }
@@ -1506,15 +1551,13 @@ async function getLightweightStudentsPayload({
         status: { in: ENROLLMENT_ACTIVE_STATUSES },
         classId: { in: yearClassIds },
       };
+      const assignmentScope = buildAcademicYearAssignmentScope(yearClassIds);
 
       const yearWhere: any = {
-        schoolId,
-        isAccountActive: true,
-        studentClasses: {
-          some: yearScopeFilter,
-        },
+        ...buildStudentDirectoryBaseScope(schoolId),
+        AND: [assignmentScope],
       };
-      const yearBaseWhere: any = { schoolId, isAccountActive: true };
+      const yearBaseWhere: any = buildStudentDirectoryBaseScope(schoolId);
       if (normalizedGender) {
         yearWhere.gender = normalizedGender;
         yearBaseWhere.gender = normalizedGender;
@@ -1523,17 +1566,16 @@ async function getLightweightStudentsPayload({
       applyStudentSearchFilter(yearBaseWhere, search);
 
       if (normalizedPlacement === "unassigned") {
-        delete yearWhere.studentClasses;
-        yearWhere.NOT = { studentClasses: { some: yearScopeFilter } };
+        yearWhere.AND = [{ NOT: assignmentScope }];
       }
 
       const assignedWhere = {
         ...yearBaseWhere,
-        studentClasses: { some: yearScopeFilter },
+        AND: [assignmentScope],
       };
       const unassignedWhere = {
         ...yearBaseWhere,
-        NOT: { studentClasses: { some: yearScopeFilter } },
+        AND: [{ NOT: assignmentScope }],
       };
 
       [totalCount, students, assignedCount, unassignedCount] =
@@ -1583,12 +1625,43 @@ async function getLightweightStudentsPayload({
           ...studentWithoutEnrollments,
           class: currentEnrollment
             ? classById.get(currentEnrollment.classId) || null
-            : null,
-          enrollmentStatus: currentEnrollment?.status || null,
+            : classById.get(student.classId) || null,
+          enrollmentStatus:
+            currentEnrollment?.status ||
+            (classById.has(student.classId) ? "LEGACY_ASSIGNED" : null),
         };
       });
     }
   }
+
+  const pageStudentIds = students.map((student) => student.id);
+  const pendingLinks = pageStudentIds.length
+    ? await prisma.schoolLinkRequest.findMany({
+        where: {
+          schoolId,
+          studentId: { in: pageStudentIds },
+          status: "PENDING",
+        },
+        select: { studentId: true },
+      })
+    : [];
+  const pendingStudentIds = new Set(
+    pendingLinks.map((request) => request.studentId).filter(Boolean),
+  );
+
+  students = students.map((student) => {
+    const { user, ...studentRecord } = student;
+    const stunityAccountStatus = deriveStunityAccountStatus({
+      linkedUser: user,
+      hasPendingLink: pendingStudentIds.has(student.id),
+    });
+    return {
+      ...studentRecord,
+      hasStunityAccount:
+        stunityAccountStatus === "LINKED" || stunityAccountStatus === "SUSPENDED",
+      stunityAccountStatus,
+    };
+  });
 
   const totalPages = Math.ceil(totalCount / limit);
   return {
@@ -1670,7 +1743,7 @@ app.get("/students/lightweight", async (req: AuthRequest, res: Response) => {
     const search = (req.query.search as string | undefined)?.trim();
 
     // Create cache key
-    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || "all"}:${gender || "all"}:${academicYearId || "all"}:${placement || "all"}:${search || "all"}`;
+    const cacheKey = `students:v2:${schoolId}:${page}:${limit}:${classId || "all"}:${gender || "all"}:${academicYearId || "all"}:${placement || "all"}:${search || "all"}`;
 
     // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
@@ -1742,7 +1815,7 @@ app.get("/students", async (req: AuthRequest, res: Response) => {
     const schoolId = req.user!.schoolId; // Multi-tenant filter
 
     const students = await prisma.student.findMany({
-      where: { schoolId }, // Multi-tenant filter
+      where: buildStudentDirectoryBaseScope(schoolId),
       select: {
         id: true,
         schoolId: true,
@@ -1756,6 +1829,7 @@ app.get("/students", async (req: AuthRequest, res: Response) => {
         classId: true,
         photoUrl: true,
         isAccountActive: true,
+        recordStatus: true,
         createdAt: true,
         updatedAt: true,
         customFields: true,
@@ -3028,6 +3102,7 @@ app.delete("/students/:id", async (req: AuthRequest, res: Response) => {
       await tx.student.update({
         where: { id },
         data: {
+          recordStatus: "ARCHIVED",
           isAccountActive: false,
           accountDeactivatedAt: new Date(),
           deactivationReason: "Archived from student directory",
@@ -3044,7 +3119,7 @@ app.delete("/students/:id", async (req: AuthRequest, res: Response) => {
       });
 
       const currentCount = await tx.student.count({
-        where: { schoolId, isAccountActive: true },
+        where: { schoolId, recordStatus: "ACTIVE" },
       });
 
       await tx.school.update({
@@ -3137,7 +3212,7 @@ app.post("/students/reassign", async (req: AuthRequest, res: Response) => {
         }
 
         const students = await tx.student.findMany({
-          where: { id: { in: ids }, schoolId, isAccountActive: true },
+          where: { id: { in: ids }, schoolId, recordStatus: "ACTIVE" },
           select: { id: true },
         });
         const validIds = students.map((student) => student.id);
@@ -4580,7 +4655,7 @@ app.get(
           gender: student.gender,
           photo: student.photoUrl,
           enrolledAt: student.createdAt,
-          status: student.isAccountActive ? "ACTIVE" : "INACTIVE",
+          status: student.recordStatus,
         },
         summary: {
           totalYears,

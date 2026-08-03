@@ -406,10 +406,15 @@ export default function UnifiedNavigation({
     ],
   );
 
+  // Translation management is mounted inside the super-admin workspace and
+  // its route guard rejects school admins. Keep navigation aligned with that
+  // authorization boundary so regular admins never see a dead Platform link.
   const canManageTranslations = Boolean(
+    user?.isSuperAdmin || user?.role === "SUPER_ADMIN",
+  );
+  const canManageClaimCodes = Boolean(
     user?.isSuperAdmin ||
-    user?.role === "SUPER_ADMIN" ||
-    user?.role === "ADMIN",
+      ["ADMIN", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(user?.role || ""),
   );
 
   const canOpenAttendanceDashboard = isSchoolAttendanceAdminRole(user?.role);
@@ -644,13 +649,17 @@ export default function UnifiedNavigation({
             prefetch: "locations",
             skeleton: "table" as const,
           },
-          {
-            name: tNav("items.claimCodes"),
-            icon: Ticket,
-            path: `/${locale}/admin/claim-codes`,
-            prefetch: null,
-            skeleton: "table" as const,
-          },
+          ...(canManageClaimCodes
+            ? [
+                {
+                  name: tNav("items.claimCodes"),
+                  icon: Ticket,
+                  path: `/${locale}/admin/claim-codes`,
+                  prefetch: null,
+                  skeleton: "table" as const,
+                },
+              ]
+            : []),
           ...(canOpenAttendanceDashboard
             ? [
                 {
@@ -685,6 +694,7 @@ export default function UnifiedNavigation({
     ],
     [
       canManageTranslations,
+      canManageClaimCodes,
       canOpenAttendanceDashboard,
       canViewTeacherQuizAnalytics,
       locale,
@@ -869,7 +879,7 @@ export default function UnifiedNavigation({
               const data = await response.json();
               if (data?.success && data?.data) {
                 writePersistentCache(
-                  `dashboard:year-stats:${school.id}:${selectedAcademicYearId}`,
+                  `dashboard:year-stats:v2:${school.id}:${selectedAcademicYearId}`,
                   data.data,
                 );
               }

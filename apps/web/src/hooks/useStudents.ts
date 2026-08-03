@@ -28,6 +28,10 @@ export interface Student {
   photoUrl?: string | null;
   schoolId: string;
   isActive: boolean;
+  isAccountActive?: boolean;
+  recordStatus?: 'ACTIVE' | 'ARCHIVED';
+  hasStunityAccount?: boolean;
+  stunityAccountStatus?: 'NOT_REGISTERED' | 'PENDING' | 'LINKED' | 'SUSPENDED';
   createdAt: string;
   updatedAt: string;
   class?: {
@@ -61,6 +65,8 @@ interface StudentsResponse {
     total: number;
     assigned: number;
     unassigned: number;
+    outsideAcademicYear: number;
+    schoolTotal: number;
   };
 }
 
@@ -104,6 +110,7 @@ function createStudentsCacheKey(params?: StudentsParams): string | null {
   }
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
   if (params?.placement) queryParams.append('placement', params.placement);
+  queryParams.append('lifecycle', 'v3');
 
   return `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`;
 }
@@ -172,6 +179,8 @@ export function useStudents(params?: StudentsParams) {
       total: pagination.total,
       assigned: students.filter((student) => Boolean(student.class)).length,
       unassigned: students.filter((student) => !student.class).length,
+      outsideAcademicYear: 0,
+      schoolTotal: pagination.total,
     },
     isLoading,
     isValidating, // True when revalidating in background

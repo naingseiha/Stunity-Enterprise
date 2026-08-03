@@ -8,8 +8,8 @@ echo "🔍 Checking Stunity service ports..."
 echo ""
 
 # Define service ports
-PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
-SERVICE_NAMES=("Web App" "Auth Service" "School Service" "Student Service" "Teacher Service" "Class Service" "Subject Service" "Grade Service" "Attendance Service" "Timetable Service" "Feed Service" "Messaging Service" "Club Service" "Notification Service" "Analytics Service" "Learn Service" "AI Service")
+PORTS=(3000 3001 3021 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
+SERVICE_NAMES=("Web App" "Auth Service" "Academic API" "School Service" "Student Service" "Teacher Service" "Class Service" "Subject Service" "Grade Service" "Attendance Service" "Timetable Service" "Feed Service" "Messaging Service" "Club Service" "Notification Service" "Analytics Service" "Learn Service" "AI Service")
 
 running_count=0
 free_count=0
@@ -39,6 +39,12 @@ echo "   🟢 Running: $running_count services"
 echo "   ⚪ Free: $free_count ports"
 echo "========================================="
 echo ""
+
+if lsof -ti:3021 >/dev/null 2>&1; then
+  echo "ℹ️  Consolidated Academic API detected on port 3021."
+  echo "   Legacy academic ports 3002-3009 and 3012 may remain free."
+  echo ""
+fi
 
 if [ $running_count -gt 0 ]; then
   echo "💡 To stop all services: ./stop-all-services.sh"

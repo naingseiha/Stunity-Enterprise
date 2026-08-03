@@ -328,7 +328,7 @@ async function loadSharedContext(
           where: {
             schoolId,
             classId: { in: classIds },
-            isAccountActive: true,
+            recordStatus: "ACTIVE",
           },
           include: {
             class: true,

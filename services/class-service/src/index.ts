@@ -9,6 +9,7 @@ import {
   shouldRunDbStartupWarmup,
   withPrismaPoolParams,
 } from "../../lib/prisma-pool-url";
+import { canManageTargetSchool } from "../../lib/tenant-access";
 
 // Load environment variables from root .env
 dotenv.config({ path: "../../.env" });
@@ -175,6 +176,34 @@ const authMiddleware = async (
   }
 };
 
+const ONBOARDING_ADMIN_ROLES = new Set([
+  "ADMIN",
+  "STAFF",
+  "SUPER_ADMIN",
+  "SCHOOL_ADMIN",
+]);
+
+const requireOnboardingAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const schoolId = String(req.body?.schoolId || "");
+  if (!ONBOARDING_ADMIN_ROLES.has(req.user?.role || "")) {
+    return res.status(403).json({
+      success: false,
+      message: "School administrator access required",
+    });
+  }
+  if (!canManageTargetSchool(req.user, schoolId, ONBOARDING_ADMIN_ROLES)) {
+    return res.status(403).json({
+      success: false,
+      message: "You can only manage your own school",
+    });
+  }
+  next();
+};
+
 // ===========================
 // Health Check
 // ===========================
@@ -190,9 +219,13 @@ app.get("/health", (req: Request, res: Response) => {
 
 // ===========================
 // POST /classes/batch
-// Batch create classes (for onboarding - no auth required)
+// Batch create classes for an authenticated, tenant-scoped onboarding admin.
 // ===========================
-app.post("/classes/batch", async (req: Request, res: Response) => {
+app.post(
+  "/classes/batch",
+  authMiddleware,
+  requireOnboardingAdmin,
+  async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId, academicYearId, classes } = req.body;
 
@@ -294,7 +327,8 @@ app.post("/classes/batch", async (req: Request, res: Response) => {
       error: error.message,
     });
   }
-});
+  },
+);
 
 // Apply auth middleware to all routes below
 app.use(authMiddleware);
@@ -1594,7 +1628,7 @@ app.get(
       // Build where clause for unassigned students
       const where: any = {
         schoolId,
-        isAccountActive: true,
+        recordStatus: "ACTIVE",
       };
 
       if (assignedStudentIds.length > 0) {
@@ -2388,7 +2422,7 @@ app.get(
         where: {
           classId: id,
           schoolId,
-          isAccountActive: true,
+          recordStatus: "ACTIVE",
         },
         select: {
           id: true,
