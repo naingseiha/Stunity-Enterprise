@@ -266,6 +266,11 @@ export default function PortraitInfographicSheet({
     const metrics = computePageMetrics(targetLevel);
     const isDivisionLevel = targetLevel === 'all' || targetLevel === 'junior' || targetLevel === 'senior';
     const isClassView = Boolean(className);
+    const displayClassName = className
+      ? className.startsWith('ថ្នាក់')
+        ? className
+        : `ថ្នាក់ ${className}`
+      : '';
     const isSpecificGradeView = Boolean(gradeFilter) && !isClassView;
     const hideClassRoster = isDivisionLevel || isSpecificGradeView || isClassView;
     const passFailBarChartData = isSpecificGradeView
@@ -280,33 +285,33 @@ export default function PortraitInfographicSheet({
     return (
       <div
         key={`a4-sheet-${targetLevel}-${pageNumber}`}
-        className="mx-auto w-full max-w-[210mm] rounded-3xl border-2 border-slate-200 bg-white p-7 text-slate-900 shadow-xl dark:border-slate-800 dark:bg-slate-900 print:max-w-none print:rounded-none print:border-none print:p-0 print:shadow-none space-y-5"
+        className="mx-auto w-full max-w-[210mm] rounded-3xl border-2 border-slate-200 bg-white p-6 text-slate-900 shadow-xl dark:border-slate-800 dark:bg-slate-900 print:max-w-none print:rounded-none print:border-none print:p-0 print:shadow-none space-y-4"
       >
         {/* ------------------- BANNER HEADER ------------------- */}
-        <header className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-5 text-white shadow-md">
-          <div className="flex items-center justify-between border-b border-blue-700/60 pb-3">
+        <header className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-4 text-white shadow-md">
+          <div className="flex items-center justify-between border-b border-blue-700/60 pb-2.5">
             <div>
-              <p className="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase">
+              <p className="text-[9px] font-extrabold tracking-widest text-amber-400 uppercase">
                 ក្រសួងអប់រំ យុវជន និងកីឡា
               </p>
-              <h1 className="font-moul mt-1 text-sm font-bold text-white tracking-wide">{schoolName}</h1>
+              <h1 className="font-moul mt-0.5 text-xs font-bold text-white tracking-wide">{schoolName}</h1>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-bold text-blue-200">ព្រះរាជាណាចក្រកម្ពុជា</p>
-              <p className="text-[9px] font-extrabold text-amber-300">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
+              <p className="text-[9px] font-bold text-blue-200">ព្រះរាជាណាចក្រកម្ពុជា</p>
+              <p className="text-[8px] font-extrabold text-amber-300">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-2.5 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-black tracking-tight text-white">
+              <h2 className="text-sm font-black tracking-tight text-white">
                 របាយការណ៍ប្រចាំខែ៖ {periodTitle} ({titleSuffix})
               </h2>
-              <p className="text-[10px] font-medium text-blue-200">
+              <p className="text-[9px] font-medium text-blue-200">
                 ទម្រង់ក្រដាស A4 ផ្លូវការ · បង្កើតនៅ {generatedAtLabel}
               </p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-extrabold text-amber-300 backdrop-blur-xs">
+            <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold text-amber-300 backdrop-blur-xs">
               <Sparkles className="h-3 w-3" />
               <span>A4 INFOGRAPHIC</span>
             </div>
@@ -316,76 +321,76 @@ export default function PortraitInfographicSheet({
         {/* ------------------- TOP OVERVIEW SECTION ------------------- */}
         {isClassView ? (
           /* CLASS VIEW: 2 COLUMNS (LEFT 4 METRICS, RIGHT PIE CHART) */
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <div className="grid grid-cols-2 gap-3 lg:col-span-6">
-              <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/30">
-                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                  <Users className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase">សិស្សសរុប</span>
+          <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+            <div className="grid grid-cols-2 gap-2.5 lg:col-span-6">
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-2.5 dark:border-blue-900/40 dark:bg-blue-950/30">
+                <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="text-[9px] font-black uppercase">សិស្សសរុប</span>
                 </div>
-                <p className="mt-2 text-2xl font-black text-blue-950 dark:text-blue-200 tabular-nums">
+                <p className="mt-1 text-xl font-black text-blue-950 dark:text-blue-200 tabular-nums">
                   {toKhmerDigits(metrics.totalStudents)}
                 </p>
-                <p className="text-[10px] text-slate-500">
-                  ថ្នាក់ {className} · {toKhmerDigits(metrics.totalTeachers)} គ្រូ
+                <p className="text-[9px] text-slate-500">
+                  {displayClassName} · {toKhmerDigits(metrics.totalTeachers)} គ្រូ
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase">អត្រាជាប់</span>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-2.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span className="text-[9px] font-black uppercase">អត្រាជាប់</span>
                 </div>
-                <p className="mt-2 text-2xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
+                <p className="mt-1 text-xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
                   {toKhmerDigits(metrics.passRate)}%
                 </p>
-                <p className="text-[10px] text-emerald-600">
+                <p className="text-[9px] text-emerald-600">
                   {toKhmerDigits(metrics.passCount)} ជាប់ · {toKhmerDigits(metrics.failCount)} ធ្លាក់
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5 dark:border-indigo-900/40 dark:bg-indigo-950/30">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                  <Award className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase">និទ្ទេស A សរុប</span>
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 dark:border-indigo-900/40 dark:bg-indigo-950/30">
+                <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                  <Award className="h-3.5 w-3.5" />
+                  <span className="text-[9px] font-black uppercase">និទ្ទេស A សរុប</span>
                 </div>
-                <p className="mt-2 text-xl font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
+                <p className="mt-1 text-lg font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
                   A = {toKhmerDigits(metrics.totalGradeA)}{' '}
-                  <span className="text-xs font-bold text-slate-500">
+                  <span className="text-[10px] font-bold text-slate-500">
                     / ស្រី {toKhmerDigits(metrics.femaleGradeA)}
                   </span>
                 </p>
-                <p className="text-[10px] text-slate-500">សិស្សនិទ្ទេស A ក្នុងថ្នាក់</p>
+                <p className="text-[9px] text-slate-500">សិស្សនិទ្ទេស A ក្នុងថ្នាក់</p>
               </div>
 
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3.5 dark:border-amber-900/40 dark:bg-amber-950/30">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                  <Crown className="h-4 w-4 text-amber-500" />
-                  <span className="text-[10px] font-black uppercase">សិស្សពិន្ទុខ្ពស់ជាងគេ</span>
+              <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-2.5 dark:border-amber-900/40 dark:bg-amber-950/30">
+                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                  <Crown className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-[9px] font-black uppercase">សិស្សពិន្ទុខ្ពស់ជាងគេ</span>
                 </div>
-                <p className="mt-2 text-sm font-black text-slate-950 dark:text-white truncate">
+                <p className="mt-1 text-xs font-black text-slate-950 dark:text-white truncate">
                   {metrics.topStudent ? metrics.topStudent.khmerName || metrics.topStudent.name : 'គុណ ប៊ុនគង់'}
                 </p>
-                <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                  {metrics.topStudent ? toKhmerDigits(metrics.topStudent.average) : toKhmerDigits(48.8)} ពិន្ទុ · ថ្នាក់ {className}
+                <p className="text-[9px] font-bold text-amber-700 dark:text-amber-400">
+                  {metrics.topStudent ? toKhmerDigits(metrics.topStudent.average) : toKhmerDigits(48.8)} ពិន្ទុ · {displayClassName}
                 </p>
               </div>
             </div>
 
             {/* PIE CHART FOR CLASS GRADE DISTRIBUTION */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40 lg:col-span-6">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
-                <div className="flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-purple-600" />
-                  <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                    ភាគរយបែងចែកនិទ្ទេស A ដល់ F នៃថ្នាក់ {className}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40 lg:col-span-6">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 dark:border-slate-700">
+                <div className="flex items-center gap-1.5">
+                  <PieChart className="h-3.5 w-3.5 text-purple-600" />
+                  <h4 className="text-[11px] font-black text-slate-900 dark:text-white">
+                    ភាគរយបែងចែកនិទ្ទេស A ដល់ F នៃ{displayClassName}
                   </h4>
                 </div>
-                <span className="text-[10px] font-bold text-slate-400">និទ្ទេស A ដល់ F</span>
+                <span className="text-[9px] font-bold text-slate-400">និទ្ទេស A ដល់ F</span>
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <div className="h-36 w-36 shrink-0">
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <div className="h-28 w-28 shrink-0">
                   {metrics.pieChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RePieChart>
@@ -393,9 +398,9 @@ export default function PortraitInfographicSheet({
                           data={metrics.pieChartData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={28}
-                          outerRadius={52}
-                          paddingAngle={3}
+                          innerRadius={22}
+                          outerRadius={42}
+                          paddingAngle={2}
                           dataKey="value"
                         >
                           {metrics.pieChartData.map((entry) => (
@@ -412,13 +417,13 @@ export default function PortraitInfographicSheet({
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-1.5 text-[10px] font-bold flex-1">
+                <div className="grid grid-cols-2 gap-1 text-[9px] font-bold flex-1">
                   {metrics.pieChartData.map((item) => (
                     <div
                       key={item.name}
-                      className="flex items-center justify-between rounded-xl bg-white p-1.5 border border-slate-200 dark:bg-slate-900 dark:border-slate-800"
+                      className="flex items-center justify-between rounded-lg bg-white p-1 border border-slate-200 dark:bg-slate-900 dark:border-slate-800"
                     >
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
                         <span className="text-slate-600 dark:text-slate-300">{item.name}</span>
                       </div>
@@ -448,7 +453,7 @@ export default function PortraitInfographicSheet({
             </div>
 
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-2 text-emerald-600 dark:emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-[10px] font-black uppercase">អត្រាជាប់</span>
               </div>
@@ -492,7 +497,7 @@ export default function PortraitInfographicSheet({
 
         {/* ------------------- SECTION 1: CLASS ROSTER (ONLY WHEN NEEDED) ------------------- */}
         {!hideClassRoster && (
-          <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+          <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
@@ -531,29 +536,29 @@ export default function PortraitInfographicSheet({
         {/* ------------------- MAIN CHARTS SECTION ------------------- */}
         {isClassView ? (
           /* CLASS VIEW: SUBJECT GRADE BREAKDOWN TABLE (A, B, C, D, E, F / ស្រី) */
-          <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 dark:border-slate-700">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-blue-600" />
-                <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  ១. សង្ខេបលទ្ធផលនិទ្ទេស និង មធ្យមភាគ តាមមុខវិជ្ជានៃថ្នាក់ {className}
+          <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
+              <div className="flex items-center gap-1.5">
+                <BarChart3 className="h-3.5 w-3.5 text-blue-600" />
+                <h4 className="text-[11px] font-black text-slate-900 dark:text-white">
+                  ១. សង្ខេបលទ្ធផលនិទ្ទេស និង មធ្យមភាគ តាមមុខវិជ្ជានៃ{displayClassName}
                 </h4>
               </div>
-              <span className="text-[10px] font-bold text-slate-400">និទ្ទេស A ដល់ F (ស្រី)</span>
+              <span className="text-[9px] font-bold text-slate-400">និទ្ទេស A ដល់ F (ស្រី)</span>
             </div>
 
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-left text-[10px]">
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-left text-[9.5px]">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                    <th className="py-2 px-3 font-black">មុខវិជ្ជា</th>
-                    <th className="py-2 px-2 text-center font-black text-emerald-600 dark:text-emerald-400">និទ្ទេស A</th>
-                    <th className="py-2 px-2 text-center font-black text-blue-600 dark:text-blue-400">និទ្ទេស B</th>
-                    <th className="py-2 px-2 text-center font-black text-sky-600 dark:text-sky-400">និទ្ទេស C</th>
-                    <th className="py-2 px-2 text-center font-black text-amber-600 dark:text-amber-400">និទ្ទេស D</th>
-                    <th className="py-2 px-2 text-center font-black text-orange-600 dark:text-orange-400">និទ្ទេស E</th>
-                    <th className="py-2 px-2 text-center font-black text-rose-600 dark:text-rose-400">និទ្ទេស F</th>
-                    <th className="py-2 px-3 text-right font-black text-slate-900 dark:text-white">មធ្យមភាគ</th>
+                    <th className="py-1.5 px-2.5 font-black">មុខវិជ្ជា</th>
+                    <th className="py-1.5 px-1.5 text-center font-black text-emerald-600 dark:text-emerald-400">និទ្ទេស A</th>
+                    <th className="py-1.5 px-1.5 text-center font-black text-blue-600 dark:text-blue-400">និទ្ទេស B</th>
+                    <th className="py-1.5 px-1.5 text-center font-black text-sky-600 dark:text-sky-400">និទ្ទេស C</th>
+                    <th className="py-1.5 px-1.5 text-center font-black text-amber-600 dark:text-amber-400">និទ្ទេស D</th>
+                    <th className="py-1.5 px-1.5 text-center font-black text-orange-600 dark:text-orange-400">និទ្ទេស E</th>
+                    <th className="py-1.5 px-1.5 text-center font-black text-rose-600 dark:text-rose-400">និទ្ទេស F</th>
+                    <th className="py-1.5 px-2.5 text-right font-black text-slate-900 dark:text-white">មធ្យមភាគ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -562,58 +567,58 @@ export default function PortraitInfographicSheet({
                       key={sub.code}
                       className={idx % 2 === 0 ? 'bg-white/90 dark:bg-slate-900/60' : 'bg-slate-50/50 dark:bg-slate-800/30'}
                     >
-                      <td className="py-1.5 px-3 font-extrabold text-slate-900 dark:text-white">
+                      <td className="py-1 px-2.5 font-extrabold text-slate-900 dark:text-white">
                         {sub.subject}
                       </td>
-                      <td className="py-1.5 px-2 text-center tabular-nums">
+                      <td className="py-1 px-1.5 text-center tabular-nums">
                         <span className="font-bold text-emerald-700 dark:text-emerald-300">
                           {toKhmerDigits(sub.gradeA.total)}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                        <span className="text-[8.5px] text-slate-400 font-semibold ml-0.5">
                           (ស្រី {toKhmerDigits(sub.gradeA.female)})
                         </span>
                       </td>
-                      <td className="py-1.5 px-2 text-center tabular-nums">
+                      <td className="py-1 px-1.5 text-center tabular-nums">
                         <span className="font-bold text-blue-700 dark:text-blue-300">
                           {toKhmerDigits(sub.gradeB.total)}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                        <span className="text-[8.5px] text-slate-400 font-semibold ml-0.5">
                           (ស្រី {toKhmerDigits(sub.gradeB.female)})
                         </span>
                       </td>
-                      <td className="py-1.5 px-2 text-center tabular-nums">
+                      <td className="py-1 px-1.5 text-center tabular-nums">
                         <span className="font-bold text-sky-700 dark:text-sky-300">
                           {toKhmerDigits(sub.gradeC.total)}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                        <span className="text-[8.5px] text-slate-400 font-semibold ml-0.5">
                           (ស្រី {toKhmerDigits(sub.gradeC.female)})
                         </span>
                       </td>
-                      <td className="py-1.5 px-2 text-center tabular-nums">
+                      <td className="py-1 px-1.5 text-center tabular-nums">
                         <span className="font-bold text-amber-700 dark:text-amber-300">
                           {toKhmerDigits(sub.gradeD.total)}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                        <span className="text-[8.5px] text-slate-400 font-semibold ml-0.5">
                           (ស្រី {toKhmerDigits(sub.gradeD.female)})
                         </span>
                       </td>
-                      <td className="py-1.5 px-2 text-center tabular-nums">
+                      <td className="py-1 px-1.5 text-center tabular-nums">
                         <span className="font-bold text-orange-700 dark:text-orange-300">
                           {toKhmerDigits(sub.gradeE.total)}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                        <span className="text-[8.5px] text-slate-400 font-semibold ml-0.5">
                           (ស្រី {toKhmerDigits(sub.gradeE.female)})
                         </span>
                       </td>
-                      <td className="py-1.5 px-2 text-center tabular-nums">
+                      <td className="py-1 px-1.5 text-center tabular-nums">
                         <span className="font-bold text-rose-700 dark:text-rose-300">
                           {toKhmerDigits(sub.gradeF.total)}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                        <span className="text-[8.5px] text-slate-400 font-semibold ml-0.5">
                           (ស្រី {toKhmerDigits(sub.gradeF.female)})
                         </span>
                       </td>
-                      <td className="py-1.5 px-3 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">
+                      <td className="py-1 px-2.5 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">
                         {toKhmerDigits(sub.average)}
                       </td>
                     </tr>
@@ -624,7 +629,7 @@ export default function PortraitInfographicSheet({
           </section>
         ) : (
           /* DIVISION / GRADE VIEW: SIDE-BY-SIDE CHARTS */
-          <section className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <section className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* CHART A: PASS/FAIL GROUPED BAR CHART */}
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
@@ -719,24 +724,24 @@ export default function PortraitInfographicSheet({
         )}
 
         {/* ------------------- SECTION: HONOR ROLL SHOWCASE ------------------- */}
-        <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5 dark:border-amber-900/50">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-amber-600" />
-              <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 dark:text-amber-200">
+        <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/40 p-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <div className="flex items-center justify-between border-b border-amber-200/80 pb-2 dark:border-amber-900/50">
+            <div className="flex items-center gap-1.5">
+              <Trophy className="h-3.5 w-3.5 text-amber-600" />
+              <h4 className="text-[11px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-200">
                 {isClassView
-                  ? `២. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ៥ រូបនៃថ្នាក់ ${className}`
+                  ? `២. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ៥ រូបនៃ${displayClassName}`
                   : isDivisionLevel
                   ? '៣. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប'
                   : '៤. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប'}
               </h4>
             </div>
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-extrabold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
               {isClassView ? 'សិស្សពូកែ ៥ រូប' : 'សិស្សពូកែសរុប ១០ រូប'}
             </span>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {(isClassView ? metrics.sortedTop10.slice(0, 5) : metrics.sortedTop10).map((student, index) => {
               const rank = index + 1;
               const isGold = rank === 1;
@@ -746,7 +751,7 @@ export default function PortraitInfographicSheet({
               return (
                 <div
                   key={`${student.name}-${index}`}
-                  className={`flex items-center justify-between rounded-xl border p-2.5 transition-all ${
+                  className={`flex items-center justify-between rounded-lg border p-1.5 px-2.5 transition-all ${
                     isGold
                       ? 'border-amber-300 bg-amber-100/70 dark:border-amber-800 dark:bg-amber-900/40'
                       : isSilver
@@ -756,26 +761,26 @@ export default function PortraitInfographicSheet({
                       : 'border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/80'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-black ${
                         isGold
-                          ? 'bg-amber-500 text-white shadow-xs'
+                          ? 'bg-amber-500 text-white shadow-2xs'
                           : isSilver
-                          ? 'bg-slate-400 text-white shadow-xs'
+                          ? 'bg-slate-400 text-white shadow-2xs'
                           : isBronze
-                          ? 'bg-amber-700 text-white shadow-xs'
+                          ? 'bg-amber-700 text-white shadow-2xs'
                           : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                       }`}
                     >
                       {toKhmerDigits(rank)}
                     </span>
                     <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white">
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white">
                         {student.khmerName || student.name}
                       </p>
-                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                        {student.className}
+                      <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                        {displayClassName || student.className}
                       </p>
                     </div>
                   </div>
