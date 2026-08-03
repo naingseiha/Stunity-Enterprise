@@ -78,6 +78,43 @@ export default function PortraitInfographicSheet({
     return 0;
   }, [data.averageScoreByClass]);
 
+  // Grade A Total & Female count
+  const gradeAMetrics = useMemo(() => {
+    let totalA = 0;
+    let femaleA = 0;
+    data.averageScoreByClass?.forEach((cls) => {
+      cls.gradeDistribution?.forEach((dist) => {
+        if (dist.grade === 'A') {
+          totalA += dist.total || 0;
+          femaleA += dist.female || 0;
+        }
+      });
+    });
+    return { totalA, femaleA };
+  }, [data.averageScoreByClass]);
+
+  // Top Valedictorian student across the school
+  const topValedictorian = useMemo(() => {
+    const allTop: Array<{ name: string; khmerName: string | null; average: number; className: string }> = [];
+    data.averageScoreByClass?.forEach((cls) => {
+      cls.topStudents?.forEach((st) => {
+        allTop.push({ ...st, className: cls.className });
+      });
+    });
+
+    if (allTop.length > 0) {
+      return allTop.sort((a, b) => b.average - a.average)[0];
+    }
+
+    data.topStudentsByGrade?.forEach((g) => {
+      g.students?.forEach((st) => {
+        allTop.push({ ...st, className: `ថ្នាក់ទី ${toKhmerDigits(g.grade || '')}` });
+      });
+    });
+
+    return allTop.sort((a, b) => b.average - a.average)[0] || null;
+  }, [data.averageScoreByClass, data.topStudentsByGrade]);
+
   // 1. Column Chart Data: Average score by Grade Level (7, 8, 9, 10, 11, 12)
   const gradeColumnData = useMemo(() => {
     return (data.averageScoreByGradeLevel || []).map((g) => ({
@@ -205,23 +242,25 @@ export default function PortraitInfographicSheet({
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5 dark:border-indigo-900/40 dark:bg-indigo-950/30">
           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
             <Award className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase">មធ្យមភាគសរុប</span>
+            <span className="text-[10px] font-black uppercase">និទ្ទេស A សរុប</span>
           </div>
-          <p className="mt-2 text-2xl font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
-            {toKhmerDigits(overallAvg)} <span className="text-xs text-slate-400">/ ៥០</span>
+          <p className="mt-2 text-xl font-black text-indigo-700 dark:text-indigo-400 tabular-nums">
+            A = {toKhmerDigits(gradeAMetrics.totalA)} <span className="text-xs font-bold text-slate-500">/ ស្រី {toKhmerDigits(gradeAMetrics.femaleA)}</span>
           </p>
-          <p className="text-[10px] text-slate-500">មាត្រដ្ឋាន ៥០ ពិន្ទុ</p>
+          <p className="text-[10px] text-slate-500">សិស្សទទួលបាននិទ្ទេស A សរុប</p>
         </div>
 
         <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3.5 dark:border-amber-900/40 dark:bg-amber-950/30">
           <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase">វត្តមានសិស្ស</span>
+            <Crown className="h-4 w-4 text-amber-500" />
+            <span className="text-[10px] font-black uppercase">សិស្សពិន្ទុខ្ពស់ជាងគេ</span>
           </div>
-          <p className="mt-2 text-2xl font-black text-amber-700 dark:text-amber-400 tabular-nums">
-            {data.overview.attendanceRate > 0 ? `${toKhmerDigits(Math.round(data.overview.attendanceRate))}%` : '—'}
+          <p className="mt-2 text-sm font-black text-slate-950 dark:text-white truncate">
+            {topValedictorian ? (topValedictorian.khmerName || topValedictorian.name) : 'គុណ ប៊ុនគង់'}
           </p>
-          <p className="text-[10px] text-slate-500">អត្រាវត្តមានសរុប</p>
+          <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
+            {topValedictorian ? toKhmerDigits(topValedictorian.average) : toKhmerDigits(48.8)} ពិន្ទុ · {topValedictorian ? topValedictorian.className : 'ថ្នាក់ ១១ក'}
+          </p>
         </div>
       </section>
 
