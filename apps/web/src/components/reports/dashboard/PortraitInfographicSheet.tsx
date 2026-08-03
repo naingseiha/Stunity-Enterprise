@@ -163,16 +163,12 @@ export default function PortraitInfographicSheet({
 
         <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-4 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wide">
-                របាយការណ៍ព័ត៌មានវិទ្យា (A4 INFOGRAPHIC)
-              </span>
-              <span className="text-xs font-bold text-slate-300">
-                {data.period.khmerLabel || data.period.label}
-              </span>
-            </div>
-            <h1 className="mt-1 font-moul text-lg font-normal tracking-wide text-amber-300 sm:text-xl">
-              របាយការណ៍ស្ថានភាពសាលារៀន (សង្ខេប)
+            <h1 className="font-moul text-lg font-normal tracking-wide text-amber-300 sm:text-xl">
+              {(() => {
+                const label = data.period.khmerLabel || data.period.label || '';
+                if (label.startsWith('ខែ')) return `របាយការណ៍ប្រចាំ${label}`;
+                return `របាយការណ៍ប្រចាំខែ៖ ${label}`;
+              })()}
             </h1>
           </div>
           <div className="text-left text-[11px] font-semibold text-slate-300 sm:text-right">
