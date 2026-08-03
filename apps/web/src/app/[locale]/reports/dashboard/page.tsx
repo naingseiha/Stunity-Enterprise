@@ -377,32 +377,61 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                 {/* DIVIDER BETWEEN HEADER & FILTERS */}
                 <div className="my-4 border-t border-slate-200 dark:border-gray-800" />
 
-                {/* EMBEDDED FILTER SECTION (WITHIN THE SAME FLAT CARD) */}
-                <div>
-                  <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+                {/* RE-ARRANGED CLEAN GROUPED FILTER SECTION */}
+                <div className="space-y-3.5">
+                  {/* TOP ROW: TITLE & PRIMARY ACTION BUTTONS */}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-gray-200">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                         <Filter className="h-4 w-4" />
                       </span>
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="text-xs font-black text-slate-950 dark:text-white">
-                            {locale === 'km' ? 'តម្រងរបាយការណ៍សាលារៀន' : 'School Report Parameters'}
+                            តម្រងរបាយការណ៍សាលារៀន
                           </h3>
                           {isFilterDirty && (
                             <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                              {locale === 'km' ? 'មិនទាន់បង្កើត' : 'Unapplied Changes'}
+                              មិនទាន់បង្កើត
                             </span>
                           )}
                         </div>
                         <p className="text-[11px] font-medium text-slate-500 dark:text-gray-400">
-                          {locale === 'km' ? 'សូមជ្រើសរើសលក្ខខណ្ឌ រួចចុចប៊ូតុង "បង្កើតរបាយការណ៍"' : 'Configure parameters below and click Generate Report'}
+                          សូមជ្រើសរើសលក្ខខណ្ឌ រួចចុចប៊ូតុង "បង្កើតរបាយការណ៍"
                         </p>
                       </div>
                     </div>
 
-                    {/* GENERATE & RESET BUTTONS */}
-                    <div className="flex items-center gap-2">
+                    {/* ACTION BUTTONS & VIEW TOGGLE */}
+                    <div className="flex items-center gap-2.5">
+                      {/* View Mode Segment Toggle */}
+                      <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-gray-700 dark:bg-gray-800">
+                        <button
+                          type="button"
+                          onClick={() => setViewMode('infographic')}
+                          className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                            viewMode === 'infographic'
+                              ? 'bg-white text-purple-700 shadow-xs dark:bg-gray-900 dark:text-purple-400'
+                              : 'text-slate-600 hover:text-slate-900 dark:text-gray-400'
+                          }`}
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>Poster</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewMode('dashboard')}
+                          className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                            viewMode === 'dashboard'
+                              ? 'bg-white text-blue-700 shadow-xs dark:bg-gray-900 dark:text-blue-400'
+                              : 'text-slate-600 hover:text-slate-900 dark:text-gray-400'
+                          }`}
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                          <span>Grid</span>
+                        </button>
+                      </div>
+
                       {isFilterDirty && (
                         <button
                           type="button"
@@ -410,7 +439,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                           className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-800 dark:text-slate-300"
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
-                          <span>{locale === 'km' ? 'កំណត់ឡើងវិញ' : 'Reset'}</span>
+                          <span>កំណត់ឡើងវិញ</span>
                         </button>
                       )}
 
@@ -425,7 +454,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         ) : (
                           <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                         )}
-                        <span>{locale === 'km' ? 'បង្កើតរបាយការណ៍' : 'Generate Report'}</span>
+                        <span>បង្កើតរបាយការណ៍</span>
                         {isFilterDirty && !loading && (
                           <span className="absolute -right-1 -top-1 flex h-3 w-3">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
@@ -436,100 +465,97 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     </div>
                   </div>
 
-                  {/* FLAT BORDER 6-COLUMN FILTER FIELDS GRID */}
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                    
-                    {/* Field 1: Period Selection */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        {locale === 'km' ? '១. ប្រភេទរបាយការណ៍' : '1. Period Type'}
-                      </label>
-                      <div className="grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-gray-700 dark:bg-gray-800">
-                        {(['month', 'semester', 'year'] as ReportPeriodType[]).map((item) => (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => setPendingPeriod(item)}
-                            className={`rounded-lg py-1.5 text-center text-[11px] font-bold transition-all ${
-                              pendingPeriod === item
-                                ? 'bg-white text-blue-700 shadow-xs dark:bg-gray-900 dark:text-blue-400'
-                                : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
-                            }`}
-                          >
-                            {item === 'month' ? 'ខែ' : item === 'semester' ? 'ឆមាស' : 'ឆ្នាំ'}
-                          </button>
-                        ))}
+                  {/* 2 GROUPED PANELS (PANEL 1: TIMEFRAME | PANEL 2: SCOPE DRILLDOWN) */}
+                  <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
+                    {/* PANEL 1: TIMEFRAME & PERIOD (4 COLS) */}
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40 lg:col-span-4">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
+                        <CalendarDays className="h-3.5 w-3.5 text-blue-600" />
+                        <span>១. ពេលវេលាសិក្សា (Timeframe)</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {/* Type selector */}
+                        <div className="grid grid-cols-3 rounded-xl border border-slate-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+                          {(['month', 'semester', 'year'] as ReportPeriodType[]).map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => setPendingPeriod(item)}
+                              className={`rounded-lg py-1 text-center text-[11px] font-bold transition-all ${
+                                pendingPeriod === item
+                                  ? 'bg-blue-600 text-white shadow-2xs'
+                                  : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
+                              }`}
+                            >
+                              {item === 'month' ? 'ខែ' : item === 'semester' ? 'ឆមាស' : 'ឆ្នាំ'}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Value dropdown */}
+                        {pendingPeriod === 'month' ? (
+                          <div className="relative">
+                            <select
+                              value={pendingMonthNumber}
+                              onChange={(e) => setPendingMonthNumber(Number(e.target.value))}
+                              className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
+                            >
+                              {KHMER_MONTHS.map((month) => (
+                                <option key={month.number} value={month.number}>
+                                  {getKhmerMonthDisplayName(month.number, month.label)}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          </div>
+                        ) : pendingPeriod === 'semester' ? (
+                          <div className="relative">
+                            <select
+                              value={pendingSemester}
+                              onChange={(e) => setPendingSemester(e.target.value as '1' | '2')}
+                              className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
+                            >
+                              <option value="1">ឆមាសទី ១</option>
+                              <option value="2">ឆមាសទី ២</option>
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          </div>
+                        ) : (
+                          <div className="flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                            ពេញមួយឆ្នាំសិក្សា
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Field 2: Month / Semester Dropdown */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        {pendingPeriod === 'month' ? '២. ជ្រើសរើសខែ' : pendingPeriod === 'semester' ? '២. ជ្រើសរើសឆមាស' : '២. ពេលវេលា'}
-                      </label>
-                      {pendingPeriod === 'month' ? (
-                        <div className="relative">
-                          <select
-                            value={pendingMonthNumber}
-                            onChange={(event) => setPendingMonthNumber(Number(event.target.value))}
-                            className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
-                          >
-                            {KHMER_MONTHS.map((month) => (
-                              <option key={month.number} value={month.number}>
-                                {getKhmerMonthDisplayName(month.number, month.label)}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        </div>
-                      ) : pendingPeriod === 'semester' ? (
-                        <div className="relative">
-                          <select
-                            value={pendingSemester}
-                            onChange={(event) => setPendingSemester(event.target.value as '1' | '2')}
-                            className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
-                          >
-                            <option value="1">{t('semester1')}</option>
-                            <option value="2">{t('semester2')}</option>
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        </div>
-                      ) : (
-                        <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                          ពេញមួយឆ្នាំសិក្សា
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Field 3: Division Selection */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        ៣. ផ្នែកសិក្សា
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={pendingDivision}
-                          onChange={(event) => handlePendingDivisionChange(event.target.value as any)}
-                          className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
-                        >
-                          <option value="all">គ្រប់ផ្នែក (៧-១២)</option>
-                          <option value="junior">ផ្នែក អនុវិទ្យាល័យ (៧-៩)</option>
-                          <option value="senior">ផ្នែក វិទ្យាល័យ (១០-១២)</option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    {/* PANEL 2: SCHOOL SCOPE & DRILLDOWN (8 COLS) */}
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40 lg:col-span-8">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
+                        <School className="h-3.5 w-3.5 text-indigo-600" />
+                        <span>២. វិសាលភាព និង ថ្នាក់សិក្សា (Scope Drilldown)</span>
                       </div>
-                    </div>
 
-                    {/* Field 4: Grade Filter */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        ៤. កម្រិតថ្នាក់
-                      </label>
-                      {canDrillDownByClass ? (
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        {/* Division */}
+                        <div className="relative">
+                          <select
+                            value={pendingDivision}
+                            onChange={(e) => handlePendingDivisionChange(e.target.value as any)}
+                            className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
+                          >
+                            <option value="all">គ្រប់ផ្នែក (៧-១២)</option>
+                            <option value="junior">ផ្នែក អនុវិទ្យាល័យ (៧-៩)</option>
+                            <option value="senior">ផ្នែក វិទ្យាល័យ (១០-១២)</option>
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        </div>
+
+                        {/* Grade */}
                         <div className="relative">
                           <select
                             value={pendingGradeFilter}
-                            onChange={(event) => handlePendingGradeChange(event.target.value)}
+                            onChange={(e) => handlePendingGradeChange(e.target.value)}
                             className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
                           >
                             <option value="">
@@ -556,23 +582,12 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                           </select>
                           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         </div>
-                      ) : (
-                        <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                          គ្រប់កម្រិត
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Field 5: Class Filter */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        ៥. ថ្នាក់រៀន
-                      </label>
-                      {canDrillDownByClass ? (
+                        {/* Class */}
                         <div className="relative">
                           <select
                             value={pendingClassFilter}
-                            onChange={(event) => setPendingClassFilter(event.target.value)}
+                            onChange={(e) => setPendingClassFilter(e.target.value)}
                             className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
                           >
                             <option value="">គ្រប់ថ្នាក់</option>
@@ -582,50 +597,9 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                               </option>
                             ))}
                           </select>
-                          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         </div>
-                      ) : (
-                        <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                          គ្រប់ថ្នាក់
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Field 6: View Mode Toggle */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        ៦. ទម្រង់បង្ហាញ
-                      </label>
-                      <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-gray-700 dark:bg-gray-800">
-                        <button
-                          type="button"
-                          onClick={() => setViewMode('infographic')}
-                          aria-pressed={viewMode === 'infographic'}
-                          className={`inline-flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                            viewMode === 'infographic'
-                              ? 'bg-white text-purple-700 shadow-xs dark:bg-gray-900 dark:text-purple-400'
-                              : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
-                          }`}
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          <span>Poster</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setViewMode('dashboard')}
-                          aria-pressed={viewMode === 'dashboard'}
-                          className={`inline-flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                            viewMode === 'dashboard'
-                              ? 'bg-white text-blue-700 shadow-xs dark:bg-gray-900 dark:text-blue-400'
-                              : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
-                          }`}
-                        >
-                          <LayoutGrid className="h-3.5 w-3.5" />
-                          <span>Grid</span>
-                        </button>
                       </div>
                     </div>
-
                   </div>
                 </div>
 
