@@ -78,7 +78,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
     classFilter: string;
   } | null>(null);
 
-  const [viewMode, setViewMode] = useState<'infographic' | 'dashboard'>('infographic');
+  const [viewMode, setViewMode] = useState<'infographic' | 'dashboard'>('dashboard');
   const [data, setData] = useState<SchoolReportsDashboardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

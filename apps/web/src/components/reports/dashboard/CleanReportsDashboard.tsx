@@ -27,10 +27,16 @@ import {
   Scale,
   Target,
   TrendingUp,
+  PieChart,
+  Layers,
+  School,
   Users,
 } from 'lucide-react';
 import type { SchoolReportsDashboardResponse } from '@/lib/api/reports';
 import OperationalHealthSection from './OperationalHealthSection';
+import SchoolLevelGroupedSection from './SchoolLevelGroupedSection';
+import SchoolMindmapDiagram from './SchoolMindmapDiagram';
+import ChartsAnalyticsHub from './ChartsAnalyticsHub';
 
 type DashboardProps = {
   data: SchoolReportsDashboardResponse;
@@ -174,6 +180,7 @@ export default function CleanReportsDashboard({
   const km = locale === 'km';
   const tx = useCallback((kh: string, en: string) => (km ? kh : en), [km]);
   const [selectedSubjectKey, setSelectedSubjectKey] = useState('');
+  const [viewTab, setViewTab] = useState<'all' | 'levels' | 'mindmap' | 'charts'>('all');
 
   const model = useMemo(() => {
     const graded = data.passRate.passing + data.passRate.failing;
@@ -421,6 +428,65 @@ export default function CleanReportsDashboard({
         </div>
       </header>
 
+      {/* DASHBOARD VIEW MODE SWITCHER TABS */}
+      {!className && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setViewTab('all')}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${
+                viewTab === 'all'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              <span>{tx('ទិដ្ឋភាពទូទៅ', 'All Analytics')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewTab('levels')}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${
+                viewTab === 'levels'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <School className="h-4 w-4" />
+              <span>{tx('អនុវិទ្យាល័យ និង វិទ្យាល័យ', 'Junior vs High School')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewTab('mindmap')}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${
+                viewTab === 'mindmap'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              <span>{tx('ដើមឈើ Mindmap', 'Mindmap Tree View')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewTab('charts')}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${
+                viewTab === 'charts'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <PieChart className="h-4 w-4" />
+              <span>{tx('មជ្ឈមណ្ឌល Charts', 'Charts Gallery')}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <section aria-label={tx('សូចនាករសំខាន់', 'Key indicators')} className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label={tx('សិស្សសរុប', 'Total students')}
@@ -473,8 +539,65 @@ export default function CleanReportsDashboard({
         />
       </section>
 
-      <section className={`${cardClass} overflow-hidden`} aria-labelledby="priority-actions-title">
-        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6">
+      {/* DEDICATED VIEW TAB RENDERING */}
+      {viewTab === 'levels' && (
+        <SchoolLevelGroupedSection
+          data={data}
+          locale={locale}
+          onSelectClass={onSelectClass}
+          onSelectStudent={onSelectStudent}
+        />
+      )}
+
+      {viewTab === 'mindmap' && (
+        <SchoolMindmapDiagram
+          data={data}
+          locale={locale}
+          schoolName={schoolName}
+          onSelectClass={onSelectClass}
+        />
+      )}
+
+      {viewTab === 'charts' && (
+        <ChartsAnalyticsHub
+          data={data}
+          locale={locale}
+        />
+      )}
+
+      {(viewTab === 'all' || className) && (
+        <>
+          {/* GROUPED JUNIOR HIGH & HIGH SCHOOL SECTION */}
+          {!className && (
+            <SchoolLevelGroupedSection
+              data={data}
+              locale={locale}
+              onSelectClass={onSelectClass}
+              onSelectStudent={onSelectStudent}
+            />
+          )}
+
+          {/* MINDMAP HIERARCHY DIAGRAM */}
+          {!className && (
+            <SchoolMindmapDiagram
+              data={data}
+              locale={locale}
+              schoolName={schoolName}
+              onSelectClass={onSelectClass}
+            />
+          )}
+
+          {/* PIE & BAR CHARTS GALLERY HUB */}
+          {!className && (
+            <ChartsAnalyticsHub
+              data={data}
+              locale={locale}
+            />
+          )}
+
+          {/* PRIORITIES & ACTION SECTION */}
+          <section className={`${cardClass} overflow-hidden`} aria-labelledby="priority-actions-title">
+            <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6">
           <SectionHeading
             eyebrow={tx('អាទិភាព', 'Priorities')}
             title={tx('អ្វីដែលត្រូវធ្វើបន្ទាប់', 'What needs attention next')}
@@ -1013,6 +1136,9 @@ export default function CleanReportsDashboard({
             </div>
           </div>
         </section>
+      )}
+
+        </>
       )}
 
       <footer className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900/60 sm:px-6">
