@@ -216,57 +216,52 @@ export default function PortraitInfographicSheet({
     pageNumber: number,
   ) => {
     const metrics = computePageMetrics(targetLevel);
+    const isDivisionLevel = targetLevel === 'all' || targetLevel === 'junior' || targetLevel === 'senior';
 
     return (
       <div
-        key={`a4-sheet-${targetLevel}`}
-        className="mx-auto w-full max-w-[850px] overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 print:p-4"
+        key={`a4-sheet-${targetLevel}-${pageNumber}`}
+        className="mx-auto w-full max-w-[210mm] rounded-3xl border-2 border-slate-200 bg-white p-7 text-slate-900 shadow-xl dark:border-slate-800 dark:bg-slate-900 print:max-w-none print:rounded-none print:border-none print:p-0 print:shadow-none space-y-5"
       >
-        {/* ------------------- OFFICIAL A4 BANNER HEADER ------------------- */}
-        <header className="border-b-2 border-slate-900 pb-4 dark:border-slate-200">
-          <div className="flex items-start justify-between text-xs font-black text-slate-900 dark:text-white">
-            <div className="space-y-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-              <p className="font-moul text-base font-bold text-blue-950 dark:text-blue-200">{schoolName}</p>
+        {/* ------------------- BANNER HEADER ------------------- */}
+        <header className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-5 text-white shadow-md">
+          <div className="flex items-center justify-between border-b border-blue-700/60 pb-3">
+            <div>
+              <p className="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase">
+                ក្រសួងអប់រំ យុវជន និងកីឡា
+              </p>
+              <h1 className="font-moul mt-1 text-sm font-bold text-white tracking-wide">{schoolName}</h1>
             </div>
-            <div className="text-center font-moul">
-              <p className="text-xs font-bold text-slate-900 dark:text-white">ព្រះរាជាណាចក្រកម្ពុជា</p>
-              <p className="text-[10px] font-normal text-slate-700 dark:text-slate-300">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
+            <div className="text-right">
+              <p className="text-[10px] font-bold text-blue-200">ព្រះរាជាណាចក្រកម្ពុជា</p>
+              <p className="text-[9px] font-extrabold text-amber-300">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-4 text-white sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-3 flex items-center justify-between">
             <div>
-              <h1 className="font-moul text-lg font-normal tracking-wide text-amber-300 sm:text-xl">
-                {periodTitle} {titleSuffix ? `— ${titleSuffix}` : ''}
-              </h1>
-            </div>
-            <div className="text-left text-[11px] font-semibold text-slate-300 sm:text-right">
-              <p>កាលបរិច្ឆេទបង្កើត៖ {generatedAtLabel}</p>
-              <p>
-                កម្រិតសិក្សា៖{' '}
-                {targetLevel === 'junior'
-                  ? 'ផ្នែក អនុវិទ្យាល័យ (ថ្នាក់ទី ៧–៩)'
-                  : targetLevel === 'senior'
-                  ? 'ផ្នែក វិទ្យាល័យ (ថ្នាក់ទី ១០–១២)'
-                  : className
-                  ? `ថ្នាក់ ${className}`
-                  : gradeFilter
-                  ? `ថ្នាក់ទី ${toKhmerDigits(gradeFilter)}`
-                  : 'គ្រប់កម្រិត (៧–១២)'}
+              <h2 className="text-base font-black tracking-tight text-white">
+                របាយការណ៍ប្រចាំខែ៖ {periodTitle} ({titleSuffix})
+              </h2>
+              <p className="text-[10px] font-medium text-blue-200">
+                ទម្រង់ក្រដាស A4 ផ្លូវការ · បង្កើតនៅ {generatedAtLabel}
               </p>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-extrabold text-amber-300 backdrop-blur-xs">
+              <Sparkles className="h-3 w-3" />
+              <span>A4 INFOGRAPHIC</span>
             </div>
           </div>
         </header>
 
-        {/* ------------------- SECTION 1: 4 EXECUTIVE KEY INDICATOR BADGES ------------------- */}
-        <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* ------------------- TOP METRICS OVERVIEW (4 CARDS) ------------------- */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/30">
             <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
               <Users className="h-4 w-4" />
               <span className="text-[10px] font-black uppercase">សិស្សសរុប</span>
             </div>
-            <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white tabular-nums">
+            <p className="mt-2 text-2xl font-black text-blue-950 dark:text-blue-200 tabular-nums">
               {toKhmerDigits(metrics.totalStudents)}
             </p>
             <p className="text-[10px] text-slate-500">
@@ -316,8 +311,8 @@ export default function PortraitInfographicSheet({
           </div>
         </section>
 
-        {/* ------------------- SECTION 1: CLASS ROSTER (ONLY FOR NON-ALL TARGET LEVELS) ------------------- */}
-        {targetLevel !== 'all' && (
+        {/* ------------------- SECTION 1: CLASS ROSTER (ONLY FOR NON-DIVISION TARGET LEVELS) ------------------- */}
+        {!isDivisionLevel && (
           <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 dark:border-slate-700">
               <div className="flex items-center gap-2">
@@ -356,19 +351,19 @@ export default function PortraitInfographicSheet({
 
         {/* ------------------- CHARTS GALLERY SECTION ------------------- */}
         <section className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* CHART A: BAR CHART (PASS/FAIL FOR ALL, AVERAGE FOR OTHERS) */}
+          {/* CHART A: BAR CHART (PASS/FAIL FOR DIVISION POSTERS, AVERAGE FOR SPECIFIC CLASS) */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-blue-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  {targetLevel === 'all'
+                  {isDivisionLevel
                     ? '១. ចំនួនសិស្សជាប់ និង ធ្លាក់ តាមកម្រិតថ្នាក់'
                     : '២. មធ្យមភាគពិន្ទុតាមកម្រិតថ្នាក់'}
                 </h4>
               </div>
               <span className="text-[10px] font-bold text-slate-400">
-                {targetLevel === 'all' ? (
+                {isDivisionLevel ? (
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-blue-600" /> ជាប់{' '}
                     <span className="h-2 w-2 rounded-full bg-rose-500 ml-1" /> ធ្លាក់
@@ -380,15 +375,15 @@ export default function PortraitInfographicSheet({
             </div>
 
             <div className="mt-3 h-48 w-full">
-              {targetLevel === 'all' ? (
+              {isDivisionLevel ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={metrics.gradePassFailChartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="grade" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <Tooltip />
-                    <Bar dataKey="pass" name="ជាប់" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={16} />
-                    <Bar dataKey="fail" name="ធ្លាក់" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={16} />
+                    <Bar dataKey="pass" name="ជាប់" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                    <Bar dataKey="fail" name="ធ្លាក់" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={18} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : metrics.columnChartData.length > 0 ? (
@@ -415,7 +410,7 @@ export default function PortraitInfographicSheet({
               <div className="flex items-center gap-2">
                 <PieChart className="h-4 w-4 text-purple-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  {targetLevel === 'all'
+                  {isDivisionLevel
                     ? '២. ភាគរយបែងចែកនិទ្ទេស A ដល់ F'
                     : '៣. ភាគរយបែងចែកនិទ្ទេស A ដល់ F'}
                 </h4>
@@ -470,8 +465,8 @@ export default function PortraitInfographicSheet({
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-amber-600" />
               <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 dark:text-amber-200">
-                {targetLevel === 'all'
-                  ? '៣. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូបទូទាំងសាលារៀន'
+                {isDivisionLevel
+                  ? '៣. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប'
                   : '៤. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប'}
               </h4>
             </div>
