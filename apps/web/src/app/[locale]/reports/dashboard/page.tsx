@@ -288,10 +288,12 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   if (!isClient) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 transition-colors duration-500 dark:bg-gray-950">
-      <UnifiedNavigation user={user} school={school} />
-      <div className="relative min-h-screen lg:ml-64">
-        <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 transition-colors duration-500 dark:bg-gray-950 print:bg-white print:p-0">
+      <div className="print:hidden">
+        <UnifiedNavigation user={user} school={school} />
+      </div>
+      <div className="relative min-h-screen lg:ml-64 print:ml-0 print:min-h-0">
+        <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8 print:max-w-none print:p-0">
           {!user ? (
             <div className="flex min-h-[50vh] items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
@@ -306,7 +308,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
           ) : (
             <>
               {/* UNIFIED SINGLE HEADER & FILTER CARD (MATCHING STUDENTS PAGE FLAT BORDER STANDARD) */}
-              <section className="relative mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+              <section className="relative mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-gray-900 print:hidden">
                 
                 {/* BREADCRUMB NAV */}
                 <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-gray-500">
@@ -621,30 +623,6 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                   </section>
                 ) : data ? (
                   <div ref={exportRef} className="space-y-5">
-                    {exporting && (
-                      <header className="rounded-2xl border-2 border-amber-300 bg-white px-8 py-7 text-slate-950">
-                        <div className="flex items-start justify-between gap-8 border-b border-slate-200 pb-5">
-                          <div className="space-y-1 text-sm font-bold text-blue-950">
-                            <p>{school?.officeName || 'ក្រសួងអប់រំ យុវជន និងកីឡា'}</p>
-                            <p>{school?.province ? `ខេត្ត៖ ${school.province}` : ''}</p>
-                            <p>{displaySchoolNameKhmer}</p>
-                          </div>
-                          <div className="text-center text-sm font-bold">
-                            <p>ព្រះរាជាណាចក្រកម្ពុជា</p>
-                            <p className="mt-1">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
-                          </div>
-                        </div>
-                        <div className="py-5 text-center">
-                          <h2 className="text-2xl font-black">របាយការណ៍ស្ថានភាពសាលារៀន</h2>
-                          <p className="mt-2 text-sm font-semibold text-slate-600">ឆ្នាំសិក្សា៖ {toKhmerDigits(activeYear?.name || '')} · {formattedPeriodSubtitle}{scopeClassName ? ` · ថ្នាក់ ${scopeClassName}` : ''}</p>
-                        </div>
-                        <div className="flex justify-center gap-3 text-[10px] font-bold text-slate-500">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5"><Hash className="h-3 w-3" />{data.period.label}-{schoolId?.slice(-6).toUpperCase()}</span>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5"><CalendarDays className="h-3 w-3" />{formatKhmerDate(new Date())}</span>
-                        </div>
-                      </header>
-                    )}
-
                     {viewMode === 'infographic' ? (
                       <PortraitInfographicSheet
                         data={data}
