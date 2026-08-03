@@ -66,6 +66,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   const [pendingPeriod, setPendingPeriod] = useState<ReportPeriodType>('month');
   const [pendingMonthNumber, setPendingMonthNumber] = useState<number>(getDefaultReportingMonth);
   const [pendingSemester, setPendingSemester] = useState<'1' | '2'>('1');
+  const [pendingDivision, setPendingDivision] = useState<'all' | 'junior' | 'senior'>('all');
   const [pendingGradeFilter, setPendingGradeFilter] = useState('');
   const [pendingClassFilter, setPendingClassFilter] = useState('');
 
@@ -74,6 +75,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
     period: ReportPeriodType;
     monthNumber: number;
     semester: '1' | '2';
+    division: 'all' | 'junior' | 'senior';
     gradeFilter: string;
     classFilter: string;
   } | null>(null);
@@ -88,14 +90,13 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   useEffect(() => {
     setIsClient(true);
     const token = TokenManager.getAccessToken();
-    if (!token) {
-      router.replace(`/${locale}/auth/login`);
+    const userData = TokenManager.getUserData();
+    if (!token || !userData) {
+      router.push(`/${locale}/login`);
       return;
     }
+    setUser(userData);
 
-    const userData = TokenManager.getUserData();
-    setUser(userData.user);
-    setSchool(userData.school);
     if (userData.school?.id) {
       schoolAPI.getProfile(userData.school.id)
         .then((profile) => {
@@ -110,9 +111,23 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   const { classes } = useClasses({ academicYearId: activeYear?.id || undefined, limit: 200 });
 
   const filteredClasses = useMemo(() => {
-    if (!pendingGradeFilter) return classes;
-    return classes.filter((item) => String(item.grade) === pendingGradeFilter);
-  }, [classes, pendingGradeFilter]);
+    let list = classes;
+    if (pendingDivision === 'junior') {
+      list = list.filter((c) => Number(c.grade) >= 7 && Number(c.grade) <= 9);
+    } else if (pendingDivision === 'senior') {
+      list = list.filter((c) => Number(c.grade) >= 10 && Number(c.grade) <= 12);
+    }
+    if (pendingGradeFilter) {
+      list = list.filter((item) => String(item.grade) === pendingGradeFilter);
+    }
+    return list;
+  }, [classes, pendingDivision, pendingGradeFilter]);
+
+  const handlePendingDivisionChange = (newDiv: 'all' | 'junior' | 'senior') => {
+    setPendingDivision(newDiv);
+    setPendingGradeFilter('');
+    setPendingClassFilter('');
+  };
 
   const handlePendingGradeChange = (newGrade: string) => {
     setPendingGradeFilter(newGrade);
@@ -131,10 +146,11 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
       pendingPeriod !== appliedFilters.period ||
       pendingMonthNumber !== appliedFilters.monthNumber ||
       pendingSemester !== appliedFilters.semester ||
+      pendingDivision !== appliedFilters.division ||
       pendingGradeFilter !== appliedFilters.gradeFilter ||
       pendingClassFilter !== appliedFilters.classFilter
     );
-  }, [appliedFilters, pendingPeriod, pendingMonthNumber, pendingSemester, pendingGradeFilter, pendingClassFilter]);
+  }, [appliedFilters, pendingPeriod, pendingMonthNumber, pendingSemester, pendingDivision, pendingGradeFilter, pendingClassFilter]);
 
   // API Fetch trigger - ONLY runs when appliedFilters is set by clicking "Generate Report"
   useEffect(() => {
@@ -180,6 +196,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
       period: pendingPeriod,
       monthNumber: pendingMonthNumber,
       semester: pendingSemester,
+      division: pendingDivision,
       gradeFilter: pendingGradeFilter,
       classFilter: pendingClassFilter,
     });
@@ -190,6 +207,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
     setPendingPeriod('month');
     setPendingMonthNumber(defaultMonth);
     setPendingSemester('1');
+    setPendingDivision('all');
     setPendingGradeFilter('');
     setPendingClassFilter('');
   };
@@ -413,8 +431,8 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     </div>
                   </div>
 
-                  {/* FLAT BORDER 5-COLUMN FILTER FIELDS GRID */}
-                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+                  {/* FLAT BORDER 6-COLUMN FILTER FIELDS GRID */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
                     
                     {/* Field 1: Period Selection */}
                     <div className="space-y-1.5">
@@ -433,7 +451,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                                 : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
                             }`}
                           >
-                            {item === 'month' ? (locale === 'km' ? 'ខែ' : 'Month') : item === 'semester' ? (locale === 'km' ? 'ឆមាស' : 'Sem') : (locale === 'km' ? 'ឆ្នាំ' : 'Year')}
+                            {item === 'month' ? 'ខែ' : item === 'semester' ? 'ឆមាស' : 'ឆ្នាំ'}
                           </button>
                         ))}
                       </div>
@@ -442,7 +460,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                     {/* Field 2: Month / Semester Dropdown */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        {pendingPeriod === 'month' ? (locale === 'km' ? '២. ជ្រើសរើសខែ' : '2. Select Month') : pendingPeriod === 'semester' ? (locale === 'km' ? '២. ជ្រើសរើសឆមាស' : '2. Select Semester') : (locale === 'km' ? '២. ពេលវេលា' : '2. Timeframe')}
+                        {pendingPeriod === 'month' ? '២. ជ្រើសរើសខែ' : pendingPeriod === 'semester' ? '២. ជ្រើសរើសឆមាស' : '២. ពេលវេលា'}
                       </label>
                       {pendingPeriod === 'month' ? (
                         <div className="relative">
@@ -473,15 +491,34 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         </div>
                       ) : (
                         <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                          {locale === 'km' ? 'ពេញមួយឆ្នាំសិក្សា' : 'Full Academic Year'}
+                          ពេញមួយឆ្នាំសិក្សា
                         </div>
                       )}
                     </div>
 
-                    {/* Field 3: Grade Filter */}
+                    {/* Field 3: Division Selection */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        {locale === 'km' ? '៣. កម្រិតថ្នាក់' : '3. Grade Level'}
+                        ៣. ផ្នែកសិក្សា
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={pendingDivision}
+                          onChange={(event) => handlePendingDivisionChange(event.target.value as any)}
+                          className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
+                        >
+                          <option value="all">គ្រប់ផ្នែក (៧-១២)</option>
+                          <option value="junior">ផ្នែក អនុវិទ្យាល័យ (៧-៩)</option>
+                          <option value="senior">ផ្នែក វិទ្យាល័យ (១០-១២)</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      </div>
+                    </div>
+
+                    {/* Field 4: Grade Filter */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
+                        ៤. កម្រិតថ្នាក់
                       </label>
                       {canDrillDownByClass ? (
                         <div className="relative">
@@ -490,27 +527,41 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                             onChange={(event) => handlePendingGradeChange(event.target.value)}
                             className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
                           >
-                            <option value="">{locale === 'km' ? 'គ្រប់កម្រិត (៧-១២)' : 'All Grades (7-12)'}</option>
-                            <option value="7">{locale === 'km' ? 'កម្រិតថ្នាក់ទី ៧' : 'Grade 7'}</option>
-                            <option value="8">{locale === 'km' ? 'កម្រិតថ្នាក់ទី ៨' : 'Grade 8'}</option>
-                            <option value="9">{locale === 'km' ? 'កម្រិតថ្នាក់ទី ៩' : 'Grade 9'}</option>
-                            <option value="10">{locale === 'km' ? 'កម្រិតថ្នាក់ទី ១០' : 'Grade 10'}</option>
-                            <option value="11">{locale === 'km' ? 'កម្រិតថ្នាក់ទី ១១' : 'Grade 11'}</option>
-                            <option value="12">{locale === 'km' ? 'កម្រិតថ្នាក់ទី ១២' : 'Grade 12'}</option>
+                            <option value="">
+                              {pendingDivision === 'junior'
+                                ? 'គ្រប់កម្រិតអនុវិទ្យាល័យ (៧-៩)'
+                                : pendingDivision === 'senior'
+                                ? 'គ្រប់កម្រិតវិទ្យាល័យ (១០-១២)'
+                                : 'គ្រប់កម្រិត (៧-១២)'}
+                            </option>
+                            {(pendingDivision === 'all' || pendingDivision === 'junior') && (
+                              <>
+                                <option value="7">កម្រិតថ្នាក់ទី ៧</option>
+                                <option value="8">កម្រិតថ្នាក់ទី ៨</option>
+                                <option value="9">កម្រិតថ្នាក់ទី ៩</option>
+                              </>
+                            )}
+                            {(pendingDivision === 'all' || pendingDivision === 'senior') && (
+                              <>
+                                <option value="10">កម្រិតថ្នាក់ទី ១០</option>
+                                <option value="11">កម្រិតថ្នាក់ទី ១១</option>
+                                <option value="12">កម្រិតថ្នាក់ទី ១២</option>
+                              </>
+                            )}
                           </select>
                           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         </div>
                       ) : (
                         <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                          {locale === 'km' ? 'គ្រប់កម្រិត' : 'All Grades'}
+                          គ្រប់កម្រិត
                         </div>
                       )}
                     </div>
 
-                    {/* Field 4: Class Filter */}
+                    {/* Field 5: Class Filter */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        {locale === 'km' ? '៤. ថ្នាក់រៀន' : '4. Specific Class'}
+                        ៥. ថ្នាក់រៀន
                       </label>
                       {canDrillDownByClass ? (
                         <div className="relative">
@@ -519,7 +570,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                             onChange={(event) => setPendingClassFilter(event.target.value)}
                             className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-3 pr-8 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
                           >
-                            <option value="">{locale === 'km' ? 'គ្រប់ថ្នាក់' : 'All Classes'}</option>
+                            <option value="">គ្រប់ថ្នាក់</option>
                             {filteredClasses.map((item) => (
                               <option key={item.id} value={item.id}>
                                 {item.name}
@@ -530,15 +581,15 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         </div>
                       ) : (
                         <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                          {locale === 'km' ? 'គ្រប់ថ្នាក់' : 'All Classes'}
+                          គ្រប់ថ្នាក់
                         </div>
                       )}
                     </div>
 
-                    {/* Field 5: View Mode Toggle */}
+                    {/* Field 6: View Mode Toggle */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-slate-700 dark:text-gray-300">
-                        {locale === 'km' ? '៥. ទម្រង់បង្ហាញ' : '5. Display Mode'}
+                        ៦. ទម្រង់បង្ហាញ
                       </label>
                       <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-gray-700 dark:bg-gray-800">
                         <button
@@ -622,6 +673,7 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
                         schoolName={displaySchoolNameKhmer}
                         className={scopeClassName}
                         gradeFilter={appliedFilters?.gradeFilter}
+                        division={appliedFilters?.division}
                         generatedAtLabel={generatedAtLabel}
                         onSelectClass={(clsId) => {
                           setPendingClassFilter(clsId);

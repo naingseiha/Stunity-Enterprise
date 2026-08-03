@@ -37,6 +37,7 @@ interface PortraitInfographicSheetProps {
   schoolName: string;
   className?: string;
   gradeFilter?: string;
+  division?: 'all' | 'junior' | 'senior';
   generatedAtLabel: string;
   onSelectClass?: (classId: string) => void;
   onSelectStudent?: (studentId: string) => void;
@@ -59,11 +60,14 @@ export default function PortraitInfographicSheet({
   schoolName,
   className,
   gradeFilter,
+  division = 'all',
   generatedAtLabel,
   onSelectClass,
   onSelectStudent,
 }: PortraitInfographicSheetProps) {
-  const [activeSheet, setActiveSheet] = useState<SheetMode>('all_pages');
+  const [activeSheet, setActiveSheet] = useState<SheetMode>(
+    division === 'junior' ? 'junior' : division === 'senior' ? 'senior' : 'all_pages',
+  );
 
   // Period title helper
   const periodTitle = useMemo(() => {
