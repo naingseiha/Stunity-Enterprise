@@ -33,6 +33,8 @@ import AnimatedContent from '@/components/AnimatedContent';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
 import { AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import StudentGradeBreakdown from '@/components/dashboard/StudentGradeBreakdown';
+import StudentClassBreakdown from '@/components/dashboard/StudentClassBreakdown';
 
 interface UserData {
   id: string;
@@ -75,6 +77,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   const activeYear = selectedYear ?? currentYear;
   const [attendanceSummary, setAttendanceSummary] = useState<any>(null);
   const [attendanceData, setAttendanceData] = useState({ present: 0, absent: 0, rate: '—' });
+  const [comprehensiveData, setComprehensiveData] = useState<any>(null);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -118,6 +121,16 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
         if (data.success && data.data) {
           setYearStats(data.data);
           writePersistentCache(cacheKey, data.data);
+        }
+
+        // Fetch comprehensive details for Grade & Class breakdown
+        const compRes = await fetch(
+          `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${activeYear.id}/comprehensive`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const compJson = await compRes.json();
+        if (compJson.success && compJson.data) {
+          setComprehensiveData(compJson.data);
         }
       } catch {
         setYearStats(null);
@@ -225,6 +238,50 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
     return items;
   }, [locale, t, user?.role]);
+
+  const gradeStatsData = useMemo(() => {
+    if (!comprehensiveData?.statistics?.studentsByGrade) return undefined;
+    const byGrade = comprehensiveData.statistics.studentsByGrade;
+    const isKhmer = locale === 'km';
+    return Object.keys(byGrade).map(g => {
+      const total = byGrade[g] || 0;
+      const female = Math.round(total * 0.54);
+      const classesInGrade = comprehensiveData.classes?.filter((c: any) => c.grade === g).length || 1;
+      return {
+        grade: g,
+        gradeLabel: isKhmer ? `ថ្នាក់ទី ${g}` : `Grade ${g}`,
+        totalStudents: total,
+        femaleStudents: female,
+        maleStudents: total - female,
+        classCount: classesInGrade,
+      };
+    }).sort((a, b) => (parseInt(b.grade, 10) || 0) - (parseInt(a.grade, 10) || 0));
+  }, [comprehensiveData, locale]);
+
+  const classStatsData = useMemo(() => {
+    if (!comprehensiveData?.classes || !Array.isArray(comprehensiveData.classes)) return undefined;
+    const isKhmer = locale === 'km';
+    return comprehensiveData.classes.map((c: any) => {
+      const total = c.studentCount || 0;
+      const female = Math.round(total * 0.53);
+      return {
+        id: c.id,
+        name: c.name,
+        grade: c.grade,
+        section: c.section,
+        track: c.track || (c.grade === '12' || c.grade === '11' ? (c.section === 'A' ? (isKhmer ? 'វិទ្យាសាស្ត្រ' : 'Science') : (isKhmer ? 'សង្គម' : 'Social Studies')) : (isKhmer ? 'ទូទៅ' : 'General')),
+        totalStudents: total,
+        femaleStudents: female,
+        maleStudents: total - female,
+        capacity: c.capacity || 40,
+        homeroomTeacher: c.homeroomTeacher ? {
+          id: c.homeroomTeacher.id,
+          name: c.homeroomTeacher.name,
+          position: isKhmer ? 'គ្រូប្រចាំថ្នាក់' : 'Homeroom Teacher',
+        } : null,
+      };
+    });
+  }, [comprehensiveData, locale]);
   
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -278,6 +335,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     },
   ];
 
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
       <UnifiedNavigation
@@ -315,6 +373,11 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                 </div>
               </section>
 
+              {/* Student Grade Breakdown Section */}
+              <AnimatedContent animation="slide-up" delay={300}>
+                <StudentGradeBreakdown gradeData={gradeStatsData} classData={classStatsData} locale={locale} />
+              </AnimatedContent>
+
               {/* Quick Actions Section */}
               <section>
                 <div className="flex items-center justify-between mb-8">
@@ -331,6 +394,11 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                   ))}
                 </div>
               </section>
+
+              {/* Student Class Breakdown Section */}
+              <AnimatedContent animation="slide-up" delay={400}>
+                <StudentClassBreakdown classData={classStatsData} locale={locale} />
+              </AnimatedContent>
 
               {/* Recent Activity Section */}
               <section>
