@@ -473,79 +473,19 @@ export default function PortraitInfographicSheet({
 
   return (
     <div className="space-y-6">
-      {/* SHEET SELECTOR BUTTONS BAR AT THE TOP */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveSheet('all_pages')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              activeSheet === 'all_pages'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Printer className="h-4 w-4" />
-            <span>បង្ហាញទាំង ៣ សន្លឹក A4 (Print ទាំង ៣ សន្លឹក)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSheet('combined')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              activeSheet === 'combined'
-                ? 'bg-purple-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-700'
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            <span>សន្លឹកទី ១៖ របាយការណ៍រួម (គ្រប់កម្រិត ៧–១២)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSheet('junior')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              activeSheet === 'junior'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-700'
-            }`}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>សន្លឹកទី ២៖ ផ្នែក អនុវិទ្យាល័យ (៧–៩)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSheet('senior')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              activeSheet === 'senior'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-700'
-            }`}
-          >
-            <GraduationCap className="h-4 w-4" />
-            <span>សន្លឹកទី ៣៖ ផ្នែក វិទ្យាល័យ (១០–១២)</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-          <Sparkles className="h-4 w-4 text-amber-500" />
-          <span>ទម្រង់ Poster ក្រដាស A4 ផ្លូវការ</span>
-        </div>
-      </div>
-
-      {/* RENDER THE SELECTED OR ALL 3 PRINTABLE A4 SHEETS */}
-      <div className="space-y-8">
-        {(activeSheet === 'all_pages' || activeSheet === 'combined') &&
-          renderA4Sheet('គ្រប់កម្រិតថ្នាក់', 'all', 1)}
-
-        {(activeSheet === 'all_pages' || activeSheet === 'junior') &&
-          renderA4Sheet('ផ្នែក អនុវិទ្យាល័យ (ថ្នាក់ទី ៧–៩)', 'junior', 2)}
-
-        {(activeSheet === 'all_pages' || activeSheet === 'senior') &&
-          renderA4Sheet('ផ្នែក វិទ្យាល័យ (ថ្នាក់ទី ១០–១២)', 'senior', 3)}
-      </div>
+      {renderA4Sheet(
+        division === 'junior'
+          ? 'ផ្នែក អនុវិទ្យាល័យ (ថ្នាក់ទី ៧–៩)'
+          : division === 'senior'
+          ? 'ផ្នែក វិទ្យាល័យ (ថ្នាក់ទី ១០–១២)'
+          : gradeFilter
+          ? `កម្រិតថ្នាក់ទី ${toKhmerDigits(gradeFilter)}`
+          : className
+          ? `ថ្នាក់ ${className}`
+          : 'គ្រប់កម្រិតថ្នាក់ (៧–១២)',
+        division,
+        1,
+      )}
     </div>
   );
 }
