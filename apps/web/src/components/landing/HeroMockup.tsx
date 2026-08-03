@@ -8,6 +8,7 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
      * Floating cards appear OUTSIDE the phone frame, overlapping both phone + background.
      */
     <div
+      className="scale-[0.65] sm:scale-80 md:scale-90 lg:scale-100 origin-bottom transition-transform"
       style={{
         position: 'relative',
         width: '420px',

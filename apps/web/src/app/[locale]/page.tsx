@@ -74,216 +74,206 @@ export default function HomePage() {
     <div className="min-h-screen bg-white text-[#111827] antialiased" style={{ fontFamily: fontBody }}>
 
       {/* ══════════════════════════════════════════
-          HERO AREA — full-width mint/green gradient
-          NO container, NO border-radius, edge-to-edge
+          FIRST SECTION — FULL SCREEN (100dvh / 100vh)
+          Contains Navbar + Hero Content + Notched Curve + Trust Badges
+          Visible immediately on initial page load without scrolling
           ══════════════════════════════════════════ */}
-      <div
-        style={{
-          background: 'linear-gradient(160deg, #dff7ff 0%, #ecfaff 30%, #f7fcff 55%, #e8f7ff 80%, #fff3e8 100%)',
-          position: 'relative',
-          overflow: 'hidden',
-          width: '100%',
-        }}
-      >
-        {/* Decorative soft blobs — top right and center */}
+      <section className="min-h-screen min-h-[100dvh] flex flex-col justify-between relative bg-white overflow-hidden w-full">
+        
+        {/* ── Top Hero Mint Gradient Area ── */}
         <div
+          className="flex-1 flex flex-col justify-between relative w-full"
           style={{
-            position: 'absolute', top: '-80px', right: '-80px',
-            width: '700px', height: '700px', borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(9,207,247,0.32) 0%, rgba(186,230,253,0.2) 50%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute', top: '30%', right: '15%',
-            width: '400px', height: '400px', borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(249,115,22,0.12) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* ── Navbar ── */}
-        <div style={{ position: 'relative', zIndex: 50 }}>
-          <Navbar locale={locale} c={c} isKm={isKm} />
-        </div>
-
-        {/* ── Hero Content ── */}
-        <div
-          className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20"
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            paddingTop: '48px',
-            position: 'relative',
-            zIndex: 10,
-            minHeight: '540px',
+            background: 'linear-gradient(160deg, #dff7ff 0%, #ecfaff 30%, #f7fcff 55%, #e8f7ff 80%, #fff3e8 100%)',
           }}
         >
-          {/* Left: Text & CTA */}
-          <div style={{ flex: '0 0 48%', paddingBottom: '72px' }}>
-
-            <h1
-              style={{
-                fontFamily: fontTitle,
-                fontSize: isKm ? '2.75rem' : '3.25rem',
-                fontWeight: 900,
-                color: '#0d1117',
-                lineHeight: isKm ? 1.5 : 1.15,
-                marginBottom: '20px',
-                letterSpacing: isKm ? '0' : '-0.02em',
-              }}
-            >
-              {isKm ? (
-                <>
-                  សាលារបស់អ្នក<br />
-                  <span style={{ color: '#0284C7' }}>ភ្ជាប់គ្រប់ផ្នែក</span>
-                </>
-              ) : (
-                <>
-                  Your school,<br />
-                  <span style={{ color: '#0284C7' }}>all connected</span>
-                </>
-              )}
-            </h1>
-
-            <p
-              style={{
-                fontFamily: fontBody,
-                fontSize: '14px',
-                color: '#6b7280',
-                lineHeight: 1.7,
-                maxWidth: '380px',
-                marginBottom: '36px',
-              }}
-            >
-              {c.heroSub}
-            </p>
-
-            {/* CTA Buttons — standardized fully rounded pills */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
-              <Link
-                href={`/${locale}/register-school`}
-                style={{
-                  display: 'inline-flex', alignItems: 'center',
-                  padding: '12px 26px',
-                  background: '#0284C7',
-                  color: '#fff',
-                  borderRadius: '9999px',
-                  fontFamily: fontBody,
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                  transition: 'background 0.2s',
-                }}
-              >
-                {c.heroCtaPrimary}
-              </Link>
-              <Link
-                href="#features"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  padding: '12px 20px',
-                  background: 'transparent',
-                  color: '#374151',
-                  borderRadius: '9999px',
-                  fontFamily: fontBody,
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  border: 'none',
-                }}
-              >
-                {c.heroCtaSecondary}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                </svg>
-              </Link>
-            </div>
-
-            {/* Avatar stack + stats */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ display: 'flex' }}>
-                {[
-                  { bg: '#e0e7ff' },
-                  { bg: '#fce7f3' },
-                  { bg: '#d1fae5' },
-                ].map((a, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: '36px', height: '36px', borderRadius: '50%',
-                      border: '2.5px solid white',
-                      background: a.bg,
-                      marginLeft: i === 0 ? '0' : '-10px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '15px',
-                    }}
-                  >
-                    {['👨‍🏫', '👩‍🎓', '🏫'][i]}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p style={{ fontFamily: fontTitle, fontWeight: 900, fontSize: '18px', color: '#111827', margin: 0, lineHeight: 1.2 }}>
-                  {isKm ? 'Web + Mobile' : 'Web + Mobile'}
-                </p>
-                <p style={{ fontFamily: fontBody, fontSize: '11px', color: '#9ca3af', margin: '3px 0 0', lineHeight: 1.4 }}>
-                  {isKm
-                    ? 'ពហុសាលា · ពហុឆ្នាំសិក្សា · ខ្មែរ និងអង់គ្លេស'
-                    : 'Multi-school · Multi-year · Khmer and English'}
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right: Phone Mockup — sits at bottom, overflows into white section below */}
+          {/* Decorative soft blobs — top right and center */}
           <div
             style={{
-              flex: '0 0 52%',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'flex-end',
-              paddingRight: '0',
+              position: 'absolute', top: '-80px', right: '-80px',
+              width: '700px', height: '700px', borderRadius: '50%',
+              background: 'radial-gradient(ellipse, rgba(9,207,247,0.32) 0%, rgba(186,230,253,0.2) 50%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute', top: '30%', right: '15%',
+              width: '400px', height: '400px', borderRadius: '50%',
+              background: 'radial-gradient(ellipse, rgba(249,115,22,0.12) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* ── Navbar ── */}
+          <div style={{ position: 'relative', zIndex: 50 }}>
+            <Navbar locale={locale} c={c} isKm={isKm} />
+          </div>
+
+          {/* ── Hero Content ── */}
+          <div
+            className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 flex-1 w-full flex flex-col lg:flex-row items-center lg:items-end justify-between py-2 lg:py-0"
+            style={{
               position: 'relative',
+              zIndex: 10,
             }}
           >
-            <HeroMockup isKm={isKm} />
+            {/* Left: Text & CTA */}
+            <div className="w-full lg:w-[48%] flex-1 lg:flex-initial flex flex-col justify-center py-2 lg:py-6 lg:pb-12 text-center lg:text-left items-center lg:items-start">
+
+              <h1
+                style={{
+                  fontFamily: fontTitle,
+                  fontSize: isKm ? 'clamp(2rem, 3.8vw, 3rem)' : 'clamp(2.25rem, 4.2vw, 3.25rem)',
+                  fontWeight: 900,
+                  color: '#0d1117',
+                  lineHeight: isKm ? 1.4 : 1.15,
+                  marginBottom: '14px',
+                  letterSpacing: isKm ? '0' : '-0.02em',
+                }}
+              >
+                {isKm ? (
+                  <>
+                    សាលារបស់អ្នក<br />
+                    <span style={{ color: '#0284C7' }}>ភ្ជាប់គ្រប់ផ្នែក</span>
+                  </>
+                ) : (
+                  <>
+                    Your school,<br />
+                    <span style={{ color: '#0284C7' }}>all connected</span>
+                  </>
+                )}
+              </h1>
+
+              <p
+                style={{
+                  fontFamily: fontBody,
+                  fontSize: 'clamp(12px, 1.3vw, 14.5px)',
+                  color: '#6b7280',
+                  lineHeight: 1.65,
+                  maxWidth: '420px',
+                  marginBottom: '22px',
+                }}
+              >
+                {c.heroSub}
+              </p>
+
+              {/* CTA Buttons — standardized fully rounded pills */}
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-6 flex-wrap">
+                <Link
+                  href={`/${locale}/register-school`}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    padding: '10px 24px',
+                    background: '#0284C7',
+                    color: '#fff',
+                    borderRadius: '9999px',
+                    fontFamily: fontBody,
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  {c.heroCtaPrimary}
+                </Link>
+                <Link
+                  href="#features"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '10px 18px',
+                    background: 'transparent',
+                    color: '#374151',
+                    borderRadius: '9999px',
+                    fontFamily: fontBody,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: 'none',
+                  }}
+                >
+                  {c.heroCtaSecondary}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                  </svg>
+                </Link>
+              </div>
+
+              {/* Avatar stack + stats */}
+              <div className="flex items-center justify-center lg:justify-start gap-3.5">
+                <div style={{ display: 'flex' }}>
+                  {[
+                    { bg: '#e0e7ff' },
+                    { bg: '#fce7f3' },
+                    { bg: '#d1fae5' },
+                  ].map((a, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        border: '2px solid white',
+                        background: a.bg,
+                        marginLeft: i === 0 ? '0' : '-8px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '14px',
+                      }}
+                    >
+                      {['👨‍🏫', '👩‍🎓', '🏫'][i]}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-left">
+                  <p style={{ fontFamily: fontTitle, fontWeight: 900, fontSize: '16px', color: '#111827', margin: 0, lineHeight: 1.2 }}>
+                    {isKm ? 'Web + Mobile' : 'Web + Mobile'}
+                  </p>
+                  <p style={{ fontFamily: fontBody, fontSize: '11px', color: '#9ca3af', margin: '2px 0 0', lineHeight: 1.3 }}>
+                    {isKm
+                      ? 'ពហុសាលា · ពហុឆ្នាំសិក្សា · ខ្មែរ និងអង់គ្លេស'
+                      : 'Multi-school · Multi-year · Khmer and English'}
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right: Phone Mockup — sits at bottom */}
+            <div className="w-full lg:w-[52%] flex justify-center lg:justify-end items-end relative mt-2 lg:mt-0">
+              <HeroMockup isKm={isKm} />
+            </div>
+          </div>
+
+          {/* ── Custom Notched Bottom Curve Overlay ── */}
+          <div style={{ position: 'relative', bottom: 0, left: 0, right: 0, width: '100%', pointerEvents: 'none', zIndex: 20 }}>
+            <svg
+              viewBox="0 0 1440 60"
+              fill="none"
+              preserveAspectRatio="none"
+              style={{ width: '100%', height: '40px', display: 'block' }}
+            >
+              {/* White bottom fill under the notched curve */}
+              <path
+                d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45 L1440 60 L0 60 Z"
+                fill="#ffffff"
+              />
+              {/* Subtle mint stroke along the notched curve */}
+              <path
+                d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45"
+                fill="none"
+                stroke="#bae6fd"
+                strokeWidth="1.5"
+              />
+            </svg>
           </div>
         </div>
 
-        {/* ── Custom Notched Bottom Curve Overlay (Matching Reference Screenshot) ── */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, width: '100%', pointerEvents: 'none', zIndex: 20 }}>
-          <svg
-            viewBox="0 0 1440 60"
-            fill="none"
-            preserveAspectRatio="none"
-            style={{ width: '100%', height: '48px', display: 'block' }}
-          >
-            {/* White bottom fill under the notched curve */}
-            <path
-              d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45 L1440 60 L0 60 Z"
-              fill="#ffffff"
-            />
-            {/* Subtle mint stroke along the notched curve */}
-            <path
-              d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45"
-              fill="none"
-              stroke="#bae6fd"
-              strokeWidth="1.5"
-            />
-          </svg>
+        {/* ── Brand Trust Badges Bar (Inside First Viewport Section) ── */}
+        <div className="shrink-0 relative z-30 bg-white">
+          <TrustBadges c={c} isKm={isKm} />
         </div>
-      </div>
-      {/* ── END HERO AREA ── */}
+      </section>
+      {/* ── END FIRST SECTION ── */}
 
       <main>
-        {/* ── Brand Trust Badges ── */}
-        <TrustBadges c={c} isKm={isKm} />
-
         {/* ── App Overview Showcase (All App Features) ── */}
         <AppOverviewShowcase isKm={isKm} />
 

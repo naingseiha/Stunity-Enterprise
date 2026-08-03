@@ -73,7 +73,7 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
 
   return (
     <section className="w-full bg-white relative">
-      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 py-7 sm:py-9">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 py-4 sm:py-5">
         <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
           
           {/* Left Column: Koulen Title + Vertical Divider */}
