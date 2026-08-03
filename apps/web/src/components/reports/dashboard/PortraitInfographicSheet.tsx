@@ -224,6 +224,18 @@ export default function PortraitInfographicSheet({
       { subject: 'ព័ត៌មានវិទ្យា', average: 48.0, fill: '#6366f1' },
     ];
 
+    // Subject Grade Breakdown Data (A, B, C, D, E, F with female counts)
+    const subjectGradesData = [
+      { subject: 'គណិតវិទ្យា', code: 'MATH', gradeA: { total: 3, female: 2 }, gradeB: { total: 12, female: 8 }, gradeC: { total: 15, female: 9 }, gradeD: { total: 5, female: 2 }, gradeE: { total: 1, female: 0 }, gradeF: { total: 0, female: 0 }, average: 44.5 },
+      { subject: 'ភាសាខ្មែរ', code: 'KHMER', gradeA: { total: 5, female: 4 }, gradeB: { total: 14, female: 9 }, gradeC: { total: 12, female: 7 }, gradeD: { total: 4, female: 2 }, gradeE: { total: 0, female: 0 }, gradeF: { total: 0, female: 0 }, average: 46.2 },
+      { subject: 'រូបវិទ្យា', code: 'PHYS', gradeA: { total: 2, female: 1 }, gradeB: { total: 10, female: 6 }, gradeC: { total: 16, female: 10 }, gradeD: { total: 6, female: 3 }, gradeE: { total: 1, female: 1 }, gradeF: { total: 0, female: 0 }, average: 42.8 },
+      { subject: 'គីមីវិទ្យា', code: 'CHEM', gradeA: { total: 2, female: 1 }, gradeB: { total: 9, female: 5 }, gradeC: { total: 17, female: 11 }, gradeD: { total: 6, female: 3 }, gradeE: { total: 1, female: 0 }, gradeF: { total: 0, female: 0 }, average: 41.5 },
+      { subject: 'ជីវវិទ្យា', code: 'BIO', gradeA: { total: 4, female: 3 }, gradeB: { total: 11, female: 7 }, gradeC: { total: 14, female: 8 }, gradeD: { total: 5, female: 2 }, gradeE: { total: 1, female: 1 }, gradeF: { total: 0, female: 0 }, average: 43.0 },
+      { subject: 'ប្រវត្តិវិទ្យា', code: 'HIST', gradeA: { total: 4, female: 2 }, gradeB: { total: 13, female: 8 }, gradeC: { total: 13, female: 7 }, gradeD: { total: 4, female: 2 }, gradeE: { total: 1, female: 0 }, gradeF: { total: 0, female: 0 }, average: 45.8 },
+      { subject: 'ភាសាអង់គ្លេស', code: 'ENG', gradeA: { total: 3, female: 2 }, gradeB: { total: 11, female: 7 }, gradeC: { total: 15, female: 9 }, gradeD: { total: 5, female: 3 }, gradeE: { total: 1, female: 0 }, gradeF: { total: 0, female: 0 }, average: 43.5 },
+      { subject: 'ព័ត៌មានវិទ្យា', code: 'ICT', gradeA: { total: 6, female: 4 }, gradeB: { total: 15, female: 10 }, gradeC: { total: 11, female: 6 }, gradeD: { total: 3, female: 1 }, gradeE: { total: 0, female: 0 }, gradeF: { total: 0, female: 0 }, average: 48.0 },
+    ];
+
     return {
       totalStudents,
       totalClasses,
@@ -239,6 +251,7 @@ export default function PortraitInfographicSheet({
       gradePassFailChartData,
       classPassFailChartData,
       subjectBarChartData,
+      subjectGradesData,
       pieChartData,
       targetClasses,
     };
@@ -517,32 +530,96 @@ export default function PortraitInfographicSheet({
 
         {/* ------------------- MAIN CHARTS SECTION ------------------- */}
         {isClassView ? (
-          /* CLASS VIEW: FULL-WIDTH SUBJECT PERFORMANCE BAR CHART */
+          /* CLASS VIEW: SUBJECT GRADE BREAKDOWN TABLE (A, B, C, D, E, F / ស្រី) */
           <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-blue-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  ១. មធ្យមភាគពិន្ទុតាមមុខវិជ្ជានៃថ្នាក់ {className}
+                  ១. សង្ខេបលទ្ធផលនិទ្ទេស និង មធ្យមភាគ តាមមុខវិជ្ជានៃថ្នាក់ {className}
                 </h4>
               </div>
-              <span className="text-[10px] font-bold text-slate-400">ពិន្ទុមធ្យម / ៥០</span>
+              <span className="text-[10px] font-bold text-slate-400">និទ្ទេស A ដល់ F (ស្រី)</span>
             </div>
 
-            <div className="mt-3.5 h-48 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.subjectBarChartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="subject" tick={{ fontSize: 9, fill: '#475569', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 50]} tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="average" name="ពិន្ទុមធ្យម" radius={[6, 6, 0, 0]} maxBarSize={28}>
-                    {metrics.subjectBarChartData.map((entry) => (
-                      <Cell key={entry.subject} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-left text-[10px]">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-100/80 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <th className="py-2 px-3 font-black">មុខវិជ្ជា</th>
+                    <th className="py-2 px-2 text-center font-black text-emerald-600 dark:text-emerald-400">និទ្ទេស A</th>
+                    <th className="py-2 px-2 text-center font-black text-blue-600 dark:text-blue-400">និទ្ទេស B</th>
+                    <th className="py-2 px-2 text-center font-black text-sky-600 dark:text-sky-400">និទ្ទេស C</th>
+                    <th className="py-2 px-2 text-center font-black text-amber-600 dark:text-amber-400">និទ្ទេស D</th>
+                    <th className="py-2 px-2 text-center font-black text-orange-600 dark:text-orange-400">និទ្ទេស E</th>
+                    <th className="py-2 px-2 text-center font-black text-rose-600 dark:text-rose-400">និទ្ទេស F</th>
+                    <th className="py-2 px-3 text-right font-black text-slate-900 dark:text-white">មធ្យមភាគ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {metrics.subjectGradesData.map((sub, idx) => (
+                    <tr
+                      key={sub.code}
+                      className={idx % 2 === 0 ? 'bg-white/90 dark:bg-slate-900/60' : 'bg-slate-50/50 dark:bg-slate-800/30'}
+                    >
+                      <td className="py-1.5 px-3 font-extrabold text-slate-900 dark:text-white">
+                        {sub.subject}
+                      </td>
+                      <td className="py-1.5 px-2 text-center tabular-nums">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                          {toKhmerDigits(sub.gradeA.total)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                          (ស្រី {toKhmerDigits(sub.gradeA.female)})
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-center tabular-nums">
+                        <span className="font-bold text-blue-700 dark:text-blue-300">
+                          {toKhmerDigits(sub.gradeB.total)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                          (ស្រី {toKhmerDigits(sub.gradeB.female)})
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-center tabular-nums">
+                        <span className="font-bold text-sky-700 dark:text-sky-300">
+                          {toKhmerDigits(sub.gradeC.total)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                          (ស្រី {toKhmerDigits(sub.gradeC.female)})
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-center tabular-nums">
+                        <span className="font-bold text-amber-700 dark:text-amber-300">
+                          {toKhmerDigits(sub.gradeD.total)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                          (ស្រី {toKhmerDigits(sub.gradeD.female)})
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-center tabular-nums">
+                        <span className="font-bold text-orange-700 dark:text-orange-300">
+                          {toKhmerDigits(sub.gradeE.total)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                          (ស្រី {toKhmerDigits(sub.gradeE.female)})
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2 text-center tabular-nums">
+                        <span className="font-bold text-rose-700 dark:text-rose-300">
+                          {toKhmerDigits(sub.gradeF.total)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold ml-1">
+                          (ស្រី {toKhmerDigits(sub.gradeF.female)})
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-3 text-right font-black text-blue-600 dark:text-blue-400 tabular-nums">
+                        {toKhmerDigits(sub.average)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         ) : (
