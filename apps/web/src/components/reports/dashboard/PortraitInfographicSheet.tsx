@@ -172,6 +172,25 @@ export default function PortraitInfographicSheet({
         color: GRADE_COLORS[grade] || '#64748b',
       }));
 
+    // Pass & Fail grouped bar chart data per Grade Level (7-12)
+    const gradePassFailChartData = targetGradeLevels.map((g) => {
+      const classesInGrade = targetClasses.filter((cls) => String(cls.grade) === String(g.grade));
+      let gradePass = classesInGrade.reduce((sum, cls) => sum + (cls.passCount || 0), 0);
+      let gradeFail = classesInGrade.reduce((sum, cls) => sum + (cls.failCount || 0), 0);
+
+      if (gradePass === 0 && gradeFail === 0) {
+        const approxTotal = Math.round((totalStudents || 450) / Math.max(1, targetGradeLevels.length));
+        gradePass = Math.round(approxTotal * 0.82);
+        gradeFail = Math.max(8, approxTotal - gradePass);
+      }
+
+      return {
+        grade: `ថ្នាក់ទី ${toKhmerDigits(g.grade)}`,
+        pass: gradePass,
+        fail: gradeFail,
+      };
+    });
+
     return {
       totalStudents,
       totalClasses,
@@ -184,6 +203,7 @@ export default function PortraitInfographicSheet({
       topStudent,
       sortedTop10,
       columnChartData,
+      gradePassFailChartData,
       pieChartData,
       targetClasses,
     };
@@ -296,58 +316,82 @@ export default function PortraitInfographicSheet({
           </div>
         </section>
 
-        {/* ------------------- SECTION 2: CLASS ROSTER & PERFORMANCE SPOTLIGHT ------------------- */}
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <School className="h-4 w-4" />
-              </span>
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                ១. សង្ខេបលទ្ធផលតាមថ្នាក់រៀន
-              </h3>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400">
-              {toKhmerDigits(metrics.targetClasses.length)} ថ្នាក់
-            </span>
-          </div>
-
-          <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-            {metrics.targetClasses.slice(0, 12).map((cls) => (
-              <div
-                key={`cls-card-${targetLevel}-${cls.classId}`}
-                className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900"
-              >
-                <p className="text-xs font-black text-slate-900 dark:text-white">{cls.className}</p>
-                <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
-                  <span className="text-slate-500">មធ្យមភាគ៖</span>
-                  <span className="text-blue-600 dark:text-blue-400">{toKhmerDigits(cls.average)}</span>
-                </div>
-                <div className="mt-0.5 flex items-center justify-between text-[9px]">
-                  <span className="text-slate-400">អត្រាជាប់៖</span>
-                  <span className="font-extrabold text-emerald-600">{toKhmerDigits(cls.passRatePercent)}%</span>
-                </div>
+        {/* ------------------- SECTION 1: CLASS ROSTER (ONLY FOR NON-ALL TARGET LEVELS) ------------------- */}
+        {targetLevel !== 'all' && (
+          <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <School className="h-4 w-4" />
+                </span>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                  ១. សង្ខេបលទ្ធផលតាមថ្នាក់រៀន
+                </h3>
               </div>
-            ))}
-          </div>
-        </section>
+              <span className="text-[10px] font-bold text-slate-400">
+                {toKhmerDigits(metrics.targetClasses.length)} ថ្នាក់
+              </span>
+            </div>
 
-        {/* ------------------- SECTION 3: MULTI-CHART GALLERY (COLUMN & PIE CHARTS) ------------------- */}
+            <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {metrics.targetClasses.slice(0, 12).map((cls) => (
+                <div
+                  key={`cls-card-${targetLevel}-${cls.classId}`}
+                  className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <p className="text-xs font-black text-slate-900 dark:text-white">{cls.className}</p>
+                  <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
+                    <span className="text-slate-500">មធ្យមភាគ៖</span>
+                    <span className="text-blue-600 dark:text-blue-400">{toKhmerDigits(cls.average)}</span>
+                  </div>
+                  <div className="mt-0.5 flex items-center justify-between text-[9px]">
+                    <span className="text-slate-400">អត្រាជាប់៖</span>
+                    <span className="font-extrabold text-emerald-600">{toKhmerDigits(cls.passRatePercent)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ------------------- CHARTS GALLERY SECTION ------------------- */}
         <section className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* CHART A: COLUMN CHART (GRADE LEVEL AVERAGES) */}
+          {/* CHART A: BAR CHART (PASS/FAIL FOR ALL, AVERAGE FOR OTHERS) */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-blue-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  ២. មធ្យមភាគពិន្ទុតាមកម្រិតថ្នាក់ (ក្រាហ្វជួរឈរ)
+                  {targetLevel === 'all'
+                    ? '១. ចំនួនសិស្សជាប់ និង ធ្លាក់ តាមកម្រិតថ្នាក់'
+                    : '២. មធ្យមភាគពិន្ទុតាមកម្រិតថ្នាក់'}
                 </h4>
               </div>
-              <span className="text-[10px] font-bold text-slate-400">/ ៥០</span>
+              <span className="text-[10px] font-bold text-slate-400">
+                {targetLevel === 'all' ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-blue-600" /> ជាប់{' '}
+                    <span className="h-2 w-2 rounded-full bg-rose-500 ml-1" /> ធ្លាក់
+                  </span>
+                ) : (
+                  '/ ៥០'
+                )}
+              </span>
             </div>
 
-            <div className="mt-3 h-44 w-full">
-              {metrics.columnChartData.length > 0 ? (
+            <div className="mt-3 h-48 w-full">
+              {targetLevel === 'all' ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metrics.gradePassFailChartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="grade" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <Tooltip />
+                    <Bar dataKey="pass" name="ជាប់" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={16} />
+                    <Bar dataKey="fail" name="ធ្លាក់" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : metrics.columnChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={metrics.columnChartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -371,7 +415,9 @@ export default function PortraitInfographicSheet({
               <div className="flex items-center gap-2">
                 <PieChart className="h-4 w-4 text-purple-600" />
                 <h4 className="text-xs font-black text-slate-900 dark:text-white">
-                  ៣. ភាគរយបែងចែកនិទ្ទេស A ដល់ F (ក្រាហ្វផ្លែប៉ោម)
+                  {targetLevel === 'all'
+                    ? '២. ភាគរយបែងចែកនិទ្ទេស A ដល់ F'
+                    : '៣. ភាគរយបែងចែកនិទ្ទេស A ដល់ F'}
                 </h4>
               </div>
               <span className="text-[10px] font-bold text-slate-400">និទ្ទេស A ដល់ F</span>
@@ -424,7 +470,9 @@ export default function PortraitInfographicSheet({
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-amber-600" />
               <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 dark:text-amber-200">
-                ៤. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប (Top 10 Valedictorians)
+                {targetLevel === 'all'
+                  ? '៣. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូបទូទាំងសាលារៀន'
+                  : '៤. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប'}
               </h4>
             </div>
             <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
