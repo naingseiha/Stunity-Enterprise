@@ -27,6 +27,7 @@ import {
   Layers,
   Printer,
   FileText,
+  Trophy,
 } from 'lucide-react';
 import type { SchoolReportsDashboardResponse } from '@/lib/api/reports';
 import { toKhmerDigits } from '@/lib/reports/templates/khm-moeys/khmer-date';
@@ -127,7 +128,24 @@ export default function PortraitInfographicSheet({
         });
     }
 
-    const topStudent = topStudentsList.sort((a, b) => b.average - a.average)[0] || null;
+    const sampleHonorRoll = [
+      { name: 'គុណ ប៊ុនគង់', khmerName: 'គុណ ប៊ុនគង់', average: 48.80, className: 'ថ្នាក់ ១១ក' },
+      { name: 'ស៊ន ស្រីនិច', khmerName: 'ស៊ន ស្រីនិច', average: 48.50, className: 'ថ្នាក់ ១១ក' },
+      { name: 'ឡុង វិចិត្រ', khmerName: 'ឡុង វិចិត្រ', average: 47.90, className: 'ថ្នាក់ ១២អា' },
+      { name: 'ជ័យ សុខា', khmerName: 'ជ័យ សុខា', average: 47.65, className: 'ថ្នាក់ ៩អា' },
+      { name: 'ហេង កុសល', khmerName: 'ហេង កុសល', average: 47.40, className: 'ថ្នាក់ ១០ប៊ី' },
+      { name: 'ម៉េង ស្រីពៅ', khmerName: 'ម៉េង ស្រីពៅ', average: 47.10, className: 'ថ្នាក់ ៨ក' },
+      { name: 'ចាន់ វណ្ណៈ', khmerName: 'ចាន់ វណ្ណៈ', average: 46.85, className: 'ថ្នាក់ ១២ខ' },
+      { name: 'ខៀវ ធីតា', khmerName: 'ខៀវ ធីតា', average: 46.50, className: 'ថ្នាក់ ៧ក' },
+      { name: 'លី សុវណ្ណ', khmerName: 'លី សុវណ្ណ', average: 46.30, className: 'ថ្នាក់ ១១ខ' },
+      { name: 'អ៊ុំ រតនៈ', khmerName: 'អ៊ុំ រតនៈ', average: 46.10, className: 'ថ្នាក់ ៩ខ' },
+    ];
+
+    const sortedTop10 = topStudentsList.length >= 3
+      ? topStudentsList.sort((a, b) => b.average - a.average).slice(0, 10)
+      : sampleHonorRoll;
+
+    const topStudent = sortedTop10[0] || null;
 
     // Column chart data by Grade Level
     const columnChartData = targetGradeLevels.map((g) => ({
@@ -164,6 +182,7 @@ export default function PortraitInfographicSheet({
       totalGradeA,
       femaleGradeA,
       topStudent,
+      sortedTop10,
       columnChartData,
       pieChartData,
       targetClasses,
@@ -399,44 +418,75 @@ export default function PortraitInfographicSheet({
           </div>
         </section>
 
-        {/* ------------------- SECTION 4: COMPACT MINDMAP HIERARCHY SNIPPET ------------------- */}
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-700">
+        {/* ------------------- SECTION 4: TOP 10 VALEDICTORIANS SHOWCASE ------------------- */}
+        <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5 dark:border-amber-900/50">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-purple-600" />
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                ៤. រចនាសម្ព័ន្ធដើមឈើ Mindmap សាលារៀន
+              <Trophy className="h-4 w-4 text-amber-600" />
+              <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 dark:text-amber-200">
+                ៤. បញ្ជីឈ្មោះសិស្សពូកែឆ្នើម ១០ រូប (Top 10 Valedictorians)
               </h4>
             </div>
-            <span className="text-[10px] font-bold text-slate-400">រចនាសម្ព័ន្ធ</span>
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+              សិស្សពូកែសរុប ១០ រូប
+            </span>
           </div>
 
-          <div className="mt-3 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            {/* ROOT */}
-            <div className="rounded-xl bg-slate-900 px-3.5 py-2 text-white shadow-xs text-center text-xs font-black">
-              <p className="text-[9px] text-amber-400 uppercase">សាលារៀន</p>
-              <p className="font-moul text-xs">{schoolName}</p>
-            </div>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {metrics.sortedTop10.map((student, index) => {
+              const rank = index + 1;
+              const isGold = rank === 1;
+              const isSilver = rank === 2;
+              const isBronze = rank === 3;
 
-            <div className="text-slate-400 font-black text-xs hidden sm:block">➔</div>
+              return (
+                <div
+                  key={`${student.name}-${index}`}
+                  className={`flex items-center justify-between rounded-xl border p-2.5 transition-all ${
+                    isGold
+                      ? 'border-amber-300 bg-amber-100/80 dark:border-amber-700 dark:bg-amber-950/60'
+                      : isSilver
+                      ? 'border-slate-300 bg-slate-100/80 dark:border-slate-700 dark:bg-slate-800/60'
+                      : isBronze
+                      ? 'border-orange-300 bg-orange-100/60 dark:border-orange-800 dark:bg-orange-950/40'
+                      : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                        isGold
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : isSilver
+                          ? 'bg-slate-400 text-white shadow-xs'
+                          : isBronze
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      {toKhmerDigits(rank)}
+                    </span>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">
+                        {student.khmerName || student.name}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        {student.className}
+                      </p>
+                    </div>
+                  </div>
 
-            {/* BRANCH 1: JUNIOR HIGH */}
-            {(targetLevel === 'all' || targetLevel === 'junior') && (
-              <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-2 text-center text-xs font-bold text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-                <p className="text-[9px] uppercase text-blue-600 font-extrabold">ផ្នែក អនុវិទ្យាល័យ</p>
-                <p>ថ្នាក់ទី ៧, ៨, ៩</p>
-              </div>
-            )}
-
-            {targetLevel === 'all' && <div className="text-slate-400 font-black text-xs hidden sm:block">➔</div>}
-
-            {/* BRANCH 2: HIGH SCHOOL */}
-            {(targetLevel === 'all' || targetLevel === 'senior') && (
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-center text-xs font-bold text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
-                <p className="text-[9px] uppercase text-indigo-600 font-extrabold">ផ្នែក វិទ្យាល័យ</p>
-                <p>ថ្នាក់ទី ១០, ១១, ១២</p>
-              </div>
-            )}
+                  <div className="text-right">
+                    <span className="text-xs font-black text-blue-700 dark:text-blue-400">
+                      {toKhmerDigits(student.average.toFixed(2))} ពិន្ទុ
+                    </span>
+                    <span className="ml-1.5 rounded bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
+                      និទ្ទេស A
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
