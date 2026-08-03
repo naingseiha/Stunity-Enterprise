@@ -6,28 +6,28 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
 
   const partners = [
     {
-      name: isKm ? 'MoEYS' : 'MoEYS',
+      name: isKm ? 'របាយការណ៍ MoEYS' : 'MoEYS Reports',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="2" width="9" height="9" rx="2" fill="#1a56db"/>
-          <rect x="13" y="2" width="9" height="9" rx="2" fill="#1a56db" opacity="0.5"/>
-          <rect x="2" y="13" width="9" height="9" rx="2" fill="#1a56db" opacity="0.5"/>
-          <rect x="13" y="13" width="9" height="9" rx="2" fill="#1a56db" opacity="0.25"/>
+          <rect x="2" y="2" width="9" height="9" rx="2" fill="#0284C7"/>
+          <rect x="13" y="2" width="9" height="9" rx="2" fill="#0284C7" opacity="0.5"/>
+          <rect x="2" y="13" width="9" height="9" rx="2" fill="#0284C7" opacity="0.5"/>
+          <rect x="13" y="13" width="9" height="9" rx="2" fill="#0284C7" opacity="0.25"/>
         </svg>
       ),
     },
     {
-      name: isKm ? 'បាក់ទូក' : 'Bak Touk',
+      name: isKm ? 'គ្រប់គ្រងពហុសាលា' : 'Multi-School',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#ff5a5f" opacity="0.12"/>
-          <path d="M12 5C8.13 5 5 8.13 5 12s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7z" fill="#ff5a5f" opacity="0.35"/>
-          <circle cx="12" cy="12" r="3" fill="#ff5a5f"/>
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#F97316" opacity="0.12"/>
+          <path d="M12 5C8.13 5 5 8.13 5 12s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7z" fill="#F97316" opacity="0.35"/>
+          <circle cx="12" cy="12" r="3" fill="#F97316"/>
         </svg>
       ),
     },
     {
-      name: isKm ? 'សិសុវត្ថ' : 'Sisowath',
+      name: isKm ? 'ឆ្នាំសិក្សាច្រើន' : 'Multi-Year',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M5 3h14M5 3l-2 7h18L19 3M3 10l2 11h14l2-11" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -36,7 +36,7 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
       ),
     },
     {
-      name: isKm ? 'EdTech Cam' : 'EdTech Cam',
+      name: isKm ? 'Web និង Mobile' : 'Web & Mobile',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <rect x="2" y="4" width="20" height="13" rx="2.5" stroke="#374151" strokeWidth="1.5" fill="none"/>
@@ -46,7 +46,7 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
       ),
     },
     {
-      name: isKm ? 'ឥន្ទ្រទេវី' : 'Indradevi',
+      name: isKm ? 'ខ្មែរ និងអង់គ្លេស' : 'Khmer & English',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="#374151" strokeWidth="1.5" fill="none"/>
@@ -57,7 +57,7 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
       ),
     },
     {
-      name: isKm ? 'RUPP' : 'RUPP',
+      name: isKm ? 'សិទ្ធិតាមតួនាទី' : 'Role-Based Access',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M3 21h18" stroke="#374151" strokeWidth="1.5" strokeLinecap="round"/>
@@ -82,7 +82,7 @@ export function TrustBadges({ c, isKm }: { c: any, isKm: boolean }) {
               className="text-sm sm:text-base font-bold text-gray-800 uppercase tracking-wide leading-snug"
               style={{ fontFamily: fontTitle }}
             >
-              {isKm ? 'ដៃគូស្ថាប័នអប់រំដែលជឿទុកចិត្ត' : 'TRUSTED BY EDUCATIONAL INSTITUTIONS'}
+              {c.trustedBy}
             </h3>
           </div>
 

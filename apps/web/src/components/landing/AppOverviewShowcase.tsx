@@ -7,7 +7,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
   const fontBody = isKm ? "'Battambang', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   return (
-    <section className="w-full relative overflow-hidden py-24 sm:py-32 bg-gradient-to-b from-sky-50/90 via-indigo-50/40 to-emerald-50/70 border-b border-gray-100">
+    <section id="social" className="w-full relative overflow-hidden py-24 sm:py-32 bg-gradient-to-b from-sky-50/90 via-cyan-50/40 to-orange-50/50 border-b border-gray-100">
       {/* Background Ambient Glow & Dot Grid Pattern (Full-Screen Edge-to-Edge) */}
       <div 
         className="absolute inset-0 opacity-40 pointer-events-none"
@@ -17,15 +17,15 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
         }}
       />
       <div className="absolute top-1/4 left-1/6 w-[500px] h-[500px] bg-sky-200/50 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/6 w-[500px] h-[500px] bg-emerald-200/50 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/6 w-[500px] h-[500px] bg-orange-200/30 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/70 border border-emerald-200/80 mb-5 shadow-sm">
-            <Sparkles size={15} className="text-emerald-700" />
-            <span className="text-xs font-bold text-emerald-800 tracking-wide uppercase" style={{ fontFamily: fontBody }}>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100/70 border border-sky-200/80 mb-5 shadow-sm">
+            <Sparkles size={15} className="text-sky-700" />
+            <span className="text-xs font-bold text-sky-800 tracking-wide uppercase" style={{ fontFamily: fontBody }}>
               {isKm ? 'ប្រព័ន្ធសិក្សា និងគ្រប់គ្រងឆ្លាតវៃ' : 'All-In-One Education Ecosystem'}
             </span>
           </div>
@@ -35,18 +35,18 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           >
             {isKm ? (
               <>
-                មុខងារគ្រប់យ៉ាងសម្រាប់ <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-indigo-600">សិស្ស គ្រូ និងសាលារៀន</span>
+                មុខងារគ្រប់យ៉ាងសម្រាប់ <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-cyan-500 to-orange-500">សិស្ស គ្រូ និងសាលារៀន</span>
               </>
             ) : (
               <>
-                Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-indigo-600">Learn, Teach & Manage</span>
+                Everything you need to <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-cyan-500 to-orange-500">Learn, Teach & Manage</span>
               </>
             )}
           </h2>
           <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto" style={{ fontFamily: fontBody }}>
             {isKm
-              ? 'ភ្ជាប់ទំនាក់ទំនងរវាងសិស្ស គ្រូបង្រៀន និងមាតាបិតា ជាមួយប្រព័ន្ធបណ្តាញសង្គមអប់រំ និងឧបករណ៍ AI ជំនួយការបង្រៀនស្តង់ដារ MoEYS។'
-              : 'Connect students, educators, and parents seamlessly with our MoEYS-compliant AI tools, automated grading, and social learning feed.'}
+              ? 'ភ្ជាប់សិស្ស គ្រូ មាតាបិតា និងអ្នកគ្រប់គ្រង ជាមួយទិន្នន័យសាលា ការជូនដំណឹង មាតិកាសិក្សា និងការទំនាក់ទំនងក្នុងប្រព័ន្ធតែមួយ។'
+              : 'Connect students, educators, parents, and administrators with school data, announcements, learning content, and communication in one platform.'}
           </p>
         </div>
 
@@ -67,10 +67,10 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
               <div className="pt-8 px-5 pb-3 bg-[#161f2e] border-b border-gray-800 flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-bold text-white tracking-tight">Stunity OS</h4>
-                  <p className="text-[10px] text-gray-400">1,200 active learners</p>
+                  <p className="text-[10px] text-gray-400">{isKm ? 'ឆ្នាំសិក្សាបច្ចុប្បន្ន' : 'Current academic year'}</p>
                 </div>
                 <div className="flex gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <div className="w-6 h-6 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400">
                     <Bell size={12} />
                   </div>
                 </div>
@@ -81,7 +81,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
                 
                 {/* Chat/Post Item 1 */}
                 <div className="bg-[#1f293d] rounded-2xl p-3 border border-gray-700/60 shadow-sm flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center text-xs font-bold shrink-0">
                     👨‍🏫
                   </div>
                   <div className="flex-1 min-w-0">
@@ -89,9 +89,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
                       <span className="text-xs font-bold text-white truncate">លោកគ្រូ សុខា</span>
                       <span className="text-[9px] text-gray-400">14:23</span>
                     </div>
-                    <p className="text-[11px] text-gray-300 line-clamp-2 leading-snug">
-                      កិច្ចតែងការមេរៀនទី២ រួចរាល់ហើយ! សូមសិស្សទាំងអស់ចូលមើលក្នុង Feed។
-                    </p>
+                    <p className="text-[11px] text-gray-300 line-clamp-2 leading-snug">មេរៀនទី២ រួចរាល់ហើយ! សូមសិស្សទាំងអស់ចូលមើលក្នុង Feed។</p>
                   </div>
                 </div>
 
@@ -118,7 +116,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-xs font-bold text-white truncate">សាលា បាក់ទូក</span>
+                      <span className="text-xs font-bold text-white truncate">រដ្ឋបាលសាលា</span>
                       <span className="text-[9px] text-gray-400">11:45</span>
                     </div>
                     <p className="text-[11px] text-gray-300 line-clamp-1">
@@ -134,11 +132,11 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
 
           {/* ── FLOATING WIDGET 1: Top-Left Toggle Pill (Matching Screenshot) ── */}
           <div className="absolute top-4 sm:top-8 left-0 sm:left-4 z-30 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-full px-4.5 py-2.5 shadow-xl transition-transform hover:scale-105 duration-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse" />
             <span className="text-xs font-bold text-gray-800" style={{ fontFamily: fontBody }}>
-              {isKm ? 'ឧបករណ៍ AI ឆ្លាតវៃ' : 'AI Helper Tools'}
+              {isKm ? 'ការជូនដំណឹងតាមតួនាទី' : 'Role-Based Updates'}
             </span>
-            <div className="w-8 h-4.5 bg-emerald-500 rounded-full p-0.5 flex items-center justify-end shadow-inner">
+            <div className="w-8 h-4.5 bg-sky-500 rounded-full p-0.5 flex items-center justify-end shadow-inner">
               <div className="w-3.5 h-3.5 bg-white rounded-full shadow-sm" />
             </div>
           </div>
@@ -150,8 +148,8 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
                 <Zap size={16} />
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-900" style={{ fontFamily: fontBody }}>AI Helper</p>
-                <p className="text-[10px] text-gray-400">MoEYS Template</p>
+                <p className="text-xs font-bold text-gray-900" style={{ fontFamily: fontBody }}>{isKm ? 'របាយការណ៍' : 'Reporting'}</p>
+                <p className="text-[10px] text-gray-400">MoEYS Format</p>
               </div>
             </div>
             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
@@ -165,7 +163,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
               👩‍🏫
             </div>
             <p className="text-xs font-semibold text-gray-800 leading-snug" style={{ fontFamily: fontBody }}>
-              {isKm ? 'តើកិច្ចតែងការមេរៀនទី២ រៀបចំស្របតាម MoEYS ដែរឬទេ?' : 'Is Lesson 2 plan aligned with MoEYS standard?'}
+              {isKm ? 'តើវត្តមាន និងពិន្ទុថ្នាក់ទី១២ បានធ្វើបច្ចុប្បន្នភាពហើយឬនៅ?' : 'Are Grade 12 attendance and scores up to date?'}
             </p>
           </div>
 
@@ -178,8 +176,8 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
               <p className="text-xs font-bold text-gray-900" style={{ fontFamily: fontBody }}>
                 {isKm ? 'ការរៀនសូត្ររបស់សិស្ស' : 'Student Engagement'}
               </p>
-              <p className="text-[11px] text-emerald-600 font-bold">
-                {isKm ? 'កើនឡើង +១៨% ខែនេះ!' : 'Increased by 18% this month!'}
+              <p className="text-[11px] text-sky-600 font-bold">
+                {isKm ? 'មើលតាមឆ្នាំសិក្សា' : 'Scoped by academic year'}
               </p>
             </div>
           </div>
@@ -192,7 +190,7 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center shadow-md">
               <MessageSquare size={18} />
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-md">
               <CheckCircle2 size={18} />
             </div>
             <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center shadow-md">
@@ -204,10 +202,10 @@ export function AppOverviewShowcase({ isKm }: { isKm: boolean }) {
           <div className="absolute bottom-6 sm:bottom-10 right-0 sm:right-0 z-30 flex items-center gap-3 bg-white/95 backdrop-blur-xl border border-white/90 rounded-2xl p-4 shadow-2xl max-w-[290px] sm:max-w-[360px] transform hover:scale-105 transition-transform duration-300">
             <p className="text-xs font-semibold text-gray-800 leading-snug" style={{ fontFamily: fontBody }}>
               {isKm 
-                ? 'បាទ! ឧបករណ៍ AI បានរៀបចំកិច្ចតែងការស្តង់ដារក្រសួងអប់រំរួចរាល់ 👨‍🏫' 
-                : 'Yes! AI has generated the official MoEYS standard lesson plan automatically 👨‍🏫'}
+                ? 'រួចរាល់! របាយការណ៍ និងប្រវត្តិការកែប្រែត្រូវបានរក្សាទុកសម្រាប់ពិនិត្យឡើងវិញ 👨‍🏫'
+                : 'Done! Reports and change history are saved for review 👨‍🏫'}
             </p>
-            <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-md">
+            <div className="w-9 h-9 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-md">
               <Sparkles size={16} />
             </div>
           </div>

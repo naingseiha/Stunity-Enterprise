@@ -19,45 +19,45 @@ type Lang = 'en' | 'km';
 
 const T = {
   en: {
-    nav: { tools: 'Features', social: 'Social Feed', schools: 'For Schools', pricing: 'Pricing' },
+    nav: { tools: 'Features', social: 'Learning Community', schools: 'For Schools', pricing: 'Get Started' },
     login: 'Log in',
     getStarted: 'Get Started',
-    heroTitle: 'Transforming Education\nThrough Social Learning',
+    heroTitle: 'Your school,\nall connected',
     heroSub:
-      'Seamlessly connecting students, teachers, and schools with our AI-powered social media and management platform.',
-    heroCtaPrimary: 'Join for free',
+      'A connected platform for multi-school and multi-academic-year operations, teaching, communication, and learning—on web and mobile.',
+    heroCtaPrimary: 'Register Your School',
     heroCtaSecondary: 'Explore Platform',
-    trustedBy: 'TRUSTED BY INNOVATIVE EDUCATIONAL INSTITUTIONS',
-    pricingTitle: 'Simple, transparent pricing.',
-    pricingSub: 'Save hours of curriculum creation with our complete suite.',
+    trustedBy: 'BUILT FOR CAMBODIAN EDUCATION WORKFLOWS',
+    pricingTitle: 'Choose how your institution gets started.',
+    pricingSub: 'Create an account yourself, register a school online, or onboard a multi-school organization with our team.',
     monthly: 'Monthly',
     annual: 'Annual (Save 20%)',
-    perMonth: '/month',
+    perMonth: '',
     plans: [
-      { name: 'Educator', priceMonthly: 'Free', priceAnnual: 'Free', desc: 'Save hours of curriculum research and generation.', feats: ['Unlimited AI Lesson Planner', 'Full access to Academic Social Feed', 'Personal cloud storage', 'MoEYS standard templates'], cta: 'Join for free', highlight: false },
-      { name: 'School Basic', priceMonthly: '$29', priceAnnual: '$24', desc: 'For growing schools up to 200 students.', feats: ['Everything in Educator', 'Automated grading & attendance engine', 'Smart faculty scheduling system', 'Direct parent-teacher portal', 'Official MoEYS report exports'], cta: 'Start 14-Day Trial', highlight: true },
-      { name: 'School Pro', priceMonthly: '$79', priceAnnual: '$64', desc: 'For established institutions needing advanced AI insights.', feats: ['Unlimited students & faculty accounts', 'AI predictive student performance analytics', 'Automated diploma certificate issuance', '24/7 priority engineering support', 'Custom role-based security access'], cta: 'Start 14-Day Trial', highlight: false },
+      { name: 'Individual Access', priceMonthly: 'Self-service', priceAnnual: 'Self-service', desc: 'For teachers, students, and education community members.', feats: ['Academic social feed', 'Courses, quizzes, and learning activities', 'Clubs and community participation', 'Web and mobile access'], cta: 'Create an Account', highlight: false },
+      { name: 'Single School', priceMonthly: 'Register online', priceAnnual: 'Register online', desc: 'For one school ready to manage its operations digitally.', feats: ['Academic years, terms, classes, and subjects', 'Admissions, students, teachers, and timetables', 'Attendance, grades, and MoEYS reports', 'Parent communication and notifications'], cta: 'Register Your School', highlight: true },
+      { name: 'Multi-School Enterprise', priceMonthly: 'Custom setup', priceAnnual: 'Custom setup', desc: 'For organizations operating multiple schools or campuses.', feats: ['Multiple schools in one organization', 'Role-based access and audit history', 'Student history, promotion, and transfers', 'Guided onboarding and deployment support'], cta: 'Request Onboarding', highlight: false },
     ],
   },
   km: {
-    nav: { tools: 'មុខងារ', social: 'បណ្តាញសិក្សា', schools: 'សម្រាប់សាលារៀន', pricing: 'កញ្ចប់តម្លៃ' },
+    nav: { tools: 'មុខងារ', social: 'សហគមន៍សិក្សា', schools: 'សម្រាប់សាលារៀន', pricing: 'ចាប់ផ្តើម' },
     login: 'ចូលគណនី',
     getStarted: 'ចាប់ផ្តើម',
-    heroTitle: 'ផ្លាស់ប្តូរវិស័យអប់រំ\nតាមរយៈបណ្តាញសិក្សាសង្គម',
+    heroTitle: 'សាលារបស់អ្នក\nភ្ជាប់គ្រប់ផ្នែក',
     heroSub:
-      'ភ្ជាប់ទំនាក់ទំនងសិស្ស គ្រូ និងសាលារៀនកាន់តែងាយស្រួល ជាមួយប្រព័ន្ធបណ្តាញសង្គម និងការគ្រប់គ្រងឆ្លាតវៃ (AI)។',
-    heroCtaPrimary: 'ចូលរួមឥតគិតថ្លៃ',
+      'ប្រព័ន្ធតែមួយសម្រាប់គ្រប់គ្រងសាលាច្រើន ឆ្នាំសិក្សាច្រើន ការបង្រៀន ទំនាក់ទំនង និងការសិក្សា ទាំងលើ Web និង Mobile។',
+    heroCtaPrimary: 'ចុះឈ្មោះសាលា',
     heroCtaSecondary: 'ស្វែងយល់បន្ថែម',
-    trustedBy: 'ទទួលស្គាល់ និងប្រើប្រាស់ដោយស្ថាប័នអប់រំឈានមុខ',
-    pricingTitle: 'កញ្ចប់តម្លៃច្បាស់លាស់ និងសមរម្យ។',
-    pricingSub: 'សន្សំពេលវេលារៀបចំកិច្ចតែងការ និងគ្រប់គ្រងសាលារៀនរបស់អ្នក។',
+    trustedBy: 'បង្កើតឡើងសម្រាប់ដំណើរការអប់រំនៅកម្ពុជា',
+    pricingTitle: 'ជ្រើសរើសវិធីចាប់ផ្តើមដែលសមនឹងស្ថាប័នរបស់អ្នក។',
+    pricingSub: 'បង្កើតគណនីដោយខ្លួនឯង ចុះឈ្មោះសាលាតាមអនឡាញ ឬរៀបចំអង្គភាពពហុសាលាជាមួយក្រុមការងាររបស់យើង។',
     monthly: 'ប្រចាំខែ',
     annual: 'ប្រចាំឆ្នាំ (ចំណេញ ២០%)',
-    perMonth: '/ខែ',
+    perMonth: '',
     plans: [
-      { name: 'សម្រាប់គ្រូបង្រៀន', priceMonthly: 'ឥតគិតថ្លៃ', priceAnnual: 'ឥតគិតថ្លៃ', desc: 'សន្សំពេលវេលាស្រាវជ្រាវ និងបង្កើតឯកសារបង្រៀន។', feats: ['ឧបករណ៍ AI កិច្ចតែងការមិនកំណត់', 'ចូលប្រើប្រាស់បណ្តាញសិក្សាសង្គម Feed', 'កន្លែងរក្សាទុកឯកសារ Cloud', 'គំរូស្តង់ដារក្រសួងអប់រំ MoEYS'], cta: 'ចាប់ផ្តើមឥតគិតថ្លៃ', highlight: false },
-      { name: 'សាលារៀន មូលដ្ឋាន', priceMonthly: '$29', priceAnnual: '$24', desc: 'សម្រាប់សាលារៀនដែលមានសិស្សដល់ ២០០ នាក់។', feats: ['មុខងារទាំងអស់ក្នុងកញ្ចប់គ្រូបង្រៀន', 'ប្រព័ន្ធពិន្ទុ និងវត្តមានស្វ័យប្រវត្តិ', 'ប្រព័ន្ធរៀបចំកាលវិភាគឆ្លាតវៃ', 'ទំនាក់ទំនងរវាងមាតាបិតា និងគ្រូ', 'របាយការណ៍ស្តង់ដារ MoEYS'], cta: 'សាកល្បងឥតគិតថ្លៃ ១៤ ថ្ងៃ', highlight: true },
-      { name: 'សាលារៀន Pro', priceMonthly: '$79', priceAnnual: '$64', desc: 'សម្រាប់ស្ថាប័នធំៗដែលត្រូវការប្រព័ន្ធវិភាគទិន្នន័យ។', feats: ['ចំនួនសិស្ស និងគ្រូមិនកំណត់', 'ប្រព័ន្ធវិភាគទិន្នន័យ AI កម្រិតខ្ពស់', 'ចេញវិញ្ញាបនបត្រស្វ័យប្រវត្តិ', 'ជំនួយបច្ចេកទេស ២៤ ម៉ោង', 'ការកំណត់សិទ្ធិសុវត្ថិភាពតាមតួនាទី'], cta: 'សាកល្បងឥតគិតថ្លៃ ១៤ ថ្ងៃ', highlight: false },
+      { name: 'គណនីបុគ្គល', priceMonthly: 'ចុះឈ្មោះដោយខ្លួនឯង', priceAnnual: 'ចុះឈ្មោះដោយខ្លួនឯង', desc: 'សម្រាប់គ្រូ សិស្ស និងសមាជិកសហគមន៍អប់រំ។', feats: ['បណ្តាញសង្គមអប់រំ', 'វគ្គសិក្សា កម្រងសំណួរ និងសកម្មភាពសិក្សា', 'ក្លឹប និងការចូលរួមសហគមន៍', 'ប្រើបានលើ Web និង Mobile'], cta: 'បង្កើតគណនី', highlight: false },
+      { name: 'សាលារៀនតែមួយ', priceMonthly: 'ចុះឈ្មោះអនឡាញ', priceAnnual: 'ចុះឈ្មោះអនឡាញ', desc: 'សម្រាប់សាលាមួយដែលចង់ឌីជីថលភាវូបនីយកម្មការងារប្រចាំថ្ងៃ។', feats: ['ឆ្នាំសិក្សា ឆមាស ថ្នាក់ និងមុខវិជ្ជា', 'ការចុះឈ្មោះសិស្ស គ្រូ និងកាលវិភាគ', 'វត្តមាន ពិន្ទុ និងរបាយការណ៍ MoEYS', 'ទំនាក់ទំនងមាតាបិតា និងការជូនដំណឹង'], cta: 'ចុះឈ្មោះសាលា', highlight: true },
+      { name: 'អង្គភាពពហុសាលា', priceMonthly: 'រៀបចំតាមតម្រូវការ', priceAnnual: 'រៀបចំតាមតម្រូវការ', desc: 'សម្រាប់អង្គភាពដែលគ្រប់គ្រងសាលា ឬសាខាច្រើន។', feats: ['គ្រប់គ្រងសាលាច្រើនក្នុងអង្គភាពតែមួយ', 'សិទ្ធិតាមតួនាទី និងប្រវត្តិសវនកម្ម', 'ប្រវត្តិសិស្ស ឡើងថ្នាក់ និងផ្ទេរសាលា', 'ការណែនាំដំឡើង និងចាប់ផ្តើមប្រើប្រាស់'], cta: 'ស្នើសុំការណែនាំ', highlight: false },
     ],
   },
 } satisfies Record<Lang, unknown>;
@@ -79,7 +79,7 @@ export default function HomePage() {
           ══════════════════════════════════════════ */}
       <div
         style={{
-          background: 'linear-gradient(160deg, #d4f5e2 0%, #e8faf0 30%, #f2fdf7 55%, #e0f9ed 80%, #cff2e4 100%)',
+          background: 'linear-gradient(160deg, #dff7ff 0%, #ecfaff 30%, #f7fcff 55%, #e8f7ff 80%, #fff3e8 100%)',
           position: 'relative',
           overflow: 'hidden',
           width: '100%',
@@ -90,7 +90,7 @@ export default function HomePage() {
           style={{
             position: 'absolute', top: '-80px', right: '-80px',
             width: '700px', height: '700px', borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(134,239,172,0.5) 0%, rgba(187,247,208,0.2) 50%, transparent 70%)',
+            background: 'radial-gradient(ellipse, rgba(9,207,247,0.32) 0%, rgba(186,230,253,0.2) 50%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -98,7 +98,7 @@ export default function HomePage() {
           style={{
             position: 'absolute', top: '30%', right: '15%',
             width: '400px', height: '400px', borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(209,250,229,0.6) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse, rgba(249,115,22,0.12) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -138,13 +138,13 @@ export default function HomePage() {
             >
               {isKm ? (
                 <>
-                  ផ្លាស់ប្តូរវិស័យអប់រំ<br />
-                  តាមរយៈ<span style={{ color: '#16a34a' }}>បណ្តាញសិក្សា</span>
+                  សាលារបស់អ្នក<br />
+                  <span style={{ color: '#0284C7' }}>ភ្ជាប់គ្រប់ផ្នែក</span>
                 </>
               ) : (
                 <>
-                  Reimagine education,<br />
-                  <span style={{ color: '#16a34a' }}>Simple solutions</span>
+                  Your school,<br />
+                  <span style={{ color: '#0284C7' }}>all connected</span>
                 </>
               )}
             </h1>
@@ -169,7 +169,7 @@ export default function HomePage() {
                 style={{
                   display: 'inline-flex', alignItems: 'center',
                   padding: '12px 26px',
-                  background: '#0d1117',
+                  background: '#0284C7',
                   color: '#fff',
                   borderRadius: '9999px',
                   fontFamily: fontBody,
@@ -228,12 +228,12 @@ export default function HomePage() {
               </div>
               <div>
                 <p style={{ fontFamily: fontTitle, fontWeight: 900, fontSize: '18px', color: '#111827', margin: 0, lineHeight: 1.2 }}>
-                  50k {isKm ? 'អ្នកប្រើប្រាស់' : 'Downloads'}
+                  {isKm ? 'Web + Mobile' : 'Web + Mobile'}
                 </p>
                 <p style={{ fontFamily: fontBody, fontSize: '11px', color: '#9ca3af', margin: '3px 0 0', lineHeight: 1.4 }}>
                   {isKm
-                    ? 'ជឿទុកចិត្តដោយស្ថាប័នអប់រំ\nឈានមុខជុំវិញប្រទេស'
-                    : 'Trusted by hundreds of schools, our\nplatform services have made great impact\non people future.'}
+                    ? 'ពហុសាលា · ពហុឆ្នាំសិក្សា · ខ្មែរ និងអង់គ្លេស'
+                    : 'Multi-school · Multi-year · Khmer and English'}
                 </p>
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function HomePage() {
             <path
               d="M0 15 L480 15 C520 15 540 45 580 45 L1440 45"
               fill="none"
-              stroke="#a7f3d0"
+              stroke="#bae6fd"
               strokeWidth="1.5"
             />
           </svg>

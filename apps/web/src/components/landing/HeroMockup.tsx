@@ -53,7 +53,7 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
             width: '100%', height: '100%',
             borderRadius: '34px',
             overflow: 'hidden',
-            background: 'linear-gradient(175deg, #c8f0d8 0%, #e8faf0 30%, #f0fdf5 60%, #daf4ea 100%)',
+            background: 'linear-gradient(175deg, #dff7ff 0%, #eefaff 30%, #f7fcff 60%, #fff1e7 100%)',
             position: 'relative',
           }}
         >
@@ -65,18 +65,18 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
 
             {/* Top label */}
             <p style={{ fontSize: '10px', color: '#6b7280', margin: '0 0 4px', fontWeight: 500 }}>
-              {isKm ? 'ប្រាក់ចំណូលប្រចាំឆ្នាំ' : 'Complete Revenue This Year'}
+              {isKm ? 'អត្រាវត្តមានឆ្នាំសិក្សានេះ' : 'Attendance this academic year'}
             </p>
 
             {/* Big percentage */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '6px' }}>
               <h2 style={{ fontSize: '28px', fontWeight: 900, color: '#111827', margin: 0, lineHeight: 1 }}>
-                4.93%
+                94.3%
               </h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444"><path d="M12 20l-8-8h5V4h6v8h5l-8 8z" transform="scale(1,-1) translate(0,-24)"/></svg>
-              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 700 }}>-2.3%</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#0284C7"><path d="M12 20l-8-8h5V4h6v8h5l-8 8z" transform="scale(1,-1) translate(0,-24)"/></svg>
+              <span style={{ fontSize: '10px', color: '#0284C7', fontWeight: 700 }}>+2.3%</span>
             </div>
 
             {/* Chart */}
@@ -92,11 +92,11 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
               {/* Line chart visual */}
               <div style={{ position: 'relative', height: '60px', marginBottom: '6px' }}>
                 <svg viewBox="0 0 240 60" style={{ width: '100%', height: '100%' }} preserveAspectRatio="none">
-                  {/* Green area */}
+                  {/* Brand-blue area */}
                   <defs>
                     <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#059669" stopOpacity="0.3"/>
-                      <stop offset="100%" stopColor="#059669" stopOpacity="0.02"/>
+                      <stop offset="0%" stopColor="#0EA5E9" stopOpacity="0.3"/>
+                      <stop offset="100%" stopColor="#0EA5E9" stopOpacity="0.02"/>
                     </linearGradient>
                   </defs>
                   <path
@@ -106,7 +106,7 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
                   <path
                     d="M0,45 C20,40 40,50 60,38 C80,26 100,30 120,20 C140,10 160,25 180,18 C200,11 220,8 240,5"
                     fill="none"
-                    stroke="#059669"
+                    stroke="#0EA5E9"
                     strokeWidth="2"
                     strokeLinecap="round"
                   />
@@ -145,7 +145,7 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
           <span style={{ fontSize: '10px', fontWeight: 700, color: '#374151' }}>
-            {isKm ? 'ការចំណាយ' : 'Spending Summary'}
+            {isKm ? 'ថ្នាក់បានកត់វត្តមាន' : 'Classes Marked'}
           </span>
           <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="3"><path d="M5 12h14"/></svg>
@@ -153,12 +153,12 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
         </div>
         {/* Progress bar */}
         <div style={{ width: '100%', height: '5px', background: '#f3f4f6', borderRadius: '99px', marginBottom: '10px', overflow: 'hidden' }}>
-          <div style={{ width: '68%', height: '100%', borderRadius: '99px', background: 'linear-gradient(90deg, #059669, #34d399)' }} />
+          <div style={{ width: '85%', height: '100%', borderRadius: '99px', background: 'linear-gradient(90deg, #0284C7, #09CFF7)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <p style={{ fontSize: '9px', color: '#9ca3af', margin: '0 0 2px' }}>{isKm ? 'ចំណាយ' : 'Spend'}</p>
-            <p style={{ fontSize: '13px', fontWeight: 900, color: '#111827', margin: 0 }}>$66,324.00</p>
+            <p style={{ fontSize: '9px', color: '#9ca3af', margin: '0 0 2px' }}>{isKm ? 'បានបញ្ចប់' : 'Completed'}</p>
+            <p style={{ fontSize: '13px', fontWeight: 900, color: '#111827', margin: 0 }}>28 / 33</p>
           </div>
         </div>
       </div>
@@ -183,13 +183,13 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
         {/* Total Income */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: 500 }}>
-            {isKm ? 'ប្រាក់ចំណូលសរុប' : 'Total Income'}
+            {isKm ? 'សិស្សសកម្ម' : 'Active Students'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
         </div>
-        <p style={{ fontSize: '20px', fontWeight: 900, color: '#111827', margin: '0 0 2px', lineHeight: 1.2 }}>$23,643.00</p>
+        <p style={{ fontSize: '20px', fontWeight: 900, color: '#111827', margin: '0 0 2px', lineHeight: 1.2 }}>1,705</p>
         <p style={{ fontSize: '9px', color: '#9ca3af', margin: '0 0 14px' }}>
-          {isKm ? 'ជំហានបន្ទាប់ $28,200.00' : 'Milestone: $28,200.00'}
+          {isKm ? 'ឆ្នាំសិក្សា ២០២៦–២០២៧' : 'Academic year 2026–2027'}
         </p>
 
         {/* Divider */}
@@ -197,18 +197,18 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
 
         {/* Transaction History label */}
         <p style={{ fontSize: '11px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
-          {isKm ? 'ប្រវត្តិប្រតិបត្តិការ' : 'Transaction History'}
+          {isKm ? 'សកម្មភាពថ្មីៗ' : 'Recent Activity'}
         </p>
 
         {/* All Transaction label */}
         <p style={{ fontSize: '10px', fontWeight: 700, color: '#374151', margin: '0 0 10px' }}>
-          {isKm ? 'ប្រតិបត្តិការទាំងអស់' : 'All Transaction'}
+          {isKm ? 'ការអាប់ដេតសាលា' : 'School Updates'}
         </p>
 
         {/* Transaction items */}
         {[
-          { initials: 'SH', name: 'Stefevn Hussain', sub: 'Card *7320...', amount: '-$10.12', color: '#7c3aed' },
-          { initials: 'SR', name: 'Staking Rewards', sub: 'Crypto', amount: '-$32.12', color: '#059669' },
+          { initials: '12A', name: isKm ? 'វត្តមានថ្នាក់ ១២A' : 'Grade 12A attendance', sub: isKm ? 'បានកត់ត្រា' : 'Recorded', amount: '96%', color: '#0284C7' },
+          { initials: '10B', name: isKm ? 'ពិន្ទុថ្នាក់ ១០B' : 'Grade 10B scores', sub: isKm ? 'បានធ្វើបច្ចុប្បន្នភាព' : 'Updated', amount: 'Done', color: '#F97316' },
         ].map((tx, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: i === 0 ? '8px' : 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -227,7 +227,7 @@ export function HeroMockup({ isKm }: { isKm: boolean }) {
                 <p style={{ fontSize: '8px', color: '#9ca3af', margin: 0 }}>{tx.sub}</p>
               </div>
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444' }}>{tx.amount}</span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#0284C7' }}>{tx.amount}</span>
           </div>
         ))}
       </div>

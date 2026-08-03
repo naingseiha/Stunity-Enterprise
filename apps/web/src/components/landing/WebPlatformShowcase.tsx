@@ -5,7 +5,7 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
   const fontTitle = isKm ? "'Koulen', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   return (
-    <section className="py-24 sm:py-32 bg-[#faf9ff] relative overflow-hidden">
+    <section id="enterprise" className="py-24 sm:py-32 bg-[#faf9ff] relative overflow-hidden">
       <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-16">
           
@@ -17,21 +17,21 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
             >
               {isKm ? (
                 <>
-                  ឧបករណ៍ <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">AI ឆ្លាតវៃ</span><br />
-                  សម្រាប់លោកគ្រូ អ្នកគ្រូ
+                  ការងារសាលា <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-orange-500">រៀបចំច្បាស់លាស់</span><br />
+                  សម្រាប់ក្រុមការងារគ្រប់រូប
                 </>
               ) : (
                 <>
-                  Creativity And Quality is<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">Our Destination</span>
+                  School operations,<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-orange-500">clearly organized</span>
                 </>
               )}
             </h2>
             
             <p className="text-gray-500 text-sm sm:text-base leading-relaxed mb-10 max-w-lg mx-auto lg:mx-0">
               {isKm 
-                ? 'ចំណេញពេលវេលាជាមួយប្រព័ន្ធបង្កើតកិច្ចតែងការ និងស្លាយបង្រៀនស្វ័យប្រវត្តិ។ ងាយស្រួលប្រើប្រាស់ ស្របតាមស្តង់ដារក្រសួងអប់រំ។' 
-                : 'Save hours of prep time with our automated lesson planner and interactive slide generator. Designed for modern educators.'}
+                ? 'ភ្ជាប់ទិន្នន័យសិស្ស គ្រូ ថ្នាក់ មុខវិជ្ជា កាលវិភាគ វត្តមាន និងពិន្ទុតាមសាលា និងឆ្នាំសិក្សាដែលបានជ្រើសរើស។'
+                : 'Connect students, teachers, classes, subjects, timetables, attendance, and grades within the selected school and academic year.'}
             </p>
 
             <div className="space-y-6 mb-10 text-left max-w-lg mx-auto lg:mx-0">
@@ -41,8 +41,8 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
                   <Monitor size={18} className="text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold text-gray-900 mb-1">{isKm ? 'ប្រព័ន្ធបង្កើតកិច្ចតែងការ AI' : 'AI Lesson Plan Generator'}</h4>
-                  <p className="text-xs text-gray-500">{isKm ? 'បង្កើតមេរៀនលម្អិតក្នុងពេលប៉ុន្មានវិនាទី។' : 'Generate detailed MoEYS compliant plans in seconds.'}</p>
+                  <h4 className="text-base font-bold text-gray-900 mb-1">{isKm ? 'ផ្ទាំងគ្រប់គ្រងតាមបរិបទ' : 'Context-Aware Dashboard'}</h4>
+                  <p className="text-xs text-gray-500">{isKm ? 'ធ្វើការតាមសាលា និងឆ្នាំសិក្សាដែលអ្នកបានជ្រើសរើស។' : 'Work within the school and academic year you select.'}</p>
                 </div>
               </div>
 
@@ -51,8 +51,8 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
                   <Layers size={18} className="text-purple-600" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold text-gray-900 mb-1">{isKm ? 'ឧបករណ៍បង្កើតស្លាយបង្រៀន' : 'Interactive Slide Creator'}</h4>
-                  <p className="text-xs text-gray-500">{isKm ? 'បំប្លែងអត្ថបទទៅជាស្លាយបង្រៀនទាក់ទាញដោយស្វ័យប្រវត្តិ។' : 'Automatically transform text into beautiful, interactive slides.'}</p>
+                  <h4 className="text-base font-bold text-gray-900 mb-1">{isKm ? 'របាយការណ៍ និងប្រវត្តិទិន្នន័យ' : 'Reports & Student History'}</h4>
+                  <p className="text-xs text-gray-500">{isKm ? 'តាមដានពិន្ទុ ការឡើងថ្នាក់ ការផ្ទេរ និងរបាយការណ៍ MoEYS។' : 'Track grades, promotion, transfers, and MoEYS reports.'}</p>
                 </div>
               </div>
 
@@ -60,7 +60,7 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
 
             <Link
               href={`/${locale}/tools`}
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:shadow-lg transition-all"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-sky-600 text-white font-bold text-sm hover:bg-sky-700 hover:shadow-lg transition-all"
             >
               {isKm ? 'មើលមុខងារទាំងអស់' : 'See All Features'}
               <ArrowRight size={16} />
@@ -118,7 +118,7 @@ export function WebPlatformShowcase({ isKm, locale }: { isKm: boolean, locale: s
             {/* Floating Elements */}
             <div className="absolute -right-6 top-10 bg-white p-3 rounded-xl shadow-glass border border-white flex items-center gap-3 animate-float z-20">
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-600 text-xs">
-                $3.5K
+                AY
               </div>
               <div className="flex flex-col gap-1">
                 <div className="w-16 h-2 bg-gray-200 rounded-full" />

@@ -7,32 +7,32 @@ export function BlogInsights({ isKm, locale }: { isKm: boolean, locale: string }
   const posts = [
     {
       id: 1,
-      image: "bg-indigo-50",
-      date: "May 12, 2026",
-      author: "Admin",
-      title: isKm ? "តើ AI អាចជួយគ្រូបង្រៀនបានកម្រិតណា?" : "How AI is transforming modern education and saving teachers time.",
-      link: "#"
+      image: "bg-sky-50",
+      date: isKm ? "ពហុសាលា" : "Multi-school",
+      author: "Stunity",
+      title: isKm ? "គ្រប់គ្រងសាលា និងសាខាច្រើនក្នុងអង្គភាពតែមួយ" : "Manage multiple schools and campuses in one organization.",
+      link: "#schools"
     },
     {
       id: 2,
-      image: "bg-blue-50",
-      date: "May 10, 2026",
-      author: "Admin",
-      title: isKm ? "វិធីសាស្ត្ររៀបចំកាលវិភាគឆ្លាតវៃសម្រាប់សាលារៀនធំៗ" : "Smart scheduling techniques for large scale educational institutions.",
-      link: "#"
+      image: "bg-orange-50",
+      date: isKm ? "ឆ្នាំសិក្សា" : "Academic years",
+      author: "Stunity",
+      title: isKm ? "រក្សាប្រវត្តិសិស្សបានត្រឹមត្រូវពីមួយឆ្នាំសិក្សាទៅមួយឆ្នាំ" : "Preserve accurate student history across academic years.",
+      link: "#features"
     },
     {
       id: 3,
-      image: "bg-emerald-50",
-      date: "May 08, 2026",
-      author: "Admin",
-      title: isKm ? "របៀបប្រើប្រាស់បណ្តាញសិក្សាសង្គមឱ្យមានប្រសិទ្ធភាព" : "How to effectively utilize academic social networks for learning.",
-      link: "#"
+      image: "bg-cyan-50",
+      date: isKm ? "សហគមន៍សិក្សា" : "Learning community",
+      author: "Stunity",
+      title: isKm ? "ភ្ជាប់ការបង្រៀន ការទំនាក់ទំនង និងសកម្មភាពសិក្សាលើ Mobile" : "Connect teaching, communication, and learning activities on mobile.",
+      link: "#mobile"
     }
   ];
 
   return (
-    <section className="py-24 sm:py-32 bg-[#faf9ff]">
+    <section id="blog" className="py-24 sm:py-32 bg-[#faf9ff]">
       <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
         
         <div className="flex justify-between items-end mb-12">
@@ -40,7 +40,7 @@ export function BlogInsights({ isKm, locale }: { isKm: boolean, locale: string }
             className={`font-black text-[#111827] ${isKm ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl tracking-tight'}`}
             style={{ fontFamily: fontTitle, lineHeight: isKm ? '1.8' : '1.2' }}
           >
-            {isKm ? 'ព័ត៌មាន និងអត្ថបទថ្មីៗ' : 'Latest Blog Insights'}
+            {isKm ? 'ស្វែងយល់ពី Stunity' : 'Explore Stunity'}
           </h2>
           
           <div className="flex gap-2">
@@ -56,11 +56,11 @@ export function BlogInsights({ isKm, locale }: { isKm: boolean, locale: string }
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {posts.map(post => (
             <Link key={post.id} href={post.link} className="group block">
-              <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-indigo-100 h-full flex flex-col">
+              <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-sky-100 h-full flex flex-col">
                 
                 {/* Image Placeholder */}
                 <div className={`w-full aspect-video rounded-2xl ${post.image} mb-4 relative overflow-hidden flex items-center justify-center`}>
-                   <div className="w-12 h-12 rounded-full bg-white/50 backdrop-blur-sm flex items-center justify-center transform scale-0 group-hover:scale-100 transition-transform duration-300 shadow-sm text-indigo-600">
+                   <div className="w-12 h-12 rounded-full bg-white/50 backdrop-blur-sm flex items-center justify-center transform scale-0 group-hover:scale-100 transition-transform duration-300 shadow-sm text-sky-600">
                      <ArrowUpRight size={20} />
                    </div>
                 </div>
@@ -72,12 +72,12 @@ export function BlogInsights({ isKm, locale }: { isKm: boolean, locale: string }
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-bold text-gray-900 px-2 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-base font-bold text-gray-900 px-2 line-clamp-2 leading-snug group-hover:text-sky-600 transition-colors">
                   {post.title}
                 </h3>
                 
                 <div className="mt-auto pt-6 px-2">
-                  <span className="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                  <span className="text-xs font-bold text-sky-600 flex items-center gap-1">
                     {isKm ? 'អានបន្ថែម' : 'Learn More'} <ArrowUpRight size={14} />
                   </span>
                 </div>

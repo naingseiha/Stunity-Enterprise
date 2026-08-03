@@ -8,42 +8,42 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
   const features = [
     {
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
         </svg>
       ),
-      titleKm: 'ភ្ជាប់សហគមន៍\nបណ្តាញសិក្សា',
-      titleEn: 'Speed up\nyour learning',
+      titleKm: 'ភ្ជាប់សហគមន៍\nសិក្សា',
+      titleEn: 'Connect your\nlearning community',
       descKm: 'ចែករំលែកមេរៀន ភ្ជាប់ទំនាក់ទំនងរវាងសិស្ស គ្រូ និងសាលា ដោយរហ័ស និងមានប្រសិទ្ធភាព។',
-      descEn: 'Share lesson plans and connect with teachers across the country seamlessly, with optimized throughput to ensure lightning-fast collaboration.',
+      descEn: 'Share learning content and connect students, teachers, and schools through one academic community.',
       bg: '#f8fffe',
       accent: false,
     },
     {
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <line x1="2" y1="12" x2="22" y2="12"/>
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
       ),
-      titleKm: 'ឈានដល់\nអ្នករៀននៅទូទាំងប្រទេស',
-      titleEn: 'National\nReach',
-      descKm: 'ចូលប្រើប្រាស់ Stunity បានគ្រប់ទីកន្លែងក្នុងប្រទេស ដើម្បីពង្រីកបណ្តាញអប់រំ និងចែករំលែកចំណេះដឹង។',
-      descEn: 'Reach educators and students across Cambodia. Expand your educational network with verified school connections and trusted contact data.',
-      bg: 'linear-gradient(160deg, #f0fdf4 0%, #dcfce7 100%)',
+      titleKm: 'គ្រប់គ្រងសាលា\nនិងឆ្នាំសិក្សាច្រើន',
+      titleEn: 'Multi-school,\nmulti-year by design',
+      descKm: 'បំបែកទិន្នន័យតាមសាលា ឆ្នាំសិក្សា និងឆមាស ដើម្បីរក្សាប្រវត្តិបានត្រឹមត្រូវ និងងាយស្រួលគ្រប់គ្រង។',
+      descEn: 'Organize data by school, academic year, and term while preserving accurate operational and student history.',
+      bg: 'linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 100%)',
       accent: true,
     },
     {
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
       ),
-      titleKm: 'ចុច\nចូលប្រើ Stunity',
-      titleEn: 'Click\nAdd to Stunity',
-      descKm: 'វាងាយស្រួលណាស់។ ពេលចុច "ចូលរួម Stunity" ព័ត៌មានរបស់សាលា និងគ្រូ នឹងត្រូវបានតភ្ជាប់ជាស្វ័យប្រវត្តិ។',
-      descEn: 'It really is as simple as that. When you click "Add to Stunity" your school profile will be synced to our network automatically.',
+      titleKm: 'ចុះឈ្មោះ\nដោយខ្លួនឯង',
+      titleEn: 'Register\nonline',
+      descKm: 'បង្កើតគណនី និងចុះឈ្មោះសាលាតាមអនឡាញ ដើម្បីចាប់ផ្តើមរៀបចំអង្គភាព និងឆ្នាំសិក្សារបស់អ្នក។',
+      descEn: 'Create an account and register your school online to begin setting up your organization and academic year.',
       bg: '#f8fffe',
       accent: false,
     },
@@ -72,47 +72,47 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
   const rightFeatures = [
     {
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
         </svg>
       ),
-      titleKm: 'ប្រព័ន្ធ AI កិច្ចតែងការ',
-      titleEn: 'AI Lesson Planner',
-      descKm: 'បង្កើតមេរៀនស្របតាមស្តង់ដារ MoEYS ជាស្វ័យប្រវត្តិ ក្នុងពេលតែប៉ុន្មាននាទី។',
-      descEn: 'Generate MoEYS-compliant lesson plans automatically in minutes with AI.',
+      titleKm: 'ឆ្នាំសិក្សា និងឆមាស',
+      titleEn: 'Academic Years & Terms',
+      descKm: 'រៀបចំឆ្នាំសិក្សា ឆមាស ប្រតិទិន និងការផ្លាស់ប្តូរឆ្នាំដោយមានប្រវត្តិច្បាស់លាស់។',
+      descEn: 'Manage academic years, terms, calendars, and year transitions with clear historical records.',
     },
     {
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
         </svg>
       ),
       titleKm: 'ប្រព័ន្ធគ្រប់គ្រងសាលា',
       titleEn: 'School OS',
-      descKm: 'គ្រប់គ្រងវត្តមាន ពិន្ទុ និងការងារទាំងអស់ ជាមួយ dashboard ឆ្លាតវៃ។',
-      descEn: 'Manage attendance, grades and all admin tasks with a smart dashboard.',
+      descKm: 'គ្រប់គ្រងការចុះឈ្មោះ សិស្ស គ្រូ ថ្នាក់ មុខវិជ្ជា វត្តមាន ពិន្ទុ និងកាលវិភាគ។',
+      descEn: 'Manage admissions, students, teachers, classes, subjects, attendance, grades, and timetables.',
     },
     {
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       ),
       titleKm: 'បណ្តាញសង្គមអប់រំ',
       titleEn: 'Academic Social Feed',
-      descKm: 'ចែករំលែក Feed បង្រៀន ភ្ជាប់ជាមួយគ្រូ-សិស្សសរុប 50k+ ជុំវិញប្រទេស។',
-      descEn: 'Share teaching posts, connect with 50k+ teachers & students nationwide.',
+      descKm: 'ចែករំលែកមាតិកាសិក្សា សារជូនដំណឹង វគ្គសិក្សា កម្រងសំណួរ និងសកម្មភាពក្លឹប។',
+      descEn: 'Share learning content, announcements, courses, quizzes, and club activities in one community.',
     },
     {
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
         </svg>
       ),
-      titleKm: 'វិភាគទិន្នន័យ AI',
-      titleEn: 'AI Analytics',
-      descKm: 'ទំនាយការរៀនសូត្ររបស់សិស្ស ហើយកែប្រែការបង្រៀនបានទាន់ពេល។',
-      descEn: 'Predict student performance and adjust teaching approaches in real time.',
+      titleKm: 'របាយការណ៍ និងសុវត្ថិភាព',
+      titleEn: 'Reports & Governance',
+      descKm: 'របាយការណ៍ MoEYS សិទ្ធិតាមតួនាទី និងប្រវត្តិសវនកម្មសម្រាប់ការគ្រប់គ្រងដែលអាចត្រួតពិនិត្យបាន។',
+      descEn: 'MoEYS reports, role-based access, and audit history support accountable school operations.',
     },
   ];
 
@@ -149,7 +149,7 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
               {/* Icon bubble */}
               <div
                 className="w-11 h-11 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300"
-                style={{ background: 'rgba(255,255,255,0.9)', boxShadow: '0 2px 12px rgba(5,150,105,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.9)', boxShadow: '0 2px 12px rgba(2,132,199,0.1)' }}
               >
                 {feat.icon}
               </div>
@@ -221,7 +221,7 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
           <div
             className="rounded-[28px] p-8 flex flex-col justify-between"
             style={{
-              background: 'linear-gradient(145deg, #0f1923 0%, #111827 60%, #0d1f15 100%)',
+              background: 'linear-gradient(145deg, #082f49 0%, #111827 60%, #172554 100%)',
               border: '1px solid rgba(255,255,255,0.06)',
               minHeight: '460px',
             }}
@@ -231,12 +231,12 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
               <div
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  background: 'rgba(52,211,153,0.15)',
+                  background: 'rgba(56,189,248,0.15)',
                   borderRadius: '100px', padding: '5px 14px', marginBottom: '16px',
                 }}
               >
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#34d399', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: fontBody }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38BDF8' }} />
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#38BDF8', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: fontBody }}>
                   {isKm ? 'មុខងារគន្លឹះ' : 'Key Features'}
                 </span>
               </div>
@@ -251,9 +251,9 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
                 }}
               >
                 {isKm ? (
-                  <>មុខងារដែលធ្វើ<br /><span style={{ color: '#34d399' }}>ការអប់រំ</span> ខុសប្លែក</>
+                  <>មុខងារសំខាន់សម្រាប់<br /><span style={{ color: '#38BDF8' }}>សាលាទំនើប</span></>
                 ) : (
-                  <>Features that make<br /><span style={{ color: '#34d399' }}>Education</span> different</>
+                  <>Core capabilities for<br /><span style={{ color: '#38BDF8' }}>modern schools</span></>
                 )}
               </h3>
             </div>
@@ -272,14 +272,14 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
                     transition: 'background 0.2s',
                     cursor: 'default',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(52,211,153,0.08)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(56,189,248,0.08)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                 >
                   {/* Icon circle */}
                   <div
                     style={{
                       width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
-                      background: 'rgba(52,211,153,0.12)',
+                      background: 'rgba(56,189,248,0.12)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
@@ -303,13 +303,13 @@ export function FeatureGrid({ c, isKm, locale }: { c: any, isKm: boolean, locale
                 href={`/${locale}/register-school`}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  background: '#34d399', color: '#0d1117',
+                  background: '#09CFF7', color: '#082f49',
                   padding: '12px 26px', borderRadius: '9999px',
                   fontFamily: fontBody, fontWeight: 800, fontSize: '14px',
                   textDecoration: 'none', transition: 'opacity 0.2s',
                 }}
               >
-                {isKm ? 'ចាប់ផ្តើមឥតគិតថ្លៃ' : 'Get Started Free'}
+                {isKm ? 'ចុះឈ្មោះសាលា' : 'Register Your School'}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
                 </svg>

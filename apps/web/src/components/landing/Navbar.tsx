@@ -120,7 +120,7 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
           {/* Primary Join Button — Dark Pill */}
           <Link
             href={`/${locale}/register-school`}
-            className="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-[#111827] hover:bg-black rounded-full shadow-sm hover:shadow transition-all duration-200"
+            className="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-full shadow-sm hover:shadow transition-all duration-200"
             style={{ fontFamily: fontBody }}
           >
             {isKm ? 'ចុះឈ្មោះ' : 'Join'}
@@ -183,7 +183,7 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
             <Link
               href={`/${locale}/register-school`}
               onClick={() => setMenuOpen(false)}
-              className="w-full text-center py-2.5 text-sm font-semibold text-white bg-[#111827] rounded-full"
+              className="w-full text-center py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-full"
               style={{ fontFamily: fontBody }}
             >
               {isKm ? 'ចុះឈ្មោះ' : 'Join'}

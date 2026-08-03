@@ -7,8 +7,8 @@ export function SchoolOSCapabilities({ isKm }: { isKm: boolean }) {
     {
       title: isKm ? 'គ្រប់គ្រងវត្តមាន និងកាលវិភាគ' : 'Attendance & Scheduling',
       desc: isKm 
-        ? 'តាមដានវត្តមានសិស្ស និងរៀបចំកាលវិភាគបង្រៀនរបស់គ្រូដោយស្វ័យប្រវត្តិ។' 
-        : 'Automated student attendance tracking and smart faculty scheduling systems.',
+        ? 'កត់ត្រាវត្តមានសិស្ស និងរៀបចំកាលវិភាគបង្រៀនរបស់គ្រូតាមថ្នាក់ និងឆ្នាំសិក្សា។'
+        : 'Record student attendance and organize faculty timetables by class and academic year.',
       icon: <ClipboardCheck size={20} className="text-indigo-600" />,
       mockup: (
         <div className="w-full h-32 bg-indigo-50/50 rounded-xl border border-indigo-100 flex items-center justify-center p-4">
@@ -71,7 +71,7 @@ export function SchoolOSCapabilities({ isKm }: { isKm: boolean }) {
       title: isKm ? 'សុវត្ថិភាព និងការគ្រប់គ្រងសិទ្ធិ' : 'Security & Role Access',
       desc: isKm 
         ? 'ការពារទិន្នន័យសាលារៀន និងកំណត់សិទ្ធិប្រើប្រាស់យ៉ាងច្បាស់លាស់សម្រាប់គ្រូ និងសិស្ស។' 
-        : 'Protect school data with custom role-based security access and cloud backups.',
+        : 'Protect school data with role-based access, audit history, and secure account controls.',
       icon: <ShieldCheck size={20} className="text-emerald-600" />,
       mockup: (
         <div className="w-full h-32 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-center p-4">
@@ -88,13 +88,13 @@ export function SchoolOSCapabilities({ isKm }: { isKm: boolean }) {
   ];
 
   return (
-    <section className="py-24 sm:py-32 bg-white relative border-t border-gray-100">
+    <section id="schools" className="py-24 sm:py-32 bg-white relative border-t border-gray-100">
       <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-20">
         
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gray-50 border border-gray-200 mb-6">
-            <div className="w-2 h-2 bg-indigo-500 rounded-sm" />
+            <div className="w-2 h-2 bg-sky-500 rounded-sm" />
             <span className="text-xs font-bold text-gray-600 tracking-wider">SCHOOL OS</span>
           </div>
           <h2 

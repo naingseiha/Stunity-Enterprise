@@ -8,10 +8,10 @@ import { Metadata } from 'next';
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   return constructMetadata({
-    title: locale === 'km' ? 'ស្ទូនិធី - ប្រព័ន្ធគ្រប់គ្រងសាលារៀនទំនើប' : 'Stunity - Modern School Management',
+    title: locale === 'km' ? 'Stunity - ប្រព័ន្ធគ្រប់គ្រងសាលា និងសហគមន៍សិក្សា' : 'Stunity - School Management & Social Learning Platform',
     description: locale === 'km' 
-      ? 'ស្ទូនិធី គឺជាប្រព័ន្ធគ្រប់គ្រងសាលារៀន និងការសិក្សាសង្គមដ៏ទំនើបបំផុត។'
-      : 'Stunity is the most advanced school management and social learning platform.',
+      ? 'គ្រប់គ្រងសាលាច្រើន ឆ្នាំសិក្សាច្រើន សិស្ស គ្រូ វត្តមាន ពិន្ទុ របាយការណ៍ និងការទំនាក់ទំនង ក្នុងប្រព័ន្ធ Stunity តែមួយ។'
+      : 'Manage multiple schools and academic years, admissions, students, teachers, attendance, grades, reports, and communication in one Stunity platform.',
   });
 }
 
