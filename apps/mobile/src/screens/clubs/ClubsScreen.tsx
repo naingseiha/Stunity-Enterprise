@@ -186,6 +186,20 @@ export default function ClubsScreen() {
     ? (classesApi.getCachedMyClasses({ academicYearId: initialSelectedYearId || undefined, scopeKey: classCacheScopeKey }) || [])
     : [];
   const hasInitialVisibleContent = Boolean(initialClubsPage || initialSchoolClasses.length > 0);
+  // Resolve class hub selection synchronously from cache so ClassHubView
+  // mounts on the first frame (Feed/Reels-style) instead of waiting for
+  // a useEffect after the school-classes fetch settles.
+  const resolveInitialClassId = (classes: MyClassSummary[], role?: string) => {
+    if (role === 'TEACHER') {
+      const teaching = classes.filter((c) => c.hasTimetableAssignment === true);
+      if (teaching.length > 0) return teaching[0].id;
+    }
+    return classes[0]?.id ?? null;
+  };
+  const initialSelectedClassId = resolveInitialClassId(initialSchoolClasses, user?.role);
+  if (initialSchoolClasses.length > 0 && __DEV__) {
+    console.log(`[Class TTI] memory/disk hit (${initialSchoolClasses.length} classes)`);
+  }
 
   // This flag is resolved by loadClubs()'s finally block. When clubs are disabled
   // that call never fires, so don't start "loading" on its account — the classes
@@ -250,7 +264,7 @@ export default function ClubsScreen() {
   const [loadingAdminClasses, setLoadingAdminClasses] = useState(false);
   const [inviteCount, setInviteCount]           = useState(0);
 
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(initialSelectedClassId);
 
   const pageRef = useRef(1);
   const isLoadingMoreRef = useRef(false);
@@ -258,6 +272,7 @@ export default function ClubsScreen() {
   const hasLoadedContentRef = useRef(Boolean(initialClubsPage));
   const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
   const debouncedQueryRef = useRef('');
+  const schoolClassesLengthRef = useRef(initialSchoolClasses.length);
   const prefetchedClassDetailKeysRef = useRef<Set<string>>(new Set());
   const deferredInteractionTaskRef = useRef<ReturnType<typeof InteractionManager.runAfterInteractions> | null>(null);
   // Guards the visible-class prefetch so it fires exactly once per mount,
@@ -374,6 +389,10 @@ export default function ClubsScreen() {
   }, [clubs.length]);
 
   useEffect(() => {
+    schoolClassesLengthRef.current = schoolClasses.length;
+  }, [schoolClasses.length]);
+
+  useEffect(() => {
     isLoadingMoreRef.current = isLoadingMore;
   }, [isLoadingMore]);
 
@@ -464,7 +483,11 @@ export default function ClubsScreen() {
       }
 
       try {
-        setLoadingSchoolClasses(true);
+        // Only block the UI when there is nothing to paint. Cache hits keep
+        // the Class hub visible while we silently refresh (Feed/Reels SWR).
+        if (schoolClassesLengthRef.current === 0) {
+          setLoadingSchoolClasses(true);
+        }
         setSchoolClassesError(null);
         const data = await classesApi.getMyClasses({
           force,
@@ -988,6 +1011,10 @@ export default function ClubsScreen() {
     if (selectedClassId) {
       const isTeacher = user?.role === 'TEACHER';
       const classesForSelector = isTeacher && teacherClassSplit.teaching.length > 0 ? teacherClassSplit.teaching : schoolClasses;
+      const selectedClassSummary =
+        classesForSelector.find((cls) => cls.id === selectedClassId) ||
+        schoolClasses.find((cls) => cls.id === selectedClassId) ||
+        null;
       const classSelectorUi = classesForSelector.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14, gap: 10, alignItems: 'center' }}>
           {classesForSelector.map(cls => {
@@ -1057,7 +1084,24 @@ export default function ClubsScreen() {
 
            <ClassHubView 
              classId={selectedClassId} 
-             myRole={user?.role} 
+             className={selectedClassSummary?.name}
+             myRole={selectedClassSummary?.myRole || user?.role} 
+             linkedStudentId={selectedClassSummary?.linkedStudentId}
+             linkedTeacherId={selectedClassSummary?.linkedTeacherId}
+             homeroomTeacherId={selectedClassSummary?.homeroomTeacher?.id}
+             initialSummary={selectedClassSummary ? {
+               id: selectedClassSummary.id,
+               name: selectedClassSummary.name,
+               grade: selectedClassSummary.grade,
+               section: selectedClassSummary.section,
+               track: selectedClassSummary.track,
+               studentCount: selectedClassSummary.studentCount,
+               myRole: selectedClassSummary.myRole,
+               linkedStudentId: selectedClassSummary.linkedStudentId,
+               linkedTeacherId: selectedClassSummary.linkedTeacherId,
+               homeroomTeacher: selectedClassSummary.homeroomTeacher,
+               isHomeroom: selectedClassSummary.isHomeroom,
+             } : undefined}
              hideBackButton={true} 
              hideAppBar={true}
              hideTopSafe={true} 
@@ -1067,7 +1111,9 @@ export default function ClubsScreen() {
       );
     }
 
-    if (loading || loadingSchoolClasses) {
+    // Only block the Class tab when we truly have nothing to paint.
+    // With disk/memory cache, selectedClassId + ClassHubView already mounted.
+    if ((loading || loadingSchoolClasses) && !selectedClassId && schoolClasses.length === 0) {
       // Return a simple loading state that doesn't look like the Bento grid
       return (
         <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>

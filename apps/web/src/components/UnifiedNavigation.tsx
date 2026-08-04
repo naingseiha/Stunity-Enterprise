@@ -49,6 +49,8 @@ import {
   Briefcase,
   Clock3,
   FolderKanban,
+  Compass,
+  Sparkles,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import AcademicYearSelector from "./AcademicYearSelector";
@@ -269,6 +271,8 @@ export default function UnifiedNavigation({
       pathname.includes("/settings") ||
       pathname.includes("/reports") ||
       pathname.includes("/teacher/quizzes/analytics") ||
+      pathname.includes("/discover") ||
+      pathname.includes("/welcome") ||
       pathname.includes("/admin"), // Added for admin pages like claim-codes
     [pathname],
   );
@@ -425,6 +429,13 @@ export default function UnifiedNavigation({
 
   const standaloneSchoolMenuItems = useMemo<SchoolMenuItem[]>(
     () => [
+      {
+        name: locale === 'km' ? "Discover (ទំព័រដើម)" : "Discover",
+        icon: Compass,
+        path: `/${locale}/discover`,
+        prefetch: null,
+        skeleton: "dashboard",
+      },
       {
         name: tNav("items.dashboard"),
         icon: BarChart3,

@@ -1,5 +1,5 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ActionSheetIOS,
@@ -648,20 +648,31 @@ export default function LessonViewerScreen() {
   const route = useRoute<RouteParams>();
   const { courseId, lessonId, contentLocale: routeContentLocale } = route.params;
   const fallbackContentLocale = normalizeResourceLocale(routeContentLocale || i18n.resolvedLanguage || i18n.language || 'en');
+  const [selectedContentLocale, setSelectedContentLocale] = useState(fallbackContentLocale);
 
-  const [loading, setLoading] = useState(true);
+  const initialCachedCourse = useMemo(
+    () => learnApi.getCachedCourseDetail(courseId, fallbackContentLocale),
+    [courseId, fallbackContentLocale]
+  );
+  const initialCachedLesson = useMemo(
+    () => learnApi.getCachedLessonDetail(courseId, lessonId, fallbackContentLocale),
+    [courseId, lessonId, fallbackContentLocale]
+  );
+  const hasImmediateShell = Boolean(initialCachedLesson || initialCachedCourse);
+
+  const [loading, setLoading] = useState(!hasImmediateShell);
   const [refreshing, setRefreshing] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [course, setCourse] = useState<LearnCourseDetail | null>(null);
-  const [lesson, setLesson] = useState<LearnLessonDetail | null>(null);
+  const [course, setCourse] = useState<LearnCourseDetail | null>(initialCachedCourse);
+  const [lesson, setLesson] = useState<LearnLessonDetail | null>(initialCachedLesson);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteSavedAt, setNoteSavedAt] = useState<string | null>(null);
   const [noteSaving, setNoteSaving] = useState(false);
   const [transcriptLocalePreference, setTranscriptLocalePreference] = useState<string | null>(null);
-  const [selectedContentLocale, setSelectedContentLocale] = useState(fallbackContentLocale);
   const [resourceActionState, setResourceActionState] = useState<Record<string, 'opening' | 'saving' | 'sharing'>>({});
   const [inlineTextPreview, setInlineTextPreview] = useState<{ resourceId: string; content: string; title: string } | null>(null);
   const [inlineTextLoadingResourceId, setInlineTextLoadingResourceId] = useState<string | null>(null);
+  const hasVisibleLessonRef = useRef(Boolean(initialCachedLesson));
 
   useEffect(() => {
     setSelectedContentLocale(fallbackContentLocale);
@@ -669,6 +680,18 @@ export default function LessonViewerScreen() {
 
   const loadLessonData = useCallback(async () => {
     try {
+      // Paint from cache first; only block UI when we have nothing.
+      if (!hasVisibleLessonRef.current) {
+        const cachedLesson = learnApi.getCachedLessonDetail(courseId, lessonId, selectedContentLocale);
+        const cachedCourse = learnApi.getCachedCourseDetail(courseId, selectedContentLocale);
+        if (cachedLesson) {
+          setLesson(cachedLesson);
+          hasVisibleLessonRef.current = true;
+          setLoading(false);
+        }
+        if (cachedCourse) setCourse(cachedCourse);
+      }
+
       const [lessonData, courseData, noteData] = await Promise.all([
         learnApi.getLessonDetail(courseId, lessonId, selectedContentLocale),
         learnApi.getCourseDetail(courseId, false, selectedContentLocale),
@@ -677,16 +700,21 @@ export default function LessonViewerScreen() {
 
       setLesson(lessonData);
       setCourse(courseData);
+      hasVisibleLessonRef.current = true;
       setNoteDraft(noteData?.content || '');
       setNoteSavedAt(noteData?.updatedAt || null);
     } catch (error: any) {
-      Alert.alert(t('learn.lessonViewer.lesson'), error?.message || t('learn.lessonViewer.unableLoadLesson'));
-      navigation.goBack();
+      if (!hasVisibleLessonRef.current) {
+        Alert.alert(t('learn.lessonViewer.lesson'), error?.message || t('learn.lessonViewer.unableLoadLesson'));
+        navigation.goBack();
+      } else if (__DEV__) {
+        console.warn('[LessonViewer] background refresh failed:', error?.message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [courseId, lessonId, navigation, selectedContentLocale]);
+  }, [courseId, lessonId, navigation, selectedContentLocale, t]);
 
   useEffect(() => {
     loadLessonData();
@@ -897,7 +925,8 @@ export default function LessonViewerScreen() {
     }
   }, []);
 
-  if (loading) {
+  // Only blank when we have no lesson shell to paint.
+  if (loading && !lesson) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <ActivityIndicator size="large" color={ColorScale.primary[600]} />

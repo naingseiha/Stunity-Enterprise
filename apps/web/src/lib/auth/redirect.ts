@@ -32,6 +32,6 @@ export function getAuthRedirectPath(
     case "ADMIN":
     case "STAFF":
     default:
-      return `/${locale}/feed`;
+      return `/${locale}/discover`;
   }
 }

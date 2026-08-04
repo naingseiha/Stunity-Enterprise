@@ -25,7 +25,11 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
 
   fetchAnnouncements: async (classId, force = false) => {
     if (!force && get().announcements[classId]) return;
-    set((state) => ({ loading: { ...state.loading, [`announcements_${classId}`]: true } }));
+    // Don't flip loading when we already have rows to paint (silent refresh).
+    const hasVisible = Array.isArray(get().announcements[classId]);
+    if (!hasVisible) {
+      set((state) => ({ loading: { ...state.loading, [`announcements_${classId}`]: true } }));
+    }
     try {
       const data = await classHubApi.getAnnouncements(classId);
       set((state) => ({
@@ -61,7 +65,10 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
 
   fetchMaterials: async (classId, force = false) => {
     if (!force && get().materials[classId]) return;
-    set((state) => ({ loading: { ...state.loading, [`materials_${classId}`]: true } }));
+    const hasVisible = Array.isArray(get().materials[classId]);
+    if (!hasVisible) {
+      set((state) => ({ loading: { ...state.loading, [`materials_${classId}`]: true } }));
+    }
     try {
       const data = await classHubApi.getMaterials(classId);
       set((state) => ({
@@ -97,7 +104,10 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
 
   fetchAssignments: async (classId, force = false) => {
     if (!force && get().assignments[classId]) return;
-    set((state) => ({ loading: { ...state.loading, [`assignments_${classId}`]: true } }));
+    const hasVisible = Array.isArray(get().assignments[classId]);
+    if (!hasVisible) {
+      set((state) => ({ loading: { ...state.loading, [`assignments_${classId}`]: true } }));
+    }
     try {
       const data = await classHubApi.getAssignments(classId);
       set((state) => ({

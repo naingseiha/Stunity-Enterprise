@@ -82,12 +82,15 @@ const getCurrentMonthLabel = (): string => {
   return new Date().toLocaleString('default', { month: 'long' });
 };
 
+const formatLocalDateYmd = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const getCurrentRange = (): { startDate: string; endDate: string } => {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const format = (d: Date) => d.toISOString().split('T')[0];
-  return { startDate: format(start), endDate: format(end) };
+  // Local YMD — matches ClassReportScreen cache keys (avoid UTC day-shift).
+  return { startDate: formatLocalDateYmd(start), endDate: formatLocalDateYmd(end) };
 };
 
 const extractTeacherSubjects = (
@@ -185,7 +188,7 @@ export function ClassHubView(props: ClassHubViewProps) {
     params.linkedTeacherId,
   ]);
   const initialCachedBundle = useMemo(
-    () => (classId ? classesApi.getCachedClassDetailBundle(bundleOptions) : null),
+    () => (classId ? classesApi.getCachedClassDetailBundle(bundleOptions, { allowStale: true }) : null),
     [bundleOptions, classId]
   );
   const initialFallbackBundle = useMemo(
@@ -718,12 +721,138 @@ export function ClassHubView(props: ClassHubViewProps) {
       useClassHubStore.getState().fetchAssignments(classId).catch(() => {});
       useClassHubStore.getState().fetchMaterials(classId).catch(() => {});
       useClassHubStore.getState().fetchAnnouncements(classId).catch(() => {});
+      // Warm Report / Grades / Members caches so bento taps paint instantly.
+      void classesApi.getClassStudents(classId);
+      void classesApi.getClassTimetable(classId);
+      void classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate);
+      void classesApi.getClassGradesReport(classId, {
+        semester: 1,
+        year: currentAcademicYear,
+        month: monthLabel,
+        monthNumber: currentMonthNumber,
+        gradeYear: currentAcademicYear,
+      });
+      if ((myRole === 'STUDENT' || myRole === 'PARENT') && params.linkedStudentId) {
+        void classesApi.getStudentMonthlySummary(
+          params.linkedStudentId,
+          monthLabel,
+          currentAcademicYear,
+          currentMonthNumber,
+          classId
+        );
+      }
     });
 
     return () => {
       task.cancel?.();
     };
+  }, [
+    classId,
+    currentAcademicYear,
+    currentMonthNumber,
+    currentRange.endDate,
+    currentRange.startDate,
+    monthLabel,
+    myRole,
+    params.linkedStudentId,
+  ]);
+
+  const prefetchMembers = useCallback(() => {
+    if (!classId) return;
+    void classesApi.getClassStudents(classId);
   }, [classId]);
+
+  const prefetchReport = useCallback(() => {
+    if (!classId) return;
+    void classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate);
+    void classesApi.getClassGradesReport(classId, {
+      semester: 1,
+      year: currentAcademicYear,
+      month: monthLabel,
+      monthNumber: currentMonthNumber,
+      gradeYear: currentAcademicYear,
+    });
+    if ((myRole === 'STUDENT' || myRole === 'PARENT') && params.linkedStudentId) {
+      void classesApi.getStudentMonthlySummary(
+        params.linkedStudentId,
+        monthLabel,
+        currentAcademicYear,
+        currentMonthNumber,
+        classId
+      );
+    }
+  }, [
+    classId,
+    currentAcademicYear,
+    currentMonthNumber,
+    currentRange.endDate,
+    currentRange.startDate,
+    monthLabel,
+    myRole,
+    params.linkedStudentId,
+  ]);
+
+  const prefetchGrades = useCallback(() => {
+    if (!classId) return;
+    void classesApi.getClassStudents(classId);
+    void classesApi.getClassTimetable(classId);
+    void classesApi.getClassGradesReport(classId, {
+      semester: 1,
+      year: currentAcademicYear,
+      month: monthLabel,
+      monthNumber: currentMonthNumber,
+      gradeYear: currentAcademicYear,
+    });
+  }, [classId, currentAcademicYear, currentMonthNumber, monthLabel]);
+
+  const openAnnouncements = useCallback(() => {
+    void useClassHubStore.getState().fetchAnnouncements(classId);
+    navigation.navigate('ClassAnnouncements', { classId });
+  }, [classId, navigation]);
+
+  const openAssignments = useCallback(() => {
+    void useClassHubStore.getState().fetchAssignments(classId);
+    navigation.navigate('ClassAssignments', {
+      classId,
+      myRole,
+      linkedStudentId: params.linkedStudentId,
+    });
+  }, [classId, myRole, navigation, params.linkedStudentId]);
+
+  const openMaterials = useCallback(() => {
+    void useClassHubStore.getState().fetchMaterials(classId);
+    navigation.navigate('ClassMaterials', { classId });
+  }, [classId, navigation]);
+
+  const openReport = useCallback(() => {
+    prefetchReport();
+    navigation.navigate('ClassReport', {
+      classId,
+      className: title,
+      myRole,
+      linkedStudentId: params.linkedStudentId,
+    });
+  }, [classId, myRole, navigation, params.linkedStudentId, prefetchReport, title]);
+
+  const openGrades = useCallback(() => {
+    prefetchGrades();
+    navigation.navigate('ClassGrades', {
+      classId,
+      className: title,
+      myRole,
+      linkedStudentId: params.linkedStudentId,
+      linkedTeacherId: params.linkedTeacherId,
+    });
+  }, [classId, myRole, navigation, params.linkedStudentId, params.linkedTeacherId, prefetchGrades, title]);
+
+  const openMembers = useCallback(() => {
+    prefetchMembers();
+    navigation.navigate('ClassMembers', {
+      classId,
+      homeroomTeacherId: params.homeroomTeacherId,
+      myRole,
+    });
+  }, [classId, myRole, navigation, params.homeroomTeacherId, prefetchMembers]);
 
   const attendanceRate = attendanceSummary?.summary?.averageAttendanceRate ?? 100;
   const pct = attendanceRate > 1 ? attendanceRate / 100 : attendanceRate;
@@ -913,12 +1042,8 @@ export function ClassHubView(props: ClassHubViewProps) {
             <View style={styles.bentoGrid}>
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassReport', {
-                classId,
-                className: title,
-                myRole,
-                linkedStudentId: params.linkedStudentId,
-              })}
+              onPress={openReport}
+              onPressIn={prefetchReport}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
@@ -929,7 +1054,7 @@ export function ClassHubView(props: ClassHubViewProps) {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassAnnouncements', { classId })}
+              onPress={openAnnouncements}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
@@ -940,11 +1065,7 @@ export function ClassHubView(props: ClassHubViewProps) {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassAssignments', {
-                classId,
-                myRole,
-                linkedStudentId: params.linkedStudentId,
-              })}
+              onPress={openAssignments}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FEF2F2' }]}>
@@ -955,7 +1076,7 @@ export function ClassHubView(props: ClassHubViewProps) {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassMaterials', { classId })}
+              onPress={openMaterials}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F0FDF4' }]}>
@@ -977,13 +1098,8 @@ export function ClassHubView(props: ClassHubViewProps) {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassGrades', { 
-                classId, 
-                className: title,
-                myRole,
-                linkedStudentId: params.linkedStudentId,
-                linkedTeacherId: params.linkedTeacherId
-              })}
+              onPress={openGrades}
+              onPressIn={prefetchGrades}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F3E8FF' }]}>
@@ -1005,11 +1121,8 @@ export function ClassHubView(props: ClassHubViewProps) {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassMembers', { 
-                classId, 
-                homeroomTeacherId: params.homeroomTeacherId,
-                myRole,
-              })}
+              onPress={openMembers}
+              onPressIn={prefetchMembers}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FDE4CF' }]}>

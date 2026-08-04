@@ -1,0 +1,546 @@
+'use client';
+
+import React, { useEffect, useState, use, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { TokenManager } from '@/lib/api/auth';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { SCHOOL_SERVICE_URL, ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
+import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import type { LucideIcon } from 'lucide-react';
+import {
+  GraduationCap, Users, School, Target, UserPlus, BookOpen,
+  ClipboardList, BarChart3, Calendar, Settings, ChevronRight,
+  ChevronLeft, LayoutGrid, Search, ArrowUpRight, Compass,
+  CheckCircle2, UserCheck, Clock, Award, TrendingUp,
+  LogOut, Moon, Sun, Globe, Bell, Home,
+} from 'lucide-react';
+import AnimatedContent from '@/components/AnimatedContent';
+import { useTheme } from '@/contexts/ThemeContext';
+
+interface AppModuleItem {
+  id: string;
+  title: string;
+  khmerTitle: string;
+  subtitle: string;
+  khmerSubtitle: string;
+  category: string;
+  icon: LucideIcon;
+  iconBg: string;
+  href: string;
+  badge?: string;
+  khmerBadge?: string;
+  priceTag?: string;
+  stat?: string;
+  badgeColor?: string;
+}
+
+const STATS_CACHE_TTL = 5 * 60 * 1000;
+
+export default function DiscoverPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+  const router = useRouter();
+  const { locale } = params;
+  const isKhmer = locale === 'km';
+  const { schoolId, selectedYear, currentYear } = useAcademicYear();
+  const activeYear = selectedYear ?? currentYear;
+  const { theme, toggleTheme } = useTheme();
+
+  const [user, setUser] = useState<any>(null);
+  const [school, setSchool] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeSideNav, setActiveSideNav] = useState('discover');
+  const horizontalScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auth check
+  useEffect(() => {
+    const token = TokenManager.getAccessToken();
+    if (!token) { router.replace(`/${locale}/auth/login`); return; }
+    const userData = TokenManager.getUserData();
+    setUser(userData.user);
+    setSchool(userData.school);
+    setLoading(false);
+  }, [locale, router]);
+
+
+
+  const appModules: AppModuleItem[] = useMemo(() => [
+    { id: 'students', title: 'Students Hub', khmerTitle: 'គ្រប់គ្រងសិស្ស', subtitle: 'Directory, Enrolment & Profiles', khmerSubtitle: 'បញ្ជីឈ្មោះ ចុះឈ្មោះ និងប្រវត្តិរូប', category: 'people', icon: UserPlus, iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-400', href: `/${locale}/students`, badge: 'Popular', khmerBadge: 'ពេញនិយម', priceTag: 'OPEN', badgeColor: 'bg-blue-100 text-blue-600' },
+    { id: 'teachers', title: 'Teachers Directory', khmerTitle: 'គ្រប់គ្រងគ្រូ', subtitle: 'Faculty staff & class assignments', khmerSubtitle: 'គ្រូ បែងចែកថ្នាក់ មុខវិជ្ជា', category: 'people', icon: Users, iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-500', href: `/${locale}/teachers`, priceTag: 'OPEN' },
+    { id: 'parents', title: 'Parent Relations', khmerTitle: 'ទំនាក់ទំនងអាណាព្យាបាល', subtitle: 'Parent profiles & student links', khmerSubtitle: 'គ្រប់គ្រងគណនី និងការតភ្ជាប់', category: 'people', icon: UserCheck, iconBg: 'bg-gradient-to-br from-amber-500 to-yellow-400', href: `/${locale}/parents`, priceTag: 'OPEN' },
+    { id: 'classes', title: 'Class & Sections', khmerTitle: 'ថ្នាក់រៀន', subtitle: 'Grade levels, rooms & sections', khmerSubtitle: 'ថ្នាក់ បន្ទប់ និងកាលវិភាគ', category: 'academics', icon: BookOpen, iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-400', href: `/${locale}/classes`, priceTag: 'OPEN' },
+    { id: 'grades', title: 'Grade Score Entry', khmerTitle: 'បញ្ចូលពិន្ទុ', subtitle: 'Monthly & semester exam results', khmerSubtitle: 'ពិន្ទុប្រចាំខែ និងឆមាស', category: 'academics', icon: ClipboardList, iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-500', href: `/${locale}/grades/entry`, priceTag: 'OPEN' },
+    { id: 'timetable', title: 'Master Timetable', khmerTitle: 'កាលវិភាគសិក្សា', subtitle: 'Schedules, shifts & periods', khmerSubtitle: 'ម៉ោងបង្រៀន និងកាលវិភាគ', category: 'academics', icon: Clock, iconBg: 'bg-gradient-to-br from-blue-600 to-indigo-700', href: `/${locale}/timetable`, priceTag: 'OPEN' },
+    { id: 'attendance', title: 'Daily Attendance', khmerTitle: 'ស្រង់វត្តមាន', subtitle: 'Mark class attendance & notify parents', khmerSubtitle: 'ស្រង់វត្តមាន និងជូនដំណឹង', category: 'operations', icon: Calendar, iconBg: 'bg-gradient-to-br from-amber-500 to-orange-400', href: `/${locale}/attendance/mark`, badge: 'Live', khmerBadge: 'ផ្ទាល់', priceTag: 'OPEN', badgeColor: 'bg-rose-100 text-rose-600' },
+    { id: 'attendance-dashboard', title: 'Attendance Center', khmerTitle: 'មជ្ឈមណ្ឌលវត្តមាន', subtitle: 'Real-time attendance stats', khmerSubtitle: 'ស្ថិតិវត្តមានទូទាំងសាលា', category: 'operations', icon: LayoutGrid, iconBg: 'bg-gradient-to-br from-rose-500 to-pink-500', href: `/${locale}/attendance/dashboard`, badge: 'Pro', khmerBadge: 'កម្រិតខ្ពស់', priceTag: 'OPEN', badgeColor: 'bg-purple-100 text-purple-600' },
+    { id: 'reports', title: 'Transcripts & Cards', khmerTitle: 'សៀវភៅតាមដាន', subtitle: 'Generate report cards & GPA', khmerSubtitle: 'ចេញសៀវភៅតាមដាន', category: 'reports', icon: BarChart3, iconBg: 'bg-gradient-to-br from-sky-500 to-blue-600', href: `/${locale}/grades/reports`, priceTag: 'OPEN' },
+    { id: 'analytics', title: 'Analytics & Insights', khmerTitle: 'ការវិភាគ', subtitle: 'School performance trends', khmerSubtitle: 'ទិន្នន័យ និងនិន្នាការ', category: 'reports', icon: TrendingUp, iconBg: 'bg-gradient-to-br from-cyan-500 to-teal-500', href: `/${locale}/reports`, priceTag: 'OPEN' },
+    { id: 'settings', title: 'Academic Settings', khmerTitle: 'ការកំណត់', subtitle: 'Academic years & school config', khmerSubtitle: 'ឆ្នាំសិក្សា ប្រវត្តិរូបសាលា', category: 'settings', icon: Settings, iconBg: 'bg-gradient-to-br from-slate-600 to-slate-800', href: `/${locale}/settings/academic-years`, priceTag: 'CONFIG' },
+    { id: 'admissions', title: 'Admissions', khmerTitle: 'ការទទួលចូលរៀន', subtitle: 'New student applications', khmerSubtitle: 'ដំណើរការចុះឈ្មោះចូលរៀនថ្មី', category: 'people', icon: Award, iconBg: 'bg-gradient-to-br from-pink-500 to-rose-500', href: `/${locale}/admissions`, priceTag: 'OPEN', badge: 'New', khmerBadge: 'ថ្មី', badgeColor: 'bg-green-100 text-green-600' },
+  ], [locale]);
+
+  const categories = [
+    { id: 'all', name: 'All Modules', khmerName: 'មុខងារទាំងអស់', icon: Compass },
+    { id: 'people', name: 'People & Staff', khmerName: 'សិស្ស និងបុគ្គលិក', icon: Users },
+    { id: 'academics', name: 'Academics', khmerName: 'ការសិក្សា', icon: BookOpen },
+    { id: 'operations', name: 'Operations', khmerName: 'ប្រតិបត្តិការ', icon: LayoutGrid },
+    { id: 'reports', name: 'Reports', khmerName: 'របាយការណ៍', icon: BarChart3 },
+    { id: 'settings', name: 'Settings', khmerName: 'ការកំណត់', icon: Settings },
+  ];
+
+  const sideNavItems = [
+    { id: 'discover', icon: Compass, label: 'Discover', khmer: 'ស្វែងរក', action: () => { setActiveSideNav('discover'); setActiveCategory('all'); } },
+    { id: 'dashboard', icon: Home, label: 'Dashboard', khmer: 'ផ្ទាំងគ្រប់គ្រង', action: () => router.push(`/${locale}/dashboard`) },
+    { id: 'people', icon: Users, label: 'People', khmer: 'បុគ្គល', action: () => { setActiveSideNav('people'); setActiveCategory('people'); } },
+    { id: 'academics', icon: BookOpen, label: 'Academics', khmer: 'ការសិក្សា', action: () => { setActiveSideNav('academics'); setActiveCategory('academics'); } },
+    { id: 'operations', icon: LayoutGrid, label: 'Operations', khmer: 'ប្រតិបត្តិ', action: () => { setActiveSideNav('operations'); setActiveCategory('operations'); } },
+    { id: 'reports', icon: BarChart3, label: 'Reports', khmer: 'របាយការណ៍', action: () => { setActiveSideNav('reports'); setActiveCategory('reports'); } },
+    { id: 'settings', icon: Settings, label: 'Settings', khmer: 'ការកំណត់', action: () => { setActiveSideNav('settings'); setActiveCategory('settings'); } },
+  ];
+
+  const filteredApps = useMemo(() => appModules.filter(app => {
+    const matchCat = activeCategory === 'all' || app.category === activeCategory;
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return matchCat;
+    return matchCat && (
+      app.title.toLowerCase().includes(q) || app.khmerTitle.includes(q) ||
+      app.subtitle.toLowerCase().includes(q) || app.khmerSubtitle.includes(q)
+    );
+  }), [appModules, activeCategory, searchQuery]);
+
+  const appRows = useMemo(() => {
+    const rows: AppModuleItem[][] = [];
+    for (let i = 0; i < filteredApps.length; i += 3) rows.push(filteredApps.slice(i, i + 3));
+    return rows;
+  }, [filteredApps]);
+
+
+
+  const scrollHorizontal = (dir: 'left' | 'right') => {
+    if (horizontalScrollRef.current) horizontalScrollRef.current.scrollBy({ left: dir === 'right' ? 320 : -320, behavior: 'smooth' });
+  };
+
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${locale}/auth/login`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#111113] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg animate-pulse">
+            <GraduationCap className="w-6 h-6 text-white" />
+          </div>
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+            {isKhmer ? 'កំពុងផ្ទុក...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const schoolName = school?.name || 'Stunity Admin';
+  const firstName = user?.firstName || 'Admin';
+
+  return (
+    <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#111113] overflow-hidden">
+
+      {/* ════════════════════════════════════════════════════
+          LEFT SIDEBAR — Mac App Store Navigation (w-64 = 256px, matches UnifiedNavigation)
+      ════════════════════════════════════════════════════ */}
+      <aside className="flex flex-col w-64 flex-shrink-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 h-full">
+
+        {/* School branding */}
+        <div className="px-4 pt-5 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md flex-shrink-0">
+              {schoolName.charAt(0)}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-black text-slate-900 dark:text-white truncate leading-none">{schoolName}</p>
+              <p className="text-[10.5px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{isKhmer ? 'បន្ទប់គ្រប់គ្រង' : 'Admin Panel'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="px-3 mb-3">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isKhmer ? 'ស្វែងរក...' : 'Search...'}
+              className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[12px] font-medium text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all border-0"
+            />
+          </div>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+          {sideNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSideNav === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={item.action}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all duration-150 ${
+                  isActive
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
+                    : 'text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span className="truncate">{isKhmer ? item.khmer : item.label}</span>
+              </button>
+            );
+          })}
+
+          {/* Divider */}
+          <div className="pt-3 pb-1 px-3">
+            <div className="border-t border-slate-200 dark:border-slate-800" />
+          </div>
+
+          {/* Language toggle */}
+          <button
+            onClick={() => router.push(locale === 'km' ? '/en/discover' : '/km/discover')}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all"
+          >
+            <Globe className="w-4 h-4 text-slate-400" />
+            <span>{locale === 'km' ? 'English' : 'ភាសាខ្មែរ'}</span>
+          </button>
+
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
+            <span>{theme === 'dark' ? (isKhmer ? 'ពន្លឺ' : 'Light Mode') : (isKhmer ? 'ងងឹត' : 'Dark Mode')}</span>
+          </button>
+        </nav>
+
+        {/* User footer */}
+        <div className="px-3 py-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm flex-shrink-0 shadow">
+              {firstName.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-bold text-slate-800 dark:text-slate-200 truncate">{firstName}</p>
+              <p className="text-[10.5px] text-slate-400 dark:text-slate-500 truncate">{activeYear?.name || '—'}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              title={isKhmer ? 'ចាកចេញ' : 'Logout'}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ════════════════════════════════════════════════════
+          MAIN CONTENT — Full Screen App Store
+      ════════════════════════════════════════════════════ */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+        {/* Top header bar */}
+        <header className="flex-shrink-0 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 z-20">
+          <div className="px-8 h-[50px] flex items-center justify-between gap-4">
+            <h1 className="text-[15px] font-bold text-slate-900 dark:text-white tracking-tight">
+              {activeSideNav === 'discover' && (isKhmer ? 'ស្វែងរក' : 'Discover')}
+              {activeSideNav === 'people' && (isKhmer ? 'សិស្ស និងបុគ្គលិក' : 'People & Staff')}
+              {activeSideNav === 'academics' && (isKhmer ? 'ការសិក្សា' : 'Academics')}
+              {activeSideNav === 'operations' && (isKhmer ? 'ប្រតិបត្តិការ' : 'Operations')}
+              {activeSideNav === 'reports' && (isKhmer ? 'របាយការណ៍' : 'Reports & Analytics')}
+              {activeSideNav === 'settings' && (isKhmer ? 'ការកំណត់' : 'Settings')}
+            </h1>
+
+            <div className="flex items-center gap-3">
+              {/* Year badge */}
+              {activeYear?.name && (
+                <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-black rounded-full uppercase tracking-wide border border-blue-100 dark:border-blue-800/40">
+                  {activeYear.name}
+                </span>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-950">
+          <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8 space-y-10">
+
+            {/* ── HERO FEATURED BANNERS ──────────────────────────────── */}
+            {(activeCategory === 'all') && (
+              <section>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Hero 1 — Students */}
+                  <AnimatedContent animation="slide-up" delay={60}>
+                    <div
+                      onClick={() => router.push(`/${locale}/students`)}
+                      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white p-6 shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.015] hover:shadow-2xl hover:shadow-blue-500/25 border border-white/10"
+                    >
+                      <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+                      <div className="relative z-10">
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-blue-200">
+                          {isKhmer ? 'មុខងារពិសេស' : 'FEATURED MANAGEMENT'}
+                        </span>
+                        <h2 className="text-[20px] font-black leading-snug mt-1 mb-1.5">
+                          {isKhmer ? 'ប្រព័ន្ធគ្រប់គ្រងសិស្ស' : 'Smart Student Onboarding'}
+                        </h2>
+                        <p className="text-[11.5px] text-blue-100/80 leading-relaxed line-clamp-2">
+                          {isKhmer ? 'គ្រប់គ្រងបញ្ជីឈ្មោះ ចុះឈ្មោះ និងប្រវត្តិរូប' : 'Manage registrations, photo profiles, and academic records seamlessly.'}
+                        </p>
+                        <div className="flex items-center gap-3 mt-4">
+                          <span className="inline-flex items-center px-4 py-1.5 bg-white text-blue-700 font-black text-[11px] rounded-full shadow-sm">
+                            {isKhmer ? 'បើកមុខងារ' : 'Open Directory'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-500">
+                        <GraduationCap className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                  </AnimatedContent>
+
+                  {/* Hero 2 — Attendance */}
+                  <AnimatedContent animation="slide-up" delay={100}>
+                    <div
+                      onClick={() => router.push(`/${locale}/attendance/mark`)}
+                      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white p-6 shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-[1.015] hover:shadow-2xl hover:shadow-emerald-500/25 border border-white/10"
+                    >
+                      <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-emerald-200">
+                            {isKhmer ? 'ប្រតិបត្តិការ' : 'DAILY OPERATIONS'}
+                          </span>
+                        </div>
+                        <h2 className="text-[20px] font-black leading-snug mb-1.5">
+                          {isKhmer ? 'ប្រព័ន្ធស្រង់វត្តមាន' : 'Attendance Command Center'}
+                        </h2>
+                        <p className="text-[11.5px] text-emerald-100/80 leading-relaxed line-clamp-2">
+                          {isKhmer ? 'ស្រង់វត្តមានប្រចាំថ្ងៃ ជូនដំណឹងស្វ័យប្រវត្ត' : 'Track student presence and broadcast real-time updates.'}
+                        </p>
+                        <div className="flex items-center gap-3 mt-4">
+                          <span className="inline-flex items-center px-4 py-1.5 bg-white text-emerald-700 font-black text-[11px] rounded-full shadow-sm">
+                            {isKhmer ? 'ស្រង់វត្តមាន' : 'Mark Attendance'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-500">
+                        <Target className="w-8 h-8 text-white" />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        </div>
+                      </div>
+                    </div>
+                  </AnimatedContent>
+                </div>
+              </section>
+            )}
+
+            {/* ── CATEGORY PILLS ─────────────────────────────────────── */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+              {categories.map((cat) => {
+                const isActive = activeCategory === cat.id;
+                const CatIcon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => { setActiveCategory(cat.id); setActiveSideNav(cat.id === 'all' ? 'discover' : cat.id); }}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+                      isActive
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-md'
+                        : 'bg-white dark:bg-[#1c1c1e] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <CatIcon className="w-3.5 h-3.5" />
+                    {isKhmer ? cat.khmerName : cat.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── "APPS WE LOVE" GRID ─────────────────────────────────── */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">
+                    {isKhmer ? 'មុខងារដែលយើងចូលចិត្ត' : 'Apps and Functions We Love'}
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {isKhmer ? 'ចុច OPEN ដើម្បីចូលផ្ទាំងគ្រប់គ្រង' : 'Tap OPEN to launch the management form'}
+                  </p>
+                </div>
+                <span className="text-[11px] font-black text-blue-600 dark:text-blue-400">
+                  {filteredApps.length} {isKhmer ? 'មុខងារ' : 'Modules'}
+                </span>
+              </div>
+
+              <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden border border-slate-200/70 dark:border-gray-800/70 shadow-sm">
+                {appRows.map((row, rowIdx) => (
+                  <div key={rowIdx}>
+                    {rowIdx > 0 && <div className="border-t border-slate-100 dark:border-gray-800/60 mx-4" />}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-x divide-slate-100 dark:divide-gray-800/60">
+                      {row.map((app) => {
+                        const Icon = app.icon;
+                        return (
+                          <div
+                            key={app.id}
+                            onClick={() => router.push(app.href)}
+                            className="group flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-all duration-150"
+                          >
+                            <div className={`w-[52px] h-[52px] rounded-[14px] ${app.iconBg} flex items-center justify-center text-white shadow-md flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[12.5px] font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                  {isKhmer ? app.khmerTitle : app.title}
+                                </span>
+                                {app.badge && (
+                                  <span className={`px-1.5 py-0.5 text-[8.5px] font-black uppercase rounded flex-shrink-0 ${app.badgeColor || 'bg-blue-100 text-blue-600'}`}>
+                                    {isKhmer ? app.khmerBadge : app.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{isKhmer ? app.khmerSubtitle : app.subtitle}</p>
+                              {app.stat && app.stat !== '—' && (
+                                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">{app.stat}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); router.push(app.href); }}
+                              className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-black text-[11px] hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-200 shadow-sm"
+                            >
+                              {app.priceTag || 'OPEN'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {filteredApps.length === 0 && (
+                  <div className="py-16 text-center">
+                    <Search className="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                    <p className="text-[13px] font-semibold text-slate-400">{isKhmer ? 'រកមិនឃើញ' : 'No modules found'}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ── DARK SHOWCASE CARDS (horizontal scroll) ─────────────── */}
+            {activeCategory === 'all' && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">
+                    {isKhmer ? 'ឧបករណ៍រដ្ឋបាលពិសេស' : 'The Latest Must-Have Admin Utilities'}
+                  </h2>
+                  <div className="flex gap-2">
+                    <button onClick={() => scrollHorizontal('left')} className="w-7 h-7 rounded-full bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 flex items-center justify-center shadow hover:bg-slate-50 transition-all">
+                      <ChevronLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                    </button>
+                    <button onClick={() => scrollHorizontal('right')} className="w-7 h-7 rounded-full bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 flex items-center justify-center shadow hover:bg-slate-50 transition-all">
+                      <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                    </button>
+                  </div>
+                </div>
+
+                <div ref={horizontalScrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+                  {[
+                    { href: `/${locale}/grades/reports`, gradient: 'from-sky-600/50 via-blue-700/30 to-slate-950', accent: 'text-sky-400', icon: BarChart3, label: isKhmer ? 'របាយការណ៍' : 'ANALYTICS & CARDS', title: isKhmer ? 'សៀវភៅតាមដាន & GPA' : 'Transcripts & Grade Book', desc: isKhmer ? 'ចេញសៀវភៅតាមដានប្រចាំខែ' : 'Generate complete grade sheets and report cards.' },
+                    { href: `/${locale}/classes`, gradient: 'from-emerald-600/50 via-teal-700/30 to-slate-950', accent: 'text-emerald-400', icon: BookOpen, label: isKhmer ? 'ថ្នាក់រៀន' : 'CLASS BUILDER', title: isKhmer ? 'ថ្នាក់ & បន្ទប់សិក្សា' : 'Grade Levels & Sections', desc: isKhmer ? 'ចំណុះថ្នាក់ គ្រូប្រចាំ' : 'Organize homeroom assignments and capacity.' },
+                    { href: `/${locale}/timetable`, gradient: 'from-violet-600/50 via-purple-700/30 to-slate-950', accent: 'text-violet-400', icon: Clock, label: isKhmer ? 'ពេលវេលា' : 'SCHEDULE MASTER', title: isKhmer ? 'កាលវិភាគ & ម៉ោង' : 'Master Timetable', desc: isKhmer ? 'ម៉ោងបង្រៀន ប្រចាំថ្ងៃ' : 'Configure shifts, periods and daily schedules.' },
+                    { href: `/${locale}/settings/academic-years`, gradient: 'from-indigo-600/50 via-indigo-800/30 to-slate-950', accent: 'text-indigo-400', icon: Settings, label: isKhmer ? 'ឆ្នាំសិក្សា' : 'ACADEMIC SESSION', title: isKhmer ? 'ការកំណត់ប្រព័ន្ធ' : 'School System Config', desc: isKhmer ? 'ព័ត៌មានសាលា ឆ្នាំសិក្សា' : 'Manage school profile and academic session.' },
+                    { href: `/${locale}/attendance/dashboard`, gradient: 'from-rose-600/50 via-pink-700/30 to-slate-950', accent: 'text-rose-400', icon: LayoutGrid, label: isKhmer ? 'វត្តមាន' : 'ATTENDANCE PRO', title: isKhmer ? 'មជ្ឈមណ្ឌលវត្តមាន' : 'Attendance Command Center', desc: isKhmer ? 'ស្ថិតិវត្តមានទូទាំងសាលា' : 'Real-time school-wide attendance stats.' },
+                  ].map((card, i) => {
+                    const CardIcon = card.icon;
+                    return (
+                      <AnimatedContent key={i} animation="slide-up" delay={100 + i * 40}>
+                        <div
+                          onClick={() => router.push(card.href)}
+                          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-slate-900 text-white flex-shrink-0 w-[260px] h-56 p-5 flex flex-col justify-end shadow-lg transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl snap-start"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-slate-900/50 to-transparent z-10" />
+                          <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} group-hover:scale-110 transition-transform duration-700`} />
+                          <div className="absolute top-4 right-4 w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center z-20">
+                            <CardIcon className={`w-5 h-5 ${card.accent}`} />
+                          </div>
+                          <div className="relative z-20 space-y-1">
+                            <span className={`text-[8.5px] font-black uppercase tracking-widest ${card.accent}`}>{card.label}</span>
+                            <h3 className="text-[15px] font-black text-white leading-snug">{card.title}</h3>
+                            <p className="text-[10.5px] text-slate-300 line-clamp-2">{card.desc}</p>
+                            <div className={`pt-0.5 flex items-center gap-1 ${card.accent} text-[10.5px] font-bold`}>
+                              {isKhmer ? 'ចូលមើល' : 'Open'}
+                              <ChevronRight className="w-3 h-3" />
+                            </div>
+                          </div>
+                        </div>
+                      </AnimatedContent>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ── "TRY THESE FAVOURITES" ────────────────────────────── */}
+            {activeCategory === 'all' && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">
+                    {isKhmer ? 'ព្យាយាមមុខងារទាំងនេះ' : 'Try These Admin Favourites'}
+                  </h2>
+                  <span className="text-[11px] font-black text-blue-600 dark:text-blue-400 cursor-pointer hover:underline" onClick={() => setActiveCategory('all')}>
+                    {isKhmer ? 'មើលទាំងអស់' : 'See All'}
+                  </span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                  {[appModules[1], appModules[2], appModules[4], appModules[5], appModules[9], appModules[11]].filter(Boolean).map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <div
+                        key={app.id}
+                        onClick={() => router.push(app.href)}
+                        className="group flex-shrink-0 flex items-center gap-3 p-3 pr-4 bg-white dark:bg-[#1c1c1e] rounded-2xl border border-slate-200/70 dark:border-gray-800/70 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 hover:scale-[1.02] min-w-[200px]"
+                      >
+                        <div className={`w-10 h-10 rounded-[12px] ${app.iconBg} flex items-center justify-center text-white shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 transition-colors">
+                            {isKhmer ? app.khmerTitle : app.title}
+                          </p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{isKhmer ? app.khmerSubtitle : app.subtitle}</p>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(app.href); }}
+                          className="flex-shrink-0 px-3 py-1 rounded-full bg-slate-100 dark:bg-gray-800 text-blue-600 font-black text-[10px] hover:bg-blue-600 hover:text-white transition-all"
+                        >
+                          {app.priceTag || 'GET'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

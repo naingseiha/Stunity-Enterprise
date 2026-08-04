@@ -238,9 +238,21 @@ export default function ClassGradesScreen() {
   const initialCachedTimetable = useMemo(() => (
     classId ? classesApi.getCachedClassTimetable(classId) : null
   ), [classId]);
+  const currentMonthNameForCache = new Date().toLocaleString('default', { month: 'long' });
+  const currentMonthNumberForCache = MONTH_TO_NUMBER[currentMonthNameForCache] || (new Date().getMonth() + 1);
+  const currentAcademicYearForCache = resolveAcademicYearForMonth(currentMonthNumberForCache);
   const initialCachedReport = useMemo(() => (
-    classId ? classesApi.getCachedClassGradesReport(classId, { semester: 1 }) : null
-  ), [classId]);
+    classId
+      ? classesApi.getCachedClassGradesReport(classId, {
+          semester: 1,
+          month: currentMonthNameForCache,
+          monthNumber: currentMonthNumberForCache,
+          gradeYear: currentAcademicYearForCache,
+          year: currentAcademicYearForCache,
+        })
+        || classesApi.getCachedClassGradesReport(classId, { semester: 1 })
+      : null
+  ), [classId, currentAcademicYearForCache, currentMonthNameForCache, currentMonthNumberForCache]);
 
   const [loading, setLoading] = useState(() => {
     if (isTeacher) {
@@ -1115,7 +1127,7 @@ export default function ClassGradesScreen() {
         </View>
       </SafeAreaView>
 
-      {loading ? (
+      {loading && students.length === 0 && !classReport ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={BRAND_ACCENT} />
           <Text style={styles.loadingText}>{t('classScreens.grades.loading')}</Text>

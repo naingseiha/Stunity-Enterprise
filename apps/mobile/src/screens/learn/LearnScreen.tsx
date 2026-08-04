@@ -60,6 +60,10 @@ import { PathCard } from '@/components/learn/PathCard';
 import { LearnHeaderSkeleton, CourseCardSkeleton, skeletonStyles } from '@/components/learn/LearnSkeletons';
 import { useTranslation } from 'react-i18next';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
+import {
+  isLearnHubCacheFresh,
+  learnHubCache,
+} from '@/screens/learn/learnHubCache';
 
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
@@ -330,18 +334,23 @@ export default function LearnScreen() {
   // re-renders the screen tree mid-navigate (same pattern as FeedScreen).
   const hasFetched = useRef(false);
   const isRefreshing = useRef(false);
+  const applyHub = useCallback((hub: LearnHubData) => {
+    setCourses(hub.courses);
+    setEnrolledCourses(hub.myCourses);
+    setCreatedCourses(hub.myCreated);
+    setPaths(hub.paths);
+    setStats(hub.stats);
+  }, []);
+
   const loadLearningData = useCallback(async (force = false) => {
     const t0 = Date.now();
     const hadCache = !!learnApi.getCachedLearnHub();
     try {
       // Single HTTP request — /courses/learn-hub runs all queries server-side in parallel.
-      // Cache hit (within 30s) returns instantly with zero network.
+      // Cache hit (within 60s) returns instantly with zero network.
+      // Joins MainNavigator prefetch via learnHubCache.inFlight when present.
       const hub: LearnHubData = await learnApi.getLearnHub(force);
-      setCourses(hub.courses);
-      setEnrolledCourses(hub.myCourses);
-      setCreatedCourses(hub.myCreated);
-      setPaths(hub.paths);
-      setStats(hub.stats);
+      applyHub(hub);
       if (__DEV__) {
         const path = hadCache ? (force ? 'refresh' : 'fresh-cache') : 'network';
         console.log(`[Learn TTI] ${path} settle (${Date.now() - t0}ms)`);
@@ -360,19 +369,40 @@ export default function LearnScreen() {
       setRefreshing(false);
       isRefreshing.current = false;
     }
-  }, [t]);
+  }, [applyHub, t]);
 
-  // Load once on mount — useEffect starts immediately even before focus transitions finish.
-  // This provides a faster perceived load as data might be ready when animation ends.
+  // Load once on mount — mirrors Reels: fresh cache → skip; inFlight → join; else fetch.
   useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      loadLearningData();
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    const mountTs = Date.now();
+    if (isLearnHubCacheFresh()) {
+      if (__DEV__) console.log(`[Learn TTI] memory-cache hit=${Date.now() - mountTs}ms`);
+      setLoading(false);
+      // Soft background refresh only when stale window will expire soon is unnecessary —
+      // freshness skip means content is current. Pull-to-refresh still forces.
+      return;
     }
-  }, [loadLearningData]);
+
+    if (learnHubCache.inFlight) {
+      learnHubCache.inFlight.then((data) => {
+        if (data) {
+          applyHub(data as LearnHubData);
+          setLoading(false);
+          if (__DEV__) console.log(`[Learn TTI] prefetch-await first-paint=${Date.now() - mountTs}ms`);
+        } else {
+          loadLearningData();
+        }
+      });
+      return;
+    }
+
+    loadLearningData();
+  }, [applyHub, loadLearningData]);
 
   // Optional: Re-fetch on focus if data is potentially stale (e.g. 5 min old)
-  // Not strictly needed for now as we have the 30s TTL cache on learnApi.
+  // Not strictly needed for now as we have the 60s TTL cache on learnApi.
 
   const onRefresh = useCallback(() => {
     if (isRefreshing.current) return;
@@ -399,6 +429,10 @@ export default function LearnScreen() {
   const handleOpenInstructorDashboard = useCallback(
     () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      // Fire-and-forget warm so the dashboard paints without a spinner.
+      void import('@/screens/learn/instructor/InstructorDashboardScreen')
+        .then((mod) => mod.prefetchInstructorStats?.())
+        .catch(() => {});
       navigation.navigate('InstructorDashboard');
     },
     [navigation]
@@ -1109,7 +1143,9 @@ export default function LearnScreen() {
   );
 
   // ── Skeleton loading ──────────────────────────────────────────────────────
-  if (loading) {
+  // Only blank the screen when we have nothing to paint (true cold miss).
+  // Stale cache / prefetch-await keep real content visible like Reels/Feed.
+  if (loading && courses.length === 0 && enrolledCourses.length === 0 && paths.length === 0) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent={true} />

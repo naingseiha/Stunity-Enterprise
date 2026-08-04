@@ -59,6 +59,7 @@ import {
 } from "@/screens/feed";
 import { prefetchReelsFeed, hydrateReelsCacheFromDisk } from "@/screens/feed/reelsCache";
 import { prefetchLearnHub, hydrateLearnHubFromDisk } from "@/screens/learn/learnHubCache";
+import { prefetchLearnHome, hydrateLearnHomeFromDisk } from "@/screens/learn/path/learnHomeCache";
 import { prefetchFeed, hydrateFeedCacheFromDisk } from "@/services/feedCache";
 import { prefetchClubs, hydrateClubsCacheFromDisk } from "@/screens/clubs/clubsCache";
 import { prefetchProfile, hydrateProfileCacheFromDisk } from "@/screens/profile/profileCache";
@@ -967,6 +968,7 @@ const MainNavigator = () => {
     // or Learn tap renders from last session's cache instantly.
     void hydrateReelsCacheFromDisk(userId);
     void hydrateLearnHubFromDisk(userId);
+    void hydrateLearnHomeFromDisk(userId);
     void hydrateFeedCacheFromDisk(userId);
     if (FEATURE_FLAGS.CLUBS_ENABLED) void hydrateClubsCacheFromDisk(userId);
     void hydrateProfileCacheFromDisk(userId);
@@ -979,6 +981,7 @@ const MainNavigator = () => {
     const t = setTimeout(() => {
       void prefetchReelsFeed(userId);
       void prefetchLearnHub(userId);
+      void prefetchLearnHome(userId);
       void prefetchFeed(userId);
       if (FEATURE_FLAGS.CLUBS_ENABLED) void prefetchClubs(userId);
       void prefetchProfile(userId);

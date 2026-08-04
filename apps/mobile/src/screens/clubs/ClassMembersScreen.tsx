@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -59,16 +59,23 @@ export default function ClassMembersScreen() {
   const [loading, setLoading] = useState(initialCachedStudents.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const studentsLengthRef = useRef(initialCachedStudents.length);
+  const hasFocusedOnceRef = useRef(false);
+
+  useEffect(() => {
+    studentsLengthRef.current = students.length;
+  }, [students.length]);
 
   const fetchMembers = useCallback(async (force = false) => {
     try {
       if (!force) {
         const cached = classesApi.getCachedClassStudents(classId);
-        if (cached) {
+        if (cached?.length) {
           setStudents(cached);
           setLoading(false);
         }
-      } else {
+      } else if (studentsLengthRef.current === 0) {
+        // Only blank when there is nothing to paint (Feed/Reels SWR).
         setLoading(true);
       }
 
@@ -88,6 +95,12 @@ export default function ClassMembersScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // Mount already loads once — skip first focus to avoid a double fetch
+      // that previously forced a full-screen spinner on every return.
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
       if (classId) {
         fetchMembers(true);
       }
@@ -101,7 +114,6 @@ export default function ClassMembersScreen() {
 
   const handleMessage = async (participantId: string, displayName: string) => {
     try {
-      setLoading(true);
       const conversation = await startConversation([participantId]);
       if (conversation) {
         navigation.navigate('Messages', {
@@ -114,8 +126,6 @@ export default function ClassMembersScreen() {
       }
     } catch (err: any) {
       if (__DEV__) { console.error(err); }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -305,7 +315,7 @@ export default function ClassMembersScreen() {
         </View>
       </SafeAreaView>
 
-      {loading && !refreshing ? (
+      {loading && !refreshing && students.length === 0 ? (
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={BRAND_ACCENT} />
         </View>

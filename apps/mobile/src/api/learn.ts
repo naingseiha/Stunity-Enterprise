@@ -473,8 +473,14 @@ export const getLearningPaths = async (params?: {
 
 const LEARN_COURSE_DETAIL_CACHE_TTL = 60_000;
 const _courseDetailCache = new Map<string, { data: LearnCourseDetail; ts: number }>();
+const _courseDetailInFlight = new Map<string, Promise<LearnCourseDetail>>();
+const LEARN_LESSON_DETAIL_CACHE_TTL = 60_000;
+const _lessonDetailCache = new Map<string, { data: LearnLessonDetail; ts: number }>();
+const _lessonDetailInFlight = new Map<string, Promise<LearnLessonDetail>>();
 
 const getCourseDetailCacheKey = (courseId: string, localeOverride?: string) => `${getLearnLocale(localeOverride)}:${courseId}`;
+const getLessonDetailCacheKey = (courseId: string, lessonId: string, localeOverride?: string) =>
+  `${getLearnLocale(localeOverride)}:${courseId}:${lessonId}`;
 
 const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
   const rawCourse = responseData?.course ?? {};
@@ -516,30 +522,42 @@ const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
   };
 };
 
+/** Synchronous read for first paint — returns stale data when present. */
 export const getCachedCourseDetail = (courseId: string, localeOverride?: string): LearnCourseDetail | null => {
   const cached = _courseDetailCache.get(getCourseDetailCacheKey(courseId, localeOverride));
   if (!cached) return null;
-
-  if (Date.now() - cached.ts >= LEARN_COURSE_DETAIL_CACHE_TTL) {
-    _courseDetailCache.delete(getCourseDetailCacheKey(courseId, localeOverride));
-    return null;
-  }
-
   return cached.data;
 };
 
+const isCourseDetailCacheFresh = (courseId: string, localeOverride?: string): boolean => {
+  const cached = _courseDetailCache.get(getCourseDetailCacheKey(courseId, localeOverride));
+  return Boolean(cached) && Date.now() - (cached?.ts ?? 0) < LEARN_COURSE_DETAIL_CACHE_TTL;
+};
+
 export const getCourseDetail = async (courseId: string, force = false, localeOverride?: string): Promise<LearnCourseDetail> => {
+  const cacheKey = getCourseDetailCacheKey(courseId, localeOverride);
+
   if (!force) {
-    const cached = getCachedCourseDetail(courseId, localeOverride);
-    if (cached) {
-      return cached;
+    if (isCourseDetailCacheFresh(courseId, localeOverride)) {
+      return _courseDetailCache.get(cacheKey)!.data;
     }
+    const inFlight = _courseDetailInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
   }
 
-  const response = await api.get(`/courses/${courseId}`, { params: withLocaleParams(undefined, localeOverride) });
-  const data = normalizeCourseDetail(response.data);
-  _courseDetailCache.set(getCourseDetailCacheKey(courseId, localeOverride), { data, ts: Date.now() });
-  return data;
+  const request = api
+    .get(`/courses/${courseId}`, { params: withLocaleParams(undefined, localeOverride) })
+    .then((response) => {
+      const data = normalizeCourseDetail(response.data);
+      _courseDetailCache.set(cacheKey, { data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      _courseDetailInFlight.delete(cacheKey);
+    });
+
+  _courseDetailInFlight.set(cacheKey, request);
+  return request;
 };
 
 export const prefetchCourseDetail = async (courseId: string, localeOverride?: string): Promise<void> => {
@@ -554,12 +572,45 @@ export const invalidateCourseDetailCache = (courseId?: string): void => {
   if (courseId) {
     const suffix = `:${courseId}`;
     Array.from(_courseDetailCache.keys())
-      .filter((key) => key.endsWith(suffix))
+      .filter((key) => key.endsWith(suffix) || key.includes(`:${courseId}:`))
       .forEach((key) => _courseDetailCache.delete(key));
+    Array.from(_courseDetailInFlight.keys())
+      .filter((key) => key.endsWith(suffix) || key.includes(`:${courseId}:`))
+      .forEach((key) => _courseDetailInFlight.delete(key));
+    Array.from(_lessonDetailCache.keys())
+      .filter((key) => key.includes(`:${courseId}:`))
+      .forEach((key) => _lessonDetailCache.delete(key));
+    Array.from(_lessonDetailInFlight.keys())
+      .filter((key) => key.includes(`:${courseId}:`))
+      .forEach((key) => _lessonDetailInFlight.delete(key));
     return;
   }
 
   _courseDetailCache.clear();
+  _courseDetailInFlight.clear();
+  _lessonDetailCache.clear();
+  _lessonDetailInFlight.clear();
+};
+
+export const getCachedLessonDetail = (
+  courseId: string,
+  lessonId: string,
+  localeOverride?: string
+): LearnLessonDetail | null => {
+  const cached = _lessonDetailCache.get(getLessonDetailCacheKey(courseId, lessonId, localeOverride));
+  return cached?.data ?? null;
+};
+
+export const prefetchLessonDetail = async (
+  courseId: string,
+  lessonId: string,
+  localeOverride?: string
+): Promise<void> => {
+  try {
+    await getLessonDetail(courseId, lessonId, localeOverride);
+  } catch {
+    // non-fatal
+  }
 };
 
 export const enrollInCourse = async (courseId: string): Promise<{ message: string }> => {
@@ -579,10 +630,19 @@ export const enrollInPath = async (pathId: string): Promise<{ message: string }>
 };
 
 export const getLessonDetail = async (courseId: string, lessonId: string, localeOverride?: string): Promise<LearnLessonDetail> => {
-  const response = await api.get(`/courses/${courseId}/lessons/${lessonId}`, { params: withLocaleParams(undefined, localeOverride) });
-  const lesson = response.data?.lesson ?? response.data ?? {};
+  const cacheKey = getLessonDetailCacheKey(courseId, lessonId, localeOverride);
+  const cached = _lessonDetailCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < LEARN_LESSON_DETAIL_CACHE_TTL) {
+    return cached.data;
+  }
+  const inFlight = _lessonDetailInFlight.get(cacheKey);
+  if (inFlight) return inFlight;
 
-  return {
+  const request = api
+    .get(`/courses/${courseId}/lessons/${lessonId}`, { params: withLocaleParams(undefined, localeOverride) })
+    .then((response) => {
+      const lesson = response.data?.lesson ?? response.data ?? {};
+      const data: LearnLessonDetail = {
     id: String(lesson?.id ?? ''),
     title: String(lesson?.title ?? ''),
     description: lesson?.description ?? null,
@@ -647,7 +707,16 @@ export const getLessonDetail = async (courseId: string, lessonId: string, locale
       score: lesson.assignmentSubmission.score !== null ? Number(lesson.assignmentSubmission.score) : null,
       feedback: lesson.assignmentSubmission.feedback ?? null,
     } : undefined,
-  };
+      };
+      _lessonDetailCache.set(cacheKey, { data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      _lessonDetailInFlight.delete(cacheKey);
+    });
+
+  _lessonDetailInFlight.set(cacheKey, request);
+  return request;
 };
 
 export const updateLessonProgress = async (
@@ -881,7 +950,7 @@ _setLearnHubNormalizers(normalizeCourse, normalizeEnrolledCourse);
 
 /**
  * Fetches all Learn screen data in a single HTTP request. Backed by
- * `learnHubCache` — 30s freshness in memory, 24h on disk. Pass force=true
+ * `learnHubCache` — 60s freshness in memory, 24h on disk. Pass force=true
  * to bypass the freshness check (e.g. pull-to-refresh, post-enroll).
  *
  * If the network fails and the cache is empty (cold install only), throws

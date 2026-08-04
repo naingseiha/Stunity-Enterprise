@@ -11,7 +11,7 @@
  *   - App boot / MainNavigator mount calls `hydrateLearnHubFromDisk(userId)`
  *     immediately and `prefetchLearnHub(userId)` after a 1.5s defer.
  *   - User taps Learn → LearnScreen reads `learnHubCache.data` directly,
- *     skips the skeleton, and only re-fetches if the cache is stale (> 30s).
+ *     skips the skeleton, and only re-fetches if the cache is stale (> 60s).
  *
  * Per-user+locale scope: account switching and language switching both
  * invalidate the cached payload.
@@ -52,7 +52,7 @@ export const learnHubCache: LearnHubCache = {
   inFlight: null,
 };
 
-export const LEARN_HUB_CACHE_FRESHNESS_MS = 30_000;
+export const LEARN_HUB_CACHE_FRESHNESS_MS = 60_000;
 
 const getLocale = (): string => {
   const lang = i18n.language || 'en';

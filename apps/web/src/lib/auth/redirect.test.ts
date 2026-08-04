@@ -2,7 +2,7 @@ import { getAuthRedirectPath } from "./redirect";
 
 describe("getAuthRedirectPath", () => {
   it("routes general accounts to Feed", () => {
-    expect(getAuthRedirectPath("en", {})).toBe("/en/feed");
+    expect(getAuthRedirectPath("en", {})).toBe("/en/discover");
   });
 
   it("preserves role-specific destinations", () => {

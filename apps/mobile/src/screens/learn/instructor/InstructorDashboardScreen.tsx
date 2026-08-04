@@ -22,6 +22,40 @@ import { learnApi } from '@/api';
 import type { InstructorDashboardStats, PerformanceData, InstructorCourseStats } from '@/api/learn';
 import { Colors, Typography, Shadows } from '@/config';
 
+const INSTRUCTOR_STATS_CACHE_TTL = 60_000;
+let _instructorStatsCache: { data: InstructorDashboardStats; ts: number } | null = null;
+let _instructorStatsInFlight: Promise<InstructorDashboardStats> | null = null;
+
+const getCachedInstructorStats = (): InstructorDashboardStats | null =>
+  _instructorStatsCache?.data ?? null;
+
+const fetchInstructorStatsCached = async (force = false): Promise<InstructorDashboardStats> => {
+  if (!force && _instructorStatsCache && Date.now() - _instructorStatsCache.ts < INSTRUCTOR_STATS_CACHE_TTL) {
+    return _instructorStatsCache.data;
+  }
+  if (!force && _instructorStatsInFlight) return _instructorStatsInFlight;
+
+  const request = learnApi.getInstructorStats()
+    .then((stats) => {
+      _instructorStatsCache = { data: stats, ts: Date.now() };
+      return stats;
+    })
+    .finally(() => {
+      _instructorStatsInFlight = null;
+    });
+
+  _instructorStatsInFlight = request;
+  return request;
+};
+
+export const prefetchInstructorStats = async (): Promise<void> => {
+  try {
+    await fetchInstructorStatsCached(false);
+  } catch {
+    // non-fatal
+  }
+};
+
 const CHART_HEIGHT = 200;
 const CHART_HORIZONTAL_PADDING = 12;
 const CHART_VERTICAL_PADDING = 18;
@@ -156,13 +190,19 @@ const PerformanceChart = ({ data }: { data: PerformanceData[] }) => {
 export const InstructorDashboardScreen = () => {
     const { t: autoT } = useTranslation();
   const navigation = useNavigation<any>();
-  const [loading, setLoading] = useState(true);
+  const initialCached = getCachedInstructorStats();
+  const [loading, setLoading] = useState(!initialCached);
   const [refreshing, setRefreshing] = useState(false);
-  const [data, setData] = useState<InstructorDashboardStats | null>(null);
+  const [data, setData] = useState<InstructorDashboardStats | null>(initialCached);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     try {
-      const stats = await learnApi.getInstructorStats();
+      if (!force && data) {
+        // Silent background refresh when we already painted from cache.
+      } else if (!data) {
+        setLoading(true);
+      }
+      const stats = await fetchInstructorStatsCached(force);
       setData(stats);
     } catch (error) {
       if (__DEV__) { console.error('Error loading instructor stats:', error); }
@@ -170,18 +210,19 @@ export const InstructorDashboardScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [data]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadData(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadData();
+    loadData(true);
   };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.teal[500]} />

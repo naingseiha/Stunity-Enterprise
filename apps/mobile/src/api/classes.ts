@@ -447,17 +447,28 @@ const getMyClassesCacheKey = (academicYearId?: string, scopeKey?: string) =>
 const getCachedResource = <T>(
   map: Map<string, { data: T; ts: number }>,
   key: string,
-  ttl = CLASS_RESOURCE_CACHE_TTL
+  ttl = CLASS_RESOURCE_CACHE_TTL,
+  options?: { allowStale?: boolean }
 ): T | null => {
   const cached = map.get(key);
   if (!cached) return null;
 
-  if (Date.now() - cached.ts >= ttl) {
-    map.delete(key);
+  const expired = Date.now() - cached.ts >= ttl;
+  // Keep stale entries for first-paint / SWR. Freshness only gates network skip.
+  if (expired && !options?.allowStale) {
     return null;
   }
 
   return cached.data;
+};
+
+const isResourceFresh = (
+  map: Map<string, { data: unknown; ts: number }>,
+  key: string,
+  ttl = CLASS_RESOURCE_CACHE_TTL
+): boolean => {
+  const cached = map.get(key);
+  return Boolean(cached) && Date.now() - (cached?.ts ?? 0) < ttl;
 };
 const getAttendanceSummaryCacheKey = (classId: string, startDate: string, endDate: string) =>
   `${classId}:${startDate}:${endDate}`;
@@ -476,13 +487,13 @@ const getStudentMonthlySummaryCacheKey = (
   classId?: string
 ) => `${studentId}:${classId || 'any'}:${year ?? 'current'}:${monthNumber ?? ''}:${monthLabel}`;
 
+/**
+ * Synchronous read for first paint. Returns cached data even when stale
+ * (stale-while-revalidate) — never wipes hydrated disk data on TTL alone.
+ * Freshness is checked separately via `isMyClassesCacheFresh`.
+ */
 export const getCachedMyClasses = (options?: { academicYearId?: string; scopeKey?: string }): MyClassSummary[] | null => {
   if (!_myClassesCache) return null;
-
-  if (Date.now() - _myClassesCache.ts >= CLASSES_CACHE_TTL) {
-    _myClassesCache = null;
-    return null;
-  }
 
   if (_myClassesCache.cacheKey !== getMyClassesCacheKey(options?.academicYearId, options?.scopeKey)) {
     return null;
@@ -491,16 +502,25 @@ export const getCachedMyClasses = (options?: { academicYearId?: string; scopeKey
   return _myClassesCache.data;
 };
 
+export const isMyClassesCacheFresh = (options?: { academicYearId?: string; scopeKey?: string }): boolean => {
+  if (!_myClassesCache) return false;
+  if (_myClassesCache.cacheKey !== getMyClassesCacheKey(options?.academicYearId, options?.scopeKey)) {
+    return false;
+  }
+  return Date.now() - _myClassesCache.ts < CLASSES_CACHE_TTL;
+};
+
+/**
+ * Synchronous read for first paint. Keeps stale hydrated years so Clubs can
+ * resolve the current year id and match the my-classes cache key.
+ */
 export const getCachedAcademicYears = (): any[] | null => {
   if (!_academicYearsCache) return null;
-
-  if (Date.now() - _academicYearsCache.ts >= ACADEMIC_YEARS_CACHE_TTL) {
-    _academicYearsCache = null;
-    return null;
-  }
-
   return _academicYearsCache.data;
 };
+
+export const isAcademicYearsCacheFresh = (): boolean =>
+  Boolean(_academicYearsCache) && Date.now() - (_academicYearsCache?.ts ?? 0) < ACADEMIC_YEARS_CACHE_TTL;
 
 export const getMyClasses = async (options?: { force?: boolean; academicYearId?: string; scopeKey?: string }): Promise<MyClassSummary[]> => {
   const force = options?.force ?? false;
@@ -510,9 +530,10 @@ export const getMyClasses = async (options?: { force?: boolean; academicYearId?:
   const cacheKey = getMyClassesCacheKey(academicYearId, scopeKey);
 
   if (!force) {
-    const cached = getCachedMyClasses({ academicYearId, scopeKey });
-    if (cached) {
-      return cached;
+    // Only short-circuit on a fresh cache. Stale entries still paint via
+    // getCachedMyClasses; the network refresh below updates React state.
+    if (isMyClassesCacheFresh({ academicYearId, scopeKey }) && _myClassesCache) {
+      return _myClassesCache.data;
     }
 
     const inFlight = _myClassesInFlight.get(cacheKey);
@@ -539,9 +560,8 @@ export const getMyClasses = async (options?: { force?: boolean; academicYearId?:
 };
 
 export const getAcademicYears = async (): Promise<any[]> => {
-  const cached = getCachedAcademicYears();
-  if (cached) {
-    return cached;
+  if (isAcademicYearsCacheFresh() && _academicYearsCache) {
+    return _academicYearsCache.data;
   }
 
   if (_academicYearsInFlight) {
@@ -612,12 +632,13 @@ export const invalidateMyClassesCache = (): void => {
 };
 
 export const getCachedClassStudents = (classId: string): ClassStudent[] | null =>
-  getCachedResource(_classStudentsCache, classId);
+  getCachedResource(_classStudentsCache, classId, CLASS_RESOURCE_CACHE_TTL, { allowStale: true });
 
 export const getClassStudents = async (classId: string, force = false): Promise<ClassStudent[]> => {
   if (!force) {
-    const cached = getCachedClassStudents(classId);
-    if (cached) return cached;
+    if (isResourceFresh(_classStudentsCache, classId)) {
+      return _classStudentsCache.get(classId)!.data;
+    }
 
     const inFlight = _classStudentsInFlight.get(classId);
     if (inFlight) return inFlight;
@@ -638,12 +659,13 @@ export const getClassStudents = async (classId: string, force = false): Promise<
 };
 
 export const getCachedClassTimetable = (classId: string): TimetableResponse | null =>
-  getCachedResource(_classTimetableCache, classId);
+  getCachedResource(_classTimetableCache, classId, CLASS_RESOURCE_CACHE_TTL, { allowStale: true });
 
 export const getClassTimetable = async (classId: string, force = false): Promise<TimetableResponse> => {
   if (!force) {
-    const cached = getCachedClassTimetable(classId);
-    if (cached) return cached;
+    if (isResourceFresh(_classTimetableCache, classId)) {
+      return _classTimetableCache.get(classId)!.data;
+    }
 
     const inFlight = _classTimetableInFlight.get(classId);
     if (inFlight) return inFlight;
@@ -668,7 +690,12 @@ export const getCachedClassAttendanceSummary = (
   startDate: string,
   endDate: string
 ): ClassAttendanceSummary | null =>
-  getCachedResource(_classAttendanceSummaryCache, getAttendanceSummaryCacheKey(classId, startDate, endDate));
+  getCachedResource(
+    _classAttendanceSummaryCache,
+    getAttendanceSummaryCacheKey(classId, startDate, endDate),
+    CLASS_RESOURCE_CACHE_TTL,
+    { allowStale: true }
+  );
 
 export const getClassAttendanceSummary = async (
   classId: string,
@@ -678,8 +705,9 @@ export const getClassAttendanceSummary = async (
 ): Promise<ClassAttendanceSummary> => {
   const cacheKey = getAttendanceSummaryCacheKey(classId, startDate, endDate);
   if (!force) {
-    const cached = getCachedClassAttendanceSummary(classId, startDate, endDate);
-    if (cached) return cached;
+    if (isResourceFresh(_classAttendanceSummaryCache, cacheKey)) {
+      return _classAttendanceSummaryCache.get(cacheKey)!.data;
+    }
 
     const inFlight = _classAttendanceSummaryInFlight.get(cacheKey);
     if (inFlight) return inFlight;
@@ -704,8 +732,18 @@ export const getCachedClassDailyAttendance = (
   classId: string,
   date: string
 ): ClassDailyAttendanceResponse | null =>
-  getCachedResource(_classDailyAttendanceCache, `${getDailyAttendanceCacheKey(classId, date)}:context`) ||
-  getCachedResource(_classDailyAttendanceCache, `${getDailyAttendanceCacheKey(classId, date)}:plain`);
+  getCachedResource(
+    _classDailyAttendanceCache,
+    `${getDailyAttendanceCacheKey(classId, date)}:context`,
+    CLASS_RESOURCE_CACHE_TTL,
+    { allowStale: true }
+  ) ||
+  getCachedResource(
+    _classDailyAttendanceCache,
+    `${getDailyAttendanceCacheKey(classId, date)}:plain`,
+    CLASS_RESOURCE_CACHE_TTL,
+    { allowStale: true }
+  );
 
 export const getClassDailyAttendance = async (
   classId: string,
@@ -716,8 +754,9 @@ export const getClassDailyAttendance = async (
   const includeTimetableContext = options?.includeTimetableContext !== false;
   const cacheKey = `${getDailyAttendanceCacheKey(classId, date)}:${includeTimetableContext ? 'context' : 'plain'}`;
   if (!force) {
-    const cached = getCachedResource(_classDailyAttendanceCache, cacheKey);
-    if (cached) return cached;
+    if (isResourceFresh(_classDailyAttendanceCache, cacheKey)) {
+      return _classDailyAttendanceCache.get(cacheKey)!.data;
+    }
 
     const inFlight = _classDailyAttendanceInFlight.get(cacheKey);
     if (inFlight) return inFlight;
@@ -866,7 +905,12 @@ export const getCachedClassGradesReport = (
   classId: string,
   options?: { semester?: number; year?: number; month?: string; monthNumber?: number; gradeYear?: number; scope?: 'CLASS' | 'GRADE' | 'SCHOOL' }
 ): ClassGradesReport | null =>
-  getCachedResource(_classGradesReportCache, getGradesReportCacheKey(classId, options));
+  getCachedResource(
+    _classGradesReportCache,
+    getGradesReportCacheKey(classId, options),
+    CLASS_RESOURCE_CACHE_TTL,
+    { allowStale: true }
+  );
 
 export const getClassGradesReport = async (
   classId: string,
@@ -875,8 +919,9 @@ export const getClassGradesReport = async (
 ): Promise<ClassGradesReport> => {
   const cacheKey = getGradesReportCacheKey(classId, options);
   if (!force) {
-    const cached = getCachedClassGradesReport(classId, options);
-    if (cached) return cached;
+    if (isResourceFresh(_classGradesReportCache, cacheKey)) {
+      return _classGradesReportCache.get(cacheKey)!.data;
+    }
 
     const inFlight = _classGradesReportInFlight.get(cacheKey);
     if (inFlight) return inFlight;
@@ -1045,8 +1090,9 @@ export const getLatestCachedClassDetailBundle = (
     if (!key.includes(`"classId":"${classId}"`)) continue;
 
     const isExpired = Date.now() - cached.ts >= CLASS_DETAIL_CACHE_TTL;
+    // Keep stale entries in the map so allowStale / first-paint paths can
+    // still paint after disk hydrate (ts is disk write time, often > TTL).
     if (isExpired && !allowStale) {
-      _classDetailCache.delete(key);
       continue;
     }
 
@@ -1059,15 +1105,18 @@ export const getLatestCachedClassDetailBundle = (
 };
 
 export const getCachedClassDetailBundle = (
-  options: GetClassDetailBundleOptions
+  options: GetClassDetailBundleOptions,
+  readOptions?: { allowStale?: boolean }
 ): ClassDetailBundle | null => {
   const cacheKey = getClassDetailCacheKey(options);
   const cached = _classDetailCache.get(cacheKey);
 
   if (!cached) return null;
 
-  if (Date.now() - cached.ts >= CLASS_DETAIL_CACHE_TTL) {
-    _classDetailCache.delete(cacheKey);
+  const allowStale = readOptions?.allowStale ?? false;
+  if (!allowStale && Date.now() - cached.ts >= CLASS_DETAIL_CACHE_TTL) {
+    // Do not delete — hydrated/stale bundles must remain available for
+    // getLatestCachedClassDetailBundle({ allowStale: true }) first paint.
     return null;
   }
 

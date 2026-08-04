@@ -37,7 +37,7 @@ import { useThemeContext } from '@/contexts';
 import { Colors, ColorScale, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 import { Haptics } from '@/services/haptics';
 import { useAuthStore } from '@/stores';
-import { statsAPI, PerformanceStatsSummary } from '@/services/stats';
+import type { PerformanceStatsSummary } from '@/services/stats';
 import { topicsService, TopicSubject } from '@/services/topics.service';
 import {
   learnPathService,
@@ -46,6 +46,17 @@ import {
   LearnUnit,
 } from '@/services/learnPath.service';
 import { fetchLearnHub } from '../learnHubCache';
+import {
+  fetchLearnHome,
+  hydrateLearnHomeFromDisk,
+  isLearnHomeCacheFresh,
+  learnHomeCache,
+  readLearnHomeFromCache,
+  writeLearnHomeToCache,
+  persistLearnHomeToDisk,
+  invalidateLearnHomeCache,
+} from './learnHomeCache';
+import { prefetchUnitLesson } from './unitLessonCache';
 // Side-effect import: registers the learn-hub course normalizers that
 // fetchLearnHub requires (api/learn.ts calls _setLearnHubNormalizers on load).
 import '@/api/learn';
@@ -133,17 +144,32 @@ export function LearnHomeScreen() {
   const { user } = useAuthStore();
   const userId = user?.id;
 
-  const [loading, setLoading] = useState(true);
+  // Synchronous cache read — MainNavigator hydrates from disk at boot and
+  // deferred-prefetches, so revisits / warm opens paint without a spinner.
+  const cachedHome = readLearnHomeFromCache();
+  if (cachedHome && __DEV__) {
+    console.log('[LearnHome TTI] memory/disk hit');
+  }
+
+  const [loading, setLoading] = useState(!cachedHome);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [pathError, setPathError] = useState(false);
-  const [profile, setProfile] = useState<LearnerProfile | null>(null);
-  const [path, setPath] = useState<LearnPath | null>(null);
-  const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
-  const [stats, setStats] = useState<PerformanceStatsSummary | null>(null);
+  const [profile, setProfile] = useState<LearnerProfile | null>(cachedHome?.profile ?? null);
+  const [path, setPath] = useState<LearnPath | null>(cachedHome?.path ?? null);
+  const hasFocusedOnceRef = useRef(false);
+  const hasVisibleContentRef = useRef(Boolean(cachedHome?.profile || cachedHome?.path));
+  const [activeSubjectId, setActiveSubjectId] = useState<string | null>(
+    cachedHome?.activeSubjectId ?? null
+  );
+  const [stats, setStats] = useState<PerformanceStatsSummary | null>(cachedHome?.stats ?? null);
   const [hubCourses, setHubCourses] = useState<any[]>([]);
   const [editingPath, setEditingPath] = useState(false);
-  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(() => {
+    const units = cachedHome?.path?.units;
+    const active = units?.find((u) => u.state === 'unlocked');
+    return active?.topicId ?? null;
+  });
 
   // Onboarding state
   const [obGrade, setObGrade] = useState<string | null>(null);
@@ -219,62 +245,147 @@ export function LearnHomeScreen() {
   // — e.g. switching subjects — never gets confused with a full profile-load
   // failure by callers; each has its own error UI (renderPath's inline retry
   // vs. the full-screen retry in the main render).
+  const applyHomePayload = useCallback((payload: {
+    profile: LearnerProfile | null;
+    path: LearnPath | null;
+    activeSubjectId: string | null;
+    stats: PerformanceStatsSummary | null;
+  }) => {
+    setProfile(payload.profile);
+    setPath(payload.path);
+    if (payload.activeSubjectId) setActiveSubjectId(payload.activeSubjectId);
+    if (payload.stats) setStats(payload.stats);
+    if (payload.path?.units) {
+      const active = payload.path.units.find((u) => u.state === 'unlocked');
+      if (active) setExpandedUnitId(active.topicId);
+    }
+    if (payload.profile || payload.path) {
+      hasVisibleContentRef.current = true;
+    }
+  }, []);
+
   const loadPath = useCallback(async (subjectId: string) => {
     try {
       setPathError(false);
       const data = await learnPathService.getPath(subjectId);
       setPath(data);
+      setActiveSubjectId(subjectId);
       if (data && data.units) {
         const active = data.units.find((u) => u.state === 'unlocked');
         if (active) {
           setExpandedUnitId(active.topicId);
         }
       }
+      // Keep module cache in sync so next tab entry is instant.
+      writeLearnHomeToCache({
+        profile: learnHomeCache.profile,
+        path: data,
+        activeSubjectId: subjectId,
+        stats: learnHomeCache.stats,
+      });
+      if (userId) void persistLearnHomeToDisk(userId);
     } catch (err) {
       console.warn('[LearnHome] loadPath failed', err);
-      setPath(null);
-      setPathError(true);
+      if (!path) {
+        setPath(null);
+        setPathError(true);
+      }
     }
-  }, []);
+  }, [path, userId]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean; force?: boolean }) => {
+    const silent = (opts?.silent === true || hasVisibleContentRef.current) && !opts?.force;
+    const t0 = Date.now();
     try {
       setLoadError(false);
-      const [p] = await Promise.all([
-        learnPathService.getProfile(),
-        // Secondary data — each guarded, never blocks the path render.
-        userId
-          ? statsAPI
-              .getUserStatsSummary(userId)
-              .then(setStats)
-              .catch(() => {})
-          : Promise.resolve(),
+      // Never blank the screen when we already painted from cache.
+      if (!silent && !hasVisibleContentRef.current) setLoading(true);
+
+      const [payload] = await Promise.all([
+        fetchLearnHome({
+          force: opts?.force === true,
+          userId,
+          subjectId: activeSubjectId || undefined,
+        }),
+        // Secondary — never blocks first paint.
         fetchLearnHub({ userId })
           .then((hub) => setHubCourses(hub?.courses ?? []))
           .catch(() => {}),
       ]);
-      setProfile(p);
-      if (p && p.subjects.length > 0) {
-        const subjectId =
-          activeSubjectId && p.subjects.some((s) => s.id === activeSubjectId)
-            ? activeSubjectId
-            : p.subjects[0].id;
-        setActiveSubjectId(subjectId);
-        await loadPath(subjectId);
+
+      if (payload) {
+        applyHomePayload(payload);
+        if (__DEV__) {
+          console.log(
+            `[LearnHome TTI] ${silent ? 'silent-refresh' : 'network'} settle (${Date.now() - t0}ms)`
+          );
+        }
+      } else if (!hasVisibleContentRef.current) {
+        setLoadError(true);
       }
     } catch (err) {
       console.warn('[LearnHome] load failed', err);
-      setLoadError(true);
+      if (!hasVisibleContentRef.current) setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  }, [activeSubjectId, applyHomePayload, userId]);
+
+  // Mount: hydrate disk if needed → fresh cache skip → join inFlight → else fetch.
+  useEffect(() => {
+    let cancelled = false;
+    const mountTs = Date.now();
+
+    (async () => {
+      // Cover the race where the user taps Learn before MainNavigator hydrate finishes.
+      if (userId && !readLearnHomeFromCache()) {
+        await hydrateLearnHomeFromDisk(userId);
+        if (cancelled) return;
+        const hydrated = readLearnHomeFromCache();
+        if (hydrated) {
+          applyHomePayload(hydrated);
+          setLoading(false);
+          if (__DEV__) console.log(`[LearnHome TTI] disk-hydrate hit=${Date.now() - mountTs}ms`);
+        }
+      }
+
+      if (isLearnHomeCacheFresh()) {
+        setLoading(false);
+        if (__DEV__) console.log(`[LearnHome TTI] memory-cache hit=${Date.now() - mountTs}ms`);
+        return;
+      }
+      if (learnHomeCache.inFlight) {
+        const payload = await learnHomeCache.inFlight;
+        if (cancelled) return;
+        if (payload) {
+          applyHomePayload(payload);
+          setLoading(false);
+          if (__DEV__) {
+            console.log(`[LearnHome TTI] prefetch-await first-paint=${Date.now() - mountTs}ms`);
+          }
+        } else {
+          load({ silent: hasVisibleContentRef.current });
+        }
+        return;
+      }
+      load({ silent: hasVisibleContentRef.current });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSubjectId, loadPath, userId]);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      // First focus already handled by mount effect — skip to avoid double fetch.
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      load({ silent: true });
     }, [load]),
   );
 
@@ -324,9 +435,10 @@ export function LearnHomeScreen() {
       await learnPathService.saveProfile(obGrade, [...obSelected]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditingPath(false);
-      setLoading(true);
+      invalidateLearnHomeCache();
+      hasVisibleContentRef.current = false;
       setActiveSubjectId(null);
-      await load();
+      await load({ force: true });
     } catch (err) {
       console.warn('[LearnHome] onboarding save failed', err);
     } finally {
@@ -337,7 +449,7 @@ export function LearnHomeScreen() {
   const switchSubject = async (subjectId: string) => {
     Haptics.selectionAsync();
     setActiveSubjectId(subjectId);
-    setPath(null);
+    // Keep previous path visible until the new subject path lands (no blank flash).
     await loadPath(subjectId);
   };
 
@@ -354,14 +466,23 @@ export function LearnHomeScreen() {
       subjectName: path?.subject?.nameEn || path?.subject?.name,
       subjectNameKh: path?.subject?.nameKh,
     };
-    if (unit.hasLesson) navigation.navigate('UnitLesson', params);
-    else navigation.navigate('PracticeSession', params);
+    if (unit.hasLesson) {
+      prefetchUnitLesson(unit.topicId);
+      navigation.navigate('UnitLesson', params);
+    } else {
+      navigation.navigate('PracticeSession', params);
+    }
   };
 
   const activeUnit = useMemo(
     () => path?.units.find((u) => u.state === 'unlocked') ?? null,
     [path],
   );
+
+  // Warm the next lesson so Continue / READ feels instant.
+  useEffect(() => {
+    if (activeUnit?.hasLesson) prefetchUnitLesson(activeUnit.topicId);
+  }, [activeUnit?.hasLesson, activeUnit?.topicId]);
 
   const topCourses = useMemo(() => {
     return [...hubCourses]
@@ -1587,6 +1708,7 @@ export function LearnHomeScreen() {
                       subjectNameKh: path?.subject?.nameKh,
                     };
                     if (isLesson) {
+                      prefetchUnitLesson(unit.topicId);
                       navigation.navigate('UnitLesson', params);
                     } else {
                       navigation.navigate('PracticeSession', {
@@ -1955,14 +2077,17 @@ export function LearnHomeScreen() {
               refreshing={refreshing}
               onRefresh={() => {
                 setRefreshing(true);
-                load();
+                invalidateLearnHomeCache();
+                load({ force: true });
               }}
               tintColor={colors.textSecondary}
             />
           }
         >
           {renderHero()}
-          {loading && <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />}
+          {loading && !profile && !path && (
+            <ActivityIndicator style={{ marginTop: 60 }} color={colors.textSecondary} />
+          )}
           {showOnboarding && obStarted && renderOnboarding()}
           {!loading && loadError && renderLoadError(() => {
             setLoading(true);

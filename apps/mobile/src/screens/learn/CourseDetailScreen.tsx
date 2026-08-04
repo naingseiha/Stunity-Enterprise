@@ -335,10 +335,11 @@ export default function CourseDetailScreen() {
 
   const handleOpenLesson = useCallback((lessonId: string, isLocked: boolean) => {
     if (isLocked) return;
+    void learnApi.prefetchLessonDetail(courseId, lessonId, selectedContentLocale);
     navigation.navigate('LessonViewer', { courseId, lessonId, contentLocale: selectedContentLocale });
   }, [courseId, navigation, selectedContentLocale]);
 
-  if (loading) {
+  if (loading && !course) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <CourseDetailSkeleton />
@@ -742,6 +743,7 @@ export default function CourseDetailScreen() {
             style={[styles.primaryActionPill, !nextLesson && styles.primaryActionPillDisabled]}
             onPress={() => {
               if (nextLesson) {
+                void learnApi.prefetchLessonDetail(courseId, nextLesson.id, selectedContentLocale);
                 navigation.navigate('LessonViewer', { courseId, lessonId: nextLesson.id, contentLocale: selectedContentLocale });
               }
             }}

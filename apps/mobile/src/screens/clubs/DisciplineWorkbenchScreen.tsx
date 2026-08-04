@@ -67,14 +67,21 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
   const user = useAuthStore((state) => state.user);
   const isKhmer = i18n.language?.startsWith('km');
 
-  const [loading, setLoading] = useState(true);
+  const initialClassId = route.params?.classId || '';
+  const initialDate = route.params?.date || format(new Date(), 'yyyy-MM-dd');
+  const initialCachedClasses = classesApi.getCachedMyClasses({ scopeKey: user?.id }) || [];
+  const initialCachedAttendance = initialClassId
+    ? classesApi.getCachedClassDailyAttendance(initialClassId, initialDate)
+    : null;
+
+  const [loading, setLoading] = useState(!(initialCachedClasses.length > 0 && initialCachedAttendance));
   const [refreshing, setRefreshing] = useState(false);
-  const [classId, setClassId] = useState<string>(route.params?.classId || '');
-  const [date, setDate] = useState<string>(() => route.params?.date || format(new Date(), 'yyyy-MM-dd'));
-  const [classes, setClasses] = useState<classesApi.MyClassSummary[]>([]);
+  const [classId, setClassId] = useState<string>(initialClassId);
+  const [date, setDate] = useState<string>(() => initialDate);
+  const [classes, setClasses] = useState<classesApi.MyClassSummary[]>(initialCachedClasses);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ABSENT' | 'PERMISSION' | 'LATE' | 'EXCUSED'>('ALL');
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<any[]>(initialCachedAttendance?.students || []);
   const [allowedStatuses, setAllowedStatuses] = useState<string[]>([]);
   const [capabilitySource, setCapabilitySource] = useState<string>('none');
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -114,11 +121,14 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
 
   const loadData = useCallback(
     async (opts?: { skipFullScreenSpinner?: boolean; force?: boolean }) => {
-      const quiet = opts?.skipFullScreenSpinner === true;
       const force = opts?.force === true;
       const requestId = loadRequestRef.current + 1;
       loadRequestRef.current = requestId;
 
+      // Quiet when we already painted from cache (or caller asked for silent).
+      const hasPaintedRows =
+        Boolean(classesApi.getCachedClassDailyAttendance(classId || initialClassId, date)?.students?.length);
+      const quiet = opts?.skipFullScreenSpinner === true || hasPaintedRows;
       if (!quiet) setLoading(true);
       try {
         const myClassesPromise = classesApi.getMyClasses({
@@ -176,10 +186,10 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
           }
         }
       } finally {
-        if (!quiet && loadRequestRef.current === requestId) setLoading(false);
+        if (loadRequestRef.current === requestId) setLoading(false);
       }
     },
-    [classId, date, user?.id]
+    [classId, date, initialClassId, user?.id]
   );
 
   useEffect(() => {
@@ -513,7 +523,7 @@ export default function DisciplineWorkbenchScreen({ navigation, route }: Props) 
         </View>
       </SafeAreaView>
 
-      {loading && !refreshing ? (
+      {loading && !refreshing && rows.length === 0 ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={BRAND_TEAL} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('common.loading')}</Text>
