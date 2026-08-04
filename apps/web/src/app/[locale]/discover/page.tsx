@@ -13,7 +13,7 @@ import {
   ClipboardList, BarChart3, Calendar, Settings, ChevronRight,
   ChevronLeft, LayoutGrid, Search, ArrowUpRight, Compass,
   CheckCircle2, UserCheck, Clock, Award, TrendingUp,
-  LogOut, Moon, Sun, Globe, Bell, Home,
+  LogOut, Moon, Sun, Globe, Bell, Home, Sparkles,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -153,15 +153,14 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
       ════════════════════════════════════════════════════ */}
       <aside className="flex flex-col w-64 flex-shrink-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 h-full">
 
-        {/* School branding */}
+        {/* Stunity Platform Branding */}
         <div className="px-4 pt-5 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md flex-shrink-0">
-              {schoolName.charAt(0)}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[12px] font-black text-slate-900 dark:text-white truncate leading-none">{schoolName}</p>
-              <p className="text-[10.5px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{isKhmer ? 'បន្ទប់គ្រប់គ្រង' : 'Admin Panel'}</p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <img src="/Stunity.png" alt="Stunity Logo" className="h-7 w-auto object-contain" />
+              <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50">
+                Platform
+              </span>
             </div>
           </div>
         </div>
@@ -251,25 +250,61 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
       ════════════════════════════════════════════════════ */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-        {/* Top header bar */}
-        <header className="flex-shrink-0 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 z-20">
-          <div className="px-8 h-[50px] flex items-center justify-between gap-4">
-            <h1 className="text-[15px] font-bold text-slate-900 dark:text-white tracking-tight">
-              {activeSideNav === 'discover' && (isKhmer ? 'ស្វែងរក' : 'Discover')}
-              {activeSideNav === 'people' && (isKhmer ? 'សិស្ស និងបុគ្គលិក' : 'People & Staff')}
-              {activeSideNav === 'academics' && (isKhmer ? 'ការសិក្សា' : 'Academics')}
-              {activeSideNav === 'operations' && (isKhmer ? 'ប្រតិបត្តិការ' : 'Operations')}
-              {activeSideNav === 'reports' && (isKhmer ? 'របាយការណ៍' : 'Reports & Analytics')}
-              {activeSideNav === 'settings' && (isKhmer ? 'ការកំណត់' : 'Settings')}
-            </h1>
+        {/* Landing Page Inspired Top Navbar Header */}
+        <header className="flex-shrink-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 z-20">
+          <div className="px-6 h-[54px] flex items-center justify-between gap-4">
+            {/* Title & Breadcrumb */}
+            <div className="flex items-center gap-2 text-[13px] font-bold">
+              <span className="text-slate-400 font-medium hidden sm:inline">Stunity Enterprise</span>
+              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">/</span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold">
+                {activeSideNav === 'discover' && (isKhmer ? 'ស្វែងរកមុខងារ' : 'Discover Platform')}
+                {activeSideNav === 'people' && (isKhmer ? 'សិស្ស និងបុគ្គលិក' : 'People & Staff')}
+                {activeSideNav === 'academics' && (isKhmer ? 'ការសិក្សា' : 'Academics')}
+                {activeSideNav === 'operations' && (isKhmer ? 'ប្រតិបត្តិការ' : 'Operations')}
+                {activeSideNav === 'reports' && (isKhmer ? 'របាយការណ៍' : 'Reports & Analytics')}
+                {activeSideNav === 'settings' && (isKhmer ? 'ការកំណត់' : 'Settings')}
+              </span>
+            </div>
 
+            {/* Right Action Controls */}
             <div className="flex items-center gap-3">
-              {/* Year badge */}
-              {activeYear?.name && (
-                <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-black rounded-full uppercase tracking-wide border border-blue-100 dark:border-blue-800/40">
-                  {activeYear.name}
-                </span>
-              )}
+              {/* System Platform Status */}
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-full text-[11px] font-semibold border border-emerald-200/60 dark:border-emerald-800/40">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{isKhmer ? 'ប្រព័ន្ធ Cloud ដំណើរការ' : 'Stunity Cloud 2.0'}</span>
+              </div>
+
+              {/* Minimalist Landing Language Switcher */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-full text-xs font-semibold border border-slate-200/60 dark:border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => router.push('/en/discover')}
+                  className={`px-2.5 py-0.5 rounded-full transition-all duration-200 text-[11px] ${
+                    !isKhmer ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/km/discover')}
+                  className={`px-2.5 py-0.5 rounded-full transition-all duration-200 text-[11px] ${
+                    isKhmer ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
+                  }`}
+                >
+                  KM
+                </button>
+              </div>
+
+              {/* Go to Dashboard Shortcut */}
+              <button
+                onClick={() => router.push(`/${locale}/dashboard`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[12px] font-bold shadow-md shadow-blue-500/20 transition-all"
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isKhmer ? 'ចូល Dashboard' : 'Full Dashboard'}</span>
+              </button>
             </div>
           </div>
         </header>
@@ -278,72 +313,128 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
         <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-950">
           <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8 space-y-10">
 
-            {/* ── HERO FEATURED BANNERS ──────────────────────────────── */}
+            {/* ── HERO CREATIVE FEATURED SHOWCASE ──────────────────────── */}
             {(activeCategory === 'all') && (
-              <section>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Hero 1 — Students */}
-                  <AnimatedContent animation="slide-up" delay={60}>
+              <section className="relative">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                  {/* Hero Card 1 (Main Platform Hub Spotlight) — 7 cols */}
+                  <AnimatedContent animation="slide-up" delay={60} className="lg:col-span-7 flex">
                     <div
                       onClick={() => router.push(`/${locale}/students`)}
-                      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white p-6 shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.015] hover:shadow-2xl hover:shadow-blue-500/25 border border-white/10"
+                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-950 text-white p-7 sm:p-8 shadow-2xl shadow-indigo-600/25 transition-all duration-500 hover:scale-[1.01] hover:shadow-indigo-600/35 border border-white/20 flex flex-col justify-between"
                     >
-                      <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
-                      <div className="relative z-10">
-                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-blue-200">
-                          {isKhmer ? 'មុខងារពិសេស' : 'FEATURED MANAGEMENT'}
-                        </span>
-                        <h2 className="text-[20px] font-black leading-snug mt-1 mb-1.5">
-                          {isKhmer ? 'ប្រព័ន្ធគ្រប់គ្រងសិស្ស' : 'Smart Student Onboarding'}
-                        </h2>
-                        <p className="text-[11.5px] text-blue-100/80 leading-relaxed line-clamp-2">
-                          {isKhmer ? 'គ្រប់គ្រងបញ្ជីឈ្មោះ ចុះឈ្មោះ និងប្រវត្តិរូប' : 'Manage registrations, photo profiles, and academic records seamlessly.'}
-                        </p>
-                        <div className="flex items-center gap-3 mt-4">
-                          <span className="inline-flex items-center px-4 py-1.5 bg-white text-blue-700 font-black text-[11px] rounded-full shadow-sm">
-                            {isKhmer ? 'បើកមុខងារ' : 'Open Directory'}
+                      {/* Creative backdrop glow */}
+                      <div className="absolute -right-12 -top-12 w-64 h-64 bg-cyan-400/25 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+                      <div className="absolute -left-12 -bottom-12 w-64 h-64 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+
+                      {/* Top Tag & Status */}
+                      <div className="relative z-10 flex items-center justify-between gap-2 mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-cyan-200 border border-white/20 shadow-sm flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 text-amber-300" />
+                            {isKhmer ? 'ប្រព័ន្ធប្រតិបត្តិការសាលារៀន' : 'STUNITY SCHOOL OS'}
+                          </span>
+                          <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 text-[10px] font-bold border border-emerald-400/30">
+                            {isKhmer ? 'ស្វ័យប្រវត្ត' : 'Connected Ecosystem'}
                           </span>
                         </div>
+                        <span className="text-[11px] font-bold text-white/70 group-hover:text-white transition-colors flex items-center gap-1">
+                          {isKhmer ? 'ស្វែងយល់បន្ថែម' : 'Explore Platform'}
+                          <ArrowUpRight className="w-4 h-4 text-cyan-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                        </span>
                       </div>
-                      <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-500">
-                        <GraduationCap className="w-8 h-8 text-white" />
+
+                      {/* Main Title & Description */}
+                      <div className="relative z-10 mb-6">
+                        <h2 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight mb-2 text-white group-hover:text-cyan-100 transition-colors">
+                          {isKhmer ? 'មជ្ឈមណ្ឌលគ្រប់គ្រងសាលា និងការសិក្សាឌីជីថល' : 'Next-Gen School Management Platform'}
+                        </h2>
+                        <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed max-w-xl">
+                          {isKhmer 
+                            ? 'តភ្ជាប់គ្រប់ផ្នែកសាលារៀន ចាប់ពីការចុះឈ្មោះសិស្ស គ្រូបង្រៀន កាលវិភាគ វត្តមាន ពិន្ទុ រហូតដល់ការទំនាក់ទំនងមាតាបិតា។'
+                            : 'Empowering Cambodian educational institutions with automated workflows, real-time sync, and digital student records.'}
+                        </p>
+                      </div>
+
+                      {/* Bottom Interactive Feature Chips & Quick CTA */}
+                      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/10 flex items-center gap-1.5">
+                            <UserPlus className="w-3.5 h-3.5 text-cyan-300" />
+                            {isKhmer ? 'គ្រប់គ្រងសិស្ស' : 'Student Hub'}
+                          </span>
+                          <span className="px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/10 flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-purple-300" />
+                            {isKhmer ? 'បញ្ជីឈ្មោះគ្រូ' : 'Teachers'}
+                          </span>
+                          <span className="px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/10 flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
+                            {isKhmer ? 'ថ្នាក់ និងកាលវិភាគ' : 'Schedules'}
+                          </span>
+                        </div>
+
+                        <button className="px-4 py-2 bg-white text-blue-900 font-black text-xs rounded-xl shadow-lg hover:bg-cyan-50 transition-colors flex items-center gap-1.5 flex-shrink-0">
+                          {isKhmer ? 'ចាប់ផ្តើមប្រើប្រាស់' : 'Open Hub'}
+                          <ChevronRight className="w-4 h-4 text-blue-600" />
+                        </button>
                       </div>
                     </div>
                   </AnimatedContent>
 
-                  {/* Hero 2 — Attendance */}
-                  <AnimatedContent animation="slide-up" delay={100}>
+                  {/* Hero Card 2 (Operations & Attendance Spotlight) — 5 cols */}
+                  <AnimatedContent animation="slide-up" delay={100} className="lg:col-span-5 flex">
                     <div
                       onClick={() => router.push(`/${locale}/attendance/mark`)}
-                      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white p-6 shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-[1.015] hover:shadow-2xl hover:shadow-emerald-500/25 border border-white/10"
+                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-950 text-white p-7 sm:p-8 shadow-2xl shadow-teal-600/25 transition-all duration-500 hover:scale-[1.01] hover:shadow-teal-600/35 border border-white/20 flex flex-col justify-between"
                     >
-                      <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-emerald-200">
-                            {isKhmer ? 'ប្រតិបត្តិការ' : 'DAILY OPERATIONS'}
-                          </span>
-                        </div>
-                        <h2 className="text-[20px] font-black leading-snug mb-1.5">
-                          {isKhmer ? 'ប្រព័ន្ធស្រង់វត្តមាន' : 'Attendance Command Center'}
-                        </h2>
-                        <p className="text-[11.5px] text-emerald-100/80 leading-relaxed line-clamp-2">
-                          {isKhmer ? 'ស្រង់វត្តមានប្រចាំថ្ងៃ ជូនដំណឹងស្វ័យប្រវត្ត' : 'Track student presence and broadcast real-time updates.'}
-                        </p>
-                        <div className="flex items-center gap-3 mt-4">
-                          <span className="inline-flex items-center px-4 py-1.5 bg-white text-emerald-700 font-black text-[11px] rounded-full shadow-sm">
-                            {isKhmer ? 'ស្រង់វត្តមាន' : 'Mark Attendance'}
-                          </span>
-                        </div>
+                      {/* Ambient Glow */}
+                      <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+
+                      {/* Header Tag */}
+                      <div className="relative z-10 flex items-center justify-between gap-2 mb-4">
+                        <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-emerald-200 border border-white/20 flex items-center gap-1.5">
+                          <Target className="w-3 h-3 text-emerald-300" />
+                          {isKhmer ? 'ប្រតិបត្តិការប្រចាំថ្ងៃ' : 'DAILY OPERATIONS'}
+                        </span>
+                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-400/25 text-emerald-100 text-[10px] font-bold border border-emerald-300/30">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                          {isKhmer ? 'វត្តមានផ្ទាល់' : 'Real-time Sync'}
+                        </span>
                       </div>
-                      <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-500">
-                        <Target className="w-8 h-8 text-white" />
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+
+                      {/* Title & Desc */}
+                      <div className="relative z-10 mb-6">
+                        <h2 className="text-xl sm:text-2xl font-black leading-tight tracking-tight mb-2 text-white group-hover:text-emerald-100 transition-colors">
+                          {isKhmer ? 'ប្រព័ន្ធស្រង់វត្តមាន និងជូនដំណឹងមាតាបិតា' : 'Smart Attendance AI & Notifications'}
+                        </h2>
+                        <p className="text-xs text-emerald-100/80 leading-relaxed">
+                          {isKhmer 
+                            ? 'ស្រង់វត្តមានសិស្សតាមថ្នាក់ប្រចាំថ្ងៃ ផ្ញើសារជូនដំណឹងទៅអាណាព្យាបាល និងបង្កើតរបាយការណ៍ស្វ័យប្រវត្តិ។'
+                            : 'Instant presence logging with automated alerts sent directly to registered guardians.'}
+                        </p>
+                      </div>
+
+                      {/* Quick Action Bar */}
+                      <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                          </div>
+                          <span className="text-xs font-semibold text-emerald-100">
+                            {isKhmer ? 'ស្រង់វត្តមានលឿន' : 'Fast Entry'}
+                          </span>
                         </div>
+
+                        <button className="px-4 py-2 bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md hover:bg-emerald-300 transition-colors flex items-center gap-1.5">
+                          {isKhmer ? 'ស្រង់វត្តមាន' : 'Mark Attendance'}
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </AnimatedContent>
+
                 </div>
               </section>
             )}
