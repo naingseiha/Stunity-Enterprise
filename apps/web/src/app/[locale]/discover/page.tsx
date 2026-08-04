@@ -313,123 +313,130 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
         <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-950">
           <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8 space-y-10">
 
-            {/* ── HERO CREATIVE FEATURED SHOWCASE ──────────────────────── */}
+            {/* ── APPLE APP STORE LEVEL HERO SHOWCASE ──────────────────── */}
             {(activeCategory === 'all') && (
               <section className="relative">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-                  {/* Hero Card 1 (Main Platform Hub Spotlight) — 7 cols */}
+                  {/* Hero Card 1 — Apple Style Main Platform Spotlight (7 cols) */}
                   <AnimatedContent animation="slide-up" delay={60} className="lg:col-span-7 flex">
                     <div
                       onClick={() => router.push(`/${locale}/students`)}
-                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-950 text-white p-7 sm:p-8 shadow-2xl shadow-indigo-600/25 transition-all duration-500 hover:scale-[1.01] hover:shadow-indigo-600/35 border border-white/20 flex flex-col justify-between"
+                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-[28px] bg-[#0A0D18] text-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(15,23,42,0.25)] border border-white/[0.12] transition-all duration-500 hover:shadow-[0_25px_60px_rgba(37,99,235,0.2)] hover:border-white/20 flex flex-col justify-between"
                     >
-                      {/* Creative backdrop glow */}
-                      <div className="absolute -right-12 -top-12 w-64 h-64 bg-cyan-400/25 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
-                      <div className="absolute -left-12 -bottom-12 w-64 h-64 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
-                      <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
+                      {/* Subtle Ambient Aurora Light Effects */}
+                      <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-blue-500/30 to-cyan-400/20 rounded-full blur-[75px] group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
+                      <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-indigo-600/20 rounded-full blur-[75px] pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
 
-                      {/* Top Tag & Status */}
-                      <div className="relative z-10 flex items-center justify-between gap-2 mb-4">
+                      {/* Top Eyebrow Header */}
+                      <div className="relative z-10 flex items-center justify-between gap-2 mb-6">
                         <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-cyan-200 border border-white/20 shadow-sm flex items-center gap-1.5">
-                            <Sparkles className="w-3 h-3 text-amber-300" />
-                            {isKhmer ? 'ប្រព័ន្ធប្រតិបត្តិការសាលារៀន' : 'STUNITY SCHOOL OS'}
+                          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-cyan-300/90">
+                            {isKhmer ? 'ប្រព័ន្ធប្រតិបត្តិការសាលារៀន' : 'STUNITY OS PLATFORM'}
                           </span>
-                          <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 text-[10px] font-bold border border-emerald-400/30">
-                            {isKhmer ? 'ស្វ័យប្រវត្ត' : 'Connected Ecosystem'}
-                          </span>
-                        </div>
-                        <span className="text-[11px] font-bold text-white/70 group-hover:text-white transition-colors flex items-center gap-1">
-                          {isKhmer ? 'ស្វែងយល់បន្ថែម' : 'Explore Platform'}
-                          <ArrowUpRight className="w-4 h-4 text-cyan-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                        </span>
-                      </div>
-
-                      {/* Main Title & Description */}
-                      <div className="relative z-10 mb-6">
-                        <h2 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight mb-2 text-white group-hover:text-cyan-100 transition-colors">
-                          {isKhmer ? 'មជ្ឈមណ្ឌលគ្រប់គ្រងសាលា និងការសិក្សាឌីជីថល' : 'Next-Gen School Management Platform'}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed max-w-xl">
-                          {isKhmer 
-                            ? 'តភ្ជាប់គ្រប់ផ្នែកសាលារៀន ចាប់ពីការចុះឈ្មោះសិស្ស គ្រូបង្រៀន កាលវិភាគ វត្តមាន ពិន្ទុ រហូតដល់ការទំនាក់ទំនងមាតាបិតា។'
-                            : 'Empowering Cambodian educational institutions with automated workflows, real-time sync, and digital student records.'}
-                        </p>
-                      </div>
-
-                      {/* Bottom Interactive Feature Chips & Quick CTA */}
-                      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/10 flex items-center gap-1.5">
-                            <UserPlus className="w-3.5 h-3.5 text-cyan-300" />
-                            {isKhmer ? 'គ្រប់គ្រងសិស្ស' : 'Student Hub'}
-                          </span>
-                          <span className="px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/10 flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5 text-purple-300" />
-                            {isKhmer ? 'បញ្ជីឈ្មោះគ្រូ' : 'Teachers'}
-                          </span>
-                          <span className="px-3 py-1 rounded-xl bg-white/10 backdrop-blur-md text-[11px] font-semibold text-white/90 border border-white/10 flex items-center gap-1.5">
-                            <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
-                            {isKhmer ? 'ថ្នាក់ និងកាលវិភាគ' : 'Schedules'}
+                          <span className="w-1 h-1 rounded-full bg-white/40" />
+                          <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">
+                            {isKhmer ? 'កំណែ ២.០' : 'VERSION 2.0'}
                           </span>
                         </div>
+                        <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-colors">
+                          <ArrowUpRight className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
+                        </div>
+                      </div>
 
-                        <button className="px-4 py-2 bg-white text-blue-900 font-black text-xs rounded-xl shadow-lg hover:bg-cyan-50 transition-colors flex items-center gap-1.5 flex-shrink-0">
-                          {isKhmer ? 'ចាប់ផ្តើមប្រើប្រាស់' : 'Open Hub'}
-                          <ChevronRight className="w-4 h-4 text-blue-600" />
+                      {/* Content & Floating Apple Badge Layout */}
+                      <div className="relative z-10 flex flex-col sm:flex-row items-start justify-between gap-6 mb-8">
+                        <div className="max-w-md">
+                          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-[1.2] mb-2.5">
+                            {isKhmer ? 'មជ្ឈមណ្ឌលគ្រប់គ្រងសិស្ស និងការសិក្សា' : 'Smart Student & School Operations'}
+                          </h2>
+                          <p className="text-xs sm:text-[13px] text-white/70 font-normal leading-relaxed">
+                            {isKhmer
+                              ? 'គ្រប់គ្រងប្រវត្តិរូបសិស្ស ការចុះឈ្មោះ បញ្ជីឈ្មោះ និងទិន្នន័យអប់រំក្នុងប្រព័ន្ធតែមួយ ដោយគ្មានភាពសាំញ៉ាំ។'
+                              : 'Centralized directory, enrolment management, and academic profiles built for high-performance school teams.'}
+                          </p>
+                        </div>
+
+                        {/* Apple App Store Icon Mockup Tile */}
+                        <div className="flex-shrink-0 relative self-end sm:self-center">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[22px] bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 p-0.5 shadow-2xl shadow-blue-500/30 flex items-center justify-center border border-white/30 group-hover:scale-105 transition-transform duration-500">
+                            <div className="w-full h-full rounded-[20px] bg-slate-950/40 backdrop-blur-sm flex items-center justify-center">
+                              <GraduationCap className="w-9 h-9 text-white drop-shadow-md" />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-2 -left-3 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[9px] font-black text-cyan-200 shadow-md">
+                            Hub
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Apple Style Footer Action */}
+                      <div className="relative z-10 flex items-center justify-between pt-5 border-t border-white/[0.08]">
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md text-[11px] font-medium text-white/80 border border-white/[0.08]">
+                            {isKhmer ? 'បញ្ជីឈ្មោះសិស្ស' : 'Student Directory'}
+                          </span>
+                          <span className="hidden sm:inline-flex px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md text-[11px] font-medium text-white/80 border border-white/[0.08]">
+                            {isKhmer ? 'ប្រវត្តិរូបឌីជីថល' : 'Digital Profiles'}
+                          </span>
+                        </div>
+
+                        <button className="px-5 py-2.5 rounded-full bg-white text-slate-950 font-extrabold text-xs shadow-[0_4px_20px_rgba(255,255,255,0.15)] hover:bg-white/95 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5">
+                          <span>{isKhmer ? 'បើកមើលសិស្ស' : 'Open Directory'}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-950" />
                         </button>
                       </div>
                     </div>
                   </AnimatedContent>
 
-                  {/* Hero Card 2 (Operations & Attendance Spotlight) — 5 cols */}
+                  {/* Hero Card 2 — Apple Style Operations Spotlight (5 cols) */}
                   <AnimatedContent animation="slide-up" delay={100} className="lg:col-span-5 flex">
                     <div
                       onClick={() => router.push(`/${locale}/attendance/mark`)}
-                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-950 text-white p-7 sm:p-8 shadow-2xl shadow-teal-600/25 transition-all duration-500 hover:scale-[1.01] hover:shadow-teal-600/35 border border-white/20 flex flex-col justify-between"
+                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-[28px] bg-[#061814] text-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(6,24,20,0.3)] border border-white/[0.12] transition-all duration-500 hover:shadow-[0_25px_60px_rgba(20,184,166,0.2)] hover:border-white/20 flex flex-col justify-between"
                     >
-                      {/* Ambient Glow */}
-                      <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+                      {/* Subtle Emerald Aurora Light */}
+                      <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-emerald-500/25 to-teal-400/20 rounded-full blur-[75px] group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
 
-                      {/* Header Tag */}
-                      <div className="relative z-10 flex items-center justify-between gap-2 mb-4">
-                        <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-black uppercase tracking-wider text-emerald-200 border border-white/20 flex items-center gap-1.5">
-                          <Target className="w-3 h-3 text-emerald-300" />
+                      {/* Top Eyebrow Header */}
+                      <div className="relative z-10 flex items-center justify-between gap-2 mb-6">
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-300/90">
                           {isKhmer ? 'ប្រតិបត្តិការប្រចាំថ្ងៃ' : 'DAILY OPERATIONS'}
                         </span>
-                        <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-400/25 text-emerald-100 text-[10px] font-bold border border-emerald-300/30">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                          {isKhmer ? 'វត្តមានផ្ទាល់' : 'Real-time Sync'}
-                        </span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 backdrop-blur-md text-[10px] font-bold text-emerald-300 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          <span>{isKhmer ? 'វត្តមានផ្ទាល់' : 'Real-time'}</span>
+                        </div>
                       </div>
 
-                      {/* Title & Desc */}
-                      <div className="relative z-10 mb-6">
-                        <h2 className="text-xl sm:text-2xl font-black leading-tight tracking-tight mb-2 text-white group-hover:text-emerald-100 transition-colors">
-                          {isKhmer ? 'ប្រព័ន្ធស្រង់វត្តមាន និងជូនដំណឹងមាតាបិតា' : 'Smart Attendance AI & Notifications'}
+                      {/* Main Title & Description */}
+                      <div className="relative z-10 mb-8">
+                        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-snug mb-2.5">
+                          {isKhmer ? 'ប្រព័ន្ធស្រង់វត្តមាន និងជូនដំណឹង' : 'Attendance & Guardian Alerts'}
                         </h2>
-                        <p className="text-xs text-emerald-100/80 leading-relaxed">
-                          {isKhmer 
-                            ? 'ស្រង់វត្តមានសិស្សតាមថ្នាក់ប្រចាំថ្ងៃ ផ្ញើសារជូនដំណឹងទៅអាណាព្យាបាល និងបង្កើតរបាយការណ៍ស្វ័យប្រវត្តិ។'
-                            : 'Instant presence logging with automated alerts sent directly to registered guardians.'}
+                        <p className="text-xs sm:text-[13px] text-white/70 font-normal leading-relaxed">
+                          {isKhmer
+                            ? 'ស្រង់វត្តមានសិស្សប្រចាំថ្ងៃលឿនរហ័ស ជាមួយការផ្ញើដំណឹងស្វ័យប្រវត្តិទៅកាន់អាណាព្យាបាល។'
+                            : 'Instant daily class logging with instant sync to guardian notifications and report cards.'}
                         </p>
                       </div>
 
-                      {/* Quick Action Bar */}
-                      <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between">
+                      {/* Apple Style Footer Action */}
+                      <div className="relative z-10 flex items-center justify-between pt-5 border-t border-white/[0.08]">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                            <Target className="w-3.5 h-3.5 text-emerald-300" />
                           </div>
-                          <span className="text-xs font-semibold text-emerald-100">
-                            {isKhmer ? 'ស្រង់វត្តមានលឿន' : 'Fast Entry'}
+                          <span className="text-xs font-semibold text-emerald-100/90">
+                            {isKhmer ? 'ស្រង់វត្តមាន' : 'Mark Presence'}
                           </span>
                         </div>
 
-                        <button className="px-4 py-2 bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md hover:bg-emerald-300 transition-colors flex items-center gap-1.5">
-                          {isKhmer ? 'ស្រង់វត្តមាន' : 'Mark Attendance'}
-                          <ChevronRight className="w-4 h-4" />
+                        <button className="px-5 py-2.5 rounded-full bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-[0_4px_20px_rgba(52,211,153,0.2)] hover:bg-emerald-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5">
+                          <span>{isKhmer ? 'ចាប់ផ្តើម' : 'Start Entry'}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-950" />
                         </button>
                       </div>
                     </div>
