@@ -407,76 +407,75 @@ export default function ReportsHubPage(props: {
                 return (
                   <article
                     key={section.key}
-                    className={`relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-xl shadow-slate-200/40 transition-all hover:shadow-2xl hover:shadow-slate-200/60 dark:border-gray-800/80 dark:bg-gray-900/80 dark:shadow-none dark:hover:border-gray-700/80`}
+                    className="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-gray-800/80 bg-slate-100/50 dark:bg-gray-900/50 p-5 space-y-4 shadow-sm"
                   >
-                    <div className={`absolute inset-0 opacity-[0.03] dark:opacity-[0.05] ${sectionTone.bgGlow}`} />
-                    <div className={`absolute top-0 left-0 h-1.5 w-full ${sectionTone.rule}`} />
-                    
-                    <div className="relative p-6 sm:p-8">
-                      <div className="mb-6 flex items-start justify-between gap-4">
-                        <div className="flex min-w-0 items-center gap-4">
-                          <span
-                            className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${sectionTone.icon}`}
-                          >
-                            <SectionIcon className="h-6 w-6" />
-                          </span>
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                              {section.title}
-                            </h3>
-                            <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                              {section.description}
-                            </p>
-                          </div>
+                    {/* Section Header */}
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-gray-800/80">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl ${sectionTone.icon} flex items-center justify-center text-white shadow-md flex-shrink-0`}>
+                          <SectionIcon className="w-5 h-5" />
                         </div>
-                        <span
-                          className={`flex h-8 min-w-[2rem] items-center justify-center rounded-full px-3 text-[11px] font-black tabular-nums ${sectionTone.count}`}
-                        >
-                          {section.tools.length}
-                        </span>
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight leading-none">
+                            {section.title}
+                          </h3>
+                          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                            {section.description}
+                          </p>
+                        </div>
                       </div>
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-gray-800 flex-shrink-0">
+                        {section.tools.length} {locale === 'km' ? 'របាយការណ៍' : 'Reports'}
+                      </span>
+                    </div>
 
-                      <div className="space-y-3.5">
-                        {section.tools.map((tool) => {
-                          const ToolIcon = tool.icon;
-                          const tone = toneStyles[tool.tone];
-                          return (
-                            <Link
-                              key={tool.key}
-                              href={tool.href}
-                              className={`group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-slate-100 bg-white p-3.5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] dark:border-gray-800/80 dark:bg-gray-900/60 dark:hover:bg-gray-800 ${tone.borderHover}`}
-                            >
-                              <span
-                                className={`relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-[0.85rem] transition-all duration-300 ${tone.icon} ${tone.iconHover}`}
-                              >
-                                <ToolIcon className="h-5 w-5" />
-                              </span>
-                              
-                              <span className="relative z-10 min-w-0 flex-1">
-                                <span className="flex items-center gap-2">
-                                  <span className="line-clamp-1 text-[13px] font-black text-slate-900 dark:text-white">
-                                    {tool.title}
+                    {/* Section Tools Container — Discover Page Menu Card Design */}
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden border border-slate-200/70 dark:border-gray-800/70 shadow-sm divide-y divide-slate-100 dark:divide-gray-800/60">
+                      {section.tools.map((tool) => {
+                        const ToolIcon = tool.icon;
+                        const toolGradients: Record<string, string> = {
+                          blue: "bg-gradient-to-br from-blue-500 to-indigo-600",
+                          violet: "bg-gradient-to-br from-violet-500 to-purple-600",
+                          emerald: "bg-gradient-to-br from-emerald-500 to-teal-600",
+                          amber: "bg-gradient-to-br from-amber-500 to-orange-500",
+                          rose: "bg-gradient-to-br from-rose-500 to-pink-600",
+                          cyan: "bg-gradient-to-br from-sky-500 to-cyan-600",
+                        };
+                        const iconBg = toolGradients[tool.tone] || toolGradients.blue;
+
+                        return (
+                          <Link
+                            key={tool.key}
+                            href={tool.href}
+                            className="group flex items-center gap-3.5 p-4 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-all duration-150"
+                          >
+                            <div className={`w-[48px] h-[48px] rounded-[14px] ${iconBg} flex items-center justify-center text-white shadow-md flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                              <ToolIcon className="w-5.5 h-5.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[12.5px] font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                  {tool.title}
+                                </span>
+                                {tool.key === "dashboard" && (
+                                  <span className="px-1.5 py-0.5 text-[8.5px] font-black uppercase rounded flex-shrink-0 bg-blue-100 text-blue-600">
+                                    {locale === 'km' ? 'បានណែនាំ' : 'FEATURED'}
                                   </span>
-                                  {tool.key === "dashboard" ? (
-                                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition-colors ${tone.badge} ${tone.badgeHover}`}>
-                                      {t("recommended")}
-                                    </span>
-                                  ) : null}
-                                </span>
-                                <span className="mt-0.5 line-clamp-1 text-[11px] font-semibold leading-relaxed text-slate-400 dark:text-slate-500">
-                                  {tool.description}
-                                </span>
-                              </span>
-                              
-                              <div className="relative z-10 shrink-0">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-all duration-300 group-hover:bg-slate-900 group-hover:text-white dark:bg-slate-800 dark:text-slate-500 dark:group-hover:bg-white dark:group-hover:text-slate-900">
-                                  <ArrowUpRight className="h-3.5 w-3.5" />
-                                </span>
+                                )}
                               </div>
-                            </Link>
-                          );
-                        })}
-                      </div>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                {tool.description}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-black text-[11px] group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all duration-200 shadow-sm"
+                            >
+                              {locale === 'km' ? 'បើក' : 'OPEN'}
+                            </button>
+                          </Link>
+                        );
+                      })}
                     </div>
                   </article>
                 );
