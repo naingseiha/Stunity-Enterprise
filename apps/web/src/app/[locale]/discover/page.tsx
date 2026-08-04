@@ -596,7 +596,7 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
                   </div>
                 </div>
 
-                <div ref={horizontalScrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+                <div ref={horizontalScrollRef} className="flex gap-4 overflow-x-auto py-3 px-1 -mx-1 scrollbar-none snap-x snap-mandatory">
                   {[
                     { 
                       href: `/${locale}/grades/reports`, 
@@ -649,10 +649,11 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
                       <AnimatedContent key={i} animation="slide-up" delay={100 + i * 40}>
                         <div
                           onClick={() => router.push(card.href)}
-                          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-slate-900 text-white flex-shrink-0 w-[270px] h-60 p-5 flex flex-col justify-between shadow-lg transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl snap-start border border-white/10"
+                          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-slate-900 text-white flex-shrink-0 w-[270px] h-60 p-5 flex flex-col justify-between shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-white/30 snap-start border border-white/15 isolate"
+                          style={{ transform: 'translateZ(0)' }}
                         >
                           {/* Card Graphic Image Background with Gradient Overlay */}
-                          <div className="absolute inset-0 z-0">
+                          <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl pointer-events-none" style={{ transform: 'translateZ(0)' }}>
                             <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-60" />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/30" />
                           </div>
