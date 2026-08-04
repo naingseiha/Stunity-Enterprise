@@ -313,131 +313,92 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
         <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-950">
           <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8 space-y-10">
 
-            {/* ── APPLE APP STORE LEVEL HERO SHOWCASE ──────────────────── */}
+            {/* ── EXACT MAC APP STORE FEATURED CARDS SECTION ─────────────── */}
             {(activeCategory === 'all') && (
-              <section className="relative">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              <section className="space-y-4">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  {isKhmer ? 'មុខងារអប់រំឆ្នើម និងប្រព័ន្ធប្រតិបត្តិការ' : 'Essential School OS Applications'}
+                </h2>
 
-                  {/* Hero Card 1 — Apple Style Main Platform Spotlight (7 cols) */}
-                  <AnimatedContent animation="slide-up" delay={60} className="lg:col-span-7 flex">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  
+                  {/* Featured Card 1 — Student Directory */}
+                  <AnimatedContent animation="slide-up" delay={60}>
                     <div
                       onClick={() => router.push(`/${locale}/students`)}
-                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-[28px] bg-[#0A0D18] text-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(15,23,42,0.25)] border border-white/[0.12] transition-all duration-500 hover:shadow-[0_25px_60px_rgba(37,99,235,0.2)] hover:border-white/20 flex flex-col justify-between"
+                      className="group cursor-pointer flex flex-col"
                     >
-                      {/* Subtle Ambient Aurora Light Effects */}
-                      <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-blue-500/30 to-cyan-400/20 rounded-full blur-[75px] group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
-                      <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-indigo-600/20 rounded-full blur-[75px] pointer-events-none" />
-                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
-
-                      {/* Top Eyebrow Header */}
-                      <div className="relative z-10 flex items-center justify-between gap-2 mb-6">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-cyan-300/90">
-                            {isKhmer ? 'ប្រព័ន្ធប្រតិបត្តិការសាលារៀន' : 'STUNITY OS PLATFORM'}
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-white/40" />
-                          <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">
-                            {isKhmer ? 'កំណែ ២.០' : 'VERSION 2.0'}
-                          </span>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-colors">
-                          <ArrowUpRight className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
-                        </div>
+                      <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-slate-200/60 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
+                        <img
+                          src="/images/discover/student_hub_banner.jpg"
+                          alt="Student Hub"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                        />
                       </div>
-
-                      {/* Content & Floating Apple Badge Layout */}
-                      <div className="relative z-10 flex flex-col sm:flex-row items-start justify-between gap-6 mb-8">
-                        <div className="max-w-md">
-                          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-[1.2] mb-2.5">
-                            {isKhmer ? 'មជ្ឈមណ្ឌលគ្រប់គ្រងសិស្ស និងការសិក្សា' : 'Smart Student & School Operations'}
-                          </h2>
-                          <p className="text-xs sm:text-[13px] text-white/70 font-normal leading-relaxed">
-                            {isKhmer
-                              ? 'គ្រប់គ្រងប្រវត្តិរូបសិស្ស ការចុះឈ្មោះ បញ្ជីឈ្មោះ និងទិន្នន័យអប់រំក្នុងប្រព័ន្ធតែមួយ ដោយគ្មានភាពសាំញ៉ាំ។'
-                              : 'Centralized directory, enrolment management, and academic profiles built for high-performance school teams.'}
-                          </p>
-                        </div>
-
-                        {/* Apple App Store Icon Mockup Tile */}
-                        <div className="flex-shrink-0 relative self-end sm:self-center">
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[22px] bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 p-0.5 shadow-2xl shadow-blue-500/30 flex items-center justify-center border border-white/30 group-hover:scale-105 transition-transform duration-500">
-                            <div className="w-full h-full rounded-[20px] bg-slate-950/40 backdrop-blur-sm flex items-center justify-center">
-                              <GraduationCap className="w-9 h-9 text-white drop-shadow-md" />
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-2 -left-3 px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[9px] font-black text-cyan-200 shadow-md">
-                            Hub
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Apple Style Footer Action */}
-                      <div className="relative z-10 flex items-center justify-between pt-5 border-t border-white/[0.08]">
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md text-[11px] font-medium text-white/80 border border-white/[0.08]">
-                            {isKhmer ? 'បញ្ជីឈ្មោះសិស្ស' : 'Student Directory'}
-                          </span>
-                          <span className="hidden sm:inline-flex px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md text-[11px] font-medium text-white/80 border border-white/[0.08]">
-                            {isKhmer ? 'ប្រវត្តិរូបឌីជីថល' : 'Digital Profiles'}
-                          </span>
-                        </div>
-
-                        <button className="px-5 py-2.5 rounded-full bg-white text-slate-950 font-extrabold text-xs shadow-[0_4px_20px_rgba(255,255,255,0.15)] hover:bg-white/95 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5">
-                          <span>{isKhmer ? 'បើកមើលសិស្ស' : 'Open Directory'}</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-950" />
-                        </button>
+                      <div className="mt-3">
+                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                          {isKhmer ? 'គ្រប់គ្រងសិស្ស' : 'STUDENT HUB'}
+                        </p>
+                        <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mt-0.5">
+                          {isKhmer ? 'ប្រព័ន្ធគ្រប់គ្រង និងចុះឈ្មោះសិស្ស' : 'Smart Student Directory'}
+                        </h3>
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5 line-clamp-2">
+                          {isKhmer ? 'គ្រប់គ្រងបញ្ជីឈ្មោះ ចុះឈ្មោះ និងប្រវត្តិរូបសិស្សឌីជីថល។' : 'Digital profiles, enrolment management, and student history.'}
+                        </p>
                       </div>
                     </div>
                   </AnimatedContent>
 
-                  {/* Hero Card 2 — Apple Style Operations Spotlight (5 cols) */}
-                  <AnimatedContent animation="slide-up" delay={100} className="lg:col-span-5 flex">
+                  {/* Featured Card 2 — Attendance Command Center */}
+                  <AnimatedContent animation="slide-up" delay={100}>
                     <div
                       onClick={() => router.push(`/${locale}/attendance/mark`)}
-                      className="group relative flex-1 cursor-pointer overflow-hidden rounded-[28px] bg-[#061814] text-white p-7 sm:p-9 shadow-[0_20px_50px_rgba(6,24,20,0.3)] border border-white/[0.12] transition-all duration-500 hover:shadow-[0_25px_60px_rgba(20,184,166,0.2)] hover:border-white/20 flex flex-col justify-between"
+                      className="group cursor-pointer flex flex-col"
                     >
-                      {/* Subtle Emerald Aurora Light */}
-                      <div className="absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-emerald-500/25 to-teal-400/20 rounded-full blur-[75px] group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
-                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-
-                      {/* Top Eyebrow Header */}
-                      <div className="relative z-10 flex items-center justify-between gap-2 mb-6">
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-emerald-300/90">
-                          {isKhmer ? 'ប្រតិបត្តិការប្រចាំថ្ងៃ' : 'DAILY OPERATIONS'}
-                        </span>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 backdrop-blur-md text-[10px] font-bold text-emerald-300 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                          <span>{isKhmer ? 'វត្តមានផ្ទាល់' : 'Real-time'}</span>
-                        </div>
+                      <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-slate-200/60 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
+                        <img
+                          src="/images/discover/attendance_hub_banner.jpg"
+                          alt="Attendance Hub"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                        />
                       </div>
-
-                      {/* Main Title & Description */}
-                      <div className="relative z-10 mb-8">
-                        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-snug mb-2.5">
-                          {isKhmer ? 'ប្រព័ន្ធស្រង់វត្តមាន និងជូនដំណឹង' : 'Attendance & Guardian Alerts'}
-                        </h2>
-                        <p className="text-xs sm:text-[13px] text-white/70 font-normal leading-relaxed">
-                          {isKhmer
-                            ? 'ស្រង់វត្តមានសិស្សប្រចាំថ្ងៃលឿនរហ័ស ជាមួយការផ្ញើដំណឹងស្វ័យប្រវត្តិទៅកាន់អាណាព្យាបាល។'
-                            : 'Instant daily class logging with instant sync to guardian notifications and report cards.'}
+                      <div className="mt-3">
+                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                          {isKhmer ? 'ប្រតិបត្តិការប្រចាំថ្ងៃ' : 'DAILY OPERATIONS'}
+                        </p>
+                        <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mt-0.5">
+                          {isKhmer ? 'មជ្ឈមណ្ឌលស្រង់វត្តមានស្វ័យប្រវត្តិ' : 'Attendance Command Center'}
+                        </h3>
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5 line-clamp-2">
+                          {isKhmer ? 'ស្រង់វត្តមានសិស្សប្រចាំថ្ងៃ ជាមួយការជូនដំណឹងទៅអាណាព្យាបាល។' : 'Daily presence tracking with instant guardian notifications.'}
                         </p>
                       </div>
+                    </div>
+                  </AnimatedContent>
 
-                      {/* Apple Style Footer Action */}
-                      <div className="relative z-10 flex items-center justify-between pt-5 border-t border-white/[0.08]">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                            <Target className="w-3.5 h-3.5 text-emerald-300" />
-                          </div>
-                          <span className="text-xs font-semibold text-emerald-100/90">
-                            {isKhmer ? 'ស្រង់វត្តមាន' : 'Mark Presence'}
-                          </span>
-                        </div>
-
-                        <button className="px-5 py-2.5 rounded-full bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-[0_4px_20px_rgba(52,211,153,0.2)] hover:bg-emerald-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5">
-                          <span>{isKhmer ? 'ចាប់ផ្តើម' : 'Start Entry'}</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-950" />
-                        </button>
+                  {/* Featured Card 3 — Master Gradebook & Timetable */}
+                  <AnimatedContent animation="slide-up" delay={140}>
+                    <div
+                      onClick={() => router.push(`/${locale}/grades/entry`)}
+                      className="group cursor-pointer flex flex-col"
+                    >
+                      <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-slate-200/60 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
+                        <img
+                          src="/images/discover/academics_hub_banner.jpg"
+                          alt="Academics Hub"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                        />
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                          {isKhmer ? 'ការសិក្សា និងពិន្ទុ' : 'ACADEMIC WORKSPACE'}
+                        </p>
+                        <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mt-0.5">
+                          {isKhmer ? 'សៀវភៅពិន្ទុ និងកាលវិភាគសិក្សា' : 'Master Gradebook & Timetable'}
+                        </h3>
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5 line-clamp-2">
+                          {isKhmer ? 'បញ្ចូលពិន្ទុប្រចាំខែ ឆមាស និងរៀបចំកាលវិភាគបង្រៀន។' : 'Exam score entry, GPA reports, and class timetable master.'}
+                        </p>
                       </div>
                     </div>
                   </AnimatedContent>
