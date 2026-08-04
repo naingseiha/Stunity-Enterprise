@@ -121,11 +121,64 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
     );
   }), [appModules, activeCategory, searchQuery]);
 
-  const appRows = useMemo(() => {
-    const rows: AppModuleItem[][] = [];
-    for (let i = 0; i < filteredApps.length; i += 3) rows.push(filteredApps.slice(i, i + 3));
-    return rows;
-  }, [filteredApps]);
+  // Section Groups
+  const sectionGroups = useMemo(() => {
+    const raw = [
+      {
+        id: 'people',
+        title: 'People & Staff Management',
+        khmerTitle: 'គ្រប់គ្រងសិស្ស គ្រូ និងអាណាព្យាបាល',
+        subtitle: 'Student records, teachers directory, parent accounts & admissions',
+        khmerSubtitle: 'បញ្ជីឈ្មោះសិស្ស គ្រូ ទំនាក់ទំនងអាណាព្យាបាល និងការចុះឈ្មោះ',
+        icon: Users,
+        color: 'text-blue-600 dark:text-blue-400',
+        items: filteredApps.filter(m => m.category === 'people'),
+      },
+      {
+        id: 'academics',
+        title: 'Academics & Schedules',
+        khmerTitle: 'ការសិក្សា ថ្នាក់រៀន និងកាលវិភាគ',
+        subtitle: 'Classes, exam grade entry, and master timetable schedules',
+        khmerSubtitle: 'គ្រប់គ្រងថ្នាក់រៀន ការបញ្ចូលពិន្ទុប្រឡង និងកាលវិភាគបង្រៀន',
+        icon: BookOpen,
+        color: 'text-purple-600 dark:text-purple-400',
+        items: filteredApps.filter(m => m.category === 'academics'),
+      },
+      {
+        id: 'operations',
+        title: 'Daily Operations & Attendance',
+        khmerTitle: 'ប្រតិបត្តិការ និងការស្រង់វត្តមាន',
+        subtitle: 'Class presence tracking, automated alerts & attendance center',
+        khmerSubtitle: 'ស្រង់វត្តមានសិស្សប្រចាំថ្ងៃ ការជូនដំណឹង និងស្ថិតិវត្តមាន',
+        icon: LayoutGrid,
+        color: 'text-emerald-600 dark:text-emerald-400',
+        items: filteredApps.filter(m => m.category === 'operations'),
+      },
+      {
+        id: 'reports',
+        title: 'Reports, Analytics & Certificates Hub',
+        khmerTitle: 'មជ្ឈមណ្ឌលរបាយការណ៍ វិភាគពិន្ទុ និងសូដីយប័ត្រ',
+        subtitle: 'Transcripts, report cards, score analytics & certificate studio',
+        khmerSubtitle: 'ចេញសៀវភៅតាមដាន វិភាគពិន្ទុ របាយការណ៍ប្រចាំខែ និងបង្កើតប័ណ្ណសរសើរ',
+        icon: BarChart3,
+        color: 'text-amber-600 dark:text-amber-400',
+        items: filteredApps.filter(m => m.category === 'reports'),
+      },
+      {
+        id: 'settings',
+        title: 'School Administrative Settings',
+        khmerTitle: 'ការកំណត់សាលារៀន និងប្រព័ន្ធ',
+        subtitle: 'Academic year sessions, school profile, and platform config',
+        khmerSubtitle: 'គ្រប់គ្រងឆ្នាំសិក្សា ប្រវត្តិរូបសាលា និងការកំណត់ប្រព័ន្ធ',
+        icon: Settings,
+        color: 'text-slate-600 dark:text-slate-400',
+        items: filteredApps.filter(m => m.category === 'settings'),
+      },
+    ];
+
+    if (activeCategory === 'all') return raw.filter(g => g.items.length > 0);
+    return raw.filter(g => g.id === activeCategory && g.items.length > 0);
+  }, [filteredApps, activeCategory]);
 
 
 
@@ -440,75 +493,91 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
               })}
             </div>
 
-            {/* ── "APPS WE LOVE" GRID ─────────────────────────────────── */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">
-                    {isKhmer ? 'មុខងារដែលយើងចូលចិត្ត' : 'Apps and Functions We Love'}
-                  </h2>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {isKhmer ? 'ចុច OPEN ដើម្បីចូលផ្ទាំងគ្រប់គ្រង' : 'Tap OPEN to launch the management form'}
-                  </p>
-                </div>
-                <span className="text-[11px] font-black text-blue-600 dark:text-blue-400">
-                  {filteredApps.length} {isKhmer ? 'មុខងារ' : 'Modules'}
-                </span>
-              </div>
+            {/* ── CATEGORIZED MODULE SECTIONS ─────────────────────────── */}
+            <div className="space-y-8">
+              {sectionGroups.map((group) => {
+                const GroupIcon = group.icon;
+                const rows: AppModuleItem[][] = [];
+                for (let i = 0; i < group.items.length; i += 3) {
+                  rows.push(group.items.slice(i, i + 3));
+                }
 
-              <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden border border-slate-200/70 dark:border-gray-800/70 shadow-sm">
-                {appRows.map((row, rowIdx) => (
-                  <div key={rowIdx}>
-                    {rowIdx > 0 && <div className="border-t border-slate-100 dark:border-gray-800/60 mx-4" />}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-x divide-slate-100 dark:divide-gray-800/60">
-                      {row.map((app) => {
-                        const Icon = app.icon;
-                        return (
-                          <div
-                            key={app.id}
-                            onClick={() => router.push(app.href)}
-                            className="group flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-all duration-150"
-                          >
-                            <div className={`w-[52px] h-[52px] rounded-[14px] ${app.iconBg} flex items-center justify-center text-white shadow-md flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
-                              <Icon className="w-6 h-6" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-[12.5px] font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                  {isKhmer ? app.khmerTitle : app.title}
-                                </span>
-                                {app.badge && (
-                                  <span className={`px-1.5 py-0.5 text-[8.5px] font-black uppercase rounded flex-shrink-0 ${app.badgeColor || 'bg-blue-100 text-blue-600'}`}>
-                                    {isKhmer ? app.khmerBadge : app.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{isKhmer ? app.khmerSubtitle : app.subtitle}</p>
-                              {app.stat && app.stat !== '—' && (
-                                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">{app.stat}</p>
-                              )}
-                            </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); router.push(app.href); }}
-                              className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-black text-[11px] hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-200 shadow-sm"
-                            >
-                              {app.priceTag || 'OPEN'}
-                            </button>
-                          </div>
-                        );
-                      })}
+                return (
+                  <section key={group.id} className="space-y-3">
+                    {/* Section Group Header */}
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-center shadow-sm">
+                          <GroupIcon className={`w-4 h-4 ${group.color}`} />
+                        </div>
+                        <div>
+                          <h2 className="text-[17px] font-bold text-slate-900 dark:text-white tracking-tight leading-none">
+                            {isKhmer ? group.khmerTitle : group.title}
+                          </h2>
+                          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {isKhmer ? group.khmerSubtitle : group.subtitle}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800">
+                        {group.items.length} {isKhmer ? 'មុខងារ' : 'Modules'}
+                      </span>
                     </div>
-                  </div>
-                ))}
 
-                {filteredApps.length === 0 && (
-                  <div className="py-16 text-center">
-                    <Search className="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-                    <p className="text-[13px] font-semibold text-slate-400">{isKhmer ? 'រកមិនឃើញ' : 'No modules found'}</p>
-                  </div>
-                )}
-              </div>
-            </section>
+                    {/* Section App Grid */}
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden border border-slate-200/70 dark:border-gray-800/70 shadow-sm">
+                      {rows.map((row, rowIdx) => (
+                        <div key={rowIdx}>
+                          {rowIdx > 0 && <div className="border-t border-slate-100 dark:border-gray-800/60 mx-4" />}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-x divide-slate-100 dark:divide-gray-800/60">
+                            {row.map((app) => {
+                              const Icon = app.icon;
+                              return (
+                                <div
+                                  key={app.id}
+                                  onClick={() => router.push(app.href)}
+                                  className="group flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/[0.03] transition-all duration-150"
+                                >
+                                  <div className={`w-[48px] h-[48px] rounded-[14px] ${app.iconBg} flex items-center justify-center text-white shadow-md flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                                    <Icon className="w-5.5 h-5.5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                      <span className="text-[12.5px] font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {isKhmer ? app.khmerTitle : app.title}
+                                      </span>
+                                      {app.badge && (
+                                        <span className={`px-1.5 py-0.5 text-[8.5px] font-black uppercase rounded flex-shrink-0 ${app.badgeColor || 'bg-blue-100 text-blue-600'}`}>
+                                          {isKhmer ? app.khmerBadge : app.badge}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{isKhmer ? app.khmerSubtitle : app.subtitle}</p>
+                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); router.push(app.href); }}
+                                    className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-black text-[11px] hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-200 shadow-sm"
+                                  >
+                                    {app.priceTag || 'OPEN'}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+
+              {filteredApps.length === 0 && (
+                <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl p-16 text-center border border-slate-200/70 dark:border-gray-800/70">
+                  <Search className="w-8 h-8 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                  <p className="text-[13px] font-semibold text-slate-400">{isKhmer ? 'រកមិនឃើញមុខងារនេះទេ' : 'No modules found'}</p>
+                </div>
+              )}
+            </div>
 
             {/* ── DARK SHOWCASE CARDS (horizontal scroll) ─────────────── */}
             {activeCategory === 'all' && (
