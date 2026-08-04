@@ -102,7 +102,7 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
   ];
 
   const sideNavItems = [
-    { id: 'discover', icon: Compass, label: 'Discover', khmer: 'ស្វែងរក', action: () => { setActiveSideNav('discover'); setActiveCategory('all'); } },
+    { id: 'discover', icon: Compass, label: 'Discover', khmer: 'ទំព័រដើម', action: () => { setActiveSideNav('discover'); setActiveCategory('all'); } },
     { id: 'dashboard', icon: Home, label: 'Dashboard', khmer: 'ផ្ទាំងគ្រប់គ្រង', action: () => router.push(`/${locale}/dashboard`) },
     { id: 'people', icon: Users, label: 'People', khmer: 'បុគ្គល', action: () => { setActiveSideNav('people'); setActiveCategory('people'); } },
     { id: 'academics', icon: BookOpen, label: 'Academics', khmer: 'ការសិក្សា', action: () => { setActiveSideNav('academics'); setActiveCategory('academics'); } },
@@ -322,7 +322,7 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
               <span className="text-slate-400 font-medium hidden sm:inline">Stunity Enterprise</span>
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">/</span>
               <span className="text-blue-600 dark:text-blue-400 font-bold">
-                {activeSideNav === 'discover' && (isKhmer ? 'ស្វែងរកមុខងារ' : 'Discover Platform')}
+                {activeSideNav === 'discover' && (isKhmer ? 'ទំព័រដើម' : 'Discover Platform')}
                 {activeSideNav === 'people' && (isKhmer ? 'សិស្ស និងបុគ្គលិក' : 'People & Staff')}
                 {activeSideNav === 'academics' && (isKhmer ? 'ការសិក្សា' : 'Academics')}
                 {activeSideNav === 'operations' && (isKhmer ? 'ប្រតិបត្តិការ' : 'Operations')}

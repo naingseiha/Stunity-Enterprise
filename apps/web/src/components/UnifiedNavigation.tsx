@@ -430,7 +430,7 @@ export default function UnifiedNavigation({
   const standaloneSchoolMenuItems = useMemo<SchoolMenuItem[]>(
     () => [
       {
-        name: locale === 'km' ? "Discover (ទំព័រដើម)" : "Discover",
+        name: locale === 'km' ? "ទំព័រដើម" : "Discover",
         icon: Compass,
         path: `/${locale}/discover`,
         prefetch: null,
