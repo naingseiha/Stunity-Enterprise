@@ -197,7 +197,7 @@
     "all": "ទាំងអស់",
     "search": {
       "placeholder": "ស្វែងរកការបង្ហោះ មនុស្ស ប្រធានបទ...",
-      "recent": "ការស្វែងរកថ្មីៗ",
+      "recent": "ថ្មីៗ",
       "clearAll": "សម្អាតទាំងអស់",
       "noResults": "រកមិនឃើញលទ្ធផលសម្រាប់ \"{{query}}\"",
       "tryDifferent": "សាកល្បងពាក្យគន្លឹះផ្សេង ឬពិនិត្យអក្ខរាវិរុទ្ធ។",
@@ -206,7 +206,6 @@
       "topics": "ប្រធានបទ",
       "top": "កំពូល",
       "latest": "ថ្មីបំផុត",
-      "recent": "ថ្មីៗ",
       "popular": "ពេញនិយម",
       "relevant": "ពាក់ព័ន្ធ",
       "all": "ទាំងអស់",
@@ -664,7 +663,43 @@
     "bookmarks": "ចំណាំ",
     "myPosts": "ការបង្ហោះរបស់ខ្ញុំ",
     "connections": "ការតភ្ជាប់",
-    "achievements": "សមិទ្ធផល"
+    "achievements": "សមិទ្ធផល",
+    "logoutConfirm": "Are you sure you want to log out of your account?",
+    "unableToOpenLink": "Unable to open this link right now.",
+    "pushNotificationsSub": "Alerts, messages, updates",
+    "emailNotificationsSub": "Weekly digest, announcements",
+    "updateFailed": "Failed to update {{setting}}.",
+    "biometricPreference": "biometric preference",
+    "profileVisibilityPreference": "profile visibility",
+    "onlineStatusPreference": "online status preference",
+    "pushNotificationPreference": "push notification preference",
+    "emailNotificationPreference": "email notification preference",
+    "notificationPreference": "notification preference",
+    "autoplayPreference": "autoplay preference",
+    "hapticPreference": "haptic feedback preference",
+    "pushEnableDenied": "Push notifications could not be enabled. Please allow notifications in your device settings.",
+    "biometricSetupIos": "សូមរៀបចំ Face ID ឬ Touch ID ក្នុងការកំណត់ឧបករណ៍របស់អ្នកជាមុនសិន។",
+    "biometricSetupAndroid": "Set up fingerprint or face unlock in your device settings first.",
+    "biometricNeedPassword": "Sign in with your password first, then enable biometric login.",
+    "biometricConfirm": "Confirm {{label}} to enable biometric login",
+    "pushStreakReminders": "ការរំលឹក Streak",
+    "pushStreakRemindersSub": "កុំបាត់បង់ streak ប្រចាំថ្ងៃរបស់អ្នក",
+    "pushWeeklyDigest": "សង្ខេបវឌ្ឍនភាពប្រចាំសប្តាហ៍",
+    "pushWeeklyDigestSub": "សង្ខេបថ្ងៃអាទិត្យរបស់អ្នក",
+    "pushFollows": "អ្នកតាម និងការបង្ហោះថ្មី",
+    "pushFollowsSub": "មនុស្សដែលអ្នកតាម",
+    "pushClubActivity": "សកម្មភាពក្លឹប",
+    "pushClubActivitySub": "ក្លឹបសិក្សារបស់អ្នក",
+    "pushGrades": "ការចេញពិន្ទុ",
+    "pushGradesSub": "នៅពេលមានពិន្ទុថ្មី",
+    "pushAssignments": "ការរំលឹកកិច្ចការ",
+    "pushAssignmentsSub": "កាលបរិច្ឆេទប្រគល់ជិតមកដល់",
+    "posts": "ការបង្ហោះ",
+    "courses": "វគ្គសិក្សា",
+    "level": "កម្រិត",
+    "edit": "កែ",
+    "aboutTitle": "Stunity Enterprise",
+    "aboutBody": "កំណែ ១.០.០\n\n© ២០២៦ Stunity Inc.\nរក្សាសិទ្ធិគ្រប់យ៉ាង។"
   },
   "feed": {
     "recall": {
@@ -691,22 +726,7 @@
       "typeChip": "ការចងចាំ",
       "defer": "រំលង"
     },
-    "bounty": {
-      "title": "សំណួររង្វាន់",
-      "hoursLeft": "នៅសល់ {{count}}ម៉ោង",
-      "askedBy": "សួរដោយ @{{name}}",
-      "atStake": "រង្វាន់ដៅ",
-      "tutorsWorking": "គ្រូជំនួយ {{count}} នាក់កំពុងធ្វើការ",
-      "answersIn": "ចម្លើយ {{count}}",
-      "topTutor": "គ្រូជំនួយឆ្នើម៖",
-      "seeAnswersCta": "មើលចម្លើយ ({{count}})",
-      "explainCta": "ពន្យល់សំណួរ",
-      "masterExplainerTier": {
-        "bronze": "សំរឹទ្ធ",
-        "silver": "ប្រាក់",
-        "gold": "មាស"
-      }
-    },
+    "bounty": "រង្វាន់",
     "quizWar": {
       "title": "សង្គ្រាមកម្រងសំណួរ",
       "live": "ផ្ទាល់",
@@ -1161,29 +1181,18 @@
       "advanced": "ខ្ពស់"
     },
     "actions": {
-      "readArticle": "អានអត្ថបទ",
-      "answer": "ឆ្លើយ",
-      "viewDetails": "មើលព័ត៌មានលម្អិត",
-      "voteNow": "បោះឆ្នោតឥឡូវនេះ",
-      "celebrate": "អបអរសាទរ",
-      "viewProject": "មើលគម្រោង",
-      "enrollNow": "ចុះឈ្មោះឥឡូវនេះ",
-      "joinEvent": "ចូលរួមព្រឹត្តិការណ៍",
-      "takeQuiz": "ធ្វើកម្រងសំណួរ",
-      "viewExamDetails": "មើលព័ត៌មានលម្អិតការប្រឡង",
-      "startAssignment": "ចាប់ផ្តើមកិច្ចការ",
-      "download": "ទាញយក",
-      "watchTutorial": "មើលការបង្រៀន",
-      "viewResearch": "មើលការស្រាវជ្រាវ",
-      "viewClub": "មើលក្លឹប",
-      "readMore": "អានបន្ថែម",
-      "joinTeam": "ចូលរួមក្រុម"
+      "like": "ចូលចិត្ត",
+      "comment": "មតិយោបល់",
+      "notInterested": "មិនចាប់អារម្មណ៍",
+      "rateValue": "វាយតម្លៃ"
     },
     "time": {
       "left": "នៅសល់",
       "expired": "ផុតកំណត់",
       "h": "ម៉ោង",
-      "d": "ថ្ងៃ"
+      "d": "ថ្ងៃ",
+      "m": "នាទី",
+      "now": "ឥឡូវនេះ"
     },
     "sections": {
       "due": "កំណត់ត្រឹម៖ ",
@@ -1207,7 +1216,6 @@
       "defaultCampus": "ទីតាំង Stunity",
       "memberCount": "សមាជិក {{count}}",
       "verifiedClub": "ក្លឹបបានផ្ទៀងផ្ទាត់",
-      "questions": "សំណួរ",
       "questionsCount": "សំណួរ {{count}}",
       "comments": "មតិយោបល់",
       "writeComment": "សរសេរមតិយោបល់...",
@@ -1310,7 +1318,6 @@
     "viewOriginal": "មើលការបង្ហោះដើម",
     "answered": "បានឆ្លើយ",
     "awaitingAnswer": "កំពុងរង់ចាំចម្លើយ",
-    "bounty": "រង្វាន់",
     "answerCount_one": "{{count}} ចម្លើយ",
     "answerCount_other": "{{count}} ចម្លើយ",
     "answerCount": "{{count}} ចម្លើយ",
@@ -1319,20 +1326,6 @@
     "progress": "វឌ្ឍនភាព",
     "stepsCompleted": "បានបញ្ចប់ {{completed}}/{{total}} ជំហាន",
     "academicMatch": "ត្រូវនឹងការសិក្សា",
-    "actions": {
-      "like": "ចូលចិត្ត",
-      "comment": "មតិយោបល់",
-      "notInterested": "មិនចាប់អារម្មណ៍",
-      "rateValue": "វាយតម្លៃ"
-    },
-    "time": {
-      "left": "នៅសល់",
-      "expired": "ផុតកំណត់",
-      "h": "ម៉ោង",
-      "d": "ថ្ងៃ",
-      "m": "នាទី",
-      "now": "ឥឡូវនេះ"
-    },
     "suggestions": {
       "passScore": "ពិន្ទុជាប់៖ {{score}}%"
     }
@@ -1529,7 +1522,11 @@
       "streakLeaderboard": "តារាងពិន្ទុការសិក្សាបន្ត",
       "leaderboardEmpty": "មិនទាន់មានការសិក្សាបន្តនៅទីនេះទេ។ ក្លាយជាអ្នកដំបូង!",
       "yourRank": "អ្នក — ចំណាត់ថ្នាក់ទី {{rank}}",
-      "scope": { "class": "ថ្នាក់", "club": "ក្លឹប", "school": "សាលា" },
+      "scope": {
+        "class": "ថ្នាក់",
+        "club": "ក្លឹប",
+        "school": "សាលា"
+      },
       "streakSubtitle": "សិក្សារាលថ្ងៃដើម្បីបង្កើតម៉ឹមមាន់",
       "currentStreak": "ជាប់គ្នាបច្ចុប្បន្ន",
       "streakToday": "ថ្ងៃនេះ",

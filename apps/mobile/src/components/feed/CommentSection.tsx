@@ -58,7 +58,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <Avatar
           uri={comment.author.profilePictureUrl || undefined}
           size="sm"
-          showOnline={false}
+          showOnline={!!comment.author.isOnline}
+          isOnline={!!comment.author.isOnline}
           variant="post"
         />
         <View style={styles.commentContent}>

@@ -13,6 +13,7 @@ import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visib
 import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../utils/feedCursor';
 import { getLatestQuizAttemptsByQuizIds } from '../utils/quizAttempts';
 import { fetchReactionCounts } from '../utils/reactionCounts';
+import { resolvePublicIsOnline } from '../utils/presence';
 
 const router = Router();
 const inFlightFeedResponses = new Map<string, Promise<{ payload: any; etag: string; hasMore: boolean }>>();
@@ -128,6 +129,7 @@ function stripToMinimal(post: any): any {
       profilePictureUrl: post.author.profilePictureUrl,
       role: post.author.role,
       isVerified: post.author.isVerified,
+      isOnline: resolvePublicIsOnline(post.author.privacySettings),
     } : undefined,
     // Keep type-specific data compact
     ...(post.postType === 'POLL' && { pollOptions: post.pollOptions, userVotedOptionId: post.userVotedOptionId }),

@@ -18,6 +18,7 @@ interface PostHeaderProps {
     profilePictureUrl?: string;
     isVerified?: boolean;
     role?: string;
+    isOnline?: boolean;
   };
   createdAt: string;
   visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'FOLLOWERS' | 'PRIVATE';
@@ -92,6 +93,8 @@ const PostHeader = ({
           name={authorName}
           size="md"
           variant="post"
+          showOnline={!!author.isOnline}
+          isOnline={!!author.isOnline}
         />
         <View style={styles.authorInfo}>
           <View style={styles.authorRow}>

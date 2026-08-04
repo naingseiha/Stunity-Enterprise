@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '@/navigation/types';
 import { feedApi } from '@/api/client';
 import { useAuthStore } from '@/stores';
+import { useThemeContext } from '@/contexts';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ManageDeadlines'>;
 
@@ -21,6 +22,8 @@ interface Deadline {
 
 export const ManageDeadlinesScreen = ({ navigation }: Props) => {
     const { t: autoT } = useTranslation();
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [deadlines, setDeadlines] = useState<Deadline[]>([]);
     const [loading, setLoading] = useState(true);
     const user = useAuthStore(state => state.user);
@@ -100,7 +103,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
     if (loading) {
         return (
             <View style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color="#F59E0B" />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
@@ -109,7 +112,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_72d0995f" /></Text>
                 <View style={{ width: 40 }} />
@@ -125,6 +128,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                     <TextInput
                         style={styles.input}
                         placeholder={autoT("auto.mobile.screens_profile_ManageDeadlinesScreen.k_9ae17242")}
+                        placeholderTextColor={colors.textTertiary}
                         value={title}
                         onChangeText={setTitle}
                     />
@@ -133,6 +137,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                     <TextInput
                         style={styles.input}
                         placeholder={autoT("auto.mobile.screens_profile_ManageDeadlinesScreen.k_ae61ec5f")}
+                        placeholderTextColor={colors.textTertiary}
                         value={dateStr}
                         onChangeText={setDateStr}
                     />
@@ -141,6 +146,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                     <TextInput
                         style={styles.input}
                         placeholder={autoT("auto.mobile.screens_profile_ManageDeadlinesScreen.k_d65c3ac2")}
+                        placeholderTextColor={colors.textTertiary}
                         value={topic}
                         onChangeText={setTopic}
                     />
@@ -163,7 +169,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
 
                 {deadlines.length === 0 ? (
                     <View style={styles.emptyState}>
-                        <Ionicons name="calendar-outline" size={48} color="#D1D5DB" />
+                        <Ionicons name="calendar-outline" size={48} color={colors.textTertiary} />
                         <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_cb2125ef" /></Text>
                     </View>
                 ) : (
@@ -172,7 +178,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                             <View style={styles.deadlineInfo}>
                                 <Text style={styles.deadlineTitle}>{dl.title}</Text>
                                 <View style={styles.deadlineMetaRow}>
-                                    <Ionicons name="time-outline" size={14} color="#6B7280" style={{ marginRight: 4 }} />
+                                    <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
                                     <Text style={styles.deadlineDate}>
                                         {new Date(dl.deadlineDate).toLocaleDateString()}
                                     </Text>
@@ -195,10 +201,10 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.background,
     },
     centered: {
         justifyContent: 'center',
@@ -210,9 +216,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
+        borderBottomColor: colors.border,
     },
     backButton: {
         padding: 8,
@@ -221,45 +227,42 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
     content: {
         padding: 16,
     },
     formCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 20,
         marginBottom: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     formTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         marginBottom: 16,
     },
     label: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#4B5563',
+        color: colors.textSecondary,
         marginBottom: 6,
     },
     input: {
-        backgroundColor: '#F1F5F9',
+        backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 15,
-        color: '#1F2937',
+        color: colors.text,
         marginBottom: 16,
     },
     addButton: {
-        backgroundColor: '#F59E0B',
+        backgroundColor: colors.primary,
         borderRadius: 12,
         paddingVertical: 14,
         alignItems: 'center',
@@ -276,7 +279,7 @@ const styles = StyleSheet.create({
     listTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         marginBottom: 16,
     },
     emptyState: {
@@ -284,22 +287,19 @@ const styles = StyleSheet.create({
         paddingVertical: 40,
     },
     emptyText: {
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         marginTop: 12,
         fontSize: 15,
     },
     deadlineItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 1,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     deadlineInfo: {
         flex: 1,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     deadlineTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: colors.text,
         marginBottom: 6,
     },
     deadlineMetaRow: {
@@ -317,15 +317,15 @@ const styles = StyleSheet.create({
     },
     deadlineDate: {
         fontSize: 14,
-        color: '#6B7280',
+        color: colors.textSecondary,
     },
     topicsText: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
     },
     deleteButton: {
         padding: 8,
-        backgroundColor: '#FEE2E2',
+        backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : '#FEE2E2',
         borderRadius: 8,
         marginLeft: 12,
     }

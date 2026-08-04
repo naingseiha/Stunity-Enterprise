@@ -2305,6 +2305,50 @@ const mergePrivacySettingsWithMobileApp = (
   };
 };
 
+const ONLINE_PRESENCE_THRESHOLD_MS = 5 * 60 * 1000;
+
+const getMobileAppRaw = (privacySettings: unknown): Record<string, unknown> => {
+  const settings = privacySettings && typeof privacySettings === 'object' && !Array.isArray(privacySettings)
+    ? privacySettings as Record<string, unknown>
+    : {};
+  const mobileApp = settings.mobileApp;
+  return mobileApp && typeof mobileApp === 'object' && !Array.isArray(mobileApp)
+    ? mobileApp as Record<string, unknown>
+    : {};
+};
+
+const getLastActiveAt = (privacySettings: unknown): Date | null => {
+  const raw = getMobileAppRaw(privacySettings).lastActiveAt;
+  if (typeof raw !== 'string') return null;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const isRecentlyActive = (lastActiveAt: Date | null, now = new Date()): boolean => {
+  if (!lastActiveAt) return false;
+  return now.getTime() - lastActiveAt.getTime() <= ONLINE_PRESENCE_THRESHOLD_MS;
+};
+
+const resolvePublicIsOnline = (privacySettings: unknown, now = new Date()): boolean => {
+  const appSettings = extractMobileAppSettings(privacySettings);
+  if (appSettings.showOnlineStatus === false) return false;
+  return isRecentlyActive(getLastActiveAt(privacySettings), now);
+};
+
+const mergePresenceHeartbeat = (privacySettings: unknown) => {
+  const current = privacySettings && typeof privacySettings === 'object' && !Array.isArray(privacySettings)
+    ? privacySettings as Record<string, unknown>
+    : {};
+
+  return {
+    ...current,
+    mobileApp: {
+      ...normalizeMobileAppSettings(getMobileAppRaw(current) as Partial<Record<MobileAppSettingKey, unknown>>),
+      lastActiveAt: new Date().toISOString(),
+    },
+  };
+};
+
 // Get current user endpoint (for mobile app)
 app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -2495,6 +2539,78 @@ app.patch('/users/me/app-settings', authenticateToken, async (req: AuthRequest, 
   } catch (error: any) {
     console.error('Update app settings error:', error);
     res.status(500).json({ success: false, error: 'Failed to update app settings' });
+  }
+});
+
+app.post('/users/me/presence', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { privacySettings: true },
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const appSettings = extractMobileAppSettings(currentUser.privacySettings);
+    if (!appSettings.showOnlineStatus) {
+      return res.json({
+        success: true,
+        data: {
+          isOnline: false,
+          showOnlineStatus: false,
+        },
+      });
+    }
+
+    const privacySettings = mergePresenceHeartbeat(currentUser.privacySettings);
+    const updated = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { privacySettings },
+      select: { privacySettings: true },
+    });
+
+    const lastActiveAt = getLastActiveAt(updated.privacySettings);
+
+    res.json({
+      success: true,
+      data: {
+        isOnline: true,
+        showOnlineStatus: true,
+        lastActiveAt: lastActiveAt?.toISOString() ?? null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Presence heartbeat error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update presence' });
+  }
+});
+
+app.post('/users/presence', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userIds = Array.isArray(req.body?.userIds)
+      ? req.body.userIds.filter((id: unknown): id is string => typeof id === 'string').slice(0, 50)
+      : [];
+
+    if (userIds.length === 0) {
+      return res.json({ success: true, data: {} });
+    }
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, privacySettings: true },
+    });
+
+    const data: Record<string, boolean> = {};
+    for (const user of users) {
+      data[user.id] = resolvePublicIsOnline(user.privacySettings);
+    }
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('Presence lookup error:', error);
+    res.status(500).json({ success: false, error: 'Failed to lookup presence' });
   }
 });
 

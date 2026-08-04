@@ -1269,6 +1269,8 @@ export default function ProfileScreen() {
                     uri={(profile as any).profilePhotoUrl || (profile as any).avatar}
                     name={fullName}
                     size="xl"
+                    showOnline={!!profile.isOnline}
+                    isOnline={!!profile.isOnline}
                   />
                   <View style={styles.profileRailIdentityText}>
                     <Text numberOfLines={1} style={[styles.profileRailName, { color: colors.text }]}>{fullName}</Text>
@@ -1567,6 +1569,8 @@ export default function ProfileScreen() {
                         size="3xl"
                         showBorder={false}
                         gradientBorder="none"
+                        showOnline={!!profile.isOnline}
+                        isOnline={!!profile.isOnline}
                         style={{ width: avatarSize, height: avatarSize }}
                       />
                       {uploadingPhoto && (

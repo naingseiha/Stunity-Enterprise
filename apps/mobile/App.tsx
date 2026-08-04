@@ -19,7 +19,7 @@ import { learnApi, clubsApi } from '@/api';
 import i18n from '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
-import { NotificationProvider, ThemeProvider } from '@/contexts';
+import { NotificationProvider, PresenceProvider, ThemeProvider } from '@/contexts';
 import { hydrateAppPreferences } from '@/services/appPreferences';
 import { loadFeatureFlags } from '@/config/featureFlags';
 import { track } from '@/services/analytics';
@@ -154,15 +154,17 @@ function App() {
         <SafeAreaProvider>
           <ThemeProvider>
             <NotificationProvider>
-              <View style={styles.contentContainer}>
-                {appIsReady && areFontsReady && <RootNavigator />}
-                {showSplash && (
-                  <SplashScreen
-                    onComplete={handleSplashComplete}
-                    duration={1400}
-                  />
-                )}
-              </View>
+              <PresenceProvider>
+                <View style={styles.contentContainer}>
+                  {appIsReady && areFontsReady && <RootNavigator />}
+                  {showSplash && (
+                    <SplashScreen
+                      onComplete={handleSplashComplete}
+                      duration={1400}
+                    />
+                  )}
+                </View>
+              </PresenceProvider>
             </NotificationProvider>
           </ThemeProvider>
         </SafeAreaProvider>

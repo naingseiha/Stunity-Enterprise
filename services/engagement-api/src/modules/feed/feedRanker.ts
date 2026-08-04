@@ -261,6 +261,7 @@ const FEED_AUTHOR_SELECT = {
     profilePictureUrl: true,
     role: true,
     isVerified: true,
+    privacySettings: true,
 } satisfies Prisma.UserSelect;
 
 const FEED_CANDIDATE_POST_SELECT = {

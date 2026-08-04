@@ -41,7 +41,7 @@ interface ContactItem {
 }
 
 export default function NewMessageScreen() {
-    const { t: autoT } = useTranslation();
+    const { t, t: autoT } = useTranslation();
     const { colors, isDark } = useThemeContext();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const navigation = useNavigation<NavigationProp>();
@@ -124,7 +124,7 @@ export default function NewMessageScreen() {
                         {item.firstName} {item.lastName}
                     </Text>
                     <Text style={styles.contactStatus}>
-                        {item.isOnline ? 'Online' : 'Offline'}
+                        {item.isOnline ? t('messages.online') : t('messages.offline')}
                     </Text>
                 </View>
                 <Ionicons name="chatbubble-outline" size={18} color={colors.textTertiary} />

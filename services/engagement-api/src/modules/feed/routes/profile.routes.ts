@@ -14,6 +14,7 @@ import {
   profileUpdateSchema,
   getProfileValidationMessage,
 } from "../validators/profile.validator";
+import { resolvePublicIsOnline } from "../utils/presence";
 
 const router = Router();
 
@@ -630,6 +631,7 @@ router.get(
           socialLinks: true,
           profileCompleteness: true,
           profileVisibility: true,
+          privacySettings: true,
           isVerified: true,
           verifiedAt: true,
           totalLearningHours: true,
@@ -704,6 +706,9 @@ router.get(
           .status(403)
           .json({ success: false, error: "This profile is private" });
       }
+
+      const isOnline = resolvePublicIsOnline(user.privacySettings);
+      const { privacySettings: _privacySettings, ...safeUser } = user;
 
       // Get follower status
       let isFollowing = false;
@@ -784,7 +789,8 @@ router.get(
       res.json({
         success: true,
         profile: {
-          ...user,
+          ...safeUser,
+          isOnline,
           isOwnProfile,
           isFollowing,
           stats: {

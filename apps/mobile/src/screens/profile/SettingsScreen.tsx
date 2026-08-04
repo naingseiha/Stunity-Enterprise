@@ -40,6 +40,11 @@ import { getLearnHub } from '@/api/learn';
 import { fetchAppSettings, updateAppSettings } from '@/api/settings';
 import tokenService from '@/services/token';
 import {
+    authenticateBiometric,
+    getBiometricLabel,
+    isBiometricAvailable,
+} from '@/services/biometrics';
+import {
     getAppPreferences,
     saveAppPreferences,
     setAppPreference,
@@ -67,15 +72,15 @@ const PUSH_CATEGORY_META: {
     icon: IoniconsName;
     iconColor: string;
     iconBg: string;
-    label: string;
-    sublabel: string;
+    labelKey: string;
+    sublabelKey: string;
 }[] = [
-    { key: 'pushStreakReminders', icon: 'flame-outline', iconColor: '#F97316', iconBg: '#FFF7ED', label: 'Streak reminders', sublabel: "Don't lose your daily streak" },
-    { key: 'pushWeeklyDigest', icon: 'stats-chart-outline', iconColor: '#8B5CF6', iconBg: '#F5F3FF', label: 'Weekly progress digest', sublabel: 'Your Sunday summary' },
-    { key: 'pushFollows', icon: 'person-add-outline', iconColor: '#0EA5E9', iconBg: '#F0F9FF', label: 'Followers & new posts', sublabel: 'People you follow' },
-    { key: 'pushClubActivity', icon: 'people-outline', iconColor: '#10B981', iconBg: '#ECFDF5', label: 'Club activity', sublabel: 'Your study clubs' },
-    { key: 'pushGrades', icon: 'school-outline', iconColor: '#EF4444', iconBg: '#FEF2F2', label: 'Grade releases', sublabel: 'When new grades are posted' },
-    { key: 'pushAssignments', icon: 'document-text-outline', iconColor: '#F59E0B', iconBg: '#FFFBEB', label: 'Assignment reminders', sublabel: 'Upcoming due dates' },
+    { key: 'pushStreakReminders', icon: 'flame-outline', iconColor: '#F97316', iconBg: '#FFF7ED', labelKey: 'settings.pushStreakReminders', sublabelKey: 'settings.pushStreakRemindersSub' },
+    { key: 'pushWeeklyDigest', icon: 'stats-chart-outline', iconColor: '#8B5CF6', iconBg: '#F5F3FF', labelKey: 'settings.pushWeeklyDigest', sublabelKey: 'settings.pushWeeklyDigestSub' },
+    { key: 'pushFollows', icon: 'person-add-outline', iconColor: '#0EA5E9', iconBg: '#F0F9FF', labelKey: 'settings.pushFollows', sublabelKey: 'settings.pushFollowsSub' },
+    { key: 'pushClubActivity', icon: 'people-outline', iconColor: '#10B981', iconBg: '#ECFDF5', labelKey: 'settings.pushClubActivity', sublabelKey: 'settings.pushClubActivitySub' },
+    { key: 'pushGrades', icon: 'school-outline', iconColor: '#EF4444', iconBg: '#FEF2F2', labelKey: 'settings.pushGrades', sublabelKey: 'settings.pushGradesSub' },
+    { key: 'pushAssignments', icon: 'document-text-outline', iconColor: '#F59E0B', iconBg: '#FFFBEB', labelKey: 'settings.pushAssignments', sublabelKey: 'settings.pushAssignmentsSub' },
 ];
 
 interface SettingItem {
@@ -220,8 +225,7 @@ export default function SettingsScreen() {
 
     useEffect(() => {
         setProfileVisibility(user?.profileVisibility !== 'PRIVATE');
-        setOnlineStatus(user?.isOnline ?? true);
-    }, [user?.profileVisibility, user?.isOnline]);
+    }, [user?.profileVisibility]);
 
     useEffect(() => {
         const snapshot = getServerConfigSnapshot();
@@ -267,7 +271,6 @@ export default function SettingsScreen() {
             setAutoPlay(preferences.autoPlayVideos);
             setHapticFeedback(preferences.hapticFeedback);
             setPushCategories(Object.fromEntries(PUSH_CATEGORY_KEYS.map((k) => [k, preferences[k]])));
-            updateUser({ isOnline: preferences.showOnlineStatus });
         };
 
         const loadPreferences = async () => {
@@ -353,7 +356,7 @@ export default function SettingsScreen() {
     const handleLogout = useCallback(() => {
         Alert.alert(
             t('common.logout'),
-            'Are you sure you want to log out of your account?',
+            t('settings.logoutConfirm'),
             [
                 { text: t('common.cancel'), style: 'cancel' },
                 {
@@ -412,7 +415,7 @@ export default function SettingsScreen() {
         try {
             await Linking.openURL(url);
         } catch (error) {
-            Alert.alert(t('common.error'), 'Unable to open this link right now.');
+            Alert.alert(t('common.error'), t('settings.unableToOpenLink'));
         }
     }, [t]);
 
@@ -433,16 +436,57 @@ export default function SettingsScreen() {
     }, [openExternalLink]);
 
     const openAchievements = useCallback(() => {
+        const parentNav = navigation.getParent?.();
+        if (parentNav?.getState?.()?.routeNames?.includes('Achievements')) {
+            parentNav.navigate('Achievements');
+            return;
+        }
         navigation.navigate('Achievements');
     }, [navigation]);
 
     const handleBiometricsToggle = useCallback(async (enabled: boolean) => {
+        if (enabled) {
+            const available = await isBiometricAvailable();
+            if (!available) {
+                Alert.alert(
+                    t('settings.biometricLogin'),
+                    Platform.OS === 'ios'
+                        ? t('settings.biometricSetupIos')
+                        : t('settings.biometricSetupAndroid')
+                );
+                return;
+            }
+
+            const hasStoredSession = await tokenService.isAuthenticated();
+            if (!hasStoredSession) {
+                Alert.alert(
+                    t('settings.biometricLogin'),
+                    t('settings.biometricNeedPassword')
+                );
+                return;
+            }
+
+            const biometricLabel = await getBiometricLabel();
+            const authResult = await authenticateBiometric(
+                t('settings.biometricConfirm', { label: biometricLabel })
+            );
+            if (!authResult.success) {
+                if (!authResult.cancelled && authResult.error) {
+                    Alert.alert(t('common.error'), authResult.error);
+                }
+                return;
+            }
+        }
+
         setBiometrics(enabled);
         try {
             await tokenService.setBiometricEnabled(enabled);
         } catch (error) {
             setBiometrics(!enabled);
-            Alert.alert(t('common.error'), 'Failed to update biometric preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.biometricPreference') })
+            );
         }
     }, [t]);
 
@@ -458,7 +502,10 @@ export default function SettingsScreen() {
         } catch (error) {
             setProfileVisibility(previous);
             updateUser({ profileVisibility: previous ? 'PUBLIC' : 'PRIVATE' });
-            Alert.alert(t('common.error'), 'Failed to update profile visibility.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.profileVisibilityPreference') })
+            );
         }
     }, [profileVisibility, t, updateUser]);
 
@@ -466,15 +513,16 @@ export default function SettingsScreen() {
         const previous = onlineStatus;
 
         setOnlineStatus(enabled);
-        updateUser({ isOnline: enabled });
 
         persistAppSetting('showOnlineStatus', enabled).catch(() => {
             setOnlineStatus(previous);
-            updateUser({ isOnline: previous });
             void setAppPreference('showOnlineStatus', previous);
-            Alert.alert(t('common.error'), 'Failed to update online status preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.onlineStatusPreference') })
+            );
         });
-    }, [onlineStatus, persistAppSetting, t, updateUser]);
+    }, [onlineStatus, persistAppSetting, t]);
 
     const handlePushNotificationsToggle = useCallback((enabled: boolean) => {
         const previous = pushNotifications;
@@ -486,7 +534,7 @@ export default function SettingsScreen() {
                 setPushNotifications(previous);
                 Alert.alert(
                     t('common.notifications'),
-                    'Push notifications could not be enabled. Please allow notifications in your device settings.'
+                    t('settings.pushEnableDenied')
                 );
                 return;
             }
@@ -496,12 +544,18 @@ export default function SettingsScreen() {
             } catch (error) {
                 setPushNotifications(previous);
                 await setProviderPushNotificationsEnabled(previous);
-                Alert.alert(t('common.error'), 'Failed to update push notification preference.');
+                Alert.alert(
+                    t('common.error'),
+                    t('settings.updateFailed', { setting: t('settings.pushNotificationPreference') })
+                );
             }
         })().catch(() => {
             setPushNotifications(previous);
             void setProviderPushNotificationsEnabled(previous);
-            Alert.alert(t('common.error'), 'Failed to update push notification preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.pushNotificationPreference') })
+            );
         });
     }, [pushNotifications, setProviderPushNotificationsEnabled, t]);
 
@@ -512,7 +566,10 @@ export default function SettingsScreen() {
         persistAppSetting('emailNotifications', enabled).catch(() => {
             setEmailNotifications(previous);
             void setAppPreference('emailNotifications', previous);
-            Alert.alert(t('common.error'), 'Failed to update email notification preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.emailNotificationPreference') })
+            );
         });
     }, [emailNotifications, persistAppSetting, t]);
 
@@ -523,7 +580,10 @@ export default function SettingsScreen() {
         persistAppSetting(key, enabled).catch(() => {
             setPushCategories((prev) => ({ ...prev, [key]: previous }));
             void setAppPreference(key, previous);
-            Alert.alert(t('common.error'), 'Failed to update notification preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.notificationPreference') })
+            );
         });
     }, [pushCategories, persistAppSetting, t]);
 
@@ -534,7 +594,10 @@ export default function SettingsScreen() {
         persistAppSetting('autoPlayVideos', enabled).catch(() => {
             setAutoPlay(previous);
             void setAppPreference('autoPlayVideos', previous);
-            Alert.alert(t('common.error'), 'Failed to update autoplay preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.autoplayPreference') })
+            );
         });
     }, [autoPlay, persistAppSetting, t]);
 
@@ -545,7 +608,10 @@ export default function SettingsScreen() {
         persistAppSetting('hapticFeedback', enabled).catch(() => {
             setHapticFeedback(previous);
             void setAppPreference('hapticFeedback', previous);
-            Alert.alert(t('common.error'), 'Failed to update haptic feedback preference.');
+            Alert.alert(
+                t('common.error'),
+                t('settings.updateFailed', { setting: t('settings.hapticPreference') })
+            );
         });
     }, [hapticFeedback, persistAppSetting, t]);
 
@@ -730,7 +796,7 @@ export default function SettingsScreen() {
                     iconColor: '#EF4444',
                     iconBg: '#FEF2F2',
                     label: t('common.notifications') + ' (Push)',
-                    sublabel: 'Alerts, messages, updates',
+                    sublabel: t('settings.pushNotificationsSub'),
                     type: 'toggle',
                     value: pushNotifications,
                     onToggle: handlePushNotificationsToggle,
@@ -740,7 +806,7 @@ export default function SettingsScreen() {
                     iconColor: '#0EA5E9',
                     iconBg: '#F0F9FF',
                     label: t('common.notifications') + ' (Email)',
-                    sublabel: 'Weekly digest, announcements',
+                    sublabel: t('settings.emailNotificationsSub'),
                     type: 'toggle',
                     value: emailNotifications,
                     onToggle: handleEmailNotificationsToggle,
@@ -749,8 +815,8 @@ export default function SettingsScreen() {
                     icon: meta.icon,
                     iconColor: meta.iconColor,
                     iconBg: meta.iconBg,
-                    label: meta.label,
-                    sublabel: meta.sublabel,
+                    label: t(meta.labelKey),
+                    sublabel: t(meta.sublabelKey),
                     type: 'toggle',
                     value: pushCategories[meta.key] ?? true,
                     disabled: !pushNotifications,
@@ -858,7 +924,7 @@ export default function SettingsScreen() {
                     label: t('settings.about'),
                     sublabel: t('settings.aboutSub'),
                     type: 'navigate',
-                    onPress: () => Alert.alert('Stunity Enterprise', 'Version 1.0.0\n\n© 2026 Stunity Inc.\nAll rights reserved.'),
+                    onPress: () => Alert.alert(t('settings.aboutTitle'), t('settings.aboutBody')),
                 },
             ],
         },
@@ -878,7 +944,7 @@ export default function SettingsScreen() {
                 },
             ],
         },
-    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, themeMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, openRateApp, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle, handlePushNotificationsToggle, handleEmailNotificationsToggle, handleAutoPlayToggle, handleHapticFeedbackToggle]);
+    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, pushCategories, themeMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, openRateApp, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle, handlePushNotificationsToggle, handleEmailNotificationsToggle, handlePushCategoryToggle, handleAutoPlayToggle, handleHapticFeedbackToggle, setThemeMode]);
 
     // ── Render ─────────────────────────────────────────────────────
 

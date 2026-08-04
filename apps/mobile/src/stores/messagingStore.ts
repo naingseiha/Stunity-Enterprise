@@ -10,6 +10,7 @@
 
 import { create } from 'zustand';
 import { messagingApi } from '@/api/client';
+import { fetchPresenceBatch } from '@/api/presence';
 import { useAuthStore } from './authStore';
 import { supabase } from '@/lib/supabase';
 import { realtimeService } from '@/services/realtimeService';
@@ -207,10 +208,44 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     };
                 });
 
-                const totalUnreadCount = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+                let presenceMap: Record<string, boolean> = {};
+                const participantIds = [
+                    ...new Set(
+                        conversations.flatMap((conversation) =>
+                            conversation.participants.map((participant) => participant.id)
+                        )
+                    ),
+                ];
+
+                if (participantIds.length > 0) {
+                    try {
+                        presenceMap = await fetchPresenceBatch(participantIds);
+                    } catch (error) {
+                        if (__DEV__) {
+                            console.warn('[Messaging] Failed to fetch participant presence:', error);
+                        }
+                    }
+                }
+
+                const conversationsWithPresence = conversations.map((conversation) => ({
+                    ...conversation,
+                    participants: conversation.participants.map((participant) => ({
+                        ...participant,
+                        isOnline: presenceMap[participant.id] ?? false,
+                    })),
+                }));
+
+                const totalUnreadCount = conversationsWithPresence.reduce((sum, c) => sum + c.unreadCount, 0);
+                const onlineUsers = new Set(
+                    Object.entries(presenceMap)
+                        .filter(([, isOnline]) => isOnline)
+                        .map(([userId]) => userId)
+                );
+
                 set({
-                    conversations,
+                    conversations: conversationsWithPresence,
                     totalUnreadCount,
+                    onlineUsers,
                     isLoadingConversations: false,
                     lastConversationsFetchedAt: Date.now(),
                 });

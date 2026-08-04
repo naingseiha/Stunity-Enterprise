@@ -5,7 +5,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * custom integrated icon-badge capsule inputs, glowing gradient primary button, zero-scroll single-screen layout.
  */
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { AuthTabletShell } from '@/components/auth/AuthTabletShell';
 import {
@@ -32,6 +32,12 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { Colors } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
+import tokenService from '@/services/token';
+import {
+  authenticateBiometric,
+  getBiometricLabel,
+  isBiometricAvailable,
+} from '@/services/biometrics';
 
 const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
@@ -58,13 +64,45 @@ export default function LoginScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation<NavigationProp>();
   const layout = useLayoutBreakpoint();
-  const { login, logout, isLoading, error, clearError } = useAuthStore();
+  const { login, logout, initialize, isLoading, error, clearError } = useAuthStore();
   const { t } = useTranslation();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [biometricLoginAvailable, setBiometricLoginAvailable] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biometrics');
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadBiometricLoginState = async () => {
+      try {
+        const [enabled, hasSession, available, label] = await Promise.all([
+          tokenService.isBiometricEnabled(),
+          tokenService.isAuthenticated(),
+          isBiometricAvailable(),
+          getBiometricLabel(),
+        ]);
+
+        if (!mounted) return;
+        setBiometricLabel(label);
+        setBiometricLoginAvailable(enabled && hasSession && available);
+      } catch {
+        if (mounted) {
+          setBiometricLoginAvailable(false);
+        }
+      }
+    };
+
+    void loadBiometricLoginState();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Proportional header framing the 120px wave and logo perfectly without crowding the bottom 70% canvas
   const HEADER_H = Math.min(height * 0.31, 250);
@@ -88,6 +126,26 @@ export default function LoginScreen() {
       Alert.alert('Login Failed', error);
     }
   };
+
+  const handleBiometricLogin = useCallback(async () => {
+    if (biometricLoading || isLoading) return;
+
+    setBiometricLoading(true);
+    clearError();
+    try {
+      const authResult = await authenticateBiometric(`Sign in with ${biometricLabel}`);
+      if (!authResult.success) {
+        if (!authResult.cancelled && authResult.error) {
+          Alert.alert('Biometric login failed', authResult.error);
+        }
+        return;
+      }
+
+      await initialize({ skipBiometric: true });
+    } finally {
+      setBiometricLoading(false);
+    }
+  }, [biometricLabel, biometricLoading, clearError, initialize, isLoading]);
 
   return (
     <View style={styles.container}>
@@ -213,6 +271,20 @@ export default function LoginScreen() {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {biometricLoginAvailable && (
+                <TouchableOpacity
+                  onPress={() => { void handleBiometricLogin(); }}
+                  disabled={isLoading || biometricLoading}
+                  activeOpacity={0.85}
+                  style={styles.biometricButton}
+                >
+                  <Ionicons name="finger-print-outline" size={22} color={BRAND_TEAL} />
+                  <Text style={styles.biometricButtonText}>
+                    {biometricLoading ? 'Authenticating...' : `Continue with ${biometricLabel}`}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               {/* Dev Clear Cache */}
               {__DEV__ && (
@@ -415,6 +487,24 @@ const styles = StyleSheet.create({
   primaryButtonTablet: { height: 72 },
   primaryText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
   primaryTextTablet: { fontSize: 20 },
+
+  biometricButton: {
+    marginTop: 14,
+    height: 56,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
+    backgroundColor: '#F0FDFA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  biometricButtonText: {
+    color: BRAND_TEAL,
+    fontSize: 16,
+    fontWeight: '700',
+  },
 
   // Dev
   devBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12 },

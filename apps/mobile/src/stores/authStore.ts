@@ -30,7 +30,7 @@ interface AuthState {
   error: string | null;
 
   // Actions
-  initialize: () => Promise<void>;
+  initialize: (options?: { skipBiometric?: boolean }) => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   startPhoneOtp: (phone: string, preferredChannel?: 'AUTO' | 'TELEGRAM' | 'SMS') => Promise<{ success: boolean; data?: OtpChallengeResponse; error?: string }>;
@@ -153,7 +153,7 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       // Initialize auth state on app start
-      initialize: async () => {
+      initialize: async (options) => {
         try {
           set({ isLoading: true });
 
@@ -173,6 +173,24 @@ export const useAuthStore = create<AuthState>()(
 
           // Check for stored tokens
           const hasTokens = await tokenService.initialize();
+
+          if (hasTokens && !options?.skipBiometric) {
+            const biometricEnabled = await tokenService.isBiometricEnabled();
+            if (biometricEnabled) {
+              const { authenticateBiometric } = await import('@/services/biometrics');
+              const authResult = await authenticateBiometric('Unlock Stunity');
+              if (!authResult.success) {
+                set({
+                  user: null,
+                  isAuthenticated: false,
+                  isLoggingOut: false,
+                  isLoading: false,
+                  isInitialized: true,
+                });
+                return;
+              }
+            }
+          }
 
           if (!hasTokens) {
             console.warn('Auth: No secure tokens loaded on init');
