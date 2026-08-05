@@ -64,7 +64,7 @@ export default function FeedZoomLoader({
           : 'opacity-100 scale-100'
       }`}
       style={{
-        background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fef3c7 100%)',
+        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
       }}
     >
       {/* Animated background glow particles */}
@@ -72,7 +72,7 @@ export default function FeedZoomLoader({
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl"
           style={{
-            background: 'rgba(251, 146, 60, 0.25)',
+            background: 'rgba(9, 207, 247, 0.25)',
             animation: isAnimatingOut 
               ? 'none' 
               : 'pulseGlow 1.5s ease-in-out infinite',
@@ -81,7 +81,7 @@ export default function FeedZoomLoader({
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-2xl"
           style={{
-            background: 'rgba(249, 115, 22, 0.2)',
+            background: 'rgba(9, 207, 247, 0.2)',
             animation: isAnimatingOut 
               ? 'none' 
               : 'pulseGlow 1.5s ease-in-out infinite 0.3s',
@@ -103,7 +103,7 @@ export default function FeedZoomLoader({
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[100px] blur-2xl rounded-full pointer-events-none"
           style={{
-            background: 'rgba(251, 146, 60, 0.3)',
+            background: 'rgba(9, 207, 247, 0.3)',
             animation: isAnimatingOut ? 'none' : 'breathe 2s ease-in-out infinite',
           }}
         />
@@ -118,7 +118,7 @@ export default function FeedZoomLoader({
           onLoad={() => setLogoLoaded(true)}
           className="relative z-10 drop-shadow-lg object-contain"
           style={{
-            filter: 'drop-shadow(0 4px 20px rgba(251, 146, 60, 0.4))',
+            filter: 'drop-shadow(0 4px 20px rgba(9, 207, 247, 0.4))',
           }}
         />
       </div>
@@ -129,10 +129,10 @@ export default function FeedZoomLoader({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-2 h-2 rounded-full bg-gradient-to-br from-orange-400 to-orange-600"
+              className="w-2 h-2 rounded-full bg-gradient-to-br from-[#09CFF7] to-[#0284C7]"
               style={{
                 animation: `dotPulse 1s ease-in-out ${i * 0.15}s infinite`,
-                boxShadow: '0 2px 8px rgba(251, 146, 60, 0.4)',
+                boxShadow: '0 2px 8px rgba(9, 207, 247, 0.4)',
               }}
             />
           ))}
@@ -200,7 +200,7 @@ export function FeedInlineLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' })
           style={{
             width: config.logo * 1.5,
             height: config.logo * 0.75,
-            background: 'rgba(251, 146, 60, 0.2)',
+            background: 'rgba(9, 207, 247, 0.2)',
             animation: 'breatheInline 2s ease-in-out infinite',
           }}
         />
@@ -214,7 +214,7 @@ export function FeedInlineLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' })
           className="relative z-10"
           style={{
             animation: 'logoPulse 2s ease-in-out infinite',
-            filter: 'drop-shadow(0 2px 12px rgba(251, 146, 60, 0.3))',
+            filter: 'drop-shadow(0 2px 12px rgba(9, 207, 247, 0.3))',
           }}
         />
       </div>
@@ -224,7 +224,7 @@ export function FeedInlineLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' })
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600"
+            className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-[#09CFF7] to-[#0284C7]"
             style={{
               animation: `dotPulseInline 1s ease-in-out ${i * 0.15}s infinite`,
             }}

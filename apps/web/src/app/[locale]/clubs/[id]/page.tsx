@@ -40,10 +40,20 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { feedApiPostToPost, feedPostToCardData } from '@/lib/feed-normalize';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import PostCard, { PostData } from '@/components/feed/PostCard';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+
+function mapClubPosts(rawPosts: unknown[]): PostData[] {
+  return (rawPosts || [])
+    .map((raw) => {
+      const normalized = feedApiPostToPost(raw);
+      return normalized ? (feedPostToCardData(normalized) as PostData) : null;
+    })
+    .filter((p): p is PostData => Boolean(p));
+}
 
 import { useTranslations } from 'next-intl';
 interface ClubMember {
@@ -200,8 +210,9 @@ export default function ClubDetailPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setPosts(data.posts);
-        writeRouteDataCache(clubPostsCacheKey, data.posts);
+        const mapped = mapClubPosts(data.posts || []);
+        setPosts(mapped);
+        writeRouteDataCache(clubPostsCacheKey, mapped);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -299,33 +310,86 @@ export default function ClubDetailPage() {
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleReact = async (postId: string, type: string) => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
+    const current = posts.find((p) => p.id === postId);
+    const prevReaction = (current as any)?.myReaction ?? (current?.isLiked ? 'LIKE' : null);
+    const prevCount = current?.likesCount ?? 0;
+
+    let nextReaction: string | null = type;
+    let nextCount = prevCount;
+    if (prevReaction === type) {
+      nextReaction = null;
+      nextCount = Math.max(0, prevCount - 1);
+    } else if (!prevReaction) {
+      nextCount = prevCount + 1;
+    }
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              myReaction: nextReaction,
+              isLiked: Boolean(nextReaction),
+              likesCount: nextCount,
+            }
+          : p,
+      ),
+    );
+
     try {
-      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/like`, {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/react`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type }),
       });
       const data = await res.json();
-      if (data.success) {
-        setPosts(prev => prev.map(p =>
-          p.id === postId ? { ...p, likesCount: data.liked ? p.likesCount + 1 : p.likesCount - 1, isLiked: data.liked } : p
-        ));
-      }
+      if (!data.success) throw new Error('react failed');
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                myReaction: data.myReaction ?? null,
+                isLiked: Boolean(data.myReaction),
+              }
+            : p,
+        ),
+      );
     } catch (err) {
-      console.error('Like error:', err);
+      console.error('React error:', err);
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                myReaction: prevReaction,
+                isLiked: Boolean(prevReaction),
+                likesCount: prevCount,
+              }
+            : p,
+        ),
+      );
     }
   };
 
-  const handleComment = async (postId: string, content: string) => {
+  const handleLike = async (postId: string) => {
+    return handleReact(postId, 'LIKE');
+  };
+
+  const handleComment = async (postId: string, content: string, parentId?: string) => {
     const token = TokenManager.getAccessToken();
     if (!token || !content?.trim()) return;
     try {
       const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ content: content.trim() }),
+        body: JSON.stringify({ content: content.trim(), parentId: parentId || null }),
       });
       const data = await res.json();
       if (data.success) {
@@ -371,23 +435,10 @@ export default function ClubDetailPage() {
   };
 
   const handleRepost = async (postId: string) => {
-    const token = TokenManager.getAccessToken();
-    if (!token) return;
-    try {
-      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/repost`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: 'REPOST' }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPosts(prev => prev.map(p =>
-          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
-        ));
-      }
-    } catch (err) {
-      console.error('Repost error:', err);
-    }
+    // PostCard RepostComposerModal owns the API call.
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+    ));
   };
 
   const handleVote = async (postId: string, optionId: string) => {
@@ -401,17 +452,19 @@ export default function ClubDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setPosts(prev => prev.map(post => {
-          if (post.id !== postId) return post;
-          return {
-            ...post,
-            userVotedOptionId: optionId,
-            pollOptions: post.pollOptions?.map((opt: any) => ({
-              ...opt,
-              _count: { votes: opt.id === optionId ? ((opt._count?.votes || 0) + 1) : (opt._count?.votes || 0) },
-            })),
-          };
-        }));
+        setPosts((prev) =>
+          prev.map((post) => {
+            if (post.id !== postId || post.userVotedOptionId) return post;
+            return {
+              ...post,
+              userVotedOptionId: optionId,
+              pollOptions: post.pollOptions?.map((opt) => ({
+                ...opt,
+                votes: opt.id === optionId ? (opt.votes || 0) + 1 : opt.votes || 0,
+              })),
+            };
+          }),
+        );
       }
     } catch (err) {
       console.error('Vote error:', err);
@@ -850,6 +903,7 @@ export default function ClubDetailPage() {
                       key={post.id}
                       post={post}
                       onLike={handleLike}
+                      onReact={handleReact}
                       onComment={handleComment}
                       onBookmark={handleBookmark}
                       onShare={handleShare}

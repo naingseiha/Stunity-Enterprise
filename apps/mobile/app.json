@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/Stunity.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#09CFF7"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -48,7 +48,7 @@
       "splash": {
         "image": "./assets/Stunity.png",
         "resizeMode": "contain",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#09CFF7"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -101,7 +101,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "#09CFF7",
           "image": "./assets/Stunity.png",
           "imageWidth": 320
         }

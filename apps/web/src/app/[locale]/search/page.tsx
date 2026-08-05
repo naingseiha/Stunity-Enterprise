@@ -8,6 +8,7 @@ import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PostCard from '@/components/feed/PostCard';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
+import { feedApiPostToPost, feedPostToCardData } from '@/lib/feed-normalize';
 import {
     Search,
     Users,
@@ -107,7 +108,15 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
 
             if (pRes.ok) {
                 const pData = await pRes.json();
-                if (pData.success) setPosts(pData.data || []);
+                if (pData.success) {
+                    const mapped = (pData.data || [])
+                        .map((raw: unknown) => {
+                            const normalized = feedApiPostToPost(raw);
+                            return normalized ? feedPostToCardData(normalized) : null;
+                        })
+                        .filter(Boolean);
+                    setPosts(mapped as any[]);
+                }
             }
         } catch (error) {
             console.error('Search error:', error);
@@ -131,35 +140,86 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
         return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
     };
 
-    const handleLike = async (postId: string) => {
+    const handleReact = async (postId: string, type: string) => {
         const token = TokenManager.getAccessToken();
         if (!token) return;
+        const current = posts.find((p) => p.id === postId);
+        const prevReaction = current?.myReaction ?? (current?.isLiked ? 'LIKE' : null);
+        const prevCount = current?.likesCount ?? 0;
+
+        let nextReaction: string | null = type;
+        let nextCount = prevCount;
+        if (prevReaction === type) {
+            nextReaction = null;
+            nextCount = Math.max(0, prevCount - 1);
+        } else if (!prevReaction) {
+            nextCount = prevCount + 1;
+        }
+
+        setPosts((prev) =>
+            prev.map((p) =>
+                p.id === postId
+                    ? {
+                          ...p,
+                          myReaction: nextReaction,
+                          isLiked: Boolean(nextReaction),
+                          likesCount: nextCount,
+                      }
+                    : p,
+            ),
+        );
+
         try {
-            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/like`, {
+            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/react`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type }),
             });
             const data = await res.json();
-            if (data.success) {
-                setPosts(prev => prev.map(p =>
+            if (!data.success) throw new Error('react failed');
+            setPosts((prev) =>
+                prev.map((p) =>
                     p.id === postId
-                        ? { ...p, likesCount: data.liked ? p.likesCount + 1 : p.likesCount - 1, isLiked: data.liked }
-                        : p
-                ));
-            }
+                        ? {
+                              ...p,
+                              myReaction: data.myReaction ?? null,
+                              isLiked: Boolean(data.myReaction),
+                          }
+                        : p,
+                ),
+            );
         } catch (err) {
-            console.error('Like error:', err);
+            console.error('React error:', err);
+            setPosts((prev) =>
+                prev.map((p) =>
+                    p.id === postId
+                        ? {
+                              ...p,
+                              myReaction: prevReaction,
+                              isLiked: Boolean(prevReaction),
+                              likesCount: prevCount,
+                          }
+                        : p,
+                ),
+            );
         }
     };
 
-    const handleComment = async (postId: string, content: string) => {
+    const handleLike = async (postId: string) => {
+        return handleReact(postId, 'LIKE');
+    };
+
+    const handleComment = async (postId: string, content: string, parentId?: string) => {
         const token = TokenManager.getAccessToken();
         if (!token || !content?.trim()) return;
         try {
             const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/comments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ content: content.trim() })
+                body: JSON.stringify({ content: content.trim(), parentId: parentId || null })
             });
             const data = await res.json();
             if (data.success) {
@@ -205,23 +265,10 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
     };
 
     const handleRepost = async (postId: string) => {
-        const token = TokenManager.getAccessToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/repost`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ type: 'REPOST' })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setPosts(prev => prev.map(p =>
-                    p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
-                ));
-            }
-        } catch (err) {
-            console.error('Repost error:', err);
-        }
+        // PostCard RepostComposerModal owns the API call.
+        setPosts(prev => prev.map(p =>
+            p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        ));
     };
 
     const handleVote = async (postId: string, optionId: string) => {
@@ -404,6 +451,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                                     key={post.id}
                                                     post={post}
                                                     onLike={handleLike}
+                                                    onReact={handleReact}
                                                     onComment={handleComment}
                                                     onBookmark={handleBookmark}
                                                     onShare={handleShare}

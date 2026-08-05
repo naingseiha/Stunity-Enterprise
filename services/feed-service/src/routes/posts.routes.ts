@@ -101,6 +101,50 @@ function resolvePostUserMedia(post: any, req: AuthRequest): void {
 
 // Helper: strip posts to minimal fields for feed cards (76% smaller payload)
 function stripToMinimal(post: any): any {
+  const typeExtras: Record<string, unknown> = {};
+
+  if (post.postType === 'POLL') {
+    typeExtras.pollOptions = post.pollOptions;
+    typeExtras.userVotedOptionId = post.userVotedOptionId;
+  }
+  if (post.postType === 'QUIZ') {
+    if (post.quiz) typeExtras.quiz = post.quiz;
+    if (post.quizData) typeExtras.quizData = post.quizData;
+  }
+  if (post.postType === 'ASSIGNMENT') {
+    typeExtras.assignmentDueDate = post.assignmentDueDate ?? null;
+    typeExtras.assignmentPoints = post.assignmentPoints ?? null;
+    typeExtras.assignmentSubmissionType = post.assignmentSubmissionType ?? null;
+  }
+  if (post.postType === 'COURSE') {
+    typeExtras.courseCode = post.courseCode ?? null;
+    typeExtras.courseLevel = post.courseLevel ?? null;
+    typeExtras.courseDuration = post.courseDuration ?? null;
+  }
+  if (post.postType === 'EXAM') {
+    typeExtras.examDate = post.examDate ?? null;
+    typeExtras.examDuration = post.examDuration ?? null;
+    typeExtras.examTotalPoints = post.examTotalPoints ?? null;
+    typeExtras.examPassingScore = post.examPassingScore ?? null;
+  }
+  if (post.postType === 'ANNOUNCEMENT') {
+    typeExtras.announcementUrgency = post.announcementUrgency ?? null;
+    typeExtras.announcementExpiryDate = post.announcementExpiryDate ?? null;
+  }
+  if (post.postType === 'TUTORIAL') {
+    typeExtras.tutorialDifficulty = post.tutorialDifficulty ?? null;
+    typeExtras.tutorialEstimatedTime = post.tutorialEstimatedTime ?? null;
+  }
+  if (post.postType === 'PROJECT') {
+    typeExtras.projectStatus = post.projectStatus ?? null;
+    typeExtras.projectDeadline = post.projectDeadline ?? null;
+    typeExtras.projectTeamSize = post.projectTeamSize ?? null;
+  }
+  if (post.postType === 'RESEARCH') {
+    typeExtras.researchField = post.researchField ?? null;
+    typeExtras.researchCollaborators = post.researchCollaborators ?? null;
+  }
+
   return {
     id: post.id,
     title: post.title,
@@ -120,8 +164,17 @@ function stripToMinimal(post: any): any {
     sharesCount: post.sharesCount ?? 0,
     viewsCount: post.viewsCount ?? post._count?.views ?? post.views ?? 0,
     isLikedByMe: post.isLikedByMe,
+    myReaction: post.myReaction ?? null,
+    reactionCounts: post.reactionCounts ?? {},
     isBookmarked: post.isBookmarked || false,
     isFollowingAuthor: post.isFollowingAuthor || false,
+    isValued: Boolean(post.isValued ?? post.isValuedByMe),
+    valuesCount: post.valuesCount ?? 0,
+    studyClubId: post.studyClubId ?? null,
+    resourceUrl: post.resourceUrl ?? null,
+    resourceType: post.resourceType ?? null,
+    questionBounty: post.questionBounty ?? 0,
+    difficultyLevel: post.difficultyLevel ?? null,
     author: post.author ? {
       id: post.author.id,
       firstName: post.author.firstName,
@@ -131,10 +184,7 @@ function stripToMinimal(post: any): any {
       isVerified: post.author.isVerified,
       isOnline: resolvePublicIsOnline(post.author.privacySettings),
     } : undefined,
-    // Keep type-specific data compact
-    ...(post.postType === 'POLL' && { pollOptions: post.pollOptions, userVotedOptionId: post.userVotedOptionId }),
-    ...(post.postType === 'QUIZ' && post.quiz && { quiz: post.quiz }),
-    ...(post.postType === 'QUIZ' && post.quizData && { quizData: post.quizData }),
+    ...typeExtras,
     // Repost data
     ...(post.repostOfId && {
       repostOfId: post.repostOfId,

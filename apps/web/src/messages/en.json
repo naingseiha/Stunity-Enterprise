@@ -853,6 +853,21 @@
     "repostConfirm": "Repost {{name}}'s post to your feed?",
     "repostOwnError": "You cannot repost your own post.",
     "repostSuccess": "This post has been shared to your feed.",
+    "repostCommentPlaceholder": "Add a comment to your repost (optional)",
+    "reactions": {
+      "like": "Like",
+      "insightful": "Insightful",
+      "celebrate": "Celebrate",
+      "smartTake": "Smart take",
+      "breakdown": "Reactions"
+    },
+    "commentSort": {
+      "newest": "Newest",
+      "top": "Top"
+    },
+    "loadMoreComments": "Load more comments",
+    "reply": "Reply",
+    "likeComment": "Like",
     "answered": "Answered",
     "awaitingAnswer": "Awaiting Answer",
     "bounty": "Bounty",
@@ -909,7 +924,7 @@
       "delete": "Delete",
       "newStudyClub": "New Study Club",
       "joinCommunity": "Join the community and learn together",
-      "scorePercent": "Score: {{score}}%",
+      "scorePercent": "Score: {score}%",
       "passed": "PASSED",
       "notPassed": "FAILED",
       "viewResults": "View Results",
@@ -918,9 +933,9 @@
       "upcomingEvent": "Upcoming Event",
       "dateTbd": "Date TBD",
       "defaultCampus": "Main Campus",
-      "memberCount": "{{count}} members",
+      "memberCount": "{count} members",
       "verifiedClub": "Verified Club",
-      "minutesShort": "{{count}} min"
+      "minutesShort": "{count} min"
     },
     "filters": {
       "allPosts": "All Posts",
@@ -942,12 +957,19 @@
       "peopleTitle": "Suggested people",
       "coursesTitle": "Courses for you",
       "quizzesTitle": "Quiz challenges",
-      "enrolledCount": "{{count}} enrolled",
+      "enrolledCount": "{count} enrolled",
       "open": "Open course",
       "fallbackName": "Member",
       "untitledCourse": "Course",
       "untitledQuiz": "Quiz",
-      "passScore": "Pass {{score}}%"
+      "passScore": "Pass {score}%",
+      "seeAll": "See all",
+      "follow": "Follow",
+      "following": "Following",
+      "student": "Student",
+      "teacher": "Teacher",
+      "admin": "Admin",
+      "quizMeta": "{questions} questions · {time} · {points} XP"
     },
     "tabs": {
       "feed": "Feed",
@@ -1109,6 +1131,8 @@
       "pollVotes": "{count} votes",
       "viewJoinClub": "View & Join Club",
       "viewEventRsvp": "View Event & RSVP",
+      "certificateEarned": "Certificate Earned",
+      "viewCertificate": "View Certificate",
       "quizQuestions": "{count} questions",
       "quizMinutes": "{count} min",
       "quizPass": "Pass: {score}%",
@@ -1137,7 +1161,16 @@
     },
     "postDetail": {
       "backToFeed": "Back to Feed",
-      "comments": "Comments ({count})"
+      "comments": "Comments ({count})",
+      "like": "Like",
+      "value": "Value",
+      "comment": "Comment",
+      "share": "Share",
+      "repost": "Repost",
+      "save": "Save",
+      "copied": "Copied",
+      "holdToReact": "Hold to react",
+      "originalPost": "Original post"
     },
     "editPost": {
       "title": "Edit Post",

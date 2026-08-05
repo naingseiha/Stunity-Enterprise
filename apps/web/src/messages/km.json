@@ -853,6 +853,21 @@
     "repostConfirm": "បង្ហោះការបង្ហោះរបស់ {{name}} បន្តទៅកាន់ Feed របស់អ្នក?",
     "repostOwnError": "អ្នកមិនអាចបង្ហោះការបង្ហោះរបស់ខ្លួនឯងបន្តបានទេ។",
     "repostSuccess": "ការបង្ហោះនេះត្រូវបានចែករំលែកទៅកាន់ Feed របស់អ្នកហើយ។",
+    "repostCommentPlaceholder": "បន្ថែមមតិទៅនឹង repost (ស្រេចចិត្ត)",
+    "reactions": {
+      "like": "ចូលចិត្ត",
+      "insightful": "មានប្រយោជន៍",
+      "celebrate": "អបអរសាទរ",
+      "smartTake": "គំនិតឆ្លាត",
+      "breakdown": "Reactions"
+    },
+    "commentSort": {
+      "newest": "ថ្មីបំផុត",
+      "top": "ពេញនិយម"
+    },
+    "loadMoreComments": "ផ្ទុកមតិបន្ថែម",
+    "reply": "ឆ្លើយតប",
+    "likeComment": "ចូលចិត្ត",
     "answered": "បានឆ្លើយ",
     "awaitingAnswer": "កំពុងរង់ចាំចម្លើយ",
     "bounty": "រង្វាន់",
@@ -909,7 +924,7 @@
       "delete": "លុប",
       "newStudyClub": "ក្លឹបសិក្សាថ្មី",
       "joinCommunity": "ចូលរួមសហគមន៍ និងរៀនជាមួយគ្នា",
-      "scorePercent": "ពិន្ទុ៖ {{score}}%",
+      "scorePercent": "ពិន្ទុ៖ {score}%",
       "passed": "ជាប់",
       "notPassed": "ធ្លាក់",
       "viewResults": "មើលលទ្ធផល",
@@ -918,9 +933,9 @@
       "upcomingEvent": "ព្រឹត្តិការណ៍ខាងមុខ",
       "dateTbd": "កាលបរិច្ឆេទមិនទាន់កំណត់",
       "defaultCampus": "សាខាធំ",
-      "memberCount": "សមាជិក {{count}} នាក់",
+      "memberCount": "សមាជិក {count} នាក់",
       "verifiedClub": "ក្លឹបដែលបានផ្ទៀងផ្ទាត់",
-      "minutesShort": "{{count}} នាទី"
+      "minutesShort": "{count} នាទី"
     },
     "filters": {
       "allPosts": "ការបង្ហោះទាំងអស់",
@@ -942,12 +957,19 @@
       "peopleTitle": "មនុស្សដែលបានផ្តល់អនុសាសន៍",
       "coursesTitle": "វគ្គសិក្សាសម្រាប់អ្នក",
       "quizzesTitle": "កម្រងសំណួរប្រយ័ត្ន",
-      "enrolledCount": "បានចុះឈ្មោះ {{count}} នាក់",
+      "enrolledCount": "បានចុះឈ្មោះ {count} នាក់",
       "open": "វគ្គបើក",
       "fallbackName": "សមាជិក",
       "untitledCourse": "វគ្គសិក្សា",
       "untitledQuiz": "កម្រងសំណួរ",
-      "passScore": "រួច {{score}}%"
+      "passScore": "រួច {score}%",
+      "seeAll": "មើលទាំងអស់",
+      "follow": "តាមដាន",
+      "following": "កំពុងតាមដាន",
+      "student": "សិស្ស",
+      "teacher": "គ្រូ",
+      "admin": "អ្នកគ្រប់គ្រង",
+      "quizMeta": "{questions} សំណួរ · {time} · {points} XP"
     },
     "tabs": {
       "feed": "មតិព័ត៌មាន",
@@ -1109,6 +1131,8 @@
       "pollVotes": "{count} សំឡេងឆ្នោត",
       "viewJoinClub": "មើល និងចូលរួមក្លឹប",
       "viewEventRsvp": "មើលព្រឹត្តិការណ៍ និង RSVP",
+      "certificateEarned": "ទទួលបានវិញ្ញាបនបត្រ",
+      "viewCertificate": "មើលវិញ្ញាបនបត្រ",
       "quizQuestions": "{count} សំណួរ",
       "quizMinutes": "{count} នាទី",
       "quizPass": "ពិន្ទុជាប់៖ {score}%",
@@ -1137,7 +1161,16 @@
     },
     "postDetail": {
       "backToFeed": "ត្រឡប់ទៅ Feed",
-      "comments": "មតិយោបល់ ({count})"
+      "comments": "មតិយោបល់ ({count})",
+      "like": "ចូលចិត្ត",
+      "value": "តម្លៃ",
+      "comment": "មតិ",
+      "share": "ចែករំលែក",
+      "repost": "បង្ហោះបន្ត",
+      "save": "រក្សាទុក",
+      "copied": "បានចម្លង",
+      "holdToReact": "ចុចឱ្យយូរដើម្បី react",
+      "originalPost": "ការបង្ហោះដើម"
     },
     "editPost": {
       "title": "កែសម្រួលការបង្ហោះ",

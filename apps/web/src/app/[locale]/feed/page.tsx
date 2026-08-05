@@ -17,11 +17,13 @@ import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-ca
 import {
   countPostRows,
   feedApiPostToPost,
+  feedPostToCardData,
   flattenPosts,
   mergeFeedRows,
   parseFeedPayloadItems,
   type FeedRow,
 } from '@/lib/feed-normalize';
+import { isFeedCacheFresh, readFeedCache, writeFeedCache } from '@/lib/feed-cache';
 import {
   FeedSuggestedCoursesStrip,
   FeedSuggestedQuizzesStrip,
@@ -43,7 +45,6 @@ import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
 import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
 import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
 import PerformanceCard from '@/components/feed/PerformanceCard';
-import SubjectFilters from '@/components/feed/SubjectFilters';
 import { useEventStream, SSEEvent } from '@/hooks/useEventStream';
 import {
   Users,
@@ -130,11 +131,15 @@ const TEACHER_QUIZ_ANALYTICS_ROLES = new Set([
   'SUPER_ADMIN',
 ]);
 
-const VIRTUALIZATION_DEFAULT_ITEM_HEIGHT = 640;
+const VIRTUALIZATION_DEFAULT_ITEM_HEIGHT = 520;
 const VIRTUALIZATION_ITEM_GAP = 12;
-const VIRTUALIZATION_THRESHOLD = 30;
-const POSTS_PER_PAGE = 15;
+const VIRTUALIZATION_THRESHOLD = 12;
+const POSTS_PER_PAGE = 18;
 const MAX_FEED_ROWS_IN_MEMORY = 800;
+const FEED_FIRST_PAGE_TIMEOUT_MS = 12_000;
+const FEED_NEXT_PAGE_TIMEOUT_MS = 9_000;
+const FEED_WARM_PAGE2_DELAY_MS = 450;
+const FEED_DESTINATION_WARM_DELAY_MS = 2_500;
 
 const getFeedNextCursor = (data: any): string | null =>
   data?.nextCursor ?? data?.pagination?.nextCursor ?? data?.meta?.nextCursor ?? null;
@@ -152,9 +157,11 @@ function useVirtualizedFeedList<T extends { id: string }>(items: T[], enabled: b
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeObserversRef = useRef<Map<string, ResizeObserver>>(new Map());
   const itemHeightsRef = useRef<Record<string, number>>({});
-  const [scrollY, setScrollY] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const scrollYRef = useRef(0);
+  const viewportHeightRef = useRef(typeof window !== 'undefined' ? window.innerHeight : 800);
+  const rangeRef = useRef({ start: 0, end: items.length });
   const [layoutVersion, setLayoutVersion] = useState(0);
+  const [rangeVersion, setRangeVersion] = useState(0);
 
   const measureItem = useCallback((id: string) => (node: HTMLDivElement | null) => {
     const existingObserver = resizeObserversRef.current.get(id);
@@ -191,22 +198,67 @@ function useVirtualizedFeedList<T extends { id: string }>(items: T[], enabled: b
     };
   }, []);
 
+  const computeRange = useCallback(() => {
+    if (!enabled || items.length <= VIRTUALIZATION_THRESHOLD || typeof window === 'undefined') {
+      const full = { start: 0, end: items.length };
+      if (rangeRef.current.start !== full.start || rangeRef.current.end !== full.end) {
+        rangeRef.current = full;
+        setRangeVersion((v) => v + 1);
+      }
+      return;
+    }
+
+    const scrollY = scrollYRef.current;
+    const viewportHeight = viewportHeightRef.current;
+    const containerTop = containerRef.current
+      ? window.scrollY + containerRef.current.getBoundingClientRect().top
+      : 0;
+    const relativeScrollTop = Math.max(0, scrollY - containerTop);
+    const overscanPx = Math.max(viewportHeight * 1.75, VIRTUALIZATION_DEFAULT_ITEM_HEIGHT * 5);
+    const startThreshold = Math.max(0, relativeScrollTop - overscanPx);
+    const endThreshold = relativeScrollTop + viewportHeight + overscanPx;
+
+    const itemSizes = items.map((item) => (itemHeightsRef.current[item.id] ?? VIRTUALIZATION_DEFAULT_ITEM_HEIGHT) + VIRTUALIZATION_ITEM_GAP);
+    const prefixOffsets = new Array<number>(itemSizes.length + 1);
+    prefixOffsets[0] = 0;
+    for (let index = 0; index < itemSizes.length; index += 1) {
+      prefixOffsets[index + 1] = prefixOffsets[index] + itemSizes[index];
+    }
+
+    let startIndex = 0;
+    while (startIndex < items.length && prefixOffsets[startIndex + 1] < startThreshold) {
+      startIndex += 1;
+    }
+    let endIndex = startIndex;
+    while (endIndex < items.length && prefixOffsets[endIndex] < endThreshold) {
+      endIndex += 1;
+    }
+    startIndex = Math.max(0, startIndex - 2);
+    endIndex = Math.min(items.length, endIndex + 2);
+
+    if (rangeRef.current.start !== startIndex || rangeRef.current.end !== endIndex) {
+      rangeRef.current = { start: startIndex, end: endIndex };
+      setRangeVersion((v) => v + 1);
+    }
+  }, [enabled, items]);
+
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
 
     let rafId = 0;
-    const updateWindowMetrics = () => {
-      rafId = 0;
-      setScrollY(window.scrollY);
-      setViewportHeight(window.innerHeight);
-    };
-
     const handleViewportChange = () => {
       if (rafId) return;
-      rafId = window.requestAnimationFrame(updateWindowMetrics);
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        scrollYRef.current = window.scrollY;
+        viewportHeightRef.current = window.innerHeight;
+        computeRange();
+      });
     };
 
-    updateWindowMetrics();
+    scrollYRef.current = window.scrollY;
+    viewportHeightRef.current = window.innerHeight;
+    computeRange();
 
     window.addEventListener('scroll', handleViewportChange, { passive: true });
     window.addEventListener('resize', handleViewportChange);
@@ -216,12 +268,17 @@ function useVirtualizedFeedList<T extends { id: string }>(items: T[], enabled: b
       window.removeEventListener('scroll', handleViewportChange);
       window.removeEventListener('resize', handleViewportChange);
     };
-  }, [enabled]);
+  }, [enabled, computeRange]);
+
+  useEffect(() => {
+    computeRange();
+  }, [layoutVersion, computeRange]);
 
   const virtualState = useMemo(() => {
+    void rangeVersion;
     void layoutVersion;
 
-    if (!enabled || items.length <= VIRTUALIZATION_THRESHOLD || typeof window === 'undefined') {
+    if (!enabled || items.length <= VIRTUALIZATION_THRESHOLD) {
       return {
         visibleItems: items,
         topSpacerHeight: 0,
@@ -230,42 +287,20 @@ function useVirtualizedFeedList<T extends { id: string }>(items: T[], enabled: b
       };
     }
 
-    const containerTop = containerRef.current
-      ? window.scrollY + containerRef.current.getBoundingClientRect().top
-      : 0;
-    const relativeScrollTop = Math.max(0, scrollY - containerTop);
-    const overscanPx = Math.max(viewportHeight * 1.5, VIRTUALIZATION_DEFAULT_ITEM_HEIGHT * 4);
-    const startThreshold = Math.max(0, relativeScrollTop - overscanPx);
-    const endThreshold = relativeScrollTop + viewportHeight + overscanPx;
-
+    const { start: startIndex, end: endIndex } = rangeRef.current;
     const itemSizes = items.map((item) => (itemHeightsRef.current[item.id] ?? VIRTUALIZATION_DEFAULT_ITEM_HEIGHT) + VIRTUALIZATION_ITEM_GAP);
-    const prefixOffsets = new Array<number>(itemSizes.length + 1);
-    prefixOffsets[0] = 0;
-
-    for (let index = 0; index < itemSizes.length; index += 1) {
-      prefixOffsets[index + 1] = prefixOffsets[index] + itemSizes[index];
-    }
-
-    let startIndex = 0;
-    while (startIndex < items.length && prefixOffsets[startIndex + 1] < startThreshold) {
-      startIndex += 1;
-    }
-
-    let endIndex = startIndex;
-    while (endIndex < items.length && prefixOffsets[endIndex] < endThreshold) {
-      endIndex += 1;
-    }
-
-    startIndex = Math.max(0, startIndex - 2);
-    endIndex = Math.min(items.length, endIndex + 2);
+    let top = 0;
+    for (let i = 0; i < startIndex; i += 1) top += itemSizes[i];
+    let bottom = 0;
+    for (let i = endIndex; i < items.length; i += 1) bottom += itemSizes[i];
 
     return {
       visibleItems: items.slice(startIndex, endIndex),
-      topSpacerHeight: prefixOffsets[startIndex],
-      bottomSpacerHeight: prefixOffsets[items.length] - prefixOffsets[endIndex],
+      topSpacerHeight: top,
+      bottomSpacerHeight: bottom,
       isVirtualized: true,
     };
-  }, [enabled, items, layoutVersion, scrollY, viewportHeight]);
+  }, [enabled, items, layoutVersion, rangeVersion]);
 
   return {
     containerRef,
@@ -291,27 +326,21 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
   const [postTypeFilter, setPostTypeFilter] = useState('all');
-  const [activeSubjectFilter, setActiveSubjectFilter] = useState('ALL');
 
   // Feed state — ranked `GET /posts/feed` (mixed posts + carousels) or chronological fallback
+  const feedRowsLengthRef = useRef(0);
+  const feedWarmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchPostsInFlightRef = useRef(false);
+  const fetchMorePostsRef = useRef<(() => Promise<void>) | null>(null);
+  const nextRankedPageRef = useRef(2);
+  const rankedCursorRef = useRef<string | null>(null);
   const [feedRows, setFeedRows] = useState<FeedRow[]>([]);
+  feedRowsLengthRef.current = feedRows.length;
   const postsFromFeed = useMemo(() => flattenPosts(feedRows), [feedRows]);
   const [feedPaginationMode, setFeedPaginationMode] = useState<'ranked' | 'chrono'>('ranked');
-  const nextRankedPageRef = useRef(2);
   const [chronoCursor, setChronoCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
-  const updatePostInMainFeed = useCallback((postId: string, updater: (p: Post) => Post) => {
-    setFeedRows((prev) =>
-      prev.map((row) =>
-        row.kind === 'post' && row.post.id === postId ? { ...row, post: updater(row.post) } : row
-      )
-    );
-  }, []);
-
-  const removePostFromMainFeed = useCallback((postId: string) => {
-    setFeedRows((prev) => prev.filter((row) => row.kind !== 'post' || row.post.id !== postId));
-  }, []);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -329,6 +358,20 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState<Record<string, string>>({});
   const [submittingComment, setSubmittingComment] = useState<Set<string>>(new Set());
+
+  const updatePostInMainFeed = useCallback((postId: string, updater: (p: Post) => Post) => {
+    setFeedRows((prev) =>
+      prev.map((row) =>
+        row.kind === 'post' && row.post.id === postId ? { ...row, post: updater(row.post) } : row
+      )
+    );
+    setMyPosts((prev) => prev.map((p) => (p.id === postId ? updater(p) : p)));
+    setBookmarkedPosts((prev) => prev.map((p) => (p.id === postId ? updater(p) : p)));
+  }, []);
+
+  const removePostFromMainFeed = useCallback((postId: string) => {
+    setFeedRows((prev) => prev.filter((row) => row.kind !== 'post' || row.post.id !== postId));
+  }, []);
 
   // Analytics state
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
@@ -427,7 +470,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
   // Load new posts when user clicks the "new posts" banner
   const loadNewPosts = async () => {
-    await fetchPosts();
+    await fetchPosts({ refresh: true });
     setNewPostsAvailable(0);
     pendingPostsRef.current = [];
   };
@@ -452,12 +495,57 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     }
   }, []);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchWithTimeout = useCallback(async (url: string, token: string, timeoutMs: number) => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }, []);
+
+  const fetchPosts = useCallback(async (opts?: { refresh?: boolean; silent?: boolean }) => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
+    if (fetchPostsInFlightRef.current && !opts?.refresh) return;
 
-    setLoadingPosts(true);
+    const userId = user?.id as string | undefined;
+    const refresh = Boolean(opts?.refresh);
+    let silent = Boolean(opts?.silent);
+
+    // Stale-while-revalidate: paint cached feed immediately on cold open.
+    if (userId && feedRowsLengthRef.current === 0) {
+      const cached = readFeedCache(userId);
+      if (cached?.rows?.length) {
+        setFeedRows(cached.rows.slice(0, MAX_FEED_ROWS_IN_MEMORY));
+        setFeedPaginationMode(cached.mode);
+        if (cached.mode === 'chrono') setChronoCursor(cached.cursor);
+        else rankedCursorRef.current = cached.cursor;
+        setHasMore(true);
+        if (!refresh && isFeedCacheFresh(userId)) {
+          setLoadingPosts(false);
+          return;
+        }
+        // Keep painted cache visible while we revalidate in the background.
+        silent = true;
+      }
+    } else if (feedRowsLengthRef.current > 0 && refresh) {
+      silent = true;
+    }
+
+    fetchPostsInFlightRef.current = true;
+    if (!silent) setLoadingPosts(true);
     nextRankedPageRef.current = 2;
+    rankedCursorRef.current = null;
+    if (feedWarmTimerRef.current) {
+      clearTimeout(feedWarmTimerRef.current);
+      feedWarmTimerRef.current = null;
+    }
+
     try {
       const rankedParams = new URLSearchParams({
         limit: String(POSTS_PER_PAGE),
@@ -465,50 +553,75 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         mode: 'FOR_YOU',
         fields: 'minimal',
       });
-      if (activeSubjectFilter !== 'ALL') {
-        rankedParams.append('subject', activeSubjectFilter);
+
+      let res: Response | null = null;
+      let data: any = null;
+      try {
+        res = await fetchWithTimeout(
+          `${FEED_API}/posts/feed?${rankedParams}`,
+          token,
+          FEED_FIRST_PAGE_TIMEOUT_MS,
+        );
+        data = await res.json();
+      } catch (rankedError) {
+        console.warn('Ranked feed stalled, falling back to recent:', rankedError);
+        data = { success: false };
       }
 
-      let res = await fetch(`${FEED_API}/posts/feed?${rankedParams}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      let data = await res.json();
+      let rows: FeedRow[] = data?.success ? parseFeedPayloadItems(data.data) : [];
+      let mode: 'ranked' | 'chrono' = 'ranked';
+      let nextCursor: string | null = null;
 
-      let rows: FeedRow[] = data.success ? parseFeedPayloadItems(data.data) : [];
-
-      if (data.success && countPostRows(rows) === 0) {
-        res = await fetch(`${FEED_API}/posts?limit=${POSTS_PER_PAGE}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      if (!data?.success || countPostRows(rows) === 0) {
+        res = await fetchWithTimeout(
+          `${FEED_API}/posts?limit=${POSTS_PER_PAGE}&fields=minimal`,
+          token,
+          FEED_FIRST_PAGE_TIMEOUT_MS,
+        );
         data = await res.json();
         if (data.success) {
           rows = parseFeedPayloadItems(data.data);
+          mode = 'chrono';
+          nextCursor = getFeedNextCursor(data);
           setFeedPaginationMode('chrono');
-          const nc = getFeedNextCursor(data);
-          setChronoCursor(nc);
-          setHasMore(getFeedHasMore(data, nc, countPostRows(rows)));
+          setChronoCursor(nextCursor);
+          setHasMore(getFeedHasMore(data, nextCursor, countPostRows(rows)));
         }
-      } else if (data.success) {
+      } else {
+        mode = 'ranked';
+        nextCursor = getFeedNextCursor(data);
         setFeedPaginationMode('ranked');
         setChronoCursor(null);
-        const nc = getFeedNextCursor(data);
-        setHasMore(getFeedHasMore(data, nc, countPostRows(rows)));
+        rankedCursorRef.current = nextCursor;
+        setHasMore(getFeedHasMore(data, nextCursor, countPostRows(rows)));
       }
 
-      if (data.success) {
-        setFeedRows(rows.slice(0, MAX_FEED_ROWS_IN_MEMORY));
-        const newestPosts = flattenPosts(rows);
-        trackPostViewsBatch(newestPosts.slice(0, 5).map((p) => p.id));
+      if (data?.success) {
+        const capped = rows.slice(0, MAX_FEED_ROWS_IN_MEMORY);
+        setFeedRows(capped);
+        if (userId) writeFeedCache(userId, capped, { mode, cursor: nextCursor });
+        trackPostViewsBatch(flattenPosts(capped).slice(0, 5).map((p) => p.id));
+
+        // Warm page 2 after first paint (mobile parity).
+        if (getFeedHasMore(data, nextCursor, countPostRows(capped))) {
+          feedWarmTimerRef.current = setTimeout(() => {
+            feedWarmTimerRef.current = null;
+            if (!loadingMoreRef.current) {
+              void fetchMorePostsRef.current?.();
+            }
+          }, FEED_WARM_PAGE2_DELAY_MS);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error);
     } finally {
+      fetchPostsInFlightRef.current = false;
       setLoadingPosts(false);
     }
-  }, [trackPostViewsBatch, activeSubjectFilter]);
+  }, [trackPostViewsBatch, fetchWithTimeout, user?.id]);
 
   const fetchMorePosts = useCallback(async () => {
-    if (loadingMoreRef.current || loadingMore || !hasMore) return;
+    if (loadingMoreRef.current || !hasMore) return;
     const token = TokenManager.getAccessToken();
     if (!token) return;
 
@@ -517,13 +630,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     try {
       let res: Response;
       if (feedPaginationMode === 'chrono') {
-        let cursorParam = chronoCursor ? `&cursor=${encodeURIComponent(chronoCursor)}` : '';
-        if (activeSubjectFilter !== 'ALL') {
-          cursorParam += `&subject=${encodeURIComponent(activeSubjectFilter)}`;
-        }
-        res = await fetch(`${FEED_API}/posts?limit=${POSTS_PER_PAGE}${cursorParam}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const cursorParam = chronoCursor ? `&cursor=${encodeURIComponent(chronoCursor)}` : '';
+        res = await fetchWithTimeout(
+          `${FEED_API}/posts?limit=${POSTS_PER_PAGE}&fields=minimal${cursorParam}`,
+          token,
+          FEED_NEXT_PAGE_TIMEOUT_MS,
+        );
       } else {
         const rankedParams = new URLSearchParams({
           limit: String(POSTS_PER_PAGE),
@@ -531,18 +643,32 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
           mode: 'FOR_YOU',
           fields: 'minimal',
         });
-        if (activeSubjectFilter !== 'ALL') {
-          rankedParams.append('subject', activeSubjectFilter);
+        if (rankedCursorRef.current) {
+          rankedParams.set('cursor', rankedCursorRef.current);
         }
-        res = await fetch(`${FEED_API}/posts/feed?${rankedParams}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        res = await fetchWithTimeout(
+          `${FEED_API}/posts/feed?${rankedParams}`,
+          token,
+          FEED_NEXT_PAGE_TIMEOUT_MS,
+        );
       }
 
       const data = await res.json();
       if (data.success) {
         const incoming = parseFeedPayloadItems(data.data);
-        setFeedRows((prev) => mergeFeedRows(prev, incoming, MAX_FEED_ROWS_IN_MEMORY));
+        setFeedRows((prev) => {
+          const merged = mergeFeedRows(prev, incoming, MAX_FEED_ROWS_IN_MEMORY);
+          if (user?.id) {
+            writeFeedCache(user.id, merged, {
+              mode: feedPaginationMode,
+              cursor:
+                feedPaginationMode === 'chrono'
+                  ? getFeedNextCursor(data)
+                  : getFeedNextCursor(data) ?? rankedCursorRef.current,
+            });
+          }
+          return merged;
+        });
 
         if (feedPaginationMode === 'chrono') {
           const nextCursor = getFeedNextCursor(data);
@@ -551,6 +677,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         } else {
           nextRankedPageRef.current += 1;
           const nextCursor = getFeedNextCursor(data);
+          rankedCursorRef.current = nextCursor;
           setHasMore(getFeedHasMore(data, nextCursor, countPostRows(incoming)));
         }
 
@@ -562,7 +689,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, feedPaginationMode, chronoCursor, trackPostViewsBatch, activeSubjectFilter]);
+  }, [hasMore, feedPaginationMode, chronoCursor, trackPostViewsBatch, fetchWithTimeout, user?.id]);
+
+  fetchMorePostsRef.current = fetchMorePosts;
 
   const fetchMyPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
@@ -574,7 +703,10 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       });
       const data = await res.json();
       if (data.success) {
-        setMyPosts(data.data || []);
+        const normalized = (Array.isArray(data.data) ? data.data : [])
+          .map((raw: unknown) => feedApiPostToPost(raw))
+          .filter(Boolean) as Post[];
+        setMyPosts(normalized);
       }
     } catch (error) {
       console.error('Failed to fetch my posts:', error);
@@ -591,7 +723,10 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       });
       const data = await res.json();
       if (data.success) {
-        setBookmarkedPosts(data.data || []);
+        const normalized = (Array.isArray(data.data) ? data.data : [])
+          .map((raw: unknown) => feedApiPostToPost(raw))
+          .filter(Boolean) as Post[];
+        setBookmarkedPosts(normalized);
       }
     } catch (error) {
       console.error('Failed to fetch bookmarks:', error);
@@ -646,10 +781,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   }, [locale, router]);
 
   useEffect(() => {
-    if (user) {
-      fetchPosts();
-    }
-  }, [user, activeSubjectFilter, fetchPosts]);
+    if (!user?.id) return;
+    void fetchPosts();
+    // Intentionally keyed by user id — avoid refetch loops when callback identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -819,7 +955,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         warmDestinationData().catch(() => {
           sessionStorage.removeItem(sessionKey);
         });
-      }, { timeout: 2000 });
+      }, { timeout: FEED_DESTINATION_WARM_DELAY_MS });
       return () => window.cancelIdleCallback(idleId);
     }
 
@@ -827,22 +963,25 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       warmDestinationData().catch(() => {
         sessionStorage.removeItem(sessionKey);
       });
-    }, 800);
+    }, FEED_DESTINATION_WARM_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
   }, [user]);
 
-  // Infinite scroll: trigger fetchMorePosts when sentinel enters viewport
+  // Infinite scroll: early trigger (~0.6 viewport) like mobile FlashList threshold
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loadingPosts) {
+        // Don't block load-more while a background SWR refresh is running
+        // if we already have posts on screen.
+        const initialBlocking = loadingPosts && feedRowsLengthRef.current === 0;
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !initialBlocking) {
           fetchMorePosts();
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '900px 0px' }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -875,6 +1014,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       },
       body: JSON.stringify({
         content: data.content,
+        title: data.title,
+        deadline: data.deadline,
         visibility: data.visibility,
         postType: data.postType,
         pollOptions: data.pollOptions,
@@ -886,7 +1027,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     const result = await res.json();
     if (result.success) {
       setShowCreateModal(false);
-      fetchPosts();
+      fetchPosts({ refresh: true, silent: true });
       if (activeTab === 'posts') fetchMyPosts();
     } else {
       throw new Error(result.error || 'Failed to create post');
@@ -932,26 +1073,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   };
 
   const handleRepost = async (postId: string) => {
-    const token = TokenManager.getAccessToken();
-    if (!token) return;
-
-    try {
-      const res = await fetch(`${FEED_API}/posts/${postId}/repost`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: 'REPOST' })
-      });
-      const data = await res.json();
-      if (data.success) {
-        updatePostInMainFeed(postId, (p) => ({ ...p, sharesCount: p.sharesCount + 1 }));
-        fetchPosts();
-      }
-    } catch (error) {
-      console.error('Repost error:', error);
-    }
+    // PostCard RepostComposerModal owns the API + local UI count.
+    // Parent refreshes silently so the new repost appears in feed.
+    fetchPosts({ refresh: true, silent: true });
   };
 
   const handleEditPost = async (postId: string, content: string) => {
@@ -1034,27 +1158,83 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleReact = async (postId: string, type: string) => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
 
+    const current =
+      (feedRows.find((row) => row.kind === 'post' && row.post.id === postId) as any)?.post ||
+      myPosts.find((p) => p.id === postId) ||
+      bookmarkedPosts.find((p) => p.id === postId);
+    const prevReaction = current?.myReaction ?? (current?.isLiked ? 'LIKE' : null);
+    const prevLiked = Boolean(current?.isLiked ?? current?.isLikedByMe);
+    const prevCount = current?.likesCount ?? 0;
+    const prevCounts = { ...(current?.reactionCounts || {}) };
+
+    // Optimistic
+    let nextReaction: string | null = type;
+    let nextCount = prevCount;
+    const nextCounts = { ...prevCounts };
+    if (prevReaction === type) {
+      nextReaction = null;
+      nextCount = Math.max(0, prevCount - 1);
+      if (nextCounts[type]) {
+        nextCounts[type] = Math.max(0, nextCounts[type] - 1);
+        if (nextCounts[type] === 0) delete nextCounts[type];
+      }
+    } else if (!prevReaction) {
+      nextCount = prevCount + 1;
+      nextCounts[type] = (nextCounts[type] || 0) + 1;
+    } else {
+      if (nextCounts[prevReaction]) {
+        nextCounts[prevReaction] = Math.max(0, nextCounts[prevReaction] - 1);
+        if (nextCounts[prevReaction] === 0) delete nextCounts[prevReaction];
+      }
+      nextCounts[type] = (nextCounts[type] || 0) + 1;
+    }
+
+    updatePostInMainFeed(postId, (post) => ({
+      ...post,
+      myReaction: nextReaction,
+      isLiked: Boolean(nextReaction),
+      isLikedByMe: Boolean(nextReaction),
+      likesCount: nextCount,
+      reactionCounts: nextCounts,
+    }));
+
     try {
-      const res = await fetch(`${FEED_API}/posts/${postId}/like`, {
+      const res = await fetch(`${FEED_API}/posts/${postId}/react`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type }),
       });
       const data = await res.json();
-      if (data.success) {
-        updatePostInMainFeed(postId, (post) => ({
-          ...post,
-          likesCount: data.liked ? post.likesCount + 1 : post.likesCount - 1,
-          isLiked: data.liked,
-          isLikedByMe: data.liked,
-        }));
-      }
+      if (!data.success) throw new Error('react failed');
+      updatePostInMainFeed(postId, (post) => ({
+        ...post,
+        myReaction: data.myReaction ?? null,
+        isLiked: Boolean(data.myReaction),
+        isLikedByMe: Boolean(data.myReaction),
+      }));
     } catch (error) {
-      console.error('Failed to like post:', error);
+      console.error('Failed to react to post:', error);
+      updatePostInMainFeed(postId, (post) => ({
+        ...post,
+        myReaction: prevReaction,
+        isLiked: prevLiked,
+        isLikedByMe: prevLiked,
+        likesCount: prevCount,
+        reactionCounts: prevCounts,
+      }));
     }
+  };
+
+  const handleLike = async (postId: string) => {
+    // Default tap = toggle LIKE reaction (parity with detail / mobile)
+    return handleReact(postId, 'LIKE');
   };
 
   const handleValueClick = useCallback((postId: string) => {
@@ -1578,14 +1758,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               <PerformanceCard user={user} locale={locale} />
             </div>
 
-            {/* Featured Categories */}
-            <div className="mb-3">
-              <SubjectFilters 
-                activeFilter={activeSubjectFilter} 
-                onFilterChange={(f) => setActiveSubjectFilter(f)} 
-              />
-            </div>
-
             {/* Create Post Card — E-Learning Focused */}
             <div className="bg-white dark:bg-none dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-3 transition-all duration-300 hover:border-[#F9A825]/30">
               <div className="flex items-center gap-3">
@@ -1697,7 +1869,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   </div>
 
                   <button
-                    onClick={fetchPosts}
+                    onClick={() => fetchPosts({ refresh: true })}
                     disabled={loadingPosts}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#F9A825] hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full transition-all duration-200"
                   >
@@ -1775,7 +1947,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         key={entry.id}
                         ref={feedVirtualizer.measureItem(entry.id)}
                         className="animate-fadeInUp"
-                        style={{ animationDelay: `${index * 50}ms` }}
+                        style={{ animationDelay: index < 4 ? `${index * 20}ms` : '0ms' }}
                       >
                         {entry.row.kind === 'suggested_users' && (
                           <FeedSuggestedUsersStrip locale={locale} users={entry.row.users} />
@@ -1788,42 +1960,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         )}
                         {entry.row.kind === 'post' && (
                         <PostCard
-                          post={{
-                            id: entry.row.post.id,
-                            content: entry.row.post.content,
-                            postType: entry.row.post.postType || 'ARTICLE',
-                            visibility: entry.row.post.visibility,
-                            author: {
-                              id: entry.row.post.author.id,
-                              firstName: entry.row.post.author.firstName,
-                              lastName: entry.row.post.author.lastName,
-                              profileImage: entry.row.post.author.profilePictureUrl,
-                              role: entry.row.post.author.role,
-                              isVerified: entry.row.post.author.isVerified,
-                              professionalTitle: entry.row.post.author.professionalTitle,
-                              level: entry.row.post.author.level,
-                              achievements: entry.row.post.author.achievements,
-                            },
-                            createdAt: entry.row.post.createdAt,
-                            likesCount: entry.row.post.likesCount,
-                            commentsCount: entry.row.post.commentsCount,
-                            sharesCount: entry.row.post.sharesCount,
+                          post={feedPostToCardData(entry.row.post, {
                             isLiked: isPostLiked(entry.row.post),
-                            isBookmarked: entry.row.post.isBookmarked,
-                            mediaUrls: entry.row.post.mediaUrls,
-                            mediaDisplayMode: entry.row.post.mediaDisplayMode,
-                            pollOptions: entry.row.post.pollOptions?.map(opt => ({
-                              id: opt.id,
-                              text: opt.text,
-                              votes: opt._count?.votes || 0,
-                            })),
-                            userVotedOptionId: entry.row.post.userVotedOptionId,
-                            quizData: entry.row.post.quizData || (entry.row.post.quiz ? {
-                              questions: entry.row.post.quiz.questions,
-                              timeLimit: entry.row.post.quiz.timeLimit,
-                              passingScore: entry.row.post.quiz.passingScore,
-                            } : undefined),
-                            userAttempt: entry.row.post.userAttempt || entry.row.post.quiz?.userAttempt || undefined,
                             comments: comments[entry.row.post.id]?.map(c => ({
                               id: c.id,
                               content: c.content,
@@ -1833,10 +1971,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                               },
                               createdAt: c.createdAt,
                             })),
-                          }}
+                          })}
                           onLike={handleLike}
+                          onReact={handleReact}
                           onValue={handleValueClick}
-                          onComment={async (postId, content) => {
+                          onComment={async (postId, content, parentId) => {
                             const token = TokenManager.getAccessToken();
                             if (!token || !content.trim()) return;
 
@@ -1847,14 +1986,27 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                   'Content-Type': 'application/json',
                                   Authorization: `Bearer ${token}`
                                 },
-                                body: JSON.stringify({ content: content.trim() })
+                                body: JSON.stringify({ content: content.trim(), parentId: parentId || null })
                               });
                               const data = await res.json();
                               if (data.success) {
-                                setComments(prev => ({
-                                  ...prev,
-                                  [postId]: [data.data, ...(prev[postId] || [])]
-                                }));
+                                setComments(prev => {
+                                  const existing = prev[postId] || [];
+                                  if (parentId) {
+                                    return {
+                                      ...prev,
+                                      [postId]: existing.map((c: any) =>
+                                        c.id === parentId
+                                          ? { ...c, replies: [...(c.replies || []), data.data] }
+                                          : c,
+                                      ),
+                                    };
+                                  }
+                                  return {
+                                    ...prev,
+                                    [postId]: [data.data, ...existing],
+                                  };
+                                });
                                 updatePostInMainFeed(postId, (p) => ({
                                   ...p,
                                   commentsCount: p.commentsCount + 1,
@@ -1889,13 +2041,13 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   )}
                 </div>
 
-                {/* Infinite scroll sentinel + load-more indicator */}
+                {/* Infinite scroll sentinel + load-more skeletons (mobile parity) */}
                 {activeTab === 'feed' && (
                   <>
-                    <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+                    <div ref={sentinelRef} className="h-24" aria-hidden="true" />
                     {loadingMore && (
-                      <div className="flex justify-center py-4">
-                        <Loader2 className="w-5 h-5 animate-spin text-[#F9A825]" />
+                      <div className="mt-1">
+                        <FeedSkeletonList count={2} />
                       </div>
                     )}
                   </>
@@ -1948,42 +2100,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <PostCard
-                        post={{
-                          id: post.id,
-                          content: post.content,
-                          postType: post.postType || 'ARTICLE',
-                          visibility: post.visibility,
-                          author: {
-                            id: post.author.id,
-                            firstName: post.author.firstName,
-                            lastName: post.author.lastName,
-                            profileImage: post.author.profilePictureUrl,
-                            role: post.author.role,
-                            isVerified: post.author.isVerified,
-                            professionalTitle: post.author.professionalTitle,
-                            level: post.author.level,
-                            achievements: post.author.achievements,
-                          },
-                          createdAt: post.createdAt,
-                          likesCount: post.likesCount,
-                          commentsCount: post.commentsCount,
-                          sharesCount: post.sharesCount,
+                        post={feedPostToCardData(post, {
                           isLiked: isPostLiked(post),
-                          isBookmarked: post.isBookmarked,
-                          mediaUrls: post.mediaUrls,
-                          mediaDisplayMode: post.mediaDisplayMode,
-                          pollOptions: post.pollOptions?.map(opt => ({
-                            id: opt.id,
-                            text: opt.text,
-                            votes: opt._count?.votes || 0,
-                          })),
-                          userVotedOptionId: post.userVotedOptionId,
-                          quizData: post.quizData || (post.quiz ? {
-                            questions: post.quiz.questions,
-                            timeLimit: post.quiz.timeLimit,
-                            passingScore: post.quiz.passingScore,
-                          } : undefined),
-                          userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -1993,10 +2111,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                             },
                             createdAt: c.createdAt,
                           })),
-                        }}
+                        })}
                         onLike={handleLike}
+                        onReact={handleReact}
                         onValue={handleValueClick}
-                        onComment={async (postId, content) => {
+                        onComment={async (postId, content, parentId) => {
                           const token = TokenManager.getAccessToken();
                           if (!token || !content.trim()) return;
                           try {
@@ -2006,7 +2125,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                 'Content-Type': 'application/json',
                                 Authorization: `Bearer ${token}`
                               },
-                              body: JSON.stringify({ content: content.trim() })
+                              body: JSON.stringify({ content: content.trim(), parentId: parentId || null })
                             });
                             const data = await res.json();
                             if (data.success) {
@@ -2072,42 +2191,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <PostCard
-                        post={{
-                          id: post.id,
-                          content: post.content,
-                          postType: post.postType || 'ARTICLE',
-                          visibility: post.visibility,
-                          author: {
-                            id: post.author.id,
-                            firstName: post.author.firstName,
-                            lastName: post.author.lastName,
-                            profileImage: post.author.profilePictureUrl,
-                            role: post.author.role,
-                            isVerified: post.author.isVerified,
-                            professionalTitle: post.author.professionalTitle,
-                            level: post.author.level,
-                            achievements: post.author.achievements,
-                          },
-                          createdAt: post.createdAt,
-                          likesCount: post.likesCount,
-                          commentsCount: post.commentsCount,
-                          sharesCount: post.sharesCount,
+                        post={feedPostToCardData(post, {
                           isLiked: isPostLiked(post),
                           isBookmarked: true,
-                          mediaUrls: post.mediaUrls,
-                          mediaDisplayMode: post.mediaDisplayMode,
-                          pollOptions: post.pollOptions?.map(opt => ({
-                            id: opt.id,
-                            text: opt.text,
-                            votes: opt._count?.votes || 0,
-                          })),
-                          userVotedOptionId: post.userVotedOptionId,
-                          quizData: post.quizData || (post.quiz ? {
-                            questions: post.quiz.questions,
-                            timeLimit: post.quiz.timeLimit,
-                            passingScore: post.quiz.passingScore,
-                          } : undefined),
-                          userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -2117,10 +2203,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                             },
                             createdAt: c.createdAt,
                           })),
-                        }}
+                        })}
                         onLike={handleLike}
+                        onReact={handleReact}
                         onValue={handleValueClick}
-                        onComment={async (postId, content) => {
+                        onComment={async (postId, content, parentId) => {
                           const token = TokenManager.getAccessToken();
                           if (!token || !content.trim()) return;
                           try {
@@ -2130,7 +2217,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                 'Content-Type': 'application/json',
                                 Authorization: `Bearer ${token}`
                               },
-                              body: JSON.stringify({ content: content.trim() })
+                              body: JSON.stringify({ content: content.trim(), parentId: parentId || null })
                             });
                             const data = await res.json();
                             if (data.success) {

@@ -28,7 +28,7 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
   const navLinks = [
     { href: '#features', label: c.nav.tools },
     { href: '#social', label: c.nav.social },
-    { href: '#schools', label: c.nav.schools },
+    { href: `/${locale}/discover`, label: c.nav.schools },
     { href: '#pricing', label: c.nav.pricing },
   ];
 
@@ -54,14 +54,25 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
         {/* Center Desktop Navigation — Uses Koulen font for Khmer menu title */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors tracking-wide"
-              style={{ fontFamily: fontTitle, fontSize: isKm ? '15px' : '13px' }}
-            >
-              {item.label}
-            </a>
+            item.href.startsWith('/') ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors tracking-wide"
+                style={{ fontFamily: fontTitle, fontSize: isKm ? '15px' : '13px' }}
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={item.href}
+                className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors tracking-wide"
+                style={{ fontFamily: fontTitle, fontSize: isKm ? '15px' : '13px' }}
+              >
+                {item.label}
+              </a>
+            )
           ))}
           <a
             href="#enterprise"
@@ -143,15 +154,27 @@ export function Navbar({ locale, c, isKm }: { locale: string; c: any; isKm: bool
         <div className="md:hidden mx-6 sm:mx-10 bg-white/95 backdrop-blur-xl rounded-2xl border border-gray-100 p-6 shadow-xl space-y-4 relative z-50">
           <div className="flex flex-col space-y-3">
             {navLinks.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-base font-medium text-gray-800 hover:text-black py-1"
-                style={{ fontFamily: fontTitle }}
-              >
-                {item.label}
-              </a>
+              item.href.startsWith('/') ? (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-base font-medium text-gray-800 hover:text-black py-1"
+                  style={{ fontFamily: fontTitle }}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-base font-medium text-gray-800 hover:text-black py-1"
+                  style={{ fontFamily: fontTitle }}
+                >
+                  {item.label}
+                </a>
+              )
             ))}
             <a
               href="#enterprise"

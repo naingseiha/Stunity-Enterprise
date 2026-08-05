@@ -46,6 +46,8 @@ interface CreatePostModalProps {
 
 export interface CreatePostData {
   content: string;
+  title?: string;
+  deadline?: string;
   postType: string;
   visibility: string;
   pollOptions?: string[];
@@ -55,19 +57,6 @@ export interface CreatePostData {
     questions: { text: string; options: string[]; correctAnswer: number }[];
     timeLimit: number;
     passingScore: number;
-  };
-  courseData?: {
-    title: string;
-    description: string;
-    modules: { title: string; description: string }[];
-    difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-    estimatedHours: number;
-  };
-  examData?: {
-    questions: { text: string; options: string[]; correctAnswer: number }[];
-    timeLimit: number;
-    passingScore: number;
-    maxAttempts: number;
   };
 }
 
@@ -200,7 +189,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user, initi
   };
 
   const handleSubmit = async () => {
-    if (!content.trim() || creating) return;
+    if (creating) return;
     
     if (postType === 'POLL') {
       const validOptions = pollOptions.filter(o => o.trim());
@@ -238,6 +227,45 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user, initi
       }
     }
 
+    let resolvedTitle: string | undefined;
+    let resolvedContent = content.trim();
+
+    if (postType === 'COURSE') {
+      const validModules = courseModules.filter(m => m.title.trim());
+      const moduleBlock = validModules
+        .map((m, i) => `${i + 1}. ${m.title}${m.description.trim() ? ` — ${m.description.trim()}` : ''}`)
+        .join('\n');
+      resolvedTitle = courseTitle.trim();
+      resolvedContent = [
+        courseDescription.trim() || content.trim(),
+        `Difficulty: ${courseDifficulty}`,
+        `Estimated hours: ${courseEstimatedHours}`,
+        moduleBlock ? `Modules:\n${moduleBlock}` : '',
+      ].filter(Boolean).join('\n\n');
+    } else if (postType === 'EXAM') {
+      const validQuestions = examQuestions.filter(q => q.text.trim() && q.options.filter(o => o.trim()).length >= 2);
+      const questionBlock = validQuestions
+        .map((q, i) => {
+          const opts = q.options.filter(o => o.trim()).map((o, oi) => `   ${String.fromCharCode(65 + oi)}. ${o}`).join('\n');
+          return `${i + 1}. ${q.text}\n${opts}`;
+        })
+        .join('\n\n');
+      resolvedTitle = content.trim().split('\n')[0]?.slice(0, 120) || tFeed('postTypes.exam');
+      resolvedContent = [
+        content.trim(),
+        `Time limit: ${examTimeLimit} min`,
+        `Passing score: ${examPassingScore}%`,
+        `Max attempts: ${examMaxAttempts}`,
+        questionBlock ? `Questions:\n${questionBlock}` : '',
+      ].filter(Boolean).join('\n\n');
+    } else if (postType === 'QUIZ' && !resolvedContent) {
+      resolvedContent = tFeed('postTypes.quiz');
+    }
+
+    if (!resolvedContent.trim()) {
+      return;
+    }
+
     setCreating(true);
     try {
       let uploadedMediaUrls: string[] = [];
@@ -270,7 +298,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user, initi
       }
 
       await onSubmit({
-        content,
+        content: resolvedContent,
+        title: resolvedTitle,
         postType,
         visibility,
         pollOptions: postType === 'POLL' ? pollOptions.filter(o => o.trim()) : undefined,
@@ -284,23 +313,6 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user, initi
           })),
           timeLimit: quizTimeLimit,
           passingScore: quizPassingScore,
-        } : undefined,
-        courseData: postType === 'COURSE' ? {
-          title: courseTitle,
-          description: courseDescription,
-          modules: courseModules.filter(m => m.title.trim()),
-          difficulty: courseDifficulty,
-          estimatedHours: courseEstimatedHours,
-        } : undefined,
-        examData: postType === 'EXAM' ? {
-          questions: examQuestions.filter(q => q.text.trim()).map(q => ({
-            text: q.text,
-            options: q.options.filter(o => o.trim()),
-            correctAnswer: q.correctAnswer,
-          })),
-          timeLimit: examTimeLimit,
-          passingScore: examPassingScore,
-          maxAttempts: examMaxAttempts,
         } : undefined,
       });
       // Reset form
@@ -1164,7 +1176,17 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user, initi
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!content.trim() || creating || uploading}
+            disabled={
+              creating ||
+              uploading ||
+              (postType === 'COURSE'
+                ? !courseTitle.trim()
+                : postType === 'EXAM'
+                  ? !examQuestions.some(q => q.text.trim())
+                  : postType === 'QUIZ'
+                    ? !quizQuestions.some(q => q.text.trim()) && !content.trim()
+                    : !content.trim())
+            }
             className={`px-5 py-2 bg-gradient-to-r ${getTypeColor(selectedType.color)} text-white rounded-full font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
           >
             {(creating || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}

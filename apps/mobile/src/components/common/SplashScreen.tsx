@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#09CFF7',
   },
   content: {
     flex: 1,

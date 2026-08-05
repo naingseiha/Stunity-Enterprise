@@ -44,7 +44,7 @@ export default function DrawingSplashScreen({
         isAnimatingOut ? 'opacity-0 scale-110' : 'opacity-100 scale-100'
       }`}
       style={{
-        background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fef3c7 100%)',
+        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)',
       }}
     >
       {/* Animated background particles */}
@@ -52,28 +52,28 @@ export default function DrawingSplashScreen({
         <div 
           className="absolute top-[10%] left-[10%] w-32 h-32 rounded-full blur-3xl"
           style={{
-            background: 'rgba(251, 146, 60, 0.2)',
+            background: 'rgba(9, 207, 247, 0.2)',
             animation: 'floatBubble 6s ease-in-out infinite',
           }}
         />
         <div 
           className="absolute top-[30%] right-[15%] w-40 h-40 rounded-full blur-3xl"
           style={{
-            background: 'rgba(249, 115, 22, 0.15)',
+            background: 'rgba(9, 207, 247, 0.15)',
             animation: 'floatBubble 8s ease-in-out infinite 1s',
           }}
         />
         <div 
           className="absolute bottom-[20%] left-[20%] w-36 h-36 rounded-full blur-3xl"
           style={{
-            background: 'rgba(253, 186, 116, 0.2)',
+            background: 'rgba(9, 207, 247, 0.2)',
             animation: 'floatBubble 7s ease-in-out infinite 0.5s',
           }}
         />
         <div 
           className="absolute bottom-[30%] right-[25%] w-28 h-28 rounded-full blur-3xl"
           style={{
-            background: 'rgba(251, 146, 60, 0.15)',
+            background: 'rgba(9, 207, 247, 0.15)',
             animation: 'floatBubble 5s ease-in-out infinite 1.5s',
           }}
         />
@@ -85,7 +85,7 @@ export default function DrawingSplashScreen({
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[200px] blur-3xl rounded-full pointer-events-none"
           style={{
-            background: 'rgba(251, 146, 60, 0.25)',
+            background: 'rgba(9, 207, 247, 0.25)',
             animation: 'pulseGlow 2s ease-in-out infinite',
           }}
         />
@@ -108,7 +108,7 @@ export default function DrawingSplashScreen({
             onLoad={() => setLogoLoaded(true)}
             className="drop-shadow-2xl object-contain"
             style={{
-              filter: 'drop-shadow(0 10px 30px rgba(251, 146, 60, 0.3))',
+              filter: 'drop-shadow(0 10px 30px rgba(9, 207, 247, 0.3))',
             }}
           />
         </div>
@@ -125,10 +125,10 @@ export default function DrawingSplashScreen({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg"
+              className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-[#09CFF7] to-[#0284C7] shadow-lg"
               style={{
                 animation: `bounce 1.2s ease-in-out ${i * 0.15}s infinite`,
-                boxShadow: '0 4px 12px rgba(251, 146, 60, 0.4)',
+                boxShadow: '0 4px 12px rgba(9, 207, 247, 0.4)',
               }}
             />
           ))}

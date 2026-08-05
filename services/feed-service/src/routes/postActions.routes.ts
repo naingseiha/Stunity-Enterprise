@@ -18,6 +18,7 @@ import {
   prepareQuizQuestions,
   type PreparedQuizQuestions,
 } from '../utils/quizQuestionRows';
+import { fetchReactionCounts } from '../utils/reactionCounts';
 
 const router = Router();
 
@@ -185,6 +186,7 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       else if (postType === 'PROJECT') deadlineFields.projectDeadline = deadlineDate;
       else if (postType === 'ANNOUNCEMENT') deadlineFields.announcementExpiryDate = deadlineDate;
       else if (postType === 'ASSIGNMENT') deadlineFields.assignmentDueDate = deadlineDate;
+      else if (postType === 'EXAM') deadlineFields.examDate = deadlineDate;
     }
 
     // Handle Question Bounties
@@ -456,7 +458,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const [pollRows, quiz] = await Promise.all([
+    const [pollRows, quiz, reactionCountsMap] = await Promise.all([
       !feedCardOnly && post.postType === 'POLL'
         ? timeStep('pollOptions', () => prismaRead.$queryRaw<Array<{
           id: string;
@@ -503,6 +505,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
           },
         }))
         : Promise.resolve(null),
+      timeStep('reactionCounts', () => fetchReactionCounts(prismaRead, [post.id])),
     ]);
     const postWithState = post as typeof post & {
       likes?: { id: string; reactionType: string }[];
@@ -546,7 +549,9 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         isLikedByMe,
         myReaction,
         isBookmarked,
+        isBookmarkedByMe: isBookmarked,
         isValuedByMe,
+        reactionCounts: reactionCountsMap.get(post.id) ?? {},
         likesCount: post.likesCount ?? 0,
         commentsCount: post.commentsCount ?? 0,
         viewsCount: postWithState.viewsCount ?? 0,

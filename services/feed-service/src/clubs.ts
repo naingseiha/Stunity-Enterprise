@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { PrismaClient, StudyClubType, ClubMode, ClubMemberRole } from '@prisma/client';
 import { EventPublisher } from './redis';
+import { fetchReactionCounts } from './utils/reactionCounts';
 
 const router = express.Router();
 let prisma: PrismaClient;
@@ -912,7 +913,9 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response) => {
           _count: {
             select: { comments: true, likes: true },
           },
-          likes: userId ? { where: { userId }, take: 1 } : false,
+          likes: userId
+            ? { where: { userId }, take: 1, select: { id: true, reactionType: true } }
+            : false,
           bookmarks: userId ? { where: { userId }, take: 1 } : false,
           pollOptions: {
             select: {
@@ -924,6 +927,29 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response) => {
               ...(userId ? { votes: { where: { userId }, take: 1, select: { id: true } } } : {}),
             },
           },
+          repostOf: {
+            select: {
+              id: true,
+              authorId: true,
+              content: true,
+              title: true,
+              postType: true,
+              mediaUrls: true,
+              createdAt: true,
+              likesCount: true,
+              commentsCount: true,
+              sharesCount: true,
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  role: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -932,23 +958,38 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response) => {
       prisma.post.count({ where }),
     ]);
 
+    const reactionCountsMap = await fetchReactionCounts(
+      prisma,
+      posts.map((p: any) => p.id),
+    );
+
     // Transform posts
-    const transformedPosts = posts.map((post: any) => ({
-      ...post,
-      isLiked: post.likes?.length > 0,
-      isBookmarked: post.bookmarks?.length > 0,
-      likesCount: post._count?.likes || 0,
-      commentsCount: post._count?.comments || 0,
-      userVotedOptionId: post.pollOptions?.find((opt: any) => opt.votes?.length > 0)?.id,
-      pollOptions: post.pollOptions?.map((opt: any) => ({
-        id: opt.id,
-        text: opt.text,
-        votes: opt.votesCount ?? opt._count?.votes ?? 0,
-      })),
-      likes: undefined,
-      bookmarks: undefined,
-      _count: undefined,
-    }));
+    const transformedPosts = posts.map((post: any) => {
+      const myReaction = post.likes?.[0]?.reactionType ?? null;
+      return {
+        ...post,
+        isLiked: Boolean(myReaction) || post.likes?.length > 0,
+        isLikedByMe: Boolean(myReaction) || post.likes?.length > 0,
+        myReaction,
+        reactionCounts: reactionCountsMap.get(post.id) ?? {},
+        isBookmarked: post.bookmarks?.length > 0,
+        likesCount: post.likesCount ?? post._count?.likes ?? 0,
+        commentsCount: post.commentsCount ?? post._count?.comments ?? 0,
+        sharesCount: post.sharesCount ?? 0,
+        repostOfId: post.repostOfId ?? null,
+        repostComment: post.repostComment ?? null,
+        repostOf: post.repostOf ?? null,
+        userVotedOptionId: post.pollOptions?.find((opt: any) => opt.votes?.length > 0)?.id,
+        pollOptions: post.pollOptions?.map((opt: any) => ({
+          id: opt.id,
+          text: opt.text,
+          votes: opt.votesCount ?? opt._count?.votes ?? 0,
+        })),
+        likes: undefined,
+        bookmarks: undefined,
+        _count: undefined,
+      };
+    });
 
     res.json({
       posts: transformedPosts,

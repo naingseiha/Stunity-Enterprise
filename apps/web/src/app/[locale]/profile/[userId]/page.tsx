@@ -19,6 +19,7 @@ import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from 
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import PostCard, { PostData } from '@/components/feed/PostCard';
+import { feedApiPostToPost, feedPostToCardData } from '@/lib/feed-normalize';
 import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
 import { PerformanceTab } from '@/components/profile';
 
@@ -351,7 +352,15 @@ export default function ProfilePage() {
       if (eduData.success) setEducation(eduData.education);
       if (achievementsData.success) setAchievements(achievementsData.achievements);
       if (recsData.success) setRecommendations(recsData.recommendations);
-      if (postsData.success) setPosts(postsData.data || []);
+      if (postsData.success) {
+        const mapped = (postsData.data || [])
+          .map((raw: unknown) => {
+            const normalized = feedApiPostToPost(raw);
+            return normalized ? (feedPostToCardData(normalized) as PostData) : null;
+          })
+          .filter((p: PostData | null): p is PostData => Boolean(p));
+        setPosts(mapped);
+      }
 
       writeRouteDataCache<CachedProfilePayload>(profileCacheKey, {
         profile: profileData.success ? profileData.profile : null,
@@ -362,7 +371,14 @@ export default function ProfilePage() {
         education: eduData.success ? eduData.education : [],
         achievements: achievementsData.success ? achievementsData.achievements : [],
         recommendations: recsData.success ? recsData.recommendations : [],
-        posts: postsData.success ? (postsData.data || []) : [],
+        posts: postsData.success
+          ? (postsData.data || [])
+              .map((raw: unknown) => {
+                const normalized = feedApiPostToPost(raw);
+                return normalized ? (feedPostToCardData(normalized) as PostData) : null;
+              })
+              .filter((p: PostData | null): p is PostData => Boolean(p))
+          : [],
       });
 
       setLoading(false);
@@ -408,23 +424,64 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleReact = async (postId: string, type: string) => {
     try {
       const token = TokenManager.getAccessToken();
       const feedUrl = FEED_SERVICE_URL;
-      const res = await fetch(`${feedUrl}/posts/${postId}/like`, {
+      const current = posts.find((p) => p.id === postId);
+      const prevReaction = current?.myReaction ?? (current?.isLiked ? 'LIKE' : null);
+      const prevCount = current?.likesCount ?? 0;
+
+      let nextReaction: string | null = type;
+      let nextCount = prevCount;
+      if (prevReaction === type) {
+        nextReaction = null;
+        nextCount = Math.max(0, prevCount - 1);
+      } else if (!prevReaction) {
+        nextCount = prevCount + 1;
+      }
+
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, myReaction: nextReaction, isLiked: Boolean(nextReaction), likesCount: nextCount }
+            : p,
+        ),
+      );
+
+      const res = await fetch(`${feedUrl}/posts/${postId}/react`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type }),
       });
       const data = await res.json();
       if (data.success) {
-        setPosts(prev => prev.map(p => 
-          p.id === postId ? { ...p, isLiked: data.action === 'liked', likesCount: p.likesCount + (data.action === 'liked' ? 1 : -1) } : p
-        ));
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, myReaction: data.myReaction ?? null, isLiked: Boolean(data.myReaction) }
+              : p,
+          ),
+        );
+      } else {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, myReaction: prevReaction, isLiked: Boolean(prevReaction), likesCount: prevCount }
+              : p,
+          ),
+        );
       }
     } catch (error) {
-      console.error('Like error:', error);
+      console.error('React error:', error);
     }
+  };
+
+  const handleLike = async (postId: string) => {
+    return handleReact(postId, 'LIKE');
   };
 
   const handleValue = async (postId: string) => {
@@ -446,7 +503,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleComment = async (postId: string, content: string) => {
+  const handleComment = async (postId: string, content: string, parentId?: string) => {
     try {
       const token = TokenManager.getAccessToken();
       const feedUrl = FEED_SERVICE_URL;
@@ -456,7 +513,7 @@ export default function ProfilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}` 
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, parentId: parentId || null }),
       });
       const data = await res.json();
       if (data.success) {
@@ -828,6 +885,7 @@ export default function ProfilePage() {
                         key={post.id}
                         post={post}
                         onLike={handleLike}
+                        onReact={handleReact}
                         onValue={handleValue}
                         onComment={handleComment}
                         onDelete={handleDeletePost}

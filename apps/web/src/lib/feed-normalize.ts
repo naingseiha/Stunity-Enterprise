@@ -37,6 +37,8 @@ export interface FeedPost {
   author: FeedPostAuthor;
   isLiked?: boolean;
   isLikedByMe?: boolean;
+  myReaction?: string | null;
+  reactionCounts?: Record<string, number>;
   isValued?: boolean;
   valuesCount?: number;
   isBookmarked?: boolean;
@@ -44,6 +46,53 @@ export interface FeedPost {
   pollOptions?: { id: string; text: string; _count?: { votes: number } }[];
   userVotedOptionId?: string;
   studyClubId?: string;
+  resourceUrl?: string | null;
+  resourceType?: string | null;
+  questionBounty?: number;
+  difficultyLevel?: number | null;
+  topicTags?: string[];
+  repostOfId?: string | null;
+  repostComment?: string | null;
+  repostOf?: {
+    id: string;
+    title?: string | null;
+    content?: string | null;
+    postType?: string;
+    mediaUrls?: string[];
+    createdAt?: string;
+    author?: {
+      id: string;
+      firstName?: string;
+      lastName?: string;
+      profilePictureUrl?: string | null;
+    };
+  } | null;
+  // Assignment
+  assignmentDueDate?: string | null;
+  assignmentPoints?: number | null;
+  assignmentSubmissionType?: string | null;
+  // Course
+  courseCode?: string | null;
+  courseLevel?: string | null;
+  courseDuration?: string | null;
+  // Exam
+  examDate?: string | null;
+  examDuration?: number | null;
+  examTotalPoints?: number | null;
+  examPassingScore?: number | null;
+  // Announcement
+  announcementUrgency?: string | null;
+  announcementExpiryDate?: string | null;
+  // Tutorial
+  tutorialDifficulty?: string | null;
+  tutorialEstimatedTime?: string | null;
+  // Project
+  projectStatus?: string | null;
+  projectDeadline?: string | null;
+  projectTeamSize?: number | null;
+  // Research
+  researchField?: string | null;
+  researchCollaborators?: string | null;
   quizData?: {
     questions?: { id: string; text: string }[];
     timeLimit?: number;
@@ -67,8 +116,10 @@ export interface FeedSuggestedUser {
   firstName?: string | null;
   lastName?: string | null;
   profilePictureUrl?: string | null;
+  coverPhotoUrl?: string | null;
   role?: string;
   headline?: string | null;
+  isFollowing?: boolean;
 }
 
 export interface FeedSuggestedCourse {
@@ -76,6 +127,7 @@ export interface FeedSuggestedCourse {
   title?: string | null;
   thumbnailUrl?: string | null;
   enrollmentCount?: number;
+  rating?: number;
   instructor?: {
     id?: string;
     firstName?: string | null;
@@ -91,6 +143,10 @@ export interface FeedSuggestedQuiz {
   topicTags?: string[];
   timeLimit?: number | null;
   passingScore?: number | null;
+  questionCount?: number;
+  totalPoints?: number;
+  thumbnailUrl?: string | null;
+  questions?: unknown[];
 }
 
 export type FeedRow =
@@ -149,7 +205,48 @@ export function feedApiPostToPost(raw: unknown): FeedPost | null {
         })()
       : undefined;
 
-  const isLikedByMe = Boolean(p.isLikedByMe ?? p.isLiked);
+  const myReaction =
+    typeof p.myReaction === 'string' && p.myReaction
+      ? p.myReaction
+      : null;
+  const isLikedByMe = Boolean(p.isLikedByMe ?? p.isLiked ?? myReaction);
+  const reactionCounts =
+    p.reactionCounts && typeof p.reactionCounts === 'object' && !Array.isArray(p.reactionCounts)
+      ? (p.reactionCounts as Record<string, number>)
+      : undefined;
+
+  const repostOfRaw = p.repostOf;
+  const repostOf =
+    repostOfRaw && typeof repostOfRaw === 'object'
+      ? (() => {
+          const r = repostOfRaw as Record<string, unknown>;
+          const ra = (r.author && typeof r.author === 'object' ? r.author : {}) as Record<string, unknown>;
+          return {
+            id: String(r.id ?? ''),
+            title: typeof r.title === 'string' ? r.title : null,
+            content: typeof r.content === 'string' ? r.content : null,
+            postType: typeof r.postType === 'string' ? r.postType : undefined,
+            mediaUrls: Array.isArray(r.mediaUrls) ? (r.mediaUrls as string[]) : undefined,
+            createdAt: typeof r.createdAt === 'string' ? r.createdAt : undefined,
+            author: {
+              id: typeof ra.id === 'string' ? ra.id : '',
+              firstName: typeof ra.firstName === 'string' ? ra.firstName : '',
+              lastName: typeof ra.lastName === 'string' ? ra.lastName : '',
+              profilePictureUrl: typeof ra.profilePictureUrl === 'string' ? ra.profilePictureUrl : null,
+            },
+          };
+        })()
+      : null;
+  const optionalString = (v: unknown): string | undefined =>
+    typeof v === 'string' && v ? v : undefined;
+  const optionalNullableString = (v: unknown): string | null | undefined =>
+    typeof v === 'string' ? v : v === null ? null : undefined;
+  const optionalNullableNumber = (v: unknown): number | null | undefined => {
+    if (v === null) return null;
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  };
 
   return {
     id: p.id,
@@ -181,12 +278,41 @@ export function feedApiPostToPost(raw: unknown): FeedPost | null {
     },
     isLiked: isLikedByMe,
     isLikedByMe,
+    myReaction: myReaction ?? (isLikedByMe ? 'LIKE' : null),
+    reactionCounts,
     isValued: Boolean(p.isValued ?? p.isValuedByMe),
     valuesCount: num(p.valuesCount, 0),
     isBookmarked: Boolean(p.isBookmarked),
     pollOptions,
     userVotedOptionId: typeof p.userVotedOptionId === 'string' ? p.userVotedOptionId : undefined,
-    studyClubId: typeof p.studyClubId === 'string' ? p.studyClubId : undefined,
+    studyClubId: optionalString(p.studyClubId),
+    resourceUrl: optionalNullableString(p.resourceUrl),
+    repostOfId: optionalNullableString(p.repostOfId),
+    repostComment: optionalNullableString(p.repostComment),
+    repostOf: repostOf?.id ? repostOf : null,
+    resourceType: optionalNullableString(p.resourceType),
+    questionBounty: num(p.questionBounty, 0) || undefined,
+    difficultyLevel: optionalNullableNumber(p.difficultyLevel),
+    topicTags: Array.isArray(p.topicTags) ? (p.topicTags as string[]) : undefined,
+    assignmentDueDate: optionalNullableString(p.assignmentDueDate) ?? (p.assignmentDueDate instanceof Date ? p.assignmentDueDate.toISOString() : undefined),
+    assignmentPoints: optionalNullableNumber(p.assignmentPoints),
+    assignmentSubmissionType: optionalNullableString(p.assignmentSubmissionType),
+    courseCode: optionalNullableString(p.courseCode),
+    courseLevel: optionalNullableString(p.courseLevel),
+    courseDuration: optionalNullableString(p.courseDuration),
+    examDate: optionalNullableString(p.examDate) ?? (p.examDate instanceof Date ? (p.examDate as Date).toISOString() : undefined),
+    examDuration: optionalNullableNumber(p.examDuration),
+    examTotalPoints: optionalNullableNumber(p.examTotalPoints),
+    examPassingScore: optionalNullableNumber(p.examPassingScore),
+    announcementUrgency: optionalNullableString(p.announcementUrgency),
+    announcementExpiryDate: optionalNullableString(p.announcementExpiryDate) ?? (p.announcementExpiryDate instanceof Date ? (p.announcementExpiryDate as Date).toISOString() : undefined),
+    tutorialDifficulty: optionalNullableString(p.tutorialDifficulty),
+    tutorialEstimatedTime: optionalNullableString(p.tutorialEstimatedTime),
+    projectStatus: optionalNullableString(p.projectStatus),
+    projectDeadline: optionalNullableString(p.projectDeadline) ?? (p.projectDeadline instanceof Date ? (p.projectDeadline as Date).toISOString() : undefined),
+    projectTeamSize: optionalNullableNumber(p.projectTeamSize),
+    researchField: optionalNullableString(p.researchField),
+    researchCollaborators: optionalNullableString(p.researchCollaborators),
     quiz,
     quizData:
       p.quizData && typeof p.quizData === 'object'
@@ -215,8 +341,15 @@ function mapSuggestedUser(u: unknown): FeedSuggestedUser | null {
     firstName: typeof o.firstName === 'string' ? o.firstName : null,
     lastName: typeof o.lastName === 'string' ? o.lastName : null,
     profilePictureUrl: typeof o.profilePictureUrl === 'string' ? o.profilePictureUrl : undefined,
+    coverPhotoUrl:
+      typeof o.coverPhotoUrl === 'string'
+        ? o.coverPhotoUrl
+        : typeof o.coverImageUrl === 'string'
+          ? o.coverImageUrl
+          : undefined,
     role: typeof o.role === 'string' ? o.role : undefined,
     headline: typeof o.headline === 'string' ? o.headline : null,
+    isFollowing: Boolean(o.isFollowing),
   };
 }
 
@@ -234,6 +367,7 @@ function mapSuggestedCourse(c: unknown): FeedSuggestedCourse | null {
       (typeof o.thumbnail === 'string' && o.thumbnail) ||
       null,
     enrollmentCount: num(o.enrollmentCount ?? o.enrolledCount, 0),
+    rating: typeof o.rating === 'number' ? o.rating : undefined,
     instructor: inst
       ? {
           id: typeof inst.id === 'string' ? inst.id : undefined,
@@ -251,6 +385,13 @@ function mapSuggestedQuiz(q: unknown): FeedSuggestedQuiz | null {
   const postId = typeof o.postId === 'string' ? o.postId : undefined;
   const id = typeof o.id === 'string' ? o.id : undefined;
   if (!postId && !id) return null;
+  const questions = Array.isArray(o.questions) ? o.questions : undefined;
+  const questionCount =
+    typeof o.questionCount === 'number'
+      ? o.questionCount
+      : questions
+        ? questions.length
+        : undefined;
   return {
     id,
     postId,
@@ -258,6 +399,14 @@ function mapSuggestedQuiz(q: unknown): FeedSuggestedQuiz | null {
     topicTags: Array.isArray(o.topicTags) ? (o.topicTags as string[]) : undefined,
     timeLimit: typeof o.timeLimit === 'number' ? o.timeLimit : undefined,
     passingScore: typeof o.passingScore === 'number' ? o.passingScore : undefined,
+    questionCount,
+    totalPoints: typeof o.totalPoints === 'number' ? o.totalPoints : undefined,
+    thumbnailUrl:
+      (typeof o.thumbnailUrl === 'string' && o.thumbnailUrl) ||
+      (typeof o.coverImageUrl === 'string' && o.coverImageUrl) ||
+      (typeof o.imageUrl === 'string' && o.imageUrl) ||
+      null,
+    questions,
   };
 }
 
@@ -326,4 +475,115 @@ export function countPostRows(rows: FeedRow[]): number {
 
 export function flattenPosts(rows: FeedRow[]): FeedPost[] {
   return rows.filter((r): r is Extract<FeedRow, { kind: 'post' }> => r.kind === 'post').map((r) => r.post);
+}
+
+/** Maps a normalized feed post into the PostCard prop shape. */
+export function feedPostToCardData(
+  post: FeedPost,
+  opts?: {
+    isLiked?: boolean;
+    isBookmarked?: boolean;
+    comments?: Array<{
+      id: string;
+      content: string;
+      author: { firstName: string; lastName: string };
+      createdAt: string;
+    }>;
+  },
+) {
+  return {
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    postType: post.postType || 'ARTICLE',
+    visibility: post.visibility,
+    author: {
+      id: post.author.id,
+      firstName: post.author.firstName,
+      lastName: post.author.lastName,
+      profileImage: post.author.profilePictureUrl,
+      role: post.author.role,
+      isVerified: post.author.isVerified,
+      professionalTitle: post.author.professionalTitle,
+      level: post.author.level,
+      achievements: post.author.achievements,
+    },
+    createdAt: post.createdAt,
+    likesCount: post.likesCount,
+    valuesCount: post.valuesCount,
+    commentsCount: post.commentsCount,
+    sharesCount: post.sharesCount,
+    isLiked: opts?.isLiked ?? post.isLiked ?? post.isLikedByMe,
+    myReaction: post.myReaction ?? null,
+    reactionCounts: post.reactionCounts,
+    isValued: post.isValued,
+    isBookmarked: opts?.isBookmarked ?? post.isBookmarked,
+    mediaUrls: post.mediaUrls,
+    mediaDisplayMode: post.mediaDisplayMode,
+    resourceUrl: post.resourceUrl ?? undefined,
+    resourceType: post.resourceType ?? undefined,
+    studyClubId: post.studyClubId,
+    questionBounty: post.questionBounty,
+    difficultyLevel: post.difficultyLevel ?? undefined,
+    topicTags: post.topicTags,
+    assignmentDueDate: post.assignmentDueDate ?? undefined,
+    assignmentPoints: post.assignmentPoints ?? undefined,
+    assignmentSubmissionType: post.assignmentSubmissionType ?? undefined,
+    courseCode: post.courseCode ?? undefined,
+    courseLevel: post.courseLevel ?? undefined,
+    courseDuration: post.courseDuration ?? undefined,
+    examDate: post.examDate ?? undefined,
+    examDuration: post.examDuration ?? undefined,
+    examTotalPoints: post.examTotalPoints ?? undefined,
+    examPassingScore: post.examPassingScore ?? undefined,
+    announcementUrgency: post.announcementUrgency ?? undefined,
+    announcementExpiryDate: post.announcementExpiryDate ?? undefined,
+    tutorialDifficulty: post.tutorialDifficulty ?? undefined,
+    tutorialEstimatedTime: post.tutorialEstimatedTime ?? undefined,
+    projectStatus: post.projectStatus ?? undefined,
+    projectDeadline: post.projectDeadline ?? undefined,
+    projectTeamSize: post.projectTeamSize ?? undefined,
+    researchField: post.researchField ?? undefined,
+    researchCollaborators: post.researchCollaborators ?? undefined,
+    pollOptions: post.pollOptions?.map((opt) => ({
+      id: opt.id,
+      text: opt.text,
+      votes: opt._count?.votes || 0,
+    })),
+    userVotedOptionId: post.userVotedOptionId,
+    quizData:
+      post.quizData ||
+      (post.quiz
+        ? {
+            questions: post.quiz.questions,
+            timeLimit: post.quiz.timeLimit,
+            passingScore: post.quiz.passingScore,
+          }
+        : post.postType === 'QUIZ'
+          ? { questions: [], timeLimit: undefined, passingScore: 70 }
+          : undefined),
+    quiz: post.quiz?.id ? { id: post.quiz.id } : undefined,
+    userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
+    comments: opts?.comments,
+    repostOfId: post.repostOfId ?? null,
+    repostComment: post.repostComment ?? null,
+    repostOf: post.repostOf
+      ? {
+          id: post.repostOf.id,
+          title: post.repostOf.title ?? undefined,
+          content: post.repostOf.content ?? undefined,
+          postType: post.repostOf.postType,
+          mediaUrls: post.repostOf.mediaUrls,
+          createdAt: post.repostOf.createdAt,
+          author: post.repostOf.author
+            ? {
+                id: post.repostOf.author.id,
+                firstName: post.repostOf.author.firstName || '',
+                lastName: post.repostOf.author.lastName || '',
+                profileImage: post.repostOf.author.profilePictureUrl,
+              }
+            : undefined,
+        }
+      : null,
+  };
 }
