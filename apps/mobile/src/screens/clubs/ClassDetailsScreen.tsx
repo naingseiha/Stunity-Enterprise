@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useScrollToTop } from '@react-navigation/native';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 import { useAuthStore, useMessagingStore } from '@/stores';
@@ -145,6 +145,8 @@ export function ClassHubView(props: ClassHubViewProps) {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
   const params = props;
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const classId = params.classId;
   const myRole = params.myRole || (
@@ -938,6 +940,7 @@ export function ClassHubView(props: ClassHubViewProps) {
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           refreshControl={

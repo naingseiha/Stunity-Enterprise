@@ -439,9 +439,7 @@ export default function CreatePostScreen() {
 
     // Dismiss keyboard immediately to prevent react-native-screens crash on goBack
     Keyboard.dismiss();
-
     setIsPosting(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       // Prepare poll options if it's a poll
@@ -474,8 +472,10 @@ export default function CreatePostScreen() {
       // Resolve question bounty if it's a question post
       const questionBounty = postType === 'QUESTION' && questionData ? questionData.bounty : 0;
 
-      // Upload images and create post
-      const success = await createPost(
+      // Upload images and create post — optimistic card appears in the feed
+      // synchronously at the start of createPost (before first await).
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const createPromise = createPost(
         content,
         mediaUris,
         postType,
@@ -491,11 +491,12 @@ export default function CreatePostScreen() {
         questionBounty,
         mediaMetadata
       );
+      navigation.goBack();
+
+      const success = await createPromise;
 
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        navigation.goBack();
       } else {
         Alert.alert(t('common.error'), t('feed.createPost.failedCreatePost'));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -504,8 +505,6 @@ export default function CreatePostScreen() {
       if (__DEV__) { console.error('Post creation error:', error); }
       Alert.alert(t('common.error'), error.message || t('feed.createPost.failedCreatePost'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setIsPosting(false);
     }
   }, [content, postType, postTitle, mediaUris, mediaMetadata, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays, t]);
 

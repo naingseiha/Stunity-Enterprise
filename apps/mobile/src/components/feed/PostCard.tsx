@@ -29,11 +29,12 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   withRepeat,
   withSequence,
   cancelAnimation,
+  FadeOut,
+  ZoomIn,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +47,8 @@ import { Avatar, ImageCarousel } from '@/components/common';
 import {
   PollVoting,
 } from '@/components/feed';
+import { AnimatedActionButton } from './AnimatedActionButton';
+import { ReactionSpark } from './ReactionSpark';
 import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSections';
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
@@ -57,7 +60,6 @@ import { FEED_POST_CARD_MARGIN_H } from '@/constants';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
-import { adjustReactionCounts } from '@/utils/reactionCounts';
 import { feedApi } from '@/api/client';
 
 interface PostCardProps {
@@ -215,106 +217,6 @@ interface ActionBarProps {
   isDark: boolean;
 }
 
-interface AnimatedActionButtonProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  activeIcon?: keyof typeof Ionicons.glyphMap;
-  active?: boolean;
-  count?: number;
-  color: string;
-  activeColor: string;
-  onPress: () => void;
-  onLongPress?: () => void;
-  size?: number;
-  styles: any;
-  accessibilityLabel: string;
-}
-
-const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
-  icon,
-  activeIcon,
-  active = false,
-  count,
-  color,
-  activeColor,
-  onPress,
-  onLongPress,
-  size = 20,
-  styles,
-  accessibilityLabel,
-}) => {
-  // Reanimated shared values run animations entirely on the UI thread —
-  // no JS bridge crossings per frame, so rapid taps never hitch the scroll.
-  const scale = useSharedValue(1);
-  const haloScale = useSharedValue(0.75);
-  const haloOpacity = useSharedValue(0);
-  const displayColor = active ? activeColor : color;
-
-  const haloAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: haloOpacity.value,
-    transform: [{ scale: haloScale.value }],
-  }));
-
-  const buttonAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const animatePress = useCallback(() => {
-    cancelAnimation(scale);
-    cancelAnimation(haloScale);
-    cancelAnimation(haloOpacity);
-
-    scale.value = 0.92;
-    haloScale.value = 0.7;
-    haloOpacity.value = active ? 0.28 : 0.18;
-
-    scale.value = withSpring(active ? 1.18 : 1.1, { damping: 4, stiffness: 180 }, (finished) => {
-      if (finished) {
-        scale.value = withSpring(1, { damping: 6, stiffness: 150 });
-      }
-    });
-    haloScale.value = withTiming(1.85, { duration: 260 });
-    haloOpacity.value = withTiming(0, { duration: 260 });
-  }, [active, scale, haloScale, haloOpacity]);
-
-  const handlePress = useCallback(() => {
-    animatePress();
-    onPress();
-  }, [animatePress, onPress]);
-
-  return (
-    <Pressable
-      onPress={handlePress}
-      onLongPress={onLongPress}
-      delayLongPress={220}
-      hitSlop={8}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      style={styles.actionPressable}
-    >
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.actionHalo,
-          { backgroundColor: activeColor },
-          haloAnimatedStyle,
-        ]}
-      />
-      <Animated.View style={[styles.actionButtonInner, buttonAnimatedStyle]}>
-        <Ionicons
-          name={active && activeIcon ? activeIcon : icon}
-          size={size}
-          color={displayColor}
-        />
-        {!!count && count > 0 && (
-          <Text style={[styles.actionText, active && { color: activeColor }]}>
-            {formatNumber(count)}
-          </Text>
-        )}
-      </Animated.View>
-    </Pressable>
-  );
-});
-
 const ViewStatsIndicator = React.memo<{
   count: number;
   onPress?: () => void;
@@ -327,7 +229,7 @@ const ViewStatsIndicator = React.memo<{
     <Pressable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
-      hitSlop={8}
+      hitSlop={12}
       accessibilityRole={disabled ? undefined : 'button'}
       accessibilityLabel={t('feed.viewsCount', { count })}
       style={styles.viewStatPressable}
@@ -348,10 +250,29 @@ const ActionBar = React.memo<ActionBarProps>(({
 }) => {
   const { t } = useTranslation();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [spark, setSpark] = useState<{
+    token: number;
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+  } | null>(null);
   const reactionMeta = myReaction ? REACTIONS.find((r) => r.type === myReaction) : null;
 
+  const openPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setPickerOpen(true);
+  }, []);
+
   const handleReactPick = useCallback((type: string) => {
+    Haptics.selectionAsync();
     setPickerOpen(false);
+    const meta = REACTION_BY_TYPE.get(type);
+    if (meta && (type === 'CELEBRATE' || type === 'INSIGHTFUL' || type === 'SMART_TAKE')) {
+      setSpark((prev) => ({
+        token: (prev?.token ?? 0) + 1,
+        icon: meta.icon,
+        color: meta.color,
+      }));
+    }
     onReact?.(type);
   }, [onReact]);
 
@@ -361,27 +282,42 @@ const ActionBar = React.memo<ActionBarProps>(({
       <View>
         {pickerOpen ? (
           <>
-            {/* Tap-away backdrop to dismiss the picker */}
             <Pressable
               onPress={() => setPickerOpen(false)}
               style={reactionPickerStyles.backdrop}
               accessibilityLabel={t('common.close')}
             />
-            <View style={[reactionPickerStyles.bar, { backgroundColor: colors.card }]}>
-              {REACTIONS.map((r) => (
-                <Pressable
+            <Animated.View
+              entering={ZoomIn.springify().damping(14).stiffness(220)}
+              exiting={FadeOut.duration(120)}
+              style={[reactionPickerStyles.bar, { backgroundColor: colors.card }]}
+            >
+              {REACTIONS.map((r, index) => (
+                <Animated.View
                   key={r.type}
-                  onPress={() => handleReactPick(r.type)}
-                  hitSlop={6}
-                  style={reactionPickerStyles.option}
-                  accessibilityRole="button"
-                  accessibilityLabel={r.label}
+                  entering={ZoomIn.delay(40 + index * 35).springify().damping(12)}
                 >
-                  <Ionicons name={r.icon} size={20} color={r.color} />
-                </Pressable>
+                  <Pressable
+                    onPress={() => handleReactPick(r.type)}
+                    hitSlop={8}
+                    style={reactionPickerStyles.option}
+                    accessibilityRole="button"
+                    accessibilityLabel={r.label}
+                  >
+                    <Ionicons name={r.icon} size={22} color={r.color} />
+                  </Pressable>
+                </Animated.View>
               ))}
-            </View>
+            </Animated.View>
           </>
+        ) : null}
+        {spark ? (
+          <ReactionSpark
+            token={spark.token}
+            icon={spark.icon}
+            color={spark.color}
+            onFinished={() => setSpark(null)}
+          />
         ) : null}
         <AnimatedActionButton
           icon="heart-outline"
@@ -391,9 +327,10 @@ const ActionBar = React.memo<ActionBarProps>(({
           color={colors.text}
           activeColor={reactionMeta ? reactionMeta.color : '#EF4444'}
           onPress={() => { setPickerOpen(false); onLike(); }}
-          onLongPress={onReact ? () => setPickerOpen(true) : undefined}
-          styles={styles}
+          onLongPress={onReact ? openPicker : undefined}
           accessibilityLabel={t('feed.actions.like')}
+          textStyle={styles.actionText}
+          activeTextStyle={{ color: reactionMeta ? reactionMeta.color : '#EF4444' }}
         />
       </View>
       <AnimatedActionButton
@@ -402,8 +339,8 @@ const ActionBar = React.memo<ActionBarProps>(({
         color={colors.text}
         activeColor="#1D9BF0"
         onPress={onComment}
-        styles={styles}
         accessibilityLabel={t('feed.actions.comment')}
+        textStyle={styles.actionText}
       />
       {onRepost && (
         <AnimatedActionButton
@@ -413,8 +350,8 @@ const ActionBar = React.memo<ActionBarProps>(({
           activeColor="#00BA7C"
           onPress={onRepost}
           size={22}
-          styles={styles}
           accessibilityLabel={t('feed.repost')}
+          textStyle={styles.actionText}
         />
       )}
       <AnimatedActionButton
@@ -423,7 +360,6 @@ const ActionBar = React.memo<ActionBarProps>(({
         activeColor="#1D9BF0"
         onPress={onShare}
         size={19}
-        styles={styles}
         accessibilityLabel={t('common.share')}
       />
     </View>
@@ -435,8 +371,6 @@ const ActionBar = React.memo<ActionBarProps>(({
         styles={styles}
         colors={colors}
       />
-      {/* Educational-value rating. The count makes its purpose legible —
-          it reads as "N peers rated this valuable", not a mystery glyph. */}
       <AnimatedActionButton
         icon="diamond-outline"
         activeIcon="diamond"
@@ -445,8 +379,9 @@ const ActionBar = React.memo<ActionBarProps>(({
         color={colors.text}
         activeColor="#8B5CF6"
         onPress={onValue}
-        styles={styles}
         accessibilityLabel={t('feed.actions.rateValue')}
+        textStyle={styles.actionText}
+        activeTextStyle={{ color: '#8B5CF6' }}
       />
     </View>
   </View>
@@ -570,96 +505,72 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const effectiveTeacherVerified =
     verifiedOverride !== null ? verifiedOverride : (post.teacherVerified ?? false);
 
-  // Derive directly from props — no useEffect sync needed
-  // We use key={post.id} on the component itself (in the parent list) to force remounting
-  // But FlashList recycles, so we DO need to handle prop updates.
-  // Instead of state, we can use a "derived state" pattern or useLayoutEffect to sync.
-
-  const [liked, setLiked] = useState(post.isLiked);
-  const [myReaction, setMyReaction] = useState<string | null>(post.myReaction ?? null);
+  // Like / reaction display — store is the sole optimistic source. Reading
+  // props directly avoids a double-count frame between store update and
+  // useLayoutEffect sync (FlashList re-renders when feedItems patch).
+  const liked = !!post.isLiked;
+  const myReaction = post.myReaction ?? null;
+  const likeCount = post.likes;
   const [bookmarked, setBookmarked] = useState(post.isBookmarked);
-  const [likeCount, setLikeCount] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
   const [showRepostComposer, setShowRepostComposer] = useState(false);
   const [valued, setValued] = useState(isValuedProp);
   const [isFollowing, setIsFollowing] = useState(post.isFollowingAuthor || false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [heartBurstToken, setHeartBurstToken] = useState(0);
 
   // Reset internal state when post identity or relevant prop slice changes (recycling).
   // useLayoutEffect runs before paint to avoid a frame of stale UI.
   React.useLayoutEffect(() => {
-    setLiked(post.isLiked);
-    setMyReaction(post.myReaction ?? null);
     setBookmarked(post.isBookmarked);
-    setLikeCount(post.likes);
     setIsFollowing(post.isFollowingAuthor || false);
     setValued(isValuedProp);
-  }, [post.id, post.isLiked, post.myReaction, post.isBookmarked, post.likes, post.isFollowingAuthor, isValuedProp]);
+  }, [post.id, post.isBookmarked, post.isFollowingAuthor, isValuedProp]);
 
-  // The reaction breakdown shown is the authoritative server counts with the
-  // viewer's own pending change folded in (their server-side reaction → their
-  // current local one), treating a plain like as a LIKE. Pure derivation, so it
-  // stays correct across every toggle/swap without a separate optimistic state.
-  const displayedReactionCounts = React.useMemo(() => {
-    const serverReaction = post.myReaction ?? (post.isLiked ? 'LIKE' : null);
-    const localReaction = myReaction ?? (liked ? 'LIKE' : null);
-    return adjustReactionCounts(post.reactionCounts ?? {}, serverReaction, localReaction);
-  }, [post.reactionCounts, post.myReaction, post.isLiked, myReaction, liked]);
+  // Store already folds the viewer's reaction into reactionCounts on toggle.
+  const displayedReactionCounts = post.reactionCounts;
 
   const handleLike = useCallback(() => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-
-    if (liked) {
-      setLikeCount((prev) => prev - 1);
-      setLiked(false);
-      setMyReaction(null);
-    } else {
-      setLikeCount((prev) => prev + 1);
-      setLiked(true);
-      setMyReaction('LIKE');
-    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Store is the single optimistic source — local state syncs via useLayoutEffect.
     onLike?.();
+  }, [onLike]);
+
+  // IG-style double-tap: always show heart burst; only like if not already liked.
+  const handleDoubleTapLike = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setHeartBurstToken((n) => n + 1);
+    if (!liked) {
+      onLike?.();
+    }
   }, [liked, onLike]);
 
-  // Pick a specific reaction (long-press). Toggles off if the same one is chosen.
+  // Pick a specific reaction (long-press). Store toggles/swaps optimistically.
   const handleReact = useCallback((type: string) => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    setMyReaction((prevReaction) => {
-      const same = prevReaction === type;
-      if (same) {
-        setLiked(false);
-        setLikeCount((c) => Math.max(0, c - 1));
-        return null;
-      }
-      if (!prevReaction) {
-        setLikeCount((c) => c + 1);
-      }
-      setLiked(true);
-      return type;
-    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onReact?.(type);
   }, [onReact]);
 
   const handleValue = useCallback(() => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onValue?.();
   }, [onValue]);
 
   const handleBookmark = useCallback(() => {
-    setTimeout(() => Haptics.selectionAsync(), 0);
+    Haptics.selectionAsync();
     setBookmarked(!bookmarked);
     setShowMenu(false);
     onBookmark?.();
   }, [bookmarked, onBookmark]);
 
   const handleNotInterested = useCallback(() => {
-    setTimeout(() => Haptics.selectionAsync(), 0);
+    Haptics.selectionAsync();
     setShowMenu(false);
     onNotInterested?.();
   }, [onNotInterested]);
 
   const handleComment = useCallback(() => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onComment?.();
   }, [onComment]);
 
@@ -669,29 +580,29 @@ const PostCardInner: React.FC<PostCardProps> = ({
       Alert.alert(t('common.error'), t('feed.repostOwnError'));
       return;
     }
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Open the quote composer — the user can add commentary (or repost as-is).
     setShowRepostComposer(true);
   }, [repostEnabled, isCurrentUser, t]);
 
   const handleShare = useCallback(() => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onShare?.();
   }, [onShare]);
 
   const handleMenuToggle = useCallback(() => {
-    setTimeout(() => Haptics.selectionAsync(), 0);
+    Haptics.selectionAsync();
     setShowMenu(true);
   }, []);
 
   const handleEdit = useCallback(() => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowMenu(false);
     navigate?.('EditPost', { post });
   }, [navigate, post]);
 
   const handleViewAnalytics = useCallback(() => {
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowMenu(false);
     if (onViewAnalytics) {
       onViewAnalytics();
@@ -958,6 +869,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
         post={post}
         onPress={handleContentPress}
         onImagePress={handleContentPress}
+        onDoubleTapLike={handleDoubleTapLike}
+        heartBurstToken={heartBurstToken}
         onVote={handleVote}
         navigate={navigate}
         typeConfig={typeConfig}

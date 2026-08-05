@@ -32,7 +32,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useThemeContext } from '@/contexts';
 import { Colors, ColorScale, Typography, Spacing, BorderRadius, Shadows } from '@/config';
 import { Haptics } from '@/services/haptics';
@@ -159,6 +159,8 @@ export function LearnHomeScreen() {
   const [path, setPath] = useState<LearnPath | null>(cachedHome?.path ?? null);
   const hasFocusedOnceRef = useRef(false);
   const hasVisibleContentRef = useRef(Boolean(cachedHome?.profile || cachedHome?.path));
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(
     cachedHome?.activeSubjectId ?? null
   );
@@ -2071,6 +2073,7 @@ export function LearnHomeScreen() {
       {/* Phase 2 (grade/subject) and normal learn screen both live in the ScrollView */}
       {(!showOnboarding || obStarted) && (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl

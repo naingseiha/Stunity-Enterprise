@@ -45,7 +45,9 @@ import {
   SuggestedUsersCarousel,
   SuggestedCoursesCarousel,
   SuggestedQuizzesCarousel,
+  FloatingActionButton,
 } from '@/components/feed';
+import { Haptics } from '@/services/haptics';
 import RecallCardItem from '@/components/feed/RecallCardItem';
 import { getMockRecallCards, injectRecallCards } from '@/utils/mockRecallCards';
 import { fetchDueCards, submitRecallReview, type RecallGrade } from '@/api/recall';
@@ -66,6 +68,7 @@ import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
+import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 import { Post, FeedItem, RecallCard, FeynmanBounty, QuizWar } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
@@ -304,8 +307,7 @@ export default function FeedScreen() {
   const unsubscribeFromFeed = useFeedStore(s => s.unsubscribeFromFeed);
   const pendingPosts = useFeedStore(s => s.pendingPosts);
   const applyPendingPosts = useFeedStore(s => s.applyPendingPosts);
-  const likePost = useFeedStore(s => s.likePost);
-  const unlikePost = useFeedStore(s => s.unlikePost);
+  const toggleLike = useFeedStore(s => s.toggleLike);
   const reactToPost = useFeedStore(s => s.reactToPost);
   const bookmarkPost = useFeedStore(s => s.bookmarkPost);
   const notInterestedPost = useFeedStore(s => s.notInterestedPost);
@@ -819,6 +821,7 @@ export default function FeedScreen() {
   ).current;
 
   const handleRefresh = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await Promise.all([
       fetchPosts(true),
@@ -839,30 +842,17 @@ export default function FeedScreen() {
   }, [hasMorePosts, fetchPosts]);
 
   const handleLikePost = useCallback((post: Post) => {
-    if (post.isLiked) {
-      unlikePost(post.id);
-    } else {
-      likePost(post.id);
-    }
-  }, [likePost, unlikePost]);
+    toggleLike(post.id);
+  }, [toggleLike]);
 
   const handleReactPost = useCallback((post: Post, type: string) => {
     reactToPost(post.id, type);
   }, [reactToPost]);
 
   const handleSharePost = useCallback(async (post: Post) => {
-    try {
-      if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        const { Share } = await import('react-native');
-        await Share.share({
-          message: `Check out this ${post.postType.toLowerCase()} on Stunity:\n\n${post.content}\n\n#Stunity #Education`,
-          title: `${post.author.firstName}'s ${post.postType}`,
-          url: `https://stunity.com/posts/${post.id}`,
-        });
-      }
+    const shared = await shareContent(buildPostShareContent(post));
+    if (shared) {
       await sharePost(post.id);
-    } catch (error) {
-      if (__DEV__) { console.error('Share failed:', error); }
     }
   }, [sharePost]);
 
@@ -1510,6 +1500,8 @@ export default function FeedScreen() {
         postType={valuePostData?.postType || 'POST'}
         authorName={valuePostData?.authorName || t('common.unknown') || 'Unknown'}
       />
+
+      <FloatingActionButton onPress={handleCreatePost} bottomOffset={56} />
 
       </View>
     </SafeAreaView>

@@ -20,7 +20,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Share,
   Alert,
   RefreshControl,
   Animated,
@@ -48,6 +47,8 @@ import { feedApi } from '@/api/client';
 import { useThemeContext } from '@/contexts';
 import { getPostDetailMediaAspectRatio, getPostDetailMediaBucket } from '@/utils/feedMediaLayout';
 import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
+import { shareContent, buildPostShareContent } from '@/utils/sharePost';
+import { AnimatedActionButton } from '@/components/feed/AnimatedActionButton';
 
 type PostDetailRouteProp = RouteProp<FeedStackParamList, 'PostDetail'>;
 
@@ -189,8 +190,7 @@ export default function PostDetailScreen() {
   const {
     feedItems,
     fetchPostById,
-    likePost,
-    unlikePost,
+    toggleLike,
     bookmarkPost,
     trackPostView,
     comments: storeComments,
@@ -224,9 +224,6 @@ export default function PostDetailScreen() {
   const [followLoading, setFollowLoading] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
-  const likeScale = useRef(new Animated.Value(1)).current;
-  const valueScale = useRef(new Animated.Value(1)).current;
-  const actionScale = useRef(new Animated.Value(1)).current;
   const bookmarkScale = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(18)).current;
@@ -306,17 +303,8 @@ export default function PostDetailScreen() {
   }, [loadPost, postId, fetchComments]);
 
   // ─── Animated styles ────────────────────────────────
-  const likeAnimStyle = {
-    transform: [{ scale: likeScale }],
-  };
   const bookmarkAnimStyle = {
     transform: [{ scale: bookmarkScale }],
-  };
-  const valueAnimStyle = {
-    transform: [{ scale: valueScale }],
-  };
-  const actionAnimStyle = {
-    transform: [{ scale: actionScale }],
   };
   const detailEntranceStyle = {
     opacity: screenOpacity,
@@ -326,33 +314,9 @@ export default function PostDetailScreen() {
   // ─── Handlers ───────────────────────────────────────
   const handleLike = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.sequence([
-      Animated.spring(likeScale, { toValue: 1.3, friction: 3, tension: 40, useNativeDriver: true }),
-      Animated.spring(likeScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
-    const previousLiked = liked;
-    const previousCount = likeCount;
-
-    if (liked) {
-      setLikeCount(prev => prev - 1);
-      setLiked(false);
-      try {
-        await unlikePost(postId);
-      } catch {
-        setLiked(previousLiked);
-        setLikeCount(previousCount);
-      }
-    } else {
-      setLikeCount(prev => prev + 1);
-      setLiked(true);
-      try {
-        await likePost(postId);
-      } catch {
-        setLiked(previousLiked);
-        setLikeCount(previousCount);
-      }
-    }
-  }, [liked, likeCount, postId, likePost, unlikePost, likeScale]);
+    // Store owns optimistic like state; local liked/likeCount sync from post props.
+    await toggleLike(postId);
+  }, [postId, toggleLike]);
 
   const handleBookmark = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -391,12 +355,8 @@ export default function PostDetailScreen() {
   const handleValue = useCallback(async () => {
     if (valued) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.spring(valueScale, { toValue: 1.35, friction: 4, tension: 40, useNativeDriver: true }),
-      Animated.spring(valueScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
     setIsValueModalVisible(true);
-  }, [valued, valueScale]);
+  }, [valued]);
 
   const handleSubmitValue = useCallback(async (value: EducationalValue) => {
     setIsValueSubmitting(true);
@@ -420,14 +380,24 @@ export default function PostDetailScreen() {
   }, [postId]);
 
   const handleSendComment = useCallback(async () => {
-    if (!commentText.trim()) return;
+    const text = commentText.trim();
+    if (!text) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const success = await addComment(postId, commentText.trim(), replyingTo?.id);
-    if (success) {
-      setCommentText('');
-      setReplyingTo(null);
+    const replyParentId = replyingTo?.id;
+    // Clear immediately — addComment inserts an optimistic bubble.
+    setCommentText('');
+    setReplyingTo(null);
+    const success = await addComment(postId, text, replyParentId);
+    if (!success) {
+      setCommentText(text);
+      if (replyParentId) {
+        // Best-effort restore reply target if still in the list
+        const parent = (storeComments[postId] || []).find((c) => c.id === replyParentId);
+        if (parent) setReplyingTo(parent);
+      }
+      Alert.alert('Error', 'Failed to post comment. Please try again.');
     }
-  }, [commentText, postId, addComment, replyingTo]);
+  }, [commentText, postId, addComment, replyingTo, storeComments]);
 
   const handleReply = useCallback((comment: Comment) => {
     Haptics.selectionAsync();
@@ -450,14 +420,10 @@ export default function PostDetailScreen() {
 
   const handleShare = useCallback(async () => {
     if (!post) return;
-    try {
-      await Share.share({
-        message: `Check out this ${post.postType.toLowerCase()} on Stunity:\n\n${post.content}\n\n#Stunity #Education`,
-        title: `${post.author.firstName}'s ${post.postType}`,
-        url: `https://stunity.com/posts/${post.id}`,
-      });
+    const shared = await shareContent(buildPostShareContent(post));
+    if (shared) {
       useFeedStore.getState().sharePost(post.id);
-    } catch { }
+    }
   }, [post]);
 
   const handleMenuToggle = useCallback(() => {
@@ -473,14 +439,10 @@ export default function PostDetailScreen() {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.spring(actionScale, { toValue: 1.25, friction: 4, tension: 40, useNativeDriver: true }),
-      Animated.spring(actionScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
     // Open the quote composer (parity with the feed) so the user can add
     // commentary or repost as-is — instead of the old bare confirm Alert.
     setShowRepostComposer(true);
-  }, [repostEnabled, post, currentUserOwnsPost, actionScale, t]);
+  }, [repostEnabled, post, currentUserOwnsPost, t]);
 
   const handleScrollToComments = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -899,50 +861,63 @@ export default function PostDetailScreen() {
               </View>
             </View>
 
-            {/* Action Bar */}
+            {/* Action Bar — Reanimated press feedback (parity with feed PostCard) */}
             <View style={styles.feedActionBar}>
               <View style={styles.feedActionLeft}>
-                <Animated.View style={[likeAnimStyle, styles.feedActionButton]}>
-                  <TouchableOpacity onPress={handleLike} style={styles.feedActionButtonInner}>
-                    <Ionicons
-                      name={liked ? 'heart' : 'heart-outline'}
-                      size={24}
-                      color={liked ? '#EF4444' : '#262626'}
-                    />
-                    {likeCount > 0 && (
-                      <Text style={[styles.feedActionText, liked && styles.feedActionTextLiked]}>{formatNumber(likeCount)}</Text>
-                    )}
-                  </TouchableOpacity>
-                </Animated.View>
-                <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
-                  <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleScrollToComments}>
-                    <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
-                    {commentCount > 0 && <Text style={styles.feedActionText}>{formatNumber(commentCount)}</Text>}
-                  </TouchableOpacity>
-                </Animated.View>
+                <AnimatedActionButton
+                  icon="heart-outline"
+                  activeIcon="heart"
+                  active={liked}
+                  count={likeCount}
+                  color={colors.text}
+                  activeColor="#EF4444"
+                  onPress={handleLike}
+                  size={24}
+                  accessibilityLabel={t('feed.actions.like')}
+                  textStyle={styles.feedActionText}
+                  activeTextStyle={styles.feedActionTextLiked}
+                />
+                <AnimatedActionButton
+                  icon="chatbubble-outline"
+                  count={commentCount}
+                  color={colors.text}
+                  activeColor="#1D9BF0"
+                  onPress={handleScrollToComments}
+                  size={24}
+                  accessibilityLabel={t('feed.actions.comment')}
+                  textStyle={styles.feedActionText}
+                />
                 {repostEnabled && (
-                  <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
-                    <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleRepost}>
-                      <Ionicons name="repeat-outline" size={26} color={colors.text} />
-                      {shareCount > 0 && <Text style={styles.feedActionText}>{formatNumber(shareCount)}</Text>}
-                    </TouchableOpacity>
-                  </Animated.View>
-                )}
-                <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
-                  <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleShare}>
-                    <Ionicons name="paper-plane-outline" size={23} color={colors.text} />
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-              <Animated.View style={[valueAnimStyle, styles.feedActionButton]}>
-                <TouchableOpacity onPress={handleValue} style={styles.feedActionButtonInner}>
-                  <Ionicons
-                    name={valued ? 'diamond' : 'diamond-outline'}
-                    size={24}
-                    color={valued ? '#8B5CF6' : '#262626'}
+                  <AnimatedActionButton
+                    icon="repeat-outline"
+                    count={shareCount}
+                    color={colors.text}
+                    activeColor="#00BA7C"
+                    onPress={handleRepost}
+                    size={26}
+                    accessibilityLabel={t('feed.repost')}
+                    textStyle={styles.feedActionText}
                   />
-                </TouchableOpacity>
-              </Animated.View>
+                )}
+                <AnimatedActionButton
+                  icon="paper-plane-outline"
+                  color={colors.text}
+                  activeColor="#1D9BF0"
+                  onPress={handleShare}
+                  size={23}
+                  accessibilityLabel={t('common.share')}
+                />
+              </View>
+              <AnimatedActionButton
+                icon="diamond-outline"
+                activeIcon="diamond"
+                active={valued}
+                color={colors.text}
+                activeColor="#8B5CF6"
+                onPress={handleValue}
+                size={24}
+                accessibilityLabel={t('feed.actions.rateValue')}
+              />
             </View>
           </Animated.View>
 

@@ -132,13 +132,17 @@ export default function CommentsScreen() {
   }, [postId]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    const text = newComment.trim();
+    if (!text) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const success = await addComment(postId, newComment.trim());
+    // Clear immediately — store inserts an optimistic comment.
+    setNewComment('');
+    const success = await addComment(postId, text);
     if (success) {
       track(isQuestion ? 'question_answer_submit' : 'comment_submit', { postId });
-      setNewComment('');
+    } else {
+      setNewComment(text);
     }
   };
 

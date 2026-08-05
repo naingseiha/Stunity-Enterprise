@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem, MediaMetadata } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
 import { dedupeFeedItems } from '@/utils/dedupeFeedItems';
+import { adjustReactionCounts } from '@/utils/reactionCounts';
 import { track } from '@/services/analytics';
 import { feedApi, quizApi, learnApi } from '@/api/client';
 import { InteractionManager } from 'react-native';
@@ -29,6 +30,69 @@ import { useAuthStore } from './authStore';
 import { metadataForUris, primaryMediaAspectRatio } from '@/utils/mediaMetadata';
 import { normalizeMediaUrls } from '@/utils/mediaUtils';
 import { cdnUrl } from '@/utils/cdnUrl';
+
+/** Effective reaction key used for optimistic reactionCounts math. */
+const effectiveReaction = (post: Post): string | null =>
+  post.myReaction ?? (post.isLiked ? 'LIKE' : null);
+
+type PostCollections = {
+  feedItems: FeedItem[];
+  myPosts: Post[];
+  bookmarkedPosts: Post[];
+};
+
+/** Patch a post across feed + myPosts + bookmarks so every surface stays in sync. */
+const patchPostEverywhere = (
+  state: PostCollections,
+  postId: string,
+  mapPost: (post: Post) => Post,
+) => ({
+  feedItems: state.feedItems.map((item) =>
+    item.type === 'POST' && item.data.id === postId
+      ? { ...item, data: mapPost(item.data) }
+      : item,
+  ),
+  myPosts: state.myPosts.map((p) => (p.id === postId ? mapPost(p) : p)),
+  bookmarkedPosts: state.bookmarkedPosts.map((p) => (p.id === postId ? mapPost(p) : p)),
+});
+
+const findPostEverywhere = (
+  state: PostCollections,
+  postId: string,
+): Post | undefined => {
+  const fromFeed = state.feedItems.find(
+    (i) => i.type === 'POST' && i.data.id === postId,
+  ) as { type: 'POST'; data: Post } | undefined;
+  if (fromFeed) return fromFeed.data;
+  return state.myPosts.find((p) => p.id === postId)
+    ?? state.bookmarkedPosts.find((p) => p.id === postId);
+};
+
+const mapCommentTree = (
+  comments: Comment[],
+  commentId: string,
+  apply: (comment: Comment) => Comment,
+): Comment[] =>
+  comments.map((comment) => {
+    if (comment.id === commentId) return apply(comment);
+    if (comment.replies?.length) {
+      return { ...comment, replies: mapCommentTree(comment.replies, commentId, apply) };
+    }
+    return comment;
+  });
+
+const replaceCommentInTree = (
+  comments: Comment[],
+  tempId: string,
+  next: Comment,
+): Comment[] =>
+  comments.map((c) => {
+    if (c.id === tempId) return next;
+    if (c.replies?.length) {
+      return { ...c, replies: replaceCommentInTree(c.replies, tempId, next) };
+    }
+    return c;
+  });
 // TEMPORARY: Disabled until native module rebuilt with EAS
 // import { networkQualityService } from '@/services/networkQuality';
 
@@ -246,6 +310,8 @@ interface FeedState {
   ) => void;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
+  /** Single source of truth toggle — reads current store state (avoids stale-closure double flips). */
+  toggleLike: (postId: string) => Promise<void>;
   reactToPost: (postId: string, type: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
   notInterestedPost: (postId: string) => Promise<void>;
@@ -905,10 +971,65 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Create a new post
   createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData, topicTags, deadline, questionBounty = 0, mediaMetadata = []) => {
+    const user = useAuthStore.getState().user;
+    const tempId = `temp-post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const nowIso = new Date().toISOString();
+    const resolvedMediaMetadata = metadataForUris(mediaUrls, mediaMetadata);
+
+    // Instant feed presence — show the post with local media while upload/API runs.
+    if (user) {
+      const optimisticPost: Post = {
+        id: tempId,
+        author: {
+          id: user.id,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+          username: user.username || 'user',
+          profilePictureUrl: user.profilePictureUrl,
+          role: user.role,
+          isVerified: user.isVerified || false,
+          email: user.email || '',
+          languages: user.languages || [],
+          interests: user.interests || [],
+          isOnline: true,
+          createdAt: user.createdAt || nowIso,
+          updatedAt: user.updatedAt || nowIso,
+        },
+        content,
+        title,
+        postType: postType as Post['postType'],
+        mediaUrls: [...mediaUrls],
+        mediaDisplayMode: 'AUTO',
+        mediaMetadata: resolvedMediaMetadata,
+        mediaAspectRatio: primaryMediaAspectRatio(resolvedMediaMetadata),
+        authorId: user.id,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        isLiked: false,
+        isBookmarked: false,
+        visibility: (visibility as Post['visibility']) || 'PUBLIC',
+        tags: [],
+        topicTags: topicTags || [],
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        learningMeta: {},
+        ...(postType === 'POLL' && pollOptions.length
+          ? {
+              pollOptions: pollOptions
+                .filter((opt) => opt.trim().length > 0)
+                .map((text, i) => ({ id: `temp-opt-${i}`, text, votes: 0 })),
+            }
+          : {}),
+      };
+      get().addOptimisticPost(optimisticPost);
+    }
+
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
-      let resolvedMediaMetadata = metadataForUris(mediaUrls, mediaMetadata);
+      let uploadResolvedMediaMetadata = resolvedMediaMetadata;
 
       const isLocalUri = (uri: string) => uri && !uri.startsWith('http') && !uri.startsWith('https') && !uri.startsWith('data:');
       const hasLocalImages = mediaUrls.some(isLocalUri);
@@ -936,7 +1057,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
             const filename = uri.split('/').pop() || `file-${Date.now()}`;
             const ext = /\.(\w+)$/.exec(filename)?.[1]?.toLowerCase() || 'jpg';
-            let type = resolvedMediaMetadata[originalIndex]?.mimeType || 'image/jpeg';
+            let type = uploadResolvedMediaMetadata[originalIndex]?.mimeType || 'image/jpeg';
             if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
             else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
             return { originalName: filename, mimeType: type, uri };
@@ -1005,7 +1126,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             }
           }
 
-          resolvedMediaMetadata = metadataForUris(uploadedMediaUrls, resolvedMediaMetadata);
+          uploadResolvedMediaMetadata = metadataForUris(uploadedMediaUrls, uploadResolvedMediaMetadata);
           console.log('✅ [FeedStore] All images uploaded successfully:', uploadedMediaUrls);
         } catch (uploadError: any) {
           console.error('❌ [FeedStore] Upload error:', uploadError);
@@ -1029,8 +1150,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         postType,
         visibility,
         mediaDisplayMode: 'AUTO',
-        mediaMetadata: resolvedMediaMetadata,
-        mediaAspectRatio: primaryMediaAspectRatio(resolvedMediaMetadata),
+        mediaMetadata: uploadResolvedMediaMetadata,
+        mediaAspectRatio: primaryMediaAspectRatio(uploadResolvedMediaMetadata),
         pollOptions: postType === 'POLL' ? pollOptions : undefined,
         pollSettings: postType === 'POLL' ? pollSettings : undefined, // Send full settings
         deadline: resolvedDeadline, // Send deadline for backend to handle
@@ -1052,6 +1173,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             firstName: newPostData.author?.firstName,
             lastName: newPostData.author?.lastName,
             name: `${newPostData.author?.firstName || ''} ${newPostData.author?.lastName || ''}`.trim(),
+            username: newPostData.author?.username || 'user',
             profilePictureUrl: newPostData.author?.profilePictureUrl,
             role: newPostData.author?.role,
             isVerified: newPostData.author?.isVerified || false,
@@ -1067,8 +1189,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           postType: newPostData.postType || postType,
           mediaUrls: newPostData.mediaUrls || uploadedMediaUrls,
           mediaDisplayMode: newPostData.mediaDisplayMode || 'AUTO',
-          mediaMetadata: newPostData.mediaMetadata || newPostData.media_metadata || resolvedMediaMetadata,
-          mediaAspectRatio: newPostData.mediaAspectRatio ?? newPostData.media_aspect_ratio ?? primaryMediaAspectRatio(resolvedMediaMetadata),
+          mediaMetadata: newPostData.mediaMetadata || newPostData.media_metadata || uploadResolvedMediaMetadata,
+          mediaAspectRatio: newPostData.mediaAspectRatio ?? newPostData.media_aspect_ratio ?? primaryMediaAspectRatio(uploadResolvedMediaMetadata),
           authorId: newPostData.author?.id,
           likes: newPostData.likesCount || 0,
           comments: newPostData.commentsCount || 0,
@@ -1103,119 +1225,169 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           }),
         };
 
-        // Add to top of feed with optimistic update
-        set((state) => ({
-          feedItems: [{ type: 'POST', data: newPost }, ...state.feedItems],
-        }));
+        // Swap the temp optimistic card for the real post (no double-insert).
+        set((state) => {
+          const hasTemp = state.feedItems.some(
+            (i) => i.type === 'POST' && i.data.id === tempId,
+          );
+          return {
+            feedItems: hasTemp
+              ? state.feedItems.map((item) =>
+                  item.type === 'POST' && item.data.id === tempId
+                    ? { type: 'POST' as const, data: newPost }
+                    : item,
+                )
+              : [{ type: 'POST' as const, data: newPost }, ...state.feedItems],
+            myPosts: [
+              newPost,
+              ...state.myPosts.filter((p) => p.id !== tempId),
+            ],
+          };
+        });
 
         return true;
       }
+      get().removeOptimisticPost(tempId);
       return false;
     } catch (error: any) {
       console.error('Failed to create post:', error);
       console.error('Error details:', error.response?.data);
+      get().removeOptimisticPost(tempId);
       return false;
     }
   },
 
   // Like a post
   likePost: async (postId) => {
-    // Optimistic update
-    set((state) => ({
-      feedItems: state.feedItems.map((item) =>
-        item.type === 'POST' && item.data.id === postId
-          ? { ...item, data: { ...item.data, isLiked: true, likes: item.data.likes + 1 } }
-          : item
-      ),
-    }));
+    const post = findPostEverywhere(get(), postId);
+    if (!post) return;
 
-    // Track for recommendation engine (local)
-    const postItem = get().feedItems.find(i => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
-    if (postItem) {
-      recommendationEngine.trackAction('LIKE', postItem.data);
-      set({ userInterestProfile: recommendationEngine.getUserProfile() });
-    }
+    const prevReaction = effectiveReaction(post);
+    // Already liked — avoid double-counting when a stale caller hits likePost.
+    if (prevReaction) return;
+
+    const applyLike = (liked: boolean) =>
+      set((state) =>
+        patchPostEverywhere(state, postId, (p) => {
+          const from = effectiveReaction(p);
+          if (liked) {
+            if (from) return p;
+            return {
+              ...p,
+              isLiked: true,
+              myReaction: 'LIKE',
+              likes: p.likes + 1,
+              reactionCounts: adjustReactionCounts(p.reactionCounts ?? {}, null, 'LIKE'),
+            };
+          }
+          if (!from) return p;
+          return {
+            ...p,
+            isLiked: false,
+            myReaction: null,
+            likes: Math.max(0, p.likes - 1),
+            reactionCounts: adjustReactionCounts(p.reactionCounts ?? {}, from, null),
+          };
+        }),
+      );
+
+    applyLike(true);
+
+    recommendationEngine.trackAction('LIKE', post);
+    set({ userInterestProfile: recommendationEngine.getUserProfile() });
 
     try {
       await feedApi.post(`/posts/${postId}/like`);
     } catch (error) {
-      // Revert on error
-      set((state) => ({
-        feedItems: state.feedItems.map((item) =>
-          item.type === 'POST' && item.data.id === postId
-            ? { ...item, data: { ...item.data, isLiked: false, likes: item.data.likes - 1 } }
-            : item
-        ),
-      }));
+      applyLike(false);
     }
   },
 
   // Unlike a post
   unlikePost: async (postId) => {
-    // Optimistic update
-    set((state) => ({
-      feedItems: state.feedItems.map((item) =>
-        item.type === 'POST' && item.data.id === postId
-          ? { ...item, data: { ...item.data, isLiked: false, likes: item.data.likes - 1 } }
-          : item
-      ),
-    }));
+    const post = findPostEverywhere(get(), postId);
+    if (!post) return;
+
+    const prevReaction = effectiveReaction(post);
+    if (!prevReaction) return;
+
+    const applyUnlike = (liked: boolean) =>
+      set((state) =>
+        patchPostEverywhere(state, postId, (p) => {
+          const from = effectiveReaction(p);
+          if (!liked) {
+            if (!from) return p;
+            return {
+              ...p,
+              isLiked: false,
+              myReaction: null,
+              likes: Math.max(0, p.likes - 1),
+              reactionCounts: adjustReactionCounts(p.reactionCounts ?? {}, from, null),
+            };
+          }
+          // Revert → restore previous reaction snapshot
+          return {
+            ...p,
+            isLiked: true,
+            myReaction: prevReaction,
+            likes: p.likes + 1,
+            reactionCounts: adjustReactionCounts(p.reactionCounts ?? {}, null, prevReaction),
+          };
+        }),
+      );
+
+    applyUnlike(false);
 
     try {
       // Backend uses POST for toggle (handles both like and unlike)
       await feedApi.post(`/posts/${postId}/like`);
     } catch (error) {
-      // Revert on error
-      set((state) => ({
-        feedItems: state.feedItems.map((item) =>
-          item.type === 'POST' && item.data.id === postId
-            ? { ...item, data: { ...item.data, isLiked: true, likes: item.data.likes + 1 } }
-            : item
-        ),
-      }));
+      applyUnlike(true);
+    }
+  },
+
+  toggleLike: async (postId) => {
+    const post = findPostEverywhere(get(), postId);
+    if (!post) return;
+    if (effectiveReaction(post)) {
+      await get().unlikePost(postId);
+    } else {
+      await get().likePost(postId);
     }
   },
 
   // Set / change / toggle-off a reaction on a post.
   reactToPost: async (postId, type) => {
-    const item = get().feedItems.find(
-      (i) => i.type === 'POST' && i.data.id === postId,
-    ) as { type: 'POST'; data: Post } | undefined;
-    const prev = item?.data.myReaction ?? null;
+    const post = findPostEverywhere(get(), postId);
+    if (!post) return;
+
+    const prev = effectiveReaction(post);
     const same = prev === type;
     const had = !!prev;
     const next = same ? null : type;
     const likeDelta = same ? -1 : had ? 0 : 1;
 
-    const apply = (reaction: string | null, delta: number) =>
-      set((state) => ({
-        feedItems: state.feedItems.map((it) =>
-          it.type === 'POST' && it.data.id === postId
-            ? {
-                ...it,
-                data: {
-                  ...it.data,
-                  myReaction: reaction,
-                  isLiked: !!reaction,
-                  likes: Math.max(0, it.data.likes + delta),
-                },
-              }
-            : it,
-        ),
-      }));
+    const apply = (reaction: string | null, from: string | null, delta: number) =>
+      set((state) =>
+        patchPostEverywhere(state, postId, (p) => ({
+          ...p,
+          myReaction: reaction,
+          isLiked: !!reaction,
+          likes: Math.max(0, p.likes + delta),
+          reactionCounts: adjustReactionCounts(p.reactionCounts ?? {}, from, reaction),
+        })),
+      );
 
-    apply(next, likeDelta);
+    apply(next, prev, likeDelta);
 
-    if (item) {
-      recommendationEngine.trackAction('LIKE', item.data);
-      set({ userInterestProfile: recommendationEngine.getUserProfile() });
-    }
+    recommendationEngine.trackAction('LIKE', post);
+    set({ userInterestProfile: recommendationEngine.getUserProfile() });
 
     try {
       await feedApi.post(`/posts/${postId}/react`, { type });
       if (next) track('post_reaction', { type: next });
     } catch (error) {
-      apply(prev, -likeDelta); // revert
+      apply(prev, next, -likeDelta); // revert
     }
   },
 
@@ -1442,16 +1614,80 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Add a comment to a post
   addComment: async (postId, content, parentId) => {
+    const user = useAuthStore.getState().user;
+    if (!user) return false;
+
+    const tempId = `temp-comment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimisticComment: Comment = {
+      id: tempId,
+      content,
+      author: {
+        id: user.id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+        username: user.username || 'user',
+        profilePictureUrl: user.profilePictureUrl,
+        role: user.role,
+        isVerified: user.isVerified || false,
+        email: user.email || '',
+        languages: user.languages || [],
+        interests: user.interests || [],
+        isOnline: true,
+        createdAt: user.createdAt || new Date().toISOString(),
+        updatedAt: user.updatedAt || new Date().toISOString(),
+      },
+      postId,
+      parentId,
+      likes: 0,
+      isLiked: false,
+      replies: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    // Optimistic insert immediately — UI clears input without waiting on the network.
     set((state) => ({
-      isSubmittingComment: { ...state.isSubmittingComment, [postId]: true },
+      comments: {
+        ...state.comments,
+        [postId]: parentId
+          ? (state.comments[postId] || []).map((comment) =>
+              comment.id === parentId
+                ? { ...comment, replies: [...(comment.replies || []), optimisticComment] }
+                : comment,
+            )
+          : [optimisticComment, ...(state.comments[postId] || [])],
+      },
+      isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
+      ...patchPostEverywhere(state, postId, (p) => ({
+        ...p,
+        comments: p.comments + 1,
+      })),
     }));
 
-    // Track for recommendation engine
-    const postItem = get().feedItems.find((i) => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    const postItem = get().feedItems.find((i) => i.type === 'POST' && i.data.id === postId) as
+      | { type: 'POST'; data: Post }
+      | undefined;
     if (postItem) {
       recommendationEngine.trackAction('COMMENT', postItem.data);
       set({ userInterestProfile: recommendationEngine.getUserProfile() });
     }
+
+    const rollback = () =>
+      set((state) => ({
+        comments: {
+          ...state.comments,
+          [postId]: parentId
+            ? mapCommentTree(state.comments[postId] || [], parentId, (comment) => ({
+                ...comment,
+                replies: (comment.replies || []).filter((r) => r.id !== tempId),
+              }))
+            : (state.comments[postId] || []).filter((c) => c.id !== tempId),
+        },
+        ...patchPostEverywhere(state, postId, (p) => ({
+          ...p,
+          comments: Math.max(0, p.comments - 1),
+        })),
+      }));
 
     try {
       const response = await feedApi.post(`/posts/${postId}/comments`, { content, parentId });
@@ -1459,7 +1695,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       if (response.data.success) {
         const newComment = response.data.data;
 
-        // Transform comment
         const transformedComment: Comment = {
           id: newComment.id,
           content: newComment.content,
@@ -1487,51 +1722,56 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           createdAt: newComment.createdAt,
         };
 
-        // Update comments list
         set((state) => ({
           comments: {
             ...state.comments,
-            [postId]: parentId
-              ? (state.comments[postId] || []).map((comment) =>
-                comment.id === parentId
-                  ? { ...comment, replies: [...(comment.replies || []), transformedComment] }
-                  : comment
-              )
-              : [transformedComment, ...(state.comments[postId] || [])],
+            [postId]: replaceCommentInTree(state.comments[postId] || [], tempId, transformedComment),
           },
-          isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
-          // Update post comment count
-          feedItems: state.feedItems.map((item) =>
-            item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, comments: item.data.comments + 1 } } : item
-          ),
         }));
 
         return true;
       }
 
-      set((state) => ({
-        isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
-      }));
+      rollback();
       return false;
     } catch (error) {
       console.error('Failed to add comment:', error);
-      set((state) => ({
-        isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
-      }));
+      rollback();
       return false;
     }
   },
 
   // Like/unlike a comment
   toggleCommentLike: async (postId, commentId) => {
-    const updateComment = (comments: Comment[], apply: (comment: Comment) => Comment): Comment[] =>
-      comments.map((comment) => {
-        if (comment.id === commentId) return apply(comment);
-        if (comment.replies?.length) {
-          return { ...comment, replies: updateComment(comment.replies, apply) };
+    const findInTree = (comments: Comment[]): Comment | undefined => {
+      for (const c of comments) {
+        if (c.id === commentId) return c;
+        if (c.replies?.length) {
+          const found = findInTree(c.replies);
+          if (found) return found;
         }
-        return comment;
-      });
+      }
+      return undefined;
+    };
+
+    const current = findInTree(get().comments[postId] || []);
+    if (!current) return false;
+
+    const prevLiked = current.isLiked;
+    const prevLikes = current.likes;
+    const nextLiked = !prevLiked;
+    const nextLikes = Math.max(0, prevLikes + (nextLiked ? 1 : -1));
+
+    set((state) => ({
+      comments: {
+        ...state.comments,
+        [postId]: mapCommentTree(state.comments[postId] || [], commentId, (comment) => ({
+          ...comment,
+          isLiked: nextLiked,
+          likes: nextLikes,
+        })),
+      },
+    }));
 
     try {
       const response = await feedApi.post(`/comments/${commentId}/like`);
@@ -1540,7 +1780,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         set((state) => ({
           comments: {
             ...state.comments,
-            [postId]: updateComment(state.comments[postId] || [], (comment) => ({
+            [postId]: mapCommentTree(state.comments[postId] || [], commentId, (comment) => ({
               ...comment,
               isLiked: response.data.isLiked,
               likes: response.data.likesCount,
@@ -1549,9 +1789,30 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         }));
         return true;
       }
+
+      set((state) => ({
+        comments: {
+          ...state.comments,
+          [postId]: mapCommentTree(state.comments[postId] || [], commentId, (comment) => ({
+            ...comment,
+            isLiked: prevLiked,
+            likes: prevLikes,
+          })),
+        },
+      }));
       return false;
     } catch (error) {
       console.error('Failed to toggle comment like:', error);
+      set((state) => ({
+        comments: {
+          ...state.comments,
+          [postId]: mapCommentTree(state.comments[postId] || [], commentId, (comment) => ({
+            ...comment,
+            isLiked: prevLiked,
+            likes: prevLikes,
+          })),
+        },
+      }));
       return false;
     }
   },
@@ -1754,21 +2015,36 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }
   },
 
-  // Share a post (track share)
+  // Share a post (optimistic count; caller should invoke only after a successful share sheet).
   sharePost: async (postId) => {
+    const post = findPostEverywhere(get(), postId);
+    if (!post) {
+      // Still fire the API for ranking signals even if the post isn't in local lists.
+      try {
+        await feedApi.post(`/posts/${postId}/share`);
+      } catch (error) {
+        console.error('Failed to track share:', error);
+      }
+      return;
+    }
+
+    set((state) =>
+      patchPostEverywhere(state, postId, (p) => ({
+        ...p,
+        shares: p.shares + 1,
+      })),
+    );
+
     try {
       await feedApi.post(`/posts/${postId}/share`);
-
-      // Update share count locally
-      set((state) => ({
-        feedItems: state.feedItems.map((item) =>
-          item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, shares: item.data.shares + 1 } } : item
-        ),
-      }));
-
-      // The share endpoint updates ranking signals server-side.
     } catch (error) {
       console.error('Failed to track share:', error);
+      set((state) =>
+        patchPostEverywhere(state, postId, (p) => ({
+          ...p,
+          shares: Math.max(0, p.shares - 1),
+        })),
+      );
     }
   },
 

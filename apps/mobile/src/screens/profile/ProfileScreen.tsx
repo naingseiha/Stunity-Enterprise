@@ -31,7 +31,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { FlashList } from "@shopify/flash-list";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useScrollToTop } from "@react-navigation/native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -49,6 +49,7 @@ import { FEATURE_FLAGS } from "@/config/featureFlags";
 import { useAuthStore, useFeedStore, useLeaderboardStore } from "@/stores";
 import { User, UserStats, Education, Experience, Certification } from "@/types";
 import { formatNumber } from "@/utils";
+import { shareContent, buildPostShareContent } from "@/utils/sharePost";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
 import { ProfileStackScreenProps } from "@/navigation/types";
 import {
@@ -246,6 +247,8 @@ export default function ProfileScreen() {
   const route = useRoute<RouteProp>();
   const currentUser = useAuthStore(s => s.user);
   const insets = useSafeAreaInsets();
+  const listRef = useRef<any>(null);
+  useScrollToTop(listRef);
   const layout = useLayoutBreakpoint();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isThreeColumnTablet =
@@ -288,9 +291,8 @@ export default function ProfileScreen() {
   const fetchMyPosts = useFeedStore((state) => state.fetchMyPosts);
   // Engagement actions for the Posts tab. These are pure store/API calls (no
   // navigation), so they work from the Profile stack even though PostDetail /
-  // Comments live in the Feed stack. PostCard handles its own optimistic UI.
-  const likePost = useFeedStore((state) => state.likePost);
-  const unlikePost = useFeedStore((state) => state.unlikePost);
+  // Comments live in the Feed stack. Store owns optimistic engagement state.
+  const toggleLike = useFeedStore((state) => state.toggleLike);
   const reactToPost = useFeedStore((state) => state.reactToPost);
   const bookmarkPostAction = useFeedStore((state) => state.bookmarkPost);
   const voteOnPoll = useFeedStore((state) => state.voteOnPoll);
@@ -950,21 +952,17 @@ export default function ProfileScreen() {
 
   const noop = useCallback(() => {}, []);
   const handleProfilePostShare = useCallback(async (post: any) => {
-    try {
-      const { Share } = await import('react-native');
-      await Share.share({
-        message: `Check out this ${String(post.postType || 'post').toLowerCase()} on Stunity:\n\n${post.content || ''}\n\nhttps://stunity.com/posts/${post.id}`,
-        title: t('common.post'),
-        url: `https://stunity.com/posts/${post.id}`,
-      });
-    } catch { /* user dismissed */ }
-  }, [t]);
+    const shared = await shareContent(buildPostShareContent(post));
+    if (shared) {
+      useFeedStore.getState().sharePost(post.id);
+    }
+  }, []);
   const profilePostHandlersRef = useMemo(
     () => ({
       current: {
         navigation,
         // Reactions + likes work here — pure store/API calls, no navigation.
-        handleLikePost: (post: any) => (post?.isLiked ? unlikePost(post.id) : likePost(post.id)),
+        handleLikePost: (post: any) => toggleLike(post.id),
         handleReactPost: (post: any, type: string) => reactToPost(post.id, type),
         bookmarkPost: (postId: string) => bookmarkPostAction(postId),
         handleVoteOnPoll: (postId: string, optionId: string) => voteOnPoll(postId, optionId),
@@ -976,7 +974,7 @@ export default function ProfileScreen() {
         handlePostPress: noop,
       },
     }),
-    [navigation, noop, likePost, unlikePost, reactToPost, bookmarkPostAction, voteOnPoll, handleProfilePostShare],
+    [navigation, noop, toggleLike, reactToPost, bookmarkPostAction, voteOnPoll, handleProfilePostShare],
   );
 
   const tabs = useMemo(
@@ -1304,6 +1302,7 @@ export default function ProfileScreen() {
           )}
 
           <FlashList
+          ref={listRef}
           style={layout.isTablet ? [styles.tabletListShell, isProfileRailTablet && styles.tabletCenterList] : undefined}
           data={profileListData}
           extraData={profileListExtraData}

@@ -5,8 +5,8 @@
  * Features: Feed, Learn, Clubs, Profile (icon-only)
  */
 
-import React, { useCallback, useEffect, useRef } from "react";
-import { Animated, StyleSheet, Platform, View } from "react-native";
+import React, { useCallback, useEffect } from "react";
+import { StyleSheet, Platform, View } from "react-native";
 import { createBottomTabNavigator, BottomTabBar } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
@@ -14,7 +14,12 @@ import {
   getFocusedRouteNameFromRoute,
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { Haptics } from "@/services/haptics";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  cancelAnimation,
+} from "react-native-reanimated";
 
 import {
   MainStackParamList,
@@ -29,9 +34,11 @@ import {
 } from "./types";
 import { Sidebar } from "@/components/navigation";
 import TabletTabRail from "@/components/navigation/TabletTabRail";
+import { PressableTabBarButton } from "@/components/navigation/PressableTabBarButton";
 import { withSwipeableTab } from "@/components/navigation/SwipeableTabContainer";
 import { ProfileTabIcon } from "@/components/navigation/ProfileTabIcon";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
+import { useReducedMotion } from "@/hooks";
 import {
   NavigationProvider,
   useNavigationContext,
@@ -489,35 +496,34 @@ const MainTabIcon = React.memo(function MainTabIcon({
   styles: ReturnType<typeof createStyles>;
   children?: React.ReactNode;
 }) {
-  const focusProgress = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const reduceMotion = useReducedMotion();
+  const focusProgress = useSharedValue(focused ? 1 : 0);
 
   useEffect(() => {
-    Animated.spring(focusProgress, {
-      toValue: focused ? 1 : 0,
+    if (reduceMotion) {
+      cancelAnimation(focusProgress);
+      focusProgress.value = focused ? 1 : 0;
+      return;
+    }
+    focusProgress.value = withSpring(focused ? 1 : 0, {
       damping: 18,
       stiffness: 220,
       mass: 0.8,
-      useNativeDriver: true,
-    }).start();
-  }, [focused, focusProgress]);
+    });
+  }, [focused, focusProgress, reduceMotion]);
 
-  const scale = focusProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.08],
-  });
-
-  const translateY = focusProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, -1],
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = focusProgress.value;
+    return {
+      transform: [
+        { translateY: 1 - p * 2 },
+        { scale: 1 + p * 0.08 },
+      ],
+    };
   });
 
   return (
-    <Animated.View
-      style={[
-        styles.tabIconContainer,
-        { transform: [{ translateY }, { scale }] },
-      ]}
-    >
+    <Animated.View style={[styles.tabIconContainer, animatedStyle]}>
       {children ?? (
         <Ionicons name={iconName} size={iconSize} color={color} />
       )}
@@ -613,6 +619,9 @@ const MainNavigatorContent = () => {
           tabBarShowLabel: false, // Instagram-style: icons only
           tabBarActiveTintColor: colors.primary, // Black when active (Instagram style)
           tabBarInactiveTintColor: colors.textSecondary, // Light gray when inactive
+          tabBarButton: (props) => <PressableTabBarButton {...props} />,
+          lazy: true,
+          freezeOnBlur: true,
           tabBarStyle: {
             backgroundColor: colors.card,
             borderTopWidth: 0.5,
@@ -688,7 +697,7 @@ const MainNavigatorContent = () => {
         })}
         screenListeners={({ route, navigation }) => ({
           tabPress: (event) => {
-            Haptics.selectionAsync();
+            // Haptic fires on pressIn inside PressableTabBarButton.
             if (route.name === "ProfileTab") {
               event.preventDefault();
               navigation.navigate("ProfileTab", { screen: "Profile" });

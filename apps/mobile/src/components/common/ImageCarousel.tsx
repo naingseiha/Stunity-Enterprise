@@ -37,6 +37,8 @@ interface ImageCarouselProps {
   images: string[];
   mediaMetadata?: MediaMetadata[];
   onImagePress?: (index: number) => void;
+  /** IG-style double-tap (e.g. like). When set, single-tap is delayed ~280ms. */
+  onDoubleTap?: (index: number) => void;
   borderRadius?: number;
   aspectRatio?: number; // Fixed aspect ratio (height/width)
   mode?: AspectRatioMode; // Layout mode: auto detects from image, or use fixed mode
@@ -161,6 +163,7 @@ function ImageCarouselInner({
   images,
   mediaMetadata = [],
   onImagePress,
+  onDoubleTap,
   borderRadius = 12,
   aspectRatio,
   mode = 'auto', // Default to auto-detect
@@ -295,7 +298,10 @@ function ImageCarouselInner({
     setActiveIndex(index);
   }, []);
 
-  const handleImagePress = useCallback((index: number) => {
+  const lastTapRef = useRef(0);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fireSinglePress = useCallback((index: number) => {
     if (isVideoMedia(normalizedImages[index], safeMediaMetadata[index])) {
       if (optimizeForFeed) {
         onImagePress?.(index);
@@ -306,6 +312,36 @@ function ImageCarouselInner({
     if (enableViewer) setModalVisible(true);
     onImagePress?.(index);
   }, [enableViewer, safeMediaMetadata, normalizedImages, onImagePress, optimizeForFeed]);
+
+  const handleImagePress = useCallback((index: number) => {
+    if (!onDoubleTap) {
+      fireSinglePress(index);
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastTapRef.current < 280) {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      lastTapRef.current = 0;
+      onDoubleTap(index);
+      return;
+    }
+
+    lastTapRef.current = now;
+    singleTapTimerRef.current = setTimeout(() => {
+      if (lastTapRef.current === now) {
+        fireSinglePress(index);
+      }
+      singleTapTimerRef.current = null;
+    }, 280);
+  }, [onDoubleTap, fireSinglePress]);
+
+  useLayoutEffect(() => () => {
+    if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+  }, []);
 
   if (normalizedImages.length === 0) return null;
 

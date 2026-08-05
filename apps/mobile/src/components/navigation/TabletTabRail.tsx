@@ -1,15 +1,23 @@
 /**
  * Vertical tab rail for tablet-width layouts (replaces bottom tab bar).
+ * Press spring + selection haptic match phone PressableTabBarButton.
  */
 
-import React, { useMemo } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import { Haptics } from '@/services/haptics';
 import { useThemeContext } from '@/contexts';
+import { useReducedMotion } from '@/hooks';
 import type { MainStackParamList, MainTabParamList } from '@/navigation/types';
 import { TABLET_TAB_RAIL_WIDTH } from '@/utils/layout';
 import { ProfileTabIcon } from '@/components/navigation/ProfileTabIcon';
@@ -36,6 +44,59 @@ const TAB_ICONS: Record<
   ClubsTab: { focused: 'school', outline: 'school-outline', size: 28 },
   ProfileTab: { focused: 'person-circle', outline: 'person-circle-outline', size: 28 },
 };
+
+const PRESS_SPRING = { damping: 16, stiffness: 420, mass: 0.55 };
+const RELEASE_SPRING = { damping: 14, stiffness: 280, mass: 0.7 };
+
+function RailTabButton({
+  focused,
+  onPress,
+  children,
+  itemStyle,
+  itemActiveStyle,
+}: {
+  focused: boolean;
+  onPress: () => void;
+  children: React.ReactNode;
+  itemStyle: object;
+  itemActiveStyle: object;
+}) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = useCallback(() => {
+    Haptics.selectionAsync();
+    if (!reduceMotion) {
+      cancelAnimation(scale);
+      scale.value = withSpring(0.9, PRESS_SPRING);
+    }
+  }, [reduceMotion, scale]);
+
+  const handlePressOut = useCallback(() => {
+    if (!reduceMotion) {
+      cancelAnimation(scale);
+      scale.value = withSpring(1, RELEASE_SPRING);
+    }
+  }, [reduceMotion, scale]);
+
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: focused }}
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+      style={[itemStyle, focused && itemActiveStyle]}
+    >
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
+    </Pressable>
+  );
+}
 
 export default function TabletTabRail() {
   const navigation = useNavigation<StackNav>();
@@ -80,7 +141,6 @@ export default function TabletTabRail() {
   );
 
   const goTab = (name: keyof MainTabParamList) => {
-    Haptics.selectionAsync();
     if (name === 'ProfileTab') {
       navigation.navigate('MainTabs', {
         screen: 'ProfileTab',
@@ -103,21 +163,19 @@ export default function TabletTabRail() {
         const color = focused ? colors.primary : colors.textSecondary;
 
         return (
-          <TouchableOpacity
+          <RailTabButton
             key={name}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: focused }}
-            style={[styles.item, focused && styles.itemActive]}
+            focused={focused}
             onPress={() => goTab(name)}
-            activeOpacity={0.75}
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            itemStyle={styles.item}
+            itemActiveStyle={styles.itemActive}
           >
             {name === 'ProfileTab' ? (
               <ProfileTabIcon focused={focused} color={color} />
             ) : (
               <Ionicons name={iconName} size={cfg.size} color={color} />
             )}
-          </TouchableOpacity>
+          </RailTabButton>
         );
       })}
     </View>

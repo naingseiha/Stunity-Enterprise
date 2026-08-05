@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ImageCarousel } from '@/components/common';
 import { PollVoting } from './PollVoting';
+import { HeartBurstOverlay } from './HeartBurstOverlay';
 import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, ClubCreatedSection } from './PostCardSections';
 import { formatNumber, formatRelativeTime } from '@/utils';
 import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
@@ -17,6 +18,8 @@ interface PostContentProps {
   post: any; // Replace with proper Post type
   onPress: () => void;
   onImagePress: (index: number) => void;
+  onDoubleTapLike?: () => void;
+  heartBurstToken?: number;
   onVote?: (optionId: string) => void;
   navigate?: (screen: string, params: any) => void;
   typeConfig: any; // Replace with proper type
@@ -49,6 +52,8 @@ const PostContent = ({
   post,
   onPress,
   onImagePress,
+  onDoubleTapLike,
+  heartBurstToken = 0,
   onVote,
   navigate,
   typeConfig,
@@ -112,6 +117,7 @@ const PostContent = ({
             images={post.mediaUrls}
             mediaMetadata={post.mediaMetadata || []}
             onImagePress={onImagePress}
+            onDoubleTap={onDoubleTapLike ? () => onDoubleTapLike() : undefined}
             borderRadius={16}
             aspectRatio={mediaDisplayMode === 'AUTO' || mediaDisplayMode === 'CAROUSEL' ? undefined : feedMediaAspectRatio}
             mode="auto"
@@ -119,6 +125,7 @@ const PostContent = ({
             optimizeForFeed
             contentWidth={mediaContentWidth}
           />
+          <HeartBurstOverlay burstToken={heartBurstToken} />
           {/* Rich content indicators */}
           {(learningMeta?.hasCode || learningMeta?.hasPdf || learningMeta?.hasFormula) && (
             <View style={styles.richContentIndicators}>

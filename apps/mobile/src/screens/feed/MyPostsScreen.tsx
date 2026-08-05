@@ -30,6 +30,7 @@ import { PostCard, PostAnalyticsModal } from '@/components/feed';
 import { useFeedStore } from '@/stores';
 import { Post } from '@/types';
 import { Colors, Shadows } from '@/config';
+import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 
 export default function MyPostsScreen() {
   const navigation = useNavigation();
@@ -39,8 +40,7 @@ export default function MyPostsScreen() {
     myPosts, 
     isLoadingMyPosts, 
     fetchMyPosts,
-    likePost,
-    unlikePost,
+    toggleLike,
     reactToPost,
     bookmarkPost,
     voteOnPoll,
@@ -73,11 +73,7 @@ export default function MyPostsScreen() {
   
   const handleLikePost = (post: Post) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (post.isLiked) {
-      unlikePost(post.id);
-    } else {
-      likePost(post.id);
-    }
+    toggleLike(post.id);
   };
   
   const renderPost = ({ item, index }: { item: Post; index: number }) => (
@@ -89,7 +85,10 @@ export default function MyPostsScreen() {
         onLike={() => handleLikePost(item)}
         onReact={(type: string) => reactToPost(item.id, type)}
         onComment={() => navigation.navigate('Comments' as any, { postId: item.id, postType: item.postType })}
-        onShare={() => sharePost(item.id)}
+        onShare={async () => {
+          const shared = await shareContent(buildPostShareContent(item));
+          if (shared) sharePost(item.id);
+        }}
         onBookmark={() => bookmarkPost(item.id)}
         onUserPress={() => navigation.navigate('UserProfile' as any, { userId: item.author.id })}
         onPress={() => handlePostPress(item)}

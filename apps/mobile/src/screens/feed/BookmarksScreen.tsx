@@ -30,6 +30,7 @@ import { PostCard } from '@/components/feed';
 import { useFeedStore } from '@/stores';
 import { Post } from '@/types';
 import { Colors, Shadows } from '@/config';
+import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 
 export default function BookmarksScreen() {
   const { t } = useTranslation();
@@ -40,8 +41,7 @@ export default function BookmarksScreen() {
     bookmarkedPosts, 
     isLoadingBookmarks, 
     fetchBookmarks,
-    likePost,
-    unlikePost,
+    toggleLike,
     reactToPost,
     bookmarkPost,
     voteOnPoll,
@@ -114,11 +114,7 @@ export default function BookmarksScreen() {
   
   const handleLikePost = (post: Post) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (post.isLiked) {
-      unlikePost(post.id);
-    } else {
-      likePost(post.id);
-    }
+    toggleLike(post.id);
   };
   
   const renderPost = ({ item, index }: { item: Post; index: number }) => (
@@ -130,7 +126,10 @@ export default function BookmarksScreen() {
         onLike={() => handleLikePost(item)}
         onReact={(type: string) => reactToPost(item.id, type)}
         onComment={() => navigation.navigate('Comments' as any, { postId: item.id, postType: item.postType })}
-        onShare={() => sharePost(item.id)}
+        onShare={async () => {
+          const shared = await shareContent(buildPostShareContent(item));
+          if (shared) sharePost(item.id);
+        }}
         onBookmark={() => bookmarkPost(item.id)}
         onUserPress={() => navigation.navigate('UserProfile' as any, { userId: item.author.id })}
         onPress={() => handlePostPress(item)}
