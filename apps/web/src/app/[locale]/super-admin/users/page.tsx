@@ -1,10 +1,11 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getSuperAdminUsers, getSuperAdminSchools, updateSuperAdminUser, SuperAdminUser } from '@/lib/api/super-admin';
+import { updateSuperAdminUser, SuperAdminUser } from '@/lib/api/super-admin';
+import { useSuperAdminUsers, useSuperAdminSchoolOptions } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   Users,
@@ -16,7 +17,6 @@ import {
   Lock,
 } from 'lucide-react';
 import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
-import { TokenManager } from '@/lib/api/auth';
 
 import { useTranslations } from 'next-intl';
 const ROLE_LABELS: Record<string, string> = {
@@ -31,63 +31,58 @@ export default function SuperAdminUsersPage() {
     const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
-  const [users, setUsers] = useState<SuperAdminUser[]>([]);
   const t = useTranslations('common');
-  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [schoolFilter, setSchoolFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SuperAdminUser | null>(null);
 
-  const fetchUsers = useCallback(async (page: number, searchText: string, schoolId: string, role: string) => {
-    setLoading(true);
-    try {
-      const res = await getSuperAdminUsers({
-        page,
-        limit: 20,
-        search: searchText || undefined,
-        schoolId: schoolId || undefined,
-        role: role || undefined,
-      });
-      setUsers(res.data.users);
-      setPagination(res.data.pagination);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { schools } = useSuperAdminSchoolOptions();
+  const {
+    users,
+    pagination,
+    isLoading: loading,
+    error: fetchError,
+    mutate,
+  } = useSuperAdminUsers({
+    page,
+    limit: 20,
+    search,
+    schoolId: schoolFilter,
+    role: roleFilter,
+  });
+  const error = actionError || (fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null);
 
   useEffect(() => {
-    getSuperAdminSchools({ limit: 500 })
-      .then((r) => setSchools(r.data.schools.map((s) => ({ id: s.id, name: s.name }))))
-      .catch(() => { });
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput), 400);
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
     return () => clearTimeout(t);
   }, [searchInput]);
-
-  useEffect(() => {
-    fetchUsers(pagination.page, search, schoolFilter, roleFilter);
-  }, [pagination.page, search, schoolFilter, roleFilter, fetchUsers]);
 
   const handleToggleActive = async (u: SuperAdminUser) => {
     setTogglingId(u.id);
     try {
       await updateSuperAdminUser(u.id, { isActive: !u.isActive });
-      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, isActive: !x.isActive } : x)));
+      setActionError(null);
+      await mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                users: current.users.map((x) => (x.id === u.id ? { ...x, isActive: !x.isActive } : x)),
+              }
+            : current,
+        { revalidate: false }
+      );
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setTogglingId(null);
     }
@@ -135,7 +130,7 @@ export default function SuperAdminUsersPage() {
             <div className="flex gap-3">
               <select
                 value={schoolFilter}
-                onChange={(e) => { setSchoolFilter(e.target.value); setPagination((p) => ({ ...p, page: 1 })); }}
+                onChange={(e) => { setSchoolFilter(e.target.value); setPage(1); }}
                 className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               >
                 <option value="">{autoT("auto.web.super_admin_users_page.k_06aa5d97")}</option>
@@ -145,7 +140,7 @@ export default function SuperAdminUsersPage() {
               </select>
               <select
                 value={roleFilter}
-                onChange={(e) => { setRoleFilter(e.target.value); setPagination((p) => ({ ...p, page: 1 })); }}
+                onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
                 className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               >
                 <option value="">{autoT("auto.web.super_admin_users_page.k_9111253e")}</option>
@@ -249,14 +244,14 @@ export default function SuperAdminUsersPage() {
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                      onClick={() => setPage((p) => p - 1)}
                       disabled={pagination.page <= 1}
                       className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                      onClick={() => setPage((p) => p + 1)}
                       disabled={pagination.page >= pagination.totalPages}
                       className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >

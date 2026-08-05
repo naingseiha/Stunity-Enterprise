@@ -434,7 +434,7 @@ export default function StudentsPage({
   const { selectedYear } = useAcademicYear();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearch = useDebounce(searchTerm, 220);
+  const debouncedSearch = useDebounce(searchTerm, 150);
   const [showModal, setShowModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -492,6 +492,8 @@ export default function StudentsPage({
     classId: serverClassFilter,
     placement: placementFilter,
     academicYearId: selectedYear?.id,
+    // Skip expensive summary counts when only flipping pages
+    includeSummary: page === 1,
   });
 
   const { classes: classOptionsSource } = useClasses({
@@ -1504,16 +1506,16 @@ export default function StudentsPage({
                       <p className="pl-4 text-xs font-medium text-amber-600 dark:text-amber-300">
                         {localLabel(
                           locale,
-                          "Type at least 2 characters to search quickly.",
-                          "សូមវាយយ៉ាងហោចណាស់ ២ តួអក្សរ ដើម្បីស្វែងរកបានលឿន។",
+                          "Type at least 2 characters to search.",
+                          "សូមវាយយ៉ាងហោចណាស់ ២ តួអក្សរ ដើម្បីស្វែងរក។",
                         )}
                       </p>
                     ) : (
                       <p className="pl-4 text-xs font-medium text-slate-400 dark:text-gray-500">
                         {localLabel(
                           locale,
-                          "Search by student ID, Khmer/English name, email, or phone.",
-                          "ស្វែងរកតាមលេខសិស្ស ឈ្មោះខ្មែរ/អង់គ្លេស អ៊ីមែល ឬលេខទូរស័ព្ទ។",
+                          "Smart search: name, ID, email, or phone — close spellings still match.",
+                          "ស្វែងរកឆ្លាតវៃ៖ ឈ្មោះ លេខសិស្ស អ៊ីមែល ឬទូរស័ព្ទ — សរសេរខុសបន្តិចនៅតែរកឃើញ។",
                         )}
                       </p>
                     )}

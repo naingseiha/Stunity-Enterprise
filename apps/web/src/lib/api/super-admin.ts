@@ -100,6 +100,25 @@ export async function getSuperAdminSchools(params?: {
   return data;
 }
 
+/** Lightweight {id, name} list for filter dropdowns (no _count aggregates). */
+export async function getSuperAdminSchoolOptions(): Promise<{
+  data: Array<{ id: string; name: string }>;
+}> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+
+  const response = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/schools/options`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch school options');
+  }
+
+  return response.json();
+}
+
 export async function getSuperAdminDashboardStats(): Promise<{ data: SuperAdminStats }> {
   const token = await getToken();
   if (!token) throw new Error('Authentication required');

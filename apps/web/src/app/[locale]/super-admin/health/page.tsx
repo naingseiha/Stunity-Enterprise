@@ -1,10 +1,9 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getSuperAdminDashboardHealth } from '@/lib/api/super-admin';
+import { useSuperAdminHealth } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import { Activity, Home, ChevronRight, CheckCircle2, Database, Loader2 } from 'lucide-react';
 
@@ -13,20 +12,8 @@ export default function SuperAdminHealthPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const t = useTranslations('common');
-  const [health, setHealth] = useState<Awaited<ReturnType<typeof getSuperAdminDashboardHealth>>['data'] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchHealth = () => {
-    setLoading(true);
-    setError(null);
-    getSuperAdminDashboardHealth()
-      .then((res) => { setHealth(res.data); })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { fetchHealth(); }, []);
+  const { health, isLoading: loading, error: fetchError, mutate } = useSuperAdminHealth();
+  const error = fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null;
 
   if (loading && !health) {
     return (
@@ -76,7 +63,7 @@ export default function SuperAdminHealthPage() {
             <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_4baf3f4f" /></p>
           </div>
           <button
-            onClick={fetchHealth}
+            onClick={() => mutate()}
             disabled={loading}
             className="ml-auto px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
           >

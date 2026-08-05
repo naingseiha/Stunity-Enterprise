@@ -2,10 +2,10 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getSuperAdminAnalytics, SuperAdminAnalytics } from '@/lib/api/super-admin';
+import { useSuperAdminAnalytics } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   TrendingUp,
@@ -21,18 +21,10 @@ export default function SuperAdminAnalyticsPage() {
     const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
-  const [analytics, setAnalytics] = useState<SuperAdminAnalytics | null>(null);
   const t = useTranslations('common');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [months, setMonths] = useState(12);
-
-  useEffect(() => {
-    getSuperAdminAnalytics(months)
-      .then((res) => { setAnalytics(res.data); setError(null); })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [months]);
+  const { analytics, isLoading: loading, error: fetchError } = useSuperAdminAnalytics(months);
+  const error = fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null;
 
   if (loading && !analytics) {
     return (

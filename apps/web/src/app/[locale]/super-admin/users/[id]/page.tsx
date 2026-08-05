@@ -2,14 +2,11 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import {
-  getSuperAdminUserDetail,
-  updateSuperAdminUser,
-  SuperAdminUserDetail,
-} from '@/lib/api/super-admin';
+import { updateSuperAdminUser } from '@/lib/api/super-admin';
+import { useSuperAdminUserDetail } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   User,
@@ -38,40 +35,24 @@ export default function SuperAdminUserDetailPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const id = params?.id as string;
-  const [user, setUser] = useState<SuperAdminUserDetail | null>(null);
   const t = useTranslations('common');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user, isLoading: loading, error: fetchError, mutate } = useSuperAdminUserDetail(id || null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const error = !id
+    ? 'Invalid user ID'
+    : actionError ||
+      (fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null);
   const [saving, setSaving] = useState(false);
-
-  const loadUser = () => {
-    if (!id) return;
-    setLoading(true);
-    getSuperAdminUserDetail(id)
-      .then((res) => {
-        setUser(res.data);
-        setError(null);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    if (id) loadUser();
-    else {
-      setError('Invalid user ID');
-      setLoading(false);
-    }
-  }, [id]);
 
   const handleToggleActive = async () => {
     if (!user) return;
     setSaving(true);
     try {
       const res = await updateSuperAdminUser(id, { isActive: !user.isActive });
-      setUser({ ...user, isActive: res.data.isActive });
+      setActionError(null);
+      await mutate({ ...user, isActive: res.data.isActive }, { revalidate: false });
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setSaving(false);
     }

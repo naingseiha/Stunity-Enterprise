@@ -27,6 +27,62 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { prefetchSuperAdminDashboard } from '@/hooks/useSuperAdmin';
+import { preload } from 'swr';
+import {
+  getSuperAdminSchools,
+  getSuperAdminAnalytics,
+  getSuperAdminDashboardHealth,
+  getSuperAdminSchoolOptions,
+} from '@/lib/api/super-admin';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+
+const PREFETCH_TTL_MS = 2 * 60 * 1000;
+
+function prefetchByHref(href: string, locale: string) {
+  const base = `/${locale}/super-admin`;
+  if (href === base) {
+    prefetchSuperAdminDashboard();
+    return;
+  }
+  if (href === `${base}/schools`) {
+    const key = 'super-admin:schools:1:20:_:all';
+    preload(key, async () => {
+      const res = await getSuperAdminSchools({ page: 1, limit: 20, status: 'all' });
+      writePersistentCache(key, res.data);
+      return res.data;
+    });
+    return;
+  }
+  if (href === `${base}/users` || href === `${base}/content`) {
+    const key = 'super-admin:school-options';
+    if (!readPersistentCache(key, PREFETCH_TTL_MS)) {
+      preload(key, async () => {
+        const res = await getSuperAdminSchoolOptions();
+        writePersistentCache(key, res.data);
+        return res.data;
+      });
+    }
+    return;
+  }
+  if (href === `${base}/analytics`) {
+    const key = 'super-admin:analytics:12';
+    preload(key, async () => {
+      const res = await getSuperAdminAnalytics(12);
+      writePersistentCache(key, res.data);
+      return res.data;
+    });
+    return;
+  }
+  if (href === `${base}/health`) {
+    const key = 'super-admin:health';
+    preload(key, async () => {
+      const res = await getSuperAdminDashboardHealth();
+      writePersistentCache(key, res.data);
+      return res.data;
+    });
+  }
+}
 
 export default function SuperAdminLayout(
   props: {
@@ -171,7 +227,13 @@ export default function SuperAdminLayout(
                   return navItem.disabled ? (
                     <div key={navItem.href}>{content}</div>
                   ) : (
-                    <Link key={navItem.href} href={navItem.href} onClick={() => setSidebarOpen(false)}>
+                    <Link
+                      key={navItem.href}
+                      href={navItem.href}
+                      onClick={() => setSidebarOpen(false)}
+                      onMouseEnter={() => prefetchByHref(navItem.href, locale)}
+                      onFocus={() => prefetchByHref(navItem.href, locale)}
+                    >
                       {content}
                     </Link>
                   );

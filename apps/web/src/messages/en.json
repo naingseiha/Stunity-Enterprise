@@ -550,7 +550,7 @@
     "unassignedOnThisPage": "Unassigned on this page",
     "outsideSelectedYearOnThisPage": "Outside selected year on this page",
     "selectedClass": "Selected class",
-    "searchPlaceholder": "Search by student name or ID",
+    "searchPlaceholder": "Search name, ID, email… (typos OK)",
     "resetFilters": "Reset Filters",
     "noKeywordFilter": "No keyword filter",
     "foundMatches": "Found {count} matches",

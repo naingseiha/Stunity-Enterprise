@@ -35,6 +35,41 @@ dotenv.config({ path: "../../.env" });
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const STALE_TTL = 10 * 60 * 1000; // 10 minutes (serve stale while refreshing)
+const SUMMARY_CACHE_TTL = 60 * 1000; // summary counts: 60s (shared across pages)
+const YEAR_CLASS_CACHE_TTL_MS = 2 * 60 * 1000;
+const yearClassCache = new Map<
+  string,
+  {
+    ids: string[];
+    classes: Array<{ id: string; name: string; grade: number }>;
+    timestamp: number;
+  }
+>();
+
+function clearSchoolStudentCache(schoolId?: string | null) {
+  if (!schoolId) {
+    cache.clear();
+    yearClassCache.clear();
+    return;
+  }
+  const prefixes = [
+    `students:v2:${schoolId}:`,
+    `students:v3:${schoolId}:`,
+    `students:v4:${schoolId}:`,
+    `students:summary:${schoolId}:`,
+  ];
+  for (const key of cache.keys()) {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) {
+      cache.delete(key);
+    }
+  }
+  for (const key of yearClassCache.keys()) {
+    if (key.startsWith(`${schoolId}:`)) {
+      yearClassCache.delete(key);
+    }
+  }
+}
+
 const TRANSCRIPT_FORMULA_VERSION = "KHM_MOEYS_TRANSCRIPT_V1";
 const TRANSCRIPT_ISSUER_ROLES = new Set([
   "ADMIN",
@@ -1371,7 +1406,7 @@ app.post("/admissions/:id/enroll", async (req: AuthRequest, res: Response) => {
       });
       return { student, application: updatedApplication };
     });
-    cache.clear();
+    clearSchoolStudentCache(schoolId);
     res.status(201).json({ success: true, data: result });
   } catch (error: any) {
     if (error?.code === "ADMISSION_ALREADY_ENROLLED")
@@ -1420,47 +1455,159 @@ const LIGHTWEIGHT_STUDENT_SELECT = {
     },
   },
   createdAt: true,
-  customFields: true,
+  // customFields omitted from list path — heavy JSON; names live on columns
 } as const;
 
 const ENROLLMENT_ACTIVE_STATUSES = ["ACTIVE", "INACTIVE"];
 
-function applyStudentSearchFilter(where: any, search?: string) {
-  const normalizedSearch = search?.trim().replace(/\s+/g, " ");
-  if (!normalizedSearch || normalizedSearch.length < 2) return;
+function normalizeStudentSearch(search?: string): string {
+  return (search || "").trim().replace(/\s+/g, " ");
+}
 
-  const searchTokens = normalizedSearch.split(" ").filter(Boolean).slice(0, 4);
+/**
+ * Index-friendly fuzzy lookup using pg_trgm `%` operator (uses GIN).
+ * Much cheaper than computing similarity() for every row.
+ * Only used as a fallback when exact ILIKE returns too few hits.
+ */
+async function findFuzzyStudentIds(
+  schoolId: string,
+  search: string,
+  limit = 40,
+): Promise<string[]> {
+  const normalizedSearch = normalizeStudentSearch(search);
+  if (normalizedSearch.length < 2) return [];
+
+  try {
+    // `%` uses gin_trgm_ops (index-backed). Avoid set_limit — unsafe on pooled connections.
+    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM "students"
+      WHERE "schoolId" = ${schoolId}
+        AND "recordStatus" = 'ACTIVE'
+        AND (
+          COALESCE("englishFirstName", '') % ${normalizedSearch}
+          OR COALESCE("englishLastName", '') % ${normalizedSearch}
+          OR COALESCE("firstName", '') % ${normalizedSearch}
+          OR COALESCE("lastName", '') % ${normalizedSearch}
+          OR "studentId" % ${normalizedSearch}
+        )
+      ORDER BY GREATEST(
+        similarity(COALESCE("englishFirstName", ''), ${normalizedSearch}),
+        similarity(COALESCE("englishLastName", ''), ${normalizedSearch}),
+        similarity(COALESCE("firstName", ''), ${normalizedSearch}),
+        similarity(COALESCE("lastName", ''), ${normalizedSearch}),
+        similarity("studentId", ${normalizedSearch})
+      ) DESC
+      LIMIT ${limit}
+    `;
+    return rows.map((row) => row.id);
+  } catch (error) {
+    console.warn("Fuzzy student search unavailable, falling back to exact match:", error);
+    return [];
+  }
+}
+
+async function getYearClassesCached(
+  schoolId: string,
+  academicYearId: string,
+  classId?: string,
+): Promise<Array<{ id: string; name: string; grade: number }>> {
+  const cacheKey = `${schoolId}:${academicYearId}:${classId || "all"}`;
+  const cached = yearClassCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < YEAR_CLASS_CACHE_TTL_MS) {
+    return cached.classes;
+  }
+
+  const rows = await prisma.class.findMany({
+    where: {
+      schoolId,
+      academicYearId,
+      ...(classId && classId !== "all" ? { id: classId } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      grade: true,
+    },
+  });
+  const classes = rows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    grade: Number(c.grade),
+  }));
+
+  yearClassCache.set(cacheKey, {
+    ids: classes.map((c) => c.id),
+    classes,
+    timestamp: Date.now(),
+  });
+  return classes;
+}
+
+function applyStudentSearchFilter(
+  where: any,
+  search?: string,
+  fuzzyIds: string[] = [],
+) {
+  const normalizedSearch = normalizeStudentSearch(search);
+  if ((!normalizedSearch || normalizedSearch.length < 2) && fuzzyIds.length === 0) {
+    return;
+  }
+
+  const searchTokens = normalizedSearch
+    ? normalizedSearch.split(" ").filter(Boolean).slice(0, 4)
+    : [];
   const isIdentifierLike =
-    /^[\p{L}\p{N}._/@-]+$/u.test(normalizedSearch) && searchTokens.length === 1;
+    !!normalizedSearch &&
+    /^[\p{L}\p{N}._/@-]+$/u.test(normalizedSearch) &&
+    searchTokens.length === 1;
+
   const tokenFilters = searchTokens.map((token) => ({
     OR: [
-      { firstName: { contains: token, mode: "insensitive" } },
-      { lastName: { contains: token, mode: "insensitive" } },
-      { englishFirstName: { contains: token, mode: "insensitive" } },
-      { englishLastName: { contains: token, mode: "insensitive" } },
-      { studentId: { contains: token, mode: "insensitive" } },
+      { firstName: { contains: token, mode: "insensitive" as const } },
+      { lastName: { contains: token, mode: "insensitive" as const } },
+      { englishFirstName: { contains: token, mode: "insensitive" as const } },
+      { englishLastName: { contains: token, mode: "insensitive" as const } },
+      { studentId: { contains: token, mode: "insensitive" as const } },
     ],
   }));
 
-  where.OR = [
-    ...(isIdentifierLike
-      ? [
-          { studentId: { startsWith: normalizedSearch, mode: "insensitive" } },
-          { email: { startsWith: normalizedSearch, mode: "insensitive" } },
-          {
-            phoneNumber: { startsWith: normalizedSearch, mode: "insensitive" },
-          },
-        ]
-      : []),
-    { studentId: { contains: normalizedSearch, mode: "insensitive" } },
-    { email: { contains: normalizedSearch, mode: "insensitive" } },
-    { phoneNumber: { contains: normalizedSearch, mode: "insensitive" } },
-    { firstName: { contains: normalizedSearch, mode: "insensitive" } },
-    { lastName: { contains: normalizedSearch, mode: "insensitive" } },
-    { englishFirstName: { contains: normalizedSearch, mode: "insensitive" } },
-    { englishLastName: { contains: normalizedSearch, mode: "insensitive" } },
-    { AND: tokenFilters },
-  ];
+  const orFilters: any[] = [];
+
+  if (normalizedSearch) {
+    if (isIdentifierLike) {
+      orFilters.push(
+        { studentId: { startsWith: normalizedSearch, mode: "insensitive" } },
+        { email: { startsWith: normalizedSearch, mode: "insensitive" } },
+        { phoneNumber: { startsWith: normalizedSearch, mode: "insensitive" } },
+      );
+    }
+
+    orFilters.push(
+      { studentId: { contains: normalizedSearch, mode: "insensitive" } },
+      { email: { contains: normalizedSearch, mode: "insensitive" } },
+      { phoneNumber: { contains: normalizedSearch, mode: "insensitive" } },
+      { firstName: { contains: normalizedSearch, mode: "insensitive" } },
+      { lastName: { contains: normalizedSearch, mode: "insensitive" } },
+      { englishFirstName: { contains: normalizedSearch, mode: "insensitive" } },
+      { englishLastName: { contains: normalizedSearch, mode: "insensitive" } },
+    );
+
+    if (tokenFilters.length > 1) {
+      // "sokha dara" / "dara sokha" — each token must match some name field
+      orFilters.push({ AND: tokenFilters });
+    } else if (tokenFilters.length === 1) {
+      orFilters.push(tokenFilters[0]);
+    }
+  }
+
+  if (fuzzyIds.length > 0) {
+    orFilters.push({ id: { in: fuzzyIds } });
+  }
+
+  if (orFilters.length > 0) {
+    where.OR = orFilters;
+  }
 }
 
 function getStudentGenderFilter(gender?: string) {
@@ -1478,6 +1625,7 @@ async function getLightweightStudentsPayload({
   academicYearId,
   placement,
   search,
+  includeSummary = true,
 }: {
   schoolId: string;
   page: number;
@@ -1488,17 +1636,30 @@ async function getLightweightStudentsPayload({
   academicYearId?: string;
   placement?: string;
   search?: string;
+  includeSummary?: boolean;
 }) {
   const normalizedGender = getStudentGenderFilter(gender);
   const normalizedPlacement =
     placement === "assigned" || placement === "unassigned"
       ? placement
       : undefined;
+  const normalizedSearch = normalizeStudentSearch(search);
 
   let students: any[] = [];
   let totalCount = 0;
   let assignedCount = 0;
   let unassignedCount = 0;
+  let summary: { total: number; assigned: number; unassigned: number } | undefined;
+
+  // Summary without search term — reusable across search keystrokes (Facebook-like)
+  const summaryCacheKey = `students:summary:${schoolId}:${classId || "all"}:${normalizedGender || "all"}:${academicYearId || "all"}:${normalizedPlacement || "all"}:_`;
+
+  const listSelect = {
+    ...LIGHTWEIGHT_STUDENT_SELECT,
+    class: {
+      select: { id: true, name: true, grade: true },
+    },
+  } as const;
 
   if (!academicYearId) {
     const baseWhere: any = buildStudentDirectoryBaseScope(schoolId);
@@ -1508,42 +1669,74 @@ async function getLightweightStudentsPayload({
     if (normalizedGender) {
       baseWhere.gender = normalizedGender;
     }
-    applyStudentSearchFilter(baseWhere, search);
+    applyStudentSearchFilter(baseWhere, normalizedSearch);
 
     const where: any = { ...baseWhere };
     if (normalizedPlacement === "assigned") where.classId = { not: null };
     if (normalizedPlacement === "unassigned") where.classId = null;
 
-    [totalCount, students, assignedCount, unassignedCount] = await Promise.all([
+    const shouldLoadSummary = includeSummary || page === 1;
+    const cachedSummary = cache.get(summaryCacheKey);
+    const summaryFresh =
+      cachedSummary && Date.now() - cachedSummary.timestamp < SUMMARY_CACHE_TTL;
+
+    // Fast path: exact ILIKE only (uses trigram GIN). No fuzzy tax on every keystroke.
+    const listPromise = Promise.all([
       prisma.student.count({ where }),
       prisma.student.findMany({
         where,
-        select: {
-          ...LIGHTWEIGHT_STUDENT_SELECT,
-          class: {
-            select: { id: true, name: true, grade: true },
-          },
-        },
+        select: listSelect,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
-      prisma.student.count({ where: { ...baseWhere, classId: { not: null } } }),
-      prisma.student.count({ where: { ...baseWhere, classId: null } }),
     ]);
+
+    if (shouldLoadSummary && !summaryFresh) {
+      // Summary ignores search — one cached count pair for the whole filter scope
+      const summaryBase: any = buildStudentDirectoryBaseScope(schoolId);
+      if (classId && classId !== "all") summaryBase.classId = classId;
+      if (normalizedGender) summaryBase.gender = normalizedGender;
+      [[totalCount, students], assignedCount, unassignedCount] = await Promise.all([
+        listPromise,
+        prisma.student.count({ where: { ...summaryBase, classId: { not: null } } }),
+        prisma.student.count({ where: { ...summaryBase, classId: null } }),
+      ]);
+      summary = {
+        total: assignedCount + unassignedCount,
+        assigned: assignedCount,
+        unassigned: unassignedCount,
+      };
+      cache.set(summaryCacheKey, { data: summary, timestamp: Date.now() });
+    } else {
+      [totalCount, students] = await listPromise;
+      if (summaryFresh) summary = cachedSummary.data;
+    }
+
+    // Progressive fuzzy: only when exact search found almost nothing (typo case)
+    if (normalizedSearch && totalCount === 0) {
+      const fuzzyIds = await findFuzzyStudentIds(schoolId, normalizedSearch);
+      if (fuzzyIds.length > 0) {
+        const fuzzyWhere: any = buildStudentDirectoryBaseScope(schoolId);
+        if (classId && classId !== "all") fuzzyWhere.classId = classId;
+        if (normalizedGender) fuzzyWhere.gender = normalizedGender;
+        applyStudentSearchFilter(fuzzyWhere, normalizedSearch, fuzzyIds);
+        if (normalizedPlacement === "assigned") fuzzyWhere.classId = { not: null };
+        if (normalizedPlacement === "unassigned") fuzzyWhere.classId = null;
+        [totalCount, students] = await Promise.all([
+          prisma.student.count({ where: fuzzyWhere }),
+          prisma.student.findMany({
+            where: fuzzyWhere,
+            select: listSelect,
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+          }),
+        ]);
+      }
+    }
   } else {
-    const yearClasses = await prisma.class.findMany({
-      where: {
-        schoolId,
-        academicYearId,
-        ...(classId && classId !== "all" ? { id: classId } : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        grade: true,
-      },
-    });
+    const yearClasses = await getYearClassesCached(schoolId, academicYearId, classId);
 
     if (yearClasses.length > 0) {
       const yearClassIds = yearClasses.map((entry) => entry.id);
@@ -1562,8 +1755,7 @@ async function getLightweightStudentsPayload({
         yearWhere.gender = normalizedGender;
         yearBaseWhere.gender = normalizedGender;
       }
-      applyStudentSearchFilter(yearWhere, search);
-      applyStudentSearchFilter(yearBaseWhere, search);
+      applyStudentSearchFilter(yearWhere, normalizedSearch);
 
       if (normalizedPlacement === "unassigned") {
         yearWhere.AND = [{ NOT: assignmentScope }];
@@ -1578,32 +1770,79 @@ async function getLightweightStudentsPayload({
         AND: [{ NOT: assignmentScope }],
       };
 
-      [totalCount, students, assignedCount, unassignedCount] =
-        await Promise.all([
-          prisma.student.count({ where: yearWhere }),
-          prisma.student.findMany({
-            where: yearWhere,
-            select: {
-              ...LIGHTWEIGHT_STUDENT_SELECT,
-              studentClasses: {
-                where: yearScopeFilter,
-                select: {
-                  status: true,
-                  classId: true,
-                },
-                orderBy: {
-                  updatedAt: "desc",
-                },
-                take: 1,
-              },
-            },
-            orderBy: { createdAt: "desc" },
-            skip,
-            take: limit,
-          }),
-          prisma.student.count({ where: assignedWhere }),
-          prisma.student.count({ where: unassignedWhere }),
-        ]);
+      const shouldLoadSummary = includeSummary || page === 1;
+      const cachedSummary = cache.get(summaryCacheKey);
+      const summaryFresh =
+        cachedSummary && Date.now() - cachedSummary.timestamp < SUMMARY_CACHE_TTL;
+
+      const yearListSelect = {
+        ...LIGHTWEIGHT_STUDENT_SELECT,
+        studentClasses: {
+          where: yearScopeFilter,
+          select: {
+            status: true,
+            classId: true,
+          },
+          orderBy: {
+            updatedAt: "desc" as const,
+          },
+          take: 1,
+        },
+      };
+
+      const listPromise = Promise.all([
+        prisma.student.count({ where: yearWhere }),
+        prisma.student.findMany({
+          where: yearWhere,
+          select: yearListSelect,
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+      ]);
+
+      if (shouldLoadSummary && !summaryFresh) {
+        [[totalCount, students], assignedCount, unassignedCount] =
+          await Promise.all([
+            listPromise,
+            prisma.student.count({ where: assignedWhere }),
+            prisma.student.count({ where: unassignedWhere }),
+          ]);
+        summary = {
+          total: assignedCount + unassignedCount,
+          assigned: assignedCount,
+          unassigned: unassignedCount,
+        };
+        cache.set(summaryCacheKey, { data: summary, timestamp: Date.now() });
+      } else {
+        [totalCount, students] = await listPromise;
+        if (summaryFresh) summary = cachedSummary.data;
+      }
+
+      // Progressive fuzzy fallback for typos
+      if (normalizedSearch && totalCount === 0) {
+        const fuzzyIds = await findFuzzyStudentIds(schoolId, normalizedSearch);
+        if (fuzzyIds.length > 0) {
+          const fuzzyWhere: any = {
+            ...buildStudentDirectoryBaseScope(schoolId),
+            AND: normalizedPlacement === "unassigned"
+              ? [{ NOT: assignmentScope }]
+              : [assignmentScope],
+          };
+          if (normalizedGender) fuzzyWhere.gender = normalizedGender;
+          applyStudentSearchFilter(fuzzyWhere, normalizedSearch, fuzzyIds);
+          [totalCount, students] = await Promise.all([
+            prisma.student.count({ where: fuzzyWhere }),
+            prisma.student.findMany({
+              where: fuzzyWhere,
+              select: yearListSelect,
+              orderBy: { createdAt: "desc" },
+              skip,
+              take: limit,
+            }),
+          ]);
+        }
+      }
 
       const classById = new Map(
         yearClasses.map((entry) => [
@@ -1634,12 +1873,15 @@ async function getLightweightStudentsPayload({
     }
   }
 
-  const pageStudentIds = students.map((student) => student.id);
-  const pendingLinks = pageStudentIds.length
+  // Only hit link-request table for students that are not already linked
+  const unlinkedIds = students
+    .filter((student) => !student.user)
+    .map((student) => student.id);
+  const pendingLinks = unlinkedIds.length
     ? await prisma.schoolLinkRequest.findMany({
         where: {
           schoolId,
-          studentId: { in: pageStudentIds },
+          studentId: { in: unlinkedIds },
           status: "PENDING",
         },
         select: { studentId: true },
@@ -1667,11 +1909,15 @@ async function getLightweightStudentsPayload({
   return {
     success: true,
     data: students,
-    summary: {
-      total: assignedCount + unassignedCount,
-      assigned: assignedCount,
-      unassigned: unassignedCount,
-    },
+    ...(summary
+      ? {
+          summary: {
+            total: summary.total,
+            assigned: summary.assigned,
+            unassigned: summary.unassigned,
+          },
+        }
+      : {}),
     pagination: {
       page,
       limit,
@@ -1696,6 +1942,7 @@ async function refreshCache(
   academicYearId?: string,
   placement?: string,
   search?: string,
+  includeSummary = true,
 ) {
   try {
     const response = await getLightweightStudentsPayload({
@@ -1708,6 +1955,7 @@ async function refreshCache(
       academicYearId,
       placement,
       search,
+      includeSummary,
     });
 
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
@@ -1741,9 +1989,11 @@ app.get("/students/lightweight", async (req: AuthRequest, res: Response) => {
     const academicYearId = req.query.academicYearId as string | undefined;
     const placement = req.query.placement as string | undefined;
     const search = (req.query.search as string | undefined)?.trim();
+    const includeSummaryRaw = String(req.query.includeSummary ?? "true").toLowerCase();
+    const includeSummary = includeSummaryRaw !== "false" && includeSummaryRaw !== "0";
 
-    // Create cache key
-    const cacheKey = `students:v2:${schoolId}:${page}:${limit}:${classId || "all"}:${gender || "all"}:${academicYearId || "all"}:${placement || "all"}:${search || "all"}`;
+    // Create cache key (includeSummary affects payload shape for page>1)
+    const cacheKey = `students:v4:${schoolId}:${page}:${limit}:${classId || "all"}:${gender || "all"}:${academicYearId || "all"}:${placement || "all"}:${search || "all"}:s${includeSummary ? 1 : 0}`;
 
     // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
@@ -1771,6 +2021,7 @@ app.get("/students/lightweight", async (req: AuthRequest, res: Response) => {
         academicYearId,
         placement,
         search,
+        includeSummary,
       ).catch(console.error);
       return res.json(cached.data);
     }
@@ -1785,6 +2036,7 @@ app.get("/students/lightweight", async (req: AuthRequest, res: Response) => {
       academicYearId,
       placement,
       search,
+      includeSummary,
     });
     const queryTime = Date.now() - startTime;
     console.log(
@@ -2660,7 +2912,7 @@ app.post("/students", async (req: AuthRequest, res: Response) => {
     );
     console.log(`   School: ${schoolId}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    cache.clear();
+    clearSchoolStudentCache(schoolId);
 
     res.status(201).json({
       success: true,
@@ -3057,7 +3309,7 @@ app.put("/students/:id", async (req: AuthRequest, res: Response) => {
 
     console.log("✅ Student updated successfully!");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    cache.clear();
+    clearSchoolStudentCache(schoolId);
 
     res.json({
       success: true,
@@ -3127,7 +3379,7 @@ app.delete("/students/:id", async (req: AuthRequest, res: Response) => {
         data: { currentStudents: currentCount },
       });
     });
-    cache.clear();
+    clearSchoolStudentCache(schoolId);
 
     res.json({
       success: true,
@@ -3324,7 +3576,7 @@ app.post("/students/reassign", async (req: AuthRequest, res: Response) => {
       { isolationLevel: "Serializable" },
     );
 
-    cache.clear();
+    clearSchoolStudentCache(schoolId);
     res.json({
       success: true,
       data: result,
@@ -4236,7 +4488,7 @@ app.post("/students/mark-failed", async (req: any, res: Response) => {
       }
     }
 
-    cache.clear();
+    clearSchoolStudentCache(schoolId);
     res.json({
       success: true,
       message: `Processed ${results.processed} student(s)`,
@@ -4996,7 +5248,7 @@ app.post(
         },
       });
 
-      cache.clear();
+      clearSchoolStudentCache(schoolId);
       res.status(201).json({ success: true, data: issuedDocument });
     } catch (error: any) {
       console.error("Issue transcript error:", error);
@@ -5094,7 +5346,7 @@ app.post(
         },
       });
 
-      cache.clear();
+      clearSchoolStudentCache(schoolId);
       res.json({ success: true, data: revokedDocument });
     } catch (error: any) {
       console.error("Revoke transcript error:", error);

@@ -1,7 +1,8 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
+import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
@@ -10,9 +11,12 @@ import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import { Activity, UserPlus, Calendar, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 import { useTranslations } from 'next-intl';
 import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
+
+const ACTIVITY_CACHE_TTL_MS = 60 * 1000;
 
 export default function GlobalActivityPage(props: { params: Promise<{ locale: string }> }) {
     const autoT = useTranslations();
@@ -24,8 +28,6 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -39,34 +41,47 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
     setLoading(false);
   }, [locale, router]);
 
-  useEffect(() => {
-    const fetchActivities = async () => {
+  const activityCacheKey = useMemo(() => {
+    if (!schoolId || !user || !isSchoolAttendanceAdminRole(user.role)) return null;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    return `admin:activity:${schoolId}:${startOfMonth}:${endOfMonth}`;
+  }, [schoolId, user]);
+
+  const activityFallback = activityCacheKey
+    ? readPersistentCache<any[]>(activityCacheKey, ACTIVITY_CACHE_TTL_MS)
+    : undefined;
+
+  const { data: activitiesData, isLoading: swrLoading } = useSWR<any[]>(
+    activityCacheKey,
+    async () => {
       const token = TokenManager.getAccessToken();
-      if (!token || !schoolId || !user || !isSchoolAttendanceAdminRole(user.role)) {
-        setStatsLoading(false);
-        return;
-      }
-      try {
-        setStatsLoading(true);
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-        const res = await fetch(
-          `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startOfMonth}&endDate=${endOfMonth}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const data = await res.json();
-        if (data.success && data.data && data.data.recentCheckIns) {
-          setActivities(data.data.recentCheckIns);
-        }
-      } catch (error) {
-        console.error('Failed to fetch activity summary', error);
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-    fetchActivities();
-  }, [schoolId, user?.role]);
+      if (!token || !activityCacheKey) return [];
+      const parts = activityCacheKey.split(':');
+      const startOfMonth = parts[parts.length - 2];
+      const endOfMonth = parts[parts.length - 1];
+      const res = await fetch(
+        `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startOfMonth}&endDate=${endOfMonth}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      const rows =
+        data.success && data.data && data.data.recentCheckIns
+          ? data.data.recentCheckIns
+          : [];
+      writePersistentCache(activityCacheKey, rows);
+      return rows;
+    },
+    {
+      dedupingInterval: ACTIVITY_CACHE_TTL_MS,
+      revalidateOnFocus: false,
+      keepPreviousData: true,
+      fallbackData: activityFallback,
+    }
+  );
+  const activities = activitiesData ?? activityFallback ?? [];
+  const statsLoading = swrLoading && activities.length === 0;
 
   if (loading) {
     return <PageSkeleton user={user} school={school} type="dashboard" />;

@@ -2,7 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -13,6 +13,7 @@ import {
   rejectSuperAdminSchool,
   SuperAdminSchool,
 } from '@/lib/api/super-admin';
+import { useSuperAdminSchools } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   School,
@@ -58,15 +59,13 @@ export default function SuperAdminSchoolsPage() {
     const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
-  const [schools, setSchools] = useState<SuperAdminSchool[]>([]);
   const t = useTranslations('common');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'pending'>('all');
   const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -84,6 +83,15 @@ export default function SuperAdminSchoolsPage() {
     trialMonths: 1,
   });
 
+  const {
+    schools,
+    pagination,
+    isLoading: loading,
+    error: fetchError,
+    mutate,
+  } = useSuperAdminSchools({ page, limit: 20, search, status: statusFilter });
+  const error = actionError || (fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null);
+
   useEffect(() => {
     if (!filterOpen) return;
     const close = () => setFilterOpen(false);
@@ -94,47 +102,26 @@ export default function SuperAdminSchoolsPage() {
     };
   }, [filterOpen]);
 
-  const fetchSchools = useCallback(async (page: number, searchText: string, status: 'all' | 'active' | 'inactive' | 'pending') => {
-    setLoading(true);
-    try {
-      const res = await getSuperAdminSchools({
-        page,
-        limit: 20,
-        search: searchText || undefined,
-        status,
-      });
-      setSchools(res.data.schools);
-      setPagination(res.data.pagination);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      setSchools([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Debounced search
   useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput), 400);
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
     return () => clearTimeout(t);
   }, [searchInput]);
-
-  useEffect(() => {
-    fetchSchools(pagination.page, search, statusFilter);
-  }, [pagination.page, search, statusFilter, fetchSchools]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchInput);
-    setPagination((p) => ({ ...p, page: 1 }));
+    setPage(1);
   };
 
   const clearFilters = () => {
     setSearchInput('');
     setSearch('');
     setStatusFilter('all');
-    setPagination((p) => ({ ...p, page: 1 }));
+    setPage(1);
     setFilterOpen(false);
   };
 
@@ -142,9 +129,21 @@ export default function SuperAdminSchoolsPage() {
     setTogglingId(school.id);
     try {
       const res = await updateSuperAdminSchool(school.id, { isActive: !school.isActive });
-      setSchools((prev) => prev.map((s) => (s.id === school.id ? { ...s, isActive: res.data.isActive } : s)));
+      setActionError(null);
+      await mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                schools: current.schools.map((s) =>
+                  s.id === school.id ? { ...s, isActive: res.data.isActive } : s
+                ),
+              }
+            : current,
+        { revalidate: false }
+      );
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setTogglingId(null);
     }
@@ -154,11 +153,20 @@ export default function SuperAdminSchoolsPage() {
     setApprovingId(school.id);
     try {
       await approveSuperAdminSchool(school.id);
-      setSchools((prev) => prev.filter((s) => s.id !== school.id));
-      setPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));
-      setError(null);
+      setActionError(null);
+      await mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                schools: current.schools.filter((s) => s.id !== school.id),
+                pagination: { ...current.pagination, total: Math.max(0, current.pagination.total - 1) },
+              }
+            : current,
+        { revalidate: false }
+      );
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setApprovingId(null);
     }
@@ -169,11 +177,20 @@ export default function SuperAdminSchoolsPage() {
     setApprovingId(school.id);
     try {
       await rejectSuperAdminSchool(school.id);
-      setSchools((prev) => prev.filter((s) => s.id !== school.id));
-      setPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));
-      setError(null);
+      setActionError(null);
+      await mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                schools: current.schools.filter((s) => s.id !== school.id),
+                pagination: { ...current.pagination, total: Math.max(0, current.pagination.total - 1) },
+              }
+            : current,
+        { revalidate: false }
+      );
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setApprovingId(null);
     }
@@ -197,7 +214,8 @@ export default function SuperAdminSchoolsPage() {
       });
       setCreateModalOpen(false);
       setCreateForm({ name: '', email: '', phone: '', address: '', adminFirstName: '', adminLastName: '', adminEmail: '', adminPassword: '', trialMonths: 1 });
-      fetchSchools(1, search, statusFilter);
+      setPage(1);
+      await mutate();
     } catch (err: any) {
       setCreateError(err.message);
     } finally {
@@ -207,20 +225,27 @@ export default function SuperAdminSchoolsPage() {
 
   const handleExportCSV = async () => {
     try {
-      const res = await getSuperAdminSchools({ page: 1, limit: 1000 });
+      // Backend caps list page size at 100; page through for a fuller export
       const rows = [['Name', 'Slug', 'Email', 'Tier', 'Status', 'Users', 'Classes', 'Created']];
-      res.data.schools.forEach((s) => {
-        rows.push([
-          s.name,
-          s.slug,
-          s.email,
-          s.subscriptionTier || '',
-          s.isActive ? 'Active' : 'Inactive',
-          String(s._count?.users ?? ''),
-          String(s._count?.classes ?? ''),
-          new Date(s.createdAt).toLocaleDateString(),
-        ]);
-      });
+      let exportPage = 1;
+      let totalPages = 1;
+      do {
+        const res = await getSuperAdminSchools({ page: exportPage, limit: 100 });
+        res.data.schools.forEach((s) => {
+          rows.push([
+            s.name,
+            s.slug,
+            s.email,
+            s.subscriptionTier || '',
+            s.isActive ? 'Active' : 'Inactive',
+            String(s._count?.users ?? ''),
+            String(s._count?.classes ?? ''),
+            new Date(s.createdAt).toLocaleDateString(),
+          ]);
+        });
+        totalPages = res.data.pagination.totalPages || 1;
+        exportPage += 1;
+      } while (exportPage <= totalPages && exportPage <= 50);
       const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       const a = document.createElement('a');
@@ -229,7 +254,7 @@ export default function SuperAdminSchoolsPage() {
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     }
   };
 
@@ -297,7 +322,7 @@ export default function SuperAdminSchoolsPage() {
               {searchInput && (
                 <button
                   type="button"
-                  onClick={() => { setSearchInput(''); setSearch(''); setPagination((p) => ({ ...p, page: 1 })); }}
+                  onClick={() => { setSearchInput(''); setSearch(''); setPage(1); }}
                   className="absolute right-4 top-1/2 -translate-y-1/0 text-gray-400 hover:text-gray-600 text-sm font-medium"
                 >
                   <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_6137340d" />
@@ -323,7 +348,7 @@ export default function SuperAdminSchoolsPage() {
                       <button
                         key={s}
                         type="button"
-                        onClick={() => { setStatusFilter(s); setPagination((p) => ({ ...p, page: 1 })); setFilterOpen(false); }}
+                        onClick={() => { setStatusFilter(s); setPage(1); setFilterOpen(false); }}
                         className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 ${
                           statusFilter === s ? 'bg-stunity-primary-50 text-stunity-primary-700 font-medium' : 'text-gray-700 dark:text-gray-200'
                         }`}
@@ -513,7 +538,7 @@ export default function SuperAdminSchoolsPage() {
                   </p>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                      onClick={() => setPage((p) => p - 1)}
                       disabled={pagination.page <= 1}
                       className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
@@ -523,7 +548,7 @@ export default function SuperAdminSchoolsPage() {
                       <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_990ae9d9" /> {pagination.page} <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_e20ab0f2" /> {pagination.totalPages}
                     </span>
                     <button
-                      onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                      onClick={() => setPage((p) => p + 1)}
                       disabled={pagination.page >= pagination.totalPages}
                       className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >

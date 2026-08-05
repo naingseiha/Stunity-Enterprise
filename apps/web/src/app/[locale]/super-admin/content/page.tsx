@@ -2,16 +2,14 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
-  getSuperAdminPosts,
   deleteSuperAdminPost,
-  getSuperAdminSchools,
   ModerationPost,
-  SuperAdminSchool,
 } from '@/lib/api/super-admin';
+import { useSuperAdminPosts, useSuperAdminSchoolOptions } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   FileText,
@@ -31,43 +29,28 @@ export default function SuperAdminContentPage() {
     const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
-  const [posts, setPosts] = useState<ModerationPost[]>([]);
   const t = useTranslations('common');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
-  const [schools, setSchools] = useState<SuperAdminSchool[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [schoolId, setSchoolId] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async (page = 1) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await getSuperAdminPosts({ page, limit: 20, search: search || undefined, schoolId: schoolId || undefined });
-      setPosts(res.data.posts);
-      setPagination(res.data.pagination);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, schoolId]);
-
-  const fetchSchools = useCallback(async () => {
-    try {
-      const res = await getSuperAdminSchools({ limit: 200 });
-      setSchools(res.data.schools);
-    } catch (_) {}
-  }, []);
-
-  useEffect(() => { fetchSchools(); }, [fetchSchools]);
-  useEffect(() => { fetchPosts(1); }, []);
+  const { schools } = useSuperAdminSchoolOptions();
+  const {
+    posts,
+    pagination,
+    isLoading: loading,
+    error: fetchError,
+    mutate,
+  } = useSuperAdminPosts({ page, limit: 20, search, schoolId });
+  const error = actionError || (fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchPosts(1);
+    setSearch(searchInput);
+    setPage(1);
   };
 
   const handleDelete = async (postId: string) => {
@@ -75,11 +58,20 @@ export default function SuperAdminContentPage() {
     setDeletingId(postId);
     try {
       await deleteSuperAdminPost(postId);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
-      setPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
-      setError(null);
+      setActionError(null);
+      await mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                posts: current.posts.filter((p) => p.id !== postId),
+                pagination: { ...current.pagination, total: Math.max(0, current.pagination.total - 1) },
+              }
+            : current,
+        { revalidate: false }
+      );
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setDeletingId(null);
     }
@@ -119,15 +111,15 @@ export default function SuperAdminContentPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={autoT("auto.web.super_admin_content_page.k_107d866d")}
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               />
             </div>
             <select
               value={schoolId}
-              onChange={(e) => setSchoolId(e.target.value)}
+              onChange={(e) => { setSchoolId(e.target.value); setPage(1); }}
               className="px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 min-w-[180px]"
             >
               <option value="">{autoT("auto.web.super_admin_content_page.k_00623991")}</option>
@@ -151,7 +143,7 @@ export default function SuperAdminContentPage() {
 
       <AnimatedContent animation="slide-up" delay={150}>
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-          {loading ? (
+          {loading && posts.length === 0 ? (
             <div className="flex justify-center py-16">
               <Loader2 className="w-10 h-10 text-stunity-primary-500 animate-spin" />
             </div>
@@ -209,14 +201,14 @@ export default function SuperAdminContentPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => fetchPosts(pagination.page - 1)}
+                  onClick={() => setPage((p) => p - 1)}
                   disabled={pagination.page <= 1}
                   className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 text-sm"
                 >
                   <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_7eb020f4" />
                 </button>
                 <button
-                  onClick={() => fetchPosts(pagination.page + 1)}
+                  onClick={() => setPage((p) => p + 1)}
                   disabled={pagination.page >= pagination.totalPages}
                   className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 text-sm"
                 >

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import useSWR from 'swr';
 import {
   Search,
   RefreshCw,
@@ -19,6 +20,18 @@ import { translationApi, type Translation } from '@/lib/api/translations';
 import { TokenManager } from '@/lib/api/auth';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import AnimatedContent from '@/components/AnimatedContent';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+
+const TRANSLATIONS_CACHE_KEY = 'super-admin:translations:all';
+const TRANSLATIONS_CACHE_TTL_MS = 2 * 60 * 1000;
+
+async function fetchAllTranslations(): Promise<Translation[]> {
+  const response = await translationApi.getAll();
+  const data = response.data || [];
+  const list = Array.isArray(data) ? data : [];
+  writePersistentCache(TRANSLATIONS_CACHE_KEY, list);
+  return list;
+}
 
 import { useTranslations } from 'next-intl';
 type AppFilter = 'all' | 'web' | 'mobile' | 'global';
@@ -148,22 +161,57 @@ export default function LanguageManagementPage() {
   const [newLocaleSource, setNewLocaleSource] = useState('en');
 
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+  const [canFetchTranslations, setCanFetchTranslations] = useState(false);
+
+  const translationsFallback = readPersistentCache<Translation[]>(
+    TRANSLATIONS_CACHE_KEY,
+    TRANSLATIONS_CACHE_TTL_MS
+  );
+
+  const {
+    data: swrTranslations,
+    isLoading: swrLoading,
+    isValidating,
+    mutate: mutateTranslations,
+    error: translationsError,
+  } = useSWR<Translation[]>(
+    canFetchTranslations ? TRANSLATIONS_CACHE_KEY : null,
+    fetchAllTranslations,
+    {
+      dedupingInterval: TRANSLATIONS_CACHE_TTL_MS,
+      revalidateOnFocus: false,
+      keepPreviousData: true,
+      fallbackData: translationsFallback,
+    }
+  );
+
+  useEffect(() => {
+    if (swrTranslations) setTranslations(swrTranslations);
+  }, [swrTranslations]);
+
+  useEffect(() => {
+    if (translationsError) {
+      console.error('Failed to load translations:', translationsError);
+      setStatus({ type: 'error', message: t('failedConnect') });
+    }
+  }, [t, translationsError]);
+
+  useEffect(() => {
+    setLoading(swrLoading && !translationsFallback && translations.length === 0);
+    setIsRefreshing(isValidating && translations.length > 0);
+  }, [isValidating, swrLoading, translations.length, translationsFallback]);
 
   const loadData = useCallback(async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
-    setLoading(true);
     try {
-      const response = await translationApi.getAll();
-      const data = response.data || [];
-      setTranslations(Array.isArray(data) ? data : []);
+      await mutateTranslations();
     } catch (error) {
       console.error('Failed to load translations:', error);
       setStatus({ type: 'error', message: t('failedConnect') });
     } finally {
-      setLoading(false);
       if (refresh) setIsRefreshing(false);
     }
-  }, [t]);
+  }, [mutateTranslations, t]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -190,8 +238,8 @@ export default function LanguageManagementPage() {
       return;
     }
 
-    void loadData();
-  }, [isSuperAdminRoute, loadData, locale, router]);
+    setCanFetchTranslations(true);
+  }, [isSuperAdminRoute, locale, router]);
 
   const translationsWithMeta = useMemo<TranslationWithMeta[]>(
     () => translations.map((t) => ({ ...t, namespace: getNamespace(t.key), screen: getScreen(t.key) })),

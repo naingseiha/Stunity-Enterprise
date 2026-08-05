@@ -2,14 +2,13 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, use } from 'react';
+import { useState, use } from 'react';
 import Link from 'next/link';
 import {
-  getSuperAdminDashboardStats,
   approveSuperAdminSchool,
   rejectSuperAdminSchool,
-  SuperAdminStats,
 } from '@/lib/api/super-admin';
+import { useSuperAdminDashboard } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   School,
@@ -102,27 +101,20 @@ export default function SuperAdminDashboardPage(
     locale
   } = params;
 
-  const [stats, setStats] = useState<SuperAdminStats | null>(null);
   const t = useTranslations('common');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { stats, isLoading: loading, error: fetchError, mutate } = useSuperAdminDashboard();
+  const [actionError, setActionError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
-
-  const fetchStats = () =>
-    getSuperAdminDashboardStats()
-      .then((res) => { setStats(res.data); setError(null); })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-
-  useEffect(() => { fetchStats(); }, []);
+  const error = actionError || (fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null);
 
   const handleApprove = async (schoolId: string) => {
     setApprovingId(schoolId);
     try {
       await approveSuperAdminSchool(schoolId);
-      await fetchStats();
+      setActionError(null);
+      await mutate();
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setApprovingId(null);
     }
@@ -133,9 +125,10 @@ export default function SuperAdminDashboardPage(
     setApprovingId(schoolId);
     try {
       await rejectSuperAdminSchool(schoolId);
-      await fetchStats();
+      setActionError(null);
+      await mutate();
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setApprovingId(null);
     }

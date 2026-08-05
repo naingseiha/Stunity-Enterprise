@@ -453,6 +453,8 @@ model Student {
   @@index([schoolId, isAccountActive, createdAt], map: "students_school_active_created_at_idx")
   @@index([schoolId, firstName, lastName])
   @@index([schoolId, createdAt])
+  @@index([schoolId, recordStatus, createdAt(sort: Desc)], map: "students_school_recordstatus_created_idx")
+  @@index([schoolId, recordStatus, classId], map: "students_school_recordstatus_class_idx")
   @@index([permanentId])
   @@index([entryYear])
   @@map("students")

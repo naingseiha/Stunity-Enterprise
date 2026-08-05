@@ -2,21 +2,20 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  getSuperAdminFeatureFlags,
   createSuperAdminFeatureFlag,
   updateSuperAdminFeatureFlag,
   deleteSuperAdminFeatureFlag,
-  getSuperAdminAnnouncements,
   createSuperAdminAnnouncement,
   updateSuperAdminAnnouncement,
   deleteSuperAdminAnnouncement,
   FeatureFlag,
   PlatformAnnouncement,
 } from '@/lib/api/super-admin';
+import { useSuperAdminFeatureFlags, useSuperAdminAnnouncements } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   Settings,
@@ -44,10 +43,28 @@ export default function SuperAdminSettingsPage() {
   const locale = (params?.locale as string) || 'en';
   const [tab, setTab] = useState<Tab>('feature-flags');
   const t = useTranslations('common');
-  const [flags, setFlags] = useState<FeatureFlag[]>([]);
-  const [announcements, setAnnouncements] = useState<PlatformAnnouncement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    flags,
+    isLoading: flagsLoading,
+    error: flagsError,
+    mutate: mutateFlags,
+  } = useSuperAdminFeatureFlags('platform');
+  const {
+    announcements,
+    isLoading: announcementsLoading,
+    error: announcementsError,
+    mutate: mutateAnnouncements,
+  } = useSuperAdminAnnouncements();
+  const loading = flagsLoading || announcementsLoading;
+  const [actionError, setActionError] = useState<string | null>(null);
+  const error =
+    actionError ||
+    (flagsError instanceof Error ? flagsError.message : flagsError ? String(flagsError) : null) ||
+    (announcementsError instanceof Error
+      ? announcementsError.message
+      : announcementsError
+        ? String(announcementsError)
+        : null);
   const [flagModal, setFlagModal] = useState(false);
   const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);
   const [flagForm, setFlagForm] = useState({ key: '', description: '', enabled: false });
@@ -57,34 +74,11 @@ export default function SuperAdminSettingsPage() {
   const [editingAnn, setEditingAnn] = useState<PlatformAnnouncement | null>(null);
   const [savingAnn, setSavingAnn] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [maintenanceFlag, setMaintenanceFlag] = useState<FeatureFlag | null>(null);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
-
-  const loadFlags = useCallback(async () => {
-    try {
-      const res = await getSuperAdminFeatureFlags('platform');
-      setFlags(res.data);
-      const maint = res.data.find((f) => f.key === 'MAINTENANCE_MODE') ?? null;
-      setMaintenanceFlag(maint);
-    } catch (e: any) {
-      setError(e.message);
-    }
-  }, []);
-
-  const loadAnnouncements = useCallback(async () => {
-    try {
-      const res = await getSuperAdminAnnouncements();
-      setAnnouncements(res.data);
-    } catch (e: any) {
-      setError(e.message);
-    }
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    Promise.all([loadFlags(), loadAnnouncements()]).finally(() => setLoading(false));
-  }, [loadFlags, loadAnnouncements]);
+  const maintenanceFlag = useMemo(
+    () => flags.find((f) => f.key === 'MAINTENANCE_MODE') ?? null,
+    [flags]
+  );
 
   const handleSaveFlag = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,10 +100,10 @@ export default function SuperAdminSettingsPage() {
       setFlagModal(false);
       setEditingFlag(null);
       setFlagForm({ key: '', description: '', enabled: false });
-      await loadFlags();
-      setError(null);
+      setActionError(null);
+      await mutateFlags();
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setSavingFlag(false);
     }
@@ -125,10 +119,13 @@ export default function SuperAdminSettingsPage() {
     if (!confirm(`Delete feature flag "${f.key}"? This cannot be undone.`)) return;
     try {
       await deleteSuperAdminFeatureFlag(f.id);
-      setFlags((prev) => prev.filter((x) => x.id !== f.id));
-      setError(null);
+      setActionError(null);
+      await mutateFlags(
+        (current) => (current ? current.filter((x) => x.id !== f.id) : current),
+        { revalidate: false }
+      );
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     }
   };
 
@@ -136,11 +133,16 @@ export default function SuperAdminSettingsPage() {
     setTogglingId(f.id);
     try {
       await updateSuperAdminFeatureFlag(f.id, { enabled: !f.enabled });
-      setFlags((prev) => prev.map((x) => (x.id === f.id ? { ...x, enabled: !x.enabled } : x)));
-      if (f.key === 'MAINTENANCE_MODE') setMaintenanceFlag((p) => (p ? { ...p, enabled: !p.enabled } : null));
-      setError(null);
+      setActionError(null);
+      await mutateFlags(
+        (current) =>
+          current
+            ? current.map((x) => (x.id === f.id ? { ...x, enabled: !x.enabled } : x))
+            : current,
+        { revalidate: false }
+      );
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setTogglingId(null);
     }
@@ -149,12 +151,15 @@ export default function SuperAdminSettingsPage() {
   const handleCreateMaintenanceMode = async () => {
     setTogglingMaintenance(true);
     try {
-      const res = await createSuperAdminFeatureFlag({ key: 'MAINTENANCE_MODE', description: 'Platform maintenance mode - non–super-admin users see full-screen overlay', enabled: true });
-      setMaintenanceFlag(res.data);
-      setFlags((prev) => [...prev, res.data]);
-      setError(null);
+      await createSuperAdminFeatureFlag({
+        key: 'MAINTENANCE_MODE',
+        description: 'Platform maintenance mode - non–super-admin users see full-screen overlay',
+        enabled: true,
+      });
+      setActionError(null);
+      await mutateFlags();
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setTogglingMaintenance(false);
     }
@@ -165,11 +170,18 @@ export default function SuperAdminSettingsPage() {
     setTogglingMaintenance(true);
     try {
       await updateSuperAdminFeatureFlag(maintenanceFlag.id, { enabled: !maintenanceFlag.enabled });
-      setMaintenanceFlag((p) => (p ? { ...p, enabled: !p.enabled } : null));
-      setFlags((prev) => prev.map((x) => (x.key === 'MAINTENANCE_MODE' ? { ...x, enabled: !x.enabled } : x)));
-      setError(null);
+      setActionError(null);
+      await mutateFlags(
+        (current) =>
+          current
+            ? current.map((x) =>
+                x.key === 'MAINTENANCE_MODE' ? { ...x, enabled: !x.enabled } : x
+              )
+            : current,
+        { revalidate: false }
+      );
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setTogglingMaintenance(false);
     }
@@ -188,10 +200,10 @@ export default function SuperAdminSettingsPage() {
       setAnnModal(false);
       setEditingAnn(null);
       setAnnForm({ title: '', content: '', priority: 'INFO', isActive: true });
-      await loadAnnouncements();
-      setError(null);
+      setActionError(null);
+      await mutateAnnouncements();
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     } finally {
       setSavingAnn(false);
     }
@@ -201,10 +213,13 @@ export default function SuperAdminSettingsPage() {
     if (!confirm('Delete this announcement?')) return;
     try {
       await deleteSuperAdminAnnouncement(id);
-      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
-      setError(null);
+      setActionError(null);
+      await mutateAnnouncements(
+        (current) => (current ? current.filter((a) => a.id !== id) : current),
+        { revalidate: false }
+      );
     } catch (e: any) {
-      setError(e.message);
+      setActionError(e.message);
     }
   };
 

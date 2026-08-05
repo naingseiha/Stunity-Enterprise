@@ -2,16 +2,14 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { runSuperAdminAuditLogCleanup } from '@/lib/api/super-admin';
 import {
-  getSuperAdminAuditLogs,
-  getSuperAdminAuditLogRetentionPolicy,
-  runSuperAdminAuditLogCleanup,
-  PlatformAuditLog,
-  AuditLogRetentionPolicy,
-} from '@/lib/api/super-admin';
+  useSuperAdminAuditLogs,
+  useSuperAdminAuditRetentionPolicy,
+} from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   FileText,
@@ -43,22 +41,32 @@ export default function SuperAdminAuditLogsPage() {
     const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
-  const [logs, setLogs] = useState<PlatformAuditLog[]>([]);
   const t = useTranslations('common');
-  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
+  const [page, setPage] = useState(1);
   const [resourceFilter, setResourceFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retentionPolicy, setRetentionPolicy] = useState<AuditLogRetentionPolicy | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [cleanupSuccess, setCleanupSuccess] = useState<string | null>(null);
 
+  const { retentionPolicy, mutate: mutateRetention } = useSuperAdminAuditRetentionPolicy();
+  const {
+    logs,
+    pagination,
+    isLoading: loading,
+    error: fetchError,
+    mutate,
+  } = useSuperAdminAuditLogs({
+    page,
+    limit: 50,
+    resourceType: resourceFilter,
+    action: actionFilter,
+  });
+  const error = actionError || (fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null);
+
   useEffect(() => {
-    getSuperAdminAuditLogRetentionPolicy()
-      .then((res) => setRetentionPolicy(res.data))
-      .catch(() => {});
-  }, []);
+    setPage(1);
+  }, [resourceFilter, actionFilter]);
 
   const handleRunCleanup = async () => {
     if (!confirm('Delete audit logs older than the retention period? This cannot be undone.')) return;
@@ -67,48 +75,15 @@ export default function SuperAdminAuditLogsPage() {
     try {
       const res = await runSuperAdminAuditLogCleanup();
       setCleanupSuccess(`Deleted ${res.data.deletedCount} log(s) older than ${res.data.olderThanDays} days.`);
-      fetchLogs(1, resourceFilter, actionFilter);
-      getSuperAdminAuditLogRetentionPolicy().then((r) => setRetentionPolicy(r.data));
+      setActionError(null);
+      setPage(1);
+      await Promise.all([mutate(), mutateRetention()]);
     } catch (err: any) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setCleanupLoading(false);
     }
   };
-
-  const fetchLogs = useCallback(async (page: number, resourceType: string, action: string) => {
-    setLoading(true);
-    try {
-      const res = await getSuperAdminAuditLogs({
-        page,
-        limit: 50,
-        resourceType: resourceType || undefined,
-        action: action || undefined,
-      });
-      setLogs(res.data.logs);
-      setPagination(res.data.pagination);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const forcePage1Ref = useRef(false);
-  // When filters change, reset to page 1 and set flag for fetch
-  useEffect(() => {
-    forcePage1Ref.current = true;
-    setPagination((p) => (p.page === 1 ? p : { ...p, page: 1 }));
-  }, [resourceFilter, actionFilter]);
-
-  // Fetch when pagination or filters change. Use page 1 when filters just changed.
-  useEffect(() => {
-    const pageToFetch = forcePage1Ref.current ? 1 : pagination.page;
-    if (forcePage1Ref.current) forcePage1Ref.current = false;
-    fetchLogs(pageToFetch, resourceFilter, actionFilter);
-  }, [pagination.page, resourceFilter, actionFilter, fetchLogs]);
 
   return (
     <div className="space-y-6">
@@ -266,14 +241,14 @@ export default function SuperAdminAuditLogsPage() {
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                      onClick={() => setPage((p) => p - 1)}
                       disabled={pagination.page <= 1}
                       className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                      onClick={() => setPage((p) => p + 1)}
                       disabled={pagination.page >= pagination.totalPages}
                       className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >

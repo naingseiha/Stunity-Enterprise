@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import useSWR, { preload } from 'swr';
 import useSWRMutation from 'swr/mutation';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
@@ -49,6 +50,8 @@ export interface StudentsParams {
   search?: string;
   academicYearId?: string;
   placement?: 'assigned' | 'unassigned';
+  /** When false, skips expensive assigned/unassigned summary counts (page turns). */
+  includeSummary?: boolean;
   disabled?: boolean;
 }
 
@@ -110,7 +113,11 @@ function createStudentsCacheKey(params?: StudentsParams): string | null {
   }
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
   if (params?.placement) queryParams.append('placement', params.placement);
-  queryParams.append('lifecycle', 'v3');
+  // Default true; omit only when explicitly false so page-1 / filter keys stay compatible
+  if (params?.includeSummary === false) {
+    queryParams.append('includeSummary', 'false');
+  }
+  queryParams.append('lifecycle', 'v5');
 
   return `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`;
 }
@@ -153,16 +160,19 @@ export function useStudents(params?: StudentsParams) {
     cacheKey,
     fetchStudents,
     {
-      // Fresh for 2 minutes, serve stale for up to 10 minutes
-      dedupingInterval: STUDENTS_CACHE_TTL_MS,
+      // Fresh for 2 minutes; keep showing prior page/search while next loads
+      dedupingInterval: 1_000,
       revalidateOnFocus: false,
       keepPreviousData: true,
+      // Prefer cached session data for instant paint
+      revalidateIfStale: true,
     }
   );
 
   const hasFallback = !!fallbackData;
   const resolvedData = data || fallbackData;
-  const isLoading = swrLoading && !hasFallback;
+  // Never blank the table when we already have something to show (Facebook-style)
+  const isLoading = swrLoading && !resolvedData;
 
   const students = resolvedData ? transformStudents(resolvedData.data) : [];
   const pagination = resolvedData?.pagination || {
@@ -172,16 +182,66 @@ export function useStudents(params?: StudentsParams) {
     totalPages: 1,
   };
 
+  const lastSummaryRef = useRef<{
+    total: number;
+    assigned: number;
+    unassigned: number;
+    outsideAcademicYear: number;
+    schoolTotal: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (resolvedData?.summary) {
+      lastSummaryRef.current = {
+        total: resolvedData.summary.total,
+        assigned: resolvedData.summary.assigned,
+        unassigned: resolvedData.summary.unassigned,
+        outsideAcademicYear: resolvedData.summary.outsideAcademicYear ?? 0,
+        schoolTotal: resolvedData.summary.schoolTotal ?? resolvedData.summary.total,
+      };
+    }
+  }, [resolvedData?.summary]);
+
+  // Prefetch adjacent pages for instant pagination
+  useEffect(() => {
+    if (!resolvedData) return;
+    const pagesToPrefetch = [pagination.page + 1, pagination.page - 1].filter(
+      (p) => p >= 1 && p <= (pagination.totalPages || 1)
+    );
+    for (const p of pagesToPrefetch) {
+      const key = createStudentsCacheKey({
+        ...params,
+        page: p,
+        includeSummary: false,
+      });
+      if (key && !readPersistentCache(key, STUDENTS_CACHE_TTL_MS)) {
+        preload(key, fetchStudents);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page, pagination.totalPages, params?.search, params?.classId, params?.academicYearId, params?.placement]);
+
+  const summary =
+    (resolvedData?.summary
+      ? {
+          total: resolvedData.summary.total,
+          assigned: resolvedData.summary.assigned,
+          unassigned: resolvedData.summary.unassigned,
+          outsideAcademicYear: resolvedData.summary.outsideAcademicYear ?? 0,
+          schoolTotal: resolvedData.summary.schoolTotal ?? resolvedData.summary.total,
+        }
+      : lastSummaryRef.current) || {
+      total: pagination.total,
+      assigned: 0,
+      unassigned: 0,
+      outsideAcademicYear: 0,
+      schoolTotal: pagination.total,
+    };
+
   return {
     students,
     pagination,
-    summary: resolvedData?.summary || {
-      total: pagination.total,
-      assigned: students.filter((student) => Boolean(student.class)).length,
-      unassigned: students.filter((student) => !student.class).length,
-      outsideAcademicYear: 0,
-      schoolTotal: pagination.total,
-    },
+    summary,
     isLoading,
     isValidating, // True when revalidating in background
     error,

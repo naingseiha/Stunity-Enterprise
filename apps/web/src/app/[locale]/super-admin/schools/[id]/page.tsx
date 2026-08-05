@@ -6,12 +6,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  getSuperAdminSchoolDetail,
   updateSuperAdminSchool,
   deleteSuperAdminSchool,
-  SuperAdminSchoolDetail,
-  UpdateSchoolData,
 } from '@/lib/api/super-admin';
+import { useSuperAdminSchoolDetail } from '@/hooks/useSuperAdmin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   School,
@@ -54,9 +52,14 @@ export default function SuperAdminSchoolDetailPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const id = params?.id as string;
-  const [school, setSchool] = useState<SuperAdminSchoolDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { school, isLoading: loading, error: fetchError, mutate } = useSuperAdminSchoolDetail(id || null);
+  const error = !id
+    ? 'Invalid school ID'
+    : fetchError instanceof Error
+      ? fetchError.message
+      : fetchError
+        ? String(fetchError)
+        : null;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -74,33 +77,22 @@ export default function SuperAdminSchoolDetailPage() {
     subscriptionEnd: '',
   });
 
-  const loadSchool = () => {
-    getSuperAdminSchoolDetail(id)
-      .then((res) => {
-        setSchool(res.data);
-        setEditForm({
-          name: res.data.name,
-          email: res.data.email,
-          phone: res.data.phone || '',
-          address: res.data.address || '',
-          website: res.data.website || '',
-        });
-        setSubscriptionForm({
-          subscriptionTier: res.data.subscriptionTier || 'FREE_TRIAL_1M',
-          subscriptionEnd: res.data.subscriptionEnd
-            ? new Date(res.data.subscriptionEnd).toISOString().slice(0, 10)
-            : '',
-        });
-        setError(null);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
-
   useEffect(() => {
-    if (id) loadSchool();
-    else { setError('Invalid school ID'); setLoading(false); }
-  }, [id]);
+    if (!school) return;
+    setEditForm({
+      name: school.name,
+      email: school.email,
+      phone: school.phone || '',
+      address: school.address || '',
+      website: school.website || '',
+    });
+    setSubscriptionForm({
+      subscriptionTier: school.subscriptionTier || 'FREE_TRIAL_1M',
+      subscriptionEnd: school.subscriptionEnd
+        ? new Date(school.subscriptionEnd).toISOString().slice(0, 10)
+        : '',
+    });
+  }, [school]);
 
   const handleToggleActive = async () => {
     if (!school) return;
@@ -108,7 +100,7 @@ export default function SuperAdminSchoolDetailPage() {
     setSaveError(null);
     try {
       const res = await updateSuperAdminSchool(id, { isActive: !school.isActive });
-      setSchool(res.data);
+      await mutate(res.data, { revalidate: false });
       setSuccessMsg(school.isActive ? 'School deactivated' : 'School activated');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
@@ -130,7 +122,7 @@ export default function SuperAdminSchoolDetailPage() {
         address: editForm.address || null,
         website: editForm.website || null,
       });
-      setSchool(res.data);
+      await mutate(res.data, { revalidate: false });
       setEditModalOpen(false);
       setSuccessMsg('School updated');
       setTimeout(() => setSuccessMsg(null), 3000);
@@ -150,7 +142,7 @@ export default function SuperAdminSchoolDetailPage() {
         subscriptionTier: subscriptionForm.subscriptionTier,
         subscriptionEnd: subscriptionForm.subscriptionEnd ? subscriptionForm.subscriptionEnd : null,
       });
-      setSchool(res.data);
+      await mutate(res.data, { revalidate: false });
       setSuccessMsg('Subscription updated');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {

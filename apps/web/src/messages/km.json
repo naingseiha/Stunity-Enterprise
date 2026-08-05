@@ -550,7 +550,7 @@
     "unassignedOnThisPage": "គ្មានថ្នាក់នៅទំព័រនេះ",
     "outsideSelectedYearOnThisPage": "នៅក្រៅឆ្នាំសិក្សាដែលបានជ្រើសក្នុងទំព័រនេះ",
     "selectedClass": "ថ្នាក់ដែលបានជ្រើសរើស",
-    "searchPlaceholder": "ស្វែងរកឈ្មោះ ឬអត្តលេខសិស្ស",
+    "searchPlaceholder": "ស្វែងរកឈ្មោះ លេខសិស្ស… (សរសេរខុសបន្តិចបាន)",
     "resetFilters": "កំណត់ការស្វែងរកឡើងវិញ",
     "noKeywordFilter": "គ្មានពាក្យស្វែងរក",
     "foundMatches": "រកឃើញ {count}",

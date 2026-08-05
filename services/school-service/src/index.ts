@@ -68,6 +68,32 @@ const academicYearCache = new Map<string, { data: any; timestamp: number }>();
 const ACADEMIC_YEAR_CACHE_TTL_MS = 5 * 60 * 1000;
 const claimCodeCache = new Map<string, { data: any; timestamp: number }>();
 const CLAIM_CODE_CACHE_TTL_MS = 2 * 60 * 1000;
+const superAdminStatsCache = new Map<string, { data: any; timestamp: number }>();
+const SUPER_ADMIN_STATS_CACHE_TTL_MS = 30 * 1000;
+const superAdminAnalyticsCache = new Map<string, { data: any; timestamp: number }>();
+const SUPER_ADMIN_ANALYTICS_CACHE_TTL_MS = 60 * 1000;
+const superAdminSchoolOptionsCache = new Map<string, { data: any; timestamp: number }>();
+const SUPER_ADMIN_SCHOOL_OPTIONS_CACHE_TTL_MS = 2 * 60 * 1000;
+
+function readTtlCache(cache: Map<string, { data: any; timestamp: number }>, cacheKey: string, ttlMs: number) {
+  const cached = cache.get(cacheKey);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp > ttlMs) {
+    cache.delete(cacheKey);
+    return null;
+  }
+  return cached.data;
+}
+
+function writeTtlCache(cache: Map<string, { data: any; timestamp: number }>, cacheKey: string, data: any) {
+  cache.set(cacheKey, { data, timestamp: Date.now() });
+}
+
+function clearSuperAdminDashboardCaches() {
+  superAdminStatsCache.clear();
+  superAdminAnalyticsCache.clear();
+  superAdminSchoolOptionsCache.clear();
+}
 
 function readAcademicYearCache(cacheKey: string) {
   const cached = academicYearCache.get(cacheKey);
@@ -1566,6 +1592,32 @@ app.get('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Res
   }
 });
 
+// GET /super-admin/schools/options - Lightweight {id,name} list for filter dropdowns
+app.get('/super-admin/schools/options', requireSuperAdmin, async (_req: Request, res: Response) => {
+  try {
+    const cacheKey = 'schools:options';
+    const cached = readTtlCache(superAdminSchoolOptionsCache, cacheKey, SUPER_ADMIN_SCHOOL_OPTIONS_CACHE_TTL_MS);
+    if (cached) return res.json(cached);
+
+    const schools = await prisma.school.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+      take: 2000,
+    });
+
+    const responseBody = { success: true, data: schools };
+    writeTtlCache(superAdminSchoolOptionsCache, cacheKey, responseBody);
+    res.json(responseBody);
+  } catch (error: any) {
+    console.error('Super admin school options error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch school options',
+      message: error.message,
+    });
+  }
+});
+
 // GET /super-admin/schools/:schoolId - Get school detail (super admin only)
 app.get('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Request, res: Response) => {
   try {
@@ -1634,6 +1686,7 @@ app.patch('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Reque
       { changes: Object.keys(updateData), schoolName: updated.name },
       req.ip || req.socket?.remoteAddress
     );
+    clearSuperAdminDashboardCaches();
     res.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('Super admin update school error:', error);
@@ -1667,6 +1720,7 @@ app.post('/super-admin/schools/:schoolId/approve', requireSuperAdmin, async (req
       { schoolName: updated.name },
       req.ip || req.socket?.remoteAddress
     );
+    clearSuperAdminDashboardCaches();
     res.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('Super admin approve school error:', error);
@@ -1696,6 +1750,7 @@ app.post('/super-admin/schools/:schoolId/reject', requireSuperAdmin, async (req:
       { schoolName: school.name },
       req.ip || req.socket?.remoteAddress
     );
+    clearSuperAdminDashboardCaches();
     res.json({ success: true, message: 'Registration rejected' });
   } catch (error: any) {
     console.error('Super admin reject school error:', error);
@@ -1720,6 +1775,7 @@ app.delete('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Requ
       { schoolName: school.name, slug: school.slug },
       req.ip || req.socket?.remoteAddress
     );
+    clearSuperAdminDashboardCaches();
     res.json({ success: true, message: 'School deleted' });
   } catch (error: any) {
     console.error('Super admin delete school error:', error);
@@ -1999,6 +2055,7 @@ app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Re
       req.ip || req.socket?.remoteAddress
     );
 
+    clearSuperAdminDashboardCaches();
     res.status(201).json({ success: true, data: { school, adminUser: { id: user.id, email: user.email } } });
   } catch (error: any) {
     console.error('Super admin create school error:', error);
@@ -2013,6 +2070,10 @@ app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Re
 // GET /super-admin/dashboard/stats - Platform-wide stats (super admin only)
 app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, res: Response) => {
   try {
+    const cacheKey = 'dashboard:stats';
+    const cached = readTtlCache(superAdminStatsCache, cacheKey, SUPER_ADMIN_STATS_CACHE_TTL_MS);
+    if (cached) return res.json(cached);
+
     const now = new Date();
     const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
     const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
@@ -2066,7 +2127,7 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
       }),
     ]);
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         // Core counts
@@ -2100,7 +2161,10 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
           count: s._count.id,
         })),
       },
-    });
+    };
+
+    writeTtlCache(superAdminStatsCache, cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Super admin dashboard error:', error);
     res.status(500).json({
@@ -2155,20 +2219,15 @@ app.get('/super-admin/analytics', requireSuperAdmin, async (req: Request, res: R
   try {
     const { months = '12' } = req.query;
     const monthsNum = Math.min(24, Math.max(1, parseInt(String(months)) || 12));
+    const cacheKey = `analytics:${monthsNum}`;
+    const cached = readTtlCache(superAdminAnalyticsCache, cacheKey, SUPER_ADMIN_ANALYTICS_CACHE_TTL_MS);
+    if (cached) return res.json(cached);
+
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - monthsNum);
     startDate.setDate(1);
     startDate.setHours(0, 0, 0, 0);
 
-    // Build monthly buckets and aggregate via Prisma
-    const schools = await prisma.school.findMany({
-      where: { createdAt: { gte: startDate } },
-      select: { createdAt: true },
-    });
-    const users = await prisma.user.findMany({
-      where: { schoolId: { not: null }, createdAt: { gte: startDate } },
-      select: { createdAt: true },
-    });
     const bucket = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const schoolsByMonth: Record<string, number> = {};
     const usersByMonth: Record<string, number> = {};
@@ -2179,25 +2238,52 @@ app.get('/super-admin/analytics', requireSuperAdmin, async (req: Request, res: R
       schoolsByMonth[m] = 0;
       usersByMonth[m] = 0;
     }
-    schools.forEach((s) => { const m = bucket(s.createdAt); if (schoolsByMonth[m] !== undefined) schoolsByMonth[m]++; });
-    users.forEach((u) => { const m = bucket(u.createdAt); if (usersByMonth[m] !== undefined) usersByMonth[m]++; });
-    const schoolsPerMonth = Object.entries(schoolsByMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count }));
-    const usersPerMonth = Object.entries(usersByMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count }));
 
-    // Top schools by student count
-    const topSchools = await prisma.school.findMany({
-      take: 10,
-      orderBy: { currentStudents: 'desc' },
-      select: { id: true, name: true, slug: true, currentStudents: true, currentTeachers: true, subscriptionTier: true },
-    });
-
-    const [totalSchools, totalUsers, activeSchools] = await Promise.all([
+    // Aggregate in SQL (O(months) result rows) instead of loading every row into Node
+    const [schoolRows, userRows, topSchools, totalSchools, totalUsers, activeSchools] = await Promise.all([
+      prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
+        SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month, COUNT(*)::bigint AS count
+        FROM "schools"
+        WHERE "createdAt" >= ${startDate}
+        GROUP BY 1
+        ORDER BY 1
+      `,
+      prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
+        SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month, COUNT(*)::bigint AS count
+        FROM "users"
+        WHERE "schoolId" IS NOT NULL AND "createdAt" >= ${startDate}
+        GROUP BY 1
+        ORDER BY 1
+      `,
+      prisma.school.findMany({
+        take: 10,
+        orderBy: { currentStudents: 'desc' },
+        select: { id: true, name: true, slug: true, currentStudents: true, currentTeachers: true, subscriptionTier: true },
+      }),
       prisma.school.count(),
       prisma.user.count({ where: { schoolId: { not: null } } }),
       prisma.school.count({ where: { isActive: true } }),
     ]);
 
-    res.json({
+    for (const row of schoolRows) {
+      if (schoolsByMonth[row.month] !== undefined) {
+        schoolsByMonth[row.month] = Number(row.count);
+      }
+    }
+    for (const row of userRows) {
+      if (usersByMonth[row.month] !== undefined) {
+        usersByMonth[row.month] = Number(row.count);
+      }
+    }
+
+    const schoolsPerMonth = Object.entries(schoolsByMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, count]) => ({ month, count }));
+    const usersPerMonth = Object.entries(usersByMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, count]) => ({ month, count }));
+
+    const responseBody = {
       success: true,
       data: {
         schoolsPerMonth,
@@ -2205,7 +2291,10 @@ app.get('/super-admin/analytics', requireSuperAdmin, async (req: Request, res: R
         topSchools,
         summary: { totalSchools, totalUsers, activeSchools },
       },
-    });
+    };
+
+    writeTtlCache(superAdminAnalyticsCache, cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Super admin analytics error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch analytics', message: error.message });

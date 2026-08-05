@@ -9,8 +9,21 @@ import { TokenManager } from '@/lib/api/auth';
 import { attendanceAPI, type AttendanceDelegation, type DisciplineCapabilityProfile, type DelegationScopeType } from '@/lib/api/attendance';
 import { getClasses } from '@/lib/api/classes';
 import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+
+const DISCIPLINE_CACHE_TTL_MS = 60 * 1000;
 
 type RoleUser = { id: string; firstName: string; lastName: string; email?: string; role: string };
+
+type DisciplineBundle = {
+  delegations: AttendanceDelegation[];
+  users: RoleUser[];
+  classes: Array<{ id: string; name: string; grade: number }>;
+  policyTemplates: string;
+  policyMinLen: number;
+  policyEscalation: boolean;
+  rolloutEnabled: boolean;
+};
 
 const capabilityOptions: Array<{ value: DisciplineCapabilityProfile; label: string }> = [
   { value: 'ATTENDANCE_APL', label: 'Attendance (A/P/L only)' },
@@ -62,8 +75,20 @@ export default function DisciplineDelegationsPage() {
     notes: '',
   });
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
+  const disciplineCacheKey = school?.id ? `admin:discipline:${school.id}` : null;
+
+  const applyBundle = useCallback((bundle: DisciplineBundle) => {
+    setDelegations(bundle.delegations);
+    setUsers(bundle.users);
+    setClasses(bundle.classes);
+    setPolicyTemplates(bundle.policyTemplates);
+    setPolicyMinLen(bundle.policyMinLen);
+    setPolicyEscalation(bundle.policyEscalation);
+    setRolloutEnabled(bundle.rolloutEnabled);
+  }, []);
+
+  const loadAll = useCallback(async (opts?: { background?: boolean }) => {
+    if (!opts?.background) setLoading(true);
     try {
       const [delegationRows, usersRows, classRows, policy, rollout] = await Promise.all([
         attendanceAPI.getDelegations(),
@@ -72,17 +97,25 @@ export default function DisciplineDelegationsPage() {
         attendanceAPI.getDisciplinePolicy(),
         attendanceAPI.getDelegationRollout(),
       ]);
-      setDelegations(delegationRows);
-      setUsers(usersRows);
-      setClasses((classRows?.data?.classes || []).map((c: any) => ({ id: c.id, name: c.name, grade: Number(c.grade) })));
-      setPolicyTemplates(JSON.stringify(policy?.allowedExcusedReasonTemplates || [], null, 2));
-      setPolicyMinLen(policy?.mandatoryExcusedReasonMinLength || 3);
-      setPolicyEscalation(Boolean(policy?.requireEscalationForExcused));
-      setRolloutEnabled(Boolean(rollout?.enabled));
+      const bundle: DisciplineBundle = {
+        delegations: delegationRows,
+        users: usersRows,
+        classes: (classRows?.data?.classes || []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          grade: Number(c.grade),
+        })),
+        policyTemplates: JSON.stringify(policy?.allowedExcusedReasonTemplates || [], null, 2),
+        policyMinLen: policy?.mandatoryExcusedReasonMinLength || 3,
+        policyEscalation: Boolean(policy?.requireEscalationForExcused),
+        rolloutEnabled: Boolean(rollout?.enabled),
+      };
+      applyBundle(bundle);
+      if (disciplineCacheKey) writePersistentCache(disciplineCacheKey, bundle);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyBundle, disciplineCacheKey]);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -94,8 +127,17 @@ export default function DisciplineDelegationsPage() {
       setLoading(false);
       return;
     }
+    if (disciplineCacheKey) {
+      const cached = readPersistentCache<DisciplineBundle>(disciplineCacheKey, DISCIPLINE_CACHE_TTL_MS);
+      if (cached) {
+        applyBundle(cached);
+        setLoading(false);
+        void loadAll({ background: true });
+        return;
+      }
+    }
     void loadAll();
-  }, [locale, router, loadAll, canManageDelegations]);
+  }, [locale, router, loadAll, canManageDelegations, disciplineCacheKey, applyBundle]);
 
   const canCreate = useMemo(() => {
     if (!form.assigneeUserId) return false;
