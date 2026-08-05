@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { Navbar } from '@/components/landing/Navbar';
 import { HeroMockup } from '@/components/landing/HeroMockup';
@@ -13,6 +15,8 @@ import { SchoolOSCapabilities } from '@/components/landing/SchoolOSCapabilities'
 import { BlogInsights } from '@/components/landing/BlogInsights';
 import { Pricing } from '@/components/landing/Pricing';
 import { Footer } from '@/components/landing/Footer';
+import { TokenManager } from '@/lib/api/auth';
+import { getAuthRedirectPath } from '@/lib/auth/redirect';
 import Link from 'next/link';
 
 type Lang = 'en' | 'km';
@@ -64,11 +68,26 @@ const T = {
 
 export default function HomePage() {
   const locale = useLocale();
+  const router = useRouter();
   const lang: Lang = locale === 'km' ? 'km' : 'en';
   const c = T[lang];
   const isKm = lang === 'km';
   const fontTitle = isKm ? "'Koulen', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
   const fontBody = isKm ? "'Battambang', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+
+  // ── Smart Auth Redirect ──────────────────────────────────────────────────
+  // If a logged-in user navigates to the root, send them to the right page
+  // based on their role (Feed for students, Dashboard for teachers/admins, etc.)
+  // Guests see the landing page as normal.
+  useEffect(() => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return; // Guest → show landing page
+    const { user, school } = TokenManager.getUserData();
+    if (!user) return;
+    const destination = getAuthRedirectPath(locale, user, school);
+    router.replace(destination);
+  }, [locale, router]);
+  // ────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-white text-[#111827] antialiased" style={{ fontFamily: fontBody }}>

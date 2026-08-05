@@ -27,11 +27,10 @@ export function getAuthRedirectPath(
     case "PARENT":
       return `/${locale}/parent`;
     case "STUDENT":
-      return `/${locale}/student`;
     case "TEACHER":
     case "ADMIN":
     case "STAFF":
     default:
-      return `/${locale}/discover`;
+      return `/${locale}/feed`;
   }
 }
