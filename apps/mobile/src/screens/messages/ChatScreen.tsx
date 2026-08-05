@@ -1,9 +1,8 @@
 /**
  * Chat Screen
  * 
- * Individual chat conversation with real-time messaging.
- * Features: send, edit, delete, reply, read receipts, media attachments.
- * Uses messagingStore for API calls + Supabase Realtime for instant updates.
+ * Individual school conversation using REST with lifecycle-aware polling.
+ * Realtime subscriptions remain disabled until private-message RLS is ready.
  */
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
@@ -20,9 +19,12 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
-  ActionSheetIOS, Animated} from 'react-native';
+  ActionSheetIOS,
+  Animated,
+  AppState,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -69,6 +71,11 @@ export default function ChatScreen() {
   const [replyTo, setReplyTo] = useState<DirectMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<DirectMessage | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentMessagingSenderId = useMemo(() => {
+    if (user?.role === 'PARENT') return user.parentId || user.id;
+    if (user?.role === 'TEACHER') return user.teacherId || user.id;
+    return user?.id;
+  }, [user?.id, user?.parentId, user?.role, user?.teacherId]);
 
   // Find conversation info from the store
   const conversations = useMessagingStore(state => state.conversations);
@@ -81,20 +88,55 @@ export default function ChatScreen() {
     [conversation]
   );
 
-  // Initialize: fetch messages + subscribe
-  useEffect(() => {
-    if (!conversationId) return;
+  // Poll only while this screen is focused and the app is active. A foreground
+  // transition fetches immediately; background/inactive states perform no work.
+  useFocusEffect(
+    useCallback(() => {
+      if (!conversationId) return undefined;
 
-    setActiveConversation(conversationId);
-    fetchMessages(conversationId, true);
-    subscribeToMessages(conversationId);
-    markAsRead(conversationId);
+      let appIsActive = AppState.currentState === 'active';
+      let pollInFlight = false;
+      const POLL_MS = 15_000;
 
-    return () => {
-      unsubscribeFromMessages();
-      setActiveConversation(null);
-    };
-  }, [conversationId]);
+      const poll = async () => {
+        if (!appIsActive || pollInFlight) return;
+        pollInFlight = true;
+        try {
+          await fetchMessages(conversationId, true);
+        } finally {
+          pollInFlight = false;
+        }
+      };
+
+      setActiveConversation(conversationId);
+      subscribeToMessages(conversationId);
+      void poll();
+      void markAsRead(conversationId);
+
+      const interval = setInterval(() => { void poll(); }, POLL_MS);
+      const appStateSubscription = AppState.addEventListener('change', nextState => {
+        const wasInactive = !appIsActive;
+        appIsActive = nextState === 'active';
+        if (wasInactive && appIsActive) {
+          void poll();
+        }
+      });
+
+      return () => {
+        clearInterval(interval);
+        appStateSubscription.remove();
+        unsubscribeFromMessages();
+        setActiveConversation(null);
+      };
+    }, [
+      conversationId,
+      fetchMessages,
+      markAsRead,
+      setActiveConversation,
+      subscribeToMessages,
+      unsubscribeFromMessages,
+    ])
+  );
 
   // Auto scroll to bottom on new messages
   useEffect(() => {
@@ -149,7 +191,7 @@ export default function ChatScreen() {
 
   const handleLongPress = useCallback((message: DirectMessage) => {
     if (message.isDeleted || message._isPending) return;
-    const isMe = message.senderId === user?.id;
+    const isMe = message.senderId === currentMessagingSenderId;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -214,7 +256,7 @@ export default function ChatScreen() {
         ]
       );
     }
-  }, [user?.id, deleteMessage]);
+  }, [currentMessagingSenderId, deleteMessage]);
 
   const handlePickImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -237,7 +279,7 @@ export default function ChatScreen() {
   }, []);
 
   const renderMessage = useCallback(({ item, index }: { item: DirectMessage; index: number }) => {
-    const isMe = item.senderId === user?.id || item.senderId === 'me';
+    const isMe = item.senderId === currentMessagingSenderId || item.senderId === 'me';
     const showAvatar = !isMe && (index === 0 || messages[index - 1].senderId !== item.senderId);
 
     // Find reply-to message
@@ -280,7 +322,7 @@ export default function ChatScreen() {
               <View style={[styles.replyBar, isMe && styles.myReplyBar]} />
               <View style={styles.replyContent}>
                 <Text style={[styles.replyAuthor, isMe && styles.myReplyAuthor]} numberOfLines={1}>
-                  {replyMessage.senderId === user?.id ? t('messages.you') : otherParticipant?.firstName || 'User'}
+                  {replyMessage.senderId === currentMessagingSenderId ? t('messages.you') : otherParticipant?.firstName || 'User'}
                 </Text>
                 <Text style={[styles.replyText, isMe && styles.myReplyText]} numberOfLines={1}>
                   {replyMessage.isDeleted ? t('messages.deletedMessage') : replyMessage.content}
@@ -329,7 +371,7 @@ export default function ChatScreen() {
         </TouchableOpacity>
       </Animated.View>
     );
-  }, [otherParticipant, user?.id, handleLongPress, messages, t]);
+  }, [otherParticipant, currentMessagingSenderId, handleLongPress, messages, t]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

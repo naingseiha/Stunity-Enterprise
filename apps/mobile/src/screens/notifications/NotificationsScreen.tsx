@@ -29,6 +29,7 @@ import { Avatar, EmptyState } from '@/components/common';
 import { Colors } from '@/config';
 import { Notification } from '@/types';
 import { useThemeContext } from '@/contexts';
+import { navigateFromNotificationData } from '@/navigation/navigationRef';
 
 const NOTIFICATION_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
     LIKE: { name: 'heart', color: '#EF4444', bg: '#FEE2E2' },
@@ -36,6 +37,7 @@ const NOTIFICATION_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap;
     REPLY: { name: 'chatbubble-ellipses', color: '#2563EB', bg: '#DBEAFE' },
     FOLLOW: { name: 'person-add', color: '#8B5CF6', bg: '#EDE9FE' },
     MENTION: { name: 'at', color: '#0EA5E9', bg: '#E0F2FE' },
+    MESSAGE: { name: 'chatbubbles', color: '#0EA5E9', bg: '#E0F2FE' },
     ANNOUNCEMENT: { name: 'megaphone', color: '#6366F1', bg: '#EEF2FF' },
     GRADE_POSTED: { name: 'school', color: '#4F46E5', bg: '#E0E7FF' },
     ATTENDANCE_MARKED: { name: 'calendar', color: '#0891B2', bg: '#CFFAFE' },
@@ -124,6 +126,14 @@ export default function NotificationsScreen() {
         if (!notification.isRead) {
             markAsRead(notification.id);
         }
+
+        if (navigateFromNotificationData({
+            ...(notification.data || {}),
+            type: notification.type,
+        })) {
+            return;
+        }
+
         const postIdFromData = typeof notification.data?.postId === 'string' ? notification.data.postId : null;
         const postIdFromLink = getLinkPostId(notification.data?.link);
         const postId = postIdFromData || postIdFromLink;

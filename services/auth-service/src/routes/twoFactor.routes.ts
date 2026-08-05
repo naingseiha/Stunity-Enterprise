@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import { buildAccessTokenClaims } from '../utils/accessToken';
 
 const router = Router();
 
@@ -190,18 +191,13 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
       if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
       const accessToken = jwt.sign(
-        {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          schoolId: user.schoolId,
-          schoolAccessVersion: user.schoolAccessVersion,
+        buildAccessTokenClaims(user, {
           school: user.school ? {
             id: user.school.id,
             name: user.school.name,
             isActive: user.school.isActive,
           } : null,
-        },
+        }),
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );

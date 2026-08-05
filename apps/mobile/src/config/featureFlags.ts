@@ -16,7 +16,12 @@ import { statsAPI } from '@/services/stats';
 
 // Static build flags (not user-rolled).
 export const FEATURE_FLAGS = {
-  MESSAGING_ENABLED: false,
+  // REST-first school messaging is enabled by default. Set the environment
+  // value to "false" for an emergency kill switch without removing the UI.
+  MESSAGING_ENABLED: process.env.EXPO_PUBLIC_MESSAGING_ENABLED !== 'false',
+  // Private messages must not use the legacy anon Supabase subscriptions until
+  // filtered authorization/RLS is in place. Screens use adaptive REST polling.
+  MESSAGING_REALTIME_ENABLED: false,
   // Quiz War is hidden until its scoring/realtime redesign is complete.
   // Re-enable only alongside the backend QUIZ_WAR_ENABLED flag.
   QUIZ_WAR_ENABLED: process.env.EXPO_PUBLIC_QUIZ_WAR_ENABLED === 'true',

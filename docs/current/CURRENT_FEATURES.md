@@ -42,7 +42,7 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 | Teacher quiz analytics (web) | Implemented in code | Dashboard, class filter, CSV export, feed deep links |
 | Streak-at-risk push (server) | Implemented in code | `POST /notifications/jobs/streak-at-risk` + Cloud Scheduler script |
 | Web super admin area | Implemented in code | Dashboard, schools, users, analytics, health, settings pages exist |
-| Messaging conversations | Live-verified | Admin messaging access works, and seeded QA-school admin-parent messaging was validated without modifying `Svaythom High School` |
+| Messaging conversations | Live-verified backend/web; mobile restored in code | Admin-parent messaging was validated on the QA school. Mobile now uses focused REST polling with private-message Realtime disabled; message push/in-app delivery, parent portal entry, unread badges, and notification deep links are wired for the next regression pass. |
 | English split-name data model | Implemented in code | `englishFirstName`/`englishLastName` are wired in Student, Teacher, and User flows with validation in service write paths |
 | English name display order standard | Implemented in code | Targeted web/mobile surfaces now render English names as `Last + First` |
 | Dashboard teacher stats | Live-verified | Dashboard teacher count now matches the school-wide teacher total instead of requiring teacher-class links |

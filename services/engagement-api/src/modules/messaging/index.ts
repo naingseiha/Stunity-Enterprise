@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
+import { deliverNotification } from '../notification/controllers/notification.controller';
 
 // Load environment variables from root .env
 
@@ -42,6 +43,16 @@ app.use(['/conversations', '/messages', '/parents', '/teachers', '/unread-count'
 
 const isAdminRole = (role?: string) => role === 'ADMIN' || role === 'SUPER_ADMIN';
 type MessagingUser = NonNullable<Request['user']>;
+const MESSAGE_MAX_LENGTH = 1000;
+
+const messageWriteLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || 'anonymous',
+  message: { success: false, error: 'Too many messages sent. Please wait and try again.' },
+});
 
 const canAccessConversation = (user: MessagingUser, conversation: { schoolId: string; teacherId: string; parentId: string }) => {
   if (user.role === 'PARENT') {
@@ -149,6 +160,106 @@ const resolveTeacherIdFromStudent = async (schoolId: string, studentId: string) 
     student.studentClasses[0]?.class.teacherClasses[0]?.teacherId ||
     null
   );
+};
+
+const getTeacherClassIds = async (schoolId: string, teacherId: string) => {
+  const teacher = await prisma.teacher.findFirst({
+    where: { id: teacherId, schoolId },
+    select: {
+      homeroomClassId: true,
+      teacherClasses: {
+        select: { classId: true },
+      },
+    },
+  });
+
+  if (!teacher) {
+    return null;
+  }
+
+  return Array.from(new Set([
+    ...(teacher.homeroomClassId ? [teacher.homeroomClassId] : []),
+    ...teacher.teacherClasses.map(({ classId }) => classId),
+  ]));
+};
+
+const parentBelongsToSchool = async (schoolId: string, parentId: string) => {
+  const linkedStudent = await prisma.studentParent.findFirst({
+    where: {
+      parentId,
+      student: { schoolId },
+    },
+    select: { id: true },
+  });
+  return Boolean(linkedStudent);
+};
+
+const areTeacherAndParentLinked = async (
+  schoolId: string,
+  teacherId: string,
+  parentId: string,
+) => {
+  const classIds = await getTeacherClassIds(schoolId, teacherId);
+  if (!classIds || classIds.length === 0) {
+    return false;
+  }
+
+  const linkedStudent = await prisma.student.findFirst({
+    where: {
+      schoolId,
+      recordStatus: 'ACTIVE',
+      studentParents: { some: { parentId } },
+      OR: [
+        { classId: { in: classIds } },
+        {
+          studentClasses: {
+            some: {
+              classId: { in: classIds },
+              status: 'ACTIVE',
+            },
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  });
+
+  return Boolean(linkedStudent);
+};
+
+const isValidConversationStudent = async (
+  schoolId: string,
+  studentId: string,
+  teacherId: string,
+  parentId: string,
+) => {
+  const classIds = await getTeacherClassIds(schoolId, teacherId);
+  if (!classIds || classIds.length === 0) {
+    return false;
+  }
+
+  const student = await prisma.student.findFirst({
+    where: {
+      id: studentId,
+      schoolId,
+      recordStatus: 'ACTIVE',
+      studentParents: { some: { parentId } },
+      OR: [
+        { classId: { in: classIds } },
+        {
+          studentClasses: {
+            some: {
+              classId: { in: classIds },
+              status: 'ACTIVE',
+            },
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  });
+
+  return Boolean(student);
 };
 
 // Auth Middleware (Request.user augmented via express.d.ts)
@@ -395,6 +506,10 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
     const { role, teacherId, parentId, schoolId } = req.user!;
     const { targetTeacherId, targetParentId, studentId } = req.body;
 
+    if (!schoolId) {
+      return res.status(403).json({ success: false, error: 'An active school context is required' });
+    }
+
     let finalTeacherId: string;
     let finalParentId: string;
 
@@ -453,6 +568,33 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
+    const participantsValid = isAdminRole(role)
+      ? Boolean(await getTeacherClassIds(schoolId, finalTeacherId)) &&
+        await parentBelongsToSchool(schoolId, finalParentId)
+      : await areTeacherAndParentLinked(schoolId, finalTeacherId, finalParentId);
+
+    if (!participantsValid) {
+      return res.status(403).json({
+        success: false,
+        error: 'Teacher and parent must belong to the same school and share an active class relationship',
+      });
+    }
+
+    if (
+      studentId &&
+      !await isValidConversationStudent(
+        schoolId,
+        studentId,
+        finalTeacherId,
+        finalParentId,
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Student is not linked to both conversation participants',
+      });
+    }
+
     // Check if conversation already exists
     let conversation = await prisma.conversation.findUnique({
       where: {
@@ -495,7 +637,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
     if (!conversation) {
       conversation = await prisma.conversation.create({
         data: {
-          schoolId: schoolId!,
+          schoolId,
           teacherId: finalTeacherId,
           parentId: finalParentId,
           studentId: studentId || null,
@@ -624,6 +766,8 @@ app.put('/conversations/:id/archive', authenticateToken, async (req: Request, re
       data: { isArchived: true },
     });
 
+    clearMessagingCache();
+
     res.json({ success: true, message: 'Conversation archived' });
   } catch (error: any) {
     res.status(500).json({ success: false, error: 'Failed to archive conversation' });
@@ -698,14 +842,21 @@ app.get('/conversations/:id/messages', authenticateToken, async (req: Request, r
 });
 
 // POST /conversations/:id/messages - Send a message
-app.post('/conversations/:id/messages', authenticateToken, async (req: Request, res: Response) => {
+app.post('/conversations/:id/messages', authenticateToken, messageWriteLimiter, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
     const { content } = req.body;
     const { id: userId, role, teacherId, parentId, schoolId } = req.user!;
 
-    if (!content || content.trim().length === 0) {
+    if (typeof content !== 'string' || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Message content is required' });
+    }
+
+    if (content.trim().length > MESSAGE_MAX_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        error: `Message content cannot exceed ${MESSAGE_MAX_LENGTH} characters`,
+      });
     }
 
     // Verify conversation exists and user has access
@@ -717,22 +868,20 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
       return res.status(404).json({ success: false, error: 'Conversation not found' });
     }
 
+    if (!canAccessConversation(req.user!, conversation)) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
     let senderType: 'TEACHER' | 'PARENT';
     let senderId: string;
 
     if (role === 'PARENT' && parentId) {
-      if (conversation.parentId !== parentId) {
-        return res.status(403).json({ success: false, error: 'Access denied' });
-      }
       senderType = 'PARENT';
       senderId = parentId;
-    } else if (isAdminRole(role) && schoolId && conversation.schoolId === schoolId) {
+    } else if (isAdminRole(role) && schoolId) {
       senderType = 'TEACHER';
       senderId = userId;
     } else if (role === 'TEACHER' && teacherId) {
-      if (conversation.teacherId !== teacherId) {
-        return res.status(403).json({ success: false, error: 'Access denied' });
-      }
       senderType = 'TEACHER';
       senderId = teacherId;
     } else {
@@ -757,6 +906,44 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
 
     clearMessagingCache();
 
+    try {
+      const recipient = senderType === 'PARENT'
+        ? await prisma.user.findFirst({
+            where: {
+              teacherId: conversation.teacherId,
+              schoolId: conversation.schoolId,
+              isActive: true,
+            },
+            select: { id: true },
+          })
+        : await prisma.user.findFirst({
+            where: {
+              parentId: conversation.parentId,
+              isActive: true,
+            },
+            select: { id: true },
+          });
+
+      if (recipient && recipient.id !== userId) {
+        await deliverNotification({
+          userId: recipient.id,
+          title: 'New school message',
+          body: 'You have a new message in Stunity.',
+          data: {
+            type: 'MESSAGE',
+            conversationId,
+            actorId: userId,
+            // Mobile deep-links parse /messages/:id; web still handles list pages.
+            link: `/messages/${conversationId}`,
+          },
+        });
+      }
+    } catch (notificationError) {
+      // The message is durable; notification delivery is best effort and must
+      // not cause the client to retry and create a duplicate message.
+      console.error('Message notification delivery failed:', notificationError);
+    }
+
     res.status(201).json({
       success: true,
       data: message,
@@ -771,14 +958,42 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
 app.put('/messages/:id/read', authenticateToken, async (req: Request, res: Response) => {
   try {
     const messageId = req.params.id;
+    const { role } = req.user!;
 
-    await prisma.message.update({
+    const message = await prisma.message.findUnique({
       where: { id: messageId },
+      include: { conversation: true },
+    });
+
+    if (!message) {
+      return res.status(404).json({ success: false, error: 'Message not found' });
+    }
+
+    if (!canAccessConversation(req.user!, message.conversation)) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    const incomingSenderType = role === 'PARENT' ? 'TEACHER' : 'PARENT';
+    if (message.senderType !== incomingSenderType) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only received messages can be marked as read',
+      });
+    }
+
+    await prisma.message.updateMany({
+      where: {
+        id: messageId,
+        conversationId: message.conversationId,
+        senderType: incomingSenderType,
+      },
       data: {
         isRead: true,
         readAt: new Date(),
       },
     });
+
+    clearMessagingCache();
 
     res.json({ success: true, message: 'Message marked as read' });
   } catch (error: any) {
@@ -870,6 +1085,10 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
       return res.status(403).json({ success: false, error: 'Only parents can access this endpoint' });
     }
 
+    if (!schoolId) {
+      return res.status(403).json({ success: false, error: 'An active school context is required' });
+    }
+
     // Get teachers related to parent's children (homeroom teachers and subject teachers)
     const childIds = children?.map(c => c.id) || [];
 
@@ -882,6 +1101,7 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
       where: {
         studentId: { in: childIds },
         status: 'ACTIVE',
+        student: { schoolId },
       },
       select: { classId: true },
     });
@@ -891,6 +1111,7 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
     // Get teachers associated with those classes
     const teachers = await prisma.teacher.findMany({
       where: {
+        schoolId,
         OR: [
           { homeroomClassId: { in: classIds } },
           { teacherClasses: { some: { classId: { in: classIds } } } },
@@ -948,35 +1169,56 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
       return res.status(403).json({ success: false, error: 'Only teachers can access this endpoint' });
     }
 
-    // Get students in teacher's classes
-    let studentFilter: any = {};
-
-    if (isAdminRole(role) && schoolId) {
-      studentFilter.schoolId = schoolId;
+    if (!schoolId) {
+      return res.status(403).json({ success: false, error: 'An active school context is required' });
     }
 
-    if (classId) {
-      studentFilter.classId = classId;
+    // Get students in the caller's authorized classes. Never allow a teacher
+    // with no assigned classes to fall through to a school-wide parent list.
+    const studentFilter: any = { schoolId };
+    if (isAdminRole(role)) {
+      if (classId) {
+        const targetClass = await prisma.class.findFirst({
+          where: { id: String(classId), schoolId },
+          select: { id: true },
+        });
+        if (!targetClass) {
+          return res.status(404).json({ success: false, error: 'Class not found in this school' });
+        }
+        studentFilter.classId = targetClass.id;
+      }
     } else if (teacherId) {
-      // Get all classes the teacher is assigned to
-      const teacherClasses = await prisma.teacherClass.findMany({
-        where: { teacherId },
-        select: { classId: true },
-      });
-      const classIds = teacherClasses.map(tc => tc.classId);
-
-      // Also get homeroom class
-      const teacher = await prisma.teacher.findUnique({
-        where: { id: teacherId },
-        select: { homeroomClassId: true },
-      });
-      if (teacher?.homeroomClassId) {
-        classIds.push(teacher.homeroomClassId);
+      const authorizedClassIds = await getTeacherClassIds(schoolId, teacherId);
+      if (!authorizedClassIds) {
+        return res.status(403).json({ success: false, error: 'Teacher is not active in this school' });
       }
 
-      if (classIds.length > 0) {
-        studentFilter.classId = { in: classIds };
+      if (classId) {
+        if (!authorizedClassIds.includes(String(classId))) {
+          return res.status(403).json({ success: false, error: 'Teacher is not assigned to this class' });
+        }
+        studentFilter.classId = String(classId);
+      } else {
+        if (authorizedClassIds.length === 0) {
+          return res.json({ success: true, data: [] });
+        }
+        studentFilter.OR = [
+          { classId: { in: authorizedClassIds } },
+          {
+            studentClasses: {
+              some: {
+                classId: { in: authorizedClassIds },
+                status: 'ACTIVE',
+              },
+            },
+          },
+        ];
       }
+    } else {
+      return res.status(403).json({
+        success: false,
+        error: 'A linked teacher profile is required',
+      });
     }
 
     // Get students and their parents

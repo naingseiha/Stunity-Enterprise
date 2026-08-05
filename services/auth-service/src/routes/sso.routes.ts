@@ -5,6 +5,7 @@ import { OIDCStrategy } from 'passport-azure-ad';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import * as ssoCodeStore from '../utils/ssoCodeStore';
+import { buildAccessTokenClaims } from '../utils/accessToken';
 
 const router = Router();
 
@@ -79,18 +80,13 @@ export default function ssoRoutes(prisma: PrismaClient) {
 
       // 2. Issue Stunity JWT
       const accessToken = jwt.sign(
-        {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          schoolId: user.schoolId,
-          schoolAccessVersion: user.schoolAccessVersion,
+        buildAccessTokenClaims(user, {
           school: user.school ? {
             id: user.school.id,
             name: user.school.name,
             isActive: user.school.isActive,
           } : null,
-        },
+        }),
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );

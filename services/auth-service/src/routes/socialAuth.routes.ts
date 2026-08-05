@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, SocialProvider } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { generateUniqueUsername } from '../utils/username';
+import { buildAccessTokenClaims } from '../utils/accessToken';
 import { normalizeEmail } from '../security/identifiers';
 import { resolveUnlinkedSocialAccount } from '../security/authPolicy';
 import { SchoolLinkError, submitSchoolLinkRequest } from '../domain/schoolLinkService';
@@ -240,18 +241,13 @@ export async function handleSocialLogin(
 
   // 5. Issue Stunity JWT
   const accessToken = jwt.sign(
-    {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      schoolId: user.schoolId,
-      schoolAccessVersion: user.schoolAccessVersion,
+    buildAccessTokenClaims(user, {
       school: user.school ? {
         id: user.school.id,
         name: user.school.name,
         isActive: user.school.isActive,
       } : null,
-    },
+    }),
     JWT_SECRET,
     { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
   );

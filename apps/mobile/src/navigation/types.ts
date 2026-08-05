@@ -13,6 +13,14 @@ import type { ProfileVisitor } from "@/api/profileApi";
 import type { MyClassSummary } from "@/api/classes";
 import type { Club } from "@/api/clubs";
 
+// Messages Stack (declared early so Parent/Main stacks can nest it)
+export type MessagesStackParamList = {
+  Conversations: undefined;
+  Chat: { conversationId?: string; userId?: string };
+  NewMessage: undefined;
+  GroupInfo: { conversationId: string };
+};
+
 // Parent Stack (parent portal)
 export type ParentStackParamList = {
   ParentHome: undefined;
@@ -20,7 +28,7 @@ export type ParentStackParamList = {
   ParentChildGrades: { studentId: string };
   ParentChildAttendance: { studentId: string };
   ParentChildReportCard: { studentId: string };
-  ParentMessages: undefined;
+  ParentMessages: NavigatorScreenParams<MessagesStackParamList> | undefined;
   ParentNotifications: undefined;
 };
 
@@ -201,14 +209,6 @@ export type QuizStackParamList = {
   BrowseQuizzes: { category?: string; search?: string } | undefined;
   MyJoinedQuizzes: undefined;
   QuizHistory: { quizId: string; title?: string };
-};
-
-// Messages Stack
-export type MessagesStackParamList = {
-  Conversations: undefined;
-  Chat: { conversationId?: string; userId?: string };
-  NewMessage: undefined;
-  GroupInfo: { conversationId: string };
 };
 
 // Clubs Stack

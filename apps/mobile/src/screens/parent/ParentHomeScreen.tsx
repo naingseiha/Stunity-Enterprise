@@ -4,7 +4,7 @@
  * Parent dashboard showing children list, school name, logout, quick actions
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,14 +14,16 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 import { Spacing } from '@/config';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { useThemeContext } from '@/contexts';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useMessagingStore } from '@/stores';
+import { navigateToMessaging } from '@/navigation/navigationRef';
 
 interface Child {
   id: string;
@@ -37,9 +39,19 @@ export default function ParentHomeScreen() {
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const { user, logout } = useAuthStore();
+  const messagingUnreadCount = useMessagingStore((s) => s.totalUnreadCount);
+  const getMessagingUnreadCount = useMessagingStore((s) => s.getUnreadCount);
 
   const children: Child[] = (user as any)?.children || [];
   const school = (user as any)?.school;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (FEATURE_FLAGS.MESSAGING_ENABLED) {
+        void getMessagingUnreadCount();
+      }
+    }, [getMessagingUnreadCount]),
+  );
 
   const handleLogout = () => {
     Alert.alert(t('parent.logoutConfirmTitle'), t('parent.logoutConfirmMessage'), [
@@ -50,6 +62,12 @@ export default function ParentHomeScreen() {
 
   const handleChildPress = (studentId: string) => {
     navigation.navigate('ParentChild', { studentId });
+  };
+
+  const handleOpenMessages = () => {
+    if (!navigateToMessaging()) {
+      navigation.navigate('ParentMessages', { screen: 'Conversations' });
+    }
   };
 
   return (
@@ -63,7 +81,20 @@ export default function ParentHomeScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft} />
+        {FEATURE_FLAGS.MESSAGING_ENABLED ? (
+          <TouchableOpacity onPress={handleOpenMessages} style={styles.messagesBtn}>
+            <Ionicons name="chatbubbles-outline" size={22} color={colors.text} />
+            {messagingUnreadCount > 0 ? (
+              <View style={styles.messagesBadge}>
+                <Text style={styles.messagesBadgeText}>
+                  {messagingUnreadCount > 99 ? '99+' : messagingUnreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerLeft} />
+        )}
         <Text style={styles.headerTitle}>{t('parent.portalTitle')}</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={22} color={colors.text} />
@@ -160,6 +191,24 @@ export default function ParentHomeScreen() {
             </View>
             <Text style={styles.quickTitle}>{t('parent.actions.reportCardTitle')}</Text>
           </TouchableOpacity>
+
+          {FEATURE_FLAGS.MESSAGING_ENABLED ? (
+            <TouchableOpacity style={styles.quickAction} onPress={handleOpenMessages}>
+              <View style={[styles.quickIcon, { backgroundColor: '#E0F2FE' }]}>
+                <Ionicons name="chatbubbles" size={28} color="#0284C7" />
+              </View>
+              <Text style={styles.quickTitle}>
+                {t('messages.title', 'Messages')}
+              </Text>
+              {messagingUnreadCount > 0 ? (
+                <View style={styles.quickUnreadBadge}>
+                  <Text style={styles.messagesBadgeText}>
+                    {messagingUnreadCount > 99 ? '99+' : messagingUnreadCount}
+                  </Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View style={{ height: 40 }} />
@@ -178,6 +227,33 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     paddingVertical: Spacing.md,
   },
   headerLeft: { width: 40 },
+  messagesBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9999,
+  },
+  messagesBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.card,
+  },
+  messagesBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 11,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -261,10 +337,12 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
   childSub: { fontSize: 12, lineHeight: 18, fontWeight: '500', color: colors.textSecondary, marginTop: 2 },
   quickActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   quickAction: {
-    flex: 1,
+    width: '47%',
+    flexGrow: 1,
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.lg,
@@ -274,6 +352,19 @@ const createStyles = (colors: ReturnType<typeof useThemeContext>['colors'], isDa
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    position: 'relative',
+  },
+  quickUnreadBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    backgroundColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   quickIcon: {
     width: 52,

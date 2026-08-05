@@ -1,15 +1,16 @@
 /**
  * Parent Navigator
  *
- * Parent portal stack: Home, Child, Grades, Attendance, Report Card
+ * Parent portal stack: Home, Child, Grades, Attendance, Report Card, Messages
  */
 
 import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ParentStackParamList } from './types';
-import { useThemeContext } from '@/contexts';
+import { NavigationProvider, useThemeContext } from '@/contexts';
 import { useLayoutBreakpoint } from '@/hooks/useLayoutBreakpoint';
 import { getTabletSceneStyle } from '@/utils/layout';
+import MessagesNavigator from './MessagesNavigator';
 
 import {
   ParentHomeScreen,
@@ -34,21 +35,24 @@ const ParentNavigator: React.FC = () => {
   );
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        gestureEnabled: true,
-        contentStyle,
-      }}
-      initialRouteName="ParentHome"
-    >
-      <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
-      <Stack.Screen name="ParentChild" component={ParentChildScreen} />
-      <Stack.Screen name="ParentChildGrades" component={ParentChildGradesScreen} />
-      <Stack.Screen name="ParentChildAttendance" component={ParentChildAttendanceScreen} />
-      <Stack.Screen name="ParentChildReportCard" component={ParentChildReportCardScreen} />
-    </Stack.Navigator>
+    <NavigationProvider>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          gestureEnabled: true,
+          contentStyle,
+        }}
+        initialRouteName="ParentHome"
+      >
+        <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
+        <Stack.Screen name="ParentChild" component={ParentChildScreen} />
+        <Stack.Screen name="ParentChildGrades" component={ParentChildGradesScreen} />
+        <Stack.Screen name="ParentChildAttendance" component={ParentChildAttendanceScreen} />
+        <Stack.Screen name="ParentChildReportCard" component={ParentChildReportCardScreen} />
+        <Stack.Screen name="ParentMessages" component={MessagesNavigator} />
+      </Stack.Navigator>
+    </NavigationProvider>
   );
 };
 

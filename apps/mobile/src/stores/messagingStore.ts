@@ -1,11 +1,9 @@
 /**
  * Messaging Store
  * 
- * Manages Direct Messages with Hybrid Architecture:
- * - REST API calls (via feed-service /dm/* endpoints) for data operations
- * - Supabase Realtime for instant message delivery
- * - Supabase Broadcast for typing indicators
- * - Supabase Presence for online status
+ * Manages school messaging with REST as the source of truth.
+ * Supabase Realtime, Broadcast, and Presence remain isolated behind a
+ * separate security flag; screens use lifecycle-aware polling by default.
  */
 
 import { create } from 'zustand';
@@ -217,7 +215,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     ),
                 ];
 
-                if (participantIds.length > 0) {
+                if (FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED && participantIds.length > 0) {
                     try {
                         presenceMap = await fetchPresenceBatch(participantIds);
                     } catch (error) {
@@ -438,11 +436,27 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     },
 
     markAsRead: async (conversationId) => {
-        // Mark as read API call
+        // Optimistic local unread clear, then persist via API.
+        set((state) => {
+            const conversations = state.conversations.map((conversation) =>
+                conversation.id === conversationId
+                    ? { ...conversation, unreadCount: 0 }
+                    : conversation,
+            );
+            return {
+                conversations,
+                totalUnreadCount: conversations.reduce(
+                    (sum, conversation) => sum + (conversation.unreadCount || 0),
+                    0,
+                ),
+            };
+        });
+
         try {
             await messagingApi.put(`/conversations/${conversationId}/read-all`);
         } catch (error) {
             console.error('Failed to mark as read:', error);
+            void get().getUnreadCount();
         }
     },
 
@@ -466,7 +480,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     // ========================================
 
     subscribeToConversations: (userId: string) => {
-        if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
+        if (!FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED) return;
         const { unsubscribeAll } = get();
 
         // Subscribe to new messages across all conversations
@@ -570,7 +584,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     },
 
     subscribeToMessages: (conversationId: string) => {
-        if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
+        if (!FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED) return;
         // Unsubscribe from previous active chat channels
         get().unsubscribeFromMessages();
 

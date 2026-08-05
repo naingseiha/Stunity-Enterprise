@@ -8,6 +8,7 @@ import { registerDeviceToken, unregisterDeviceToken } from '@/api/notifications'
 import { fetchAppSettings } from '@/api/settings';
 import { useAuthStore } from '@/stores';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useMessagingStore } from '@/stores/messagingStore';
 import {
     getAppPreferences,
     saveAppPreferences,
@@ -15,6 +16,8 @@ import {
     type AppPreferences,
 } from '@/services/appPreferences';
 import { bindStreakReminderSync } from '@/services/streakReminders';
+import { navigateFromNotificationData } from '@/navigation/navigationRef';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
 
 /**
  * Push Notification Configuration
@@ -184,7 +187,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             });
 
             responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-                console.log('[Notifications] Response received:', response);
+                const data = response.notification.request.content.data as
+                    | Record<string, unknown>
+                    | undefined;
+                if (!navigateFromNotificationData(data) && __DEV__) {
+                    console.log('[Notifications] Response received (no messaging route):', response);
+                }
             });
         } catch (e) {
             console.warn('[Notifications] Failed to add listeners (plugin not compiled in):', e);
@@ -197,6 +205,44 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             } catch (e) { /* no-op */ }
         };
     }, []);
+
+    // Cold-start: user opened the app by tapping a notification.
+    useEffect(() => {
+        if (!PUSH_NOTIFICATIONS_ENABLED || !isAuthenticated) return;
+
+        let active = true;
+        Notifications.getLastNotificationResponseAsync()
+            .then((response) => {
+                if (!active || !response) return;
+                const data = response.notification.request.content.data as
+                    | Record<string, unknown>
+                    | undefined;
+                navigateFromNotificationData(data);
+            })
+            .catch(() => { /* ignore */ });
+
+        return () => {
+            active = false;
+        };
+    }, [isAuthenticated]);
+
+    // Keep messaging unread badge warm without Realtime subscriptions.
+    useEffect(() => {
+        if (!FEATURE_FLAGS.MESSAGING_ENABLED || !isAuthenticated) return;
+
+        const refreshUnread = () => {
+            void useMessagingStore.getState().getUnreadCount();
+        };
+
+        refreshUnread();
+        const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+            if (nextState === 'active') refreshUnread();
+        });
+
+        return () => {
+            appStateSubscription.remove();
+        };
+    }, [isAuthenticated]);
 
     // Register token with backend when user logs in
     useEffect(() => {

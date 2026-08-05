@@ -46,12 +46,13 @@ import { Skeleton } from "@/components/common/Loading";
 import { useThemeContext } from "@/contexts";
 import { Shadows } from "@/config";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
-import { useAuthStore, useFeedStore, useLeaderboardStore } from "@/stores";
+import { useAuthStore, useFeedStore, useLeaderboardStore, useMessagingStore } from "@/stores";
 import { User, UserStats, Education, Experience, Certification } from "@/types";
 import { formatNumber } from "@/utils";
 import { shareContent, buildPostShareContent } from "@/utils/sharePost";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
 import { ProfileStackScreenProps } from "@/navigation/types";
+import { navigateToMessaging } from "@/navigation/navigationRef";
 import {
   fetchProfile as apiFetchProfile,
   fetchEducation,
@@ -703,6 +704,9 @@ export default function ProfileScreen() {
     };
   }, [currentUser?.id, isOwnProfile, profileTargetKey, resolveProfileUserId, syncStreakFromCache]);
 
+  const messagingUnreadCount = useMessagingStore((s) => s.totalUnreadCount);
+  const getMessagingUnreadCount = useMessagingStore((s) => s.getUnreadCount);
+
   useFocusEffect(
     useCallback(() => {
       const resolvedId = resolveProfileUserId();
@@ -711,8 +715,12 @@ export default function ProfileScreen() {
       void loadAnalyticsFast(resolvedId);
       if (isOwnProfile) {
         void loadProfileVisitors(resolvedId);
+        if (FEATURE_FLAGS.MESSAGING_ENABLED) {
+          void getMessagingUnreadCount();
+        }
       }
     }, [
+      getMessagingUnreadCount,
       isOwnProfile,
       loadAnalyticsFast,
       loadProfileVisitors,
@@ -1439,17 +1447,26 @@ export default function ProfileScreen() {
                                 borderColor: colors.border,
                               },
                             ]}
-                            onPress={() =>
-                              navigation.navigate("Messages" as any, {
-                                screen: "Conversations",
-                              })
-                            }
+                            onPress={() => {
+                              if (!navigateToMessaging()) {
+                                navigation.navigate("Messages" as any, {
+                                  screen: "Conversations",
+                                });
+                              }
+                            }}
                           >
                             <Ionicons
                               name="chatbubbles-outline"
                               size={20}
                               color={colors.text}
                             />
+                            {messagingUnreadCount > 0 ? (
+                              <View style={styles.messagingBadge}>
+                                <Text style={styles.messagingBadgeText}>
+                                  {messagingUnreadCount > 99 ? "99+" : messagingUnreadCount}
+                                </Text>
+                              </View>
+                            ) : null}
                           </TouchableOpacity>
                         ) : null}
                         <TouchableOpacity
@@ -2776,6 +2793,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     ...Shadows.sm,
+  },
+  messagingBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: "#0EA5E9",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  messagingBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+    lineHeight: 11,
   },
   // Cover placeholder styles
   coverPlaceholder: {

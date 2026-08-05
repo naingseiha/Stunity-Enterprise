@@ -45,6 +45,8 @@ export interface User {
   /** Same as Prisma User.teacherId — present when this login is linked to a Teacher record */
   teacherId?: string | null;
   studentId?: string | null;
+  /** Same as Prisma User.parentId — used as the sender identity in school messaging */
+  parentId?: string | null;
   teacher?: {
     id: string;
     email?: string | null;
