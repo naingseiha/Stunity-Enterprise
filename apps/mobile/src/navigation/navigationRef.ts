@@ -30,15 +30,30 @@ export function extractConversationIdFromNotificationData(
   }
 }
 
-/** Open Conversations, or a specific Chat when conversationId is known. */
-export function navigateToMessaging(conversationId?: string): boolean {
+type MessagingNavTarget =
+  | { screen: 'Conversations' }
+  | { screen: 'NewMessage'; params?: { prefillSearch?: string } }
+  | { screen: 'Chat'; params: { conversationId: string; userId?: string } };
+
+/** Open messaging stack (conversations, compose, or a specific chat). */
+export function navigateToMessaging(
+  conversationIdOrTarget?: string | MessagingNavTarget,
+): boolean {
   if (!FEATURE_FLAGS.MESSAGING_ENABLED) return false;
   if (!navigationRef.isReady()) return false;
 
   const role = useAuthStore.getState().user?.role;
-  const nestedParams = conversationId
-    ? { screen: 'Chat' as const, params: { conversationId } }
-    : { screen: 'Conversations' as const };
+  let nestedParams: MessagingNavTarget;
+  if (!conversationIdOrTarget) {
+    nestedParams = { screen: 'Conversations' };
+  } else if (typeof conversationIdOrTarget === 'string') {
+    nestedParams = {
+      screen: 'Chat',
+      params: { conversationId: conversationIdOrTarget },
+    };
+  } else {
+    nestedParams = conversationIdOrTarget;
+  }
 
   try {
     if (role === 'PARENT') {

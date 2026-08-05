@@ -634,6 +634,9 @@ router.get(
           isOpenToOpportunities: true,
           resumeUrl: true,
           createdAt: true,
+          teacherId: true,
+          parentId: true,
+          studentId: true,
           school: {
             select: { id: true, name: true, logo: true },
           },

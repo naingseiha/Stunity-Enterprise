@@ -17,7 +17,7 @@ import type { Club } from "@/api/clubs";
 export type MessagesStackParamList = {
   Conversations: undefined;
   Chat: { conversationId?: string; userId?: string };
-  NewMessage: undefined;
+  NewMessage: { prefillSearch?: string } | undefined;
   GroupInfo: { conversationId: string };
 };
 
