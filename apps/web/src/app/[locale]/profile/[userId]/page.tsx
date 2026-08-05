@@ -696,32 +696,31 @@ export default function ProfilePage() {
             <div className="h-full w-1/3 bg-gradient-to-r from-[#09CFF7] to-[#00B8DB] animate-[profileProgress_1.1s_ease-in-out_infinite]" />
           </div>
         )}
-        
-        <div className={`max-w-5xl mx-auto px-4 py-6 transition-opacity duration-200 ${pageReady ? 'opacity-100' : 'opacity-100'}`}>
-          {/* Profile Card */}
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden"
-            style={{ animation: pageReady ? 'slideInUp 0.6s ease-out forwards' : 'none' }}
+
+        {/* LinkedIn-style: constrained card with cover inside (e-learning social) */}
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden"
+            style={{ animation: pageReady ? 'slideInUp 0.45s ease-out forwards' : 'none' }}
           >
             {/*
-              Cover: use a stable cinematic ratio (~2.7:1) instead of a short fixed strip.
-              Wide desktop + short height was cropping photos aggressively (unlike mobile ~16:9).
+              Cover ratio ~4:1 on desktop (LinkedIn banner), taller on mobile.
+              Soft blur fill reduces harsh crop without going Facebook full-bleed.
             */}
-            <div className="relative w-full aspect-[16/9] sm:aspect-[2.5/1] md:aspect-[2.7/1] max-h-[340px] bg-gradient-to-br from-[#F0F9FF] via-[#E0F2FE] to-[#BAE6FD] dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
+            <div className="relative w-full h-40 sm:h-48 md:h-[196px] lg:h-[220px] bg-gradient-to-br from-[#F0F9FF] via-[#E0F2FE] to-[#BAE6FD] dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
               {profile.coverPhotoUrl ? (
                 <>
-                  {/* Soft blurred fill so extreme crops still feel full-bleed */}
                   <Image
                     src={profile.coverPhotoUrl}
                     alt=""
                     fill
                     aria-hidden
-                    className="object-cover scale-110 blur-2xl opacity-50 saturate-125"
+                    className="object-cover scale-110 blur-xl opacity-35 saturate-125"
                     priority
                   />
                   <Image
                     src={profile.coverPhotoUrl}
-                    alt={autoT("auto.web.locale_profile_userId_page.k_7b74323b")}
+                    alt={autoT('auto.web.locale_profile_userId_page.k_7b74323b')}
                     fill
                     className="object-cover object-center"
                     sizes="(max-width: 1024px) 100vw, 1024px"
@@ -736,28 +735,26 @@ export default function ProfilePage() {
                 </div>
               )}
               {profile.isOwnProfile && (
-                <Link 
+                <Link
                   href={`/${locale}/profile/${profile.id}/edit`}
                   className="absolute top-3 right-3 z-10 p-2.5 bg-white/95 dark:bg-gray-900/90 hover:bg-white rounded-full shadow-md transition-all hover:scale-105"
                 >
                   <Camera className="w-4 h-4 text-[#00B8DB]" />
                 </Link>
               )}
-              {/* Light bottom shade only — keeps avatar edge clean without washing the photo */}
-              <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/15 to-transparent pointer-events-none" />
             </div>
 
             <div className="px-5 md:px-6 pb-5">
-              {/* Avatar overlap — slightly less aggressive so more cover stays visible */}
-              <div className="relative -mt-14 sm:-mt-16 md:-mt-[72px] mb-3">
+              {/* Avatar overlaps cover — LinkedIn-style left alignment */}
+              <div className="relative -mt-14 md:-mt-[72px] mb-3">
                 <div className="relative inline-block group">
-                  <div className="w-[120px] h-[120px] sm:w-[132px] sm:h-[132px] md:w-40 md:h-40 rounded-full border-[5px] border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-sky-200 to-cyan-200 shadow-[0_6px_12px_rgba(0,0,0,0.08)]">
+                  <div className="w-[120px] h-[120px] md:w-[152px] md:h-[152px] rounded-full border-[4px] border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-sky-200 to-cyan-200 shadow-[0_6px_14px_rgba(0,0,0,0.10)]">
                     {profile.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
                         alt={`${profile.lastName} ${profile.firstName}`}
-                        width={160}
-                        height={160}
+                        width={152}
+                        height={152}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -956,7 +953,7 @@ export default function ProfilePage() {
 
           {/* Underline tabs — mobile parity */}
           <div
-            className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 mt-3 shadow-sm overflow-x-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 mt-3 shadow-sm overflow-x-auto"
             style={{ animation: pageReady ? 'slideInUp 0.6s ease-out 0.1s forwards' : 'none', opacity: pageReady ? 1 : 0 }}
           >
             <div className="flex px-2">

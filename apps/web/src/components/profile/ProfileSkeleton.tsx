@@ -16,16 +16,15 @@ export default function ProfileSkeleton() {
       <div className="h-16 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800 shadow-sm" />
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Main Profile Card */}
+        {/* LinkedIn-style profile card */}
         <div 
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden"
           style={{
             animation: 'fadeInUp 0.35s ease-out forwards',
           }}
         >
-          {/* Cover Photo Skeleton — matches live profile height */}
           <div 
-            className="relative h-48 md:h-56 overflow-hidden"
+            className="relative h-40 sm:h-48 md:h-[196px] lg:h-[220px] overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 50%, #BAE6FD 100%)',
             }}
@@ -46,11 +45,11 @@ export default function ProfileSkeleton() {
           {/* Profile Content */}
           <div className="px-6 pb-6">
             {/* Avatar - Overlapping cover */}
-            <div className="relative -mt-20 md:-mt-24 mb-4">
+            <div className="relative -mt-14 md:-mt-[72px] mb-4">
               <div 
-                className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white shadow-lg overflow-hidden"
+                className="w-[120px] h-[120px] md:w-[152px] md:h-[152px] rounded-full border-4 border-white shadow-lg overflow-hidden"
                 style={{
-                  background: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)',
+                  background: 'linear-gradient(135deg, #BAE6FD 0%, #09CFF7 100%)',
                   animation: 'pulseAvatar 2s ease-in-out infinite',
                 }}
               >
