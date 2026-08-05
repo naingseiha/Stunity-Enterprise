@@ -68,6 +68,7 @@ import { prefetchTeachers } from "@/hooks/useTeachers";
 import { prefetchClasses } from "@/hooks/useClasses";
 import { prefetchSubjects } from "@/hooks/useSubjects";
 import { TokenManager } from "@/lib/api/auth";
+import { prefetchProfile } from "@/lib/profile-cache";
 import {
   ATTENDANCE_SERVICE_URL,
   AUTH_SERVICE_URL,
@@ -380,7 +381,7 @@ export default function UnifiedNavigation({
           key: "school",
           name: tNav("items.school"),
           icon: GraduationCap,
-          path: `/${locale}/dashboard`,
+          path: `/${locale}/discover`,
           active: isSchoolContext,
           badge: null,
           prefetch: null as SchoolPrefetchType,
@@ -1269,8 +1270,8 @@ export default function UnifiedNavigation({
                           setTransitionSkeleton(null);
                         }
                         const skeletonType =
-                          item.name === "School" ? "dashboard" : "cards";
-                        const hasSidebar = item.name === "School";
+                          item.key === "school" ? "dashboard" : "cards";
+                        const hasSidebar = item.key === "school";
                         beginNavigationFeedback(
                           item.path,
                           skeletonType,
@@ -1499,6 +1500,18 @@ export default function UnifiedNavigation({
                       <Link
                         href={`/${locale}/profile/me`}
                         prefetch={true}
+                        onMouseEnter={() => {
+                          void prefetchProfile("me", {
+                            token: TokenManager.getAccessToken(),
+                            feedBaseUrl: FEED_SERVICE_URL,
+                          });
+                        }}
+                        onFocus={() => {
+                          void prefetchProfile("me", {
+                            token: TokenManager.getAccessToken(),
+                            feedBaseUrl: FEED_SERVICE_URL,
+                          });
+                        }}
                         onClick={() => setProfileMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
                       >

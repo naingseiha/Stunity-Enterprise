@@ -11,6 +11,7 @@ import ReactionSummary from './ReactionSummary';
 import ShareSheet from './ShareSheet';
 import RepostComposerModal from './RepostComposerModal';
 import { seedPostDetailFromFeedCard, writePostDetailCache } from '@/lib/post-detail-cache';
+import { patchProfileCache, prefetchProfile, readProfileCache } from '@/lib/profile-cache';
 import type { ReactionType } from '@/lib/feed-reactions';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
@@ -355,6 +356,59 @@ export default function PostCard({
     if (!path) return;
     router.prefetch(path);
   }, [router]);
+
+  const prefetchAuthorProfile = useCallback(() => {
+    prefetchPath(authorProfilePath);
+    const authorId = post.author.id;
+    if (!authorId) return;
+    // Seed a minimal hero so profile loading paints instantly
+    if (!readProfileCache(authorId)?.profile) {
+      patchProfileCache(authorId, {
+        profile: {
+          id: authorId,
+          firstName: post.author.firstName,
+          lastName: post.author.lastName,
+          role: post.author.role || 'STUDENT',
+          profilePictureUrl: post.author.profileImage || null,
+          headline: (post.author as any).headline || (post.author as any).professionalTitle,
+          languages: [],
+          interests: [],
+          skills: [],
+          profileCompleteness: 0,
+          profileVisibility: 'PUBLIC',
+          isVerified: Boolean(post.author.isVerified),
+          totalLearningHours: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          totalPoints: 0,
+          level: post.author.level || 1,
+          isOpenToOpportunities: false,
+          createdAt: new Date().toISOString(),
+          isOwnProfile: false,
+          isFollowing: false,
+          stats: {
+            posts: 0,
+            followers: 0,
+            following: 0,
+            skills: 0,
+            experiences: 0,
+            certifications: 0,
+            projects: 0,
+            achievements: 0,
+            recommendations: 0,
+            postsThisMonth: 0,
+            totalLikes: 0,
+            totalViews: 0,
+          },
+          socialLinks: {},
+        },
+      });
+    }
+    void prefetchProfile(authorId, {
+      token: TokenManager.getAccessToken(),
+      feedBaseUrl: FEED_SERVICE_URL,
+    });
+  }, [authorProfilePath, post.author, prefetchPath]);
 
   const prefetchPostDetail = useCallback(() => {
     prefetchPath(postPath);
@@ -717,8 +771,8 @@ export default function PostCard({
             <Link
               href={authorProfilePath}
               prefetch={true}
-              onMouseEnter={() => prefetchPath(authorProfilePath)}
-              onFocus={() => prefetchPath(authorProfilePath)}
+              onMouseEnter={prefetchAuthorProfile}
+              onFocus={prefetchAuthorProfile}
               className="flex-shrink-0"
             >
               {post.author.profileImage ? (
@@ -741,8 +795,8 @@ export default function PostCard({
                 <Link
                   href={authorProfilePath}
                   prefetch={true}
-                  onMouseEnter={() => prefetchPath(authorProfilePath)}
-                  onFocus={() => prefetchPath(authorProfilePath)}
+                  onMouseEnter={prefetchAuthorProfile}
+                  onFocus={prefetchAuthorProfile}
                   className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-[#F9A825] hover:underline"
                 >
                   {getDisplayName(post.author.firstName, post.author.lastName)}

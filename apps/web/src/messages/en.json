@@ -1664,6 +1664,8 @@
     "title": "Profile",
     "viewProfile": "View Profile",
     "editProfile": "Edit Profile",
+    "shareProfile": "Share Profile",
+    "linkCopied": "Link copied",
     "performance": {
       "title": "Performance",
       "level": "LEVEL",

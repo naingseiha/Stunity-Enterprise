@@ -11,23 +11,23 @@
  */
 export default function ProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-gray-950">
       {/* Navigation placeholder */}
-      <div className="h-16 bg-white border-b border-gray-100 shadow-sm" />
+      <div className="h-16 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800 shadow-sm" />
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Main Profile Card */}
         <div 
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden"
           style={{
-            animation: 'fadeInUp 0.5s ease-out forwards',
+            animation: 'fadeInUp 0.35s ease-out forwards',
           }}
         >
-          {/* Cover Photo Skeleton - Larger height */}
+          {/* Cover Photo Skeleton — matches live profile height */}
           <div 
-            className="relative h-56 md:h-72 overflow-hidden"
+            className="relative h-48 md:h-56 overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #fde68a 0%, #fcd34d 50%, #f59e0b 100%)',
+              background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 50%, #BAE6FD 100%)',
             }}
           >
             {/* Shimmer overlay */}

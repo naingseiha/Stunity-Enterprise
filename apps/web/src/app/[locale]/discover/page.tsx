@@ -13,10 +13,11 @@ import {
   ClipboardList, BarChart3, Calendar, Settings, ChevronRight,
   ChevronLeft, LayoutGrid, Search, ArrowUpRight, Compass,
   CheckCircle2, UserCheck, Clock, Award, TrendingUp,
-  LogOut, Moon, Sun, Globe, Bell, Home, Sparkles,
+  LogOut, Moon, Sun, Globe, Bell, Home, Sparkles, Rss,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
 import { useTheme } from '@/contexts/ThemeContext';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 interface AppModuleItem {
   id: string;
@@ -103,6 +104,7 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
 
   const sideNavItems = [
     { id: 'discover', icon: Compass, label: 'Discover', khmer: 'ទំព័រដើម', action: () => { setActiveSideNav('discover'); setActiveCategory('all'); } },
+    { id: 'feed', icon: Rss, label: 'News Feed', khmer: 'ទំព័រព័ត៌មាន', action: () => router.push(`/${locale}/feed`) },
     { id: 'dashboard', icon: Home, label: 'Dashboard', khmer: 'ផ្ទាំងគ្រប់គ្រង', action: () => router.push(`/${locale}/dashboard`) },
     { id: 'people', icon: Users, label: 'People', khmer: 'បុគ្គល', action: () => { setActiveSideNav('people'); setActiveCategory('people'); } },
     { id: 'academics', icon: BookOpen, label: 'Academics', khmer: 'ការសិក្សា', action: () => { setActiveSideNav('academics'); setActiveCategory('academics'); } },
@@ -210,172 +212,15 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
   const firstName = user?.firstName || 'Admin';
 
   return (
-    <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#111113] overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
+      <UnifiedNavigation
+        user={user}
+        school={school}
+        onLogout={handleLogout}
+      />
 
-      {/* ════════════════════════════════════════════════════
-          LEFT SIDEBAR — Mac App Store Navigation (w-64 = 256px, matches UnifiedNavigation)
-      ════════════════════════════════════════════════════ */}
-      <aside className="flex flex-col w-64 flex-shrink-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 h-full">
-
-        {/* Stunity Platform Branding */}
-        <div className="px-4 pt-5 pb-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <img src="/Stunity.png" alt="Stunity Logo" className="h-7 w-auto object-contain" />
-              <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50">
-                Platform
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="px-3 mb-3">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isKhmer ? 'ស្វែងរក...' : 'Search...'}
-              className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[12px] font-medium text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all border-0"
-            />
-          </div>
-        </div>
-
-        {/* Nav items */}
-        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-          {sideNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSideNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={item.action}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all duration-150 ${
-                  isActive
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                <span className="truncate">{isKhmer ? item.khmer : item.label}</span>
-              </button>
-            );
-          })}
-
-          {/* Divider */}
-          <div className="pt-3 pb-1 px-3">
-            <div className="border-t border-slate-200 dark:border-slate-800" />
-          </div>
-
-          {/* Language toggle */}
-          <button
-            onClick={() => router.push(locale === 'km' ? '/en/discover' : '/km/discover')}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all"
-          >
-            <Globe className="w-4 h-4 text-slate-400" />
-            <span>{locale === 'km' ? 'English' : 'ភាសាខ្មែរ'}</span>
-          </button>
-
-          {/* Dark mode toggle */}
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
-            <span>{theme === 'dark' ? (isKhmer ? 'ពន្លឺ' : 'Light Mode') : (isKhmer ? 'ងងឹត' : 'Dark Mode')}</span>
-          </button>
-        </nav>
-
-        {/* User footer */}
-        <div className="px-3 py-4 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm flex-shrink-0 shadow">
-              {firstName.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-bold text-slate-800 dark:text-slate-200 truncate">{firstName}</p>
-              <p className="text-[10.5px] text-slate-400 dark:text-slate-500 truncate">{activeYear?.name || '—'}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              title={isKhmer ? 'ចាកចេញ' : 'Logout'}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* ════════════════════════════════════════════════════
-          MAIN CONTENT — Full Screen App Store
-      ════════════════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-
-        {/* Landing Page Inspired Top Navbar Header */}
-        <header className="flex-shrink-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 z-20">
-          <div className="px-6 h-[54px] flex items-center justify-between gap-4">
-            {/* Title & Breadcrumb */}
-            <div className="flex items-center gap-2 text-[13px] font-bold">
-              <span className="text-slate-400 font-medium hidden sm:inline">Stunity Enterprise</span>
-              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">/</span>
-              <span className="text-blue-600 dark:text-blue-400 font-bold">
-                {activeSideNav === 'discover' && (isKhmer ? 'ទំព័រដើម' : 'Discover Platform')}
-                {activeSideNav === 'people' && (isKhmer ? 'សិស្ស និងបុគ្គលិក' : 'People & Staff')}
-                {activeSideNav === 'academics' && (isKhmer ? 'ការសិក្សា' : 'Academics')}
-                {activeSideNav === 'operations' && (isKhmer ? 'ប្រតិបត្តិការ' : 'Operations')}
-                {activeSideNav === 'reports' && (isKhmer ? 'របាយការណ៍' : 'Reports & Analytics')}
-                {activeSideNav === 'settings' && (isKhmer ? 'ការកំណត់' : 'Settings')}
-              </span>
-            </div>
-
-            {/* Right Action Controls */}
-            <div className="flex items-center gap-3">
-              {/* System Platform Status */}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-full text-[11px] font-semibold border border-emerald-200/60 dark:border-emerald-800/40">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{isKhmer ? 'ប្រព័ន្ធ Cloud ដំណើរការ' : 'Stunity Cloud 2.0'}</span>
-              </div>
-
-              {/* Minimalist Landing Language Switcher */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-full text-xs font-semibold border border-slate-200/60 dark:border-slate-700/60">
-                <button
-                  type="button"
-                  onClick={() => router.push('/en/discover')}
-                  className={`px-2.5 py-0.5 rounded-full transition-all duration-200 text-[11px] ${
-                    !isKhmer ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push('/km/discover')}
-                  className={`px-2.5 py-0.5 rounded-full transition-all duration-200 text-[11px] ${
-                    isKhmer ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
-                  }`}
-                >
-                  KM
-                </button>
-              </div>
-
-              {/* Go to Dashboard Shortcut */}
-              <button
-                onClick={() => router.push(`/${locale}/dashboard`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[12px] font-bold shadow-md shadow-blue-500/20 transition-all"
-              >
-                <Home className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{isKhmer ? 'ចូល Dashboard' : 'Full Dashboard'}</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-950">
-          <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8 space-y-10">
+      <div className="lg:ml-64 min-h-screen relative overflow-hidden pt-16">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 relative z-10 space-y-10">
 
             {/* ── EXACT MAC APP STORE FEATURED CARDS SECTION ─────────────── */}
             {(activeCategory === 'all') && (
@@ -731,8 +576,7 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
 
 
 
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   );
