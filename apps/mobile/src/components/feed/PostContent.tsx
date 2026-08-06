@@ -12,21 +12,7 @@ import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, Clu
 import { formatNumber, formatRelativeTime } from '@/utils';
 import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
 import { renderPostBodyText } from '@/utils/renderEmojiText';
-import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
-
-/** Feed CTAs only for posts that need a distinct next action (not passive reading). */
-const ACTIONABLE_FEED_CTA_TYPES = new Set([
-  'QUIZ',
-  'COURSE',
-  'ASSIGNMENT',
-  'EXAM',
-  'EVENT',
-  'PROJECT',
-  'RESOURCE',
-  'TUTORIAL',
-  'RESEARCH',
-  'COLLABORATION',
-]);
+import { feedBodyPreferKhmer, feedTextStyle, ACTIONABLE_FEED_CTA_TYPES } from '@/config/feedTypography';
 
 // Placeholder for missing types, adjust based on actual types
 interface PostContentProps {

@@ -2,8 +2,7 @@
  * BrainModeToggle — the switch that flips the feed from
  * engagement-ranked → quality-ranked (Ed-Score desc).
  *
- * Designed as a clean feed header row sitting flush with the content,
- * featuring a left text section and a toggling pill button on the right.
+ * Compact header row: context hint only when active, pill toggle on the right.
  */
 
 import React from 'react';
@@ -42,17 +41,15 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
 
   return (
     <View style={styles.row}>
-      <View style={styles.leftCol}>
-        <Text style={styles.contextText} numberOfLines={1} ellipsizeMode="tail">
-          {active
-            ? t('feed.brainMode.contextOnShort', {
-                defaultValue: 'Sorted by educational value',
-              })
-            : t('feed.brainMode.contextOffShort', {
-                defaultValue: 'Prioritize educational content',
-              })}
+      {active ? (
+        <Text style={styles.contextText} numberOfLines={1}>
+          {t('feed.brainMode.contextOnShort', {
+            defaultValue: 'Sorted by educational value',
+          })}
         </Text>
-      </View>
+      ) : (
+        <View style={styles.leftSpacer} />
+      )}
 
       <Pressable
         onPress={handlePress}
@@ -67,20 +64,12 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
       >
         <Ionicons
           name={active ? 'bulb' : 'bulb-outline'}
-          size={14}
+          size={13}
           color={active ? '#EAB308' : colors.textSecondary}
-          style={styles.bulbIcon}
         />
         <Text style={[styles.pillText, active ? styles.pillTextActive : styles.pillTextInactive]}>
           {t('feed.brainMode.label', { defaultValue: 'Brain Mode' })}
         </Text>
-        {active ? (
-          <View style={styles.onBadge}>
-            <Text style={styles.onBadgeText}>
-              {t('feed.brainMode.on', { defaultValue: 'ON' })}
-            </Text>
-          </View>
-        ) : null}
       </Pressable>
     </View>
   );
@@ -88,17 +77,14 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
 
 type StyleMap = {
   row: ViewStyle;
-  leftCol: ViewStyle;
+  leftSpacer: ViewStyle;
   contextText: TextStyle;
   pill: ViewStyle;
   pillActive: ViewStyle;
   pillInactive: ViewStyle;
-  bulbIcon: TextStyle;
   pillText: TextStyle;
   pillTextActive: TextStyle;
   pillTextInactive: TextStyle;
-  onBadge: ViewStyle;
-  onBadgeText: TextStyle;
 };
 
 const createStyles = (colors: any, isDark: boolean) =>
@@ -108,71 +94,48 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingVertical: 10,
+      paddingVertical: 6,
       backgroundColor: colors.card,
-      borderBottomWidth: 1.5,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: isDark ? 'rgba(255,255,255,0.12)' : '#E2E8F0',
+      minHeight: 36,
     },
-    leftCol: {
+    leftSpacer: {
       flex: 1,
-      marginRight: 12,
     },
     contextText: {
-      fontSize: 12,
+      flex: 1,
+      fontSize: 11,
       fontWeight: '500',
-      color: colors.textSecondary,
+      color: colors.textTertiary,
+      marginRight: 10,
     },
     pill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
       borderRadius: 9999,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-        },
-        android: { elevation: 1 },
-      }),
     },
     pillActive: {
       backgroundColor: colors.primary,
     },
     pillInactive: {
       backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
     },
-    bulbIcon: {
-      marginRight: 1,
-    },
     pillText: {
-      fontSize: 12,
-      fontWeight: '800',
-      letterSpacing: 0.1,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 0.05,
     },
     pillTextActive: {
       color: '#FFFFFF',
     },
     pillTextInactive: {
       color: colors.textSecondary,
-    },
-    onBadge: {
-      backgroundColor: 'rgba(255,255,255,0.20)',
-      paddingHorizontal: 5,
-      paddingVertical: 1,
-      borderRadius: 4,
-      marginLeft: 2,
-    },
-    onBadgeText: {
-      fontSize: 8,
-      fontWeight: '900',
-      color: '#FFFFFF',
-      letterSpacing: 0.5,
     },
   });
 

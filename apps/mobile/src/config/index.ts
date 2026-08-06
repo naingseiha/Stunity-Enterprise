@@ -6,5 +6,6 @@ export {
   feedTextStyle,
   feedBodyPreferKhmer,
   textContainsKhmer,
+  ACTIONABLE_FEED_CTA_TYPES,
 } from './feedTypography';
 

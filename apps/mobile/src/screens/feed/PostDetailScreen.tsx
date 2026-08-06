@@ -110,9 +110,13 @@ const CommentItem: React.FC<{
   onToggleLike: (commentId: string) => Promise<void>;
   depth?: number;
 }> = ({ comment, onReply, onToggleLike, depth = 0 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const preferKhmer = feedBodyPreferKhmer(comment.content, i18n.resolvedLanguage || i18n.language);
+  const styles = React.useMemo(
+    () => createStyles(colors, isDark, preferKhmer),
+    [colors, isDark, preferKhmer],
+  );
   const [isLiking, setIsLiking] = useState(false);
   const authorName = `${comment.author.lastName || ''} ${comment.author.firstName || ''}`.trim();
 
@@ -142,7 +146,7 @@ const CommentItem: React.FC<{
               </View>
             )}
           </View>
-          <Text style={styles.commentText}>{comment.content}</Text>
+          {renderPostBodyText(comment.content, styles.commentText)}
         </View>
         <View style={styles.commentActions}>
           <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
@@ -1311,7 +1315,11 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
   },
   teacherBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
   teacherBadgeText: { fontSize: 9, fontWeight: '700', color: '#3B82F6' },
-  commentText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+  commentText: {
+    ...feedTextStyle('body', { preferKhmer, color: colors.text }),
+    fontSize: 14,
+    lineHeight: preferKhmer ? 22 : 20,
+  },
   commentActions: {
     flexDirection: 'row', alignItems: 'center', marginTop: 6, paddingLeft: 4, gap: 14,
   },

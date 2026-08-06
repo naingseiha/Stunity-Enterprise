@@ -90,3 +90,17 @@ export const feedBodyPreferKhmer = (
   const locale = (uiLocale || '').toLowerCase().split('-')[0];
   return locale === 'km' || textContainsKhmer(content);
 };
+
+/** Feed CTAs only for posts that need a distinct next action (not passive reading). */
+export const ACTIONABLE_FEED_CTA_TYPES = new Set([
+  'QUIZ',
+  'COURSE',
+  'ASSIGNMENT',
+  'EXAM',
+  'EVENT',
+  'PROJECT',
+  'RESOURCE',
+  'TUTORIAL',
+  'RESEARCH',
+  'COLLABORATION',
+]);
