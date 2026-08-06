@@ -204,10 +204,14 @@ export const Typography = {
     medium: 'System',
     semibold: 'System',
     bold: 'System',
-    khmerBody: 'Battambang-Regular',
-    khmerBodyBold: 'Battambang-Bold',
+    khmerBody: 'KantumruyPro-Regular',
+    khmerBodySemibold: 'KantumruyPro-SemiBold',
+    khmerBodyBold: 'KantumruyPro-Bold',
     khmerHeading: 'Koulen-Regular',
     khmerQuote: 'Metal-Regular',
+    /** @deprecated Prefer khmerBody (Kantumruy Pro). */
+    khmerLegacyBody: 'Battambang-Regular',
+    khmerLegacyBodyBold: 'Battambang-Bold',
   },
 
   // Font Sizes — numeric scale (direct access, e.g. Typography.fontSize[16])

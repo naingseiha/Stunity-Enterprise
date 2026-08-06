@@ -3,15 +3,8 @@
  * post and marked it canonical. Distinct from User.isVerified (the blue
  * tick on the author) — this is *post-level* verification.
  *
- * Matches the existing role-badge vocabulary in PostHeader so it slots in
- * naturally next to "Teacher" / "Admin" / EdScore pills.
- *
- * Visual: amber school icon + "Verified" label on soft amber background.
- * Prestigious without being loud.
- *
- * Data source (prototype): mocked by utils/mockEdScores.ts.
- * Production: needs Post.verifiedByTeacherId + Post.verificationStatus
- * on the Prisma model.
+ * Shown in the meta row next to date / visibility (not beside the name),
+ * so it is not confused with account verification.
  */
 
 import React from 'react';
@@ -30,27 +23,21 @@ export const TeacherVerifiedBadge: React.FC<Props> = () => {
     <View style={styles.badge}>
       <Ionicons name="school" size={10} color="#D97706" />
       <Text style={styles.text}>
-        {t('feed.edScore.teacherVerified', { defaultValue: 'Verified' })}
+        {t('feed.edScore.teacherVerified', { defaultValue: 'Teacher verified' })}
       </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create<{ badge: ViewStyle; text: TextStyle }>({
-  // Matches PostHeader.roleBadge layout exactly
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
     gap: 3,
-    marginLeft: 4,
-    backgroundColor: '#FEF3C7',
   },
   text: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: '#D97706',
     letterSpacing: 0.1,
   },

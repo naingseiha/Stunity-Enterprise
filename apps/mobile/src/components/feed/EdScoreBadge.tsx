@@ -1,17 +1,12 @@
 /**
- * EdScoreBadge — small pill rendering a post's aggregate "Educational Value"
- * score (0–5). Matches the existing role-badge vocabulary in PostHeader
- * (paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, gap: 3,
- * marginLeft: 4) so it slots in naturally next to "Teacher" / "Admin" pills.
+ * EdScoreBadge — compact educational-value score next to the author name.
+ * Tint-only (icon + label), no fill — matches LinkedIn/X density and avoids
+ * chip clutter when Admin / Ed-Score / Verified sit on one row.
  *
  * Color-graded by score:
- *   ≥4.5   gold (#D97706 on #FEF3C7) — top-tier educational value
- *   ≥3.5   emerald (#059669 on #D1FAE5) — high educational value
+ *   ≥4.5   gold (#D97706) — top-tier educational value
+ *   ≥3.5   emerald (#059669) — high educational value
  *   <3.5   not rendered — low scores are silently un-badged, never stigmatized
- *
- * Data source (prototype): mocked by utils/mockEdScores.ts.
- * Production: nightly job aggregates EducationalValueRating.averageRating
- * onto Post.edScore + Post.edScoreCount.
  */
 
 import React from 'react';
@@ -27,14 +22,12 @@ const getTone = (score: number) => {
   if (score >= 4.5) {
     return {
       color: '#D97706',
-      bg: '#FEF3C7',
       icon: 'star' as const,
     };
   }
   if (score >= 3.5) {
     return {
       color: '#059669',
-      bg: '#D1FAE5',
       icon: 'star' as const,
     };
   }
@@ -46,7 +39,7 @@ export const EdScoreBadge: React.FC<Props> = ({ score }) => {
   if (!tone) return null; // silently un-badged for sub-3.5 posts
 
   return (
-    <View style={[styles.badge, { backgroundColor: tone.bg }]}>
+    <View style={styles.badge}>
       <Ionicons name={tone.icon} size={10} color={tone.color} />
       <Text style={[styles.text, { color: tone.color }]}>
         {score.toFixed(1)}
@@ -56,13 +49,11 @@ export const EdScoreBadge: React.FC<Props> = ({ score }) => {
 };
 
 const styles = StyleSheet.create<{ badge: ViewStyle; text: TextStyle }>({
-  // Matches PostHeader.roleBadge style exactly for visual cohesion
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
     gap: 3,
     marginLeft: 4,
   },

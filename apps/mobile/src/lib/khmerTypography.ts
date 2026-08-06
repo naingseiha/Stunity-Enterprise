@@ -1,19 +1,36 @@
 import { isValidElement } from 'react';
 import type { ForwardedRef, ReactElement, ReactNode } from 'react';
-import { StyleProp, StyleSheet, Text, TextInput, TextStyle } from 'react-native';
+import { Platform, StyleProp, StyleSheet, Text, TextInput, TextStyle } from 'react-native';
 
+/**
+ * Khmer UI fonts (bundled via expo-font — never depend on device system fonts).
+ *
+ * - body* → Kantumruy Pro: modern UI sans for chrome + post body (social density)
+ * - heading → Koulen: display only for large titles (≥20–22px), not names/meta
+ * - quote → Metal: italic / pull-quote accent
+ *
+ * Battambang remains in assets for legacy screens that still reference it
+ * explicitly; new UI should use Kantumruy Pro.
+ */
 export const KHMER_FONT_FAMILIES = {
   heading: 'Koulen-Regular',
-  body: 'Battambang-Regular',
-  bodyBold: 'Battambang-Bold',
+  body: 'KantumruyPro-Regular',
+  bodySemibold: 'KantumruyPro-SemiBold',
+  bodyBold: 'KantumruyPro-Bold',
   quote: 'Metal-Regular',
+  /** @deprecated Prefer body / bodyBold (Kantumruy Pro). Kept for explicit legacy styles. */
+  legacyBody: 'Battambang-Regular',
+  legacyBodyBold: 'Battambang-Bold',
 } as const;
 
 export const KHMER_FONT_ASSETS = {
   [KHMER_FONT_FAMILIES.heading]: require('../assets/fonts/khmer/Koulen/Koulen-Regular.ttf'),
-  [KHMER_FONT_FAMILIES.body]: require('../assets/fonts/khmer/Battambang/Battambang-Regular.ttf'),
-  [KHMER_FONT_FAMILIES.bodyBold]: require('../assets/fonts/khmer/Battambang/Battambang-Bold.ttf'),
+  [KHMER_FONT_FAMILIES.body]: require('../assets/fonts/khmer/KantumruyPro/KantumruyPro-Regular.ttf'),
+  [KHMER_FONT_FAMILIES.bodySemibold]: require('../assets/fonts/khmer/KantumruyPro/KantumruyPro-SemiBold.ttf'),
+  [KHMER_FONT_FAMILIES.bodyBold]: require('../assets/fonts/khmer/KantumruyPro/KantumruyPro-Bold.ttf'),
   [KHMER_FONT_FAMILIES.quote]: require('../assets/fonts/khmer/Metal/Metal-Regular.ttf'),
+  [KHMER_FONT_FAMILIES.legacyBody]: require('../assets/fonts/khmer/Battambang/Battambang-Regular.ttf'),
+  [KHMER_FONT_FAMILIES.legacyBodyBold]: require('../assets/fonts/khmer/Battambang/Battambang-Bold.ttf'),
 } as const;
 
 export type KhmerTextRole = 'heading' | 'body' | 'quote';
@@ -124,6 +141,8 @@ const inferRole = (style: TextStyle, plainText: string): KhmerTextRole => {
     return 'quote';
   }
 
+  // Profile names → Koulen (display). Prefer renderProfileNameText for mixed
+  // Khmer+Latin so Latin can stay on System Bold beside Koulen.
   if (isLikelyProfileNameText(style, plainText)) {
     return 'heading';
   }
@@ -131,7 +150,7 @@ const inferRole = (style: TextStyle, plainText: string): KhmerTextRole => {
   const weight = toNumericWeight(style.fontWeight);
   const fontSize = typeof style.fontSize === 'number' ? style.fontSize : 0;
 
-  if (fontSize >= 22 || (fontSize >= 18 && weight >= 600)) {
+  if (fontSize >= 22 || (fontSize >= 20 && weight >= 700)) {
     return 'heading';
   }
 
@@ -141,22 +160,31 @@ const inferRole = (style: TextStyle, plainText: string): KhmerTextRole => {
 const resolveFontFamily = (role: KhmerTextRole, style: TextStyle): string => {
   if (role === 'heading') return KHMER_FONT_FAMILIES.heading;
   if (role === 'quote') return KHMER_FONT_FAMILIES.quote;
-  return toNumericWeight(style.fontWeight) >= 700
-    ? KHMER_FONT_FAMILIES.bodyBold
-    : KHMER_FONT_FAMILIES.body;
+  const weight = toNumericWeight(style.fontWeight);
+  if (weight >= 700) return KHMER_FONT_FAMILIES.bodyBold;
+  if (weight >= 600) return KHMER_FONT_FAMILIES.bodySemibold;
+  return KHMER_FONT_FAMILIES.body;
 };
 
 const appendFontFamily = (
   style: StyleProp<TextStyle>,
   fontFamily: TextStyle['fontFamily']
 ): StyleProp<TextStyle> => {
+  // Android resolves fontFamily + fontWeight as a request for a separate
+  // weighted file. Our Khmer faces are loaded as discrete families, so keep
+  // weight neutral and let the chosen face carry the weight.
+  const fontPatch: TextStyle =
+    Platform.OS === 'android'
+      ? { fontFamily, fontWeight: '400' }
+      : { fontFamily };
+
   if (Array.isArray(style)) {
-    return [...style, { fontFamily }];
+    return [...style, fontPatch];
   }
   if (style) {
-    return [style, { fontFamily }];
+    return [style, fontPatch];
   }
-  return { fontFamily };
+  return fontPatch;
 };
 
 // Named emoji font families. On iOS we no longer set 'Apple Color Emoji' explicitly

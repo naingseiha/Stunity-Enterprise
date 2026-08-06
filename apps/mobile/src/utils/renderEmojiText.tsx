@@ -64,11 +64,14 @@ const resolveKhmerSpanFont = (style: StyleProp<TextStyle>): string => {
   const weight = toNumericWeight(flattened.fontWeight);
   const fontSize = typeof flattened.fontSize === 'number' ? flattened.fontSize : 0;
 
-  if (fontSize >= 22 || (fontSize >= 18 && weight >= 600)) {
+  // Koulen only for large display titles — body/names stay on Kantumruy Pro.
+  if (fontSize >= 22 || (fontSize >= 20 && weight >= 700)) {
     return KHMER_FONT_FAMILIES.heading;
   }
 
-  return weight >= 700 ? KHMER_FONT_FAMILIES.bodyBold : KHMER_FONT_FAMILIES.body;
+  if (weight >= 700) return KHMER_FONT_FAMILIES.bodyBold;
+  if (weight >= 600) return KHMER_FONT_FAMILIES.bodySemibold;
+  return KHMER_FONT_FAMILIES.body;
 };
 
 const splitEmojiText = (value: string): InlineRun[] => {
@@ -232,22 +235,43 @@ const getLatinSpanStyle = (
   options?: RenderEmojiTextOptions,
 ): TextStyle => {
   const baseStyle = stripFontFamily(style) as TextStyle;
-  return options?.latinFontFamily
-    ? { ...baseStyle, fontFamily: options.latinFontFamily }
-    : baseStyle;
+  if (!options?.latinFontFamily) return baseStyle;
+
+  return {
+    ...baseStyle,
+    fontFamily: options.latinFontFamily,
+    // Slight negative tracking when pairing System Bold beside Koulen names.
+    letterSpacing:
+      typeof baseStyle.letterSpacing === 'number' ? baseStyle.letterSpacing : -0.25,
+  };
 };
 
 const getKhmerSpanStyle = (
   baseStyle: TextStyle,
   fontFamily: TextStyle['fontFamily'],
-): TextStyle => ({
-  ...baseStyle,
-  fontFamily,
-  // Android treats fontFamily + fontWeight as a request for a separate weighted
-  // font file. Our Khmer display font is loaded as a regular face, so keep the
-  // custom font weight neutral and let Koulen's glyph design carry the heading.
-  fontWeight: Platform.OS === 'android' ? '400' : baseStyle.fontWeight,
-});
+): TextStyle => {
+  const isKoulen = fontFamily === KHMER_FONT_FAMILIES.heading;
+  const fontSize = typeof baseStyle.fontSize === 'number' ? baseStyle.fontSize : 15;
+  const minKoulenLineHeight = Math.round(fontSize * 1.6);
+
+  return {
+    ...baseStyle,
+    fontFamily,
+    // Android treats fontFamily + fontWeight as a request for a separate weighted
+    // font file. Khmer faces are loaded as discrete families (Regular / SemiBold /
+    // Bold / Koulen), so keep weight neutral and let the chosen face carry it.
+    fontWeight: Platform.OS === 'android' ? '400' : baseStyle.fontWeight,
+    // Koulen ascenders need a taller line box than Kantumruy/Battambang.
+    ...(isKoulen
+      ? {
+          lineHeight: Math.max(
+            typeof baseStyle.lineHeight === 'number' ? baseStyle.lineHeight : 0,
+            minKoulenLineHeight,
+          ),
+        }
+      : null),
+  };
+};
 
 const renderSplitScriptText = (
   value: string,
@@ -399,6 +423,32 @@ export const renderPostTitleText = (
   khmerFontFamily: KHMER_FONT_FAMILIES.heading,
 });
 
+/**
+ * Profile / author names: Khmer → Koulen (display), Latin → System Bold.
+ * Script-split keeps mixed names (e.g. "សុខា Kim") visually balanced —
+ * Koulen carries Khmer identity; SF Pro / Roboto Bold carries English.
+ */
+export const renderProfileNameText = (
+  value: string,
+  style?: StyleProp<TextStyle>,
+  numberOfLines?: number,
+) => {
+  const flattened = (StyleSheet.flatten(style) || {}) as TextStyle;
+  const nameStyle: StyleProp<TextStyle> = [
+    style,
+    {
+      // Bold Latin to sit next to Koulen's display weight.
+      fontWeight: flattened.fontWeight ?? '700',
+    },
+  ];
+
+  return renderEmojiText(value, nameStyle, numberOfLines, {
+    splitScripts: true,
+    khmerFontFamily: KHMER_FONT_FAMILIES.heading,
+    // Explicit System so the global Khmer Text patch does not retarget Latin runs.
+    latinFontFamily: 'System',
+  });
+};
 export const renderPostBodyText = (
   value: string,
   style?: StyleProp<TextStyle>,

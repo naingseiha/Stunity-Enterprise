@@ -12,6 +12,21 @@ import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, Clu
 import { formatNumber, formatRelativeTime } from '@/utils';
 import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
 import { renderPostBodyText } from '@/utils/renderEmojiText';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
+
+/** Feed CTAs only for posts that need a distinct next action (not passive reading). */
+const ACTIONABLE_FEED_CTA_TYPES = new Set([
+  'QUIZ',
+  'COURSE',
+  'ASSIGNMENT',
+  'EXAM',
+  'EVENT',
+  'PROJECT',
+  'RESOURCE',
+  'TUTORIAL',
+  'RESEARCH',
+  'COLLABORATION',
+]);
 
 // Placeholder for missing types, adjust based on actual types
 interface PostContentProps {
@@ -62,9 +77,16 @@ const PostContent = ({
   DIFFICULTY_CONFIG,
 }: PostContentProps) => {
   const { colors, isDark } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const preferKhmer = feedBodyPreferKhmer(post.content, i18n.resolvedLanguage || i18n.language);
+  const quotePreferKhmer = feedBodyPreferKhmer(
+    `${post.repostOf?.title || ''} ${post.repostOf?.content || ''}`,
+    i18n.resolvedLanguage || i18n.language,
+  );
+  const styles = React.useMemo(
+    () => createStyles(colors, isDark, preferKhmer, quotePreferKhmer),
+    [colors, isDark, preferKhmer, quotePreferKhmer],
+  );
 
   const [mediaContentWidth, setMediaContentWidth] = useState<number | undefined>(undefined);
   const onMediaWrapperLayout = useCallback((e: LayoutChangeEvent) => {
@@ -191,10 +213,10 @@ const PostContent = ({
             <Text style={styles.quoteTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
           </View>
           {!!post.repostOf.title && (
-            <Text style={styles.quoteTitle} numberOfLines={2}>{post.repostOf.title}</Text>
+            renderPostBodyText(post.repostOf.title, styles.quoteTitle, 2)
           )}
           {!!post.repostOf.content?.trim() && (
-            <Text style={styles.quoteContent} numberOfLines={3}>{post.repostOf.content}</Text>
+            renderPostBodyText(post.repostOf.content, styles.quoteContent, 3)
           )}
           {post.repostOf.mediaUrls && post.repostOf.mediaUrls.length > 0 && (
             <Image
@@ -212,7 +234,7 @@ const PostContent = ({
             <Ionicons name={typeConfig.icon as any} size={12} color={colors.textTertiary} />
             <Text style={styles.quoteType} numberOfLines={1}>{typeConfig.label}</Text>
             <View style={{ flex: 1 }} />
-            {!!typeConfig.ctaLabel && (
+            {ACTIONABLE_FEED_CTA_TYPES.has(post.repostOf?.postType || post.postType) && !!typeConfig.ctaLabel && (
               <>
                 <Text style={[styles.quoteCta, { color: typeConfig.color }]} numberOfLines={1}>{typeConfig.ctaLabel}</Text>
                 <Ionicons name="arrow-forward" size={12} color={typeConfig.color} />
@@ -344,10 +366,9 @@ const PostContent = ({
         </View>
       )}
 
-      {/* Generic CTA Button (Courses, Projects, Events, Assignments).
-          Suppressed on reposts — the CTA belongs to the quoted original and
-          now lives inside the quoted card's footer. */}
-      {!isRepost && !post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && post.postType !== 'EVENT_CREATED' && post.postType !== 'CLUB_CREATED' && !!typeConfig.ctaLabel && (
+      {/* Actionable CTA only — Quiz/Course/Event/etc.
+          Passive types (Article, Reflection, Achievement…) rely on tap + type chip. */}
+      {!isRepost && !post.quizData && ACTIONABLE_FEED_CTA_TYPES.has(post.postType) && !!typeConfig.ctaLabel && (
         <View style={styles.genericCtaContainer}>
           <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
             <View style={[styles.genericCtaButton, { backgroundColor: typeConfig.color + '15' }]}>
@@ -438,7 +459,12 @@ const PostContent = ({
   );
 };
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (
+  colors: any,
+  isDark: boolean,
+  preferKhmer: boolean,
+  quotePreferKhmer: boolean,
+) => StyleSheet.create({
   mediaWrapper: {
     marginHorizontal: 12,
     marginBottom: 10,
@@ -469,14 +495,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   contentSection: {
     paddingHorizontal: 16,
+    paddingTop: 2,
     paddingBottom: 8,
   },
   contentText: {
-    fontSize: 15,
-    lineHeight: 27,
-    color: colors.text,
-    paddingTop: 3,
-    paddingBottom: 1,
+    ...feedTextStyle('body', { preferKhmer, color: colors.text }),
   },
   // Quote-tweet style quoted card — light, condensed, subtle border, no
   // inner engagement counts (the repost's action bar owns engagement).
@@ -507,29 +530,22 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'center',
   },
   quoteAuthor: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.text,
+    ...feedTextStyle('quoteAuthor', { preferKhmer: quotePreferKhmer, color: colors.text }),
     flexShrink: 1,
   },
   quoteDot: {
-    fontSize: 12,
-    color: colors.textTertiary,
+    ...feedTextStyle('quote', { preferKhmer: quotePreferKhmer, color: colors.textTertiary }),
   },
   quoteTime: {
-    fontSize: 11.5,
-    color: colors.textTertiary,
+    ...feedTextStyle('chip', { preferKhmer: quotePreferKhmer, color: colors.textTertiary }),
   },
   quoteTitle: {
-    fontSize: 13.5,
+    ...feedTextStyle('quoteAuthor', { preferKhmer: quotePreferKhmer, color: colors.text }),
     fontWeight: '700',
-    color: colors.text,
     marginBottom: 3,
   },
   quoteContent: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
+    ...feedTextStyle('quote', { preferKhmer: quotePreferKhmer, color: colors.textSecondary }),
   },
   quoteMedia: {
     width: '100%',
