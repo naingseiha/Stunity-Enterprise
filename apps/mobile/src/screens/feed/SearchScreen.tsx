@@ -649,6 +649,9 @@ export default function SearchScreen() {
         if (activeScope === 'all' && userResults.length > 0) return null;
 
         if (hasSearched) {
+            const noResultsSub = t('common.search.noResultsSub');
+            const preferKhmer = feedBodyPreferKhmer(noResultsSub, i18n.resolvedLanguage || i18n.language);
+
             return (
                 <Animated.View style={styles.emptyContainer} entering={FadeInDown.springify()}>
                     <LinearGradient
@@ -668,8 +671,8 @@ export default function SearchScreen() {
                     <Text style={styles.emptyTitle}>
                         {t('common.search.noResults')}
                     </Text>
-                    <Text style={styles.emptySubtitle}>
-                        {t('common.search.noResultsSub')}
+                    <Text style={[styles.emptySubtitle, feedTextStyle('body', { preferKhmer, color: colors.textTertiary })]}>
+                        {noResultsSub}
                     </Text>
                     <View style={styles.emptyActions}>
                         <TouchableOpacity
@@ -1977,11 +1980,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         letterSpacing: -0.5,
     },
     emptySubtitle: {
-        fontSize: 15,
-        color: colors.textTertiary,
         textAlign: 'center',
         paddingHorizontal: 40,
-        lineHeight: 22,
     },
 
     // Quiz Info

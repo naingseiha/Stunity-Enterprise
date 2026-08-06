@@ -1,4 +1,5 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
+import { useTranslation } from 'react-i18next';
 /**
  * My Posts Screen
  * 
@@ -28,14 +29,23 @@ import { Haptics } from '@/services/haptics';
 
 import { PostCard, PostAnalyticsModal } from '@/components/feed';
 import { useFeedStore } from '@/stores';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
 import { Post } from '@/types';
 import { Colors, Shadows } from '@/config';
 import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 
 export default function MyPostsScreen() {
   const navigation = useNavigation();
+  const { i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const emptySubtitleTypography = React.useMemo(
+    () => feedTextStyle('body', {
+      preferKhmer: feedBodyPreferKhmer(null, i18n.resolvedLanguage || i18n.language),
+      color: colors.textSecondary,
+    }),
+    [colors.textSecondary, i18n.language, i18n.resolvedLanguage],
+  );
   const { 
     myPosts, 
     isLoadingMyPosts, 
@@ -119,7 +129,7 @@ export default function MyPostsScreen() {
           </LinearGradient>
         </View>
         <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_5d37cac7" /></Text>
-        <Text style={styles.emptySubtitle}>
+        <Text style={[styles.emptySubtitle, emptySubtitleTypography]}>
           <AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_f2e53e51" />
         </Text>
         <TouchableOpacity 
@@ -272,10 +282,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 15,
-    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
     marginBottom: 32,
   },
   emptyButton: {

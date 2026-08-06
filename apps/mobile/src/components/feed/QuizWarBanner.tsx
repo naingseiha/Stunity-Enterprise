@@ -373,7 +373,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     },
     name: {
       fontSize: 15,
-      fontWeight: '800',
+      fontWeight: '600',
       color: colors.text,
       flexShrink: 1,
     },
@@ -470,8 +470,8 @@ const createStyles = (colors: any, isDark: boolean) =>
       justifyContent: 'center',
     },
     teamScore: {
-      fontSize: 26,
-      fontWeight: '900',
+      fontSize: 22,
+      fontWeight: '800',
       color: colors.text,
       letterSpacing: -0.5,
     },
@@ -499,7 +499,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       borderRadius: 2,
       overflow: 'hidden',
       flexDirection: 'row',
-      marginTop: 16,
+      marginTop: 12,
       backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
     },
     tugFillA: {
@@ -541,7 +541,7 @@ const createStyles = (colors: any, isDark: boolean) =>
 
     // ── CTA ──
     ctaWrap: {
-      marginTop: 16,
+      marginTop: 12,
     },
     cta: {
       flexDirection: 'row',

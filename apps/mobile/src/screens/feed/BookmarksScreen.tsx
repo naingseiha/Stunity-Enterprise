@@ -28,12 +28,13 @@ import { Haptics } from '@/services/haptics';
 
 import { PostCard } from '@/components/feed';
 import { useFeedStore } from '@/stores';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
 import { Post } from '@/types';
 import { Colors, Shadows } from '@/config';
 import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 
 export default function BookmarksScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -148,6 +149,9 @@ export default function BookmarksScreen() {
       );
     }
     
+    const emptyDesc = t('screens.bookmarks.emptyDesc');
+    const preferKhmer = feedBodyPreferKhmer(emptyDesc, i18n.resolvedLanguage || i18n.language);
+
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconContainer}>
@@ -159,8 +163,8 @@ export default function BookmarksScreen() {
           </LinearGradient>
         </View>
         <Text style={styles.emptyTitle}>{t('screens.bookmarks.emptyTitle')}</Text>
-        <Text style={styles.emptySubtitle}>
-          {t('screens.bookmarks.emptyDesc')}
+        <Text style={[styles.emptySubtitle, feedTextStyle('body', { preferKhmer, color: colors.textSecondary })]}>
+          {emptyDesc}
         </Text>
         <TouchableOpacity 
           onPress={navigateToFeedHome}
@@ -316,10 +320,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 15,
-    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
     marginBottom: 32,
   },
   emptyButton: {
