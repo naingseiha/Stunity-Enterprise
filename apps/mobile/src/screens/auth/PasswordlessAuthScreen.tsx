@@ -31,13 +31,10 @@ import type { OtpChallengeResponse } from '@/types';
 import { normalizePhonePreview } from '@/utils/passwordlessPhone';
 import { Colors } from '@/config';
 import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
-import {
-  isFacebookAuthConfigured,
-  isGoogleAuthConfigured,
-} from '@/services/socialAuth';
 
-const BRAND_TEAL = Colors.brand;
+const BRAND_TEAL = Colors.brand; // #09CFF7 — Welcome Sign Up
 const BRAND_TEAL_DARK = '#00B8DB';
+const BRAND_TEAL_MUTED = '#7DE7F7';
 const INK = '#0F172A';
 const MUTED = '#64748B';
 const PASSKEYS_ENABLED = process.env.EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED === 'true';
@@ -216,27 +213,24 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   <Text style={styles.title}>{entry === 'login' ? t('common.login') : t('common.signup')}</Text>
                   <Text style={styles.subtitle}>
                     {entry === 'login'
-                      ? t('auth.passwordless.signInSubtitle', 'Enter your phone number to sign in securely to your enterprise platform.')
-                      : t('auth.passwordless.createSubtitle', 'Enter your phone number to start creating your Stunity enterprise account.')}
+                      ? t('auth.passwordless.signInSubtitle', 'Enter your phone number to continue.')
+                      : t('auth.passwordless.createSubtitle', 'Enter your phone number to get started.')}
                   </Text>
                 </View>
 
-                {/* Creative Phone Capsule with Integrated Country Code Pill Badge */}
-                <View style={styles.phoneCapsule}>
-                  <View style={styles.countryCodePill}>
-                    <Ionicons name="globe-outline" size={18} color="#0284C7" />
-                    <Text style={styles.countryCodeText}>+855</Text>
-                  </View>
+                <View style={styles.field}>
+                  <Text style={styles.fieldPrefix}>+855</Text>
+                  <View style={styles.fieldDivider} />
                   <TextInput
                     ref={phoneInputRef}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder={t('auth.passwordless.phonePlaceholder', '12 345 678')}
+                    placeholder={t('auth.passwordless.phonePlaceholder', 'Phone number')}
                     placeholderTextColor="#94A3B8"
                     keyboardType="phone-pad"
                     textContentType="telephoneNumber"
                     autoComplete="tel"
-                    style={styles.phoneInput}
+                    style={styles.fieldInput}
                     returnKeyType="go"
                     onSubmitEditing={() => void start()}
                   />
@@ -250,7 +244,11 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   activeOpacity={0.85}
                 >
                   <LinearGradient
-                    colors={!phonePreview || isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                    colors={
+                      !phonePreview || isLoading
+                        ? [BRAND_TEAL_MUTED, BRAND_TEAL_MUTED]
+                        : [BRAND_TEAL, BRAND_TEAL_DARK]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.primaryButton}
@@ -260,86 +258,58 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                     ) : (
                       <>
                         <Text style={styles.primaryText}>{t('auth.passwordless.continue', 'Continue')}</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                        <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
                       </>
                     )}
                   </LinearGradient>
                 </TouchableOpacity>
 
-                {/* Creative Divider matching WelcomeScreen FOR PARENTS */}
-                {(passkeysSupported || TELEGRAM_ENABLED || isGoogleAuthConfigured() || isFacebookAuthConfigured()) && (
-                  <View style={styles.dividerRow}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-                    <View style={styles.dividerLine} />
-                  </View>
-                )}
-
-                {/* Passkey Secondary Card with Circular Icon Badge */}
-                {entry === 'login' && passkeysSupported && (
-                  <TouchableOpacity
-                    onPress={() => void continueWithPasskey()}
-                    disabled={isLoading}
-                    style={styles.secondaryCapsuleCard}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.secondaryIconBadge}>
-                      <Ionicons name="finger-print-outline" size={20} color={BRAND_TEAL} />
-                    </View>
-                    <Text style={styles.secondaryCardText}>{t('auth.passwordless.usePasskey', 'Use Passkey')}</Text>
-                    <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-                  </TouchableOpacity>
-                )}
-
-                {/* Telegram Secondary Card with Circular Icon Badge */}
-                {TELEGRAM_ENABLED && (
-                  <TouchableOpacity
-                    onPress={() => void continueWithTelegram()}
-                    disabled={isLoading}
-                    style={styles.secondaryCapsuleCard}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.secondaryIconBadge}>
-                      <Ionicons name="paper-plane-outline" size={20} color="#0088CC" />
-                    </View>
-                    <Text style={styles.secondaryCardText}>{t('auth.passwordless.continueWithTelegram', 'Telegram Account')}</Text>
-                    <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-                  </TouchableOpacity>
-                )}
-
-                <SocialAuthButtons disabled={isLoading} showDivider={false} />
-
-                {/* Password Login Option */}
                 <TouchableOpacity
                   onPress={() => navigation.navigate('PasswordLogin')}
-                  style={styles.tertiaryBtn}
-                  activeOpacity={0.7}
+                  style={styles.secondaryBtn}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.tertiaryText}>Use Email & Password Instead</Text>
+                  <Ionicons name="mail-outline" size={18} color={BRAND_TEAL} style={{ marginRight: 8 }} />
+                  <Text style={styles.secondaryBtnText}>
+                    {t('auth.passwordless.useEmailPassword', 'Use email & password')}
+                  </Text>
                 </TouchableOpacity>
+
+                <SocialAuthButtons
+                  disabled={isLoading}
+                  telegram={
+                    TELEGRAM_ENABLED
+                      ? { onPress: continueWithTelegram, loading: isLoading }
+                      : false
+                  }
+                  passkey={
+                    entry === 'login' && passkeysSupported
+                      ? { onPress: continueWithPasskey, loading: isLoading }
+                      : false
+                  }
+                />
               </>
             )}
 
             {step === 'OTP' && (
               <>
                 <View style={styles.titleGroup}>
-                  <Text style={styles.title}>{t('auth.passwordless.otpTitle', 'Verification Code')}</Text>
+                  <Text style={styles.title}>{t('auth.passwordless.otpTitle', 'Enter code')}</Text>
                   <Text style={styles.subtitle}>
-                    We sent a 6-digit code to <Text style={styles.strongText}>{challenge?.maskedDestination || phonePreview}</Text>
+                    Sent to <Text style={styles.strongText}>{challenge?.maskedDestination || phonePreview}</Text>
                   </Text>
                 </View>
 
-                {/* Glowing OTP Capsule Input */}
                 <TextInput
                   ref={codeInputRef}
                   value={code}
                   onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
+                  placeholder="••••••"
                   placeholderTextColor="#CBD5E1"
                   keyboardType="number-pad"
                   textContentType="oneTimeCode"
                   autoComplete="sms-otp"
-                  style={styles.otpCapsule}
+                  style={styles.otpField}
                   maxLength={6}
                   returnKeyType="done"
                   onSubmitEditing={() => void verify()}
@@ -352,7 +322,11 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   activeOpacity={0.85}
                 >
                   <LinearGradient
-                    colors={code.length !== 6 || isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                    colors={
+                      code.length !== 6 || isLoading
+                        ? [BRAND_TEAL_MUTED, BRAND_TEAL_MUTED]
+                        : [BRAND_TEAL, BRAND_TEAL_DARK]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.primaryButton}
@@ -360,7 +334,7 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                     {isLoading ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={styles.primaryText}>{t('auth.passwordless.verifyContinue', 'Verify & Continue')}</Text>
+                      <Text style={styles.primaryText}>{t('auth.passwordless.verifyContinue', 'Verify')}</Text>
                     )}
                   </LinearGradient>
                 </TouchableOpacity>
@@ -385,40 +359,32 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
             {step === 'PROFILE' && (
               <>
                 <View style={styles.titleGroup}>
-                  <Text style={styles.title}>{t('auth.passwordless.profileTitle', 'Complete Profile')}</Text>
-                  <Text style={styles.subtitle}>Set up your personal details to complete your enterprise registration.</Text>
+                  <Text style={styles.title}>{t('auth.passwordless.profileTitle', 'Your name')}</Text>
+                  <Text style={styles.subtitle}>{t('auth.passwordless.profileSubtitle', 'Just a few details to finish.')}</Text>
                 </View>
 
-                {/* First Name Capsule with Circular Icon Badge */}
-                <View style={styles.inputCapsule}>
-                  <View style={styles.iconCircleBadge}>
-                    <Ionicons name="person-outline" size={18} color="#0284C7" />
-                  </View>
+                <View style={styles.field}>
                   <TextInput
                     ref={firstNameInputRef}
                     value={firstName}
                     onChangeText={setFirstName}
-                    placeholder={t('auth.passwordless.firstName', 'First Name')}
+                    placeholder={t('auth.passwordless.firstName', 'First name')}
                     placeholderTextColor="#94A3B8"
                     autoCapitalize="words"
                     autoComplete="name-given"
-                    style={styles.input}
+                    style={styles.fieldInputSolo}
                   />
                 </View>
 
-                {/* Last Name Capsule with Circular Icon Badge */}
-                <View style={styles.inputCapsule}>
-                  <View style={styles.iconCircleBadge}>
-                    <Ionicons name="person-outline" size={18} color="#0284C7" />
-                  </View>
+                <View style={styles.field}>
                   <TextInput
                     value={lastName}
                     onChangeText={setLastName}
-                    placeholder={t('auth.passwordless.lastName', 'Last Name')}
+                    placeholder={t('auth.passwordless.lastName', 'Last name')}
                     placeholderTextColor="#94A3B8"
                     autoCapitalize="words"
                     autoComplete="name-family"
-                    style={styles.input}
+                    style={styles.fieldInputSolo}
                   />
                 </View>
 
@@ -442,7 +408,11 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                   activeOpacity={0.85}
                 >
                   <LinearGradient
-                    colors={!firstName.trim() || !lastName.trim() || !accepted || isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                    colors={
+                      !firstName.trim() || !lastName.trim() || !accepted || isLoading
+                        ? [BRAND_TEAL_MUTED, BRAND_TEAL_MUTED]
+                        : [BRAND_TEAL, BRAND_TEAL_DARK]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.primaryButton}
@@ -510,142 +480,162 @@ const styles = StyleSheet.create({
   wavyContainer: { position: 'absolute', bottom: -1, width: '100%' },
   wavySvg: { bottom: 0 },
 
-  // Single-Screen Content Area
-  contentArea: { flex: 1, paddingHorizontal: 32, paddingTop: 10, paddingBottom: 16, justifyContent: 'space-between' },
-  formShell: { width: '100%' },
-
-  // Typography
-  titleGroup: { alignItems: 'center', marginBottom: 18 },
-  title: { fontSize: 28, fontWeight: '900', color: INK, marginBottom: 6, textAlign: 'center', letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: MUTED, textAlign: 'center', lineHeight: 20, maxWidth: 340 },
-  strongText: { fontWeight: '800', color: '#0284C7' },
-
-  // Creative Phone Capsule
-  phoneCapsule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 60,
-    borderRadius: 9999,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
-    paddingLeft: 8,
-    paddingRight: 18,
-    marginBottom: 16,
+  // Bottom-anchored controls — logo stays in header, middle stays open
+  contentArea: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 8,
+    paddingBottom: 10,
+    justifyContent: 'flex-end',
   },
-  countryCodePill: {
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginRight: 10,
+  formShell: {
+    width: '100%',
   },
-  countryCodeText: { fontSize: 15, fontWeight: '800', color: '#0284C7' },
-  phoneInput: { flex: 1, fontSize: 16, color: INK, height: '100%' },
 
-  // Inputs
-  inputCapsule: {
+  // Typography — professional system display
+  titleGroup: { alignItems: 'center', marginBottom: 20 },
+  title: {
+    fontSize: 34,
+    fontWeight: '600',
+    color: INK,
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -1.1,
+    ...Platform.select({
+      ios: { fontFamily: 'System' },
+      android: { fontFamily: 'sans-serif-medium' },
+      default: {},
+    }),
+  },
+  subtitle: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: MUTED,
+    textAlign: 'center',
+    lineHeight: 21,
+    maxWidth: 280,
+    letterSpacing: -0.1,
+  },
+  strongText: { fontWeight: '600', color: INK },
+
+  // Minimal soft field — no nested chrome
+  field: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 60,
+    height: 56,
     borderRadius: 9999,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
-    paddingHorizontal: 8,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  fieldPrefix: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#334155',
+    letterSpacing: -0.2,
+  },
+  fieldDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 14,
+  },
+  fieldInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '400',
+    color: INK,
+    height: '100%',
+    letterSpacing: -0.1,
+    ...Platform.select({
+      android: { paddingVertical: 0 },
+      default: {},
+    }),
+  },
+  fieldInputSolo: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '400',
+    color: INK,
+    height: '100%',
+    letterSpacing: -0.1,
+    ...Platform.select({
+      android: { paddingVertical: 0 },
+      default: {},
+    }),
+  },
+
+  // Soft OTP field
+  otpField: {
+    height: 56,
+    borderRadius: 9999,
+    backgroundColor: '#F1F5F9',
+    textAlign: 'center',
+    fontSize: 22,
+    letterSpacing: 10,
+    fontWeight: '600',
+    color: INK,
     marginBottom: 14,
   },
-  iconCircleBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E0F2FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  input: { flex: 1, fontSize: 16, color: INK, height: '100%', paddingRight: 14 },
 
-  // OTP Capsule
-  otpCapsule: {
-    height: 66,
-    borderRadius: 9999,
-    borderWidth: 2,
-    borderColor: '#09CFF7',
-    backgroundColor: '#F8FAFC',
-    textAlign: 'center',
-    fontSize: 28,
-    letterSpacing: 16,
-    fontWeight: '900',
-    color: INK,
-    paddingLeft: 14,
-    marginBottom: 18,
-  },
-
-  // Primary Submit Button
+  // Fully rounded primary CTA — Welcome Sign Up brand treatment
   primaryShadow: {
     shadowColor: BRAND_TEAL,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
     borderRadius: 9999,
   },
-  disabledButtonShadow: { shadowOpacity: 0, elevation: 0 },
-  primaryButton: { height: 64, borderRadius: 9999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
+  disabledButtonShadow: { shadowOpacity: 0.08, elevation: 0 },
+  primaryButton: {
+    height: 56,
+    borderRadius: 9999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
 
-  // Creative Divider (`FOR PARENTS` style)
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 18 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  dividerText: { marginHorizontal: 12, fontSize: 10, fontWeight: '800', color: '#94A3B8', letterSpacing: 1.5 },
-
-  // Secondary Option Cards with Circular Icon Badges (`WelcomeScreen` outline card style)
-  secondaryCapsuleCard: {
-    height: 58,
+  // Secondary CTA — sits directly under Continue (Welcome Login outline)
+  secondaryBtn: {
+    marginTop: 10,
+    height: 56,
     borderRadius: 9999,
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
     backgroundColor: '#F8FAFC',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    marginBottom: 12,
-  },
-  secondaryIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#fff',
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: BRAND_TEAL,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
-    marginRight: 12,
   },
-  secondaryCardText: { flex: 1, fontSize: 16, fontWeight: '700', color: INK },
+  secondaryBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: BRAND_TEAL,
+    letterSpacing: -0.2,
+  },
 
-  tertiaryBtn: { alignItems: 'center', paddingVertical: 10, marginTop: 4 },
-  tertiaryText: { fontSize: 14, fontWeight: '700', color: '#64748B' },
-
-  resendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 6 },
-  linkText: { color: BRAND_TEAL, fontWeight: '800', fontSize: 14 },
+  resendRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, paddingHorizontal: 6 },
+  linkText: { color: BRAND_TEAL, fontWeight: '600', fontSize: 14 },
   disabledText: { color: '#94A3B8' },
 
-  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingHorizontal: 6 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#BAE6FD', alignItems: 'center', justifyContent: 'center' },
+  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, paddingHorizontal: 4 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   checkboxChecked: { backgroundColor: BRAND_TEAL, borderColor: BRAND_TEAL },
-  consentText: { flex: 1, fontSize: 13, color: MUTED, lineHeight: 18 },
-  consentLink: { color: BRAND_TEAL, fontWeight: '700' },
+  consentText: { flex: 1, fontSize: 13, fontWeight: '400', color: MUTED, lineHeight: 18 },
+  consentLink: { color: BRAND_TEAL, fontWeight: '600' },
 
-  // Footer
-  footer: { alignItems: 'center', paddingVertical: 12 },
-  footerText: { fontSize: 15, color: MUTED, fontWeight: '600' },
-  footerLink: { color: BRAND_TEAL, fontWeight: '800' },
+  // Footer sits with bottom control cluster
+  footer: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
+  footerText: { fontSize: 14, color: MUTED, fontWeight: '400' },
+  footerLink: { color: BRAND_TEAL, fontWeight: '600' },
 });

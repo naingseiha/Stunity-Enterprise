@@ -504,9 +504,9 @@ const s = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.gray[900],
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   stepTitleTablet: {
     fontSize: 28,
@@ -514,8 +514,10 @@ const s = StyleSheet.create({
   },
   stepSubtitle: {
     fontSize: 14,
+    fontWeight: '400',
     color: Colors.gray[500],
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 20,
   },
   stepSubtitleTablet: {
     fontSize: 16,
@@ -534,31 +536,31 @@ const s = StyleSheet.create({
 
   // ── CTA Button ────────────────────────────────────────
   ctaShadow: {
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    elevation: 6,
-    borderRadius: 26,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    borderRadius: 16,
     marginTop: 16,
   },
   ctaButton: {
     height: 52,
-    borderRadius: 26,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
   },
   ctaButtonTablet: {
-    height: 60,
-    borderRadius: 30,
+    height: 56,
+    borderRadius: 16,
   },
   ctaText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
-    letterSpacing: 0.3,
+    letterSpacing: -0.1,
   },
   ctaTextTablet: {
     fontSize: 17,

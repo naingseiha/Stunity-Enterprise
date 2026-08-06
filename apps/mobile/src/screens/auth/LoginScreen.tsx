@@ -40,8 +40,9 @@ import {
   isBiometricAvailable,
 } from '@/services/biometrics';
 
-const BRAND_TEAL = Colors.brand;
+const BRAND_TEAL = Colors.brand; // #09CFF7 — Welcome Sign Up
 const BRAND_TEAL_DARK = '#00B8DB';
+const BRAND_TEAL_MUTED = '#7DE7F7';
 const INK = '#0F172A';
 const MUTED = '#64748B';
 
@@ -184,10 +185,9 @@ export default function LoginScreen() {
               {/* Heading */}
               <View style={styles.titleGroup}>
                 <Text style={styles.title}>{t('common.login')}</Text>
-                <Text style={styles.subtitle}>{t('auth.signInToStunity', 'Welcome back! Sign in to access your Stunity workspace.')}</Text>
+                <Text style={styles.subtitle}>{t('auth.signInToStunity', 'Welcome back to Stunity.')}</Text>
               </View>
 
-              {/* Error Badge */}
               {error && (
                 <View style={styles.errorBadge}>
                   <Ionicons name="alert-circle" size={18} color="#DC2626" />
@@ -195,14 +195,10 @@ export default function LoginScreen() {
                 </View>
               )}
 
-              {/* Account Input — Creative Integrated Capsule with Circular Icon Badge */}
-              <View style={[styles.inputCapsule, layout.isTablet && styles.inputCapsuleTablet]}>
-                <View style={styles.iconCircleBadge}>
-                  <Ionicons name="person-outline" size={18} color="#0284C7" />
-                </View>
+              <View style={[styles.field, layout.isTablet && styles.fieldTablet]}>
                 <TextInput
-                  style={[styles.input, layout.isTablet && styles.inputTablet]}
-                  placeholder={t('common.email') + ' or Phone'}
+                  style={styles.fieldInput}
+                  placeholder={t('common.email') + ' or phone'}
                   value={identifier}
                   onChangeText={setIdentifier}
                   keyboardType="email-address"
@@ -214,14 +210,10 @@ export default function LoginScreen() {
                 />
               </View>
 
-              {/* Password Input — Creative Integrated Capsule with Circular Icon Badge */}
-              <View style={[styles.inputCapsule, layout.isTablet && styles.inputCapsuleTablet]}>
-                <View style={styles.iconCircleBadge}>
-                  <Ionicons name="lock-closed-outline" size={18} color="#0284C7" />
-                </View>
+              <View style={[styles.field, layout.isTablet && styles.fieldTablet]}>
                 <TextInput
                   ref={passwordRef}
-                  style={[styles.input, layout.isTablet && styles.inputTablet]}
+                  style={styles.fieldInput}
                   placeholder={t('common.password')}
                   value={password}
                   onChangeText={setPassword}
@@ -238,7 +230,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color="#64748B"
+                    color="#94A3B8"
                   />
                 </TouchableOpacity>
               </View>
@@ -258,7 +250,7 @@ export default function LoginScreen() {
                 style={styles.primaryShadow}
               >
                 <LinearGradient
-                  colors={isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                  colors={isLoading ? [BRAND_TEAL_MUTED, BRAND_TEAL_MUTED] : [BRAND_TEAL, BRAND_TEAL_DARK]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={[styles.primaryButton, layout.isTablet && styles.primaryButtonTablet]}
@@ -267,7 +259,7 @@ export default function LoginScreen() {
                     <Text style={styles.primaryText}>{t('auth.signingIn', 'Signing in...')}</Text>
                   ) : (
                     <>
-                      <Ionicons name="log-in-outline" size={22} color="#fff" style={{ marginRight: 10 }} />
+                      <Ionicons name="log-in-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
                       <Text style={[styles.primaryText, layout.isTablet && styles.primaryTextTablet]}>{t('common.login')}</Text>
                     </>
                   )}
@@ -283,7 +275,7 @@ export default function LoginScreen() {
                   activeOpacity={0.85}
                   style={styles.biometricButton}
                 >
-                  <Ionicons name="finger-print-outline" size={22} color={BRAND_TEAL} />
+                  <Ionicons name="finger-print-outline" size={20} color="#64748B" />
                   <Text style={styles.biometricButtonText}>
                     {biometricLoading ? 'Authenticating...' : `Continue with ${biometricLabel}`}
                   </Text>
@@ -386,37 +378,44 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 
-  // Single-Screen Content Area
+  // Bottom-anchored controls — logo stays in header, middle stays open
   contentArea: {
     flex: 1,
-    paddingHorizontal: 32,
-    paddingTop: 10,
-    paddingBottom: 16,
-    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    paddingTop: 8,
+    paddingBottom: 10,
+    justifyContent: 'flex-end',
   },
   formShell: {
     width: '100%',
   },
 
-  // Typography Group
+  // Typography — professional system display
   titleGroup: {
     alignItems: 'center',
     marginBottom: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 34,
+    fontWeight: '600',
     color: INK,
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -1.1,
+    ...Platform.select({
+      ios: { fontFamily: 'System' },
+      android: { fontFamily: 'sans-serif-medium' },
+      default: {},
+    }),
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '400',
     color: MUTED,
     textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 340,
+    lineHeight: 21,
+    maxWidth: 280,
+    letterSpacing: -0.1,
   },
 
   // Error Badge
@@ -424,90 +423,85 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 9999,
-    marginBottom: 14,
+    marginBottom: 12,
     gap: 8,
   },
-  errorText: { flex: 1, fontSize: 13, color: '#DC2626', fontWeight: '600' },
+  errorText: { flex: 1, fontSize: 13, color: '#DC2626', fontWeight: '500' },
 
-  // Inputs — Creative Pill Capsule with interior circular badge
-  inputCapsule: {
+  // Minimal soft fields
+  field: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 60,
+    height: 56,
     borderRadius: 9999,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
-    paddingHorizontal: 8,
-    marginBottom: 14,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
-  inputCapsuleTablet: {
-    height: 66,
-    marginBottom: 16,
+  fieldTablet: {
+    height: 58,
   },
-  iconCircleBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E0F2FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
+  fieldInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '400',
+    color: INK,
+    height: '100%',
+    letterSpacing: -0.1,
+    ...Platform.select({
+      android: { paddingVertical: 0 },
+      default: {},
+    }),
   },
-  input: { flex: 1, fontSize: 16, color: INK, height: '100%', paddingRight: 14 },
-  inputTablet: { fontSize: 17 },
-  eyeBtn: { paddingHorizontal: 14 },
+  eyeBtn: { paddingLeft: 10 },
 
   // Forgot Password
   forgotRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: 20,
+    marginBottom: 16,
     marginTop: -2,
+    paddingHorizontal: 6,
   },
-  forgotText: { fontSize: 14, color: BRAND_TEAL, fontWeight: '700' },
+  forgotText: { fontSize: 14, color: BRAND_TEAL, fontWeight: '600' },
 
-  // Primary Submit Button — Glowing Teal Gradient Pill matching WelcomeScreen Sign Up
+  // Fully rounded primary CTA — Welcome Sign Up brand treatment
   primaryShadow: {
     shadowColor: BRAND_TEAL,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
     borderRadius: 9999,
   },
   primaryButton: {
-    height: 64,
+    height: 56,
     borderRadius: 9999,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryButtonTablet: { height: 72 },
-  primaryText: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
-  primaryTextTablet: { fontSize: 20 },
+  primaryButtonTablet: { height: 58 },
+  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  primaryTextTablet: { fontSize: 17 },
 
   biometricButton: {
-    marginTop: 14,
-    height: 56,
+    marginTop: 12,
+    height: 52,
     borderRadius: 9999,
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
-    backgroundColor: '#F0FDFA',
+    backgroundColor: '#F1F5F9',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
   },
   biometricButtonText: {
-    color: BRAND_TEAL,
-    fontSize: 16,
-    fontWeight: '700',
+    color: INK,
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   // Dev
@@ -515,7 +509,7 @@ const styles = StyleSheet.create({
   devText: { fontSize: 12, color: '#94A3B8' },
 
   // Footer
-  footer: { alignItems: 'center', paddingVertical: 12 },
-  footerText: { fontSize: 15, color: MUTED, fontWeight: '600' },
-  footerLink: { color: BRAND_TEAL, fontWeight: '800' },
+  footer: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
+  footerText: { fontSize: 14, color: MUTED, fontWeight: '400' },
+  footerLink: { color: BRAND_TEAL, fontWeight: '600' },
 });
