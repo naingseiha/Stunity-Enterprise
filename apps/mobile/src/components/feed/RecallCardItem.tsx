@@ -791,9 +791,9 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       letterSpacing: 1.6,
     },
     answer: {
-      fontSize: 20,
-      lineHeight: 26,
-      fontWeight: '800',
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: '700',
       letterSpacing: -0.3,
     },
 
@@ -803,9 +803,9 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      paddingVertical: 14,
+      paddingVertical: 11,
       borderRadius: 9999,
-      marginTop: 14,
+      marginTop: 12,
     },
     ctaText: {
       fontSize: 15,

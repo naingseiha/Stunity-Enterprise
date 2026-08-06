@@ -269,7 +269,13 @@ export default function CommentsScreen() {
     </View>
   );
 
-  const renderEmptyState = () => (
+  const renderEmptyState = () => {
+    const subtitle = isQuestion
+      ? t('feed.sections.beFirstAnswer', { defaultValue: 'Be the first to answer' })
+      : t('feed.sections.beFirst');
+    const preferKhmer = feedBodyPreferKhmer(subtitle, i18n.resolvedLanguage || i18n.language);
+
+    return (
     <Animated.View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
         <View style={styles.emptyIconGradient}>
@@ -279,11 +285,12 @@ export default function CommentsScreen() {
       <Text style={styles.emptyTitle}>
         {isQuestion ? t('feed.sections.noAnswers', { defaultValue: 'No answers yet' }) : t('feed.sections.noComments')}
       </Text>
-      <Text style={styles.emptySubtitle}>
-        {isQuestion ? t('feed.sections.beFirstAnswer', { defaultValue: 'Be the first to answer' }) : t('feed.sections.beFirst')}
+      <Text style={[styles.emptySubtitle, feedTextStyle('body', { preferKhmer, color: colors.textSecondary })]}>
+        {subtitle}
       </Text>
     </Animated.View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -739,10 +746,7 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
   },
 
   // Input Area - Floating Pill
