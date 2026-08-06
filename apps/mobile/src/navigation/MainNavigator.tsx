@@ -27,7 +27,6 @@ import {
   FeedStackParamList,
   LearnStackParamList,
   QuizStackParamList,
-  MessagesStackParamList,
   ProfileStackParamList,
   ClubsStackParamList,
   ReelsStackParamList,
@@ -97,12 +96,7 @@ import {
   ManageDeadlinesScreen,
 } from "@/screens/profile";
 import MyQRCardScreen from "@/screens/profile/MyQRCardScreen";
-import {
-  ConversationsScreen,
-  ChatScreen,
-  NewMessageScreen,
-} from "@/screens/messages";
-import MessagingArchivedScreen from "@/features/archived/messaging/MessagingArchivedScreen";
+import MessagesNavigator from "./MessagesNavigator";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
   ClubsScreen,
@@ -179,7 +173,6 @@ const MainStack = createNativeStackNavigator<ExtendedMainStackParamList>();
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
 const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const QuizStack = createNativeStackNavigator<QuizStackParamList>();
-const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const ReelsStack = createNativeStackNavigator<ReelsStackParamList>();
 
@@ -385,32 +378,6 @@ const QuizStackNavigator = () => {
     >
       <QuizStack.Screen name="QuizDashboard" component={QuizDashboardScreen} />
     </QuizStack.Navigator>
-  );
-};
-
-// Messages Stack Navigator (archived until Enterprise — see config/featureFlags.ts)
-const MessagesStackNavigator = () => {
-  const { colors } = useThemeContext();
-
-  if (!FEATURE_FLAGS.MESSAGING_ENABLED) {
-    return <MessagingArchivedScreen />;
-  }
-  return (
-    <MessagesStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-        gestureEnabled: true,
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    >
-      <MessagesStack.Screen
-        name="Conversations"
-        component={ConversationsScreen}
-      />
-      <MessagesStack.Screen name="Chat" component={ChatScreen} />
-      <MessagesStack.Screen name="NewMessage" component={NewMessageScreen} />
-    </MessagesStack.Navigator>
   );
 };
 
@@ -896,7 +863,7 @@ function MainStackNavigatorTabletAware() {
       }}
     >
         <MainStack.Screen name="MainTabs" component={MainTabsScreenWrapper} />
-        <MainStack.Screen name="Messages" component={MessagesStackNavigator} />
+        <MainStack.Screen name="Messages" component={MessagesNavigator} />
         <MainStack.Screen name="QuizDetails" component={QuizDetailsScreen} />
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
         <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />

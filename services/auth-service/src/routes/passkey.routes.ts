@@ -19,6 +19,7 @@ import type {
 import { loadWebAuthnSettings, type WebAuthnSettings } from "../webauthn/webauthnConfig";
 import { createPasskeyChallengeStore, type PasskeyChallengeStore } from "../webauthn/passkeyChallengeStore";
 import { canRemoveIdentity, type IdentityInventory } from "../security/identityPolicy";
+import { buildAccessTokenClaims } from "../utils/accessToken";
 import {
   createStructuredAuthMetrics,
   type AuthOperationalMetrics,
@@ -67,15 +68,15 @@ function issueTokens(user: {
   schoolId: string | null;
   accountType: string;
   schoolAccessVersion: number;
+  teacherId?: string | null;
+  parentId?: string | null;
+  studentId?: string | null;
 }, options: PasskeyRouteOptions) {
-  const accessToken = jwt.sign({
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    schoolId: user.schoolId,
-    accountType: user.accountType,
-    schoolAccessVersion: user.schoolAccessVersion,
-  }, options.jwtSecret, { expiresIn: options.accessTokenExpiration } as jwt.SignOptions);
+  const accessToken = jwt.sign(
+    buildAccessTokenClaims(user, { accountType: user.accountType }),
+    options.jwtSecret,
+    { expiresIn: options.accessTokenExpiration } as jwt.SignOptions,
+  );
   const refreshToken = jwt.sign(
     { userId: user.id },
     options.jwtSecret,

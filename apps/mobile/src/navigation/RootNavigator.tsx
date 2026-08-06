@@ -5,11 +5,12 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar, View, Text, ActivityIndicator } from 'react-native';
 
 import { RootStackParamList } from './types';
+import { navigationRef } from './navigationRef';
 import { useAuthStore } from '@/stores';
 import { useThemeContext } from '@/contexts';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -52,7 +53,6 @@ const RootNavigator: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const isParent = user?.role === 'PARENT';
   const mustChangePassword = isAuthenticated && user?.isDefaultPassword;
-  const navigationRef = useNavigationContainerRef<RootStackParamList>();
   const [navigationReady, setNavigationReady] = useState(false);
   const lastResumeKeyRef = useRef<string | null>(null);
 
@@ -125,6 +125,22 @@ const RootNavigator: React.FC = () => {
                     PostDetail: 'posts/:postId',
                   },
                 },
+              },
+            },
+            Messages: {
+              screens: {
+                Conversations: 'messages',
+                Chat: 'messages/:conversationId',
+              },
+            },
+          },
+        },
+        Parent: {
+          screens: {
+            ParentMessages: {
+              screens: {
+                Conversations: 'parent/messages',
+                Chat: 'parent/messages/:conversationId',
               },
             },
           },

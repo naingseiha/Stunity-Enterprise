@@ -3,6 +3,7 @@ import { Router, type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { generateUniqueUsername } from "../utils/username";
+import { buildAccessTokenClaims } from "../utils/accessToken";
 import { normalizePhone } from "../security/identifiers";
 import {
   createOtpChallengeStore,
@@ -58,15 +59,15 @@ function issueTokens(user: {
   schoolId: string | null;
   accountType: string;
   schoolAccessVersion: number;
+  teacherId?: string | null;
+  parentId?: string | null;
+  studentId?: string | null;
 }, options: PasswordlessRouteOptions) {
-  const accessToken = jwt.sign({
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    schoolId: user.schoolId,
-    accountType: user.accountType,
-    schoolAccessVersion: user.schoolAccessVersion,
-  }, options.jwtSecret, { expiresIn: options.accessTokenExpiration } as jwt.SignOptions);
+  const accessToken = jwt.sign(
+    buildAccessTokenClaims(user, { accountType: user.accountType }),
+    options.jwtSecret,
+    { expiresIn: options.accessTokenExpiration } as jwt.SignOptions,
+  );
   const refreshToken = jwt.sign(
     { userId: user.id },
     options.jwtSecret,

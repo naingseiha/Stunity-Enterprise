@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lightweight local dev: auth + feed + notifications + learn (+ web).
+# Lightweight local dev: auth + feed + messaging + notifications + learn (+ web).
 # Uses fewer Supabase connections than ./quick-start.sh (full stack).
 #
 # Usage:
@@ -10,7 +10,7 @@
 
 set -e
 export QUICK_START_LITE=1
-export SKIP_MESSAGING_SERVICE=1
+export SKIP_MESSAGING_SERVICE=0
 export SKIP_DB_MIGRATE="${SKIP_DB_MIGRATE:-1}"
 export DISABLE_DB_KEEPALIVE=1
 export DISABLE_DB_STARTUP_WARMUP=1

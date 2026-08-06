@@ -9,6 +9,7 @@ const ALLOWED_NOTIFICATION_TYPES = new Set<NotificationType>([
     'REPLY',
     'FOLLOW',
     'MENTION',
+    'MESSAGE',
     'SHARE',
     'ANNOUNCEMENT',
     'GRADE_POSTED',
@@ -20,6 +21,7 @@ const ALLOWED_NOTIFICATION_TYPES = new Set<NotificationType>([
     'COURSE_ENROLL',
     'ASSIGNMENT_DUE',
     'POLL_RESULT',
+    'SYSTEM',
 ]);
 
 const isMobilePushEnabled = (privacySettings: unknown) => {

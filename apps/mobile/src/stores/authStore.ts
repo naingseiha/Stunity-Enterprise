@@ -85,6 +85,7 @@ const mapApiUserToUser = (apiUser: any): User => {
     school: apiUser.school,
     teacherId: apiUser.teacherId ?? null,
     studentId: apiUser.studentId ?? null,
+    parentId: apiUser.parentId ?? null,
     linkingStatus: apiUser.linkingStatus || 'NONE',
     pendingLinkData: apiUser.pendingLinkData || null,
     teacher:

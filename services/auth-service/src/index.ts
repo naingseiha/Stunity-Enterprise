@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import * as tokenBlacklist from './utils/tokenBlacklist';
+import { buildAccessTokenClaims } from './utils/accessToken';
 import { generateUniqueUsername } from './utils/username';
 import passwordResetRoutes from './routes/passwordReset.routes';
 import socialAuthRoutes from './routes/socialAuth.routes';
@@ -1057,16 +1058,11 @@ app.post(
       : null;
 
       const accessToken = jwt.sign(
-        {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          schoolId: user.schoolId,
-          schoolAccessVersion: user.schoolAccessVersion,
+        buildAccessTokenClaims(user, {
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
           schoolAccessScope: schoolAccess.accessScope,
           school: schoolPayload,
-        },
+        }),
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
@@ -1098,6 +1094,7 @@ app.post(
             profilePictureUrl: user.profilePictureUrl,
             schoolId: user.schoolId,
             teacherId: user.teacherId,
+            parentId: user.parentId,
             studentId: user.studentId,
             teacher: user.teacherId ? { id: user.teacherId } : null,
             isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
@@ -1463,16 +1460,11 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
 
     // Generate new tokens
     const newAccessToken = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        schoolId: user.schoolId,
-        schoolAccessVersion: user.schoolAccessVersion,
+      buildAccessTokenClaims(user, {
         isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
         schoolAccessScope: schoolAccess.accessScope,
         school: schoolPayload,
-      },
+      }),
       JWT_SECRET,
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
     );
@@ -1870,15 +1862,9 @@ app.post(
 
       // Generate tokens
       const accessToken = jwt.sign(
-        {
-          userId: user.id,
-          phone: user.phone,
-          role: user.role,
-          schoolId: user.schoolId,
-          schoolAccessVersion: user.schoolAccessVersion,
-          parentId: user.parentId,
+        buildAccessTokenClaims(user, {
           children: children.map(c => c.id),
-        },
+        }),
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
       );
@@ -2384,6 +2370,7 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
         pendingLinkData: publicPendingLinkData(user.pendingLinkData),
         schoolAccessVersion: user.schoolAccessVersion,
         teacherId: user.teacherId,
+        parentId: user.parentId,
         studentId: user.studentId,
         teacher: user.teacherId ? { id: user.teacherId } : null,
         school: user.school ? {
@@ -3097,6 +3084,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           socialLinks: user.socialLinks,
           schoolId: user.schoolId,
           teacherId: user.teacherId,
+          parentId: user.parentId,
           studentId: user.studentId,
           /** Minimal shape so mobile can treat admin+teacher like TEACHER for feature flags */
           teacher: user.teacherId ? { id: user.teacherId } : null,

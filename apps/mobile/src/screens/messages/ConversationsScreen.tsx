@@ -2,7 +2,7 @@
  * Conversations Screen — Clean Professional Design
  *
  * Flat conversation list, iOS-style header, inline search
- * Real-time updates via messagingStore + Supabase Realtime
+ * Adaptive REST polling while focused; pull-to-refresh remains available.
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -15,7 +15,10 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
-  Animated, Platform} from 'react-native';
+  Animated,
+  Platform,
+  AppState,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -38,8 +41,14 @@ export default function ConversationsScreen() {
   const { colors, isDark } = useThemeContext();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
+  const canGoBack = navigation.canGoBack();
   const { openSidebar } = useNavigationContext();
   const { user } = useAuthStore();
+  const currentMessagingSenderId = useMemo(() => {
+    if (user?.role === 'PARENT') return user.parentId || user.id;
+    if (user?.role === 'TEACHER') return user.teacherId || user.id;
+    return user?.id;
+  }, [user?.id, user?.parentId, user?.role, user?.teacherId]);
   // Granular Zustand selectors — each only re-renders when its slice changes.
   const conversations = useMessagingStore(s => s.conversations);
   const isLoadingConversations = useMessagingStore(s => s.isLoadingConversations);
@@ -52,7 +61,6 @@ export default function ConversationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchConversations();
     if (user?.id) {
       subscribeToConversations(user.id);
     }
@@ -61,16 +69,37 @@ export default function ConversationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const { lastConversationsFetchedAt, conversationsChannel } =
-        useMessagingStore.getState();
+      let appIsActive = AppState.currentState === 'active';
+      let pollInFlight = false;
       const FRESH_MS = 30_000;
-      if (
-        conversationsChannel &&
-        Date.now() - lastConversationsFetchedAt < FRESH_MS
-      ) {
-        return;
-      }
-      fetchConversations();
+
+      const poll = async (force = false) => {
+        if (!appIsActive || pollInFlight) return;
+        const { lastConversationsFetchedAt } = useMessagingStore.getState();
+        if (!force && Date.now() - lastConversationsFetchedAt < FRESH_MS) return;
+
+        pollInFlight = true;
+        try {
+          await fetchConversations();
+        } finally {
+          pollInFlight = false;
+        }
+      };
+
+      void poll();
+      const interval = setInterval(() => { void poll(true); }, FRESH_MS);
+      const appStateSubscription = AppState.addEventListener('change', nextState => {
+        const wasInactive = !appIsActive;
+        appIsActive = nextState === 'active';
+        if (wasInactive && appIsActive) {
+          void poll(true);
+        }
+      });
+
+      return () => {
+        clearInterval(interval);
+        appStateSubscription.remove();
+      };
     }, [fetchConversations])
   );
 
@@ -152,7 +181,7 @@ export default function ConversationsScreen() {
                 style={[styles.convMessage, isUnread && styles.convMessageUnread]}
                 numberOfLines={1}
               >
-                {item.lastMessage?.senderId === user?.id && (
+                {item.lastMessage?.senderId === currentMessagingSenderId && (
                   <Text style={styles.youPrefix}>{t('messages.you')}</Text>
                 )}
                 {item.lastMessage?.content || t('messages.noMessages')}
@@ -167,7 +196,7 @@ export default function ConversationsScreen() {
         </TouchableOpacity>
       </Animated.View>
     );
-  }, [handleConversationPress, t, user?.id]);
+  }, [currentMessagingSenderId, handleConversationPress, t]);
 
   const renderOnlineConversation = useCallback(({ item }: { item: DMConversation }) => {
     const participant = item.participants.find((p) => p.isOnline) || item.participants[0];
@@ -223,8 +252,21 @@ export default function ConversationsScreen() {
       {/* ── Header ─────────────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={openSidebar} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="menu" size={26} color={colors.text} />
+          <TouchableOpacity
+            onPress={() => {
+              if (canGoBack) {
+                navigation.goBack();
+                return;
+              }
+              openSidebar();
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name={canGoBack ? 'chevron-back' : 'menu'}
+              size={canGoBack ? 24 : 26}
+              color={colors.text}
+            />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>{t('messages.title')}</Text>

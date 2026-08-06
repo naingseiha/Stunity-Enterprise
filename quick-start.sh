@@ -297,7 +297,7 @@ start_service "services/feed-service" 3010 "feed.log" "Feed Service"
 wait_for_port 3010 "Feed Service" 60
 wait_for_health "${FEED_SERVICE_URL}/health" "Feed Service" 30
 
-if [ "${SKIP_MESSAGING_SERVICE:-1}" != "1" ]; then
+if [ "${SKIP_MESSAGING_SERVICE:-0}" != "1" ]; then
   start_service "services/messaging-service" 3011 "messaging.log" "Messaging Service"
   wait_for_port 3011 "Messaging Service" 45
 else
@@ -352,7 +352,7 @@ if [ "${QUICK_START_LITE:-0}" != "1" ]; then
   echo "🏫 Academic API: http://localhost:3021 (school/student/teacher/class/subject/grade/attendance/timetable/club)"
 fi
 echo "📱 Feed Service: http://localhost:3010"
-if [ "${SKIP_MESSAGING_SERVICE:-1}" != "1" ]; then
+if [ "${SKIP_MESSAGING_SERVICE:-0}" != "1" ]; then
   echo "💬 Messaging Service: http://localhost:3011"
 fi
 echo "🔔 Notification Service: http://localhost:3013"

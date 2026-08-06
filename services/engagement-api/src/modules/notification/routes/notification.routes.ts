@@ -67,21 +67,33 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
             take: 50,
         });
 
-        const formatted = notifications.map(n => ({
-            id: n.id,
-            type: n.type,
-            title: n.title,
-            body: n.message,
-            data: { link: n.link, postId: n.postId, commentId: n.commentId },
-            isRead: n.isRead,
-            actor: n.actor ? {
-                id: n.actor.id,
-                firstName: n.actor.firstName,
-                lastName: n.actor.lastName,
-                profilePictureUrl: n.actor.profilePictureUrl,
-            } : undefined,
-            createdAt: n.createdAt.toISOString(),
-        }));
+        const formatted = notifications.map(n => {
+            const link = n.link || undefined;
+            const conversationMatch = typeof link === 'string'
+                ? link.match(/\/messages\/([^/?#]+)/i)
+                : null;
+            return {
+                id: n.id,
+                type: n.type,
+                title: n.title,
+                body: n.message,
+                data: {
+                    type: n.type,
+                    link,
+                    postId: n.postId,
+                    commentId: n.commentId,
+                    conversationId: conversationMatch?.[1],
+                },
+                isRead: n.isRead,
+                actor: n.actor ? {
+                    id: n.actor.id,
+                    firstName: n.actor.firstName,
+                    lastName: n.actor.lastName,
+                    profilePictureUrl: n.actor.profilePictureUrl,
+                } : undefined,
+                createdAt: n.createdAt.toISOString(),
+            };
+        });
 
         res.json({ success: true, data: formatted });
     } catch (error: any) {

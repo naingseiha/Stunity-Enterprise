@@ -1,18 +1,24 @@
-# Messaging (archived)
+# Messaging (REST-first restoration)
 
-Direct messaging UI and Supabase Realtime subscriptions are **disabled** via `FEATURE_FLAGS.MESSAGING_ENABLED` in `apps/mobile/src/config/featureFlags.ts`.
+School messaging UI is enabled through `FEATURE_FLAGS.MESSAGING_ENABLED`.
+Private-message Supabase subscriptions remain disabled through
+`FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED`; active screens use lifecycle-aware
+REST polling instead.
 
-## Why archived
+## Why Realtime remains disabled
 
-- Reduces Supabase Realtime and API load on the current Pro plan.
-- Full messaging is planned for **Enterprise** (messaging-service + filtered Realtime).
+- Avoids anon Realtime access to private message tables before filtered RLS is ready.
+- Keeps Supabase and always-on connection usage low.
+- Push/in-app notifications provide background delivery; polling only runs while
+  a message screen is focused and the app is active.
 
-## Re-enable later
+## Enable Realtime later
 
-1. Set `MESSAGING_ENABLED: true` in `featureFlags.ts`.
+1. Keep `MESSAGING_ENABLED` enabled and set `MESSAGING_REALTIME_ENABLED: true`
+   only after the security review.
 2. Confirm `scripts/migrations/enable-supabase-realtime.sql` publishes `messages` / `conversations` (or `direct_messages` / `dm_conversations` per your schema).
-3. Restore message buttons in `ProfileScreen`, `ClassDetailsScreen`, and `ClassMembersScreen` (search `FEATURE_FLAGS.MESSAGING_ENABLED`).
-4. Verify `MainNavigator` still registers the `Messages` stack.
+3. Require participant-filtered RLS policies; do not grant anonymous table-wide reads.
+4. Verify delivery, reconnect, duplicate suppression, and polling fallback.
 
 ## Code locations
 

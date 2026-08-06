@@ -46,12 +46,13 @@ import { Skeleton } from "@/components/common/Loading";
 import { useThemeContext } from "@/contexts";
 import { Shadows } from "@/config";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
-import { useAuthStore, useFeedStore, useLeaderboardStore } from "@/stores";
+import { useAuthStore, useFeedStore, useLeaderboardStore, useMessagingStore } from "@/stores";
 import { User, UserStats, Education, Experience, Certification } from "@/types";
 import { formatNumber } from "@/utils";
 import { shareContent, buildPostShareContent } from "@/utils/sharePost";
 import { useLayoutBreakpoint } from "@/hooks/useLayoutBreakpoint";
 import { ProfileStackScreenProps } from "@/navigation/types";
+import { navigateToMessaging } from "@/navigation/navigationRef";
 import {
   fetchProfile as apiFetchProfile,
   fetchEducation,
@@ -703,6 +704,9 @@ export default function ProfileScreen() {
     };
   }, [currentUser?.id, isOwnProfile, profileTargetKey, resolveProfileUserId, syncStreakFromCache]);
 
+  const messagingUnreadCount = useMessagingStore((s) => s.totalUnreadCount);
+  const getMessagingUnreadCount = useMessagingStore((s) => s.getUnreadCount);
+
   useFocusEffect(
     useCallback(() => {
       const resolvedId = resolveProfileUserId();
@@ -711,8 +715,12 @@ export default function ProfileScreen() {
       void loadAnalyticsFast(resolvedId);
       if (isOwnProfile) {
         void loadProfileVisitors(resolvedId);
+        if (FEATURE_FLAGS.MESSAGING_ENABLED) {
+          void getMessagingUnreadCount();
+        }
       }
     }, [
+      getMessagingUnreadCount,
       isOwnProfile,
       loadAnalyticsFast,
       loadProfileVisitors,
@@ -796,6 +804,110 @@ export default function ProfileScreen() {
       if (__DEV__) { console.error("Follow/unfollow failed:", error); }
     }
   }, [isFollowing, userId]);
+
+  const openMessagingScreen = useCallback(
+    (target: Parameters<typeof navigateToMessaging>[0]) => {
+      if (navigateToMessaging(target)) return;
+      if (typeof target === "string") {
+        navigation.navigate("Messages" as any, {
+          screen: "Chat",
+          params: { conversationId: target },
+        });
+        return;
+      }
+      if (target && typeof target === "object") {
+        navigation.navigate("Messages" as any, target);
+        return;
+      }
+      navigation.navigate("Messages" as any, { screen: "Conversations" });
+    },
+    [navigation],
+  );
+
+  const handleOpenOwnMessages = useCallback(() => {
+    if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
+    openMessagingScreen({ screen: "NewMessage" });
+  }, [openMessagingScreen]);
+
+  const handleMessageUser = useCallback(async () => {
+    if (!FEATURE_FLAGS.MESSAGING_ENABLED || !profile || !currentUser) return;
+
+    const myRole = currentUser.role;
+    const theirRole = profile.role;
+    const theirTeacherId = profile.teacherId || profile.teacher?.id || null;
+    const theirParentId = profile.parentId || null;
+    const displayName =
+      `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || "User";
+
+    const iAmStaff = ["TEACHER", "ADMIN", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
+      myRole || "",
+    );
+    const iAmParent = myRole === "PARENT";
+
+    try {
+      if (iAmParent && theirTeacherId) {
+        const conversation = await useMessagingStore
+          .getState()
+          .startSchoolConversation({ targetTeacherId: theirTeacherId });
+        if (conversation?.id) {
+          openMessagingScreen({
+            screen: "Chat",
+            params: { conversationId: conversation.id, userId: theirTeacherId },
+          });
+          return;
+        }
+      }
+
+      if (iAmStaff && theirParentId) {
+        const directory = await useMessagingStore
+          .getState()
+          .fetchMessagingDirectory();
+        const parentRow = directory.find((row) => row.id === theirParentId);
+        const conversation = await useMessagingStore
+          .getState()
+          .startSchoolConversation({
+            targetParentId: theirParentId,
+            studentId: parentRow?.children?.[0]?.id,
+          });
+        if (conversation?.id) {
+          openMessagingScreen({
+            screen: "Chat",
+            params: { conversationId: conversation.id, userId: theirParentId },
+          });
+          return;
+        }
+      }
+
+      if ((iAmParent && theirRole === "TEACHER") || (iAmStaff && theirRole === "PARENT")) {
+        openMessagingScreen({
+          screen: "NewMessage",
+          params: { prefillSearch: displayName },
+        });
+        return;
+      }
+
+      Alert.alert(
+        t("messages.schoolMessagingOnlyTitle", "School messaging"),
+        t(
+          "messages.schoolMessagingOnlyBody",
+          "Messaging is available for teachers/admins and parents who share a class link.",
+        ),
+        [
+          { text: t("common.cancel", "Cancel"), style: "cancel" },
+          {
+            text: t("messages.openInbox", "Open inbox"),
+            onPress: () => openMessagingScreen({ screen: "Conversations" }),
+          },
+        ],
+      );
+    } catch (error) {
+      if (__DEV__) console.error("Message user failed:", error);
+      Alert.alert(
+        t("common.error", "Error"),
+        t("messages.startConversationFailed", "Could not start this conversation."),
+      );
+    }
+  }, [currentUser, openMessagingScreen, profile, t]);
 
   const handleEditProfile = useCallback(() => {
     navigation.navigate("EditProfile" as any);
@@ -1439,17 +1551,20 @@ export default function ProfileScreen() {
                                 borderColor: colors.border,
                               },
                             ]}
-                            onPress={() =>
-                              navigation.navigate("Messages" as any, {
-                                screen: "Conversations",
-                              })
-                            }
+                            onPress={handleOpenOwnMessages}
                           >
                             <Ionicons
                               name="chatbubbles-outline"
                               size={20}
                               color={colors.text}
                             />
+                            {messagingUnreadCount > 0 ? (
+                              <View style={styles.messagingBadge}>
+                                <Text style={styles.messagingBadgeText}>
+                                  {messagingUnreadCount > 99 ? "99+" : messagingUnreadCount}
+                                </Text>
+                              </View>
+                            ) : null}
                           </TouchableOpacity>
                         ) : null}
                         <TouchableOpacity
@@ -1960,20 +2075,23 @@ export default function ProfileScreen() {
                             : t("profile.follow")}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.capsuleBtnYellow}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons
-                          name="chatbubble-outline"
-                          size={16}
-                          color="#78350F"
-                          style={{ marginRight: 5 }}
-                        />
-                        <Text style={styles.capsuleBtnYellowText}>
-                          {t("profile.message")}
-                        </Text>
-                      </TouchableOpacity>
+                      {FEATURE_FLAGS.MESSAGING_ENABLED ? (
+                        <TouchableOpacity
+                          style={styles.capsuleBtnYellow}
+                          activeOpacity={0.8}
+                          onPress={handleMessageUser}
+                        >
+                          <Ionicons
+                            name="chatbubble-outline"
+                            size={16}
+                            color="#78350F"
+                            style={{ marginRight: 5 }}
+                          />
+                          <Text style={styles.capsuleBtnYellowText}>
+                            {t("profile.message")}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : null}
                     </>
                   )}
                 </Animated.View>
@@ -2776,6 +2894,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     ...Shadows.sm,
+  },
+  messagingBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: "#0EA5E9",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  messagingBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+    lineHeight: 11,
   },
   // Cover placeholder styles
   coverPlaceholder: {

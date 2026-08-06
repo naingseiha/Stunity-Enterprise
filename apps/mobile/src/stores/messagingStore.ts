@@ -1,11 +1,9 @@
 /**
  * Messaging Store
  * 
- * Manages Direct Messages with Hybrid Architecture:
- * - REST API calls (via feed-service /dm/* endpoints) for data operations
- * - Supabase Realtime for instant message delivery
- * - Supabase Broadcast for typing indicators
- * - Supabase Presence for online status
+ * Manages school messaging with REST as the source of truth.
+ * Supabase Realtime, Broadcast, and Presence remain isolated behind a
+ * separate security flag; screens use lifecycle-aware polling by default.
  */
 
 import { create } from 'zustand';
@@ -33,6 +31,31 @@ export interface DMUser {
     profilePictureUrl?: string;
     isOnline?: boolean;
 }
+
+/** Directory row from GET /parents or GET /teachers for composing school chats. */
+export interface MessagingDirectoryPerson {
+    id: string;
+    firstName: string;
+    lastName: string;
+    name?: string;
+    photoUrl?: string;
+    phone?: string;
+    children?: Array<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        studentId?: string;
+        class?: { id: string; name: string; grade?: string } | null;
+    }>;
+    homeroomClass?: { id: string; name: string; grade?: string } | null;
+    position?: string | null;
+}
+
+export type StartSchoolConversationInput = {
+    targetParentId?: string;
+    targetTeacherId?: string;
+    studentId?: string;
+};
 
 export interface DMConversation {
     id: string;
@@ -104,6 +127,8 @@ interface MessagingState {
 
     // Actions — Conversations
     fetchConversations: () => Promise<void>;
+    fetchMessagingDirectory: (search?: string) => Promise<MessagingDirectoryPerson[]>;
+    startSchoolConversation: (input: StartSchoolConversationInput) => Promise<DMConversation | null>;
     startConversation: (participantIds: string[], isGroup?: boolean, groupName?: string) => Promise<DMConversation | null>;
     leaveConversation: (conversationId: string) => Promise<void>;
 
@@ -217,7 +242,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     ),
                 ];
 
-                if (participantIds.length > 0) {
+                if (FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED && participantIds.length > 0) {
                     try {
                         presenceMap = await fetchPresenceBatch(participantIds);
                     } catch (error) {
@@ -258,32 +283,82 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         }
     },
 
-    startConversation: async (participantIds, isGroup = false, groupName?) => {
+    fetchMessagingDirectory: async (search) => {
+        try {
+            const { user } = useAuthStore.getState();
+            if (!user) return [];
+
+            const trimmed = search?.trim();
+            if (user.role === 'PARENT') {
+                const response = await messagingApi.get('/teachers');
+                const rows: MessagingDirectoryPerson[] = response.data?.success
+                    ? (response.data.data || [])
+                    : [];
+                if (!trimmed) return rows;
+                const q = trimmed.toLowerCase();
+                return rows.filter((row) =>
+                    `${row.firstName} ${row.lastName} ${row.name || ''} ${row.position || ''}`
+                        .toLowerCase()
+                        .includes(q)
+                );
+            }
+
+            const response = await messagingApi.get('/parents', {
+                params: trimmed ? { search: trimmed } : undefined,
+            });
+            return response.data?.success ? (response.data.data || []) : [];
+        } catch (error) {
+            console.error('Failed to fetch messaging directory:', error);
+            return [];
+        }
+    },
+
+    startSchoolConversation: async (input) => {
         try {
             const { user } = useAuthStore.getState();
             if (!user) return null;
 
-            // messaging-service expects targetTeacherId or targetParentId
-            const payload: any = {};
-            if (user.role === 'PARENT') {
-                payload.targetTeacherId = participantIds[0];
-            } else {
-                payload.targetParentId = participantIds[0];
+            const payload: StartSchoolConversationInput = {};
+            if (input.targetTeacherId) payload.targetTeacherId = input.targetTeacherId;
+            if (input.targetParentId) payload.targetParentId = input.targetParentId;
+            if (input.studentId) payload.studentId = input.studentId;
+
+            if (!payload.targetParentId && !payload.targetTeacherId) {
+                return null;
             }
 
             const response = await messagingApi.post('/conversations', payload);
-
-            if (response.data.success) {
-                const conversation = response.data.data;
-                // Refresh conversation list
-                await get().fetchConversations();
-                return conversation;
+            if (!response.data?.success || !response.data?.data?.id) {
+                return null;
             }
-            return null;
+
+            await get().fetchConversations();
+            const createdId = response.data.data.id as string;
+            const fromList = get().conversations.find((c) => c.id === createdId);
+            if (fromList) return fromList;
+
+            return {
+                id: createdId,
+                isGroup: false,
+                lastMessageAt: response.data.data.lastMessageAt || new Date().toISOString(),
+                unreadCount: 0,
+                participants: [],
+                displayName: 'Conversation',
+            };
         } catch (error) {
-            console.error('Failed to start conversation:', error);
+            console.error('Failed to start school conversation:', error);
             return null;
         }
+    },
+
+    startConversation: async (participantIds) => {
+        // Legacy helper used by class screens: treat first id as parent/teacher roster id.
+        const { user } = useAuthStore.getState();
+        if (!user || !participantIds[0]) return null;
+        if (user.role === 'PARENT') {
+            return get().startSchoolConversation({ targetTeacherId: participantIds[0] });
+        }
+        return get().startSchoolConversation({ targetParentId: participantIds[0] });
     },
 
     leaveConversation: async (conversationId) => {
@@ -438,11 +513,27 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     },
 
     markAsRead: async (conversationId) => {
-        // Mark as read API call
+        // Optimistic local unread clear, then persist via API.
+        set((state) => {
+            const conversations = state.conversations.map((conversation) =>
+                conversation.id === conversationId
+                    ? { ...conversation, unreadCount: 0 }
+                    : conversation,
+            );
+            return {
+                conversations,
+                totalUnreadCount: conversations.reduce(
+                    (sum, conversation) => sum + (conversation.unreadCount || 0),
+                    0,
+                ),
+            };
+        });
+
         try {
             await messagingApi.put(`/conversations/${conversationId}/read-all`);
         } catch (error) {
             console.error('Failed to mark as read:', error);
+            void get().getUnreadCount();
         }
     },
 
@@ -466,7 +557,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     // ========================================
 
     subscribeToConversations: (userId: string) => {
-        if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
+        if (!FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED) return;
         const { unsubscribeAll } = get();
 
         // Subscribe to new messages across all conversations
@@ -570,7 +661,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     },
 
     subscribeToMessages: (conversationId: string) => {
-        if (!FEATURE_FLAGS.MESSAGING_ENABLED) return;
+        if (!FEATURE_FLAGS.MESSAGING_REALTIME_ENABLED) return;
         // Unsubscribe from previous active chat channels
         get().unsubscribeFromMessages();
 
