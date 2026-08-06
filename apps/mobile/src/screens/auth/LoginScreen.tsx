@@ -33,6 +33,7 @@ import { Colors } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
 import tokenService from '@/services/token';
+import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
 import {
   authenticateBiometric,
   getBiometricLabel,
@@ -122,8 +123,9 @@ export default function LoginScreen() {
       password,
       rememberMe: true,
     });
-    if (!success && error) {
-      Alert.alert('Login Failed', error);
+    if (!success) {
+      const message = useAuthStore.getState().error || 'Login failed';
+      Alert.alert('Login Failed', message);
     }
   };
 
@@ -271,6 +273,8 @@ export default function LoginScreen() {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              <SocialAuthButtons disabled={isLoading} />
 
               {biometricLoginAvailable && (
                 <TouchableOpacity

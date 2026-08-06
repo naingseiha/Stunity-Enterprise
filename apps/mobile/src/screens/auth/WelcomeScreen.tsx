@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -673,9 +674,19 @@ export default function WelcomeScreen() {
 
       <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
         <View style={styles.legalLinks}>
-          <TouchableOpacity><Text style={styles.legalText}>{t('auth.termsOfService')}</Text></TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => void Linking.openURL('https://stunity.app/privacy')}
+            accessibilityRole="link"
+          >
+            <Text style={styles.legalText}>{t('auth.termsOfService')}</Text>
+          </TouchableOpacity>
           <View style={styles.legalDot} />
-          <TouchableOpacity><Text style={styles.legalText}>{t('auth.privacyPolicy')}</Text></TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => void Linking.openURL('https://stunity.app/privacy')}
+            accessibilityRole="link"
+          >
+            <Text style={styles.legalText}>{t('auth.privacyPolicy')}</Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
     </>

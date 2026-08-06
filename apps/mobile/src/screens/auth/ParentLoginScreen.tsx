@@ -60,8 +60,11 @@ export default function ParentLoginScreen() {
       password,
     });
 
-    if (!success && error) {
-      Alert.alert(t('auth.parentLogin.loginFailed'), error);
+    if (!success) {
+      Alert.alert(
+        t('auth.parentLogin.loginFailed'),
+        useAuthStore.getState().error || t('auth.parentLogin.loginFailed'),
+      );
     }
   };
 

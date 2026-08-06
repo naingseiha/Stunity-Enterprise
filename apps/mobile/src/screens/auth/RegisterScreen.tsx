@@ -33,6 +33,7 @@ import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { validatePassword } from '@/utils';
+import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
 
 const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
@@ -105,8 +106,11 @@ export default function RegisterScreen() {
 
     if (success) {
       Alert.alert('Account Created', 'Your account has been created successfully.');
-    } else if (error) {
-      Alert.alert('Registration Failed', error);
+    } else {
+      Alert.alert(
+        'Registration Failed',
+        useAuthStore.getState().error || 'Registration failed',
+      );
     }
   };
 
@@ -315,6 +319,8 @@ export default function RegisterScreen() {
           )}
         </LinearGradient>
       </TouchableOpacity>
+
+      <SocialAuthButtons disabled={isLoading} />
 
       {email.trim() && (
         <View style={s.verifyNote}>

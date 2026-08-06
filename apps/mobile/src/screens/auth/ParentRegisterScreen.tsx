@@ -143,8 +143,25 @@ export default function ParentRegisterScreen() {
 
         if (success) {
             Alert.alert('Success', 'Parent account created successfully!');
-        } else if (error) {
-            Alert.alert('Failed', error);
+        } else {
+            const message = useAuthStore.getState().error || 'Registration failed';
+            const isGeneralAccountRequired =
+                /general account|410|GENERAL_ACCOUNT_REQUIRED/i.test(message);
+            Alert.alert(
+                'Failed',
+                isGeneralAccountRequired
+                    ? 'Parent portal signup now uses a general Stunity account. Please Sign Up from the Welcome screen, then link your child with a claim code.'
+                    : message,
+                isGeneralAccountRequired
+                    ? [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Go to Sign Up',
+                          onPress: () => navigation.navigate('Register'),
+                        },
+                      ]
+                    : undefined,
+            );
         }
     };
 

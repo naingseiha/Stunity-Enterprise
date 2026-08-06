@@ -1,7 +1,7 @@
 /**
  * Two-Factor Authentication Screen
- * 
- * Handles 2FA verification during login flow
+ *
+ * Handles 2FA verification during social / federated login flows.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -13,28 +13,23 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert, Animated} from 'react-native';
+  Alert,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-
-import { Colors, Spacing } from '@/config';
-import { authApi } from '@/api/client';
 import { useTranslation } from 'react-i18next';
 
-type TwoFactorParams = {
-  TwoFactor: {
-    tempToken: string;
-    email: string;
-  };
-};
+import { Colors, Spacing } from '@/config';
+import { useAuthStore } from '@/stores';
+import { AuthStackParamList } from '@/navigation/types';
 
 export default function TwoFactorScreen() {
   const { t } = useTranslation();
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<TwoFactorParams, 'TwoFactor'>>();
-  const { tempToken, email } = route.params || { tempToken: '', email: '' };
+  const route = useRoute<RouteProp<AuthStackParamList, 'TwoFactor'>>();
+  const { challengeToken, email = '' } = route.params || { challengeToken: '', email: '' };
+  const completeTwoFactor = useAuthStore((s) => s.completeTwoFactor);
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -43,13 +38,11 @@ export default function TwoFactorScreen() {
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
-    // Auto-focus first input
     setTimeout(() => inputRefs.current[0]?.focus(), 300);
   }, []);
 
   const handleCodeChange = (text: string, index: number) => {
     if (text.length > 1) {
-      // Handle paste — distribute digits across inputs
       const digits = text.replace(/\D/g, '').slice(0, 6).split('');
       const newCode = [...code];
       digits.forEach((d, i) => {
@@ -89,24 +82,26 @@ export default function TwoFactorScreen() {
       Alert.alert(t('common.error'), t('auth.twoFactor.enterBackupCode'));
       return;
     }
+    if (!challengeToken) {
+      Alert.alert(t('common.error'), t('auth.twoFactor.missingChallenge', 'Missing 2FA challenge. Please sign in again.'));
+      return;
+    }
 
     setLoading(true);
     try {
-      const response = await authApi.post('/auth/2fa/verify', {
-        tempToken,
+      const result = await completeTwoFactor({
+        challengeToken,
         code: totpCode,
         isBackupCode: useBackupCode,
       });
 
-      if (response.data?.success) {
-        // 2FA verified — the response contains final tokens
-        // Navigate to main app (auth store handles token storage)
-        Alert.alert(t('common.success'), t('auth.twoFactor.authComplete'));
-        // The login flow in authStore should handle storing tokens and navigating
+      if (!result.success) {
+        Alert.alert(
+          t('auth.twoFactor.verificationFailed'),
+          result.error || t('auth.twoFactor.invalidCode'),
+        );
       }
-    } catch (error: any) {
-      const msg = error.response?.data?.error || t('auth.twoFactor.invalidCode');
-      Alert.alert(t('auth.twoFactor.verificationFailed'), msg);
+      // On success RootNavigator swaps to Main via isAuthenticated.
     } finally {
       setLoading(false);
     }
@@ -134,7 +129,9 @@ export default function TwoFactorScreen() {
               {code.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={(ref) => { inputRefs.current[index] = ref; }}
+                  ref={(ref) => {
+                    inputRefs.current[index] = ref;
+                  }}
                   style={[styles.codeInput, digit ? styles.codeInputFilled : null]}
                   value={digit}
                   onChangeText={(text) => handleCodeChange(text, index)}
@@ -180,7 +177,9 @@ export default function TwoFactorScreen() {
             }}
           >
             <Text style={styles.switchButtonText}>
-              {useBackupCode ? t('auth.twoFactor.useAuthenticatorInstead') : t('auth.twoFactor.useBackupCode')}
+              {useBackupCode
+                ? t('auth.twoFactor.useAuthenticatorInstead')
+                : t('auth.twoFactor.useBackupCode')}
             </Text>
           </TouchableOpacity>
         </Animated.View>

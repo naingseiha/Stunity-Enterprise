@@ -4,7 +4,10 @@
     "slug": "stunity-mobile",
     "version": "1.0.0",
     "orientation": "default",
-    "scheme": "stunity",
+    "scheme": [
+      "stunity",
+      "com.googleusercontent.apps.527589814768-am3vaacsop7elhgup811fmb29c0fb3lb"
+    ],
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "splash": {

@@ -62,7 +62,7 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="ParentRegister" component={ParentRegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-      <Stack.Screen name="TwoFactor" component={TwoFactorScreen as any} />
+      <Stack.Screen name="TwoFactor" component={TwoFactorScreen} />
       <Stack.Screen name="ForceChangePassword" component={ForceChangePasswordScreen} />
       <Stack.Screen name="ClaimCodeSetup" component={ClaimCodeSetupScreen} />
     </Stack.Navigator>

@@ -715,11 +715,15 @@ export default function ProfileScreen() {
       void loadAnalyticsFast(resolvedId);
       if (isOwnProfile) {
         void loadProfileVisitors(resolvedId);
-        if (FEATURE_FLAGS.MESSAGING_ENABLED) {
+        const role = currentUser?.role;
+        const canUseMessaging =
+          role === 'PARENT' || role === 'TEACHER' || role === 'SCHOOL_ADMIN';
+        if (FEATURE_FLAGS.MESSAGING_ENABLED && canUseMessaging) {
           void getMessagingUnreadCount();
         }
       }
     }, [
+      currentUser?.role,
       getMessagingUnreadCount,
       isOwnProfile,
       loadAnalyticsFast,

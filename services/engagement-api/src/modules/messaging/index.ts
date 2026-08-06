@@ -1056,7 +1056,9 @@ app.get('/unread-count', authenticateToken, async (req: Request, res: Response) 
     } else if (conversationFilter) {
       senderTypeFilter = 'PARENT';
     } else {
-      return res.status(403).json({ success: false, error: 'Access denied' });
+      // General students / unlinked accounts do not use parent-teacher messaging.
+      // Return zero instead of 403 so mobile clients can poll unread safely.
+      return res.json({ success: true, data: { unreadCount: 0 } });
     }
 
     const unreadCount = await prisma.message.count({

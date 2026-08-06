@@ -741,8 +741,16 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
             if (response.data.success) {
                 set({ totalUnreadCount: response.data.data.unreadCount || 0 });
             }
-        } catch (error) {
-            console.error('Failed to get unread count:', error);
+        } catch (error: any) {
+            // Students / general accounts are outside parent-teacher messaging.
+            // Treat FORBIDDEN/403 as zero unread instead of surfacing a LogBox error.
+            if (error?.code === 'FORBIDDEN' || error?.response?.status === 403) {
+                set({ totalUnreadCount: 0 });
+                return;
+            }
+            if (__DEV__) {
+                console.warn('Failed to get unread count:', error?.message || error);
+            }
         }
     },
 

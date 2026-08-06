@@ -39,11 +39,21 @@ function sendSocialAuthError(res: Response, error: unknown, fallback: string) {
 
 async function verifyGoogleToken(idToken: string): Promise<ProviderProfile> {
   const { OAuth2Client } = await import('google-auth-library');
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  const audiences = [
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_WEB_CLIENT_ID,
+    process.env.GOOGLE_IOS_CLIENT_ID,
+    process.env.GOOGLE_ANDROID_CLIENT_ID,
+  ].filter((value): value is string => Boolean(value && value.trim()));
 
+  if (audiences.length === 0) {
+    throw new Error('Google login not configured. Set GOOGLE_CLIENT_ID.');
+  }
+
+  const client = new OAuth2Client(audiences[0]);
   const ticket = await client.verifyIdToken({
     idToken,
-    audience: process.env.GOOGLE_CLIENT_ID,
+    audience: audiences.length === 1 ? audiences[0] : audiences,
   });
   const payload = ticket.getPayload();
   if (!payload || !payload.email_verified) {
@@ -293,7 +303,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
   // POST /auth/social/google
   router.post('/google', async (req: Request, res: Response) => {
     try {
-      if (!process.env.GOOGLE_CLIENT_ID) {
+      if (!process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_WEB_CLIENT_ID && !process.env.GOOGLE_IOS_CLIENT_ID && !process.env.GOOGLE_ANDROID_CLIENT_ID) {
         return res.status(501).json({ success: false, error: 'Google login not configured. Set GOOGLE_CLIENT_ID.' });
       }
       const { idToken, claimCode } = req.body;

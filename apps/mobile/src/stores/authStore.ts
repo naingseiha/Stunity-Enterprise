@@ -36,7 +36,31 @@ interface AuthState {
   startPhoneOtp: (phone: string, preferredChannel?: 'AUTO' | 'TELEGRAM' | 'SMS') => Promise<{ success: boolean; data?: OtpChallengeResponse; error?: string }>;
   verifyPhoneOtp: (challengeId: string, code: string) => Promise<{ success: boolean; data?: OtpVerifyResult; error?: string }>;
   enrollPasswordless: (input: { enrollmentToken: string; firstName: string; lastName: string; acceptedTermsVersion: string }) => Promise<{ success: boolean; error?: string }>;
-  startTelegramOidc: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
+  startTelegramOidc: () => Promise<{
+    success: boolean;
+    error?: string;
+    cancelled?: boolean;
+    requires2FA?: boolean;
+    challengeToken?: string;
+    email?: string;
+  }>;
+  socialLogin: (
+    provider: 'google' | 'facebook',
+    artifact: { idToken?: string; accessToken?: string },
+    claimCode?: string,
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    cancelled?: boolean;
+    requires2FA?: boolean;
+    challengeToken?: string;
+    email?: string;
+  }>;
+  completeTwoFactor: (input: {
+    challengeToken: string;
+    code: string;
+    isBackupCode?: boolean;
+  }) => Promise<{ success: boolean; error?: string }>;
   enrollPasskey: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   passkeySignIn: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   logout: () => Promise<void>;
@@ -483,10 +507,13 @@ export const useAuthStore = create<AuthState>()(
           const response = await authApi.post('/auth/oidc/telegram/session', { code: sessionCode });
           const data = response.data.data;
           if (data.requires2FA) {
-            // Mobile two-factor challenge UI for federated sign-in is not
-            // built yet; surface a clear error instead of stalling here.
-            set({ isLoading: false, error: 'Two-factor sign-in is not yet supported for Telegram.' });
-            return { success: false, error: 'Two-factor sign-in is not yet supported for Telegram.' };
+            set({ isLoading: false, error: null });
+            return {
+              success: false,
+              requires2FA: true,
+              challengeToken: data.challengeToken,
+              email: data.user?.email || data.email || '',
+            };
           }
           const { useFeedStore } = await import('./feedStore');
           useFeedStore.getState().reset();
@@ -498,6 +525,100 @@ export const useAuthStore = create<AuthState>()(
           return { success: true };
         } catch (error: any) {
           const message = error.response?.data?.error || 'Unable to complete Telegram sign-in';
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
+        }
+      },
+
+      socialLogin: async (provider, artifact, claimCode) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          const path = provider === 'google' ? '/auth/social/google' : '/auth/social/facebook';
+          const body =
+            provider === 'google'
+              ? { idToken: artifact.idToken, claimCode }
+              : { accessToken: artifact.accessToken, claimCode };
+
+          if (provider === 'google' && !artifact.idToken) {
+            set({ isLoading: false, error: 'Missing Google ID token' });
+            return { success: false, error: 'Missing Google ID token' };
+          }
+          if (provider === 'facebook' && !artifact.accessToken) {
+            set({ isLoading: false, error: 'Missing Facebook access token' });
+            return { success: false, error: 'Missing Facebook access token' };
+          }
+
+          const response = await authApi.post(path, body);
+          const data = response.data?.data ?? response.data;
+
+          if (data?.requires2FA && data?.challengeToken) {
+            set({ isLoading: false, error: null });
+            return {
+              success: false,
+              requires2FA: true,
+              challengeToken: data.challengeToken,
+              email: data.user?.email || data.email || '',
+            };
+          }
+
+          if (!response.data?.success && !data?.tokens) {
+            const message = response.data?.error || 'Social sign-in failed';
+            set({ isLoading: false, error: message });
+            return { success: false, error: message };
+          }
+
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+          await tokenService.setTokens(data.tokens as AuthTokens);
+          await tokenService.setUserId(data.user.id);
+          const user = mapAuthResponseUser(data.user, data);
+          set({ user, isAuthenticated: true, isLoading: false, error: null });
+          prewarmFeedAfterAuth(user.role);
+          return { success: true };
+        } catch (error: any) {
+          const code = error?.response?.data?.code;
+          const message =
+            error?.response?.data?.error ||
+            error?.message ||
+            (provider === 'google' ? 'Unable to complete Google sign-in' : 'Unable to complete Facebook sign-in');
+
+          if (code === 'ACCOUNT_LINK_REQUIRED') {
+            const linkMessage =
+              'An account with this email already exists. Sign in with your password or phone, then link Google/Facebook from settings.';
+            set({ isLoading: false, error: linkMessage });
+            return { success: false, error: linkMessage };
+          }
+
+          set({ isLoading: false, error: message });
+          return { success: false, error: message };
+        }
+      },
+
+      completeTwoFactor: async ({ challengeToken, code, isBackupCode }) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await authApi.post('/auth/2fa/verify', {
+            challengeToken,
+            code,
+            isBackupCode: !!isBackupCode,
+          });
+
+          if (!response.data?.success) {
+            throw new Error(response.data?.error || '2FA verification failed');
+          }
+
+          const data = response.data.data;
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+          await tokenService.setTokens(data.tokens as AuthTokens);
+          await tokenService.setUserId(data.user.id);
+          const user = mapAuthResponseUser(data.user, data);
+          set({ user, isAuthenticated: true, isLoading: false, error: null });
+          prewarmFeedAfterAuth(user.role);
+          return { success: true };
+        } catch (error: any) {
+          const message = error?.response?.data?.error || error?.message || '2FA verification failed';
           set({ isLoading: false, error: message });
           return { success: false, error: message };
         }

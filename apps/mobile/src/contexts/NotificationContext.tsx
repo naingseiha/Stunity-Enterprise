@@ -227,8 +227,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }, [isAuthenticated]);
 
     // Keep messaging unread badge warm without Realtime subscriptions.
+    // Parent-teacher messaging only — skip for general students.
     useEffect(() => {
         if (!FEATURE_FLAGS.MESSAGING_ENABLED || !isAuthenticated) return;
+
+        const role = user?.role;
+        const canUseMessaging = role === 'PARENT' || role === 'TEACHER' || role === 'SCHOOL_ADMIN';
+        if (!canUseMessaging) return;
 
         const refreshUnread = () => {
             void useMessagingStore.getState().getUnreadCount();
@@ -242,7 +247,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return () => {
             appStateSubscription.remove();
         };
-    }, [isAuthenticated]);
+    }, [isAuthenticated, user?.role]);
 
     // Register token with backend when user logs in
     useEffect(() => {

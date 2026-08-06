@@ -116,7 +116,7 @@ export type AuthStackParamList = {
   VerifyOTP: { email: string };
   ResetPassword: { token: string };
   ForceChangePassword: undefined;
-  TwoFactor: undefined;
+  TwoFactor: { challengeToken: string; email?: string };
   ClaimCodeSetup: undefined;
 };
 

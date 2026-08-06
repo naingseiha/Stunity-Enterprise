@@ -30,12 +30,18 @@ import { useAuthStore } from '@/stores';
 import type { OtpChallengeResponse } from '@/types';
 import { normalizePhonePreview } from '@/utils/passwordlessPhone';
 import { Colors } from '@/config';
+import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
+import {
+  isFacebookAuthConfigured,
+  isGoogleAuthConfigured,
+} from '@/services/socialAuth';
 
 const BRAND_TEAL = Colors.brand;
 const BRAND_TEAL_DARK = '#00B8DB';
 const INK = '#0F172A';
 const MUTED = '#64748B';
 const PASSKEYS_ENABLED = process.env.EXPO_PUBLIC_AUTH_PASSKEYS_ENABLED === 'true';
+const TELEGRAM_ENABLED = process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true';
 
 type Step = 'PHONE' | 'OTP' | 'PROFILE';
 
@@ -143,6 +149,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
 
   const continueWithTelegram = async () => {
     const result = await startTelegramOidc();
+    if (result.requires2FA && result.challengeToken) {
+      navigation.navigate('TwoFactor', {
+        challengeToken: result.challengeToken,
+        email: result.email || '',
+      });
+      return;
+    }
     if (!result.success && !result.cancelled) {
       Alert.alert('Error', result.error || t('auth.passwordless.telegramErrorBody', 'Failed to sign in with Telegram'));
     }
@@ -254,7 +267,7 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                 </TouchableOpacity>
 
                 {/* Creative Divider matching WelcomeScreen FOR PARENTS */}
-                {(passkeysSupported || process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true') && (
+                {(passkeysSupported || TELEGRAM_ENABLED || isGoogleAuthConfigured() || isFacebookAuthConfigured()) && (
                   <View style={styles.dividerRow}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
@@ -279,7 +292,7 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                 )}
 
                 {/* Telegram Secondary Card with Circular Icon Badge */}
-                {process.env.EXPO_PUBLIC_AUTH_TELEGRAM_OIDC_ENABLED === 'true' && (
+                {TELEGRAM_ENABLED && (
                   <TouchableOpacity
                     onPress={() => void continueWithTelegram()}
                     disabled={isLoading}
@@ -293,6 +306,8 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
                     <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
                   </TouchableOpacity>
                 )}
+
+                <SocialAuthButtons disabled={isLoading} showDivider={false} />
 
                 {/* Password Login Option */}
                 <TouchableOpacity
