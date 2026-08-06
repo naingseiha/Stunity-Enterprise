@@ -705,6 +705,22 @@ export default function PostDetailPage() {
     }
   };
 
+  const sortedComments = useMemo(() => {
+    const list = [...comments];
+    list.sort((a, b) => {
+      if (post?.postType === 'QUESTION') {
+        const verifiedDiff = Number(Boolean(b.isVerifiedAnswer)) - Number(Boolean(a.isVerifiedAnswer));
+        if (verifiedDiff !== 0) return verifiedDiff;
+      }
+      if (commentSort === 'top') {
+        const likeDiff = (b.likesCount || 0) - (a.likesCount || 0);
+        if (likeDiff !== 0) return likeDiff;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    return list;
+  }, [comments, commentSort, post?.postType]);
+
   if (error && !post) {
     return (
       <div className="min-h-screen bg-[#F3F2EF] dark:bg-gray-950 flex flex-col items-center justify-center gap-4 px-4">
@@ -727,21 +743,6 @@ export default function PostDetailPage() {
   const authorName = post ? displayName(post.author) : '';
   const authorHeadline = post?.author.professionalTitle || post?.author.role?.replace(/_/g, ' ') || '';
   const canRepost = Boolean(post && currentUserId && currentUserId !== post.author.id);
-  const sortedComments = useMemo(() => {
-    const list = [...comments];
-    list.sort((a, b) => {
-      if (post?.postType === 'QUESTION') {
-        const verifiedDiff = Number(Boolean(b.isVerifiedAnswer)) - Number(Boolean(a.isVerifiedAnswer));
-        if (verifiedDiff !== 0) return verifiedDiff;
-      }
-      if (commentSort === 'top') {
-        const likeDiff = (b.likesCount || 0) - (a.likesCount || 0);
-        if (likeDiff !== 0) return likeDiff;
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-    return list;
-  }, [comments, commentSort, post?.postType]);
 
   return (
     <div className="min-h-screen bg-[#F3F2EF] dark:bg-gray-950">
