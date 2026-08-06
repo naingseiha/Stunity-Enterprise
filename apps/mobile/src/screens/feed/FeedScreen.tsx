@@ -998,23 +998,23 @@ export default function FeedScreen() {
           contentContainerStyle={styles.quickActionsInCard}
         >
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="chatbubble-ellipses" size={22} color="#3B82F6" />
+            <Ionicons name="chatbubble-ellipses" size={20} color="#3B82F6" />
             <Text style={styles.inCardActionText}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="bulb" size={22} color="#10B981" />
+            <Ionicons name="bulb" size={20} color="#10B981" />
             <Text style={styles.inCardActionText}>{t('feed.quiz')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="bar-chart" size={22} color="#8B5CF6" />
+            <Ionicons name="bar-chart" size={20} color="#8B5CF6" />
             <Text style={styles.inCardActionText}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleNavigateToFocusReels} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="play-circle" size={22} color="#EF4444" />
+            <Ionicons name="play-circle" size={20} color="#EF4444" />
             <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="ribbon" size={22} color="#D97706" />
+            <Ionicons name="ribbon" size={20} color="#D97706" />
             <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -1824,8 +1824,8 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     marginHorizontal: 0,
     marginTop: 0,
     marginBottom: 0,
-    paddingTop: isTablet ? 16 : 14,
-    paddingBottom: isTablet ? 10 : 8,
+    paddingTop: isTablet ? 12 : 10,
+    paddingBottom: isTablet ? 8 : 6,
     borderWidth: 0,
     borderRadius: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -1841,8 +1841,8 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     flex: 1,
     backgroundColor: 'transparent',
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -1852,9 +1852,9 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     fontWeight: '500',
   },
   createPostMediaButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1866,21 +1866,21 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
   },
   quickActionsInCard: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    gap: 12,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 2,
+    gap: 4,
   },
   inCardAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
     borderRadius: 8,
   },
   inCardActionText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
   },

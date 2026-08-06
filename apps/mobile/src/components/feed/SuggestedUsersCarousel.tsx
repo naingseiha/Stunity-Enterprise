@@ -162,8 +162,8 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         backgroundColor: colors.card,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
+        paddingVertical: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : colors.border,
     },
     header: {
@@ -171,7 +171,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
-        marginBottom: 12,
+        marginBottom: 8,
     },
     title: {
         fontSize: 15,

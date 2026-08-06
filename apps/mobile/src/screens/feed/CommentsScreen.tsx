@@ -37,6 +37,7 @@ import { useFeedStore, feedStore, useAuthStore } from '@/stores';
 import { Comment } from '@/types';
 import { formatRelativeTime } from '@/utils';
 import { Colors, Shadows } from '@/config';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
 import { supabase } from '@/lib/supabase';
 import { createKeyedDebouncer } from '@/utils/debounce';
 import { useThemeContext } from '@/contexts';
@@ -47,13 +48,12 @@ const scheduleCommentRefresh = createKeyedDebouncer(600);
 type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string; postType?: string } }, 'Comments'>;
 
 export default function CommentsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<CommentsScreenRouteProp>();
   const { postId } = route.params;
   const { user } = useAuthStore();
   const { colors, isDark } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const {
     feedItems,
@@ -70,6 +70,11 @@ export default function CommentsScreen() {
 
   const postItem = feedItems.find((p) => p.type === 'POST' && p.data.id === postId) as { type: 'POST', data: any } | undefined;
   const post = postItem?.data;
+  const preferKhmer = feedBodyPreferKhmer(post?.content, i18n.resolvedLanguage || i18n.language);
+  const styles = React.useMemo(
+    () => createStyles(colors, isDark, preferKhmer),
+    [colors, isDark, preferKhmer],
+  );
   // QUESTION posts reframe the whole surface as Q&A (answers, not generic
   // comments). Prefer the route param so it's correct even when the post isn't
   // in the feed store (e.g. opened from a reel), falling back to the loaded post.
@@ -428,7 +433,7 @@ export default function CommentsScreen() {
   );
 }
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.card,
@@ -543,9 +548,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   postContent: {
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
+    ...feedTextStyle('body', { preferKhmer, color: colors.text }),
   },
 
   // Content Area
@@ -640,9 +643,9 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     color: '#D97706',
   },
   commentText: {
+    ...feedTextStyle('body', { preferKhmer, color: colors.text }),
     fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
+    lineHeight: preferKhmer ? 22 : 20,
     marginBottom: 6,
   },
   commentFooter: {
