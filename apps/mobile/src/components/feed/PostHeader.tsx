@@ -1,11 +1,13 @@
 import React, { memo, useCallback, useRef } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
 import { formatRelativeTime } from '@/utils';
 import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
+import { feedBodyPreferKhmer, feedTextStyle, textContainsKhmer } from '@/config/feedTypography';
+import { renderProfileNameText } from '@/utils/renderEmojiText';
 import EdScoreBadge from './EdScoreBadge';
 import TeacherVerifiedBadge from './TeacherVerifiedBadge';
 
@@ -59,12 +61,16 @@ const PostHeader = ({
   teacherVerified,
 }: PostHeaderProps) => {
   const { colors, isDark } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const menuScale = useRef(new Animated.Value(1)).current;
-
-  const { t } = useTranslation();
-
+  const { t, i18n } = useTranslation();
   const authorName = `${author.lastName || ''} ${author.firstName || ''}`.trim() || author.name || '';
+  // Koulen metrics only apply when the name itself has Khmer — not merely UI locale.
+  const nameHasKhmer = textContainsKhmer(authorName);
+  const preferKhmer = feedBodyPreferKhmer(authorName, i18n.resolvedLanguage || i18n.language);
+  const styles = React.useMemo(
+    () => createStyles(colors, isDark, preferKhmer, nameHasKhmer),
+    [colors, isDark, preferKhmer, nameHasKhmer],
+  );
+  const menuScale = useRef(new Animated.Value(1)).current;
 
   const handleMenuPress = useCallback(() => {
     Animated.sequence([
@@ -83,11 +89,11 @@ const PostHeader = ({
       return { icon: 'shield-checkmark', color: '#8B5CF6', label: t('common.admin') };
     }
     return null;
-  }, [author.role]);
+  }, [author.role, t]);
 
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onUserPress} style={styles.authorSection}>
+      <TouchableOpacity onPress={onUserPress} activeOpacity={0.8}>
         <Avatar
           uri={author.profilePictureUrl}
           name={authorName}
@@ -96,38 +102,52 @@ const PostHeader = ({
           showOnline={!!author.isOnline}
           isOnline={!!author.isOnline}
         />
-        <View style={styles.authorInfo}>
-          <View style={styles.authorRow}>
-            <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
+      </TouchableOpacity>
 
-            {/* Verified Badge */}
-            {(author.isVerified || isCurrentUser) && (
-              <View style={styles.verifiedBadge}>
-                <View style={styles.twitterBlueTick}>
-                  <Ionicons name="checkmark" size={10} color="#fff" />
+      <View style={styles.authorInfo}>
+        {/* Name + badges + ··· on the top line */}
+        <View style={styles.nameActionsRow}>
+          <TouchableOpacity onPress={onUserPress} activeOpacity={0.8} style={styles.nameBadges}>
+            <View style={styles.authorRow}>
+              {renderProfileNameText(authorName, styles.authorName, 1)}
+
+              {(author.isVerified || isCurrentUser) && (
+                <View style={styles.verifiedBadge}>
+                  <View style={styles.twitterBlueTick}>
+                    <Ionicons name="checkmark" size={10} color="#fff" />
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
 
-            {/* Role Badge */}
-            {roleBadge && (
-              <View style={[styles.roleBadge, { backgroundColor: roleBadge.color + '20' }]}>
-                <Ionicons name={roleBadge.icon as any} size={12} color={roleBadge.color} />
-                <Text style={[styles.roleBadgeText, { color: roleBadge.color }]}>{roleBadge.label}</Text>
-              </View>
-            )}
+              {roleBadge && (
+                <View style={styles.roleBadge}>
+                  <Ionicons name={roleBadge.icon as any} size={12} color={roleBadge.color} />
+                  <Text style={[styles.roleBadgeText, { color: roleBadge.color }]}>{roleBadge.label}</Text>
+                </View>
+              )}
 
-            {/* Ed-Score Badge — renders only when score >= 3.5 */}
-            {typeof edScore === 'number' ? <EdScoreBadge score={edScore} /> : null}
+              {typeof edScore === 'number' ? <EdScoreBadge score={edScore} /> : null}
+            </View>
+          </TouchableOpacity>
 
-            {/* Teacher Verified Badge — post-level endorsement */}
-            {teacherVerified ? <TeacherVerifiedBadge /> : null}
+          <View style={styles.menuContainer}>
+            <Animated.View style={{ transform: [{ scale: menuScale }] }}>
+              <Pressable
+                style={styles.moreButton}
+                onPress={handleMenuPress}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="ellipsis-horizontal" size={20} color="#6B7280" />
+              </Pressable>
+            </Animated.View>
+            {showMenu ? menuContent : null}
           </View>
+        </View>
 
-          <View style={styles.metaRow}>
+        {/* Meta + teacher verified + Follow on the second line */}
+        <View style={styles.metaRow}>
+          <TouchableOpacity onPress={onUserPress} activeOpacity={0.8} style={styles.metaLeft}>
             <Text style={styles.timeText}>{formatRelativeTime(createdAt, t)}</Text>
-
-            {/* Visibility */}
             <Text style={styles.metaDot}>•</Text>
             <View style={styles.visibilityIndicator}>
               <Ionicons
@@ -147,7 +167,13 @@ const PostHeader = ({
               />
             </View>
 
-            {/* Study Group Tag */}
+            {teacherVerified ? (
+              <>
+                <Text style={styles.metaDot}>•</Text>
+                <TeacherVerifiedBadge />
+              </>
+            ) : null}
+
             {!!learningMeta?.studyGroupName && (
               <>
                 <Text style={styles.metaDot}>•</Text>
@@ -157,74 +183,95 @@ const PostHeader = ({
                 </View>
               </>
             )}
-          </View>
-        </View>
-      </TouchableOpacity>
+          </TouchableOpacity>
 
-      {/* Follow Button */}
-      {!isCurrentUser && (
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onFollow();
-          }}
-          disabled={followLoading}
-          activeOpacity={0.5}
-          style={styles.followBtnWrap}
-        >
-          {followLoading ? (
-            <ActivityIndicator size={11} color="#0EA5E9" />
-          ) : isFollowing ? (
-            <Text style={styles.followBtnTextFollowing}>{t('common.following')}</Text>
-          ) : (
-            <Text style={styles.followBtnText}>{t('common.follow')}</Text>
+          {!isCurrentUser && (
+            <>
+              <Text style={styles.metaDot}>•</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onFollow();
+                }}
+                disabled={followLoading}
+                activeOpacity={0.5}
+                style={styles.followBtnWrap}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              >
+                {followLoading ? (
+                  <ActivityIndicator size={11} color="#0EA5E9" />
+                ) : isFollowing ? (
+                  <Text style={styles.followBtnTextFollowing}>{t('common.following')}</Text>
+                ) : (
+                  <Text style={styles.followBtnText}>{t('common.follow')}</Text>
+                )}
+              </TouchableOpacity>
+            </>
           )}
-        </TouchableOpacity>
-      )}
-
-      {/* Menu */}
-      <View style={styles.menuContainer}>
-        <Animated.View style={{ transform: [{ scale: menuScale }] }}>
-          <Pressable style={styles.moreButton} onPress={handleMenuPress}>
-            <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-          </Pressable>
-        </Animated.View>
-        {showMenu ? menuContent : null}
+        </View>
       </View>
     </View>
   );
 };
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (
+  colors: any,
+  isDark: boolean,
+  preferKhmer: boolean,
+  nameHasKhmer: boolean,
+) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 10,
     position: 'relative',
     zIndex: 50,
     overflow: 'visible',
-  },
-  authorSection: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
   },
   authorInfo: {
     flex: 1,
+    minWidth: 0,
+    overflow: 'visible',
+  },
+  nameActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    overflow: 'visible',
+    // Keep room for Koulen ascenders without inflating the gap to meta.
+    minHeight: nameHasKhmer ? 24 : 20,
+  },
+  nameBadges: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 4,
+    overflow: 'visible',
+    justifyContent: 'center',
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 4,
+    overflow: 'visible',
   },
   authorName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
+    ...feedTextStyle('name', { preferKhmer: nameHasKhmer, color: colors.text }),
+    fontWeight: '700',
     flexShrink: 1,
+    overflow: 'visible',
+    // Padding only on top — bottom padding was opening a large gap above meta.
+    // Koulen's line box already has unused descent below the glyph mass.
+    ...(nameHasKhmer
+      ? {
+          paddingTop: Platform.OS === 'ios' ? 3 : 2,
+          paddingBottom: 0,
+          transform: [{ translateY: 1 }],
+        }
+      : null),
   },
   verifiedBadge: {
     marginLeft: 2,
@@ -240,28 +287,31 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
     gap: 3,
     marginLeft: 4,
   },
   roleBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    ...feedTextStyle('chip', { preferKhmer }),
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    flexWrap: 'wrap',
+    // Pull meta up into Koulen's unused descent so name→date feels tight.
+    marginTop: nameHasKhmer ? -4 : 1,
+  },
+  metaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
   },
   timeText: {
-    fontSize: 13,
-    color: colors.textTertiary,
+    ...feedTextStyle('meta', { preferKhmer, color: colors.textTertiary }),
   },
   metaDot: {
-    fontSize: 13,
-    color: colors.textTertiary,
+    ...feedTextStyle('meta', { preferKhmer, color: colors.textTertiary }),
     marginHorizontal: 6,
   },
   visibilityIndicator: {
@@ -277,33 +327,33 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 4,
   },
   studyGroupText: {
-    fontSize: 11,
+    ...feedTextStyle('chip', { preferKhmer, color: '#0D9488' }),
     fontWeight: '500',
-    color: '#0D9488',
   },
   followBtnWrap: {
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    marginRight: 2,
+    paddingVertical: 1,
+    flexShrink: 0,
   },
   followBtnText: {
-    fontSize: 13,
+    ...feedTextStyle('meta', { preferKhmer, color: '#0EA5E9' }),
     fontWeight: '700',
-    color: '#0EA5E9',
   },
   followBtnTextFollowing: {
-    fontSize: 13,
+    ...feedTextStyle('meta', { preferKhmer, color: colors.textTertiary }),
     fontWeight: '500',
-    color: colors.textTertiary,
   },
   menuContainer: {
     position: 'relative',
     zIndex: 1000,
     overflow: 'visible',
+    flexShrink: 0,
+    justifyContent: 'center',
   },
   moreButton: {
-    padding: 6,
-    marginRight: -6,
+    padding: 4,
+    marginRight: -4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

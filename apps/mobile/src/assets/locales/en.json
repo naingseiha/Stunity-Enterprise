@@ -703,6 +703,9 @@
     "aboutBody": "Version 1.0.0\n\n© 2026 Stunity Inc.\nAll rights reserved."
   },
   "feed": {
+    "edScore": {
+      "teacherVerified": "Teacher verified"
+    },
     "recall": {
       "title": "Memory Check",
       "doneToday": "Done",

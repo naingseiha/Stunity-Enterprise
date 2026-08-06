@@ -702,6 +702,9 @@
     "aboutBody": "កំណែ ១.០.០\n\n© ២០២៦ Stunity Inc.\nរក្សាសិទ្ធិគ្រប់យ៉ាង។"
   },
   "feed": {
+    "edScore": {
+      "teacherVerified": "គ្រូផ្ទៀងផ្ទាត់"
+    },
     "recall": {
       "title": "រំលឹកការចងចាំ",
       "doneToday": "រួចរាល់",

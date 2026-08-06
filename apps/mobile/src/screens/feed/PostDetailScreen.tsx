@@ -32,6 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
 
 
 import { Avatar, ImageCarousel } from '@/components/common';
@@ -178,10 +179,9 @@ const CommentItem: React.FC<{
 
 // ─── Main Screen ────────────────────────────────────────────
 export default function PostDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const repostEnabled = useFeatureFlag('repost_quote');
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation();
   const route = useRoute<PostDetailRouteProp>();
   const { postId } = route.params;
@@ -231,6 +231,14 @@ export default function PostDetailScreen() {
   // Try to find post in store, or fetch from API
   const postItem = feedItems.find(i => i.type === 'POST' && (i.data as Post).id === postId);
   const post = postItem?.type === 'POST' ? postItem.data as Post : undefined;
+  const preferKhmer = feedBodyPreferKhmer(
+    `${post?.title || ''} ${post?.content || ''}`,
+    i18n.resolvedLanguage || i18n.language,
+  );
+  const styles = React.useMemo(
+    () => createStyles(colors, isDark, preferKhmer),
+    [colors, isDark, preferKhmer],
+  );
   const postComments = storeComments[postId] || [];
   const isSubmitting = isSubmittingComment[postId] || false;
   const currentUserOwnsPost = post?.author.id === user?.id;
@@ -1034,7 +1042,7 @@ export default function PostDetailScreen() {
 }
 
 // ─── Styles ─────────────────────────────────────────────────
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centeredContainer: { flex: 1, backgroundColor: colors.background },
   loadingBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
@@ -1134,21 +1142,21 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   viewCountText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
 
   // Title
-  titleSection: { backgroundColor: colors.card, paddingHorizontal: 16, paddingTop: 18 },
+  titleSection: { backgroundColor: colors.card, paddingHorizontal: 16, paddingTop: 16 },
   postTitle: {
+    ...feedTextStyle('bodyDetail', { preferKhmer, color: colors.text }),
     fontSize: 22,
     fontWeight: '800',
-    color: colors.text,
-    lineHeight: Platform.OS === 'ios' ? 35 : 38,
-    paddingTop: Platform.OS === 'ios' ? 3 : 5,
-    paddingBottom: Platform.OS === 'ios' ? 2 : 3,
+    lineHeight: preferKhmer ? 32 : 28,
   },
 
   // Content
   contentCard: { backgroundColor: colors.card, paddingBottom: 4 },
   contentText: {
-    fontSize: 16, color: colors.text, lineHeight: 25,
-    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
+    ...feedTextStyle('bodyDetail', { preferKhmer, color: colors.text }),
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
 
   // Poll

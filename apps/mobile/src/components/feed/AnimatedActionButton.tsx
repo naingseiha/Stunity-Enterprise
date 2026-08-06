@@ -175,8 +175,9 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   countText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#6B7280',
+    lineHeight: 16,
   },
 });

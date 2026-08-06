@@ -970,7 +970,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 0,
     borderWidth: 0,
     position: 'relative',
-    paddingTop: 14,
+    paddingTop: 8,
     overflow: 'hidden',
     borderBottomWidth: 1,
     borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
