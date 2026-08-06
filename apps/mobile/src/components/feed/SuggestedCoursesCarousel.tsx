@@ -84,7 +84,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         backgroundColor: colors.card,
-        paddingVertical: 16,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
     },
@@ -93,7 +93,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
-        marginBottom: 12,
+        marginBottom: 8,
     },
     headerTitle: {
         fontSize: 16,

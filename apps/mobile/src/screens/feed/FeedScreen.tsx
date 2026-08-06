@@ -379,6 +379,7 @@ export default function FeedScreen() {
   const [serverBounties,    setServerBounties]    = useState<FeynmanBounty[] | null>(null);
   const [serverQuizWar,     setServerQuizWar]     = useState<QuizWar | null>(null);
   const [deferredCardIds,   setDeferredCardIds]   = useState<Set<string>>(new Set());
+  const [showMoreQuickActions, setShowMoreQuickActions] = useState(false);
 
   // smartScrollRef — holds all Smart Scroll data with stable identity.
   // renderPost callbacks close over this ref instead of the state values,
@@ -1009,13 +1010,29 @@ export default function FeedScreen() {
             <Ionicons name="bar-chart" size={20} color="#8B5CF6" />
             <Text style={styles.inCardActionText}>{t('feed.poll.label')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleNavigateToFocusReels} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="play-circle" size={20} color="#EF4444" />
-            <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
-            <Ionicons name="ribbon" size={20} color="#D97706" />
-            <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
+          {showMoreQuickActions ? (
+            <>
+              <TouchableOpacity onPress={handleNavigateToFocusReels} activeOpacity={0.7} style={styles.inCardAction}>
+                <Ionicons name="play-circle" size={20} color="#EF4444" />
+                <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
+                <Ionicons name="ribbon" size={20} color="#D97706" />
+                <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+          <TouchableOpacity
+            onPress={() => setShowMoreQuickActions((prev) => !prev)}
+            activeOpacity={0.7}
+            style={styles.inCardAction}
+          >
+            <Ionicons
+              name={showMoreQuickActions ? 'chevron-back' : 'ellipsis-horizontal'}
+              size={20}
+              color={colors.textSecondary}
+            />
+            <Text style={styles.inCardActionText}>{t('common.more')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -1026,7 +1043,7 @@ export default function FeedScreen() {
         onToggle={handleToggleBrainMode}
       />
     </View>
-  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateBounty, handleNavigateToFocusReels, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode]);
+  ), [handleCreatePost, user, stableProfilePictureUrl, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateBounty, handleNavigateToFocusReels, navigation, t, colors, openSidebar, unreadNotifications, feedMode, handleToggleBrainMode, showMoreQuickActions]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({

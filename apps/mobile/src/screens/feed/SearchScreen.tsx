@@ -50,6 +50,8 @@ import { feedApi } from '@/api/client';
 import { Post, PostType } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { formatRelativeTime, formatNumber } from '@/utils';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
+import { renderPostBodyText } from '@/utils/renderEmojiText';
 
 const RECENT_SEARCHES_KEY = '@stunity_recent_searches';
 const MAX_RECENT = 8;
@@ -136,7 +138,7 @@ interface SearchUser {
 }
 
 export default function SearchScreen() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigation = useNavigation();
     const inputRef = useRef<TextInput>(null);
     const insets = useSafeAreaInsets();
@@ -408,6 +410,7 @@ export default function SearchScreen() {
         const isPoll = item.postType === 'POLL';
         const typeMeta = getPostTypeMeta(item.postType);
         const relevance = Math.max(0, Math.min(Math.round((item._score || 0) * 100), 100));
+        const preferKhmer = feedBodyPreferKhmer(item.content, i18n.resolvedLanguage || i18n.language);
 
         return (
             <Animated.View 
@@ -455,9 +458,11 @@ export default function SearchScreen() {
                         <Text style={styles.postResultTitle} numberOfLines={1}>{item.title}</Text>
                     ) : null}
 
-                    <Text style={styles.postResultContent} numberOfLines={isQuiz || isPoll ? 2 : 3}>
-                        {item.content}
-                    </Text>
+                    {renderPostBodyText(
+                        item.content,
+                        [styles.postResultContent, feedTextStyle('body', { preferKhmer, color: colors.text })],
+                        isQuiz || isPoll ? 2 : 3,
+                    )}
 
                     {isQuiz && item.quizData && (() => {
                         const quiz = item.quizData;
@@ -1434,9 +1439,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         textTransform: 'uppercase',
     },
     postResultContent: {
-        fontSize: 15,
-        color: colors.text,
-        lineHeight: 22,
         marginBottom: 12,
         opacity: 0.9,
     },

@@ -344,7 +344,7 @@ type StyleMap = {
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create<StyleMap>({
     outer: {
-      paddingVertical: 16,
+      paddingVertical: 12,
       paddingHorizontal: 16,
       backgroundColor: colors.card,
       borderBottomWidth: 1,
@@ -442,7 +442,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     divider: {
       height: 1,
       backgroundColor: isDark ? colors.border : '#F1F5F9',
-      marginVertical: 14,
+      marginVertical: 10,
     },
 
     // ── Teams scoreboard ──
