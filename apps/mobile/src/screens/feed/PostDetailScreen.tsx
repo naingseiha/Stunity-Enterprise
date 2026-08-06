@@ -48,11 +48,13 @@ import { formatRelativeTime, formatNumber } from '@/utils';
 import { FeedStackParamList } from '@/navigation/types';
 import { feedApi } from '@/api/client';
 import { useThemeContext } from '@/contexts';
+import { BrandCtaGradient } from '@/config/theme';
 import { getPostDetailMediaAspectRatio, getPostDetailMediaBucket } from '@/utils/feedMediaLayout';
 import { postMediaTransitionTag } from '@/utils/postMediaTransition';
 import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
 import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 import { AnimatedActionButton } from '@/components/feed/AnimatedActionButton';
+import { PostReactionButton } from '@/components/feed/PostReactionButton';
 
 type PostDetailRouteProp = RouteProp<FeedStackParamList, 'PostDetail'>;
 
@@ -189,6 +191,7 @@ export default function PostDetailScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const repostEnabled = useFeatureFlag('repost_quote');
+  const reactionsEnabled = useFeatureFlag('reactions');
   const navigation = useNavigation();
   const route = useRoute<PostDetailRouteProp>();
   const { postId } = route.params;
@@ -198,6 +201,7 @@ export default function PostDetailScreen() {
     feedItems,
     fetchPostById,
     toggleLike,
+    reactToPost,
     bookmarkPost,
     trackPostView,
     comments: storeComments,
@@ -314,7 +318,7 @@ export default function PostDetailScreen() {
       setIsFollowingAuthor(post.isFollowingAuthor || false);
       setIsLoading(false);
     }
-  }, [post?.id, post?.isLiked, post?.isBookmarked, post?.isValued, post?.likes, post?.shares, post?.views, post?.isFollowingAuthor, detailViewBump]);
+  }, [post?.id, post?.isLiked, post?.isBookmarked, post?.isValued, post?.likes, post?.shares, post?.views, post?.isFollowingAuthor, post?.myReaction, detailViewBump]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -344,9 +348,18 @@ export default function PostDetailScreen() {
   // ─── Handlers ───────────────────────────────────────
   const handleLike = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Store owns optimistic like state; local liked/likeCount sync from post props.
     await toggleLike(postId);
   }, [postId, toggleLike]);
+
+  const handleReact = useCallback(
+    async (type: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await reactToPost(postId, type);
+    },
+    [postId, reactToPost],
+  );
+
+  const myReaction = post?.myReaction ?? (liked ? 'LIKE' : null);
 
   const handleBookmark = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -655,11 +668,20 @@ export default function PostDetailScreen() {
                   onPress={handleFollow}
                 >
                   {followLoading ? (
-                    <ActivityIndicator size="small" color={isFollowingAuthor ? '#6366F1' : '#fff'} />
-                  ) : (
-                    <Text style={[styles.followBtnText, isFollowingAuthor && styles.followingBtnText]}>
-                      {isFollowingAuthor ? t('common.following') : t('common.follow')}
+                    <ActivityIndicator size="small" color={isFollowingAuthor ? '#0284C7' : '#fff'} />
+                  ) : isFollowingAuthor ? (
+                    <Text style={[styles.followBtnText, styles.followingBtnText]}>
+                      {t('common.following')}
                     </Text>
+                  ) : (
+                    <LinearGradient
+                      colors={[...BrandCtaGradient]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.followBtnGradient}
+                    >
+                      <Text style={styles.followBtnText}>{t('common.follow')}</Text>
+                    </LinearGradient>
                   )}
                 </ScalePressable>
               )}
@@ -821,16 +843,15 @@ export default function PostDetailScreen() {
             {/* Action Bar — matches feed PostCard */}
             <View style={styles.feedActionBar}>
               <View style={styles.feedActionLeft}>
-                <AnimatedActionButton
-                  icon="heart-outline"
-                  activeIcon="heart"
-                  active={liked}
-                  count={likeCount}
-                  color={colors.text}
-                  activeColor="#EF4444"
-                  onPress={handleLike}
+                <PostReactionButton
+                  liked={liked}
+                  myReaction={myReaction}
+                  likeCount={likeCount}
+                  onLike={handleLike}
+                  onReact={reactionsEnabled ? handleReact : undefined}
+                  cardColor={colors.card}
+                  textColor={colors.text}
                   size={24}
-                  accessibilityLabel={t('feed.actions.like')}
                   textStyle={styles.feedActionText}
                   activeTextStyle={styles.feedActionTextLiked}
                 />
@@ -1057,12 +1078,26 @@ const createStyles = (
   timeText: { fontSize: 13, color: colors.textTertiary },
   followBtn: {
     minWidth: 82,
-    backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20, alignItems: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignItems: 'stretch',
+  },
+  followBtnGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   followBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  followingBtn: { backgroundColor: isDark ? colors.surfaceVariant : '#EEF2FF', borderWidth: 1, borderColor: isDark ? colors.border : '#C7D2FE' },
-  followingBtnText: { color: '#4F46E5' },
+  followingBtn: {
+    backgroundColor: isDark ? 'rgba(14,165,233,0.12)' : '#E0F2FE',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(14,165,233,0.35)' : '#BAE6FD',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  followingBtnText: { color: '#0284C7' },
 
   // Deadline Banner
   deadlineBanner: {

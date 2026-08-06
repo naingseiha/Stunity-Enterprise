@@ -9,6 +9,7 @@ import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, BorderRadius } from '@/config';
+import { BrandCtaGradient } from '@/config/theme';
 import { cdnAvatar } from '@/utils/cdnUrl';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
@@ -97,47 +98,27 @@ const getInitials = (name: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-// Light grey gradients for fallback avatars - clean and professional
-const getGradientColors = (name: string): [string, string] => {
-  const gradients: [string, string][] = [
-    ['#F3F4F6', '#E5E7EB'], // Light grey gradient
-    ['#E5E7EB', '#D1D5DB'], // Medium light grey
-    ['#F9FAFB', '#F3F4F6'], // Very light grey
-    ['#FAFAFA', '#F5F5F5'], // Off-white grey
-    ['#F8F9FA', '#E9ECEF'], // Soft grey
-    ['#F5F5F5', '#EEEEEE'], // Neutral grey
-  ];
+// Light brand tints for small feed avatars (readable initials at xs–md sizes)
+const BRAND_AVATAR_TINTS: [string, string][] = [
+  ['#E0F2FE', '#BAE6FD'],
+  ['#DBEAFE', '#BAE6FD'],
+  ['#E0F2FE', '#7DD3FC'],
+  ['#BAE6FD', '#7DD3FC'],
+];
 
-  const index = name
-    ? name.charCodeAt(0) % gradients.length
-    : 0;
-
-  return gradients[index];
+const getBrandFallbackGradient = (
+  name: string,
+  variant: AvatarVariant,
+): readonly [string, string, ...string[]] => {
+  if (variant === 'post') {
+    const index = name ? name.charCodeAt(0) % BRAND_AVATAR_TINTS.length : 0;
+    return BRAND_AVATAR_TINTS[index];
+  }
+  return BrandCtaGradient;
 };
 
-// Beautiful light gradients for post avatars - colorful and vibrant
-const getPostGradientColors = (name: string): [string, string] => {
-  const gradients: [string, string][] = [
-    ['#FEE2E2', '#FECACA'], // Light red/rose
-    ['#DBEAFE', '#BFDBFE'], // Light blue
-    ['#E0F2FE', '#BAE6FD'], // Light yellow
-    ['#D1FAE5', '#A7F3D0'], // Light green
-    ['#FCE7F3', '#FBCFE8'], // Light pink
-    ['#E0E7FF', '#C7D2FE'], // Light indigo
-    ['#FFEDD5', '#FED7AA'], // Light orange
-    ['#E9D5FF', '#D8B4FE'], // Light purple
-    ['#BAE6FD', '#7DD3FC'], // Light sky
-    ['#FED7E2', '#FBB6CE'], // Light rose
-    ['#D9F99D', '#BEF264'], // Light lime
-    ['#FEE4C7', '#FDBA74'], // Light amber
-  ];
-
-  const index = name
-    ? name.charCodeAt(0) % gradients.length
-    : 0;
-
-  return gradients[index];
-};
+const getFallbackInitialsColor = (variant: AvatarVariant): string =>
+  variant === 'post' ? '#0369A1' : '#FFFFFF';
 
 export const Avatar = React.memo<AvatarProps>(function Avatar({
   uri,
@@ -159,9 +140,8 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
   // For 'post' variant, use light gradients and no border
   const isPostVariant = variant === 'post';
   const effectiveShowBorder = isPostVariant ? false : showBorder;
-  const backgroundGradient = isPostVariant
-    ? getPostGradientColors(name)
-    : getGradientColors(name);
+  const backgroundGradient = getBrandFallbackGradient(name, variant);
+  const initialsColor = getFallbackInitialsColor(variant);
   const avatarCacheKey = React.useMemo(() => getAvatarCacheKey(name, size, variant), [name, size, variant]);
   const imageUri = React.useMemo(
     () => cdnAvatar(uri, size === 'xs' || size === 'sm' || size === 'md' ? 'sm' : size === 'lg' || size === 'xl' ? 'md' : 'lg'),
@@ -244,7 +224,7 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={[styles.initials, { fontSize: fontSize - 2, color: isPostVariant ? '#374151' : '#1F2937' }]}>
+                <Text style={[styles.initials, { fontSize: fontSize - 2, color: initialsColor }]}>
                   {getInitials(name)}
                 </Text>
               </LinearGradient>
@@ -303,7 +283,7 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <Text style={[styles.initials, { fontSize, color: isPostVariant ? '#374151' : '#1F2937' }]}>
+          <Text style={[styles.initials, { fontSize, color: initialsColor }]}>
             {getInitials(name)}
           </Text>
         </LinearGradient>
@@ -353,7 +333,6 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   initials: {
-    color: '#1F2937',
     fontWeight: Typography.fontWeight.bold,
   },
   onlineIndicator: {

@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { quizService } from '@/services';
 import { useFeedStore } from '@/stores';
 import { normalizeQuiz } from '@/utils/quiz';
+import { BrandCtaGradient } from '@/config/theme';
 
 // ═══════════════════════════════════════════
 // Deadline Banner
@@ -672,17 +673,17 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                     </View>
                 </View>
             ) : (
-                /* CTA button */
+                /* CTA — brand gradient; per-post accent lives on stats/icons above */
                 <TouchableOpacity onPress={handleTakeQuiz} activeOpacity={0.8}>
                     <LinearGradient
-                        colors={quizGradient}
+                        colors={[...BrandCtaGradient]}
                         start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                         style={styles.quizCta}
                     >
                         <Ionicons name="play-circle" size={20} color="#fff" />
                         <Text style={styles.quizCtaText}>{t('feed.sections.takeQuizNow')}</Text>
-                        <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
+                        <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.85)" />
                     </LinearGradient>
                 </TouchableOpacity>
             )}

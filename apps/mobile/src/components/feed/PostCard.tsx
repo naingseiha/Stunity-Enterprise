@@ -48,7 +48,8 @@ import {
   PollVoting,
 } from '@/components/feed';
 import { AnimatedActionButton } from './AnimatedActionButton';
-import { ReactionSpark } from './ReactionSpark';
+import { PostReactionButton } from './PostReactionButton';
+import { POST_REACTION_BY_TYPE } from '@/config/postReactions';
 import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSections';
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
@@ -61,6 +62,7 @@ import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
 import { feedApi } from '@/api/client';
+import { getQuizAccentGradient } from '@/utils/quizAccentColor';
 
 interface PostCardProps {
   post: Post;
@@ -118,27 +120,6 @@ const DIFFICULTY_CONFIG: Record<DifficultyLevel, { labelKey: string; color: stri
   ADVANCED: { labelKey: 'feed.difficulty.advanced', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
 };
 
-// Vibrant gradients for Quiz cards to make them pop
-const QUIZ_GRADIENTS: [string, string][] = [
-  ['#F9A8D4', '#F472B6'], // Pink — soft
-  ['#C4B5FD', '#A78BFA'], // Violet — soft
-  ['#93C5FD', '#60A5FA'], // Blue — soft
-  ['#6EE7B7', '#34D399'], // Emerald — soft
-  ['#7DD3FC', '#38BDF8'], // Sky — soft
-  ['#A5B4FC', '#818CF8'], // Indigo — soft
-  ['#67E8F9', '#22D3EE'], // Cyan — soft
-  ['#FDBA74', '#FB923C'], // Orange — soft
-];
-
-const getQuizGradient = (id: string): [string, string] => {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % QUIZ_GRADIENTS.length;
-  return QUIZ_GRADIENTS[index];
-};
-
 // Helper to calculate time remaining
 const getTimeRemaining = (deadline: string, t: any): { text: string; isUrgent: boolean } => {
   const now = new Date();
@@ -160,38 +141,7 @@ const getTimeRemaining = (deadline: string, t: any): { text: string; isUrgent: b
 };
 
 // Memoized action bar — isolates like/comment/share state from header/content re-renders
-// Reaction palette — Ionicons only (no emoji, which can render as tofu boxes).
-const REACTIONS: { type: string; icon: keyof typeof Ionicons.glyphMap; color: string; label: string }[] = [
-  { type: 'LIKE', icon: 'heart', color: '#EF4444', label: 'Like' },
-  { type: 'INSIGHTFUL', icon: 'bulb', color: '#F59E0B', label: 'Insightful' },
-  { type: 'CELEBRATE', icon: 'sparkles', color: '#8B5CF6', label: 'Celebrate' },
-  { type: 'SMART_TAKE', icon: 'rocket', color: '#0EA5E9', label: 'Smart take' },
-];
-
-const REACTION_BY_TYPE = new Map(REACTIONS.map((r) => [r.type, r]));
-
-const reactionPickerStyles = StyleSheet.create({
-  // Large negative insets so a tap anywhere outside the bar dismisses the picker.
-  backdrop: { position: 'absolute', top: -1000, left: -1000, right: -1000, bottom: -1000, zIndex: 10 },
-  bar: {
-    position: 'absolute',
-    bottom: 42,
-    left: -6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-    zIndex: 20,
-  },
-  option: { padding: 3 },
-});
+const REACTION_BY_TYPE = POST_REACTION_BY_TYPE;
 
 interface ActionBarProps {
   liked: boolean;
@@ -249,90 +199,20 @@ const ActionBar = React.memo<ActionBarProps>(({
   styles, colors,
 }) => {
   const { t } = useTranslation();
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [spark, setSpark] = useState<{
-    token: number;
-    icon: keyof typeof Ionicons.glyphMap;
-    color: string;
-  } | null>(null);
-  const reactionMeta = myReaction ? REACTIONS.find((r) => r.type === myReaction) : null;
-
-  const openPicker = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPickerOpen(true);
-  }, []);
-
-  const handleReactPick = useCallback((type: string) => {
-    Haptics.selectionAsync();
-    setPickerOpen(false);
-    const meta = REACTION_BY_TYPE.get(type);
-    if (meta && (type === 'CELEBRATE' || type === 'INSIGHTFUL' || type === 'SMART_TAKE')) {
-      setSpark((prev) => ({
-        token: (prev?.token ?? 0) + 1,
-        icon: meta.icon,
-        color: meta.color,
-      }));
-    }
-    onReact?.(type);
-  }, [onReact]);
 
   return (
     <View style={styles.actionBar}>
     <View style={styles.actionBarLeft}>
-      <View>
-        {pickerOpen ? (
-          <>
-            <Pressable
-              onPress={() => setPickerOpen(false)}
-              style={reactionPickerStyles.backdrop}
-              accessibilityLabel={t('common.close')}
-            />
-            <Animated.View
-              entering={ZoomIn.springify().damping(14).stiffness(220)}
-              exiting={FadeOut.duration(120)}
-              style={[reactionPickerStyles.bar, { backgroundColor: colors.card }]}
-            >
-              {REACTIONS.map((r, index) => (
-                <Animated.View
-                  key={r.type}
-                  entering={ZoomIn.delay(40 + index * 35).springify().damping(12)}
-                >
-                  <Pressable
-                    onPress={() => handleReactPick(r.type)}
-                    hitSlop={8}
-                    style={reactionPickerStyles.option}
-                    accessibilityRole="button"
-                    accessibilityLabel={r.label}
-                  >
-                    <Ionicons name={r.icon} size={22} color={r.color} />
-                  </Pressable>
-                </Animated.View>
-              ))}
-            </Animated.View>
-          </>
-        ) : null}
-        {spark ? (
-          <ReactionSpark
-            token={spark.token}
-            icon={spark.icon}
-            color={spark.color}
-            onFinished={() => setSpark(null)}
-          />
-        ) : null}
-        <AnimatedActionButton
-          icon="heart-outline"
-          activeIcon={reactionMeta ? reactionMeta.icon : 'heart'}
-          active={liked}
-          count={likeCount}
-          color={colors.text}
-          activeColor={reactionMeta ? reactionMeta.color : '#EF4444'}
-          onPress={() => { setPickerOpen(false); onLike(); }}
-          onLongPress={onReact ? openPicker : undefined}
-          accessibilityLabel={t('feed.actions.like')}
-          textStyle={styles.actionText}
-          activeTextStyle={{ color: reactionMeta ? reactionMeta.color : '#EF4444' }}
-        />
-      </View>
+      <PostReactionButton
+        liked={liked}
+        myReaction={myReaction}
+        likeCount={likeCount}
+        onLike={onLike}
+        onReact={onReact}
+        cardColor={colors.card}
+        textColor={colors.text}
+        textStyle={styles.actionText}
+      />
       <AnimatedActionButton
         icon="chatbubble-outline"
         count={commentCount}
@@ -387,10 +267,8 @@ const ActionBar = React.memo<ActionBarProps>(({
   </View>
 )});
 
-// Social-proof summary: the distinct reaction types present on a post (stacked,
-// most-used first) + the total — the "who reacted, and how" signal. Renders
-// nothing until at least one known reaction exists, so it never duplicates a
-// bare like count.
+// Social-proof summary: stacked reaction types + total — shown only when
+// reactions go beyond a bare like count (ActionBar already shows heart + count).
 const ReactionSummary = React.memo<{
   counts?: Record<string, number>;
   styles: any;
@@ -401,6 +279,9 @@ const ReactionSummary = React.memo<{
     .filter(([type, n]) => n > 0 && REACTION_BY_TYPE.has(type))
     .sort((a, b) => b[1] - a[1]);
   if (entries.length === 0) return null;
+
+  const onlyLikes = entries.length === 1 && entries[0][0] === 'LIKE';
+  if (onlyLikes) return null;
 
   const total = entries.reduce((s, [, n]) => s + n, 0);
   const top = entries.slice(0, 3);
@@ -679,7 +560,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   }, [post.author.role, t]);
 
   const quizGradient = useMemo(
-    () => post.postType === 'QUIZ' ? getQuizGradient(post.id) : undefined,
+    () => post.postType === 'QUIZ' ? getQuizAccentGradient(post.id) : undefined,
     [post.postType, post.id]
   );
 

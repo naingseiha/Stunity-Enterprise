@@ -17,9 +17,10 @@ import { useNavigation } from '@react-navigation/native';
 
 import { ScalePressable } from '@/components/common';
 import { useThemeContext } from '@/contexts';
+import { Colors } from '@/config/theme';
 import { Haptics } from '@/services/haptics';
 
-const SYSTEM_BLUE = '#007AFF';
+const BRAND_PRIMARY = Colors.primary;
 
 export interface PostDetailQuizHeroProps {
   quizData: {
@@ -43,7 +44,6 @@ export function PostDetailQuizHero({
   quizData,
   postTitle,
   postContent,
-  accentColor,
 }: PostDetailQuizHeroProps) {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
@@ -56,7 +56,7 @@ export function PostDetailQuizHero({
     : t('feed.detail.unlimitedTime', { defaultValue: 'No limit' });
   const pointsLabel = String(quizData.totalPoints ?? 100);
   const hasAttempt = !!quizData.userAttempt;
-  const ctaColor = accentColor || SYSTEM_BLUE;
+  const ctaColor = BRAND_PRIMARY;
 
   const handleStart = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

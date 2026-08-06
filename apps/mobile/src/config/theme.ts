@@ -118,6 +118,9 @@ export const Colors = {
   error: '#EF4444' as const,
 };
 
+/** Primary CTA gradient — FAB, follow, quiz start, branded actions */
+export const BrandCtaGradient = ['#7DD3FC', '#0EA5E9', '#0284C7'] as const;
+
 // Export ColorScale for components that need the full palette
 export { ColorScale };
 

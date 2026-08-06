@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useThemeContext } from '@/contexts';
 import { View, Text, StyleSheet, Platform, LayoutChangeEvent } from 'react-native';
 import { ScalePressable } from '@/components/common';
@@ -15,6 +15,7 @@ import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
 import { postMediaTransitionTag } from '@/utils/postMediaTransition';
 import { renderPostBodyText } from '@/utils/renderEmojiText';
 import { feedBodyPreferKhmer, feedTextStyle, ACTIONABLE_FEED_CTA_TYPES } from '@/config/feedTypography';
+import { getQuizAccentGradient } from '@/utils/quizAccentColor';
 
 // Placeholder for missing types, adjust based on actual types
 interface PostContentProps {
@@ -102,9 +103,10 @@ const PostContent = ({
     post.mediaUrls,
   ]);
 
-  // Quiz Gradient logic - simplified or passed down
-  // Assuming quizGradient is handled inside QuizSection or passed if needed
-  // If QuizSection needs it, we might need to calculate it here or accept it as prop.
+  const quizAccentGradient = useMemo(
+    () => (post.postType === 'QUIZ' ? getQuizAccentGradient(post.id) : null),
+    [post.postType, post.id],
+  );
   // For now, I'll use the default logic seen in PostCard or pass it if expensive.
   // In PostCard it was useMemo.
 
@@ -244,15 +246,14 @@ const PostContent = ({
       )}
 
       {/* Quiz Card */}
-      {post.postType === 'QUIZ' && post.quizData && (
+      {post.postType === 'QUIZ' && post.quizData && quizAccentGradient && (
         <QuizSection
           quizData={post.quizData}
           postTitle={post.title}
           postContent={post.content}
           postId={post.id}
-          // Default colors if not passed
-          quizThemeColor={'#EC4899'}
-          quizGradient={['#EC4899', '#DB2777']}
+          quizThemeColor={quizAccentGradient[1]}
+          quizGradient={quizAccentGradient}
         />
       )}
 
