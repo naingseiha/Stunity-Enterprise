@@ -659,7 +659,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
     // the only contained card in the stream. White body, soft shadow,
     // generous radius, no border — depth comes from shadow alone.
     outer: {
-      paddingVertical: 16,
+      paddingVertical: 12,
       paddingHorizontal: 16,
       backgroundColor: colors.card,
       borderBottomWidth: 1,
@@ -671,7 +671,7 @@ const createStyles = (colors: any, isDark: boolean, subject: SubjectVisual) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
-      marginBottom: 12,
+      marginBottom: 8,
     },
     iconWrapHeader: {
       width: 38,

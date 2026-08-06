@@ -163,7 +163,7 @@ type QuizCarouselStyles = {
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCarouselStyles>({
   container: {
     backgroundColor: colors.card,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
   },
@@ -172,7 +172,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create<QuizCar
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   headerLeft: {
     flexDirection: 'row',

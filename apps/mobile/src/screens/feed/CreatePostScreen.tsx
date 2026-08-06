@@ -9,7 +9,7 @@
  * - Gradient header and polished UI
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -53,6 +53,7 @@ import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 import { metadataFromPickerAsset } from '@/utils/mediaMetadata';
 import { materializePickedMediaAsset } from '@/utils/localMediaCache';
+import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; labelKey: string; titleKey: string; color: string; gradient: [string, string] }[] = [
@@ -156,13 +157,20 @@ export default function CreatePostScreen() {
     const { t: autoT } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user } = useAuthStore();
   const { createPost } = useFeedStore();
 
   const [content, setContent] = useState('');
+  const contentInputTypography = useMemo(
+    () => feedTextStyle('bodyDetail', {
+      preferKhmer: feedBodyPreferKhmer(content, i18n.resolvedLanguage || i18n.language),
+      color: colors.text,
+    }),
+    [content, i18n.resolvedLanguage, i18n.language, colors.text],
+  );
   const [postTitle, setPostTitle] = useState('');
   const [postType, setPostType] = useState<PostType>(route.params?.initialPostType || route.params?.postType || 'ARTICLE');
   const [visibility, setVisibility] = useState('PUBLIC');
@@ -636,7 +644,7 @@ export default function CreatePostScreen() {
 
           {/* Content Input */}
           <TextInput
-            style={styles.contentInput}
+            style={[styles.contentInput, contentInputTypography]}
             placeholder={t('feed.createPost.contentPlaceholder')}
             placeholderTextColor={colors.textTertiary}
             multiline
@@ -1226,14 +1234,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   contentInput: {
     flex: 1,
-    fontSize: 17,
-    color: colors.text,
     paddingHorizontal: 24,
     paddingTop: 16,
     minHeight: 140,
     textAlignVertical: 'top',
     letterSpacing: 0.2,
-    lineHeight: 26,
   },
 
   /* ─── Post Type Selector (Horizontal) ─── */
