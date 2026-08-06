@@ -10,9 +10,12 @@ import {
   useEffect,
   useRef,
 } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import MobileTopBar from "@/components/mobile/MobileTopBar";
+import PWAInstallBanner from "@/components/mobile/PWAInstallBanner";
 import {
   Home,
   GraduationCap,
@@ -89,6 +92,7 @@ import {
 } from "@/lib/route-data-cache";
 import { formatEducationModelLabel } from "@/lib/educationModel";
 import { isSchoolAttendanceAdminRole } from "@/lib/permissions/schoolAttendance";
+import GlobalSearch from "@/components/search/GlobalSearch";
 
 interface UnifiedNavProps {
   user?: any;
@@ -157,14 +161,11 @@ export default function UnifiedNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, toggleTheme } = useTheme();
-  const searchParams = useSearchParams();
   const locale = pathname.split("/")[1] || "en";
   const [, startTransition] = useTransition();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [schoolMenuQuery, setSchoolMenuQuery] = useState("");
   const [expandedSchoolSections, setExpandedSchoolSections] = useState<
     Record<string, boolean>
@@ -181,25 +182,9 @@ export default function UnifiedNavigation({
   const navFeedbackDedupRef = useRef<{ path: string; at: number } | null>(null);
   const navFeedbackTimeoutRef = useRef<number | null>(null);
 
-  // Sync search query with URL
-  useEffect(() => {
-    const q = searchParams?.get("q");
-    if (q) setSearchQuery(q);
-  }, [searchParams]);
-
   useEffect(() => {
     setIsHydrated(true);
   }, []);
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      startTransition(() => {
-        router.push(
-          `/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`,
-        );
-      });
-    }
-  };
 
   // Optimistic navigation - track clicked path for instant feedback
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
@@ -1199,9 +1184,24 @@ export default function UnifiedNavigation({
 
   return (
     <>
+      {/* ═══ MOBILE NAVIGATION (hidden on desktop) ═══ */}
+      <MobileTopBar
+        locale={locale}
+        user={user}
+        school={school}
+      />
+      <MobileBottomNav
+        locale={locale}
+        user={user}
+        school={school}
+      />
+      <PWAInstallBanner locale={locale} />
+
+      {/* ═══ DESKTOP NAVIGATION (hidden on mobile) ═══ */}
       {/* Flat, Apple-inspired application menubar */}
       <nav
         className={`
+        hidden md:block
         kh-navigation-font sticky top-0 z-50 border-b transition-colors duration-200
         ${
           scrolled
@@ -1310,43 +1310,9 @@ export default function UnifiedNavigation({
               </div>
             </div>
 
-            {/* Center Search - Expandable */}
-            <div
-              className={`
-              hidden lg:flex items-center transition-all duration-300 ease-out
-              ${searchFocused ? "flex-1 max-w-md mx-2" : "w-44 xl:w-56"}
-            `}
-            >
-              <div className="relative w-full group">
-                <Search
-                  className={`
-                  absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200
-                  ${searchFocused ? "text-slate-700 dark:text-slate-200" : "text-slate-400 group-hover:text-slate-600"}
-                `}
-                />
-                <input
-                  type="text"
-                  placeholder={autoT(
-                    "auto.web.components_UnifiedNavigation.k_1b8d4e99",
-                  )}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  onKeyDown={handleSearchKeyDown}
-                  className={`
-                    w-full rounded-lg border border-transparent bg-transparent py-2 pl-9 pr-4 text-[12px] transition-all duration-200
-                    placeholder:text-gray-400 dark:placeholder:text-gray-500
-                    hover:bg-slate-100/80 dark:hover:bg-slate-900
-                    focus:border-slate-200 focus:bg-slate-50 focus:outline-none dark:focus:border-slate-800 dark:focus:bg-slate-900
-                  `}
-                />
-                {searchFocused && (
-                  <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-200/80 dark:bg-gray-700 rounded">
-                    <AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_7e99a5d5" />
-                  </kbd>
-                )}
-              </div>
+            {/* Center Search - typeahead + ⌘K */}
+            <div className="mx-2 hidden max-w-md flex-1 items-center lg:flex">
+              <GlobalSearch compact />
             </div>
 
             {/* Right Actions */}

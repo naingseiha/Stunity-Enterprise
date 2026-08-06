@@ -1,513 +1,877 @@
 'use client';
 
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useEffect, useState, useCallback, use } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { TokenManager } from '@/lib/api/auth';
+import { useTranslations } from 'next-intl';
+import {
+  ArrowLeft,
+  BookOpen,
+  Clock3,
+  FileText,
+  Filter,
+  ImageIcon,
+  Loader2,
+  MessageCircle,
+  Search,
+  TrendingUp,
+  Users,
+  UsersRound,
+  X,
+} from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PostCard from '@/components/feed/PostCard';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
-import { feedApiPostToPost, feedPostToCardData } from '@/lib/feed-normalize';
-import {
-    Search,
-    Users,
-    FileText,
-    Loader2,
-    ArrowLeft,
-    MessageCircle,
-    Filter
-} from 'lucide-react';
+import GlobalSearch from '@/components/search/GlobalSearch';
+import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
-
-import { useTranslations } from 'next-intl';
-const POST_TYPE_OPTIONS: { value: string; label: string }[] = [
-    { value: '', label: 'All types' },
-    { value: 'ARTICLE', label: 'Article' },
-    { value: 'QUESTION', label: 'Question' },
-    { value: 'QUIZ', label: 'Quiz' },
-    { value: 'POLL', label: 'Poll' },
-    { value: 'ANNOUNCEMENT', label: 'Announcement' },
-    { value: 'EVENT', label: 'Event' },
-    { value: 'COURSE', label: 'Course' },
-    { value: 'TUTORIAL', label: 'Tutorial' },
-];
+import {
+  fetchUnifiedSearch,
+  filterMediaPosts,
+  formatRole,
+  getInitials,
+  sortPosts,
+  type SearchClub,
+  type SearchCourse,
+  type SearchUser,
+} from '@/lib/search/api';
+import {
+  POST_TYPE_FILTERS,
+  TRENDING_TOPICS,
+  type SearchTab,
+  type SortMode,
+} from '@/lib/search/constants';
+import {
+  clearRecentSearches,
+  getRecentSearches,
+  removeRecentSearch,
+  saveRecentSearch,
+} from '@/lib/search/recentSearches';
 
 export default function SearchPage(props: { params: Promise<{ locale: string }> }) {
-    const params = use(props.params);
+  const params = use(props.params);
+  const { locale } = params;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const query = searchParams?.get('q') || '';
+  const t = useTranslations('common.search');
+  const tSort = useTranslations('common.sort');
 
-    const {
-        locale
-    } = params;
+  const [user, setUser] = useState<any>(null);
+  const [school, setSchool] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
-    const router = useRouter();
-  const t = useTranslations('common');
-    const searchParams = useSearchParams();
-    const query = searchParams?.get('q') || '';
+  const [users, setUsers] = useState<SearchUser[]>([]);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [clubs, setClubs] = useState<SearchClub[]>([]);
+  const [courses, setCourses] = useState<SearchCourse[]>([]);
+  const [recent, setRecent] = useState<string[]>([]);
 
-    const [user, setUser] = useState<any>(null);
-    const [school, setSchool] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<SearchTab>('all');
+  const [postTypeFilter, setPostTypeFilter] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('top');
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
 
-    const [users, setUsers] = useState<any[]>([]);
-    const [posts, setPosts] = useState<any[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-    // Tab state: 'all', 'users', 'posts'
-    const [activeTab, setActiveTab] = useState<'all' | 'users' | 'posts'>('all');
-    const [postTypeFilter, setPostTypeFilter] = useState<string>('');
-    const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-    const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
+  useEffect(() => {
+    const token = TokenManager.getAccessToken();
+    if (!token) {
+      router.replace(`/${locale}/auth/login`);
+      return;
+    }
+    const userData = TokenManager.getUserData();
+    setUser(userData.user);
+    setSchool(userData.school);
+    setRecent(getRecentSearches());
+    setLoading(false);
+  }, [locale, router]);
 
-    useEffect(() => {
-        const token = TokenManager.getAccessToken();
-        if (!token) {
-            router.replace(`/${locale}/auth/login`);
-            return;
-        }
-
-        const userData = TokenManager.getUserData();
-        setUser(userData.user);
-        setSchool(userData.school);
-        setLoading(false);
-    }, [locale, router]);
-
-    const performSearch = useCallback(async () => {
-        if (!query.trim()) {
-            setUsers([]);
-            setPosts([]);
-            return;
-        }
-
-        const token = TokenManager.getAccessToken();
-        if (!token) return;
-
-        setIsSearching(true);
-        try {
-            // Fetch matching users
-            const usersRes = fetch(`${FEED_SERVICE_URL}/users/search?q=${encodeURIComponent(query)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            // Fetch matching posts (optionally filter by post type)
-            const postsParams = new URLSearchParams({ search: query, limit: '20' });
-            if (postTypeFilter) postsParams.set('type', postTypeFilter);
-            const postsRes = fetch(`${FEED_SERVICE_URL}/posts?${postsParams}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const [uRes, pRes] = await Promise.all([usersRes, postsRes]);
-
-            if (uRes.ok) {
-                const uData = await uRes.json();
-                if (uData.success) {
-                    // Filter out the current user from results if they appear
-                    setUsers((uData.users || uData.data || []).filter((u: any) => u.id !== user?.id));
-                }
-            }
-
-            if (pRes.ok) {
-                const pData = await pRes.json();
-                if (pData.success) {
-                    const mapped = (pData.data || [])
-                        .map((raw: unknown) => {
-                            const normalized = feedApiPostToPost(raw);
-                            return normalized ? feedPostToCardData(normalized) : null;
-                        })
-                        .filter(Boolean);
-                    setPosts(mapped as any[]);
-                }
-            }
-        } catch (error) {
-            console.error('Search error:', error);
-        } finally {
-            setIsSearching(false);
-        }
-    }, [query, postTypeFilter, user?.id]);
-
-    useEffect(() => {
-        if (user && query) {
-            performSearch();
-        }
-    }, [user, query, performSearch]);
-
-    const handleLogout = async () => {
-        await TokenManager.logout();
-        router.replace(`/${locale}/auth/login`);
-    };
-
-    const getInitials = (firstName: string, lastName: string) => {
-        return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
-    };
-
-    const handleReact = async (postId: string, type: string) => {
-        const token = TokenManager.getAccessToken();
-        if (!token) return;
-        const current = posts.find((p) => p.id === postId);
-        const prevReaction = current?.myReaction ?? (current?.isLiked ? 'LIKE' : null);
-        const prevCount = current?.likesCount ?? 0;
-
-        let nextReaction: string | null = type;
-        let nextCount = prevCount;
-        if (prevReaction === type) {
-            nextReaction = null;
-            nextCount = Math.max(0, prevCount - 1);
-        } else if (!prevReaction) {
-            nextCount = prevCount + 1;
-        }
-
-        setPosts((prev) =>
-            prev.map((p) =>
-                p.id === postId
-                    ? {
-                          ...p,
-                          myReaction: nextReaction,
-                          isLiked: Boolean(nextReaction),
-                          likesCount: nextCount,
-                      }
-                    : p,
-            ),
-        );
-
-        try {
-            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/react`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ type }),
-            });
-            const data = await res.json();
-            if (!data.success) throw new Error('react failed');
-            setPosts((prev) =>
-                prev.map((p) =>
-                    p.id === postId
-                        ? {
-                              ...p,
-                              myReaction: data.myReaction ?? null,
-                              isLiked: Boolean(data.myReaction),
-                          }
-                        : p,
-                ),
-            );
-        } catch (err) {
-            console.error('React error:', err);
-            setPosts((prev) =>
-                prev.map((p) =>
-                    p.id === postId
-                        ? {
-                              ...p,
-                              myReaction: prevReaction,
-                              isLiked: Boolean(prevReaction),
-                              likesCount: prevCount,
-                          }
-                        : p,
-                ),
-            );
-        }
-    };
-
-    const handleLike = async (postId: string) => {
-        return handleReact(postId, 'LIKE');
-    };
-
-    const handleComment = async (postId: string, content: string, parentId?: string) => {
-        const token = TokenManager.getAccessToken();
-        if (!token || !content?.trim()) return;
-        try {
-            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/comments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ content: content.trim(), parentId: parentId || null })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setPosts(prev => prev.map(p =>
-                    p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
-                ));
-            }
-        } catch (err) {
-            console.error('Comment error:', err);
-        }
-    };
-
-    const handleBookmark = async (postId: string) => {
-        const token = TokenManager.getAccessToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/bookmark`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.success) {
-                setPosts(prev => prev.map(p =>
-                    p.id === postId ? { ...p, isBookmarked: data.bookmarked } : p
-                ));
-            }
-        } catch (err) {
-            console.error('Bookmark error:', err);
-        }
-    };
-
-    const handleShare = async (postId: string) => {
-        const token = TokenManager.getAccessToken();
-        if (!token) return;
-        try {
-            await fetch(`${FEED_SERVICE_URL}/posts/${postId}/share`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-        } catch (err) {
-            console.error('Share error:', err);
-        }
-    };
-
-    const handleRepost = async (postId: string) => {
-        // PostCard RepostComposerModal owns the API call.
-        setPosts(prev => prev.map(p =>
-            p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
-        ));
-    };
-
-    const handleVote = async (postId: string, optionId: string) => {
-        const token = TokenManager.getAccessToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/vote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ optionId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setPosts(prev => prev.map(post => {
-                    if (post.id !== postId) return post;
-                    return {
-                        ...post,
-                        userVotedOptionId: optionId,
-                        pollOptions: post.pollOptions?.map((opt: any) => ({
-                            ...opt,
-                            _count: { votes: opt.id === optionId ? ((opt._count?.votes || 0) + 1) : (opt._count?.votes || 0) }
-                        }))
-                    };
-                }));
-            }
-        } catch (err) {
-            console.error('Vote error:', err);
-        }
-    };
-
-    const handleViewAnalytics = (postId: string) => {
-        setSelectedPostForAnalytics(postId);
-        setShowAnalyticsModal(true);
-    };
-
-    const noop = () => { };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-            </div>
-        );
+  const performSearch = useCallback(async () => {
+    if (!query.trim()) {
+      setUsers([]);
+      setPosts([]);
+      setClubs([]);
+      setCourses([]);
+      return;
     }
 
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex flex-col">
-            {/* Search Header explicitly uses UnifiedNavigation so it connects to standard platform headers */}
-            <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
 
-            <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-                <div className="mb-8 pl-64">
-                    <Link href={`/${locale}/feed`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 dark:text-white mb-4 transition-colors">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_41743f1f" />
-                    </Link>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Search className="w-8 h-8 text-blue-600" />
-                        <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_07f64258" />{query}"
-                    </h1>
-                </div>
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsSearching(true);
 
-                <div className="pl-64">
-                    {/* Post type filter (when searching posts) */}
-                    {query && (
-                        <div className="flex items-center gap-3 mb-4">
-                            <Filter className="w-4 h-4 text-gray-500" />
-                            <select
-                                value={postTypeFilter}
-                                onChange={(e) => setPostTypeFilter(e.target.value)}
-                                className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            >
-                                {POST_TYPE_OPTIONS.map(opt => (
-                                    <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+    try {
+      const result = await fetchUnifiedSearch({
+        query,
+        token,
+        postType: postTypeFilter,
+        userLimit: 24,
+        postLimit: 24,
+        clubLimit: 16,
+        courseLimit: 16,
+        signal: controller.signal,
+      });
 
-                    {/* Tabs */}
-                    <div className="flex space-x-1 bg-white dark:bg-gray-900 p-1 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 mb-6 max-w-md">
-                        <button
-                            onClick={() => setActiveTab('all')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'all'
-                                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
-                                }`}
-                        >
-                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_9e1953fc" />
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('users')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'users'
-                                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
-                                }`}
-                        >
-                            <Users className="w-4 h-4" />
-                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_afe7e133" />{users.length})
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('posts')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'posts'
-                                    ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
-                                }`}
-                        >
-                            <FileText className="w-4 h-4" />
-                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_a8f8a393" />{posts.length})
-                        </button>
-                    </div>
+      if (controller.signal.aborted) return;
 
-                    {isSearching ? (
-                        <div className="flex flex-col items-center justify-center py-20">
-                            <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                            <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_fa333cb5" /></p>
-                        </div>
-                    ) : (!users.length && !posts.length) ? (
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-12 text-center">
-                            <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Search className="w-10 h-10 text-gray-400" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_f360612c" /></h2>
-                            <p className="text-gray-500 max-w-md mx-auto">
-                                <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_7116c7ec" />{query}<AutoI18nText i18nKey="auto.web.app_locale_search_page.k_32c94ec5" />
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      setUsers(result.users.filter((u) => u.id !== user?.id));
+      setPosts(result.posts);
+      setClubs(result.clubs);
+      setCourses(result.courses);
+      setRecent(saveRecentSearch(query));
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        console.error('Search error:', error);
+      }
+    } finally {
+      if (!controller.signal.aborted) setIsSearching(false);
+    }
+  }, [postTypeFilter, query, user?.id]);
 
-                            {/* Main Content Area */}
-                            <div className="lg:col-span-8 space-y-8">
+  useEffect(() => {
+    if (user && query) {
+      performSearch();
+    }
+    return () => abortRef.current?.abort();
+  }, [user, query, performSearch]);
 
-                                {/* Users Section */}
-                                {(activeTab === 'all' || activeTab === 'users') && users.length > 0 && (
-                                    <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                            <Users className="w-5 h-5 text-gray-400" />
-                                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_f18dfa93" />
-                                        </h2>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {users.map(u => (
-                                                <div key={u.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 flex items-center justify-between hover:shadow-md transition-shadow">
-                                                    <Link href={`/${locale}/profile/${u.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                                                        {u.profilePictureUrl ? (
-                                                            <img src={u.profilePictureUrl} alt="" className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100" />
-                                                        ) : (
-                                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                                                                {getInitials(u.firstName, u.lastName)}
-                                                            </div>
-                                                        )}
-                                                        <div className="min-w-0">
-                                                            <p className="font-semibold text-gray-900 dark:text-white truncate">
-                                                                {u.firstName} {u.lastName}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500 truncate capitalize">
-                                                                {u.role?.toLowerCase().replace('_', ' ')}
-                                                            </p>
-                                                        </div>
-                                                    </Link>
-                                                    <Link href={`/${locale}/messages?c=new&user=${u.id}`} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors ml-2">
-                                                        <MessageCircle className="w-5 h-5" />
-                                                    </Link>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </section>
-                                )}
+  useEffect(() => {
+    setActiveTab('all');
+  }, [query]);
 
-                                {/* Posts Section */}
-                                {(activeTab === 'all' || activeTab === 'posts') && posts.length > 0 && (
-                                    <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                            <FileText className="w-5 h-5 text-gray-400" />
-                                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_4143cbd4" />
-                                        </h2>
-                                        <div className="space-y-4">
-                                            {posts.map(post => (
-                                                <PostCard
-                                                    key={post.id}
-                                                    post={post}
-                                                    onLike={handleLike}
-                                                    onReact={handleReact}
-                                                    onComment={handleComment}
-                                                    onBookmark={handleBookmark}
-                                                    onShare={handleShare}
-                                                    onRepost={handleRepost}
-                                                    onDelete={noop}
-                                                    onEdit={noop}
-                                                    onVote={handleVote}
-                                                    onViewAnalytics={handleViewAnalytics}
-                                                    currentUserId={user?.id}
-                                                />
-                                            ))}
-                                        </div>
-                                    </section>
-                                )}
-                            </div>
+  const sortedPosts = useMemo(() => sortPosts(posts, sortMode), [posts, sortMode]);
+  const mediaPosts = useMemo(() => filterMediaPosts(sortedPosts), [sortedPosts]);
 
-                            {/* Sidebar Insights */}
-                            <div className="hidden lg:block lg:col-span-4">
-                                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 sticky top-24">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_74fd40a1" /></h3>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                            <span className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_157cfc37" /></span>
-                                            <span className="font-semibold text-gray-900 dark:text-white">{users.length + posts.length}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100/50">
-                                            <div className="flex items-center gap-2 text-blue-700">
-                                                <Users className="w-4 h-4" />
-                                                <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_8b541735" /></span>
-                                            </div>
-                                            <span className="font-semibold text-blue-700">{users.length}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between p-3 bg-amber-50/50 rounded-lg border border-amber-100/50">
-                                            <div className="flex items-center gap-2 text-amber-700">
-                                                <FileText className="w-4 h-4" />
-                                                <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_7b997516" /></span>
-                                            </div>
-                                            <span className="font-semibold text-amber-700">{posts.length}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+  const tabs = useMemo(
+    () =>
+      [
+        { key: 'all' as const, label: t('everything'), count: users.length + posts.length + clubs.length + courses.length },
+        { key: 'people' as const, label: t('people'), count: users.length, icon: Users },
+        { key: 'posts' as const, label: t('posts'), count: posts.length, icon: FileText },
+        { key: 'clubs' as const, label: t('clubs'), count: clubs.length, icon: UsersRound },
+        { key: 'courses' as const, label: t('courses'), count: courses.length, icon: BookOpen },
+        { key: 'media' as const, label: t('media'), count: mediaPosts.length, icon: ImageIcon },
+      ] as const,
+    [clubs.length, courses.length, mediaPosts.length, posts.length, t, users.length],
+  );
 
-                        </div>
-                    )}
-                </div>
-            </main>
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.replace(`/${locale}/auth/login`);
+  };
 
-            {selectedPostForAnalytics && (
-                <PostAnalyticsModal
-                    isOpen={showAnalyticsModal}
-                    onClose={() => { setShowAnalyticsModal(false); setSelectedPostForAnalytics(null); }}
-                    postId={selectedPostForAnalytics}
-                    apiUrl={FEED_SERVICE_URL}
-                />
-            )}
-        </div>
+  const navigateSearch = (term: string) => {
+    const trimmed = term.trim();
+    if (!trimmed) return;
+    setRecent(saveRecentSearch(trimmed));
+    router.push(`/${locale}/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  const handleReact = async (postId: string, type: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    const current = posts.find((p) => p.id === postId);
+    const prevReaction = current?.myReaction ?? (current?.isLiked ? 'LIKE' : null);
+    const prevCount = current?.likesCount ?? 0;
+
+    let nextReaction: string | null = type;
+    let nextCount = prevCount;
+    if (prevReaction === type) {
+      nextReaction = null;
+      nextCount = Math.max(0, prevCount - 1);
+    } else if (!prevReaction) {
+      nextCount = prevCount + 1;
+    }
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? { ...p, myReaction: nextReaction, isLiked: Boolean(nextReaction), likesCount: nextCount }
+          : p,
+      ),
     );
+
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/react`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error('react failed');
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, myReaction: data.myReaction ?? null, isLiked: Boolean(data.myReaction) }
+            : p,
+        ),
+      );
+    } catch (err) {
+      console.error('React error:', err);
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? { ...p, myReaction: prevReaction, isLiked: Boolean(prevReaction), likesCount: prevCount }
+            : p,
+        ),
+      );
+    }
+  };
+
+  const handleLike = async (postId: string) => handleReact(postId, 'LIKE');
+
+  const handleComment = async (postId: string, content: string, parentId?: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token || !content?.trim()) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content: content.trim(), parentId: parentId || null }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p)),
+        );
+      }
+    } catch (err) {
+      console.error('Comment error:', err);
+    }
+  };
+
+  const handleBookmark = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/bookmark`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, isBookmarked: data.bookmarked } : p)),
+        );
+      }
+    } catch (err) {
+      console.error('Bookmark error:', err);
+    }
+  };
+
+  const handleShare = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      await fetch(`${FEED_SERVICE_URL}/posts/${postId}/share`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error('Share error:', err);
+    }
+  };
+
+  const handleRepost = async (postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p)),
+    );
+  };
+
+  const handleVote = async (postId: string, optionId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ optionId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts((prev) =>
+          prev.map((post) => {
+            if (post.id !== postId) return post;
+            return {
+              ...post,
+              userVotedOptionId: optionId,
+              pollOptions: post.pollOptions?.map((opt: any) => ({
+                ...opt,
+                _count: {
+                  votes:
+                    opt.id === optionId
+                      ? (opt._count?.votes || 0) + 1
+                      : opt._count?.votes || 0,
+                },
+              })),
+            };
+          }),
+        );
+      }
+    } catch (err) {
+      console.error('Vote error:', err);
+    }
+  };
+
+  const noop = () => {};
+
+  const renderPeople = (list: SearchUser[], limit?: number) => {
+    const items = typeof limit === 'number' ? list.slice(0, limit) : list;
+    return (
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+        {items.map((u, index) => (
+          <div
+            key={u.id}
+            className={`flex items-center gap-3 px-4 py-3.5 transition hover:bg-slate-50 dark:hover:bg-slate-900/60 ${
+              index > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''
+            }`}
+          >
+            <Link href={`/${locale}/profile/${u.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+              {u.profilePictureUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={u.profilePictureUrl}
+                  alt=""
+                  className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-800"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-slate-900 text-sm font-semibold text-white">
+                  {getInitials(u.firstName, u.lastName)}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-slate-900 dark:text-white">
+                  {u.firstName} {u.lastName}
+                </p>
+                <p className="truncate text-xs capitalize text-slate-500">
+                  {u.headline || u.professionalTitle || formatRole(u.role)}
+                </p>
+              </div>
+            </Link>
+            <Link
+              href={`/${locale}/messages?c=new&user=${u.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              {t('message')}
+            </Link>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderClubs = (list: SearchClub[], limit?: number) => {
+    const items = typeof limit === 'number' ? list.slice(0, limit) : list;
+    return (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {items.map((club) => (
+          <Link
+            key={club.id}
+            href={`/${locale}/clubs/${club.id}`}
+            className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
+          >
+            <div className="flex items-start gap-3">
+              {club.avatarUrl || club.coverImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={club.avatarUrl || club.coverImageUrl || ''}
+                  alt=""
+                  className="h-12 w-12 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                  <UsersRound className="h-5 w-5" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-slate-900 dark:text-white">{club.name}</p>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {club.category || t('clubs')} · {t('members', { count: club.memberCount || 0 })}
+                </p>
+                {club.description && (
+                  <p className="mt-2 line-clamp-2 text-xs text-slate-500">{club.description}</p>
+                )}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  };
+
+  const renderCourses = (list: SearchCourse[], limit?: number) => {
+    const items = typeof limit === 'number' ? list.slice(0, limit) : list;
+    return (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {items.map((course) => (
+          <Link
+            key={course.id}
+            href={`/${locale}/learn/course/${course.id}`}
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
+          >
+            <div className="flex gap-3 p-3">
+              {course.thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={course.thumbnailUrl}
+                  alt=""
+                  className="h-16 w-20 shrink-0 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-900">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+              )}
+              <div className="min-w-0 py-0.5">
+                <p className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white">
+                  {course.title}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {course.level || course.category || t('courses')}
+                  {typeof course.enrollmentCount === 'number'
+                    ? ` · ${t('enrolled', { count: course.enrollmentCount })}`
+                    : ''}
+                </p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  };
+
+  const renderPosts = (list: any[]) => (
+    <div className="space-y-4">
+      {list.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          onLike={handleLike}
+          onReact={handleReact}
+          onComment={handleComment}
+          onBookmark={handleBookmark}
+          onShare={handleShare}
+          onRepost={handleRepost}
+          onDelete={noop}
+          onEdit={noop}
+          onVote={handleVote}
+          onViewAnalytics={(postId) => {
+            setSelectedPostForAnalytics(postId);
+            setShowAnalyticsModal(true);
+          }}
+          currentUserId={user?.id}
+        />
+      ))}
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-700 dark:text-slate-200" />
+      </div>
+    );
+  }
+
+  const hasResults =
+    users.length > 0 || posts.length > 0 || clubs.length > 0 || courses.length > 0;
+
+  return (
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:pl-72 lg:pr-6">
+        <div className="mb-6 flex flex-col gap-4">
+          <Link
+            href={`/${locale}/feed`}
+            className="inline-flex w-fit items-center text-sm text-slate-500 transition hover:text-slate-900 dark:hover:text-white"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('backToFeed')}
+          </Link>
+
+          <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 sm:p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+                <Search className="h-4 w-4" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900 dark:text-white sm:text-xl">
+                  {query ? (
+                    <>
+                      {t('resultsFor')} <span className="text-slate-500">“{query}”</span>
+                    </>
+                  ) : (
+                    t('idleTitle')
+                  )}
+                </h1>
+                <p className="text-xs text-slate-500 sm:text-sm">
+                  {query
+                    ? t('resultsSummaryFull', {
+                        people: users.length,
+                        posts: posts.length,
+                        clubs: clubs.length,
+                        courses: courses.length,
+                      })
+                    : t('idleSubtitle')}
+                </p>
+              </div>
+            </div>
+            <GlobalSearch />
+          </div>
+        </div>
+
+        {!query ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="space-y-6 lg:col-span-8">
+              {recent.length > 0 && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t('recent')}</h2>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearRecentSearches();
+                        setRecent([]);
+                      }}
+                      className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    >
+                      {t('clearAll')}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recent.map((term) => (
+                      <div
+                        key={term}
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 pl-3 pr-1.5 py-1.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                      >
+                        <button type="button" onClick={() => navigateSearch(term)} className="inline-flex items-center gap-1.5">
+                          <Clock3 className="h-3.5 w-3.5 text-slate-400" />
+                          {term}
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={t('removeRecent')}
+                          onClick={() => setRecent(removeRecentSearch(term))}
+                          className="rounded-full p-1 hover:bg-slate-200/80 dark:hover:bg-slate-800"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
+                <div className="mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-amber-500" />
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t('trending')}</h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {TRENDING_TOPICS.map((topic) => (
+                    <button
+                      key={topic}
+                      type="button"
+                      onClick={() => navigateSearch(topic)}
+                      className="rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
+                <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">
+                  {t('exploreByType')}
+                </h2>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {POST_TYPE_FILTERS.filter((item) => item.value).map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => navigateSearch(item.value.toLowerCase())}
+                      className="rounded-xl border border-slate-200 px-3 py-3 text-left text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+                    >
+                      {t(item.labelKey)}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <aside className="space-y-4 lg:col-span-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
+                <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
+                  {t('trySearching')}
+                </h3>
+                <div className="space-y-2">
+                  <Link
+                    href={`/${locale}/learn`}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    {t('browseLearn')}
+                  </Link>
+                  <Link
+                    href={`/${locale}/clubs`}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+                  >
+                    <UsersRound className="h-4 w-4" />
+                    {t('browseClubs')}
+                  </Link>
+                </div>
+              </div>
+            </aside>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <Filter className="h-4 w-4 shrink-0 text-slate-400" />
+                <select
+                  value={postTypeFilter}
+                  onChange={(e) => setPostTypeFilter(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                >
+                  {POST_TYPE_FILTERS.map((opt) => (
+                    <option key={opt.value || 'all'} value={opt.value}>
+                      {t(opt.labelKey)}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-950">
+                  {(['top', 'recent', 'popular'] as SortMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setSortMode(mode)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                        sortMode === mode
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {tSort(mode)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-950">
+              {tabs.map((tab) => {
+                const Icon = 'icon' in tab ? tab.icon : null;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
+                      activeTab === tab.key
+                        ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900'
+                    }`}
+                  >
+                    {Icon ? <Icon className="h-4 w-4" /> : null}
+                    {tab.label}
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                        activeTab === tab.key
+                          ? 'bg-white/20 dark:bg-slate-900/10'
+                          : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {isSearching ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="mb-4 h-10 w-10 animate-spin text-slate-700 dark:text-slate-200" />
+                <p className="text-slate-500">{t('searching')}</p>
+              </div>
+            ) : !hasResults ? (
+              <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center dark:border-slate-800 dark:bg-slate-950">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-900">
+                  <Search className="h-7 w-7 text-slate-400" />
+                </div>
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{t('noResults')}</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{t('noResultsSub')}</p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  <Link
+                    href={`/${locale}/learn`}
+                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
+                  >
+                    {t('browseLearn')}
+                  </Link>
+                  <Link
+                    href={`/${locale}/clubs`}
+                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
+                  >
+                    {t('browseClubs')}
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+                <div className="space-y-8 lg:col-span-8">
+                  {(activeTab === 'all' || activeTab === 'people') && users.length > 0 && (
+                    <section>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+                          <Users className="h-4 w-4 text-slate-400" />
+                          {t('people')}
+                        </h2>
+                        {activeTab === 'all' && users.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('people')}
+                            className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          >
+                            {t('seeAllPeople')}
+                          </button>
+                        )}
+                      </div>
+                      {renderPeople(users, activeTab === 'all' ? 4 : undefined)}
+                    </section>
+                  )}
+
+                  {(activeTab === 'all' || activeTab === 'clubs') && clubs.length > 0 && (
+                    <section>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+                          <UsersRound className="h-4 w-4 text-slate-400" />
+                          {t('clubs')}
+                        </h2>
+                        {activeTab === 'all' && clubs.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('clubs')}
+                            className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          >
+                            {t('seeAllClubs')}
+                          </button>
+                        )}
+                      </div>
+                      {renderClubs(clubs, activeTab === 'all' ? 4 : undefined)}
+                    </section>
+                  )}
+
+                  {(activeTab === 'all' || activeTab === 'courses') && courses.length > 0 && (
+                    <section>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+                          <BookOpen className="h-4 w-4 text-slate-400" />
+                          {t('courses')}
+                        </h2>
+                        {activeTab === 'all' && courses.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('courses')}
+                            className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          >
+                            {t('seeAllCourses')}
+                          </button>
+                        )}
+                      </div>
+                      {renderCourses(courses, activeTab === 'all' ? 4 : undefined)}
+                    </section>
+                  )}
+
+                  {(activeTab === 'all' || activeTab === 'posts') && sortedPosts.length > 0 && (
+                    <section>
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+                          <FileText className="h-4 w-4 text-slate-400" />
+                          {t('posts')}
+                        </h2>
+                        {activeTab === 'all' && sortedPosts.length > 3 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('posts')}
+                            className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          >
+                            {t('seeAllPosts')}
+                          </button>
+                        )}
+                      </div>
+                      {renderPosts(activeTab === 'all' ? sortedPosts.slice(0, 3) : sortedPosts)}
+                    </section>
+                  )}
+
+                  {activeTab === 'media' && (
+                    <section>
+                      {mediaPosts.length > 0 ? (
+                        renderPosts(mediaPosts)
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center text-sm text-slate-500 dark:border-slate-800">
+                          {t('noResults')}
+                        </div>
+                      )}
+                    </section>
+                  )}
+                </div>
+
+                <aside className="hidden lg:col-span-4 lg:block">
+                  <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
+                    <h3 className="mb-4 font-semibold text-slate-900 dark:text-white">{t('insights')}</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900">
+                        <span className="text-sm text-slate-600 dark:text-slate-300">{t('totalMatches')}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          {users.length + posts.length + clubs.length + courses.length}
+                        </span>
+                      </div>
+                      {[
+                        { label: t('people'), value: users.length },
+                        { label: t('posts'), value: posts.length },
+                        { label: t('clubs'), value: clubs.length },
+                        { label: t('courses'), value: courses.length },
+                        { label: t('media'), value: mediaPosts.length },
+                      ].map((row) => (
+                        <div
+                          key={row.label}
+                          className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 dark:border-slate-800"
+                        >
+                          <span className="text-sm text-slate-600 dark:text-slate-300">{row.label}</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">{row.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {selectedPostForAnalytics && (
+        <PostAnalyticsModal
+          isOpen={showAnalyticsModal}
+          onClose={() => {
+            setShowAnalyticsModal(false);
+            setSelectedPostForAnalytics(null);
+          }}
+          postId={selectedPostForAnalytics}
+          apiUrl={FEED_SERVICE_URL}
+        />
+      )}
+    </div>
+  );
 }

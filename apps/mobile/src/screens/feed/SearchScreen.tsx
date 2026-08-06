@@ -31,7 +31,6 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
-    FadeIn,
     FadeInDown,
     Layout,
     useAnimatedStyle,
@@ -47,6 +46,8 @@ import { Avatar } from '@/components/common';
 import { useThemeContext } from '@/contexts';
 import { ColorScale } from '@/config/theme';
 import { feedApi } from '@/api/client';
+import { getClubs, type Club } from '@/api/clubs';
+import { getCourses, type LearnCourse } from '@/api/learn';
 import { Post, PostType } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -62,17 +63,21 @@ const SEARCH_USER_LIMIT = 12;
 const SEARCH_REQUEST_TIMEOUT_MS = 12000;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-type SearchScope = 'all' | 'posts' | 'people';
+type SearchScope = 'all' | 'posts' | 'people' | 'clubs' | 'courses';
 type PostFilter = 'ALL' | Extract<PostType, 'COURSE' | 'QUIZ' | 'QUESTION' | 'RESOURCE' | 'TUTORIAL' | 'RESEARCH' | 'PROJECT'>;
 type SortMode = 'top' | 'recent' | 'popular';
 type SearchOptions = {
     allowEmpty?: boolean;
     includePeople?: boolean;
+    includeClubs?: boolean;
+    includeCourses?: boolean;
     saveRecent?: boolean;
 };
 type SearchCacheEntry = {
     posts: Post[];
     users: SearchUser[];
+    clubs: Club[];
+    courses: LearnCourse[];
     timestamp: number;
 };
 
@@ -88,9 +93,9 @@ const POST_FILTERS: Array<{ key: PostFilter; labelKey: string; icon: IoniconName
 ];
 
 const SORT_OPTIONS: Array<{ key: SortMode; labelKey: string; icon: IoniconName }> = [
-    { key: 'top', labelKey: 'top', icon: 'analytics-outline' },
-    { key: 'recent', labelKey: 'recent', icon: 'time-outline' },
-    { key: 'popular', labelKey: 'popular', icon: 'flame-outline' },
+    { key: 'top', labelKey: 'sortTop', icon: 'sparkles-outline' },
+    { key: 'recent', labelKey: 'sortLatest', icon: 'time-outline' },
+    { key: 'popular', labelKey: 'sortPopular', icon: 'flame-outline' },
 ];
 
 const TOPIC_SUGGESTIONS = [
@@ -114,10 +119,10 @@ const getPostTypeMeta = (type: PostType | string) => {
 };
 
 const getRoleMeta = (role: string) => {
-    if (role === 'TEACHER') return { labelKey: 'common.roles.teacher', icon: 'school-outline' as IoniconName, color: ColorScale.primary[800], bg: ColorScale.primary[100] };
-    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') return { labelKey: 'common.roles.admin', icon: 'shield-checkmark-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
-    if (role === 'STAFF') return { labelKey: 'common.roles.staff', icon: 'briefcase-outline' as IoniconName, color: ColorScale.secondary[800], bg: ColorScale.secondary[100] };
-    return { labelKey: 'common.roles.student', icon: 'reader-outline' as IoniconName, color: ColorScale.teal[800], bg: ColorScale.teal[100] };
+    if (role === 'TEACHER') return { labelKey: 'profile.roles.teacher', icon: 'school-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') return { labelKey: 'profile.roles.admin', icon: 'shield-checkmark-outline' as IoniconName, color: ColorScale.primary[700], bg: ColorScale.primary[50] };
+    if (role === 'STAFF') return { labelKey: 'profile.roles.staff', icon: 'briefcase-outline' as IoniconName, color: ColorScale.gray[700], bg: ColorScale.gray[100] };
+    return { labelKey: 'profile.roles.student', icon: 'person-outline' as IoniconName, color: ColorScale.teal[700], bg: ColorScale.teal[50] };
 };
 
 const normalizePostTypeLabel = (label: string) =>
@@ -125,8 +130,14 @@ const normalizePostTypeLabel = (label: string) =>
         .toLowerCase()
         .replace(/(^|\s)\S/g, match => match.toUpperCase());
 
-const getSearchCacheKey = (query: string, postType: PostFilter, includePeople: boolean) =>
-    `${query.trim().toLowerCase()}::${postType}::${includePeople ? 'people' : 'posts'}`;
+const getSearchCacheKey = (
+    query: string,
+    postType: PostFilter,
+    includePeople: boolean,
+    includeClubs: boolean,
+    includeCourses: boolean,
+) =>
+    `${query.trim().toLowerCase()}::${postType}::${includePeople ? 'people' : 'posts'}::${includeClubs ? 'clubs' : '-'}::${includeCourses ? 'courses' : '-'}`;
 
 interface SearchUser {
     id: string;
@@ -152,6 +163,8 @@ export default function SearchScreen() {
     const [isSearching, setIsSearching] = useState(false);
     const [postResults, setPostResults] = useState<Post[]>([]);
     const [userResults, setUserResults] = useState<SearchUser[]>([]);
+    const [clubResults, setClubResults] = useState<Club[]>([]);
+    const [courseResults, setCourseResults] = useState<LearnCourse[]>([]);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
     const [searchFocused, setSearchFocused] = useState(false);
@@ -211,14 +224,6 @@ export default function SearchScreen() {
         await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
     }, [recentSearches]);
 
-    const handleIdleScopePress = useCallback((scope: SearchScope) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setActiveScope(scope);
-        if (scope === 'posts' && !query.trim()) {
-            setSelectedType('ALL');
-        }
-    }, [query]);
-
     const performSearch = useCallback(async (
         searchQuery: string,
         overrideType: PostFilter = selectedType,
@@ -227,24 +232,36 @@ export default function SearchScreen() {
         const trimmedQuery = searchQuery.trim();
         const selectedPostType = overrideType !== 'ALL' ? overrideType : undefined;
         const shouldBrowseWithoutKeyword = options.allowEmpty || Boolean(selectedPostType);
-        const shouldSearchPeople = Boolean(trimmedQuery) && (options.includePeople ?? activeScope !== 'posts');
+        const shouldSearchPeople = Boolean(trimmedQuery) && (options.includePeople ?? true);
+        const shouldSearchClubs = Boolean(trimmedQuery) && (options.includeClubs ?? true);
+        const shouldSearchCourses = Boolean(trimmedQuery) && (options.includeCourses ?? true);
 
         if (!trimmedQuery && !shouldBrowseWithoutKeyword) {
             activeSearchControllerRef.current?.abort();
             setPostResults([]);
             setUserResults([]);
+            setClubResults([]);
+            setCourseResults([]);
             setHasSearched(false);
             setIsSearching(false);
             return;
         }
 
-        const cacheKey = getSearchCacheKey(trimmedQuery, overrideType, shouldSearchPeople);
+        const cacheKey = getSearchCacheKey(
+            trimmedQuery,
+            overrideType,
+            shouldSearchPeople,
+            shouldSearchClubs,
+            shouldSearchCourses,
+        );
         const cached = searchCacheRef.current.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL_MS) {
             activeSearchControllerRef.current?.abort();
             searchRequestIdRef.current += 1;
             setPostResults(cached.posts);
             setUserResults(cached.users);
+            setClubResults(cached.clubs);
+            setCourseResults(cached.courses);
             setHasSearched(true);
             setIsSearching(false);
             if (trimmedQuery && (options.saveRecent ?? true)) {
@@ -263,7 +280,7 @@ export default function SearchScreen() {
 
         try {
             const requestHeaders = { 'X-No-Retry': '1' };
-            const [postsResponse, usersResponse] = await Promise.allSettled([
+            const [postsResponse, usersResponse, clubsResponse, coursesResponse] = await Promise.allSettled([
                 feedApi.get('/posts', {
                     params: {
                         limit: SEARCH_POST_LIMIT,
@@ -284,26 +301,46 @@ export default function SearchScreen() {
                         timeout: SEARCH_REQUEST_TIMEOUT_MS,
                     })
                     : Promise.resolve({ data: { success: true, data: [] } }),
+                shouldSearchClubs
+                    ? getClubs({ discover: true, search: trimmedQuery, limit: 12 })
+                    : Promise.resolve([] as Club[]),
+                shouldSearchCourses
+                    ? getCourses({ search: trimmedQuery, limit: 12 })
+                    : Promise.resolve([] as LearnCourse[]),
             ]);
 
             if (requestId !== searchRequestIdRef.current || controller.signal.aborted) return;
 
             let nextPosts: Post[] = [];
             let nextUsers: SearchUser[] = [];
-            if (postsResponse.status === 'fulfilled' && postsResponse.value.data?.success) {
-                const rawPosts = postsResponse.value.data.data || [];
+            let nextClubs: Club[] = [];
+            let nextCourses: LearnCourse[] = [];
+            if (postsResponse.status === 'fulfilled' && (postsResponse.value as any).data?.success) {
+                const rawPosts = (postsResponse.value as any).data.data || [];
                 nextPosts = transformPosts(rawPosts);
             }
 
-            if (usersResponse.status === 'fulfilled' && usersResponse.value.data?.success) {
-                nextUsers = usersResponse.value.data.data || usersResponse.value.data.users || [];
+            if (usersResponse.status === 'fulfilled' && (usersResponse.value as any).data?.success) {
+                nextUsers = (usersResponse.value as any).data.data || (usersResponse.value as any).data.users || [];
+            }
+
+            if (clubsResponse.status === 'fulfilled' && Array.isArray(clubsResponse.value)) {
+                nextClubs = clubsResponse.value;
+            }
+
+            if (coursesResponse.status === 'fulfilled' && Array.isArray(coursesResponse.value)) {
+                nextCourses = coursesResponse.value;
             }
 
             setPostResults(nextPosts);
             setUserResults(nextUsers);
+            setClubResults(nextClubs);
+            setCourseResults(nextCourses);
             searchCacheRef.current.set(cacheKey, {
                 posts: nextPosts,
                 users: nextUsers,
+                clubs: nextClubs,
+                courses: nextCourses,
                 timestamp: Date.now(),
             });
             if (searchCacheRef.current.size > 36) {
@@ -389,6 +426,8 @@ export default function SearchScreen() {
         setActiveScope('all');
         setPostResults([]);
         setUserResults([]);
+        setClubResults([]);
+        setCourseResults([]);
         setHasSearched(false);
         setIsSearching(false);
         inputRef.current?.focus();
@@ -402,6 +441,22 @@ export default function SearchScreen() {
     const handleUserPress = useCallback((userId: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         navigation.navigate('UserProfile' as any, { userId });
+    }, [navigation]);
+
+    const handleClubPress = useCallback((clubId: string) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        navigation.navigate('ClubsTab' as any, {
+            screen: 'ClubDetails',
+            params: { clubId },
+        });
+    }, [navigation]);
+
+    const handleCoursePress = useCallback((courseId: string) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        navigation.navigate('LearnTab' as any, {
+            screen: 'CourseDetail',
+            params: { courseId },
+        });
     }, [navigation]);
 
     const renderPostResult = ({ item, index }: { item: Post; index: number }) => {
@@ -575,10 +630,9 @@ export default function SearchScreen() {
                                 </LinearGradient>
                             )}
                         </View>
-                        <View style={[styles.rolePill, { backgroundColor: roleMeta.bg }]}>
-                            <Ionicons name={roleMeta.icon} size={11} color={roleMeta.color} />
-                            <Text style={[styles.userResultRole, { color: roleMeta.color }]}>{t(roleMeta.labelKey)}</Text>
-                        </View>
+                        <Text style={[styles.peopleListRole, { color: roleMeta.color }]}>
+                            {t(roleMeta.labelKey)}
+                        </Text>
                     </View>
                     <View style={styles.userResultAction}>
                         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -588,65 +642,138 @@ export default function SearchScreen() {
         );
     };
 
-    const renderPeoplePreview = () => {
-        if (activeScope !== 'all' || userResults.length === 0) return null;
+    const renderClubResult = ({ item, index }: { item: Club; index: number }) => (
+        <Animated.View entering={FadeInDown.delay(index * 30).springify().damping(15)}>
+            <TouchableOpacity
+                style={styles.userResultCard}
+                activeOpacity={0.9}
+                onPress={() => handleClubPress(item.id)}
+            >
+                <View style={[styles.entityIconWrap, { backgroundColor: ColorScale.primary[50] }]}>
+                    <Ionicons name="people-circle-outline" size={28} color={ColorScale.primary[700]} />
+                </View>
+                <View style={styles.userResultInfo}>
+                    <Text style={styles.userResultName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.entityMeta} numberOfLines={1}>
+                        {item.subject || item.type?.replace(/_/g, ' ') || t('common.search.clubs')}
+                        {typeof item.memberCount === 'number' ? ` · ${item.memberCount}` : ''}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+
+    const renderCourseResult = ({ item, index }: { item: LearnCourse; index: number }) => (
+        <Animated.View entering={FadeInDown.delay(index * 30).springify().damping(15)}>
+            <TouchableOpacity
+                style={styles.userResultCard}
+                activeOpacity={0.9}
+                onPress={() => handleCoursePress(item.id)}
+            >
+                {item.thumbnail ? (
+                    <Image source={{ uri: item.thumbnail }} style={styles.courseThumb} contentFit="cover" />
+                ) : (
+                    <View style={[styles.entityIconWrap, { backgroundColor: ColorScale.teal[50] }]}>
+                        <Ionicons name="book-outline" size={24} color={ColorScale.teal[700]} />
+                    </View>
+                )}
+                <View style={styles.userResultInfo}>
+                    <Text style={styles.userResultName} numberOfLines={2}>{item.title}</Text>
+                    <Text style={styles.entityMeta} numberOfLines={1}>
+                        {item.category || item.level || t('common.search.courses')}
+                        {typeof item.enrolledCount === 'number' ? ` · ${item.enrolledCount}` : ''}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+
+    const renderAllHeader = () => {
+        if (activeScope !== 'all') return null;
 
         return (
-            <Animated.View 
-                entering={FadeInDown.springify()}
-                style={styles.peoplePreview}
-            >
-                <View style={styles.peoplePreviewHeader}>
-                    <Text style={styles.peoplePreviewTitle}>{t('common.search.people')}</Text>
-                    <TouchableOpacity onPress={() => setActiveScope('people')} style={styles.seeAllBtn}>
-                        <Text style={styles.seeAllText}>{t('common.seeAll')}</Text>
-                        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-                    </TouchableOpacity>
-                </View>
-                <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false} 
-                    contentContainerStyle={styles.peoplePreviewRow}
-                    decelerationRate="fast"
-                >
-                    {userResults.slice(0, 8).map((user, index) => {
-                        const name = `${user.lastName} ${user.firstName}`;
-                        const roleMeta = getRoleMeta(user.role);
-                        return (
-                            <Animated.View
-                                key={user.id}
-                                entering={FadeIn.delay(index * 50)}
-                            >
-                                <TouchableOpacity
-                                    style={styles.peoplePreviewCard}
-                                    activeOpacity={0.86}
-                                    onPress={() => handleUserPress(user.id)}
-                                >
-                                    <View style={styles.peoplePreviewAvatarWrap}>
+            <View>
+                {userResults.length > 0 && (
+                    <Animated.View
+                        entering={FadeInDown.springify()}
+                        style={styles.peoplePreview}
+                    >
+                        <View style={styles.peoplePreviewHeader}>
+                            <Text style={styles.peoplePreviewTitle}>{t('common.search.people')}</Text>
+                            <TouchableOpacity onPress={() => setActiveScope('people')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                <Text style={styles.seeAllText}>{t('common.search.seeAllPeople')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.peopleListCard}>
+                            {userResults.slice(0, 4).map((user, index) => {
+                                const name = `${user.lastName} ${user.firstName}`.trim();
+                                const roleMeta = getRoleMeta(user.role);
+                                return (
+                                    <TouchableOpacity
+                                        key={user.id}
+                                        style={[
+                                            styles.peopleListRow,
+                                            index < Math.min(userResults.length, 4) - 1 && styles.peopleListRowBorder,
+                                        ]}
+                                        activeOpacity={0.75}
+                                        onPress={() => handleUserPress(user.id)}
+                                    >
                                         <Avatar uri={user.profilePictureUrl} name={name} size="md" variant="post" />
-                                        {user.isVerified && (
-                                            <View style={styles.verifiedBadgeSmall}>
-                                                <Ionicons name="checkmark" size={6} color="#fff" />
-                                            </View>
-                                        )}
-                                    </View>
-                                    <Text style={styles.peoplePreviewName} numberOfLines={1}>{name}</Text>
-                                    <View style={[styles.peoplePreviewRole, { backgroundColor: roleMeta.bg }]}>
-                                        <Ionicons name={roleMeta.icon} size={9} color={roleMeta.color} />
-                                        <Text style={[styles.peoplePreviewRoleText, { color: roleMeta.color }]} numberOfLines={1}>{t(roleMeta.labelKey)}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            </Animated.View>
-                        );
-                    })}
-                </ScrollView>
-            </Animated.View>
+                                        <View style={styles.userResultInfo}>
+                                            <Text style={styles.userResultName} numberOfLines={1}>{name}</Text>
+                                            <Text style={[styles.peopleListRole, { color: roleMeta.color }]} numberOfLines={1}>
+                                                {t(roleMeta.labelKey)}
+                                            </Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </Animated.View>
+                )}
+
+                {clubResults.length > 0 && (
+                    <View style={styles.entitySection}>
+                        <View style={styles.peoplePreviewHeader}>
+                            <Text style={styles.peoplePreviewTitle}>{t('common.search.clubs')}</Text>
+                            <TouchableOpacity onPress={() => setActiveScope('clubs')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                <Text style={styles.seeAllText}>{t('common.seeAll')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {clubResults.slice(0, 3).map((club, index) => (
+                            <View key={club.id}>{renderClubResult({ item: club, index })}</View>
+                        ))}
+                    </View>
+                )}
+
+                {courseResults.length > 0 && (
+                    <View style={styles.entitySection}>
+                        <View style={styles.peoplePreviewHeader}>
+                            <Text style={styles.peoplePreviewTitle}>{t('common.search.courses')}</Text>
+                            <TouchableOpacity onPress={() => setActiveScope('courses')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                <Text style={styles.seeAllText}>{t('common.seeAll')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {courseResults.slice(0, 3).map((course, index) => (
+                            <View key={course.id}>{renderCourseResult({ item: course, index })}</View>
+                        ))}
+                    </View>
+                )}
+            </View>
         );
     };
 
     const renderEmptyState = () => {
         if (isSearching) return null;
-        if (activeScope === 'all' && userResults.length > 0) return null;
+        if (
+            activeScope === 'all' &&
+            (userResults.length > 0 || clubResults.length > 0 || courseResults.length > 0)
+        ) {
+            return null;
+        }
 
         if (hasSearched) {
             const noResultsSub = t('common.search.noResultsSub');
@@ -722,75 +849,34 @@ export default function SearchScreen() {
                 keyboardDismissMode="on-drag"
                 nestedScrollEnabled
             >
-                <View style={styles.idleScopeSection}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.idleScopeRow}
-                    >
-                        {(
-                            [
-                                { key: 'all' as const, labelKey: 'everything', icon: 'layers-outline' as IoniconName },
-                                { key: 'posts' as const, labelKey: 'posts', icon: 'newspaper-outline' as IoniconName },
-                                { key: 'people' as const, labelKey: 'people', icon: 'people-outline' as IoniconName },
-                            ] as const
-                        ).map((scope) => {
-                            const active = activeScope === scope.key;
-                            return (
-                                <TouchableOpacity
-                                    key={scope.key}
-                                    style={[styles.idleScopeChip, active && styles.idleScopeChipActive]}
-                                    onPress={() => handleIdleScopePress(scope.key)}
-                                    activeOpacity={0.88}
-                                >
-                                    <Ionicons
-                                        name={scope.icon}
-                                        size={16}
-                                        color={active ? colors.primary : colors.textTertiary}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.idleScopeChipText,
-                                            active && styles.idleScopeChipTextActive,
-                                        ]}
-                                    >
-                                        {t(`common.search.${scope.labelKey}`)}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-                </View>
-
                 {recentSearches.length > 0 && (
                     <View style={styles.sectionContainer}>
                         <View style={styles.recentHeader}>
                             <Text style={styles.recentTitle}>
-                                {t('common.search.recent')}
+                                {t('common.search.recentSearches')}
                             </Text>
-                            <TouchableOpacity onPress={clearRecentSearches} style={styles.clearAllBtn}>
+                            <TouchableOpacity onPress={clearRecentSearches} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                                 <Text style={styles.clearText}>
                                     {t('common.search.clearAll')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.recentList}>
-                            {recentSearches.map((term) => (
-                                <View key={term} style={styles.recentItem}>
+                            {recentSearches.map((term, index) => (
+                                <View
+                                    key={term}
+                                    style={[
+                                        styles.recentItem,
+                                        index === recentSearches.length - 1 && styles.recentItemLast,
+                                    ]}
+                                >
                                     <TouchableOpacity
                                         style={styles.recentItemMain}
                                         onPress={() => handleRecentSearchPress(term)}
                                         activeOpacity={0.72}
                                     >
-                                        <View style={styles.recentIconWrap}>
-                                            <Ionicons name="time-outline" size={16} color={colors.textTertiary} />
-                                        </View>
+                                        <Ionicons name="time-outline" size={18} color={colors.textTertiary} />
                                         <Text style={styles.recentText}>{term}</Text>
-                                        <Ionicons
-                                            name="chevron-forward"
-                                            size={16}
-                                            color={colors.textTertiary}
-                                        />
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.recentRemoveBtn}
@@ -798,7 +884,7 @@ export default function SearchScreen() {
                                         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                                         accessibilityLabel="Remove from history"
                                     >
-                                        <Ionicons name="close-circle" size={22} color={colors.textTertiary} />
+                                        <Ionicons name="close" size={18} color={colors.textTertiary} />
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -807,45 +893,36 @@ export default function SearchScreen() {
                 )}
 
                 <View style={styles.suggestionsSection}>
-                    <View style={styles.sectionTitleRow}>
-                        <LinearGradient colors={[ColorScale.primary[400], ColorScale.primary[600]]} style={styles.trendingIcon}>
-                            <Ionicons name="trending-up" size={12} color="#fff" />
-                        </LinearGradient>
-                        <Text style={styles.recentTitle}>{t('common.search.trending')}</Text>
-                    </View>
+                    <Text style={[styles.recentTitle, { marginBottom: 12 }]}>{t('common.search.trending')}</Text>
                     <View style={styles.suggestionChips}>
-                        {TOPIC_SUGGESTIONS.map((chip, index) => (
-                            <Animated.View key={chip} entering={FadeInDown.delay(index * 30)}>
-                                <TouchableOpacity
-                                    style={styles.suggestionChip}
-                                    onPress={() => handleRecentSearchPress(chip)}
-                                    activeOpacity={0.8}
-                                >
-                                    <Text style={styles.suggestionChipText}>{t(`feed.subjects.${chip}`)}</Text>
-                                </TouchableOpacity>
-                            </Animated.View>
+                        {TOPIC_SUGGESTIONS.map((chip) => (
+                            <TouchableOpacity
+                                key={chip}
+                                style={styles.suggestionChip}
+                                onPress={() => handleRecentSearchPress(chip)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.suggestionChipText}>{t(`feed.subjects.${chip}`)}</Text>
+                            </TouchableOpacity>
                         ))}
                     </View>
                 </View>
 
                 <View style={styles.discoverySection}>
-                    <Text style={styles.recentTitle}>{t('common.search.exploreByType')}</Text>
+                    <Text style={[styles.recentTitle, { marginBottom: 12 }]}>{t('common.search.exploreByType')}</Text>
                     <View style={styles.discoveryGrid}>
-                        {POST_FILTERS.slice(1, 7).map((filter) => (
+                        {POST_FILTERS.slice(1, 5).map((filter) => (
                             <TouchableOpacity
                                 key={filter.key}
                                 style={styles.discoveryTile}
                                 activeOpacity={0.86}
                                 onPress={() => handleBrowseFilter(filter.key)}
                             >
-                                <LinearGradient
-                                    colors={[filter.bg, `${filter.bg}DD`] as [string, string]}
-                                    style={styles.discoveryIcon}
-                                >
-                                    <Ionicons name={filter.icon} size={22} color={filter.color} />
-                                </LinearGradient>
-                                <Text style={styles.discoveryLabel} numberOfLines={2}>
-                                    {t(`feed.postTypes.${filter.labelKey.toLowerCase()}`)}
+                                <View style={[styles.discoveryIcon, { backgroundColor: filter.bg }]}>
+                                    <Ionicons name={filter.icon} size={20} color={filter.color} />
+                                </View>
+                                <Text style={styles.discoveryLabel} numberOfLines={1}>
+                                    {normalizePostTypeLabel(t(`feed.postTypes.${filter.labelKey.toLowerCase()}`))}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -866,13 +943,23 @@ export default function SearchScreen() {
         return posts.sort((a, b) => ((b._score || 0) - (a._score || 0)) || ((b.likes || 0) + (b.comments || 0) - (a.likes || 0) - (a.comments || 0)));
     }, [postResults, sortMode]);
 
-    const currentResults = activeScope === 'people' ? userResults : sortedPostResults;
+    const currentResults =
+        activeScope === 'people'
+            ? userResults
+            : activeScope === 'clubs'
+                ? clubResults
+                : activeScope === 'courses'
+                    ? courseResults
+                    : sortedPostResults;
     const postCount = postResults.length;
     const userCount = userResults.length;
+    const clubCount = clubResults.length;
+    const courseCount = courseResults.length;
+    const totalResults = postCount + userCount + clubCount + courseCount;
     const resultSummary =
-        postCount === 0 && userCount === 0
+        totalResults === 0
             ? t('common.search.noResultsYet')
-            : t('common.search.resultsSummary', { postCount, userCount });
+            : t('common.search.resultsCompact', { total: totalResults });
     const skeletonAnimatedStyle = useAnimatedStyle(() => {
         return {
             opacity: 0.45 + (loadingPulse.value * (0.88 - 0.45))
@@ -921,9 +1008,18 @@ export default function SearchScreen() {
         );
     };
 
+    const scopeTabs = (
+        [
+            { key: 'all' as const, labelKey: 'everything', count: totalResults },
+            { key: 'people' as const, labelKey: 'people', count: userCount },
+            { key: 'posts' as const, labelKey: 'posts', count: postCount },
+            { key: 'clubs' as const, labelKey: 'clubs', count: clubCount },
+            { key: 'courses' as const, labelKey: 'courses', count: courseCount },
+        ] as const
+    );
+
     return (
         <View style={styles.container}>
-            {/* Search row: no card; controls card only after a search */}
             <View style={styles.headerSticky}>
                 <View
                     onLayout={(e) => {
@@ -947,6 +1043,11 @@ export default function SearchScreen() {
                                         searchFocused && styles.searchInputInnerFocused,
                                     ]}
                                 >
+                                    <Ionicons
+                                        name="search"
+                                        size={18}
+                                        color={searchFocused ? colors.primary : colors.textTertiary}
+                                    />
                                     <TextInput
                                         ref={inputRef}
                                         style={styles.searchInput}
@@ -961,179 +1062,127 @@ export default function SearchScreen() {
                                         onFocus={() => setSearchFocused(true)}
                                         onBlur={() => setSearchFocused(false)}
                                     />
+                                    {query.length > 0 && (
+                                        <TouchableOpacity
+                                            onPress={handleClearQuery}
+                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                            style={styles.clearInlineBtn}
+                                        >
+                                            <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
-                                {query.length > 0 ? (
-                                    <TouchableOpacity
-                                        onPress={handleClearQuery}
-                                        style={styles.searchCircleBtn}
-                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    >
-                                        <Ionicons name="close" size={22} color={colors.textTertiary} />
-                                    </TouchableOpacity>
-                                ) : (
-                                    <TouchableOpacity
-                                        style={styles.searchCircleBtn}
-                                        onPress={() => inputRef.current?.focus()}
-                                        activeOpacity={0.85}
-                                    >
-                                        <Ionicons name="search" size={20} color={colors.primary} />
-                                    </TouchableOpacity>
-                                )}
                             </View>
 
                             {hasSearched && (
-                                <View style={styles.searchControlsCard}>
-                                    <LinearGradient
-                                        colors={['transparent', colors.border, 'transparent']}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={styles.searchStoryDivider}
-                                    />
-                                    <View style={styles.searchCardFooter}>
-                                        <View style={styles.tabBarWrap}>
-                                            <View style={styles.tabBar}>
-                                        {(
-                                            [
-                                                {
-                                                    key: 'all',
-                                                    labelKey: 'everything',
-                                                    count: postCount + userCount,
-                                                    icon: 'sparkles-outline' as IoniconName,
-                                                },
-                                                {
-                                                    key: 'posts',
-                                                    labelKey: 'posts',
-                                                    count: postCount,
-                                                    icon: 'newspaper-outline' as IoniconName,
-                                                },
-                                                {
-                                                    key: 'people',
-                                                    labelKey: 'people',
-                                                    count: userCount,
-                                                    icon: 'people-outline' as IoniconName,
-                                                },
-                                            ] as const
-                                        ).map((scope) => {
+                                <View style={styles.controlsBlock}>
+                                    <ScrollView
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        contentContainerStyle={styles.scopeTabRow}
+                                    >
+                                        {scopeTabs.map((scope) => {
                                             const active = activeScope === scope.key;
                                             return (
                                                 <TouchableOpacity
                                                     key={scope.key}
-                                                    style={[styles.tab, active && styles.tabActive]}
+                                                    style={styles.scopeTab}
                                                     onPress={() => {
                                                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                                         setActiveScope(scope.key);
                                                     }}
-                                                    activeOpacity={0.88}
+                                                    activeOpacity={0.85}
                                                 >
-                                                    {active ? (
-                                                        <LinearGradient
-                                                            colors={[ColorScale.primary[500], ColorScale.primary[600]]}
-                                                            start={{ x: 0, y: 0 }}
-                                                            end={{ x: 1, y: 1 }}
-                                                            style={styles.tabGradientFill}
+                                                    <Text
+                                                        style={[
+                                                            styles.scopeTabLabel,
+                                                            active && styles.scopeTabLabelActive,
+                                                        ]}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {t(`common.search.${scope.labelKey}`)}
+                                                    </Text>
+                                                    {scope.count > 0 && (
+                                                        <Text
+                                                            style={[
+                                                                styles.scopeTabCount,
+                                                                active && styles.scopeTabCountActive,
+                                                            ]}
                                                         >
-                                                            <Ionicons name={scope.icon} size={15} color="#fff" />
-                                                            <Text style={styles.tabTextOnAccent} numberOfLines={1}>
-                                                                {t(`common.search.${scope.labelKey}`)}
-                                                                {scope.count > 0 ? ` · ${scope.count}` : ''}
-                                                            </Text>
-                                                        </LinearGradient>
-                                                    ) : (
-                                                        <View style={styles.tabInnerMuted}>
-                                                            <Ionicons
-                                                                name={scope.icon}
-                                                                size={15}
-                                                                color={colors.textTertiary}
-                                                            />
-                                                            <Text style={styles.tabTextMuted} numberOfLines={1}>
-                                                                {t(`common.search.${scope.labelKey}`)}
-                                                                {scope.count > 0 ? ` ${scope.count}` : ''}
-                                                            </Text>
-                                                        </View>
+                                                            {scope.count}
+                                                        </Text>
                                                     )}
+                                                    {active && <View style={styles.scopeTabUnderline} />}
                                                 </TouchableOpacity>
                                             );
                                         })}
-                                            </View>
-                                        </View>
-                                        {activeScope !== 'people' && (
-                                            <View style={styles.filterShell}>
-                                            <ScrollView
-                                                horizontal
-                                                showsHorizontalScrollIndicator={false}
-                                                contentContainerStyle={styles.filterRow}
-                                            >
-                                                {POST_FILTERS.map((filter) => {
-                                                    const active = selectedType === filter.key;
+                                    </ScrollView>
+
+                                    {(activeScope === 'all' || activeScope === 'posts') && (
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            contentContainerStyle={styles.filterRow}
+                                        >
+                                            {POST_FILTERS.map((filter) => {
+                                                const active = selectedType === filter.key;
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={filter.key}
+                                                        style={[
+                                                            styles.filterChip,
+                                                            active && styles.filterChipActive,
+                                                        ]}
+                                                        onPress={() => handleFilterPress(filter.key)}
+                                                        activeOpacity={0.85}
+                                                    >
+                                                        <Text
+                                                            style={[
+                                                                styles.filterChipText,
+                                                                active && styles.filterChipTextActive,
+                                                            ]}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {normalizePostTypeLabel(
+                                                                t(`feed.postTypes.${filter.labelKey.toLowerCase()}`),
+                                                            )}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </ScrollView>
+                                    )}
+
+                                    <View style={styles.metaRow}>
+                                        <Text style={styles.resultSummary} numberOfLines={1}>
+                                            {resultSummary}
+                                        </Text>
+                                        {(activeScope === 'all' || activeScope === 'posts') && (
+                                            <View style={styles.sortTrack}>
+                                                {SORT_OPTIONS.map((option) => {
+                                                    const active = sortMode === option.key;
                                                     return (
                                                         <TouchableOpacity
-                                                            key={filter.key}
+                                                            key={option.key}
                                                             style={[
-                                                                styles.filterChip,
-                                                                active && {
-                                                                    backgroundColor: filter.bg,
-                                                                    borderColor: filter.color,
-                                                                },
+                                                                styles.sortSegment,
+                                                                active && styles.sortSegmentActive,
                                                             ]}
-                                                            onPress={() => handleFilterPress(filter.key)}
+                                                            onPress={() => handleSortPress(option.key)}
                                                             activeOpacity={0.85}
                                                         >
-                                                            <Ionicons
-                                                                name={filter.icon}
-                                                                size={14}
-                                                                color={active ? filter.color : colors.textTertiary}
-                                                            />
                                                             <Text
                                                                 style={[
-                                                                    styles.filterChipText,
-                                                                    active && { color: filter.color },
+                                                                    styles.sortSegmentLabel,
+                                                                    active && styles.sortSegmentLabelActive,
                                                                 ]}
-                                                                numberOfLines={1}
                                                             >
-                                                                {t(`feed.postTypes.${filter.labelKey.toLowerCase()}`)}
+                                                                {t(`common.search.${option.labelKey}`)}
                                                             </Text>
                                                         </TouchableOpacity>
                                                     );
                                                 })}
-                                            </ScrollView>
-                                            <View style={styles.sortRow}>
-                                                <Text style={styles.resultSummary} numberOfLines={1}>
-                                                    {resultSummary}
-                                                </Text>
-                                                <View style={styles.sortCluster}>
-                                                    {SORT_OPTIONS.map((option) => {
-                                                        const active = sortMode === option.key;
-                                                        return (
-                                                            <TouchableOpacity
-                                                                key={option.key}
-                                                                style={[
-                                                                    styles.sortPill,
-                                                                    active && styles.sortPillActive,
-                                                                ]}
-                                                                onPress={() => handleSortPress(option.key)}
-                                                                activeOpacity={0.85}
-                                                            >
-                                                                <Ionicons
-                                                                    name={option.icon}
-                                                                    size={13}
-                                                                    color={
-                                                                        active ? colors.primary : colors.textTertiary
-                                                                    }
-                                                                />
-                                                                <Text
-                                                                    style={[
-                                                                        styles.sortPillLabel,
-                                                                        active && styles.sortPillLabelActive,
-                                                                    ]}
-                                                                >
-                                                                    {t(`common.sort.${option.labelKey}`)}
-                                                                </Text>
-                                                            </TouchableOpacity>
-                                                        );
-                                                    })}
-                                                </View>
                                             </View>
-                                        </View>
                                         )}
                                     </View>
                                 </View>
@@ -1151,20 +1200,40 @@ export default function SearchScreen() {
                 <View style={{ flex: 1, zIndex: 0 }}>
                     <FlashList
                         data={currentResults as any[]}
-                        renderItem={activeScope === 'people' ? renderUserResult as any : renderPostResult as any}
+                        renderItem={
+                            (activeScope === 'people'
+                                ? renderUserResult
+                                : activeScope === 'clubs'
+                                    ? renderClubResult
+                                    : activeScope === 'courses'
+                                        ? renderCourseResult
+                                        : renderPostResult) as any
+                        }
                         keyExtractor={(item: any) => item.id}
                         contentContainerStyle={{
                             paddingHorizontal: 16,
                             paddingBottom: 40 + insets.bottom + 8,
-                            paddingTop: stickyHeaderHeight + (activeScope !== 'people' ? 8 : 12),
+                            paddingTop: stickyHeaderHeight + (activeScope === 'all' || activeScope === 'posts' ? 8 : 12),
                         }}
                         showsVerticalScrollIndicator={false}
                         ListEmptyComponent={renderEmptyState}
-                        ListHeaderComponent={renderPeoplePreview}
+                        ListHeaderComponent={renderAllHeader}
                         keyboardShouldPersistTaps="handled"
                         keyboardDismissMode="on-drag"
-                        estimatedItemSize={activeScope === 'people' ? 86 : 178}
-                        getItemType={(item) => (activeScope === 'people' ? 'USER' : item.postType || 'POST')}
+                        estimatedItemSize={
+                            activeScope === 'people' || activeScope === 'clubs' || activeScope === 'courses'
+                                ? 86
+                                : 178
+                        }
+                        getItemType={(item) =>
+                            activeScope === 'people'
+                                ? 'USER'
+                                : activeScope === 'clubs'
+                                    ? 'CLUB'
+                                    : activeScope === 'courses'
+                                        ? 'COURSE'
+                                        : item.postType || 'POST'
+                        }
                     />
                 </View>
             )}
@@ -1188,196 +1257,167 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.background,
     },
     headerSection: {
-        paddingTop: 8,
-        paddingBottom: 4,
+        paddingTop: 4,
+        paddingBottom: 0,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+        backgroundColor: colors.background,
     },
     searchRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        gap: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 4,
     },
     searchBackBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'transparent',
-    },
-    searchControlsCard: {
-        backgroundColor: colors.card,
-        marginHorizontal: 12,
-        marginTop: 4,
-        marginBottom: 8,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
-        overflow: 'hidden',
-    },
-    searchCircleBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.teal[50],
     },
     searchInputInner: {
         flex: 1,
-        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.teal[50],
-        borderRadius: 24,
-        paddingHorizontal: 16,
-        justifyContent: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[100],
+        borderRadius: 14,
+        paddingHorizontal: 12,
         minHeight: 44,
-        borderWidth: 0,
+        borderWidth: 1,
+        borderColor: 'transparent',
     },
     searchInputInnerFocused: {
-        borderWidth: 1,
-        borderColor: isDark ? colors.primary : ColorScale.teal[100],
-        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.1)' : ColorScale.teal[50],
+        borderColor: ColorScale.primary[200],
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.1)' : '#fff',
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
         fontWeight: '500',
         color: colors.text,
-        paddingVertical: 10,
+        paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     },
-    searchStoryDivider: {
-        height: 1,
-        marginHorizontal: 16,
-        marginTop: 2,
-        marginBottom: 6,
+    clearInlineBtn: {
+        padding: 2,
     },
-    searchCardFooter: {
-        paddingBottom: 4,
-    },
-
-    // Tab Bar
-    tabBarWrap: {
-        paddingHorizontal: 16,
+    controlsBlock: {
         paddingBottom: 10,
+        gap: 10,
     },
-    tabBar: {
-        flexDirection: 'row',
-        padding: 4,
-        borderRadius: 9999,
-        gap: 6,
-        backgroundColor: colors.surfaceVariant,
-        borderWidth: 1,
-        borderColor: colors.border,
+    scopeTabRow: {
+        paddingHorizontal: 16,
+        gap: 18,
+        paddingTop: 2,
     },
-    tab: {
-        flex: 1,
-        minHeight: 40,
-        borderRadius: 9999,
-        overflow: 'hidden',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    tabActive: {},
-    tabGradientFill: {
-        width: '100%',
+    scopeTab: {
+        paddingBottom: 10,
+        position: 'relative',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: 6,
-        paddingVertical: 10,
-        paddingHorizontal: 8,
-        borderRadius: 9999,
     },
-    tabTextOnAccent: {
-        fontSize: 13,
-        fontWeight: '800',
-        color: '#fff',
-    },
-    tabTextMuted: {
-        fontSize: 13,
-        fontWeight: '700',
+    scopeTabLabel: {
+        fontSize: 15,
+        fontWeight: '600',
         color: colors.textTertiary,
     },
-    tabInnerMuted: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        paddingVertical: 10,
-        paddingHorizontal: 8,
+    scopeTabLabelActive: {
+        color: colors.text,
+        fontWeight: '700',
     },
-
-    filterShell: {
-        paddingBottom: 12,
+    scopeTabCount: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.textTertiary,
+        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[100],
+        overflow: 'hidden',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 999,
+        minWidth: 20,
+        textAlign: 'center',
+    },
+    scopeTabCountActive: {
+        color: colors.primary,
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.16)' : ColorScale.primary[50],
+    },
+    scopeTabUnderline: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: 2.5,
+        borderRadius: 2,
+        backgroundColor: colors.primary,
     },
     filterRow: {
         paddingHorizontal: 16,
         gap: 8,
     },
     filterChip: {
-        height: 32,
+        height: 30,
         paddingHorizontal: 12,
-        borderRadius: 9999,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.card,
-        flexDirection: 'row',
+        borderRadius: 999,
+        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[100],
         alignItems: 'center',
-        gap: 6,
+        justifyContent: 'center',
+    },
+    filterChipActive: {
+        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.18)' : ColorScale.primary[50],
     },
     filterChipText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '600',
         color: colors.textSecondary,
     },
-    sortRow: {
-        marginTop: 12,
+    filterChipTextActive: {
+        color: colors.primary,
+        fontWeight: '700',
+    },
+    metaRow: {
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 10,
+        gap: 12,
     },
     resultSummary: {
-        flex: 1,
-        fontSize: 12,
+        flexShrink: 1,
+        fontSize: 13,
         color: colors.textTertiary,
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        fontWeight: '500',
     },
-    sortCluster: {
+    sortTrack: {
         flexDirection: 'row',
         alignItems: 'center',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-        gap: 6,
-        maxWidth: '62%',
+        backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[100],
+        borderRadius: 10,
+        padding: 2,
     },
-    sortPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
+    sortSegment: {
         paddingHorizontal: 10,
-        paddingVertical: 7,
-        borderRadius: 9999,
-        backgroundColor: colors.surfaceVariant,
-        borderWidth: 1,
-        borderColor: colors.border,
+        paddingVertical: 6,
+        borderRadius: 8,
     },
-    sortPillActive: {
-        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.18)' : ColorScale.primary[50],
-        borderColor: colors.primary,
+    sortSegmentActive: {
+        backgroundColor: colors.card,
+        shadowColor: '#0F172A',
+        shadowOpacity: isDark ? 0 : 0.06,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: isDark ? 0 : 1,
     },
-    sortPillLabel: {
-        fontSize: 11,
-        fontWeight: '800',
+    sortSegmentLabel: {
+        fontSize: 12,
+        fontWeight: '600',
         color: colors.textTertiary,
-        textTransform: 'uppercase',
-        letterSpacing: 0.4,
     },
-    sortPillLabelActive: {
-        color: colors.primary,
+    sortSegmentLabelActive: {
+        color: colors.text,
+        fontWeight: '700',
     },
 
     // Post Result Card
@@ -1499,12 +1539,34 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.card,
-        borderRadius: 20,
+        borderRadius: 16,
         padding: 14,
-        marginBottom: 10,
-        gap: 14,
-        borderWidth: 1,
+        marginBottom: 8,
+        gap: 12,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.border,
+    },
+    entityIconWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    courseThumb: {
+        width: 56,
+        height: 56,
+        borderRadius: 14,
+        backgroundColor: colors.surfaceVariant,
+    },
+    entityMeta: {
+        marginTop: 4,
+        fontSize: 12,
+        color: colors.textTertiary,
+        textTransform: 'capitalize',
+    },
+    entitySection: {
+        marginBottom: 18,
     },
     userResultInfo: {
         flex: 1,
@@ -1515,7 +1577,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         gap: 6,
     },
     userResultName: {
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: '700',
         color: colors.text,
     },
@@ -1526,30 +1588,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    rolePill: {
-        alignSelf: 'flex-start',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 9999,
-        marginTop: 4,
-    },
-    userResultRole: {
-        fontSize: 11,
-        fontWeight: '800',
-        textTransform: 'uppercase',
-    },
     userResultAction: {
-        width: 32,
-        height: 32,
-        borderRadius: 9999,
-        backgroundColor: colors.surfaceVariant,
+        width: 28,
+        height: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.border,
     },
 
     // People Preview
@@ -1561,182 +1604,96 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 14,
-        paddingHorizontal: 4,
+        marginBottom: 10,
+        paddingHorizontal: 2,
     },
     peoplePreviewTitle: {
-        fontSize: 17,
-        fontWeight: '800',
+        fontSize: 16,
+        fontWeight: '700',
         color: colors.text,
-        letterSpacing: -0.3,
-    },
-    seeAllBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.08)' : ColorScale.primary[50],
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 9999,
-        borderWidth: 1,
-        borderColor: colors.border,
+        letterSpacing: -0.2,
     },
     seeAllText: {
-        fontSize: 12,
-        fontWeight: '700',
+        fontSize: 13,
+        fontWeight: '600',
         color: colors.primary,
     },
-    peoplePreviewRow: {
-        gap: 12,
-        paddingRight: 16,
-    },
-    peoplePreviewCard: {
-        width: 120,
-        borderRadius: 9999,
-        borderWidth: 1,
-        borderColor: colors.border,
+    peopleListCard: {
         backgroundColor: colors.card,
-        alignItems: 'center',
-        padding: 16,
+        borderRadius: 16,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.border,
+        overflow: 'hidden',
     },
-    peoplePreviewAvatarWrap: {
-        position: 'relative',
-        marginBottom: 10,
-    },
-    verifiedBadgeSmall: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#0EA5E9',
-        borderWidth: 1,
-        borderColor: colors.card,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    peoplePreviewName: {
-        width: '100%',
-        textAlign: 'center',
-        fontSize: 13,
-        fontWeight: '700',
-        color: colors.text,
-        marginBottom: 8,
-    },
-    peoplePreviewRole: {
+    peopleListRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 9999,
+        gap: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
     },
-    peoplePreviewRoleText: {
-        fontSize: 10,
-        fontWeight: '800',
-        textTransform: 'uppercase',
+    peopleListRowBorder: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+    },
+    peopleListRole: {
+        marginTop: 2,
+        fontSize: 12,
+        fontWeight: '600',
     },
 
     // Recent Section
     recentSection: {
         flex: 1,
     },
-    idleScopeSection: {
-        marginBottom: 16,
-        marginTop: 4,
-        paddingHorizontal: 16,
-    },
-    idleScopeRow: {
-        gap: 10,
-        paddingRight: 8,
-    },
-    idleScopeChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 11,
-        borderRadius: 9999,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.card,
-    },
-    idleScopeChipActive: {
-        borderColor: colors.primary,
-        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.12)' : ColorScale.primary[50],
-    },
-    idleScopeChipText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: colors.textSecondary,
-    },
-    idleScopeChipTextActive: {
-        color: colors.primary,
-    },
     sectionContainer: {
-        marginBottom: 24,
+        marginBottom: 28,
         paddingHorizontal: 16,
     },
     recentHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 14,
+        marginBottom: 12,
     },
     recentTitle: {
-        fontSize: 17,
-        fontWeight: '800',
+        fontSize: 16,
+        fontWeight: '700',
         color: colors.text,
-        letterSpacing: -0.3,
-    },
-    clearAllBtn: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 9999,
-        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
-        borderWidth: 1,
-        borderColor: colors.border,
+        letterSpacing: -0.2,
     },
     clearText: {
         fontSize: 13,
-        fontWeight: '700',
-        color: '#6366F1',
+        fontWeight: '600',
+        color: colors.primary,
     },
     recentList: {
-        backgroundColor: colors.surfaceVariant,
-        borderRadius: 20,
-        padding: 4,
-        borderWidth: 1,
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.border,
+        overflow: 'hidden',
     },
     recentItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderBottomWidth: 1,
+        borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: colors.border,
+    },
+    recentItemLast: {
+        borderBottomWidth: 0,
     },
     recentItemMain: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 14,
         gap: 12,
     },
     recentRemoveBtn: {
-        paddingRight: 10,
-        paddingVertical: 8,
-    },
-    recentIconWrap: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.card,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.border,
+        paddingRight: 14,
+        paddingVertical: 10,
     },
     recentText: {
         flex: 1,
@@ -1747,73 +1704,61 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 
     // Suggestions Section
     suggestionsSection: {
-        marginBottom: 24,
+        marginBottom: 28,
         paddingHorizontal: 16,
-    },
-    sectionTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 16,
-    },
-    trendingIcon: {
-        width: 24,
-        height: 24,
-        borderRadius: 9999,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     suggestionChips: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 8,
+        marginTop: 0,
     },
     suggestionChip: {
         backgroundColor: colors.card,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 9999,
-        borderWidth: 1,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.border,
     },
     suggestionChipText: {
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: 13,
+        fontWeight: '600',
         color: colors.textSecondary,
     },
 
     // Discovery Section
     discoverySection: {
-        marginBottom: 24,
+        marginBottom: 28,
         paddingHorizontal: 16,
     },
     discoveryGrid: {
-        marginTop: 16,
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        justifyContent: 'space-between',
+        gap: 10,
     },
     discoveryTile: {
-        width: '47%',
-        borderRadius: 18,
+        width: '48%',
+        flexGrow: 1,
+        borderRadius: 14,
         backgroundColor: colors.card,
-        padding: 16,
+        paddingVertical: 16,
+        paddingHorizontal: 12,
         alignItems: 'center',
-        borderWidth: 1,
+        borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.border,
     },
     discoveryIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
+        width: 44,
+        height: 44,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 12,
+        marginBottom: 10,
     },
     discoveryLabel: {
         fontSize: 13,
-        fontWeight: '800',
+        fontWeight: '700',
         color: colors.text,
         textAlign: 'center',
     },
