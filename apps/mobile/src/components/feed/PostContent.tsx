@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useState } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, Platform, LayoutChangeEvent } from 'react-native';
+import { ScalePressable } from '@/components/common';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +12,7 @@ import { HeartBurstOverlay } from './HeartBurstOverlay';
 import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, ClubCreatedSection } from './PostCardSections';
 import { formatNumber, formatRelativeTime } from '@/utils';
 import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
+import { postMediaTransitionTag } from '@/utils/postMediaTransition';
 import { renderPostBodyText } from '@/utils/renderEmojiText';
 import { feedBodyPreferKhmer, feedTextStyle, ACTIONABLE_FEED_CTA_TYPES } from '@/config/feedTypography';
 
@@ -132,6 +134,7 @@ const PostContent = ({
             enableViewer={false}
             optimizeForFeed
             contentWidth={mediaContentWidth}
+            sharedTransitionTag={postMediaTransitionTag(post.id)}
           />
           <HeartBurstOverlay burstToken={heartBurstToken} />
           {/* Rich content indicators */}
@@ -158,9 +161,9 @@ const PostContent = ({
       )}
 
       {!isAutomated && !!post.content?.trim() && (
-        <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
+        <ScalePressable pressScale={0.995} pressOpacity={false} onPress={onPress} style={styles.contentSection}>
           {renderPostBodyText(post.content, styles.contentText, 2)}
-        </TouchableOpacity>
+        </ScalePressable>
       )}
 
       {/* Quoted original (quote-tweet style). Light card, no inner engagement
@@ -168,8 +171,8 @@ const PostContent = ({
           + CTA sit in the footer so it's clear they belong to the quoted post.
           Tapping anywhere opens the original. */}
       {isRepost && (
-        <TouchableOpacity
-          activeOpacity={0.85}
+        <ScalePressable
+          pressScale={0.98}
           onPress={() => navigate?.('PostDetail', { postId: post.repostOf!.id })}
           style={styles.quoteCard}
           accessibilityRole="button"
@@ -227,10 +230,8 @@ const PostContent = ({
               </>
             )}
           </View>
-        </TouchableOpacity>
+        </ScalePressable>
       )}
-
-      {/* Poll Voting */}
       {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
         <View style={styles.pollSection}>
           <PollVoting
@@ -287,9 +288,9 @@ const PostContent = ({
       {post.topicTags && post.topicTags.length > 0 && (
         <View style={styles.topicTagsContainer}>
           {post.topicTags.slice(0, 4).map((tag: string, index: number) => (
-            <TouchableOpacity key={index} style={styles.topicTag}>
+            <ScalePressable key={index} pressScale={0.94} style={styles.topicTag}>
               <Text style={styles.topicTagText}>#{tag}</Text>
-            </TouchableOpacity>
+            </ScalePressable>
           ))}
           {post.topicTags.length > 4 && (
             <Text style={styles.moreTagsText}>+{post.topicTags.length - 4}</Text>
@@ -356,14 +357,14 @@ const PostContent = ({
           Passive types (Article, Reflection, Achievement…) rely on tap + type chip. */}
       {!isRepost && !post.quizData && ACTIONABLE_FEED_CTA_TYPES.has(post.postType) && !!typeConfig.ctaLabel && (
         <View style={styles.genericCtaContainer}>
-          <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+          <ScalePressable pressScale={0.96} onPress={onPress}>
             <View style={[styles.genericCtaButton, { backgroundColor: typeConfig.color + '15' }]}>
               <Text style={[styles.genericCtaText, { color: typeConfig.color }]}>
                 {typeConfig.ctaLabel}
               </Text>
               <Ionicons name="arrow-forward" size={16} color={typeConfig.color} />
             </View>
-          </TouchableOpacity>
+          </ScalePressable>
         </View>
       )}
 

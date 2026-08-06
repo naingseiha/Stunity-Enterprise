@@ -9,7 +9,6 @@ import React from 'react';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   Platform,
   type ViewStyle,
@@ -17,6 +16,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+
+import { ScalePressable } from '@/components/common';
 
 import { useThemeContext } from '@/contexts';
 import { Haptics } from '@/services/haptics';
@@ -51,12 +52,12 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
         <View style={styles.leftSpacer} />
       )}
 
-      <Pressable
+      <ScalePressable
         onPress={handlePress}
-        style={({ pressed }) => [
+        pressScale={0.94}
+        style={[
           styles.pill,
           active ? styles.pillActive : styles.pillInactive,
-          pressed && { opacity: 0.85 },
         ]}
         accessibilityRole="switch"
         accessibilityState={{ checked: active }}
@@ -70,7 +71,7 @@ export const BrainModeToggle: React.FC<Props> = ({ active, onToggle }) => {
         <Text style={[styles.pillText, active ? styles.pillTextActive : styles.pillTextInactive]}>
           {t('feed.brainMode.label', { defaultValue: 'Brain Mode' })}
         </Text>
-      </Pressable>
+      </ScalePressable>
     </View>
   );
 };

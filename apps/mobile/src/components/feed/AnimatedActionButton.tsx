@@ -108,6 +108,11 @@ export const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
     haloOpacity.value = withTiming(0, { duration: 260 });
   }, [active, scale, haloScale, haloOpacity]);
 
+  const handlePressIn = useCallback(() => {
+    cancelAnimation(scale);
+    scale.value = withTiming(0.86, { duration: 45 });
+  }, [scale]);
+
   const handlePress = useCallback(() => {
     animatePress();
     onPress();
@@ -115,6 +120,7 @@ export const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
 
   return (
     <Pressable
+      onPressIn={handlePressIn}
       onPress={handlePress}
       onLongPress={onLongPress}
       delayLongPress={220}
@@ -154,8 +160,8 @@ AnimatedActionButton.displayName = 'AnimatedActionButton';
 
 const styles = StyleSheet.create({
   pressable: {
-    minWidth: 34,
-    minHeight: 34,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

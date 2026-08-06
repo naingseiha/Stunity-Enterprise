@@ -252,7 +252,9 @@ const getKhmerSpanStyle = (
 ): TextStyle => {
   const isKoulen = fontFamily === KHMER_FONT_FAMILIES.heading;
   const fontSize = typeof baseStyle.fontSize === 'number' ? baseStyle.fontSize : 15;
-  const minKoulenLineHeight = Math.round(fontSize * 1.6);
+  const minKoulenLineHeight = Math.round(
+    fontSize * (fontSize >= 20 ? 1.9 : 1.6),
+  );
 
   return {
     ...baseStyle,

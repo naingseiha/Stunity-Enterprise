@@ -276,9 +276,10 @@ const FeedStackNavigator = () => {
       name="PostDetail"
       component={PostDetailScreen}
       options={{
-        animation:
-          Platform.OS === "ios" ? "fade_from_bottom" : "slide_from_right",
-        animationDuration: 260,
+        animation: 'slide_from_right',
+        animationDuration: 280,
+        gestureEnabled: true,
+        fullScreenGestureEnabled: Platform.OS === 'ios',
       }}
     />
     <FeedStack.Screen name="Comments" component={CommentsScreen} />

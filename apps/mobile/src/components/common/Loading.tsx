@@ -4,9 +4,16 @@
  * Various loading states for the app with shimmer animations
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { Colors, Typography, Spacing } from '@/config';
 import { useThemeContext } from '@/contexts';
 
@@ -61,17 +68,19 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 }) => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const shimmerTranslate = useRef(new Animated.Value(-300)).current;
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(shimmerTranslate, {
-        toValue: 300,
-        duration: 1000,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1400, easing: Easing.linear }),
+      -1,
+      false,
+    );
+  }, [progress]);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -280 + progress.value * 560 }],
+  }));
 
   return (
     <View
@@ -85,12 +94,12 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         style,
       ]}
     >
-      <Animated.View style={[styles.shimmer, { transform: [{ translateX: shimmerTranslate }] }]}>
+      <Animated.View style={[styles.shimmer, shimmerStyle]}>
         <LinearGradient
           colors={[
             'transparent',
-            isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.6)',
-            'transparent'
+            isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.55)',
+            'transparent',
           ]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -101,7 +110,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   );
 };
 
-// Post Skeleton
+// Post Skeleton — LinkedIn-style full-bleed feed row
 export const PostSkeleton: React.FC = () => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -110,17 +119,20 @@ export const PostSkeleton: React.FC = () => {
       <View style={styles.postHeader}>
         <Skeleton width={40} height={40} borderRadius={20} />
         <View style={styles.postHeaderText}>
-          <Skeleton width={120} height={14} />
-          <Skeleton width={80} height={12} style={{ marginTop: 6 }} />
+          <Skeleton width={132} height={14} borderRadius={7} />
+          <Skeleton width={88} height={11} borderRadius={6} style={{ marginTop: 8 }} />
         </View>
+        <Skeleton width={20} height={20} borderRadius={10} />
       </View>
-      <Skeleton height={16} style={{ marginTop: 12 }} />
-      <Skeleton width="80%" height={16} style={{ marginTop: 8 }} />
-      <Skeleton height={200} style={{ marginTop: 12 }} borderRadius={12} />
+      <Skeleton height={14} style={{ marginTop: 14 }} borderRadius={7} />
+      <Skeleton width="92%" height={14} style={{ marginTop: 8 }} borderRadius={7} />
+      <Skeleton width="68%" height={14} style={{ marginTop: 8 }} borderRadius={7} />
+      <Skeleton height={220} style={{ marginTop: 12, marginHorizontal: 12 }} borderRadius={16} />
       <View style={styles.postActions}>
-        <Skeleton width={60} height={24} borderRadius={12} />
-        <Skeleton width={60} height={24} borderRadius={12} />
-        <Skeleton width={60} height={24} borderRadius={12} />
+        <Skeleton width={52} height={22} borderRadius={11} />
+        <Skeleton width={52} height={22} borderRadius={11} />
+        <Skeleton width={52} height={22} borderRadius={11} />
+        <Skeleton width={36} height={22} borderRadius={11} />
       </View>
     </View>
   );
@@ -238,13 +250,17 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   postSkeleton: {
     backgroundColor: colors.card,
-    padding: Spacing[4],
-    marginBottom: Spacing[3],
-    borderRadius: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+    marginBottom: 0,
+    borderRadius: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.16)' : '#E5E7EB',
   },
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: Spacing[4],
   },
   postHeaderText: {
     marginLeft: Spacing[3],
@@ -252,11 +268,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   },
   postActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 20,
     marginTop: Spacing[4],
-    paddingTop: Spacing[4],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    paddingHorizontal: Spacing[4],
+    paddingTop: Spacing[3],
   },
   profileSkeleton: {
     backgroundColor: colors.card,

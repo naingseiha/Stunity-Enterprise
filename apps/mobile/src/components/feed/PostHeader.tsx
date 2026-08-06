@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useRef } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Pressable, Animated, Platform } from 'react-native';
+import { ScalePressable } from '@/components/common';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
 import { formatRelativeTime } from '@/utils';
@@ -93,7 +94,7 @@ const PostHeader = ({
 
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onUserPress} activeOpacity={0.8}>
+      <ScalePressable pressScale={0.94} onPress={onUserPress}>
         <Avatar
           uri={author.profilePictureUrl}
           name={authorName}
@@ -102,12 +103,12 @@ const PostHeader = ({
           showOnline={!!author.isOnline}
           isOnline={!!author.isOnline}
         />
-      </TouchableOpacity>
+      </ScalePressable>
 
       <View style={styles.authorInfo}>
         {/* Name + badges + ··· on the top line */}
         <View style={styles.nameActionsRow}>
-          <TouchableOpacity onPress={onUserPress} activeOpacity={0.8} style={styles.nameBadges}>
+          <ScalePressable pressScale={0.98} pressOpacity={false} onPress={onUserPress} style={styles.nameBadges}>
             <View style={styles.authorRow}>
               {renderProfileNameText(authorName, styles.authorName, 1)}
 
@@ -128,7 +129,7 @@ const PostHeader = ({
 
               {typeof edScore === 'number' ? <EdScoreBadge score={edScore} /> : null}
             </View>
-          </TouchableOpacity>
+          </ScalePressable>
 
           <View style={styles.menuContainer}>
             <Animated.View style={{ transform: [{ scale: menuScale }] }}>
@@ -146,7 +147,7 @@ const PostHeader = ({
 
         {/* Meta + teacher verified + Follow on the second line */}
         <View style={styles.metaRow}>
-          <TouchableOpacity onPress={onUserPress} activeOpacity={0.8} style={styles.metaLeft}>
+          <ScalePressable pressScale={0.98} pressOpacity={false} onPress={onUserPress} style={styles.metaLeft}>
             <Text style={styles.timeText}>{formatRelativeTime(createdAt, t)}</Text>
             <Text style={styles.metaDot}>•</Text>
             <View style={styles.visibilityIndicator}>
@@ -183,18 +184,18 @@ const PostHeader = ({
                 </View>
               </>
             )}
-          </TouchableOpacity>
+          </ScalePressable>
 
           {!isCurrentUser && (
             <>
               <Text style={styles.metaDot}>•</Text>
-              <TouchableOpacity
+              <ScalePressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onFollow();
                 }}
                 disabled={followLoading}
-                activeOpacity={0.5}
+                pressScale={0.94}
                 style={styles.followBtnWrap}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               >
@@ -205,7 +206,7 @@ const PostHeader = ({
                 ) : (
                   <Text style={styles.followBtnText}>{t('common.follow')}</Text>
                 )}
-              </TouchableOpacity>
+              </ScalePressable>
             </>
           )}
         </View>

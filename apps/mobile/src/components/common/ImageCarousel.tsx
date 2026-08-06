@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { Image, ImageLoadEventData } from 'expo-image';
+import Reanimated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import type { MediaMetadata } from '@/types';
 import { normalizeMediaUrls } from '@/utils';
@@ -47,6 +48,8 @@ interface ImageCarouselProps {
   fullBleed?: boolean;
   /** Measured inner width from parent `onLayout` (e.g. feed post media row). Overrides feed fallback math when set. */
   contentWidth?: number;
+  /** Reanimated shared tag — first still image only (feed → PostDetail hero). */
+  sharedTransitionTag?: string;
 }
 
 // Helper to check if URI is video
@@ -171,6 +174,7 @@ function ImageCarouselInner({
   optimizeForFeed = false,
   fullBleed = false,
   contentWidth,
+  sharedTransitionTag,
 }: ImageCarouselProps) {
   const { t } = useTranslation();
   const { width: SCREEN_WIDTH } = useWindowDimensions();
@@ -377,18 +381,33 @@ function ImageCarouselInner({
             useNativeControls={!optimizeForFeed}
           />
         ) : (
-          <Image
-            source={{ uri }}
-            style={[styles.image, { borderRadius }]}
-            contentFit={isItemHeightCapped ? 'contain' : 'cover'}
-            transition={150}
-            cachePolicy="memory-disk"
-            priority={optimizeForFeed ? 'high' : 'normal'}
-            recyclingKey={uri}
-            blurRadius={0}
-            allowDownscaling={optimizeForFeed}
-            onLoad={!usesFixedHeight && !usesMultiMediaFeedFrame ? (event) => handleImageLoad(index, event) : undefined}
-          />
+          (() => {
+            const imageNode = (
+              <Image
+                source={{ uri }}
+                style={[styles.image, { borderRadius }]}
+                contentFit={isItemHeightCapped ? 'contain' : 'cover'}
+                transition={150}
+                cachePolicy="memory-disk"
+                priority={optimizeForFeed ? 'high' : 'normal'}
+                recyclingKey={uri}
+                blurRadius={0}
+                allowDownscaling={optimizeForFeed}
+                onLoad={!usesFixedHeight && !usesMultiMediaFeedFrame ? (event) => handleImageLoad(index, event) : undefined}
+              />
+            );
+            if (sharedTransitionTag && index === 0) {
+              return (
+                <Reanimated.View
+                  sharedTransitionTag={sharedTransitionTag}
+                  style={StyleSheet.absoluteFill}
+                >
+                  {imageNode}
+                </Reanimated.View>
+              );
+            }
+            return imageNode;
+          })()
         )}
       </TouchableOpacity>
     );
@@ -405,6 +424,7 @@ function ImageCarouselInner({
     optimizeForFeed,
     usesFixedHeight,
     usesMultiMediaFeedFrame,
+    sharedTransitionTag,
   ]);
 
   // Single item — wrap in a clipping View so borderRadius applies perfectly

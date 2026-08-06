@@ -32,6 +32,13 @@ export const FeedType = {
     lineHeight: 24,
     lineHeightKhmer: 26,
   },
+  /** Post detail hero title — moderate size; Koulen needs ascender room. */
+  titleDetail: {
+    fontSize: 19,
+    fontWeight: '700' as const,
+    lineHeight: 24,
+    lineHeightKhmer: 36,
+  },
   quote: {
     fontSize: 13,
     fontWeight: '400' as const,

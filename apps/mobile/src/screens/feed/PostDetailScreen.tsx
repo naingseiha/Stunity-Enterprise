@@ -32,11 +32,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
-import { feedBodyPreferKhmer, feedTextStyle } from '@/config/feedTypography';
+import { feedBodyPreferKhmer, feedTextStyle, textContainsKhmer } from '@/config/feedTypography';
 
 
-import { Avatar, ImageCarousel } from '@/components/common';
+import { Avatar, ImageCarousel, ScalePressable } from '@/components/common';
 import { EducationalValueModal, type EducationalValue, PollVoting } from '@/components/feed';
+import PostDetailAppBar from '@/components/feed/PostDetailAppBar';
+import PostDetailQuizHero from '@/components/feed/PostDetailQuizHero';
 import PostOptionsSheet, { PostOptionAction } from '@/components/feed/PostOptionsSheet';
 import { RepostComposer } from '@/components/feed/RepostComposer';
 import { useFeatureFlag } from '@/config/featureFlags';
@@ -47,6 +49,7 @@ import { FeedStackParamList } from '@/navigation/types';
 import { feedApi } from '@/api/client';
 import { useThemeContext } from '@/contexts';
 import { getPostDetailMediaAspectRatio, getPostDetailMediaBucket } from '@/utils/feedMediaLayout';
+import { postMediaTransitionTag } from '@/utils/postMediaTransition';
 import { renderPostBodyText, renderPostTitleText } from '@/utils/renderEmojiText';
 import { shareContent, buildPostShareContent } from '@/utils/sharePost';
 import { AnimatedActionButton } from '@/components/feed/AnimatedActionButton';
@@ -150,7 +153,7 @@ const CommentItem: React.FC<{
         </View>
         <View style={styles.commentActions}>
           <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
-          <TouchableOpacity onPress={handleLike} style={styles.commentAction}>
+          <ScalePressable onPress={handleLike} pressScale={0.94} style={styles.commentAction}>
             <Ionicons
               name={comment.isLiked ? 'heart' : 'heart-outline'}
               size={14}
@@ -159,12 +162,12 @@ const CommentItem: React.FC<{
             {comment.likes > 0 && (
               <Text style={[styles.commentActionText, comment.isLiked && { color: '#EF4444' }]}>{comment.likes}</Text>
             )}
-          </TouchableOpacity>
+          </ScalePressable>
           {depth === 0 && (
-          <TouchableOpacity onPress={() => onReply(comment)} style={styles.commentAction}>
+          <ScalePressable onPress={() => onReply(comment)} pressScale={0.94} style={styles.commentAction}>
             <Ionicons name="chatbubble-outline" size={13} color={colors.textTertiary} />
             <Text style={styles.commentActionText}>{t('common.reply')}</Text>
-          </TouchableOpacity>
+          </ScalePressable>
           )}
         </View>
         {comment.replies?.map(reply => (
@@ -227,7 +230,8 @@ export default function PostDetailScreen() {
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const bookmarkScale = useRef(new Animated.Value(1)).current;
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(18)).current;
@@ -239,9 +243,14 @@ export default function PostDetailScreen() {
     `${post?.title || ''} ${post?.content || ''}`,
     i18n.resolvedLanguage || i18n.language,
   );
+  const titlePreferKhmer = feedBodyPreferKhmer(
+    post?.title,
+    i18n.resolvedLanguage || i18n.language,
+  );
+  const titleHasKhmer = textContainsKhmer(post?.title);
   const styles = React.useMemo(
-    () => createStyles(colors, isDark, preferKhmer),
-    [colors, isDark, preferKhmer],
+    () => createStyles(colors, isDark, preferKhmer, titlePreferKhmer, titleHasKhmer),
+    [colors, isDark, preferKhmer, titlePreferKhmer, titleHasKhmer],
   );
   const postComments = storeComments[postId] || [];
   const isSubmitting = isSubmittingComment[postId] || false;
@@ -322,6 +331,15 @@ export default function PostDetailScreen() {
     opacity: screenOpacity,
     transform: [{ translateY: screenTranslateY }],
   };
+
+  const onScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: true },
+  );
+
+  const handleGoBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
   // ─── Handlers ───────────────────────────────────────
   const handleLike = useCallback(async () => {
@@ -491,15 +509,13 @@ export default function PostDetailScreen() {
   if (isLoading && !post) {
     return (
       <View style={styles.centeredContainer}>
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{t('feed.detail.title')}</Text>
-            <View style={{ width: 36 }} />
-          </View>
-        </SafeAreaView>
+        <PostDetailAppBar
+          title={t('feed.detail.title')}
+          onBack={handleGoBack}
+          showActions={false}
+          colors={colors}
+          isDark={isDark}
+        />
         <View style={styles.loadingBody}>
           <ActivityIndicator size="large" color="#6366F1" />
           <Text style={styles.loadingText}>{t('feed.detail.fetching')}</Text>
@@ -511,23 +527,21 @@ export default function PostDetailScreen() {
   if (loadError && !post) {
     return (
       <View style={styles.centeredContainer}>
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{t('common.post')}</Text>
-            <View style={{ width: 36 }} />
-          </View>
-        </SafeAreaView>
+        <PostDetailAppBar
+          title={t('common.post')}
+          onBack={handleGoBack}
+          showActions={false}
+          colors={colors}
+          isDark={isDark}
+        />
         <View style={styles.loadingBody}>
           <Ionicons name="alert-circle-outline" size={56} color={colors.textTertiary} />
           <Text style={styles.errorTitle}>{t('feed.detail.loadError')}</Text>
           <Text style={styles.errorSubtitle}>{t('feed.detail.loadErrorSubtitle')}</Text>
-          <TouchableOpacity onPress={loadPost} style={styles.retryBtn}>
+          <ScalePressable pressScale={0.96} onPress={loadPost} style={styles.retryBtn}>
             <Ionicons name="refresh" size={18} color="#FFFFFF" />
             <Text style={styles.retryBtnText}>{t('common.tryAgain')}</Text>
-          </TouchableOpacity>
+          </ScalePressable>
         </View>
       </View>
     );
@@ -566,43 +580,25 @@ export default function PostDetailScreen() {
     } : null,
   ].filter(Boolean) as Array<{ key: string; icon: string; color: string; text: string }>;
   const commentCount = post.comments ?? postComments.length;
+  const isQuizPost = post.postType === 'QUIZ' && !!post.quizData;
 
   // ─── Render ─────────────────────────────────────────
   return (
     <View style={styles.container}>
-      {/* ── Header ── */}
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-          </TouchableOpacity>
-
-          {/* Post type badge in header */}
-          <View style={styles.headerCenter}>
-            <View style={[styles.headerTypeBadge, { backgroundColor: isDark ? `${typeConfig.color}26` : typeConfig.bgColor }]}>
-              <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
-              <Text style={[styles.headerTypeText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
-            </View>
-          </View>
-
-          <View style={styles.headerActions}>
-            {/* Bookmark always visible in header */}
-            <Animated.View style={bookmarkAnimStyle}>
-              <TouchableOpacity onPress={handleBookmark} style={styles.headerIconBtn}>
-                <Ionicons
-                  name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-                  size={22}
-                  color={bookmarked ? '#6366F1' : '#6B7280'}
-                />
-              </TouchableOpacity>
-            </Animated.View>
-            {/* Menu */}
-            <TouchableOpacity style={styles.headerIconBtn} onPress={handleMenuToggle}>
-              <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeAreaView>
+      <PostDetailAppBar
+        title={t('common.post')}
+        onBack={handleGoBack}
+        scrollY={scrollY}
+        authorName={authorName}
+        authorAvatarUri={post.author.profilePictureUrl}
+        onAuthorPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
+        bookmarked={bookmarked}
+        onBookmark={handleBookmark}
+        onMenu={handleMenuToggle}
+        bookmarkAnimStyle={bookmarkAnimStyle}
+        colors={colors}
+        isDark={isDark}
+      />
 
       <Animated.View style={[styles.detailBody, detailEntranceStyle]}>
         <KeyboardAvoidingView
@@ -610,23 +606,26 @@ export default function PostDetailScreen() {
           style={{ flex: 1 }}
           keyboardVerticalOffset={0}
         >
-        <ScrollView
+        <Animated.ScrollView
           ref={scrollViewRef}
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           nestedScrollEnabled={Platform.OS === 'android'}
+          scrollEventThrottle={16}
+          onScroll={onScroll}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />}
         >
           {/* ── Author Section ── */}
           <Animated.View style={styles.authorCard}>
             <View style={styles.authorRow}>
-              <TouchableOpacity
+              <ScalePressable
+                pressScale={0.98}
+                pressOpacity={false}
                 style={styles.authorProfileBtn}
                 onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
-                activeOpacity={0.7}
               >
-                <Avatar uri={post.author.profilePictureUrl} name={authorName} size="lg" variant="post" />
+                <Avatar uri={post.author.profilePictureUrl} name={authorName} size="md" variant="post" />
                 <View style={styles.authorInfo}>
                   <View style={styles.authorNameRow}>
                     <Text style={styles.authorName}>{authorName}</Text>
@@ -646,13 +645,12 @@ export default function PostDetailScreen() {
                     <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </ScalePressable>
 
-              {/* Follow button for non-own posts */}
               {!isCurrentUser && (
-                <TouchableOpacity
+                <ScalePressable
+                  pressScale={0.94}
                   style={[styles.followBtn, isFollowingAuthor && styles.followingBtn]}
-                  activeOpacity={0.7}
                   disabled={followLoading}
                   onPress={handleFollow}
                 >
@@ -663,7 +661,7 @@ export default function PostDetailScreen() {
                       {isFollowingAuthor ? t('common.following') : t('common.follow')}
                     </Text>
                   )}
-                </TouchableOpacity>
+                </ScalePressable>
               )}
             </View>
           </Animated.View>
@@ -696,6 +694,7 @@ export default function PostDetailScreen() {
                 mode={shouldUseFixedDetailMedia ? detailMediaMode : 'auto'}
                 fullBleed
                 contentWidth={detailMediaContentWidth}
+                sharedTransitionTag={postMediaTransitionTag(post.id)}
               />
               {/* View count overlay */}
               <View style={styles.viewCountOverlay}>
@@ -707,97 +706,49 @@ export default function PostDetailScreen() {
             </Animated.View>
           )}
 
-          {/* ── Title (if present) ── */}
+          {/* ── Title ── */}
           {post.title && (
             <Animated.View style={styles.titleSection}>
+              {isQuizPost && (
+                <Text style={styles.quizSectionLabel}>{typeConfig.label}</Text>
+              )}
               {renderPostTitleText(post.title, styles.postTitle)}
             </Animated.View>
           )}
 
-          {/* ── Content ── */}
+          {/* ── Body text ── */}
+          {!!post.content?.trim() && (
+            <Animated.View style={styles.contentCard}>
+              {renderPostBodyText(post.content, styles.contentText)}
+            </Animated.View>
+          )}
+
+          {/* Poll */}
+          {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
+            <View style={styles.pollSection}>
+              <PollVoting
+                options={post.pollOptions}
+                userVotedOptionId={post.userVotedOptionId}
+                onVote={(optionId) => voteOnPoll(post.id, optionId)}
+                endsAt={post.learningMeta?.deadline}
+              />
+            </View>
+          )}
+
+          {/* Quiz hero — featured block */}
+          {isQuizPost && post.quizData && (
+            <PostDetailQuizHero
+              quizData={post.quizData}
+              postTitle={post.title}
+              postContent={post.content}
+              gradient={getQuizGradient(post.id)}
+              accentColor={typeConfig.color}
+            />
+          )}
+
+          {/* Non-quiz extras inside content flow */}
+          {!isQuizPost && (
           <Animated.View style={styles.contentCard}>
-            {renderPostBodyText(post.content, styles.contentText)}
-
-            {/* Poll Voting */}
-            {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
-              <View style={styles.pollSection}>
-                <PollVoting
-                  options={post.pollOptions}
-                  userVotedOptionId={post.userVotedOptionId}
-                  onVote={(optionId) => voteOnPoll(post.id, optionId)}
-                  endsAt={post.learningMeta?.deadline}
-                />
-              </View>
-            )}
-
-            {/* Quiz Card */}
-            {post.postType === 'QUIZ' && post.quizData && (
-              <View style={styles.quizSection}>
-                <LinearGradient
-                  colors={getQuizGradient(post.id)}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.quizGradientCard}
-                >
-                  <View style={styles.quizHeader}>
-                    <View style={styles.quizIconCircle}>
-                      <Ionicons name="rocket" size={24} color={typeConfig.color} />
-                    </View>
-                    <View style={styles.quizHeaderText}>
-                      <Text style={styles.quizHeaderTitle}>{t('feed.sections.testKnowledge')}</Text>
-                      <Text style={styles.quizHeaderSubtitle}>{t('feed.sections.completeQuiz')}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.quizStatsGrid}>
-                    <View style={styles.quizStatItem}>
-                      <View style={styles.quizStatIconBg}>
-                        <Ionicons name="document-text-outline" size={18} color={typeConfig.color} />
-                      </View>
-                      <Text style={styles.quizStatValue}>{post.quizData.questions?.length || 0}</Text>
-                      <Text style={styles.quizStatLabel}>{t('feed.sections.questions')}</Text>
-                    </View>
-                    <View style={styles.quizStatItem}>
-                      <View style={styles.quizStatIconBg}>
-                        <Ionicons name="time-outline" size={18} color={typeConfig.color} />
-                      </View>
-                      <Text style={styles.quizStatValue}>
-                        {post.quizData.timeLimit ? t('feed.sections.minutesShort', { count: post.quizData.timeLimit }) : '∞'}
-                      </Text>
-                      <Text style={styles.quizStatLabel}>{t('feed.sections.time')}</Text>
-                    </View>
-                    <View style={styles.quizStatItem}>
-                      <View style={styles.quizStatIconBg}>
-                        <Ionicons name="star" size={18} color="#0EA5E9" />
-                      </View>
-                      <Text style={styles.quizStatValue}>{post.quizData.totalPoints || 100}</Text>
-                      <Text style={styles.quizStatLabel}>{t('feed.sections.points')}</Text>
-                    </View>
-                  </View>
-                  {post.quizData.userAttempt && (
-                    <View style={styles.quizPrevResult}>
-                      <Ionicons name="checkmark-circle" size={16} color={post.quizData.userAttempt.passed ? '#22c55e' : '#f59e0b'} />
-                      <Text style={styles.quizPrevResultText}>
-                        {t('feed.detail.lastAttempt', { score: Math.round(post.quizData.userAttempt.score ?? 0) })}
-                        {post.quizData.userAttempt.passed ? t('feed.detail.passedSuffix') : t('feed.detail.notPassedSuffix')}
-                      </Text>
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    style={styles.quizStartButton}
-                    onPress={() => navigation.navigate('QuizDetails' as any, {
-                      quiz: { ...post.quizData, title: post.title },
-                    })}
-                  >
-                    <Text style={styles.quizStartButtonText}>
-                      {post.quizData.userAttempt ? t('feed.detail.retakeQuiz') : t('feed.detail.startQuiz')}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={20} color={typeConfig.color} />
-                  </TouchableOpacity>
-                </LinearGradient>
-              </View>
-            )}
-
-            {/* ── Topic Tags ── */}
             {post.topicTags && post.topicTags.length > 0 && (
               <View style={styles.tagsRow}>
                 {post.topicTags.map((tag, i) => (
@@ -835,6 +786,17 @@ export default function PostDetailScreen() {
               ))}
             </View>
           </Animated.View>
+          )}
+
+          {isQuizPost && post.topicTags && post.topicTags.length > 0 && (
+            <View style={styles.tagsRow}>
+              {post.topicTags.map((tag, i) => (
+                <View key={i} style={styles.tag}>
+                  <Text style={styles.tagText}>#{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* ── Progress Bar ── */}
           {learningMeta?.progress !== undefined && ['COURSE', 'QUIZ', 'TUTORIAL'].includes(post.postType) && (
@@ -854,26 +816,9 @@ export default function PostDetailScreen() {
             </Animated.View>
           )}
 
-          {/* ── Engagement Stats ── */}
+          {/* ── Engagement ── */}
           <Animated.View style={styles.engagementCard}>
-            <View style={styles.statsRow}>
-              <TouchableOpacity style={styles.statItem}>
-                <Ionicons name="heart" size={16} color="#EF4444" />
-                <Text style={styles.statText}>{formatNumber(likeCount)}</Text>
-              </TouchableOpacity>
-              <View style={styles.statDot} />
-              <TouchableOpacity style={styles.statItem} onPress={handleScrollToComments}>
-                <Ionicons name="chatbubble" size={16} color="#6366F1" />
-                <Text style={styles.statText}>{commentCount} {t('feed.sections.comments')}</Text>
-              </TouchableOpacity>
-              <View style={styles.statDot} />
-              <View style={styles.statItem}>
-                <Ionicons name="eye" size={16} color="#9CA3AF" />
-                <Text style={styles.statText}>{formatNumber(viewCount)}</Text>
-              </View>
-            </View>
-
-            {/* Action Bar — Reanimated press feedback (parity with feed PostCard) */}
+            {/* Action Bar — matches feed PostCard */}
             <View style={styles.feedActionBar}>
               <View style={styles.feedActionLeft}>
                 <AnimatedActionButton
@@ -966,9 +911,10 @@ export default function PostDetailScreen() {
               ))
             )}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
 
         {/* ── Comment Input ── */}
+        <SafeAreaView edges={['bottom']} style={styles.commentInputSafe}>
         <View style={styles.commentInputBar}>
           <Avatar
             uri={user?.profilePictureUrl}
@@ -985,9 +931,9 @@ export default function PostDetailScreen() {
                   </Text>
                   <Text style={styles.replyBannerText} numberOfLines={1}>{replyingTo.content}</Text>
                 </View>
-                <TouchableOpacity onPress={handleCancelReply} style={styles.replyBannerClose}>
+                <ScalePressable pressScale={0.9} onPress={handleCancelReply} style={styles.replyBannerClose}>
                   <Ionicons name="close" size={16} color={colors.textSecondary} />
-                </TouchableOpacity>
+                </ScalePressable>
               </View>
             )}
             <TextInput
@@ -1000,7 +946,8 @@ export default function PostDetailScreen() {
               maxLength={500}
             />
           </View>
-          <TouchableOpacity
+          <ScalePressable
+            pressScale={0.9}
             onPress={handleSendComment}
             disabled={!commentText.trim() || isSubmitting}
             style={[styles.sendBtn, commentText.trim() && !isSubmitting && styles.sendBtnActive]}
@@ -1014,8 +961,9 @@ export default function PostDetailScreen() {
                 color={commentText.trim() ? '#fff' : '#D1D5DB'}
               />
             )}
-          </TouchableOpacity>
+          </ScalePressable>
         </View>
+        </SafeAreaView>
         </KeyboardAvoidingView>
       </Animated.View>
       <EducationalValueModal
@@ -1046,7 +994,13 @@ export default function PostDetailScreen() {
 }
 
 // ─── Styles ─────────────────────────────────────────────────
-const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => StyleSheet.create({
+const createStyles = (
+  colors: any,
+  isDark: boolean,
+  preferKhmer = false,
+  titlePreferKhmer = false,
+  titleHasKhmer = false,
+) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centeredContainer: { flex: 1, backgroundColor: colors.background },
   loadingBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
@@ -1060,26 +1014,6 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
   },
   retryBtnText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
 
-  // Header
-  headerSafe: { backgroundColor: colors.card, zIndex: 100, borderBottomWidth: 1, borderBottomColor: colors.border },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 12, paddingVertical: 10,
-  },
-  backBtn: {
-    width: 36, height: 36, borderRadius: 12,
-    backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTypeBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14,
-  },
-  headerTypeText: { fontSize: 13, fontWeight: '700' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  headerIconBtn: { padding: 6 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   detailBody: { flex: 1 },
 
   // Dropdown
@@ -1096,9 +1030,13 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
 
   scrollContent: { paddingBottom: 100 },
 
-  // Author Section
+  // Author Section — compact, feed-aligned
   authorCard: {
-    backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 16,
+    backgroundColor: colors.card,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorProfileBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -1119,8 +1057,8 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
   timeText: { fontSize: 13, color: colors.textTertiary },
   followBtn: {
     minWidth: 82,
-    backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 7,
-    borderRadius: 14, alignItems: 'center',
+    backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 20, alignItems: 'center',
   },
   followBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
   followingBtn: { backgroundColor: isDark ? colors.surfaceVariant : '#EEF2FF', borderWidth: 1, borderColor: isDark ? colors.border : '#C7D2FE' },
@@ -1146,60 +1084,37 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
   viewCountText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
 
   // Title
-  titleSection: { backgroundColor: colors.card, paddingHorizontal: 16, paddingTop: 16 },
+  titleSection: {
+    backgroundColor: colors.card,
+    paddingHorizontal: 16,
+    paddingTop: titleHasKhmer ? 12 : 14,
+    paddingBottom: 6,
+    overflow: 'visible',
+    gap: 8,
+  },
+  quizSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    letterSpacing: -0.08,
+    textTransform: 'uppercase',
+  },
   postTitle: {
-    ...feedTextStyle('bodyDetail', { preferKhmer, color: colors.text }),
-    fontSize: 22,
-    fontWeight: '800',
-    lineHeight: preferKhmer ? 32 : 28,
+    ...feedTextStyle('titleDetail', { preferKhmer: titlePreferKhmer, color: colors.text }),
+    ...(titleHasKhmer && Platform.OS === 'android' ? { includeFontPadding: true } : null),
   },
 
   // Content
-  contentCard: { backgroundColor: colors.card, paddingBottom: 4 },
+  contentCard: { backgroundColor: colors.card },
   contentText: {
-    ...feedTextStyle('bodyDetail', { preferKhmer, color: colors.text }),
+    ...feedTextStyle('bodyDetail', { preferKhmer, color: colors.textSecondary }),
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 12,
   },
 
   // Poll
-  pollSection: { paddingHorizontal: 16, paddingBottom: 12 },
-
-  // Quiz
-  quizSection: { paddingHorizontal: 16, paddingBottom: 12 },
-  quizGradientCard: { borderRadius: 14, padding: 20 },
-  quizHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  quizIconCircle: {
-    width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  quizHeaderText: { flex: 1 },
-  quizHeaderTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
-  quizHeaderSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  quizStatsGrid: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  quizStatItem: {
-    flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14,
-    padding: 12, alignItems: 'center', gap: 6,
-  },
-  quizStatIconBg: {
-    width: 36, height: 36, borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  quizStatValue: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
-  quizStatLabel: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
-  quizPrevResult: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
-  },
-  quizPrevResultText: { fontSize: 13, color: '#FFFFFF', fontWeight: '500' },
-  quizStartButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.card, borderRadius: 14, paddingVertical: 14, gap: 8,
-  },
-  quizStartButtonText: { fontSize: 16, fontWeight: '700' },
+  pollSection: { paddingHorizontal: 16, paddingBottom: 12, backgroundColor: colors.card },
 
   // Tags
   tagsRow: {
@@ -1247,21 +1162,16 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
 
   // Engagement
   engagementCard: {
-    backgroundColor: colors.card, marginTop: 6,
+    backgroundColor: colors.card,
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
-  statsRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, paddingHorizontal: 16, gap: 10,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
-  },
-  statItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  statText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  statDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.border },
   feedActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
   },
   feedActionLeft: {
@@ -1289,7 +1199,12 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
 
   // Comments
   commentsSection: {
-    backgroundColor: colors.card, marginTop: 6, paddingHorizontal: 16, paddingVertical: 20,
+    backgroundColor: colors.card,
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   commentsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
   commentsTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
@@ -1336,6 +1251,9 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
   noCommentsSubtext: { fontSize: 13, color: colors.textTertiary, marginTop: 2 },
 
   // Comment Input
+  commentInputSafe: {
+    backgroundColor: colors.card,
+  },
   commentInputBar: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 10,
@@ -1358,7 +1276,7 @@ const createStyles = (colors: any, isDark: boolean, preferKhmer = false) => Styl
   replyBannerClose: { padding: 4 },
   commentInput: { fontSize: 14, color: colors.text, maxHeight: 80 },
   sendBtn: {
-    width: 38, height: 38, borderRadius: 19,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },

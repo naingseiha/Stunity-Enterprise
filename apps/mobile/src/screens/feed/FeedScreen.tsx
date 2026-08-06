@@ -30,6 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import Reanimated, { FadeIn, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 
 
 import StunityLogo from '../../../assets/Stunity.svg';
@@ -62,7 +63,7 @@ import QuizWarBanner from '@/components/feed/QuizWarBanner';
 import { getMockQuizWar, injectQuizWar } from '@/utils/mockQuizWars';
 import { fetchActiveQuizWar, joinQuizWar } from '@/api/quizWars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
+import { Avatar, PostSkeleton, NetworkStatus, EmptyState, ScalePressable } from '@/components/common';
 import { useFeatureFlag } from '@/config/featureFlags';
 import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
@@ -144,7 +145,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, avata
   });
 
   return (
-    <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
+    <ScalePressable pressScale={0.985} pressOpacity={false} style={perfCardStyles.card} onPress={onPress}>
       <View style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
 
@@ -232,7 +233,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, avata
           </View>
         </View>
       </View>
-    </TouchableOpacity>
+    </ScalePressable>
   );
 });
 
@@ -591,21 +592,24 @@ export default function FeedScreen() {
         })
       : base;
 
-    // Step 3: recall cards — real preferred, mocks as fallback, deferred hidden
+    // Step 3: recall cards — real API data only in production; dev mocks for UI work
     const rcBase = (serverRecallCards && serverRecallCards.length > 0)
       ? serverRecallCards
-      : getMockRecallCards();
+      : (__DEV__ ? getMockRecallCards() : []);
+
     const activeRecallCards = deferredCardIds.size > 0
       ? rcBase.filter(c => !deferredCardIds.has(c.id))
       : rcBase;
 
-    // Step 4: bounties — real preferred, mocks as fallback
+    // Step 4: bounties — real API data only in production
     const activeBounties = (serverBounties && serverBounties.length > 0)
       ? serverBounties
-      : getMockFeynmanBounties();
+      : (__DEV__ ? getMockFeynmanBounties() : []);
 
-    // Step 5: quiz war + all injections in one pass
-    const activeWar = quizWarEnabled ? serverQuizWar ?? getMockQuizWar() : null;
+    // Step 5: quiz war — flag-gated; no mock injection in production builds
+    const activeWar = quizWarEnabled
+      ? (serverQuizWar ?? (__DEV__ ? getMockQuizWar() : null))
+      : null;
     return injectQuizWar(
       injectFeynmanBounties(
         injectRecallCards(sorted, activeRecallCards, 5),
@@ -936,16 +940,17 @@ export default function FeedScreen() {
       <View style={styles.headerSafe}>
         <View style={styles.header}>
           {/* Menu Button - Left */}
-          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
+          <ScalePressable onPress={openSidebar} pressScale={0.9} style={styles.menuButton}>
             <Ionicons name="menu" size={28} color={colors.text} />
-          </TouchableOpacity>
+          </ScalePressable>
 
           {/* Stunity Logo - Center */}
           <StunityLogo width={130} height={36} />
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
-            <TouchableOpacity
+            <ScalePressable
+              pressScale={0.9}
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
             >
@@ -957,13 +962,14 @@ export default function FeedScreen() {
                   </Text>
                 </View>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity
+            </ScalePressable>
+            <ScalePressable
+              pressScale={0.9}
               style={styles.headerButton}
               onPress={() => navigation.navigate('Search' as any)}
             >
               <Ionicons name="search-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
+            </ScalePressable>
           </View>
         </View>
         {/* Header Divider */}
@@ -982,41 +988,41 @@ export default function FeedScreen() {
 
       {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
-        <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.8} style={styles.createPostRow}>
+        <ScalePressable onPress={handleCreatePost} pressScale={0.99} style={styles.createPostRow}>
           <Avatar uri={stableProfilePictureUrl} name={user ? `${user.lastName} ${user.firstName}` : (t('common.profile') || 'User')} size="md" variant="post" />
           <View style={styles.createPostInputFake}>
             <Text style={styles.createPostPlaceholder}>{t('feed.shareLearning')}</Text>
           </View>
-          <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
+          <View style={styles.createPostMediaButton}>
             <Ionicons name="images-outline" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </ScalePressable>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.quickActionsInCard}
         >
-          <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
+          <ScalePressable onPress={handleAskQuestion} pressScale={0.94} style={styles.inCardAction}>
             <Ionicons name="chatbubble-ellipses" size={20} color="#3B82F6" />
             <Text style={styles.inCardActionText}>{t('feed.ask')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
+          </ScalePressable>
+          <ScalePressable onPress={handleCreateQuiz} pressScale={0.94} style={styles.inCardAction}>
             <Ionicons name="bulb" size={20} color="#10B981" />
             <Text style={styles.inCardActionText}>{t('feed.quiz')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
+          </ScalePressable>
+          <ScalePressable onPress={handleCreatePoll} pressScale={0.94} style={styles.inCardAction}>
             <Ionicons name="bar-chart" size={20} color="#8B5CF6" />
             <Text style={styles.inCardActionText}>{t('feed.poll.label')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleNavigateToFocusReels} activeOpacity={0.7} style={styles.inCardAction}>
+          </ScalePressable>
+          <ScalePressable onPress={handleNavigateToFocusReels} pressScale={0.94} style={styles.inCardAction}>
             <Ionicons name="play-circle" size={20} color="#EF4444" />
             <Text style={styles.inCardActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreateBounty} activeOpacity={0.7} style={styles.inCardAction}>
+          </ScalePressable>
+          <ScalePressable onPress={handleCreateBounty} pressScale={0.94} style={styles.inCardAction}>
             <Ionicons name="ribbon" size={20} color="#D97706" />
             <Text style={styles.inCardActionText}>{t('feed.bounty.shortLabel', { defaultValue: 'Bounty' })}</Text>
-          </TouchableOpacity>
+          </ScalePressable>
         </ScrollView>
       </View>
 
@@ -1165,8 +1171,9 @@ export default function FeedScreen() {
     if (!isLoadingPosts || feedItems.length === 0) return null;
     return (
       <View style={styles.footer}>
-        <PostSkeleton />
-        <PostSkeleton />
+        <Reanimated.View entering={FadeIn.duration(220)}>
+          <PostSkeleton />
+        </Reanimated.View>
       </View>
     );
   }, [isLoadingPosts, feedItems.length]);
@@ -1226,7 +1233,9 @@ export default function FeedScreen() {
         <View style={styles.skeletonContainer}>
           {renderInitialLoadNotice()}
           {[1, 2, 3].map((i) => (
-            <PostSkeleton key={i} />
+            <Reanimated.View key={i} entering={FadeIn.delay((i - 1) * 70).duration(280)}>
+              <PostSkeleton />
+            </Reanimated.View>
           ))}
         </View>
       );
@@ -1285,22 +1294,22 @@ export default function FeedScreen() {
 
         <View style={styles.sideRailCard}>
           <Text style={styles.sideRailTitle}>{t('feed.shareLearning')}</Text>
-          <TouchableOpacity style={styles.sideRailAction} onPress={handleAskQuestion} activeOpacity={0.75}>
+          <ScalePressable pressScale={0.96} style={styles.sideRailAction} onPress={handleAskQuestion}>
             <Ionicons name="chatbubble-ellipses-outline" size={20} color="#0EA5E9" />
             <Text style={styles.sideRailActionText}>{t('feed.ask')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sideRailAction} onPress={handleCreateQuiz} activeOpacity={0.75}>
+          </ScalePressable>
+          <ScalePressable pressScale={0.96} style={styles.sideRailAction} onPress={handleCreateQuiz}>
             <Ionicons name="bulb-outline" size={20} color="#10B981" />
             <Text style={styles.sideRailActionText}>{t('feed.quiz')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sideRailAction} onPress={handleCreatePoll} activeOpacity={0.75}>
+          </ScalePressable>
+          <ScalePressable pressScale={0.96} style={styles.sideRailAction} onPress={handleCreatePoll}>
             <Ionicons name="bar-chart-outline" size={20} color="#8B5CF6" />
             <Text style={styles.sideRailActionText}>{t('feed.poll.label')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sideRailAction} onPress={handleNavigateToFocusReels} activeOpacity={0.75}>
+          </ScalePressable>
+          <ScalePressable pressScale={0.96} style={styles.sideRailAction} onPress={handleNavigateToFocusReels}>
             <Ionicons name="play-circle-outline" size={20} color="#EF4444" />
             <Text style={styles.sideRailActionText}>{t('feed.reels.label', { defaultValue: 'Reels' })}</Text>
-          </TouchableOpacity>
+          </ScalePressable>
         </View>
       </View>
     );
@@ -1343,14 +1352,14 @@ export default function FeedScreen() {
           </View>
           <Text style={styles.leftProfileName} numberOfLines={1}>{displayName}</Text>
           <Text style={styles.leftProfileRole} numberOfLines={1}>{roleLabel}</Text>
-          <TouchableOpacity
+          <ScalePressable
+            pressScale={0.96}
             style={styles.leftProfileLink}
             onPress={() => navigation.getParent()?.navigate('ProfileTab')}
-            activeOpacity={0.75}
           >
             <Ionicons name="person-outline" size={15} color={colors.primary} />
             <Text style={styles.leftProfileLinkText}>{t('common.profile')}</Text>
-          </TouchableOpacity>
+          </ScalePressable>
 
           <View style={styles.leftMetricGrid}>
             <View style={styles.leftMetric}>
@@ -1400,27 +1409,29 @@ export default function FeedScreen() {
 
       {/* New Posts Pill */}
       {pendingPosts.length > 0 && (
-        <Animated.View
+        <Reanimated.View
+          entering={FadeInDown.springify().damping(16).stiffness(280)}
+          exiting={FadeOutUp.duration(180)}
           style={styles.newPostsPillContainer}
         >
-          <TouchableOpacity
+          <ScalePressable
+            pressScale={0.94}
             style={[styles.newPostsPill, Shadows.md]}
             onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               const newCount = applyPendingPosts();
               if (newCount > 0) {
-                // Scroll to first data item (index 0) — this is the first new post,
-                // positioned right after the ListHeaderComponent
                 setTimeout(() => {
                   try {
                     flatListRef.current?.scrollToIndex({
                       index: 0,
                       animated: true,
-                      viewPosition: 0, // Align to top of viewport
+                      viewPosition: 0,
                     });
                   } catch {
                     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
                   }
-                }, 100); // Small delay to let FlashList re-render with new data
+                }, 100);
               }
             }}
           >
@@ -1430,8 +1441,8 @@ export default function FeedScreen() {
                 ? t('feed.newPost')
                 : t('feed.newPosts', { count: pendingPosts.length })}
             </Text>
-          </TouchableOpacity>
-        </Animated.View>
+          </ScalePressable>
+        </Reanimated.View>
       )}
 
       <View style={styles.feedBody}>
@@ -1875,9 +1886,10 @@ const createStyles = (colors: any, isDark: boolean, isTablet: boolean, isLargeTa
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 8,
+    minHeight: 36,
   },
   inCardActionText: {
     fontSize: 12,
