@@ -5,46 +5,51 @@ const withNextIntl = createNextIntlPlugin('./src/lib/i18n.ts');
 const nextConfig = {
   reactStrictMode: true,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'pub-772730709ea64ee7824db864842e5bc0.r2.dev',
-        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: '*.r2.dev',
-        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.fbsbx.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.gravatar.com',
       },
       {
         protocol: 'https',
         hostname: 'picsum.photos',
-        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'i.pravatar.cc',
-        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'api.dicebear.com',
-        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '**',
-        pathname: '/uploads/**',
       },
     ],
   },
@@ -74,6 +79,30 @@ const nextConfig = {
       };
     }
     return config;
+  },
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
+        source: '/manifest.json',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+          { key: 'Content-Type', value: 'application/manifest+json' },
+        ],
+      },
+      {
+        source: '/offline.html',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600' },
+        ],
+      },
+    ];
   },
 };
 

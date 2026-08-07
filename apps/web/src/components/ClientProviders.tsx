@@ -7,6 +7,7 @@ import SplashScreenProvider from './SplashScreenProvider';
 import AnnouncementBanner from './AnnouncementBanner';
 import MaintenanceOverlay from './MaintenanceOverlay';
 import TokenRefreshProvider from './TokenRefreshProvider';
+import MobileBootWarm from './mobile/MobileBootWarm';
 import { ReactNode } from 'react';
 
 export default function ClientProviders({ children }: { children: ReactNode }) {
@@ -18,6 +19,7 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
             <AcademicYearProvider>
             <MaintenanceOverlay />
             <AnnouncementBanner />
+            <MobileBootWarm />
             {children}
             </AcademicYearProvider>
           </SplashScreenProvider>

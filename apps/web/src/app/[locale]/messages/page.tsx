@@ -30,6 +30,7 @@ import {
 import { useMessageUpdates, SSEEvent } from '@/hooks/useEventStream';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 import { useTranslations } from 'next-intl';
 interface Conversation {
@@ -410,14 +411,15 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-500">
-      <div className="max-w-7xl mx-auto h-screen flex">
+      <UnifiedNavigation />
+      <div className="max-w-7xl mx-auto h-[100dvh] md:h-screen flex pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))] md:pt-0 pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px))] md:pb-0">
         {/* Conversation List */}
         <div className={`w-full md:w-96 bg-white dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 flex flex-col ${activeConversation ? 'hidden md:flex' : 'flex'}`}>
           {/* Header */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/50 dark:bg-none dark:bg-gray-900/50 backdrop-blur-md">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Link href={`/${locale}/feed`} className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-amber-500 hover:bg-orange-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
+                <Link href={`/${locale}/feed`} className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-amber-500 hover:bg-orange-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors md:inline-flex hidden">
                   <ArrowLeft className="w-5 h-5" />
                 </Link>
                 <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_bde28e77" /></h1>

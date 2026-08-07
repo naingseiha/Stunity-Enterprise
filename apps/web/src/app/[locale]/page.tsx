@@ -76,18 +76,44 @@ export default function HomePage() {
   const fontBody = isKm ? "'Battambang', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   // ── Smart Auth Redirect ──────────────────────────────────────────────────
-  // If a logged-in user navigates to the root, send them to the right page
-  // based on their role (Feed for students, Dashboard for teachers/admins, etc.)
-  // Guests see the landing page as normal.
+  // Logged-in users leave the marketing landing for their app home (Feed).
+  // Installed PWA (standalone) never shows the landing page — login or Feed.
+  // Narrow mobile browsers with a session also skip marketing → Feed.
   useEffect(() => {
     const token = TokenManager.getAccessToken();
-    if (!token) return; // Guest → show landing page
+    const isStandalone =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
+        (window.navigator as any).standalone === true);
+
+    const isMobileViewport =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(max-width: 767px)').matches ||
+        /iphone|ipad|ipod|android/i.test(navigator.userAgent));
+
+    if (!token) {
+      if (isStandalone) {
+        router.replace(`/${locale}/auth/login`);
+      }
+      return;
+    }
+
     const { user, school } = TokenManager.getUserData();
     if (!user) return;
+
+    // PWA / mobile: always enter the app shell at Feed (or role-specific hub)
+    if (isStandalone || isMobileViewport) {
+      const destination = getAuthRedirectPath(locale, user, school);
+      router.replace(destination);
+      return;
+    }
+
     const destination = getAuthRedirectPath(locale, user, school);
     router.replace(destination);
   }, [locale, router]);
   // ────────────────────────────────────────────────────────────────────────
+
 
   return (
     <div className="min-h-screen bg-white text-[#111827] antialiased" style={{ fontFamily: fontBody }}>

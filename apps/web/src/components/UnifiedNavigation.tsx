@@ -16,6 +16,7 @@ import Image from "next/image";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import MobileTopBar from "@/components/mobile/MobileTopBar";
 import PWAInstallBanner from "@/components/mobile/PWAInstallBanner";
+import { useEventStream } from "@/hooks/useEventStream";
 import {
   Home,
   GraduationCap,
@@ -72,6 +73,9 @@ import { prefetchClasses } from "@/hooks/useClasses";
 import { prefetchSubjects } from "@/hooks/useSubjects";
 import { TokenManager } from "@/lib/api/auth";
 import { prefetchProfile } from "@/lib/profile-cache";
+import { prefetchLearnHome } from "@/lib/learn-home-cache";
+import { prefetchClassesHub } from "@/lib/classes-hub-cache";
+import { prefetchReelsFeed } from "@/lib/reels-cache";
 import {
   ATTENDANCE_SERVICE_URL,
   AUTH_SERVICE_URL,
@@ -181,6 +185,10 @@ export default function UnifiedNavigation({
   const warmedSchoolDataKeyRef = useRef<string | null>(null);
   const navFeedbackDedupRef = useRef<{ path: string; at: number } | null>(null);
   const navFeedbackTimeoutRef = useRef<number | null>(null);
+
+  const { unreadCounts } = useEventStream(user?.id, {
+    enabled: Boolean(user?.id),
+  });
 
   useEffect(() => {
     setIsHydrated(true);
@@ -993,6 +1001,11 @@ export default function UnifiedNavigation({
     };
 
     const warmPrimaryNavData = async () => {
+      // Mobile hubs first (Learn path + Class hub + Reels) — native MainNavigator parity
+      prefetchLearnHome(user.id);
+      prefetchClassesHub(user.id, user.role);
+      prefetchReelsFeed(user.id);
+
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
@@ -1189,11 +1202,15 @@ export default function UnifiedNavigation({
         locale={locale}
         user={user}
         school={school}
+        unreadNotifications={unreadCounts.notifications}
+        unreadMessages={unreadCounts.messages}
       />
       <MobileBottomNav
         locale={locale}
         user={user}
         school={school}
+        unreadMessages={unreadCounts.messages}
+        unreadNotifications={unreadCounts.notifications}
       />
       <PWAInstallBanner locale={locale} />
 

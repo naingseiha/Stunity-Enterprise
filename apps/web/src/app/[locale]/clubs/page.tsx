@@ -2,7 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -30,6 +30,7 @@ import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import ClassHubMobile from '@/components/mobile/ClassHubMobile';
 
 import { useTranslations } from 'next-intl';
 interface StudyClub {
@@ -102,8 +103,10 @@ export default function StudyClubsPage() {
     const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
+  const showCommunity = searchParams.get('community') === '1';
   
   const [activeTab, setActiveTab] = useState<'my-clubs' | 'discover'>('my-clubs');
   const [clubs, setClubs] = useState<StudyClub[]>([]);
@@ -122,6 +125,12 @@ export default function StudyClubsPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const fromToken = TokenManager.getUserData();
+      if (fromToken?.user) {
+        setCurrentUser(fromToken.user);
+        if (fromToken.school) setSchool(fromToken.school);
+        return;
+      }
       const userStr = localStorage.getItem('user');
       const schoolStr = localStorage.getItem('school');
       if (userStr) setCurrentUser(JSON.parse(userStr));
@@ -382,7 +391,7 @@ export default function StudyClubsPage() {
       {!currentUser ? (
         <div className="min-h-screen bg-gray-50 dark:bg-none dark:bg-gray-950 scrollbar-hide">
           <UnifiedNavigation />
-          <div className="max-w-6xl mx-auto px-4 py-5">
+          <div className="max-w-6xl mx-auto px-0 sm:px-4 py-0 sm:py-5 mobile-shell-pad md:!pt-5 md:!pb-5">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               
               {/* Left Sidebar Skeleton */}
@@ -428,9 +437,28 @@ export default function StudyClubsPage() {
       ) : (
         <div className="min-h-screen bg-gray-50 dark:bg-none dark:bg-gray-950 transition-colors duration-300">
           <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
+
+          {/* Mobile: native Class Hub (Clubs tab = Classes) */}
+          {!showCommunity && (
+            <div className="md:hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))] pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px))]">
+              <ClassHubMobile locale={locale} user={currentUser} />
+            </div>
+          )}
+
+          {/* Desktop study clubs (and mobile community via ?community=1) */}
+          <div className={showCommunity ? 'block' : 'hidden md:block'}>
+          {showCommunity && (
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/clubs`)}
+              className="md:hidden mx-4 mt-3 mb-1 inline-flex items-center gap-1.5 text-sm font-bold text-teal-600"
+            >
+              ← {locale === 'km' ? 'ត្រឡប់ទៅថ្នាក់' : 'Back to Classes'}
+            </button>
+          )}
           
           {/* LinkedIn-style 3-column layout */}
-          <div className="max-w-6xl mx-auto px-4 py-5">
+          <div className="max-w-6xl mx-auto px-0 sm:px-4 py-0 sm:py-5 mobile-shell-pad md:!pt-5 md:!pb-5">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               
               {/* Left Sidebar */}
@@ -675,6 +703,7 @@ export default function StudyClubsPage() {
                 </div>
               </aside>
             </div>
+          </div>
           </div>
         </div>
       )}

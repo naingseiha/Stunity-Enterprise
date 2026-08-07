@@ -2,7 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -58,6 +58,7 @@ import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import SubmissionsDashboard from '@/components/learn/SubmissionsDashboard';
+import LearnHomeMobile from '@/components/learn/LearnHomeMobile';
 
 import { useTranslations } from 'next-intl';
 // =============
@@ -453,12 +454,31 @@ export default function LearnHubPage() {
     const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
+  const showMobileHub = searchParams.get('hub') === '1' || searchParams.get('tab') === 'explore';
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobileViewport(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  /** Mobile default tab = LearnHome path; skip heavy marketplace fetches. */
+  const mobilePathOnly = isMobileViewport && !showMobileHub;
   
   // UI State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths' | 'my-created' | 'submissions'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths' | 'my-created' | 'submissions'>(
+    showMobileHub ? 'explore' : 'curriculum'
+  );
+  const [selectedGrade, setSelectedGrade] = useState<string>('12');
+  const [selectedTrack, setSelectedTrack] = useState<'ALL' | 'SCIENCE' | 'SOCIAL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('');
@@ -720,7 +740,7 @@ export default function LearnHubPage() {
   }, [currentUser?.id]);
 
   useEffect(() => {
-    if (!currentUser?.id) return;
+    if (!currentUser?.id || mobilePathOnly) return;
 
     const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);
     if (!cachedPayload) return;
@@ -736,9 +756,13 @@ export default function LearnHubPage() {
     setStats(cachedPayload.stats);
     setCurriculumLoaded(cachedPayload.subjects.length > 0 || cachedPayload.myGrades.length > 0);
     setLoading(false);
-  }, [currentUser?.id, learnCacheKey]);
+  }, [currentUser?.id, learnCacheKey, mobilePathOnly]);
 
   useEffect(() => {
+    if (mobilePathOnly) {
+      setLoading(false);
+      return;
+    }
     if (currentUser) {
       const loadAll = async () => {
         const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);
@@ -758,25 +782,20 @@ export default function LearnHubPage() {
       };
       loadAll();
     }
-  }, [currentUser, fetchCourses, fetchCreatedCourses, fetchEnrolledCourses, fetchLearnHub, fetchLearningPaths, fetchLearningStats, fetchSavedLessons, learnCacheKey]);
+  }, [currentUser, fetchCourses, fetchCreatedCourses, fetchEnrolledCourses, fetchLearnHub, fetchLearningPaths, fetchLearningStats, fetchSavedLessons, learnCacheKey, mobilePathOnly]);
 
-  const fetchCurriculumData = useCallback(async () => {
-    if (!isStudent || !currentUser?.id || curriculumLoaded || curriculumLoading) return;
-
+  useEffect(() => {
+    if (mobilePathOnly || curriculumLoaded || curriculumLoading) return;
     setCurriculumLoading(true);
-    await Promise.all([fetchSubjects(), fetchGrades()]);
-    setCurriculumLoaded(true);
-    setCurriculumLoading(false);
-  }, [curriculumLoaded, curriculumLoading, currentUser?.id, fetchGrades, fetchSubjects, isStudent]);
+    Promise.all([fetchSubjects(), fetchGrades()]).finally(() => {
+      setCurriculumLoaded(true);
+      setCurriculumLoading(false);
+    });
+  }, [curriculumLoaded, curriculumLoading, fetchGrades, fetchSubjects, mobilePathOnly]);
+
 
   useEffect(() => {
-    if (activeTab === 'curriculum' && isStudent) {
-      void fetchCurriculumData();
-    }
-  }, [activeTab, fetchCurriculumData, isStudent]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
+    if (mobilePathOnly || !currentUser?.id) return;
 
     writeRouteDataCache<CachedLearnPayload>(learnCacheKey, {
       courses,
@@ -789,7 +808,7 @@ export default function LearnHubPage() {
       myGrades,
       stats,
     });
-  }, [courses, createdCourses, currentUser?.id, enrolledCourses, learnCacheKey, learningPaths, myGrades, recentLessons, savedLessons, stats, subjects]);
+  }, [courses, createdCourses, currentUser?.id, enrolledCourses, learnCacheKey, learningPaths, myGrades, mobilePathOnly, recentLessons, savedLessons, stats, subjects]);
 
   useEffect(() => {
     if (createdCourses.length === 0) {
@@ -989,7 +1008,7 @@ export default function LearnHubPage() {
         href={`/${locale}/learn/course/${course.id}`}
         onMouseEnter={() => prefetchLearnCourseRoute(course.id)}
         onFocus={() => prefetchLearnCourseRoute(course.id)}
-        className="learn-course-card group block overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-amber-400/40"
+        className="feed-card-mobile learn-course-card group block overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-amber-400/40"
       >
         {/* Thumbnail */}
         <div className="relative h-40 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-500/10 dark:via-slate-900 dark:to-cyan-500/10">
@@ -1349,13 +1368,40 @@ export default function LearnHubPage() {
     <div style={learnTheme} className="learn-stage min-h-screen bg-[var(--learn-bg)] text-[var(--learn-ink)] dark:bg-slate-950 dark:text-slate-100">
       <UnifiedNavigation />
 
-      <div className="relative overflow-hidden">
+      {/* ═══ Mobile: native LearnHome parity (path hub) ═══ */}
+      {!showMobileHub && (
+        <div className="md:hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))] pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+8px)]">
+          <LearnHomeMobile
+            locale={locale}
+            user={currentUser}
+            courses={courses.map((c) => ({
+              id: c.id,
+              title: c.title,
+              category: c.category,
+              thumbnailUrl: c.thumbnail,
+              enrolledCount: c.enrolledCount,
+            }))}
+          />
+        </div>
+      )}
+
+      {/* ═══ Desktop marketplace (and optional mobile hub via ?hub=1) ═══ */}
+      <div className={`relative overflow-hidden ${showMobileHub ? 'block' : 'hidden md:block'}`}>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-amber-100/70 via-rose-50/40 to-transparent dark:from-amber-500/10 dark:via-cyan-500/5 dark:to-transparent" />
         <div className="pointer-events-none absolute -left-20 top-16 h-64 w-64 rounded-full bg-amber-300/30 blur-3xl dark:bg-amber-500/10" />
         <div className="pointer-events-none absolute -right-20 top-20 h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl dark:bg-cyan-500/10" />
 
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-          <section className="learn-hero reveal-item reveal-1 mb-5 rounded-[1.75rem] border border-amber-100 bg-[var(--learn-panel)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-slate-900/90 md:p-6">
+        <div className="feed-mobile-container mx-auto max-w-7xl px-0 sm:px-6 lg:px-8 pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px)+8px)] md:pt-5 pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+12px)] md:pb-5">
+          {showMobileHub && (
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/learn`)}
+              className="md:hidden mb-3 mx-4 inline-flex items-center gap-1.5 text-sm font-bold text-sky-600"
+            >
+              ← {locale === 'km' ? 'ត្រឡប់ទៅផ្លូវសិក្សា' : 'Back to learning path'}
+            </button>
+          )}
+          <section className="learn-hero hidden md:block reveal-item reveal-1 mb-5 rounded-[1.75rem] border border-amber-100 bg-[var(--learn-panel)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-slate-900/90 md:p-6">
             <div className="grid gap-4 md:grid-cols-[1.2fr_auto] md:items-end">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_dbdd7bc4" /></p>
@@ -1530,28 +1576,29 @@ export default function LearnHubPage() {
                 </select>
               </div>
 
-              {/* Mobile Tab Switcher */}
-              <div className="mt-4 flex gap-1 rounded-xl bg-slate-100 dark:bg-gray-800 p-1 dark:bg-slate-800/80 lg:hidden">
+              {/* Mobile Tab Switcher - Focus on Grade Subjects */}
+              <div className="mobile-feed-tabs flex gap-2 mb-3 overflow-x-auto pb-2 px-4 sm:px-0 lg:hidden hide-scrollbar whitespace-nowrap">
                 {[
-                  { id: 'explore', label: 'Explore', icon: Compass },
-                  { id: 'my-courses', label: 'My Courses', icon: BookOpen },
-                  { id: 'my-created', label: 'Teaching', icon: Video },
-                  { id: 'submissions', label: 'Submissions', icon: ClipboardList },
-                  { id: 'paths', label: 'Paths', icon: Route },
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-white dark:bg-gray-900 text-amber-600 shadow-sm dark:bg-slate-900 dark:text-amber-300'
-                        : 'text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                ))}
+                  { id: 'curriculum', label: 'រៀនតាមថ្នាក់ (Grades 7-12)', icon: GraduationCap },
+                  { id: 'paths', label: 'ផ្លូវសិក្សា (Paths)', icon: Route },
+                  { id: 'my-courses', label: 'វគ្គសិក្សារបស់ខ្ញុំ', icon: BookOpen },
+                ].map(tab => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'bg-[#F9A825] text-white shadow-sm font-bold'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1611,7 +1658,7 @@ export default function LearnHubPage() {
                 )}
 
                 {/* Course Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-4 bg-gray-100 dark:bg-gray-950 sm:bg-transparent sm:dark:bg-transparent">
                   {loading ? (
                     Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={`skeleton-${i}`} />)
                   ) : filteredCourses.map(course => (
@@ -1725,10 +1772,12 @@ export default function LearnHubPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {enrolledCourses.map(course => (
-                      <CourseCard key={course.id} course={course} enrolled />
-                    ))}
+                  <div className="p-4 sm:p-5">
+                    <div className="grid grid-cols-1 gap-1 sm:gap-4 xl:grid-cols-2 bg-gray-100 dark:bg-gray-950 sm:bg-transparent sm:dark:bg-transparent">
+                      {enrolledCourses.map(course => (
+                        <CourseCard key={course.id} course={course} enrolled />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1914,39 +1963,176 @@ export default function LearnHubPage() {
               </div>
             )}
 
-            {/* CURRICULUM TAB (Students only) */}
+            {/* CURRICULUM TAB (Exact Mobile App Parity: Grade 7-12 & Subject Discovery) */}
             {activeTab === 'curriculum' && (
-              <div className="space-y-4">
-                {!isStudent ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
-                    <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_210552df" /></h3>
-                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_633370ce" /></p>
+              <div className="space-y-5">
+                {/* 1. Course Discovery Top Greeting Header */}
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      សួស្តី! {currentUser?.firstName || 'អ្នកសិក្សា'} 👋
+                    </p>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                      ស្វែងរកវគ្គសិក្សារបស់អ្នក (Find your course)
+                    </h2>
                   </div>
-                ) : curriculumLoading ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
-                    <RefreshCw className="w-10 h-10 text-amber-500 mx-auto mb-3 animate-spin" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_d6765dfe" /></h3>
-                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_d846a70b" /></p>
-                  </div>
-                ) : subjects.length === 0 ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
-                    <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_0c4e655f" /></h3>
-                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_436a99a4" /></p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-slate-800 dark:bg-slate-900/80">
-                      <h3 className="mb-3 font-semibold text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_055e546c" /></h3>
-                      <div className="space-y-2">
-                        {subjects.slice(0, 10).map(subject => (
-                          <SubjectCard key={subject.id} subject={subject} />
-                        ))}
-                      </div>
+                  <button className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-center shadow-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50">
+                    <Search className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* 2. World-Class Enterprise Hero Banner Card (Promo Offer Banner) */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0EA5E9] via-[#06A8CC] to-[#0284C7] p-6 text-white shadow-xl shadow-cyan-500/20">
+                  {/* Subtle Dark Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
+
+                  {/* Watermark Trophy Silhouette */}
+                  <Trophy className="absolute -right-6 -bottom-6 w-36 h-36 text-white/15 pointer-events-none stroke-1" />
+
+                  <div className="relative z-10 space-y-3 max-w-md">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-bold">
+                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                      <span>ការផ្តល់ជូនមានកំណត់ (Limited Time Offer)</span>
                     </div>
-                  </>
+
+                    <h3 className="text-3xl font-black tracking-tight text-white">
+                      បញ្ចុះតម្លៃ 60% OFF
+                    </h3>
+
+                    <div className="flex items-center gap-1.5 text-xs text-white/90 font-medium">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>១៤ កុម្ភៈ - ២០ មីនា</span>
+                    </div>
+
+                    <button className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-[#06A8CC] font-bold text-xs shadow-md hover:bg-slate-50 transition-transform active:scale-95">
+                      <span>ទទួលបានការផ្តល់ជូន (Claim Offer)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Pick Your Grade (Horizontal Scrollable Chips Row) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>ជ្រើសរើសថ្នាក់ (Pick Grade)</span>
+                    </h3>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/50 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                      ថ្នាក់ទី ៧ - ១២
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                    {['7', '8', '9', '10', '11', '12'].map((g) => {
+                      const selected = selectedGrade === g;
+                      const khGrade = g === '12' ? '១២' : g === '11' ? '១១' : g === '10' ? '១០' : g === '9' ? '៩' : g === '8' ? '៨' : '៧';
+                      return (
+                        <button
+                          key={g}
+                          onClick={() => setSelectedGrade(g)}
+                          className={`flex-1 min-w-[76px] py-3 px-3 rounded-2xl font-bold text-xs transition-all text-center flex flex-col items-center justify-center gap-0.5 border ${
+                            selected
+                              ? 'bg-gradient-to-br from-[#0EA5E9] to-[#06A8CC] text-white border-transparent shadow-md shadow-cyan-500/20 scale-[1.03]'
+                              : 'bg-white dark:bg-gray-900 text-slate-700 dark:text-slate-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-[10px] opacity-75 uppercase tracking-wider font-semibold">Grade</span>
+                          <span className="text-sm font-black">ថ្នាក់ទី {khGrade}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Specialization / Track Selector for High School (Grades 10, 11, 12) */}
+                {['10', '11', '12'].includes(selectedGrade) && (
+                  <div className="flex items-center gap-2 bg-slate-100 dark:bg-gray-800/60 p-1.5 rounded-xl text-xs">
+                    <span className="font-semibold px-2 text-slate-600 dark:text-slate-400">ឯកទេស:</span>
+                    <div className="flex gap-1 flex-1">
+                      {[
+                        { id: 'ALL', label: 'ទាំងអស់' },
+                        { id: 'SCIENCE', label: 'វិទ្យាសាស្ត្រ (Science)' },
+                        { id: 'SOCIAL', label: 'សង្គម (Social)' },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setSelectedTrack(t.id as any)}
+                          className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-all text-center ${
+                            selectedTrack === t.id
+                              ? 'bg-white dark:bg-gray-900 text-[#06A8CC] shadow-sm'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
+
+                {/* 4. Pick Your Subjects (Grid Cards with Subject Graphics & Lesson Progress Bar) */}
+                <div className="space-y-3">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    ជ្រើសរើសមុខវិជ្ជា (Pick Subjects)
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { id: 'math', name: `គណិតវិទ្យា ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}${['10','11','12'].includes(selectedGrade) ? ' (វិទ្យា.)' : ''}`, code: 'MATH', track: 'ALL', icon: Calculator, color: 'from-blue-500 to-indigo-600', topics: 24, progress: 35 },
+                      { id: 'phys', name: `រូបវិទ្យា ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'PHYS', track: 'SCIENCE', icon: Zap, color: 'from-purple-500 to-violet-600', topics: 18, progress: 60 },
+                      { id: 'chem', name: `គីមីវិទ្យា ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'CHEM', track: 'SCIENCE', icon: Beaker, color: 'from-pink-500 to-rose-600', topics: 20, progress: 20 },
+                      { id: 'bio', name: `ជីវវិទ្យា ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'BIO', track: 'SCIENCE', icon: Flame, color: 'from-emerald-500 to-teal-600', topics: 16, progress: 45 },
+                      { id: 'khmer', name: `អក្សរសាស្ត្រខ្មែរ ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'KHMER', track: 'ALL', icon: BookOpen, color: 'from-amber-500 to-orange-600', topics: 22, progress: 75 },
+                      { id: 'hist', name: `ប្រវត្តិវិទ្យា ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'HIST', track: 'SOCIAL', icon: Globe, color: 'from-orange-500 to-red-600', topics: 15, progress: 10 },
+                      { id: 'geog', name: `ភូមិវិទ្យា ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'GEOG', track: 'SOCIAL', icon: Compass, color: 'from-cyan-500 to-blue-600', topics: 14, progress: 50 },
+                      { id: 'eng', name: `ភាសាអង់គ្លេស ថ្នាក់ទី${selectedGrade === '12' ? '១២' : selectedGrade === '11' ? '១១' : selectedGrade === '10' ? '១០' : selectedGrade === '9' ? '៩' : selectedGrade === '8' ? '៨' : '៧'}`, code: 'ENG', track: 'ALL', icon: Languages, color: 'from-sky-500 to-indigo-600', topics: 26, progress: 80 },
+                    ]
+                      .filter(s => selectedTrack === 'ALL' || s.track === 'ALL' || s.track === selectedTrack)
+                      .map((s) => {
+                        const IconComp = s.icon;
+                        return (
+                          <div
+                            key={s.id}
+                            className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}>
+                                <IconComp className="w-6 h-6" />
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300">
+                                {s.topics} មេរៀន
+                              </span>
+                            </div>
+
+                            <div>
+                              <h4 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-[#06A8CC] transition-colors leading-snug">
+                                {s.name}
+                              </h4>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                                {s.progress}% ធ្លាប់បានសិក្សា
+                              </p>
+                            </div>
+
+                            {/* Lesson Progress Bar */}
+                            <div className="mt-3 h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-[#0EA5E9] to-[#06A8CC]"
+                                style={{ width: `${s.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* 5. Start Learning Action Button (Cyan Gradient CTA Button) */}
+                <div className="pt-2">
+                  <button className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#06A8CC] text-white font-bold text-base shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+                    <span>ចាប់ផ្ដើមរៀន (Start Learning)</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             )}
           </main>
