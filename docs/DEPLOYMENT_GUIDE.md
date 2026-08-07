@@ -73,9 +73,9 @@ Authentication defaults to a one-hour access token and a rotating, database-back
 |----------|---------|---------|
 | `CLOUD_RUN_MIN_INSTANCES` | `0` | Set to `1` to reduce cold starts (higher cost). |
 | `CLOUD_RUN_CPU_THROTTLING` | `true` | Set to `false` for steadier CPU when instances are idle (higher cost). |
-| `CORS_ORIGIN` | required | Set to your real web origin(s), e.g. `https://stunity.com`. Wildcard CORS is rejected in production. |
+| `CORS_ORIGIN` | required | Set to your real web origin(s), e.g. `https://stunity.app,https://www.stunity.app`. Wildcard CORS is rejected in production. |
 
-The script rejects `CORS_ORIGIN=*` rather than deploying a credentialed wildcard policy.
+The script rejects `CORS_ORIGIN=*` and localhost-only allowlists rather than deploying a policy that breaks production browser login. Use `.env.production.local` (or export `CORS_ORIGIN`) — do not deploy with the local-dev `.env` CORS value.
 
 ### Deploy commands
 

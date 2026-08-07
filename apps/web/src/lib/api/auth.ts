@@ -1,7 +1,7 @@
 // API client for authentication service
 import type { EducationModel } from '@/lib/educationModel';
 
-const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
 
 export interface LoginCredentials {
   email?: string;

@@ -36,14 +36,22 @@ load_env_file() {
   done < "$file"
 }
 
-# Required in root .env: DATABASE_URL, JWT_SECRET, Supabase, R2, GEMINI_API_KEY,
-# ANTHROPIC_API_KEY (see script body).
-if [ -f .env ]; then
-  echo "📄 Loading environment variables from .env..."
-  # Shell-safe dotenv loading: preserves URLs with &, comma-separated origins, and wrapper env overrides.
-  load_env_file .env
-else
-  echo "⚠️  .env file not found. Please ensure it exists with DATABASE_URL and JWT_SECRET."
+# Prefer production env for Cloud Run. Loading local-dev `.env` alone previously
+# shipped localhost-only CORS_ORIGIN and broke browser login on stunity.app.
+# Required: DATABASE_URL, JWT_SECRET, CORS_ORIGIN, Supabase, R2, GEMINI_API_KEY,
+# ANTHROPIC_API_KEY (see script body). Later files only fill unset keys.
+ENV_LOADED=0
+for env_file in .env.production.local .env.production .env; do
+  if [ -f "$env_file" ]; then
+    echo "📄 Loading environment variables from $env_file..."
+    # Shell-safe dotenv loading: preserves URLs with &, comma-separated origins, and wrapper env overrides.
+    load_env_file "$env_file"
+    ENV_LOADED=1
+  fi
+done
+if [ "$ENV_LOADED" -eq 0 ]; then
+  echo "❌ No env file found (.env.production.local / .env.production / .env)."
+  echo "   Provide DATABASE_URL, JWT_SECRET, and production CORS_ORIGIN."
   exit 1
 fi
 
@@ -86,6 +94,19 @@ done
 if [ "$CORS_ORIGIN" = "*" ]; then
   echo "❌ Refusing production deploy with wildcard CORS_ORIGIN. Set an explicit origin allowlist."
   exit 1
+fi
+
+# Production web is served from https://stunity.app (Vercel). Deploying with only
+# localhost origins breaks browser login (CORS rejects Origin → generic 500).
+if [[ "$CORS_ORIGIN" == *"localhost"* ]] && [[ "$CORS_ORIGIN" != *"https://"* ]]; then
+  echo "❌ Refusing production deploy: CORS_ORIGIN only allows localhost ($CORS_ORIGIN)."
+  echo "   Set production web origins, e.g. CORS_ORIGIN=https://stunity.app,https://www.stunity.app"
+  echo "   Tip: use .env.production.local (or export CORS_ORIGIN) before running this script."
+  exit 1
+fi
+if [[ "$CORS_ORIGIN" != *"stunity.app"* && "$CORS_ORIGIN" != *"https://"* ]]; then
+  echo "⚠️  CORS_ORIGIN does not include stunity.app — browser login from production web may fail."
+  echo "   Current: $CORS_ORIGIN"
 fi
 
 echo "🚀 Deploying Stunity Enterprise to Cloud Run in project: $PROJECT_ID region: $REGION (min-instances=$CLOUD_RUN_MIN_INSTANCES, cpu-throttling=$CLOUD_RUN_CPU_THROTTLING)"

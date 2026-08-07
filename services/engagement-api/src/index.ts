@@ -69,7 +69,7 @@ if (process.env.NODE_ENV === 'production' && process.env.CORS_ORIGIN === '*') {
 
 // ── Shared middleware (was duplicated per service before consolidation) ──
 const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',')
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
   : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002',
      'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
 
@@ -78,7 +78,9 @@ app.use(cors({
     if (process.env.CORS_ORIGIN === '*') return callback(null, true);
     if (!origin) return callback(null, true); // mobile apps, curl
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS: origin ${origin} not allowed`));
+    // Deny without throwing — a thrown Error becomes a generic 500 ("Login failed")
+    // instead of a clean CORS failure in the browser.
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
