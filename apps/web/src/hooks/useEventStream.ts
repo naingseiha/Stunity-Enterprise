@@ -117,9 +117,15 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
 
       const ticketRes = await fetch(`${FEED_API}/api/events/ticket`, {
         headers: { Authorization: `Bearer ${token}` },
+      }).catch((err) => {
+        console.warn('📡 SSE ticket fetch network error:', err);
+        return null;
       });
-      if (!ticketRes.ok) {
-        throw new Error(`Failed to obtain SSE ticket: ${ticketRes.status}`);
+
+      if (!ticketRes || !ticketRes.ok) {
+        console.warn(`📡 SSE ticket endpoint unavailable (${ticketRes?.status || 'network failure'}), SSE disabled.`);
+        setIsConnected(false);
+        return;
       }
       const { ticket } = await ticketRes.json();
 
@@ -187,7 +193,7 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
       });
 
       eventSource.onerror = (error) => {
-        console.error('SSE Error:', error);
+        console.warn('📡 SSE Error:', error);
         setIsConnected(false);
         onError?.(error);
         
@@ -206,7 +212,7 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
         }, delay);
       };
     } catch (error) {
-      console.error('Failed to create EventSource:', error);
+      console.warn('📡 Failed to create EventSource:', error);
     }
   }, [userId, enabled, onConnect, onEvent, onError]);
 

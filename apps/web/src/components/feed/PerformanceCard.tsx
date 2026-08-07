@@ -132,7 +132,7 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-4 animate-pulse">
+      <div className="perf-card-mobile bg-white dark:bg-gray-900 sm:rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-4 animate-pulse">
         <div className="flex items-center gap-4">
           <div className="w-[110px] h-[110px] rounded-full bg-gray-100 dark:bg-gray-800" />
           <div className="flex-1 space-y-3">
@@ -147,7 +147,7 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
 
   return (
     <Link href={`/${locale}/profile/me`} className="block">
-      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl dark:hover:shadow-black/20 transition-all duration-500 p-4 mb-3 cursor-pointer group">
+      <div className="perf-card-mobile bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 sm:shadow-sm sm:hover:shadow-xl dark:sm:hover:shadow-black/20 transition-all duration-500 p-4 mb-0 sm:mb-3 cursor-pointer group">
         <div className="flex items-center gap-5">
           {/* Activity Rings */}
           <div className="relative flex-shrink-0" style={{ width: size, height: size }}>

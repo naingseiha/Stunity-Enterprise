@@ -28,14 +28,16 @@ function Avatar({
   name: string;
   size?: number;
 }) {
+  const [imgError, setImgError] = useState(false);
   const letter = name?.trim()?.charAt(0)?.toUpperCase() || '?';
-  if (url) {
+  if (url && !imgError) {
     return (
       <NextImage
         src={url}
         alt=""
         width={size}
         height={size}
+        onError={() => setImgError(true)}
         className="rounded-full object-cover border-2 border-white dark:border-gray-900 shadow-sm shrink-0"
       />
     );
@@ -144,7 +146,7 @@ export function FeedSuggestedUsersStrip({ locale, users }: { locale: string; use
             >
               <div className="relative h-14 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800">
                 {u.coverPhotoUrl ? (
-                  <NextImage src={u.coverPhotoUrl} alt="" fill sizes="148px" className="object-cover" />
+                  <NextImage src={u.coverPhotoUrl} alt="" fill sizes="148px" unoptimized className="object-cover" />
                 ) : null}
               </div>
               <div className="px-3 pb-3 -mt-7 flex flex-col items-center text-center">
@@ -201,7 +203,7 @@ export function FeedSuggestedCoursesStrip({ locale, courses }: { locale: string;
               className="flex-shrink-0 w-[240px] snap-start rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-950/40 hover:border-[#F9A825]/45 transition-colors"
             >
               <div className="relative h-[135px] bg-gray-100 dark:bg-gray-800">
-                <NextImage src={thumb} alt="" fill sizes="240px" className="object-cover" />
+                <NextImage src={thumb} alt="" fill sizes="240px" unoptimized className="object-cover" />
                 {!c.thumbnailUrl && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-100/80 to-orange-100/80 dark:from-gray-800 dark:to-gray-900">
                     <BookOpen className="w-10 h-10 text-amber-300/90" />
@@ -260,8 +262,15 @@ export function FeedSuggestedQuizzesStrip({ locale, quizzes }: { locale: string;
                 : `/${locale}/feed`;
           const questionCount = q.questionCount ?? (Array.isArray(q.questions) ? q.questions.length : 0);
           const points = q.totalPoints ?? Math.max(questionCount * 10, 10);
-          const timeLabel = q.timeLimit
-            ? tFeed('sections.minutesShort', { count: q.timeLimit })
+          const rawTime = typeof q.timeLimit === 'number'
+            ? q.timeLimit
+            : typeof q.timeLimit === 'string'
+              ? parseInt(q.timeLimit, 10)
+              : typeof (q.timeLimit as any)?.count === 'number'
+                ? (q.timeLimit as any).count
+                : NaN;
+          const timeLabel = Number.isFinite(rawTime) && rawTime > 0
+            ? `${rawTime} នាទី`
             : '∞';
           const background = q.thumbnailUrl || QUIZ_BACKGROUNDS[i % QUIZ_BACKGROUNDS.length];
 
@@ -272,7 +281,7 @@ export function FeedSuggestedQuizzesStrip({ locale, quizzes }: { locale: string;
               className="flex-shrink-0 w-[240px] snap-start rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-950/40 hover:border-violet-300 dark:hover:border-violet-700 transition-colors"
             >
               <div className="relative h-[135px] bg-gray-100 dark:bg-gray-800">
-                <NextImage src={background} alt="" fill sizes="240px" className="object-cover" />
+                <NextImage src={background} alt="" fill sizes="240px" unoptimized className="object-cover" />
                 <div className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/45 text-white text-[10px] font-semibold backdrop-blur-sm">
                   <Trophy className="w-3 h-3 text-amber-300" />
                   {t('untitledQuiz')}

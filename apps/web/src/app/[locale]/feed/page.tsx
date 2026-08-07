@@ -1536,7 +1536,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       {/* LinkedIn-style 3-column layout - cleaner proportions */}
-      <div className="max-w-6xl mx-auto px-4 py-5">
+      <div className="feed-mobile-container max-w-6xl mx-auto px-0 sm:px-4 pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px)+8px)] md:pt-5 pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+12px)] md:pb-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
           {/* Left Sidebar - Compact Profile & Navigation */}
@@ -1754,12 +1754,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
             </div>
 
             {/* Performance Card - XP, Level, Streak */}
-            <div className="mb-3 transform hover:scale-[1.01] transition-transform duration-300">
+            <div className="mb-0 sm:mb-3 sm:transform sm:hover:scale-[1.01] transition-transform duration-300">
               <PerformanceCard user={user} locale={locale} />
             </div>
 
             {/* Create Post Card — E-Learning Focused */}
-            <div className="bg-white dark:bg-none dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-3 transition-all duration-300 hover:border-[#F9A825]/30">
+            <div className="create-post-mobile bg-white dark:bg-none dark:bg-gray-900/80 backdrop-blur-xl sm:rounded-lg sm:shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-0 sm:mb-3 transition-all duration-300 sm:hover:border-[#F9A825]/30">
               <div className="flex items-center gap-3">
                 {user.profilePictureUrl ? (
                   <NextImage
@@ -1826,7 +1826,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
             {/* Feed Content */}
             {activeTab === 'feed' && (
-              <div className="space-y-3">
+              <div className="feed-items-mobile space-y-0 sm:space-y-3">
                 {/* Post Type Filters & Refresh - Minimal */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="relative">
@@ -1941,7 +1941,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <div style={{ height: `${feedVirtualizer.topSpacerHeight}px` }} aria-hidden="true" />
                   )}
 
-                  <div className="space-y-3">
+                  <div className="feed-items-mobile space-y-0 sm:space-y-3">
                     {feedVirtualizer.visibleItems.map((entry, index) => (
                       <div
                         key={entry.id}

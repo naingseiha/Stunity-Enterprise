@@ -26,6 +26,7 @@ import {
 } from '@/lib/profile-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
+import ProfileMobile from '@/components/mobile/ProfileMobile';
 import PostCard, { PostData } from '@/components/feed/PostCard';
 import { feedApiPostToPost, feedPostToCardData } from '@/lib/feed-normalize';
 import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
@@ -643,6 +644,28 @@ export default function ProfilePage() {
     return map[role] || map.STUDENT;
   };
 
+  const handleRefreshProfile = async () => {
+    await fetchProfileData({ soft: false });
+    await fetchStatsSummary({ soft: false });
+  };
+
+  const profileMobileLabels = {
+    posts: tProfile('stats.posts'),
+    followers: tProfile('stats.followers'),
+    following: tProfile('stats.following'),
+    editProfile: tProfile('editProfile'),
+    shareProfile: tProfile('shareProfile'),
+    linkCopied: tProfile('linkCopied'),
+    follow: tProfile('follow'),
+    followingBtn: tProfile('following'),
+    message: tProfile('message'),
+    performance: tProfile('performance.title'),
+    about: tProfile('about.title'),
+    activity: tProfile('activity.title'),
+    noPosts: tProfile('noPosts'),
+    openToOpportunities: tProfile('openToOpportunities'),
+  };
+
   const handleShareProfile = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
     const title = profile
@@ -661,9 +684,24 @@ export default function ProfilePage() {
     }
   };
 
-  // Show zoom loader during initial load
+  // Show skeleton during initial load (keep nav on mobile)
   if (loading) {
-    return <ProfileSkeleton />;
+    return (
+      <div className="min-h-screen bg-[#F0F4F8] dark:bg-gray-950">
+        <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
+        <div className="md:hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))]">
+          <div className="h-[220px] bg-gradient-to-br from-sky-100 to-cyan-100 animate-pulse" />
+          <div className="px-4 -mt-12">
+            <div className="w-[108px] h-[108px] rounded-full bg-sky-200 animate-pulse border-4 border-[#F0F4F8]" />
+            <div className="h-6 w-48 bg-gray-200 rounded-lg mt-4 animate-pulse" />
+            <div className="h-4 w-64 bg-gray-100 rounded mt-2 animate-pulse" />
+          </div>
+        </div>
+        <div className="hidden md:block">
+          <ProfileSkeleton />
+        </div>
+      </div>
+    );
   }
   
   if (!profile) {
@@ -692,13 +730,46 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-[#F0F4F8] dark:bg-gray-950">
         <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
         {revalidating && (
-          <div className="h-0.5 w-full overflow-hidden bg-transparent">
+          <div className="hidden md:block h-0.5 w-full overflow-hidden bg-transparent">
             <div className="h-full w-1/3 bg-gradient-to-r from-[#09CFF7] to-[#00B8DB] animate-[profileProgress_1.1s_ease-in-out_infinite]" />
           </div>
         )}
 
-        {/* LinkedIn-style: constrained card with cover inside (e-learning social) */}
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* ═══ Mobile: native ProfileScreen parity ═══ */}
+        <div className="md:hidden">
+          <ProfileMobile
+            locale={locale}
+            userId={userId}
+            profile={profile}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            statsSummary={statsSummary}
+            achievements={achievements}
+            projectsCount={projects.length}
+            posts={posts}
+            skills={skills}
+            education={education}
+            experiences={experiences}
+            certifications={certifications}
+            following={following}
+            shareCopied={shareCopied}
+            revalidating={revalidating}
+            currentUserId={currentUser?.id}
+            roleLabel={roleLabel}
+            labels={profileMobileLabels}
+            onFollow={handleFollow}
+            onShare={handleShareProfile}
+            onRefresh={handleRefreshProfile}
+            onLike={handleLike}
+            onReact={handleReact}
+            onValue={handleValue}
+            onComment={handleComment}
+            onDeletePost={handleDeletePost}
+          />
+        </div>
+
+        {/* ═══ Desktop: LinkedIn-style card layout ═══ */}
+        <div className="hidden md:block max-w-5xl mx-auto px-4 py-6">
           <div
             className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden"
             style={{ animation: pageReady ? 'slideInUp 0.45s ease-out forwards' : 'none' }}

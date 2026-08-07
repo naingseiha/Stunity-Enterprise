@@ -755,7 +755,7 @@ export default function PostCard({
   const isAnswered = (post.commentsCount || 0) > 0;
 
   return (
-    <div className={`bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg dark:hover:shadow-black/20 transition-all duration-300`}>
+    <div className={`feed-card-mobile bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 sm:rounded-xl overflow-hidden sm:shadow-sm sm:hover:shadow-lg dark:sm:hover:shadow-black/20 transition-all duration-300`}>
       {/* Type Badge for special posts */}
       {post.postType !== 'ARTICLE' && (
         <div className={`px-4 py-2 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30 backdrop-blur-sm`}>
@@ -1170,9 +1170,16 @@ export default function PostCard({
                   <Clock className="w-4 h-4 text-sky-500" />
                 </div>
                 <p className="text-base font-extrabold text-sky-600 dark:text-sky-400">
-                  {post.quizData?.timeLimit
-                    ? tFeed('sections.minutesShort', { count: post.quizData.timeLimit })
-                    : '∞'}
+                  {(() => {
+                    const rawTime = typeof post.quizData?.timeLimit === 'number'
+                      ? post.quizData.timeLimit
+                      : typeof post.quizData?.timeLimit === 'string'
+                        ? parseInt(post.quizData.timeLimit, 10)
+                        : typeof (post.quizData?.timeLimit as any)?.count === 'number'
+                          ? (post.quizData?.timeLimit as any)?.count
+                          : NaN;
+                    return Number.isFinite(rawTime) && rawTime > 0 ? `${rawTime} នាទី` : '∞';
+                  })()}
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">{tFeed('sections.time')}</p>
               </div>
@@ -1339,7 +1346,7 @@ export default function PostCard({
             reactionCounts={post.reactionCounts}
             className="px-1 pb-1.5"
           />
-          <div className="flex items-center justify-between -mx-1">
+          <div className="post-action-bar-mobile flex items-center justify-between -mx-1">
           <ReactionButton
             myReaction={localMyReaction}
             count={localLikesCount}

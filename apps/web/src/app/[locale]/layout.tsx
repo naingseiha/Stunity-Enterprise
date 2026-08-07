@@ -59,6 +59,23 @@ export default async function LocaleLayout(
             __html: `(function(){var t=localStorage.getItem('stunity-theme');var m=window.matchMedia('(prefers-color-scheme:dark)').matches;var d=t==='dark'||(t!=='light'&&m);document.documentElement.classList.toggle('dark',d);})();`,
           }}
         />
+        {/* PWA Service Worker Registration + update check */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(!('serviceWorker' in navigator))return;window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).then(function(reg){try{reg.update();}catch(e){}setInterval(function(){try{reg.update();}catch(e){}},60*60*1000);}).catch(function(e){console.warn('[PWA] SW registration failed',e);});});var s=window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone===true;if(s)document.documentElement.classList.add('pwa-standalone');if(/iphone|ipad|ipod|android/i.test(navigator.userAgent)||window.innerWidth<768)document.documentElement.classList.add('pwa-mobile');})();`,
+          }}
+        />
+        {/* iOS PWA splash screen support */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Stunity" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-startup-image" href="/icons/pwa-512x512.png" />
+        {/* Microsoft Tiles */}
+        <meta name="msapplication-TileColor" content="#ea580c" />
+        <meta name="msapplication-TileImage" content="/icons/pwa-144x144.png" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${locale === 'km' ? 'font-battambang' : 'font-poppins'} bg-slate-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors`}>
         <NextIntlClientProvider messages={messages}>
