@@ -42,8 +42,6 @@ const ROUTE_TITLES: Record<string, { en: string; km: string }> = {
 
 export default function MobileTopBar({
   locale,
-  user,
-  school,
   title,
   showBack = false,
   unreadNotifications = 0,
@@ -63,8 +61,21 @@ export default function MobileTopBar({
     return "Stunity";
   })();
 
-  const isHomeFeed = pathname.includes("/feed");
+  const isHomeFeed = pathname.includes("/feed") && !pathname.includes("/feed/post");
   const isReels = pathname.includes("/reels");
+  // Native Clubs tab uses in-content chrome (avatar/streak/XP) — no duplicate title bar.
+  // Also covers ?community=1 (has its own back control).
+  const isClassHubHome = /\/clubs\/?$/.test(pathname);
+  // Native Profile tab is immersive cover-first — hide title bar on profile home.
+  const isProfileHome =
+    /\/profile\/?$/.test(pathname) ||
+    /\/profile\/me\/?$/.test(pathname) ||
+    (/\/profile\/[^/]+\/?$/.test(pathname) &&
+      !pathname.includes("/edit") &&
+      !pathname.includes("/connections") &&
+      !pathname.includes("/settings") &&
+      !pathname.includes("/qr") &&
+      !pathname.includes("/card"));
   const isNested =
     showBack ||
     (!isHomeFeed &&
@@ -76,8 +87,27 @@ export default function MobileTopBar({
   // Reels: immersive fullscreen — hide top bar (native FocusReels)
   if (isReels) return null;
 
+  // Class hub home: ClassHubMobile owns the top chrome
+  if (isClassHubHome) return null;
+
+  // Profile home: ProfileMobile owns cover header actions
+  if (isProfileHome) return null;
+
   // Auth / path practice sessions: no chrome (native hides tab bar)
   if (pathname.includes("/auth/") || pathname.includes("/learn/path/")) return null;
+
+  const logo = (
+    <Link href={`/${locale}/feed`} className="mobile-top-bar-logo">
+      <Image
+        src="/Stunity.png"
+        alt="Stunity"
+        width={90}
+        height={22}
+        priority
+        className="h-[22px] w-auto object-contain dark:brightness-0 dark:invert"
+      />
+    </Link>
+  );
 
   return (
     <header
@@ -95,25 +125,15 @@ export default function MobileTopBar({
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
+          ) : isHomeFeed ? (
+            <span className="mobile-top-bar-spacer" aria-hidden />
           ) : (
-            <Link href={`/${locale}/feed`} className="mobile-top-bar-logo">
-              <Image
-                src="/Stunity.png"
-                alt="Stunity"
-                width={90}
-                height={22}
-                priority
-                className="h-[22px] w-auto object-contain dark:brightness-0 dark:invert"
-              />
-            </Link>
+            logo
           )}
         </div>
 
         <div className="mobile-top-bar-center">
-          {!isHomeFeed && <h1 className="mobile-top-bar-title">{derivedTitle}</h1>}
-          {isHomeFeed && school?.name && (
-            <span className="mobile-top-bar-school">{school.name}</span>
-          )}
+          {isHomeFeed ? logo : <h1 className="mobile-top-bar-title">{derivedTitle}</h1>}
         </div>
 
         <div className="mobile-top-bar-right">

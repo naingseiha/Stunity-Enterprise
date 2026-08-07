@@ -21,6 +21,7 @@ import {
   Shield,
   ChevronRight,
   UserRound,
+  Clock,
 } from "lucide-react";
 import {
   MyClassSummary,
@@ -35,6 +36,37 @@ import {
   isClassesHubCacheFresh,
   prefetchClassDetail,
 } from "@/lib/classes-hub-cache";
+import { timetableAPI, type TimetableEntry, type DayOfWeek } from "@/lib/api/timetable";
+
+const CLASS_CARD_PALETTE = [
+  { accent: "#0EA5E9", bg: "#F0F9FF", darkBg: "rgba(14,165,233,0.12)" },
+  { accent: "#8B5CF6", bg: "#F5F3FF", darkBg: "rgba(139,92,246,0.12)" },
+  { accent: "#10B981", bg: "#ECFDF5", darkBg: "rgba(16,185,129,0.12)" },
+  { accent: "#F59E0B", bg: "#FFFBEB", darkBg: "rgba(245,158,11,0.12)" },
+  { accent: "#EC4899", bg: "#FDF2F8", darkBg: "rgba(236,72,153,0.12)" },
+];
+
+function classPalette(name: string) {
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+  return CLASS_CARD_PALETTE[sum % CLASS_CARD_PALETTE.length];
+}
+
+const DAY_KEYS: DayOfWeek[] = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
+
+function todayDayKey(): DayOfWeek {
+  // JS: 0=Sun … 6=Sat → map to MONDAY-first index
+  const js = new Date().getDay();
+  return DAY_KEYS[js === 0 ? 6 : js - 1];
+}
 
 interface ClassHubMobileProps {
   locale: string;
@@ -102,10 +134,20 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
   const [attendancePct, setAttendancePct] = useState(cachedDetail?.attendancePct ?? 1);
   const [search, setSearch] = useState("");
   const [hubLoading, setHubLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState<DayOfWeek>(() => todayDayKey());
+  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+
+  const orderedClasses = useMemo(() => {
+    if (role !== "TEACHER") return myClasses;
+    const teaching = myClasses.filter((c) => c.hasTimetableAssignment === true);
+    const other = myClasses.filter((c) => c.hasTimetableAssignment !== true);
+    return [...teaching, ...other];
+  }, [myClasses, role]);
 
   const selected = useMemo(
-    () => myClasses.find((c) => c.id === selectedClassId) || null,
-    [myClasses, selectedClassId]
+    () => orderedClasses.find((c) => c.id === selectedClassId) || myClasses.find((c) => c.id === selectedClassId) || null,
+    [orderedClasses, myClasses, selectedClassId]
   );
 
   const load = useCallback(async (opts?: { silent?: boolean; force?: boolean }) => {
@@ -146,6 +188,29 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
       setLoading(false);
     }
   }, [userId, user?.role, myClasses.length, directory.length]);
+
+  const refresh = useCallback(async () => {
+    if (!userId || refreshing) return;
+    setRefreshing(true);
+    try {
+      await load({ force: true, silent: true });
+      if (selectedClassId) {
+        await fetchClassDetail({
+          userId,
+          classId: selectedClassId,
+          fallbackStudentCount: selected?.studentCount || 0,
+          force: true,
+        }).then((detail) => {
+          if (!detail) return;
+          setStudentStats(detail.studentStats);
+          setAttendancePct(detail.attendancePct);
+        });
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [userId, refreshing, load, selectedClassId, selected?.studentCount]);
+
 
   useEffect(() => {
     if (!userId) {
@@ -220,6 +285,36 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
     });
   }, [userId, myClasses, selectedClassId]);
 
+  // Timetable preview for selected class
+  useEffect(() => {
+    if (!selectedClassId) {
+      setTimetableEntries([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await timetableAPI.getClassTimetable(
+          selectedClassId,
+          selected?.academicYear?.id
+        );
+        if (cancelled) return;
+        setTimetableEntries(Array.isArray(res?.data?.entries) ? res.data.entries : []);
+      } catch {
+        if (!cancelled) setTimetableEntries([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClassId, selected?.academicYear?.id]);
+
+  const dayEntries = useMemo(() => {
+    return timetableEntries
+      .filter((e) => e.dayOfWeek === scheduleDay)
+      .sort((a, b) => (a.period?.order ?? 0) - (b.period?.order ?? 0));
+  }, [timetableEntries, scheduleDay]);
+
   const filteredDirectory = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return directory;
@@ -234,14 +329,19 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
   const tools = useMemo(() => {
     if (!selectedClassId) return [];
     const id = selectedClassId;
+    const qs = new URLSearchParams({ classId: id });
+    if (selected?.name) qs.set("className", selected.name);
     const canManage = ["TEACHER", "ADMIN", "STAFF", "SCHOOL_ADMIN", "SUPER_ADMIN"].includes(
       (selected?.myRole || role).toUpperCase()
     );
-    return [
+    const canMessageTeacher =
+      role === "PARENT" && Boolean(selected?.homeroomTeacher?.id);
+
+    const items = [
       {
         key: "report",
         label: isKm ? "របាយការណ៍" : "Report",
-        href: `/${locale}/grades/reports`,
+        href: `/${locale}/grades/reports?${qs}`,
         icon: BarChart3,
         bg: "#EFF6FF",
         color: "#2563EB",
@@ -250,7 +350,7 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
         key: "announce",
         label: isKm ? "សេចក្តីប្រកាស" : "Announce",
         href: canManage
-          ? `/${locale}/classes/${id}/manage`
+          ? `/${locale}/classes/${id}/manage?tab=announce`
           : `/${locale}/messages`,
         icon: Megaphone,
         bg: "#EFF6FF",
@@ -260,7 +360,7 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
         key: "assign",
         label: isKm ? "កិច្ចការ" : "Assign",
         href: canManage
-          ? `/${locale}/classes/${id}/manage`
+          ? `/${locale}/classes/${id}/manage?tab=assign`
           : `/${locale}/learn`,
         icon: FileText,
         bg: "#FEF2F2",
@@ -270,7 +370,7 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
         key: "materials",
         label: isKm ? "ឯកសារ" : "Materials",
         href: canManage
-          ? `/${locale}/classes/${id}/manage`
+          ? `/${locale}/classes/${id}/manage?tab=materials`
           : `/${locale}/learn`,
         icon: FolderOpen,
         bg: "#F0FDF4",
@@ -280,8 +380,8 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
         key: "attend",
         label: isKm ? "វត្តមាន" : "Attend",
         href: canManage
-          ? `/${locale}/attendance/mark`
-          : `/${locale}/attendance/dashboard`,
+          ? `/${locale}/attendance/mark?${qs}`
+          : `/${locale}/attendance/dashboard?${qs}`,
         icon: Calendar,
         bg: "#FFFBEB",
         color: "#F59E0B",
@@ -290,8 +390,8 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
         key: "scores",
         label: isKm ? "ពិន្ទុ" : "Scores",
         href: canManage
-          ? `/${locale}/grades/entry`
-          : `/${locale}/grades/monthly-report`,
+          ? `/${locale}/grades/entry?${qs}`
+          : `/${locale}/grades/monthly-report?${qs}`,
         icon: BarChart3,
         bg: "#F3E8FF",
         color: "#A855F7",
@@ -299,7 +399,9 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
       {
         key: "quizzes",
         label: isKm ? "កម្រងសំណួរ" : "Quizzes",
-        href: `/${locale}/live-quiz/join`,
+        href: canManage
+          ? `/${locale}/teacher/quizzes/analytics`
+          : `/${locale}/live-quiz/join`,
         icon: Puzzle,
         bg: "#ECFEFF",
         color: "#06B6D4",
@@ -312,16 +414,21 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
         bg: "#FDE4CF",
         color: "#F97316",
       },
-      {
+    ];
+
+    if (canMessageTeacher) {
+      items.push({
         key: "message",
         label: isKm ? "សារ" : "Message",
         href: `/${locale}/messages`,
         icon: MessageCircle,
         bg: "#F1F5F9",
         color: "#64748B",
-      },
-    ];
-  }, [selectedClassId, selected?.myRole, role, locale, isKm]);
+      });
+    }
+
+    return items;
+  }, [selectedClassId, selected?.myRole, selected?.name, selected?.homeroomTeacher?.id, role, locale, isKm]);
 
   // ── Loading ──
   if (loading) {
@@ -418,27 +525,33 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5">
-            {filteredDirectory.map((cls) => (
-              <Link
-                key={cls.id}
-                href={`/${locale}/classes/${cls.id}/manage`}
-                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3.5 shadow-sm"
-              >
-                <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center mb-2">
-                  <School className="w-5 h-5 text-teal-600" />
-                </div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
-                  {cls.name}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  {isKm ? `ថ្នាក់ទី ${cls.grade}` : `Grade ${cls.grade}`}
-                  {cls.section ? ` · ${cls.section}` : ""}
-                </p>
-                <p className="text-[11px] text-teal-600 font-semibold mt-1">
-                  {cls.studentCount} {isKm ? "សិស្ស" : "students"}
-                </p>
-              </Link>
-            ))}
+            {filteredDirectory.map((cls) => {
+              const palette = classPalette(cls.name);
+              return (
+                <Link
+                  key={cls.id}
+                  href={`/${locale}/classes/${cls.id}/manage`}
+                  className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3.5 shadow-sm active:scale-[0.98] transition"
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 dark:bg-opacity-100"
+                    style={{ backgroundColor: palette.bg }}
+                  >
+                    <School className="w-5 h-5" style={{ color: palette.accent }} />
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
+                    {cls.name}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {isKm ? `ថ្នាក់ទី ${cls.grade}` : `Grade ${cls.grade}`}
+                    {cls.section ? ` · ${cls.section}` : ""}
+                  </p>
+                  <p className="text-[11px] font-semibold mt-1" style={{ color: palette.accent }}>
+                    {cls.studentCount} {isKm ? "សិស្ស" : "students"}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         )}
 
@@ -521,6 +634,14 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
             <Star className="w-3 h-3 fill-amber-500" />
             {xp >= 1000 ? `${(xp / 1000).toFixed(1)}k` : xp} XP
           </span>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            aria-label={isKm ? "ធ្វើឱ្យថ្មី" : "Refresh"}
+            className="w-[38px] h-[38px] rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-500"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-teal-500" : ""}`} />
+          </button>
           <Link
             href={`/${locale}/messages`}
             className="w-[38px] h-[38px] rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-sky-500"
@@ -593,10 +714,10 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
           </div>
         )}
 
-        {/* Class selector pills */}
-        {myClasses.length > 1 && (
+        {/* Class selector pills — teachers: teaching classes first */}
+        {orderedClasses.length > 1 && (
           <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-1 px-1 pb-0.5">
-            {myClasses.map((cls) => {
+            {orderedClasses.map((cls) => {
               const active = cls.id === selectedClassId;
               return (
                 <button
@@ -650,6 +771,77 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
           </div>
         </div>
 
+        {/* Timetable preview */}
+        {timetableEntries.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {isKm ? "កាលវិភាគថ្នាក់" : "Class schedule"}
+              </h3>
+              <Clock className="w-4 h-4 text-slate-400" />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-2 mb-2">
+              {(isKm
+                ? ["ច", "អ", "ពុ", "ព្រ", "សុ", "ស", "អា"]
+                : ["M", "T", "W", "T", "F", "S", "S"]
+              ).map((label, ix) => {
+                const day = DAY_KEYS[ix];
+                const active = day === scheduleDay;
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => setScheduleDay(day)}
+                    className={`w-9 h-9 rounded-full text-xs font-bold shrink-0 ${
+                      active
+                        ? "bg-teal-500 text-white"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {dayEntries.length === 0 ? (
+              <p className="text-xs text-slate-400 py-2">
+                {isKm ? "មិនមានម៉ោងសិក្សាថ្ងៃនេះ" : "No periods this day"}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {dayEntries.map((entry) => {
+                  const subject = isKm
+                    ? entry.subject?.nameKh || entry.subject?.name
+                    : entry.subject?.name || entry.subject?.nameKh;
+                  const teacher = entry.teacher
+                    ? [entry.teacher.lastName, entry.teacher.firstName].filter(Boolean).join(" ")
+                    : "";
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex gap-3 items-start rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3 py-2.5"
+                    >
+                      <div className="text-[10px] font-bold text-teal-600 w-14 shrink-0 leading-tight pt-0.5">
+                        {entry.period?.startTime || "—"}
+                        <br />
+                        <span className="text-slate-400 font-medium">{entry.period?.endTime || ""}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                          {subject || (isKm ? "មុខវិជ្ជា" : "Subject")}
+                        </p>
+                        <p className="text-[11px] text-slate-500 truncate">
+                          {teacher || entry.room || entry.period?.name || ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Homeroom teacher */}
         {selected?.homeroomTeacher && (
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
@@ -669,12 +861,14 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
                   {selected.isHomeroom ? (isKm ? " · អ្នក" : " · You") : ""}
                 </p>
               </div>
-              <Link
-                href={`/${locale}/messages`}
-                className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sky-500"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </Link>
+              {role === "PARENT" && (
+                <Link
+                  href={`/${locale}/messages`}
+                  className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sky-500"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Link>
+              )}
             </div>
           </div>
         )}

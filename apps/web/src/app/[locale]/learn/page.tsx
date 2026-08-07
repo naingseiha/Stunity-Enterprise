@@ -758,11 +758,18 @@ export default function LearnHubPage() {
     setLoading(false);
   }, [currentUser?.id, learnCacheKey, mobilePathOnly]);
 
+  // Mobile path home still needs a light courses strip (native parity).
   useEffect(() => {
-    if (mobilePathOnly) {
-      setLoading(false);
-      return;
-    }
+    if (!mobilePathOnly || !currentUser) return;
+    setLoading(false);
+    void (async () => {
+      const loadedFromHub = await fetchLearnHub();
+      if (!loadedFromHub) await fetchCourses();
+    })();
+  }, [currentUser, fetchCourses, fetchLearnHub, mobilePathOnly]);
+
+  useEffect(() => {
+    if (mobilePathOnly) return;
     if (currentUser) {
       const loadAll = async () => {
         const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);

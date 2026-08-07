@@ -159,11 +159,17 @@ export function patchReelsEngagementInCache(
   });
 }
 
-async function fetchReelsNetwork(userId: string): Promise<ReelsCacheSnapshot | null> {
+async function fetchReelsNetwork(
+  userId: string,
+  cursor?: string | null,
+): Promise<ReelsCacheSnapshot | null> {
   const token = TokenManager.getAccessToken();
   if (!token) return null;
 
-  const res = await fetch(`${FEED_SERVICE_URL}/reels/feed?limit=20`, {
+  const params = new URLSearchParams({ limit: '20' });
+  if (cursor) params.set('cursor', cursor);
+
+  const res = await fetch(`${FEED_SERVICE_URL}/reels/feed?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return null;
@@ -174,7 +180,11 @@ async function fetchReelsNetwork(userId: string): Promise<ReelsCacheSnapshot | n
     hasMore?: boolean;
   };
 
-  if (!data?.items?.length) return null;
+  if (!data?.items?.length) {
+    return cursor
+      ? { items: [], nextCursor: null, hasMore: false, cachedAt: Date.now() }
+      : null;
+  }
 
   return {
     items: data.items,
@@ -187,9 +197,15 @@ async function fetchReelsNetwork(userId: string): Promise<ReelsCacheSnapshot | n
 export async function fetchReelsFeed(options: {
   userId: string;
   force?: boolean;
+  cursor?: string | null;
 }): Promise<ReelsCacheSnapshot | null> {
-  const { userId, force } = options;
+  const { userId, force, cursor } = options;
   if (!userId) return null;
+
+  // Cursor pages always hit the network (append path)
+  if (cursor) {
+    return fetchReelsNetwork(userId, cursor);
+  }
 
   if (!force && isReelsCacheFresh(userId)) {
     return readReelsCache(userId);
@@ -201,7 +217,7 @@ export async function fetchReelsFeed(options: {
   const cached = readReelsCache(userId);
   const request = fetchReelsNetwork(userId)
     .then((payload) => {
-      if (payload) {
+      if (payload?.items?.length) {
         writeReelsCache(userId, payload);
         return payload;
       }
@@ -214,6 +230,27 @@ export async function fetchReelsFeed(options: {
 
   IN_FLIGHT.set(userId, request);
   return request;
+}
+
+/** Append next page into cache + return merged snapshot. */
+export async function fetchMoreReelsFeed(userId: string): Promise<ReelsCacheSnapshot | null> {
+  if (!userId) return null;
+  const current = readReelsCache(userId);
+  if (!current?.hasMore || !current.nextCursor) return current;
+
+  const page = await fetchReelsNetwork(userId, current.nextCursor);
+  if (!page) return current;
+
+  const seen = new Set(current.items.map((i) => i.id));
+  const appended = page.items.filter((i) => !seen.has(i.id));
+  const merged: ReelsCacheSnapshot = {
+    items: [...current.items, ...appended],
+    nextCursor: page.nextCursor,
+    hasMore: page.hasMore,
+    cachedAt: Date.now(),
+  };
+  writeReelsCache(userId, merged);
+  return merged;
 }
 
 /** Fire-and-forget warm — boot / nav hover. */

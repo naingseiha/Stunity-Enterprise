@@ -139,7 +139,12 @@ export default function MobileBottomNav({
       labelKm: "គណនី",
       icon: User,
       path: `/${locale}/profile`,
-      matchPaths: [`/${locale}/profile`, `/${locale}/settings`],
+      matchPaths: [
+        `/${locale}/profile`,
+        `/${locale}/profile/settings`,
+        `/${locale}/profile/qr`,
+        `/${locale}/profile/card`,
+      ],
       badge: unreadMessages > 0 ? unreadMessages : undefined,
       isProfile: true,
     });

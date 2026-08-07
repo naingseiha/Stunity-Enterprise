@@ -120,21 +120,21 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
   const pct = xpToNext > 0 ? Math.min((xpProgress / xpToNext) * 100, 100) : 0;
   const nextLevel = stats.level + 1;
 
-  const size = 110;
+  const size = 128;
   const cx = size / 2;
   const cy = size / 2;
 
   const rings = [
-    { r: 48, sw: 8, pct: xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
-    { r: 37, sw: 6, pct: Math.min(stats.totalQuizzes / Math.max(stats.totalQuizzes + 5, 10), 1), id: 'quiz', c1: '#34D399', c2: '#059669' },
-    { r: 28, sw: 5, pct: Math.min(stats.avgScore / 100, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
+    { r: 55, sw: 10, pct: xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+    { r: 42, sw: 8, pct: Math.min(stats.totalQuizzes / Math.max(stats.totalQuizzes + 5, 10), 1), id: 'quiz', c1: '#34D399', c2: '#059669' },
+    { r: 31, sw: 7, pct: Math.min(stats.avgScore / 100, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
   ];
 
   if (loading) {
     return (
       <div className="perf-card-mobile bg-white dark:bg-gray-900 sm:rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-4 animate-pulse">
         <div className="flex items-center gap-4">
-          <div className="w-[110px] h-[110px] rounded-full bg-gray-100 dark:bg-gray-800" />
+          <div className="w-[128px] h-[128px] rounded-full bg-gray-100 dark:bg-gray-800" />
           <div className="flex-1 space-y-3">
             <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-24" />
             <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-32" />

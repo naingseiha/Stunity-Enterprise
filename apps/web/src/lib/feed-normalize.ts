@@ -3,6 +3,8 @@
  * (posts + injected suggestion carousels).
  */
 
+import type { FeynmanBounty, QuizWar, RecallCard } from './feed-smart-scroll-types';
+
 export interface FeedPostAuthor {
   id: string;
   firstName: string;
@@ -153,7 +155,10 @@ export type FeedRow =
   | { kind: 'post'; key: string; post: FeedPost }
   | { kind: 'suggested_users'; key: string; users: FeedSuggestedUser[] }
   | { kind: 'suggested_courses'; key: string; courses: FeedSuggestedCourse[] }
-  | { kind: 'suggested_quizzes'; key: string; quizzes: FeedSuggestedQuiz[] };
+  | { kind: 'suggested_quizzes'; key: string; quizzes: FeedSuggestedQuiz[] }
+  | { kind: 'recall_card'; key: string; card: RecallCard }
+  | { kind: 'feynman_bounty'; key: string; bounty: FeynmanBounty }
+  | { kind: 'quiz_war'; key: string; war: QuizWar };
 
 const num = (v: unknown, fallback = 0): number => {
   const n = typeof v === 'number' ? v : Number(v);

@@ -2,7 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -94,7 +94,17 @@ interface UserProfile {
     postsThisMonth: number;
     totalLikes: number;
     totalViews: number;
+    profileViews30d?: number;
+    uniqueProfileViewers30d?: number;
+    profileViews7d?: number;
+    profilePerformanceScore?: number;
+    trendingProfileScore?: number;
   };
+  profilePerformanceScore?: number;
+  trendingProfileScore?: number;
+  profileViews30d?: number;
+  uniqueProfileViewers30d?: number;
+  profileViews7d?: number;
 }
 
 interface Skill {
@@ -205,6 +215,7 @@ interface PerformanceStatsSummary {
   weekActivity?: boolean[];
   freezesAvailable?: number;
   studiedToday?: boolean;
+  streakAtRisk?: boolean;
 }
 
 // Skeleton Component - Use imported ProfileSkeleton instead
@@ -287,6 +298,7 @@ export default function ProfilePage() {
   const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations('common');
   const tProfile = useTranslations('profile');
   const locale = (params?.locale as string) || 'en';
@@ -301,7 +313,11 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
+  const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'posts' || tab === 'about' || tab === 'activity' || tab === 'performance') return tab;
+    return 'performance';
+  });
   const [statsSummary, setStatsSummary] = useState<PerformanceStatsSummary | null>(null);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [following, setFollowing] = useState(false);
@@ -375,6 +391,14 @@ export default function ProfilePage() {
       }
 
       // Phase 2 — about + posts in parallel (fill tabs without blocking hero)
+      // Own profile: /my-posts includes reposts (native parity).
+      const isOwn =
+        Boolean(profileData?.profile?.isOwnProfile) ||
+        userId === 'me' ||
+        userId === TokenManager.getUserData()?.user?.id;
+      const postsUrl = isOwn
+        ? `${feedUrl}/my-posts?limit=50`
+        : `${feedUrl}/posts?authorId=${encodeURIComponent(userId)}&limit=50`;
       const [skillsRes, expRes, projectsRes, certsRes, eduRes, achievementsRes, recsRes, postsRes] =
         await Promise.all([
           fetch(`${feedUrl}/users/${userId}/skills`, { headers }),
@@ -384,7 +408,7 @@ export default function ProfilePage() {
           fetch(`${feedUrl}/users/${userId}/education`, { headers }),
           fetch(`${feedUrl}/users/${userId}/achievements`, { headers }),
           fetch(`${feedUrl}/users/${userId}/recommendations`, { headers }),
-          fetch(`${feedUrl}/posts?authorId=${userId}&limit=50`, { headers }),
+          fetch(postsUrl, { headers }),
         ]);
 
       const [skillsData, expData, projectsData, certsData, eduData, achievementsData, recsData, postsData] =
@@ -765,6 +789,9 @@ export default function ProfilePage() {
             onValue={handleValue}
             onComment={handleComment}
             onDeletePost={handleDeletePost}
+            onStatsPatch={(patch) =>
+              setStatsSummary((prev) => (prev ? { ...prev, ...patch } : prev))
+            }
           />
         </div>
 
@@ -1065,7 +1092,11 @@ export default function ProfilePage() {
                   achievements={achievements} 
                   projectsCount={projects.length}
                   profile={profile} 
-                  locale={locale} 
+                  locale={locale}
+                  currentUserId={currentUser?.id}
+                  onStatsPatch={(patch) =>
+                    setStatsSummary((prev) => (prev ? { ...prev, ...patch } : prev))
+                  }
                 />
               )}
 

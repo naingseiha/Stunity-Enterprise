@@ -110,6 +110,107 @@ function unitDisplayName(u: LearnUnit, isKm: boolean) {
   return isKm ? u.nameKh || u.name : u.name;
 }
 
+
+type PracticeStep = {
+  id: string;
+  titleKh: string;
+  titleEn: string;
+  targetVal: number;
+  state: "locked" | "unlocked" | "completed";
+  minDifficulty?: number;
+  maxDifficulty?: number;
+  icon: "puzzle" | "zap" | "flame" | "rocket" | "trophy";
+};
+
+function buildPracticeSteps(unit: LearnUnit, grade?: string): PracticeStep[] {
+  const bandCounts = unit.difficultyCounts ?? {};
+  const countInRange = (lo: number, hi: number) => {
+    let sum = 0;
+    for (let lvl = lo; lvl <= hi; lvl++) sum += bandCounts[lvl as 1 | 2 | 3 | 4 | 5] ?? 0;
+    return sum;
+  };
+  const MIN_PER_BAND = 2;
+  const has5DistinctBands = [1, 2, 3, 4, 5].every((lvl) => countInRange(lvl, lvl) >= MIN_PER_BAND);
+  const has3DistinctBands =
+    countInRange(1, 2) >= MIN_PER_BAND &&
+    countInRange(3, 3) >= MIN_PER_BAND &&
+    countInRange(4, 5) >= MIN_PER_BAND;
+  const wantsLongLadder = unit.totalQuestions > 12 || grade === "12";
+
+  // Khmer titles copied from native LearnHomeScreen.
+  const KH = {
+    p1b: 'លំហាត់អនុវត្តន៍ ១ (កម្រិតមូលដ្ឋាន)',
+    p2m: 'លំហាត់អនុវត្តន៍ ២ (កម្រិតមធ្យម)',
+    p3a: 'លំហាត់អនុវត្តន៍ ៣ (កម្រិតខ្ពស់)',
+    p4e: 'លំហាត់អនុវត្តន៍ ៤ (ត្រៀមប្រឡង)',
+    p5f: 'លំហាត់ផ្ដាច់ព្រ័ត្រ (បាក់ឌុប)',
+    p1: 'លំហាត់អនុវត្តន៍ ១',
+    p2: 'លំហាត់អនុវត្តន៍ ២',
+    final: 'លំហាត់ផ្ដាច់ព្រ័ត្រ',
+  };
+
+  type Raw = {
+    id: string;
+    ratio: number;
+    titleKh: string;
+    titleEn: string;
+    icon: PracticeStep["icon"];
+    minDifficulty?: number;
+    maxDifficulty?: number;
+  };
+
+  const rawSteps: Raw[] =
+    wantsLongLadder && has5DistinctBands
+      ? [
+          { id: "p1", ratio: 0.2, titleKh: KH.p1b, titleEn: "Practice Quiz 1 (Basic)", icon: "puzzle", minDifficulty: 1, maxDifficulty: 1 },
+          { id: "p2", ratio: 0.4, titleKh: KH.p2m, titleEn: "Practice Quiz 2 (Medium)", icon: "zap", minDifficulty: 2, maxDifficulty: 2 },
+          { id: "p3", ratio: 0.65, titleKh: KH.p3a, titleEn: "Practice Quiz 3 (Advanced)", icon: "flame", minDifficulty: 3, maxDifficulty: 3 },
+          { id: "p4", ratio: 0.85, titleKh: KH.p4e, titleEn: "Practice Quiz 4 (Exam Prep)", icon: "rocket", minDifficulty: 4, maxDifficulty: 4 },
+          { id: "p5", ratio: 1.0, titleKh: KH.p5f, titleEn: "Final Challenge (Bac II)", icon: "trophy", minDifficulty: 5, maxDifficulty: 5 },
+        ]
+      : has3DistinctBands
+        ? [
+            { id: "p1", ratio: 0.4, titleKh: KH.p1, titleEn: "Practice Quiz 1", icon: "puzzle", minDifficulty: 1, maxDifficulty: 2 },
+            { id: "p2", ratio: 0.8, titleKh: KH.p2, titleEn: "Practice Quiz 2", icon: "zap", minDifficulty: 3, maxDifficulty: 3 },
+            { id: "p3", ratio: 1.0, titleKh: KH.final, titleEn: "Final Challenge", icon: "trophy", minDifficulty: 4, maxDifficulty: 5 },
+          ]
+        : [
+            { id: "p1", ratio: 0.4, titleKh: KH.p1, titleEn: "Practice Quiz 1", icon: "puzzle" },
+            { id: "p2", ratio: 0.8, titleKh: KH.p2, titleEn: "Practice Quiz 2", icon: "zap" },
+            { id: "p3", ratio: 1.0, titleKh: KH.final, titleEn: "Final Challenge", icon: "trophy" },
+          ];
+
+  const steps: PracticeStep[] = rawSteps.map((raw) => ({
+    id: raw.id,
+    titleKh: raw.titleKh,
+    titleEn: raw.titleEn,
+    icon: raw.icon,
+    targetVal: Math.max(1, Math.min(unit.target, Math.round(unit.target * raw.ratio))),
+    state: "locked",
+    minDifficulty: raw.minDifficulty,
+    maxDifficulty: raw.maxDifficulty,
+  }));
+
+  steps.forEach((step, idx) => {
+    if (unit.correct >= step.targetVal) {
+      step.state = "completed";
+    } else {
+      const prev = steps[idx - 1];
+      const prevDone = prev ? prev.state === "completed" : unit.hasLesson ? unit.correct > 0 : true;
+      if (prevDone) step.state = "unlocked";
+    }
+  });
+  return steps;
+}
+
+function practiceStepIcon(icon: PracticeStep["icon"]) {
+  if (icon === "zap") return Zap;
+  if (icon === "flame") return Flame;
+  if (icon === "rocket") return Rocket;
+  if (icon === "trophy") return Trophy;
+  return Puzzle;
+}
+
 interface MiniCourse {
   id: string;
   title: string;
@@ -621,7 +722,11 @@ export default function LearnHomeMobile({ locale, user, courses = [] }: LearnHom
             </div>
           )}
           <Link
-            href={`/${locale}/messages`}
+            href={`/${locale}/learn/path/tutor?${new URLSearchParams({
+              grade: path?.subject?.grade || "",
+              subjectName: path ? subjectDisplayName(path.subject, false) : "",
+              subjectNameKh: path ? subjectDisplayName(path.subject, true) : "",
+            }).toString()}`}
             className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-500 shadow-sm"
             aria-label="Tutor"
           >
@@ -977,24 +1082,55 @@ export default function LearnHomeMobile({ locale, user, courses = [] }: LearnHom
                           <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex-1">
                             {isKm ? "អានមេរៀនសង្ខេប" : "Read lesson summary"}
                           </span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {unit.correct > 0 ? (isKm ? "រួច" : "Done") : ""}
+                          </span>
                           <ChevronRight className="w-4 h-4 text-slate-400" />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => openPractice(unit)}
-                        className="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-left"
-                      >
-                        <Puzzle className="w-4 h-4 shrink-0" style={{ color: accent }} />
-                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex-1">
-                          {isKm ? "លំហាត់អនុវត្តន៍" : "Practice quiz"}
-                          <span className="text-slate-400 font-medium">
-                            {" "}
-                            · {unit.correct}/{unit.target}
-                          </span>
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
-                      </button>
+                      {buildPracticeSteps(unit, path?.subject?.grade).map((step) => {
+                        const StepIcon = practiceStepIcon(step.icon);
+                        const lockedStep = step.state === "locked";
+                        const doneStep = step.state === "completed";
+                        return (
+                          <button
+                            key={step.id}
+                            type="button"
+                            disabled={lockedStep}
+                            onClick={() =>
+                              openPractice(unit, {
+                                minDifficulty: step.minDifficulty,
+                                maxDifficulty: step.maxDifficulty,
+                                title: isKm ? step.titleKh : step.titleEn,
+                              })
+                            }
+                            className={`w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl border text-left transition ${
+                              lockedStep
+                                ? "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 opacity-60"
+                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                            }`}
+                          >
+                            <StepIcon
+                              className="w-4 h-4 shrink-0"
+                              style={{ color: doneStep ? "#10B981" : accent }}
+                            />
+                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex-1">
+                              {isKm ? step.titleKh : step.titleEn}
+                              <span className="text-slate-400 font-medium">
+                                {" "}
+                                · {Math.min(unit.correct, step.targetVal)}/{step.targetVal}
+                              </span>
+                            </span>
+                            {lockedStep ? (
+                              <Lock className="w-3.5 h-3.5 text-slate-400" />
+                            ) : doneStep ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1045,7 +1181,11 @@ export default function LearnHomeMobile({ locale, user, courses = [] }: LearnHom
             </Link>
             {path.subject.code && (
               <Link
-                href={`/${locale}/learn?tab=explore`}
+                href={`/${locale}/learn/path/exams?${new URLSearchParams({
+                  courseCode: path.subject.code,
+                  subjectName: subjectDisplayName(path.subject, false),
+                  subjectNameKh: subjectDisplayName(path.subject, true),
+                }).toString()}`}
                 className="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm"
               >
                 <div className="w-9 h-9 rounded-full bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">

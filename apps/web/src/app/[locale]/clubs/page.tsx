@@ -440,7 +440,7 @@ export default function StudyClubsPage() {
 
           {/* Mobile: native Class Hub (Clubs tab = Classes) */}
           {!showCommunity && (
-            <div className="md:hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))] pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px))]">
+            <div className="md:hidden pt-[env(safe-area-inset-top,0px)] pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px))]">
               <ClassHubMobile locale={locale} user={currentUser} />
             </div>
           )}
@@ -451,7 +451,7 @@ export default function StudyClubsPage() {
             <button
               type="button"
               onClick={() => router.push(`/${locale}/clubs`)}
-              className="md:hidden mx-4 mt-3 mb-1 inline-flex items-center gap-1.5 text-sm font-bold text-teal-600"
+              className="md:hidden mx-4 mb-1 inline-flex items-center gap-1.5 text-sm font-bold text-teal-600 pt-[max(12px,env(safe-area-inset-top,0px))]"
             >
               ← {locale === 'km' ? 'ត្រឡប់ទៅថ្នាក់' : 'Back to Classes'}
             </button>

@@ -26,6 +26,8 @@ export const GRADE_SERVICE_URL =
   process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
 export const LEARN_SERVICE_URL =
   process.env.NEXT_PUBLIC_LEARN_SERVICE_URL || 'http://localhost:3018';
+export const AI_SERVICE_URL =
+  process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:3020';
 
 // Production builds should set NEXT_PUBLIC_* at build time; unset vars fall back to localhost.
 if (

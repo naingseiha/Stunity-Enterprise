@@ -165,12 +165,17 @@ async function fetchHubNetwork(
   }
 
   const prev = readClassesHubCache(userId);
+  // Teachers: prefer a class they actually teach (timetable assignment), like native ClubsScreen.
+  const teachingFirst =
+    roleUpper === "TEACHER"
+      ? myClasses.filter((c) => c.hasTimetableAssignment === true)
+      : [];
+  const preferredDefault =
+    (teachingFirst[0]?.id || myClasses[0]?.id) ?? null;
   const selectedClassId =
     (prev?.selectedClassId && myClasses.some((c) => c.id === prev.selectedClassId)
       ? prev.selectedClassId
-      : null) ||
-    myClasses[0]?.id ||
-    null;
+      : null) || preferredDefault;
 
   return {
     myClasses,

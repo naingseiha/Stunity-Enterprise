@@ -45,6 +45,19 @@ import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
 import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
 import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
 import PerformanceCard from '@/components/feed/PerformanceCard';
+import BrainModeToggle from '@/components/feed/BrainModeToggle';
+import FeedFloatingActionButton from '@/components/feed/FeedFloatingActionButton';
+import RecallCardItem from '@/components/feed/RecallCardItem';
+import FeynmanBountyItem from '@/components/feed/FeynmanBountyItem';
+import QuizWarBanner from '@/components/feed/QuizWarBanner';
+import CreateBountyModal from '@/components/feed/CreateBountyModal';
+import BountyDetailModal from '@/components/feed/BountyDetailModal';
+import { fetchDueCards, submitRecallReview } from '@/lib/api/recall';
+import { fetchActiveBounties } from '@/lib/api/bounties';
+import { fetchActiveQuizWar, joinQuizWar } from '@/lib/api/quizWars';
+import { QUIZ_WAR_ENABLED } from '@/lib/feature-flags';
+import { applySmartScrollInjects } from '@/lib/inject-smart-scroll';
+import type { FeynmanBounty, QuizWar, RecallCard, RecallGrade } from '@/lib/feed-smart-scroll-types';
 import { useEventStream, SSEEvent } from '@/hooks/useEventStream';
 import {
   Users,
@@ -82,6 +95,8 @@ import {
   User,
   Wifi,
   WifiOff,
+  PlayCircle,
+  Ribbon,
 } from 'lucide-react';
 
 const FEED_API = FEED_SERVICE_URL;
@@ -353,6 +368,16 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [isValueSubmitting, setIsValueSubmitting] = useState(false);
   const [createPostTypePreset, setCreatePostTypePreset] = useState<string>('ARTICLE');
   const [showFilters, setShowFilters] = useState(false);
+  const [brainMode, setBrainMode] = useState(false);
+  const [recallCards, setRecallCards] = useState<RecallCard[]>([]);
+  const [deferredRecallIds, setDeferredRecallIds] = useState<Set<string>>(new Set());
+  const [activeBounties, setActiveBounties] = useState<FeynmanBounty[]>([]);
+  const [activeQuizWar, setActiveQuizWar] = useState<QuizWar | null>(null);
+  const [showCreateBountyModal, setShowCreateBountyModal] = useState(false);
+  const [bountyDetail, setBountyDetail] = useState<{
+    bounty: FeynmanBounty;
+    mode: 'answers' | 'explain';
+  } | null>(null);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
@@ -997,6 +1022,27 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     }
   }, [activeTab, user, fetchMyPosts, fetchBookmarks]);
 
+  // Smart Scroll overlays — delayed slightly like native (1.5s) so posts paint first
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const [due, bounties, war] = await Promise.all([
+        fetchDueCards({ limit: 8 }),
+        fetchActiveBounties({ limit: 6 }),
+        QUIZ_WAR_ENABLED ? fetchActiveQuizWar() : Promise.resolve(null),
+      ]);
+      if (cancelled) return;
+      setRecallCards(due);
+      setActiveBounties(bounties);
+      setActiveQuizWar(war);
+    }, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [user?.id]);
+
   const handleLogout = async () => {
     await TokenManager.logout();
     router.replace(`/${locale}/auth/login`);
@@ -1326,6 +1372,59 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     setShowCreateModal(true);
   }, []);
 
+  const handleRecallGrade = useCallback(async (cardId: string, grade: RecallGrade) => {
+    await submitRecallReview(cardId, grade);
+    setRecallCards((prev) => prev.filter((c) => c.id !== cardId));
+  }, []);
+
+  const handleRecallDefer = useCallback((cardId: string) => {
+    setDeferredRecallIds((prev) => new Set(prev).add(cardId));
+  }, []);
+
+  const handleBountySeeAnswers = useCallback(
+    (bountyId: string) => {
+      const bounty = activeBounties.find((b) => b.id === bountyId);
+      if (bounty) setBountyDetail({ bounty, mode: 'answers' });
+    },
+    [activeBounties],
+  );
+
+  const handleBountyExplain = useCallback(
+    (bountyId: string) => {
+      const bounty = activeBounties.find((b) => b.id === bountyId);
+      if (bounty) setBountyDetail({ bounty, mode: 'explain' });
+    },
+    [activeBounties],
+  );
+
+  const handleQuizWarJoin = useCallback(
+    async (warId: string) => {
+      if (!QUIZ_WAR_ENABLED || !activeQuizWar) return;
+      const team: 'A' | 'B' =
+        activeQuizWar.userTeamId === activeQuizWar.teamB.id ? 'B' : 'A';
+      try {
+        const result = await joinQuizWar(warId, team);
+        setActiveQuizWar((prev) =>
+          prev && prev.id === warId
+            ? {
+                ...prev,
+                isUserParticipating: true,
+                userTeamId: result.team === 'B' ? prev.teamB.id : prev.teamA.id,
+              }
+            : prev,
+        );
+      } catch (err: any) {
+        window.alert(err?.message || 'Failed to join Quiz War');
+      }
+    },
+    [activeQuizWar],
+  );
+
+  const refreshBounties = useCallback(async () => {
+    const bounties = await fetchActiveBounties({ limit: 6 });
+    setActiveBounties(bounties);
+  }, []);
+
   const toggleComments = async (postId: string) => {
     const newExpanded = new Set(expandedComments);
     if (newExpanded.has(postId)) {
@@ -1418,13 +1517,33 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const selectedFilterLabel = tFeed(selectedFilter.labelKey);
 
   const filteredVirtualFeedEntries = useMemo<VirtualFeedEntry[]>(() => {
-    if (postTypeFilter === 'all') {
-      return feedRows.map((row) => ({ id: row.key, row }));
+    let rows =
+      postTypeFilter === 'all'
+        ? feedRows
+        : feedRows.filter((row) => row.kind !== 'post' || row.post.postType === postTypeFilter);
+
+    if (brainMode) {
+      // Client-side Ed-Score ranking (valuesCount as proxy) — matches native Brain Mode UX.
+      const posts = rows.filter((r) => r.kind === 'post');
+      const inserts = rows.filter((r) => r.kind !== 'post');
+      posts.sort(
+        (a, b) =>
+          ((b.kind === 'post' ? b.post.valuesCount : 0) ?? 0) -
+          ((a.kind === 'post' ? a.post.valuesCount : 0) ?? 0),
+      );
+      rows = [...posts, ...inserts];
     }
-    return feedRows
-      .filter((row) => row.kind !== 'post' || row.post.postType === postTypeFilter)
-      .map((row) => ({ id: row.key, row }));
-  }, [feedRows, postTypeFilter]);
+
+    const activeRecall = recallCards.filter((c) => !deferredRecallIds.has(c.id));
+    rows = applySmartScrollInjects(rows, {
+      recallCards: activeRecall,
+      bounties: activeBounties,
+      quizWar: activeQuizWar,
+      quizWarEnabled: QUIZ_WAR_ENABLED,
+    });
+
+    return rows.map((row) => ({ id: row.key, row }));
+  }, [feedRows, postTypeFilter, brainMode, recallCards, deferredRecallIds, activeBounties, activeQuizWar]);
 
   const filteredMainFeedPostCount = useMemo(
     () => filteredVirtualFeedEntries.filter((entry) => entry.row.kind === 'post').length,
@@ -1515,14 +1634,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       ? `${tCommon('view')} ${tCommon('profile')}`
       : translated;
   })();
-  const tabs = [
-    { id: 'feed', label: tFeed('tabs.feed'), icon: TrendingUp },
-    { id: 'posts', label: tFeed('tabs.myPosts'), icon: BookOpen },
-    { id: 'insights', label: tFeed('tabs.insights'), icon: BarChart3 },
-    { id: 'activity', label: tFeed('tabs.activity'), icon: Activity },
-    { id: 'bookmarks', label: tFeed('tabs.saved'), icon: Bookmark },
-  ];
-
   const sidebarTabs = [
     { id: 'feed', label: tFeed('tabs.feed'), icon: TrendingUp },
     { id: 'bookmarks', label: tFeed('tabs.saved'), icon: Bookmark },
@@ -1733,33 +1844,13 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
           {/* Center - Main Feed */}
           <main className="lg:col-span-6">
-            {/* Tab Navigation - Mobile only */}
-            <div className="flex gap-2 mb-3 overflow-x-auto pb-2 lg:hidden scrollbar-hide">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${activeTab === tab.id
-                      ? 'bg-[#F9A825] text-white'
-                      : 'bg-white dark:bg-none dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-                      }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
             {/* Performance Card - XP, Level, Streak */}
             <div className="mb-0 sm:mb-3 sm:transform sm:hover:scale-[1.01] transition-transform duration-300">
               <PerformanceCard user={user} locale={locale} />
             </div>
 
-            {/* Create Post Card — E-Learning Focused */}
-            <div className="create-post-mobile bg-white dark:bg-none dark:bg-gray-900/80 backdrop-blur-xl sm:rounded-lg sm:shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-0 sm:mb-3 transition-all duration-300 sm:hover:border-[#F9A825]/30">
+            {/* Create Post Card — native-parity horizontal quick actions */}
+            <div className="create-post-mobile bg-white dark:bg-gray-900/80 backdrop-blur-xl sm:rounded-lg sm:shadow-sm border border-gray-200 dark:border-gray-800 px-4 pt-3 pb-2 mb-0 sm:mb-3 transition-all duration-300 sm:hover:border-sky-500/30">
               <div className="flex items-center gap-3">
                 {user.profilePictureUrl ? (
                   <NextImage
@@ -1770,70 +1861,87 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                     {getInitials(user.firstName, user.lastName)}
                   </div>
                 )}
                 <button
                   onClick={() => openCreateModalWithPreset('ARTICLE')}
-                  className="flex-1 text-left px-4 py-2.5 bg-gray-50 dark:bg-none dark:bg-gray-800/50 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700/80 transition-all duration-300 text-sm border border-gray-200 dark:border-gray-700/50"
+                  className="flex-1 text-left px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/80 transition-all duration-300 text-sm border border-gray-200 dark:border-gray-700/50"
                 >
-                  {tFeed('createPost.askMind')}
+                  {tFeed('shareLearning')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openCreateModalWithPreset('ARTICLE')}
+                  className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors"
+                  aria-label={tFeed('ask')}
+                >
+                  <ImageIcon className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <button
-                  onClick={() => openCreateModalWithPreset('QUESTION')}
-                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-sky-50 dark:hover:bg-sky-900/20"
-                >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-sky-300 to-sky-500 shadow-md shadow-sky-500/20 group-hover:scale-110 transition-transform">
-                    <HelpCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-sky-500">{tFeed('ask')}</span>
-                </button>
-
-                <button
-                  onClick={() => openCreateModalWithPreset('QUIZ')}
-                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-                    <Lightbulb className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-emerald-500">{tFeed('quiz')}</span>
-                </button>
-
-                <button
-                  onClick={() => openCreateModalWithPreset('POLL')}
-                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-violet-400 to-violet-600 shadow-md shadow-violet-500/20 group-hover:scale-110 transition-transform">
-                    <BarChart3 className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-violet-500">{tFeed('postTypes.poll')}</span>
-                </button>
-
-                <button
-                  onClick={() => openCreateModalWithPreset('RESOURCE')}
-                  className="flex-1 flex flex-col items-center justify-center gap-2 px-2 py-2 rounded-xl transition-all duration-300 group hover:bg-pink-50 dark:hover:bg-pink-900/20"
-                >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600 shadow-md shadow-pink-500/20 group-hover:scale-110 transition-transform">
-                    <BookOpen className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-pink-500">{tFeed('resource')}</span>
-                </button>
+              <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 -mx-4 px-2 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center gap-1 min-w-max">
+                  <button
+                    type="button"
+                    onClick={() => openCreateModalWithPreset('QUESTION')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all"
+                  >
+                    <MessageCircle className="w-5 h-5 text-blue-500" />
+                    <span>{tFeed('ask')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openCreateModalWithPreset('QUIZ')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all"
+                  >
+                    <Lightbulb className="w-5 h-5 text-emerald-500" />
+                    <span>{tFeed('quiz')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openCreateModalWithPreset('POLL')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all"
+                  >
+                    <BarChart3 className="w-5 h-5 text-violet-500" />
+                    <span>{tFeed('postTypes.poll')}</span>
+                  </button>
+                  <Link
+                    href={`/${locale}/reels`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all"
+                  >
+                    <PlayCircle className="w-5 h-5 text-red-500" />
+                    <span>Reels</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateBountyModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all"
+                  >
+                    <Ribbon className="w-5 h-5 text-amber-600" />
+                    <span>Bounty</span>
+                  </button>
+                </div>
               </div>
+            </div>
+
+            <div className="lg:hidden">
+              <BrainModeToggle
+                active={brainMode}
+                onToggle={() => setBrainMode((v) => !v)}
+              />
             </div>
 
             {/* Feed Content */}
             {activeTab === 'feed' && (
               <div className="feed-items-mobile space-y-0 sm:space-y-3">
-                {/* Post Type Filters & Refresh - Minimal */}
-                <div className="flex items-center justify-between gap-2">
+                {/* Post Type Filters & Refresh — desktop only (native feed has no filter bar) */}
+                <div className="hidden sm:flex items-center justify-between gap-2">
                   <div className="relative">
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors ${postTypeFilter !== 'all'
-                        ? 'bg-amber-50 dark:bg-amber-900/30 border-[#F9A825] text-[#F9A825]'
+                        ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-500 text-sky-600'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700'
                         }`}
                     >
@@ -1854,11 +1962,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                 setPostTypeFilter(filter.id);
                                 setShowFilters(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors ${postTypeFilter === filter.id ? 'bg-gradient-to-r from-amber-50 to-[#F9A825]/10 dark:from-amber-900/20 dark:to-[#F9A825]/20 border-l-2 border-[#F9A825]' : ''
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-sky-50 dark:hover:bg-sky-900/30 transition-colors ${postTypeFilter === filter.id ? 'bg-gradient-to-r from-sky-50 to-sky-500/10 dark:from-sky-900/20 dark:to-sky-500/20 border-l-2 border-sky-500' : ''
                                 }`}
                             >
-                              <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-[#F9A825]' : 'text-gray-500 dark:text-gray-400'}`} />
-                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
+                              <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-sky-500' : 'text-gray-500 dark:text-gray-400'}`} />
+                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-sky-600 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {tFeed(filter.labelKey)}
                               </span>
                             </button>
@@ -1871,7 +1979,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   <button
                     onClick={() => fetchPosts({ refresh: true })}
                     disabled={loadingPosts}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#F9A825] hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-full transition-all duration-200"
                   >
                     <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
                     {tFeed('actions.refresh')}
@@ -1900,7 +2008,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 {newPostsAvailable > 0 && (
                   <button
                     onClick={loadNewPosts}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg shadow-md hover:from-amber-600 hover:to-orange-600 transition-all animate-pulse"
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg shadow-md hover:from-sky-600 hover:to-blue-700 transition-all animate-pulse"
                   >
                     <Sparkles className="w-4 h-4" />
                     <span className="font-medium">
@@ -1919,15 +2027,15 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
                 {/* Empty State - Stunity Design */}
                 {!loadingPosts && feedRows.length === 0 && (
-                  <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-10 text-center">
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center animate-pulse">
-                      <Sparkles className="w-10 h-10 text-[#F9A825]" />
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-10 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-sky-500/20 to-blue-500/20 flex items-center justify-center animate-pulse">
+                      <Sparkles className="w-10 h-10 text-sky-500" />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{tFeed('empty.welcomeTitle')}</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">{tFeed('empty.welcomeMessage')}</p>
                     <button
                       onClick={() => setShowCreateModal(true)}
-                      className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
+                      className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-full font-semibold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg shadow-sky-200/50 transform hover:scale-105"
                     >
                       <Send className="w-5 h-5" />
                       {tFeed('empty.createFirstPost')}
@@ -1957,6 +2065,26 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         )}
                         {entry.row.kind === 'suggested_quizzes' && (
                           <FeedSuggestedQuizzesStrip locale={locale} quizzes={entry.row.quizzes} />
+                        )}
+                        {entry.row.kind === 'recall_card' && (
+                          <RecallCardItem
+                            card={entry.row.card}
+                            onGrade={handleRecallGrade}
+                            onDefer={handleRecallDefer}
+                          />
+                        )}
+                        {entry.row.kind === 'feynman_bounty' && (
+                          <FeynmanBountyItem
+                            bounty={entry.row.bounty}
+                            onSeeAnswers={handleBountySeeAnswers}
+                            onExplain={handleBountyExplain}
+                          />
+                        )}
+                        {entry.row.kind === 'quiz_war' && QUIZ_WAR_ENABLED && (
+                          <QuizWarBanner
+                            war={entry.row.war}
+                            onJoin={handleQuizWarJoin}
+                          />
                         )}
                         {entry.row.kind === 'post' && (
                         <PostCard
@@ -2055,9 +2183,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
                 {/* Empty Filter State */}
                 {!loadingPosts && postsFromFeed.length > 0 && filteredMainFeedPostCount === 0 && (
-                  <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
-                      <Filter className="w-8 h-8 text-[#F9A825]" />
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-sky-500/20 to-blue-500/20 flex items-center justify-center">
+                      <Filter className="w-8 h-8 text-sky-500" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                       {tFeed('empty.noPostsForFilter', { filter: selectedFilterLabel })}
@@ -2065,7 +2193,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <p className="text-gray-600 mb-4">{tFeed('empty.tryDifferentFilter')}</p>
                     <button
                       onClick={() => setPostTypeFilter('all')}
-                      className="text-[#F9A825] hover:text-[#E89A1E] font-medium"
+                      className="text-sky-500 hover:text-sky-600 font-medium"
                     >
                       {tFeed('empty.showAllPosts')}
                     </button>
@@ -2293,6 +2421,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
 
 
+      <FeedFloatingActionButton
+        onPress={() => openCreateModalWithPreset('ARTICLE')}
+        label={tFeed('createPost.title')}
+      />
+
       {/* Create Post Modal */}
       <CreatePostModal
         isOpen={showCreateModal}
@@ -2300,6 +2433,21 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         onSubmit={handleCreatePost}
         user={user}
         initialPostType={createPostTypePreset}
+      />
+
+      <CreateBountyModal
+        isOpen={showCreateBountyModal}
+        onClose={() => setShowCreateBountyModal(false)}
+        onCreated={() => {
+          refreshBounties();
+        }}
+      />
+
+      <BountyDetailModal
+        isOpen={bountyDetail !== null}
+        bounty={bountyDetail?.bounty ?? null}
+        mode={bountyDetail?.mode ?? 'answers'}
+        onClose={() => setBountyDetail(null)}
       />
 
       {/* Educational Value Modal */}

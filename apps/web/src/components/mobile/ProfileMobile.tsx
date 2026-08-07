@@ -19,9 +19,7 @@ import {
   Flame,
   Trophy,
   Award,
-  ChevronRight,
   RefreshCw,
-  Eye,
   Star,
   Plus,
 } from "lucide-react";
@@ -121,6 +119,7 @@ interface ProfileMobileProps {
   onValue: (postId: string) => void;
   onComment: (postId: string, content: string, parentId?: string) => void;
   onDeletePost: (postId: string) => void;
+  onStatsPatch?: (patch: Record<string, unknown>) => void;
 }
 
 function formatDate(date: string) {
@@ -155,13 +154,16 @@ export default function ProfileMobile({
   onValue,
   onComment,
   onDeletePost,
+  onStatsPatch,
 }: ProfileMobileProps) {
   const isKm = locale === "km";
   const [visitors, setVisitors] = useState<ProfileVisitor[]>([]);
+  const [visitorsLoading, setVisitorsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadVisitors = useCallback(async () => {
     if (!profile.isOwnProfile) return;
+    setVisitorsLoading(true);
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
@@ -173,6 +175,8 @@ export default function ProfileMobile({
       setVisitors(data?.visitors || data?.data?.visitors || []);
     } catch {
       /* non-fatal */
+    } finally {
+      setVisitorsLoading(false);
     }
   }, [profile.isOwnProfile]);
 
@@ -199,10 +203,10 @@ export default function ProfileMobile({
   return (
     <div
       className="min-h-screen bg-[#F0F4F8] dark:bg-gray-950 pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom,0px)+8px)]"
-      style={{ paddingTop: "calc(var(--top-bar-height) + env(safe-area-inset-top, 0px))" }}
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       {revalidating ? (
-        <div className="h-0.5 w-full overflow-hidden bg-transparent fixed top-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))] left-0 right-0 z-40">
+        <div className="h-0.5 w-full overflow-hidden bg-transparent fixed top-[env(safe-area-inset-top,0px)] left-0 right-0 z-40">
           <div className="h-full w-1/3 bg-gradient-to-r from-[#09CFF7] to-[#00B8DB] animate-[profileProgress_1.1s_ease-in-out_infinite]" />
         </div>
       ) : null}
@@ -237,8 +241,15 @@ export default function ProfileMobile({
             {profile.isOwnProfile ? (
               <>
                 <Link
+                  href={`/${locale}/profile/qr`}
+                  className="w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 shadow-sm flex items-center justify-center text-sky-600"
+                  aria-label="QR"
+                >
+                  <QrCode className="w-4 h-4" />
+                </Link>
+                <Link
                   href={`/${locale}/messages`}
-                  className="w-9 h-9 rounded-full bg-black/25 backdrop-blur-md flex items-center justify-center text-white"
+                  className="w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 shadow-sm flex items-center justify-center text-sky-600"
                   aria-label="Messages"
                 >
                   <MessageCircle className="w-4 h-4" />
@@ -246,14 +257,14 @@ export default function ProfileMobile({
                 <button
                   type="button"
                   onClick={() => void onShare()}
-                  className="w-9 h-9 rounded-full bg-black/25 backdrop-blur-md flex items-center justify-center text-white"
+                  className="w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 shadow-sm flex items-center justify-center text-sky-600"
                   aria-label="Share"
                 >
                   <Share2 className="w-4 h-4" />
                 </button>
                 <Link
-                  href={`/${locale}/settings`}
-                  className="w-9 h-9 rounded-full bg-black/25 backdrop-blur-md flex items-center justify-center text-white"
+                  href={`/${locale}/profile/settings`}
+                  className="w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 shadow-sm flex items-center justify-center text-sky-600"
                   aria-label="Settings"
                 >
                   <Settings className="w-4 h-4" />
@@ -263,7 +274,7 @@ export default function ProfileMobile({
               <button
                 type="button"
                 onClick={() => void onShare()}
-                className="w-9 h-9 rounded-full bg-black/25 backdrop-blur-md flex items-center justify-center text-white"
+                className="w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 shadow-sm flex items-center justify-center text-sky-600"
               >
                 <Share2 className="w-4 h-4" />
               </button>
@@ -273,16 +284,16 @@ export default function ProfileMobile({
       </div>
 
       {/* Identity card */}
-      <div className="relative px-4 -mt-16">
+      <div className="relative px-4 -mt-[88px]">
         <div className="flex items-end justify-between gap-3">
           <div className="relative shrink-0">
-            <div className="w-[108px] h-[108px] rounded-full border-[4px] border-[#F0F4F8] dark:border-gray-950 overflow-hidden bg-gradient-to-br from-sky-200 to-cyan-200 shadow-lg">
+            <div className="w-[152px] h-[152px] rounded-full border-[5px] border-[#F0F4F8] dark:border-gray-950 overflow-hidden bg-gradient-to-br from-sky-200 to-cyan-200 shadow-lg ring-[3px] ring-sky-400/30">
               {profile.profilePictureUrl ? (
                 <Image
                   src={profile.profilePictureUrl}
                   alt=""
-                  width={108}
-                  height={108}
+                  width={152}
+                  height={152}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -304,11 +315,11 @@ export default function ProfileMobile({
 
           {profile.isOwnProfile ? (
             <Link
-              href={`/${locale}/profile/${profile.id}/edit`}
-              className="mb-2 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 dark:bg-gray-900/90 border border-slate-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 shadow-sm"
+              href={`/${locale}/profile/card`}
+              className="mb-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-[#78350F] text-xs font-bold shadow-md"
             >
-              <QrCode className="w-4 h-4 text-[#00B8DB]" />
-              {isKm ? "កាត" : "My Card"}
+              <QrCode className="w-4 h-4" />
+              {isKm ? "កាតអប់រំ" : "My Card"}
             </Link>
           ) : null}
         </div>
@@ -387,14 +398,13 @@ export default function ProfileMobile({
                   <Edit3 className="w-4 h-4" />
                   {labels.editProfile}
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => void onShare()}
+                <Link
+                  href={`/${locale}/profile/card`}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#FFC53D] to-[#FFA600] text-[#78350F] rounded-full text-sm font-bold shadow-md"
                 >
-                  <Share2 className="w-4 h-4" />
-                  {shareCopied ? labels.linkCopied : labels.shareProfile}
-                </button>
+                  <QrCode className="w-4 h-4" />
+                  {isKm ? "កាតអប់រំ" : "Education Card"}
+                </Link>
               </>
             ) : (
               <>
@@ -445,7 +455,7 @@ export default function ProfileMobile({
       </div>
 
       {/* Sticky tabs */}
-      <div className="sticky top-[calc(var(--top-bar-height)+env(safe-area-inset-top,0px))] z-30 mt-3 bg-[#F0F4F8]/95 dark:bg-gray-950/95 backdrop-blur-md border-y border-slate-200/80 dark:border-gray-800">
+      <div className="sticky top-[env(safe-area-inset-top,0px)] z-30 mt-3 bg-[#F0F4F8]/95 dark:bg-gray-950/95 backdrop-blur-md border-y border-slate-200/80 dark:border-gray-800">
         <div className="flex overflow-x-auto px-2 scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -473,64 +483,17 @@ export default function ProfileMobile({
       {/* Tab content */}
       <div className="px-0 sm:px-4 pt-3 space-y-3">
         {activeTab === "performance" ? (
-          <div className="space-y-3">
-            {profile.isOwnProfile && profile.profileCompleteness < 100 ? (
-              <div className="mx-4 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-4 shadow-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    {isKm ? "ភាពពេញលេញ" : "Completeness"}
-                  </span>
-                  <span className="text-sm font-extrabold text-sky-600">{profile.profileCompleteness}%</span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                  <div
-                    className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all"
-                    style={{ width: `${profile.profileCompleteness}%` }}
-                  />
-                </div>
-                <Link
-                  href={`/${locale}/profile/me/edit`}
-                  className="block text-center text-xs text-sky-600 font-bold mt-3"
-                >
-                  {isKm ? "បំពេញគណនី" : "Complete your profile"}
-                </Link>
-              </div>
-            ) : null}
-
-            {profile.isOwnProfile && visitors.length > 0 ? (
-              <div className="mx-4 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-                    <Eye className="w-4 h-4 text-violet-500" />
-                    {isKm ? "អ្នកមើលថ្មីៗ" : "Recent visitors"}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="flex -space-x-2">
-                  {visitors.slice(0, 3).map((v) => (
-                    <div
-                      key={v.id}
-                      className="w-9 h-9 rounded-full border-2 border-white dark:border-gray-900 overflow-hidden bg-sky-100"
-                    >
-                      {v.profilePictureUrl ? (
-                        <Image src={v.profilePictureUrl} alt="" width={36} height={36} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-sky-700">
-                          {(v.firstName?.[0] || "") + (v.lastName?.[0] || "")}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
+          <div className="space-y-3 px-0 sm:px-0">
             <PerformanceTab
               statsSummary={statsSummary}
               achievements={achievements}
               projectsCount={projectsCount}
               profile={profile}
               locale={locale}
+              visitors={visitors}
+              visitorsLoading={visitorsLoading}
+              currentUserId={currentUserId}
+              onStatsPatch={onStatsPatch}
             />
           </div>
         ) : null}
@@ -565,6 +528,29 @@ export default function ProfileMobile({
 
         {activeTab === "about" ? (
           <div className="mx-4 space-y-3 pb-4">
+            {profile.isOwnProfile && profile.profileCompleteness < 100 ? (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-4 shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    {isKm ? "ភាពពេញលេញ" : "Completeness"}
+                  </span>
+                  <span className="text-sm font-extrabold text-sky-600">{profile.profileCompleteness}%</span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+                  <div
+                    className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all"
+                    style={{ width: `${profile.profileCompleteness}%` }}
+                  />
+                </div>
+                <Link
+                  href={`/${locale}/profile/${profile.id}/edit`}
+                  className="block text-center text-xs text-sky-600 font-bold mt-3"
+                >
+                  {isKm ? "បំពេញគណនី" : "Complete your profile"}
+                </Link>
+              </div>
+            ) : null}
+
             {profile.bio ? (
               <section className="bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-4">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2">{isKm ? "អំពី" : "About"}</h3>

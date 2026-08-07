@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { 
   Flame, Trophy, Target, Award, Code, Clock, Eye, 
-  TrendingUp, CheckCircle, Diamond, Shield, Zap, 
-  ChevronRight, Calendar, Users, Star, ArrowUpRight
+  TrendingUp, CheckCircle, Diamond, Shield, Snowflake,
+  ChevronRight, Star, ArrowUpRight, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import SubjectMasteryTree from '@/components/profile/SubjectMasteryTree';
+import StreakLeaderboardWidget from '@/components/profile/StreakLeaderboard';
+import { postStreakFreeze, getGlobalStanding } from '@/lib/api/analytics';
+import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 interface PerformanceStatsSummary {
   xp: number;
@@ -27,6 +32,16 @@ interface PerformanceStatsSummary {
   weekActivity?: boolean[];
   freezesAvailable?: number;
   studiedToday?: boolean;
+  streakAtRisk?: boolean;
+}
+
+export interface PerformanceVisitor {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  profilePictureUrl?: string | null;
+  headline?: string;
+  viewedAt?: string;
 }
 
 interface PerformanceTabProps {
@@ -35,6 +50,27 @@ interface PerformanceTabProps {
   projectsCount: number;
   profile: any;
   locale: string;
+  visitors?: PerformanceVisitor[];
+  /** When set, parent owns visitor loading (mobile). When omitted, tab self-fetches. */
+  visitorsLoading?: boolean;
+  currentUserId?: string;
+  onStatsPatch?: (patch: Partial<PerformanceStatsSummary>) => void;
+}
+
+/** Normalize xpProgress: absolute XP toward next level, or 0–1 ratio from older APIs. */
+function xpProgressPct(xpProgress: number, xpToNextLevel: number) {
+  if (xpToNextLevel <= 0) return 0;
+  if (xpProgress > 0 && xpProgress <= 1 && xpToNextLevel > 1) {
+    return Math.min(xpProgress, 1);
+  }
+  return Math.min(xpProgress / xpToNextLevel, 1);
+}
+
+function formatXpProgress(xpProgress: number, xpToNextLevel: number) {
+  if (xpProgress > 0 && xpProgress <= 1 && xpToNextLevel > 1) {
+    return Math.round(xpProgress * xpToNextLevel);
+  }
+  return Math.round(xpProgress);
 }
 
 function ProgressRing({ 
@@ -131,10 +167,79 @@ function MiniLineChart({ data, width = 240, height = 80 }: { data: number[]; wid
   );
 }
 
+function compactNumber(n: number) {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+function relativeTime(iso?: string, isKm = false) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return isKm ? `${Math.max(1, mins)}នាទីមុន` : `${Math.max(1, mins)}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return isKm ? `${hrs}ម៉ោងមុន` : `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return isKm ? `${days}ថ្ងៃមុន` : `${days}d ago`;
+}
+
 export default function PerformanceTab({ 
-  statsSummary, achievements = [], projectsCount = 0, profile, locale 
+  statsSummary, achievements = [], projectsCount = 0, profile, locale,
+  visitors: visitorsProp = [], visitorsLoading: visitorsLoadingProp,
+  currentUserId, onStatsPatch,
 }: PerformanceTabProps) {
-  const summary = statsSummary || {
+  const isKm = locale === 'km';
+  const [localSummary, setLocalSummary] = useState<PerformanceStatsSummary | null>(statsSummary);
+  const [freezing, setFreezing] = useState(false);
+  const [freezeMsg, setFreezeMsg] = useState<string | null>(null);
+  const [globalRank, setGlobalRank] = useState<number | null>(null);
+  const [localVisitors, setLocalVisitors] = useState<PerformanceVisitor[]>([]);
+  const [localVisitorsLoading, setLocalVisitorsLoading] = useState(false);
+
+  const parentOwnsVisitors = visitorsLoadingProp !== undefined;
+  const visitors = parentOwnsVisitors || visitorsProp.length > 0 ? visitorsProp : localVisitors;
+  const visitorsLoading = parentOwnsVisitors ? !!visitorsLoadingProp : localVisitorsLoading;
+
+  useEffect(() => {
+    setLocalSummary(statsSummary);
+  }, [statsSummary]);
+
+  useEffect(() => {
+    if (!profile?.isOwnProfile) return;
+    let cancelled = false;
+    getGlobalStanding()
+      .then((s) => { if (!cancelled) setGlobalRank(s.rank); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [profile?.isOwnProfile, profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.isOwnProfile || parentOwnsVisitors) return;
+    let cancelled = false;
+    setLocalVisitorsLoading(true);
+    (async () => {
+      try {
+        const token = TokenManager.getAccessToken();
+        if (!token) return;
+        const res = await fetch(`${FEED_SERVICE_URL}/users/me/profile/visitors/preview`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) {
+          setLocalVisitors(data?.visitors || data?.data?.visitors || []);
+        }
+      } catch {
+        /* non-fatal */
+      } finally {
+        if (!cancelled) setLocalVisitorsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.isOwnProfile, profile?.id, parentOwnsVisitors]);
+
+  const summary = localSummary || statsSummary || {
     xp: profile?.totalPoints || 0,
     level: profile?.level || 1,
     xpProgress: 0,
@@ -151,13 +256,60 @@ export default function PerformanceTab({
     recentScores: [],
     weekActivity: [false, false, false, false, false, false, false],
     freezesAvailable: 0,
-    studiedToday: false
+    studiedToday: false,
+    streakAtRisk: false,
   };
 
-  const xpPct = summary.xpToNextLevel > 0 ? Math.min(summary.xpProgress / summary.xpToNextLevel, 1) : 0;
+  const handleFreeze = useCallback(async () => {
+    if (freezing || (summary.freezesAvailable ?? 0) <= 0) return;
+    setFreezing(true);
+    setFreezeMsg(null);
+    try {
+      const result = await postStreakFreeze();
+      if (!result?.success) {
+        setFreezeMsg(isKm ? 'មិនអាចប្រើ freeze បានទេ' : 'Could not use freeze');
+        return;
+      }
+      const patch: Partial<PerformanceStatsSummary> = {
+        freezesAvailable: result.freezesAvailable,
+        weekActivity: result.weekActivity,
+        studiedToday: result.studiedToday,
+        streakAtRisk: result.streakAtRisk,
+        currentStreak: result.currentStreak ?? summary.currentStreak,
+      };
+      setLocalSummary((prev) => ({ ...(prev || summary), ...patch }));
+      onStatsPatch?.(patch);
+      setFreezeMsg(isKm ? 'បានរក្សា streak!' : 'Streak protected!');
+    } catch {
+      setFreezeMsg(isKm ? 'មានបញ្ហា' : 'Something went wrong');
+    } finally {
+      setFreezing(false);
+    }
+  }, [freezing, summary, isKm, onStatsPatch]);
+
+  const stats = profile?.stats || {};
+  const profileViews30d = Number(stats.profileViews30d ?? profile?.profileViews30d ?? stats.totalViews ?? 0);
+  const uniqueViewers30d = Number(stats.uniqueProfileViewers30d ?? profile?.uniqueProfileViewers30d ?? 0);
+  const profileViews7d = Number(stats.profileViews7d ?? profile?.profileViews7d ?? 0);
+  const profilePerformanceScore = Number(
+    stats.profilePerformanceScore ?? profile?.profilePerformanceScore ?? 0,
+  );
+  const trendingProfileScore = Number(
+    stats.trendingProfileScore ?? profile?.trendingProfileScore ?? 0,
+  );
+  const profileMomentum = Math.min(100, Math.max(8, profilePerformanceScore || 8));
+
+  const xpPct = xpProgressPct(summary.xpProgress, summary.xpToNextLevel);
+  const xpTowardNext = formatXpProgress(summary.xpProgress, summary.xpToNextLevel);
   const quizTarget = Math.max(summary.totalQuizzes + 5, 10);
   const quizPct = Math.min(summary.totalQuizzes / quizTarget, 1);
   const scorePct = Math.min(summary.avgScore / 100, 1);
+  const freezes = summary.freezesAvailable ?? 0;
+  const canFreeze =
+    !!profile?.isOwnProfile &&
+    freezes > 0 &&
+    !summary.studiedToday &&
+    !freezing;
 
   const size = 136;
   const cx = size / 2;
@@ -203,10 +355,10 @@ export default function PerformanceTab({
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-3 sm:space-y-4 px-3 sm:px-4 md:px-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Top Section - Ring & Streak Overview */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
         
         {/* Activity & XP Progress Ring */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-all gap-4">
@@ -258,6 +410,24 @@ export default function PerformanceTab({
                 <div className="text-sm font-bold text-gray-800 dark:text-gray-200">{summary.currentStreak} Days</div>
                 <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">Active Streak</div>
               </div>
+            </div>
+
+            <div className="pt-1 space-y-1">
+              <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                <span>{isKm ? 'XP ទៅកម្រិតបន្ទាប់' : 'XP to next level'}</span>
+                <span className="text-sky-600">{xpTowardNext} / {summary.xpToNextLevel}</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-400 to-sky-600 transition-all"
+                  style={{ width: `${Math.round(xpPct * 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium">
+                {isKm
+                  ? `នៅសល់ ${Math.max(0, summary.xpToNextLevel - xpTowardNext).toLocaleString()} XP → Lv.${summary.level + 1}`
+                  : `${Math.max(0, summary.xpToNextLevel - xpTowardNext).toLocaleString()} XP to Lv.${summary.level + 1}`}
+              </p>
             </div>
           </div>
         </div>
@@ -323,44 +493,194 @@ export default function PerformanceTab({
               );
             })}
           </div>
+
+          {summary.streakAtRisk && !summary.studiedToday && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-3 py-2.5 text-xs text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{isKm ? 'Streak របស់អ្នកកំពុងប្រឈម — សិក្សាថ្ងៃនេះ ឬប្រើ freeze' : 'Your streak is at risk — study today or use a freeze'}</span>
+            </div>
+          )}
+
+          {profile?.isOwnProfile && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-sky-300">
+                  <Snowflake className="w-3.5 h-3.5" />
+                  {freezes} {isKm ? 'freeze' : 'freezes'}
+                </span>
+                {!summary.streakAtRisk && canFreeze && (
+                  <button
+                    type="button"
+                    onClick={() => void handleFreeze()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-sky-500 text-white"
+                  >
+                    <Snowflake className="w-3.5 h-3.5" />
+                    {isKm ? 'ប្រើ freeze' : 'Use freeze'}
+                  </button>
+                )}
+              </div>
+              {/* Native parity: primary freeze CTA when at-risk */}
+              {summary.streakAtRisk && !summary.studiedToday && freezes > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void handleFreeze()}
+                  disabled={freezing}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-200 border border-sky-200/80 dark:border-sky-500/30 disabled:opacity-50"
+                >
+                  <Snowflake className={`w-4 h-4 ${freezing ? 'animate-pulse' : ''}`} />
+                  {freezing
+                    ? (isKm ? 'កំពុងរក្សា…' : 'Protecting…')
+                    : (isKm ? 'ប្រើ streak freeze' : 'Use streak freeze')}
+                </button>
+              )}
+            </div>
+          )}
+          {freezeMsg && (
+            <p className="mt-2 text-[11px] font-semibold text-emerald-600">{freezeMsg}</p>
+          )}
         </div>
 
       </div>
 
       {/* Discovery Stats & Quiz Performance */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
         
         {/* Discovery stats card */}
-        <div className="bg-gradient-to-br from-sky-50/30 to-cyan-50/20 dark:from-gray-800 dark:to-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 flex flex-col shadow-sm hover:shadow-md transition-all">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Eye className="w-5 h-5 text-sky-500" />
-              Profile Discovery
-            </h3>
-            <span className="bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-400 text-xs font-bold px-2.5 py-1 rounded-full">
-              Score: {profile?.profilePerformanceScore || 0}
+        <div className="bg-gradient-to-br from-sky-50/30 to-cyan-50/20 dark:from-gray-800 dark:to-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 sm:p-6 flex flex-col shadow-sm hover:shadow-md transition-all">
+          <div className="flex justify-between items-start gap-3">
+            <div className="min-w-0">
+              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Eye className="w-5 h-5 text-sky-500 shrink-0" />
+                {isKm ? 'ការរកឃើញប្រវត្តិរូប' : 'Profile Discovery'}
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {isKm ? 'របៀបដែលអ្នកលេចឡើងក្នុងបណ្តាញ' : 'How you show up across the network'}
+              </p>
+            </div>
+            <span className="bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-400 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 text-center leading-tight">
+              <span className="block text-sm font-black">{profilePerformanceScore}</span>
+              <span className="text-[9px] uppercase tracking-wide opacity-80">{isKm ? 'ពិន្ទុ' : 'Score'}</span>
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mt-6">
-            <div className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
-              <div className="text-xl font-black text-gray-900 dark:text-white">{profile?.stats?.totalViews || 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 uppercase font-semibold">Total Views</div>
+          <div className="mt-4">
+            <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+              <span>{isKm ? 'សន្ទុះ' : 'Momentum'}</span>
+              <span>{Math.round(profileMomentum)}</span>
             </div>
-            <div className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
-              <div className="text-xl font-black text-gray-900 dark:text-white">{profile?.stats?.followers || 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 uppercase font-semibold">Followers</div>
-            </div>
-            <div className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
-              <div className="text-xl font-black text-gray-900 dark:text-white">{profile?.stats?.postsThisMonth || 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 uppercase font-semibold">Posts (Mo)</div>
+            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-500"
+                style={{ width: `${profileMomentum}%` }}
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mt-5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-4 py-2 rounded-xl">
-            <TrendingUp className="w-4 h-4" />
-            <span>Profile views increased by {profile?.trendingProfileScore || 0}% this week</span>
+          <div className="grid grid-cols-3 gap-2 mt-5">
+            <div className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
+              <div className="text-lg font-black text-gray-900 dark:text-white">{compactNumber(profileViews30d)}</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 uppercase font-semibold">{isKm ? 'មើល 30ថ្ងៃ' : 'Views 30d'}</div>
+            </div>
+            <div className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
+              <div className="text-lg font-black text-gray-900 dark:text-white">{compactNumber(uniqueViewers30d)}</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 uppercase font-semibold">{isKm ? 'អ្នកមើល' : 'Unique'}</div>
+            </div>
+            <div className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
+              <div className="text-lg font-black text-gray-900 dark:text-white">{compactNumber(profileViews7d)}</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 uppercase font-semibold">{isKm ? 'សប្តាហ៍នេះ' : 'This week'}</div>
+            </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-4">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold px-3 py-1.5 rounded-full">
+              <TrendingUp className="w-3.5 h-3.5" />
+              {trendingProfileScore} {isKm ? 'និន្នាការ' : 'trend'}
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-semibold px-3 py-1.5 rounded-full">
+              {isKm ? 'អ្នកបង្កើតការសិក្សា' : 'Learning creator'}
+            </span>
+          </div>
+
+          {profile?.isOwnProfile && (visitorsLoading || visitors.length > 0) && (
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-2.5">
+                <div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    {isKm ? 'អ្នកមើលថ្មីៗ' : 'Recent visitors'}
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    {visitorsLoading
+                      ? (isKm ? 'កំពុងផ្ទុក…' : 'Loading…')
+                      : (isKm ? '៣០ ថ្ងៃចុងក្រោយ' : 'Last 30 days')}
+                  </p>
+                </div>
+                {!visitorsLoading && visitors.length > 0 && (
+                  <Link
+                    href={`/${locale}/profile/visitors`}
+                    className="text-[11px] font-bold text-sky-600 inline-flex items-center gap-0.5"
+                  >
+                    {isKm ? 'មើលទាំងអស់' : 'View all'}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
+              {visitorsLoading && visitors.length === 0 ? (
+                <div className="space-y-2.5">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-2.5 animate-pulse">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-2.5 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
+                        <div className="h-2 w-3/4 rounded bg-slate-100 dark:bg-slate-800" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {visitors.slice(0, 3).map((v) => {
+                    const name = [v.lastName, v.firstName].filter(Boolean).join(' ') || 'User';
+                    return (
+                      <Link
+                        key={`${v.id}-${v.viewedAt || ''}`}
+                        href={`/${locale}/profile/${v.id}`}
+                        className="flex items-center gap-2.5"
+                      >
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-sky-100 shrink-0">
+                          {v.profilePictureUrl ? (
+                            <Image src={v.profilePictureUrl} alt="" width={32} height={32} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-sky-700">
+                              {(v.firstName?.[0] || '') + (v.lastName?.[0] || '')}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{name}</p>
+                          {v.headline ? (
+                            <p className="text-[10px] text-slate-400 truncate">{v.headline}</p>
+                          ) : null}
+                        </div>
+                        <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                          {relativeTime(v.viewedAt, isKm)}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {profile?.isOwnProfile && !visitorsLoading && visitors.length === 0 && (
+            <Link
+              href={`/${locale}/profile/visitors`}
+              className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-[11px] font-bold text-sky-600"
+            >
+              <span>{isKm ? 'មើលអ្នកមើលប្រវត្តិរូប' : 'See profile visitors'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
         </div>
 
         {/* Quiz Performance Card */}
@@ -469,6 +789,18 @@ export default function PerformanceTab({
         )}
       </div>
 
+      <SubjectMasteryTree
+        profileUserId={profile?.id}
+        currentUserId={currentUserId || (profile?.isOwnProfile ? profile?.id : undefined)}
+        isKm={isKm}
+      />
+
+      <StreakLeaderboardWidget
+        profileUserId={profile?.id}
+        currentUserId={currentUserId || (profile?.isOwnProfile ? profile?.id : undefined)}
+        isKm={isKm}
+      />
+
       {/* Leaderboard CTA Card */}
       <Link href={`/${locale}/leaderboard`} className="block">
         <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white flex items-center justify-between shadow-md hover:shadow-lg transition-all hover:scale-101 cursor-pointer group">
@@ -477,8 +809,14 @@ export default function PerformanceTab({
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-extrabold text-base leading-none">View Global Leaderboard</h4>
-              <p className="text-xs text-white/80 mt-1.5 font-medium">Rank among top students in Cambodian MoEYS learning network</p>
+              <h4 className="font-extrabold text-base leading-none">
+                {globalRank != null
+                  ? (isKm ? `អ្នកនៅលំដាប់ #${globalRank}` : `You're #${globalRank}`)
+                  : (isKm ? 'មើលតារាងពិន្ទុសកល' : 'View Global Leaderboard')}
+              </h4>
+              <p className="text-xs text-white/80 mt-1.5 font-medium">
+                {isKm ? 'ចូលរួមជាមួយសិស្សកំពូលក្នុងបណ្តាញសិក្សា' : 'Rank among top students in the learning network'}
+              </p>
             </div>
           </div>
           <ArrowUpRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

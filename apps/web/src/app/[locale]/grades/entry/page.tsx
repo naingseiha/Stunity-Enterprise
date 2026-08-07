@@ -57,7 +57,14 @@ export default function GradeEntryPage() {
   
   // The academic year from context
   const selectedAcademicYear = selectedYear?.id || '';
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return new URLSearchParams(window.location.search).get('classId') || '';
+    } catch {
+      return '';
+    }
+  });
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
   

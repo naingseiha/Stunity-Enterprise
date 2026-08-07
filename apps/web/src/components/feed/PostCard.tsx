@@ -519,7 +519,7 @@ export default function PostCard({
       case 'REFLECTION': return 'from-slate-500 to-gray-500';
       case 'CLUB_CREATED': return 'from-purple-500 to-violet-600';
       case 'EVENT_CREATED': return 'from-amber-500 to-orange-500';
-      default: return 'from-[#F9A825] to-[#FFB74D]';
+      default: return 'from-sky-400 to-sky-600';
     }
   };
 
@@ -756,9 +756,9 @@ export default function PostCard({
 
   return (
     <div className={`feed-card-mobile bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 sm:rounded-xl overflow-hidden sm:shadow-sm sm:hover:shadow-lg dark:sm:hover:shadow-black/20 transition-all duration-300`}>
-      {/* Type Badge for special posts */}
+      {/* Type Badge — desktop only; mobile uses bottom learning-bar chip (native parity) */}
       {post.postType !== 'ARTICLE' && (
-        <div className={`px-4 py-2 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30 backdrop-blur-sm`}>
+        <div className={`hidden sm:flex px-4 py-2 items-center gap-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30 backdrop-blur-sm`}>
           <TypeIcon className={`w-3.5 h-3.5 ${typeConfig.textColor}`} />
           <span className={`text-[10px] font-black uppercase tracking-widest ${typeConfig.textColor}`}>{typeConfig.label}</span>
         </div>
@@ -782,10 +782,10 @@ export default function PostCard({
                   width={40}
                   height={40}
                   unoptimized={shouldSkipImageOptimization(post.author.profileImage)}
-                  className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#F9A825] transition-all"
+                  className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-sky-500 transition-all"
                 />
               ) : (
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient()} flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-[#F9A825] transition-all`}>
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient()} flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-sky-500 transition-all`}>
                   {getInitials(post.author.firstName, post.author.lastName)}
                 </div>
               )}
@@ -797,7 +797,7 @@ export default function PostCard({
                   prefetch={true}
                   onMouseEnter={prefetchAuthorProfile}
                   onFocus={prefetchAuthorProfile}
-                  className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-[#F9A825] hover:underline"
+                  className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-sky-500 hover:underline"
                 >
                   {getDisplayName(post.author.firstName, post.author.lastName)}
                 </Link>
@@ -895,7 +895,7 @@ export default function PostCard({
                   onClick={() => { handleBookmark(); setShowMenu(false); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current text-[#F9A825]' : ''}`} />
+                  <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current text-sky-500' : ''}`} />
                   <span>{localBookmarked ? tFeed('postCard.menu.unsave') : tCommon('save')}</span>
                 </button>
                 <button
@@ -1048,7 +1048,7 @@ export default function PostCard({
                     localVoted
                       ? 'cursor-default'
                       : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'
-                  } ${isVoted ? 'ring-1 ring-[#F9A825]' : 'border border-gray-200 dark:border-gray-700'}`}
+                  } ${isVoted ? 'ring-1 ring-sky-500' : 'border border-gray-200 dark:border-gray-700'}`}
                 >
                   {/* Progress bar background */}
                   {localVoted && (
@@ -1060,7 +1060,7 @@ export default function PostCard({
                   
                   <div className="relative flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {isVoted && <CheckCircle className="w-4 h-4 text-[#F9A825]" />}
+                      {isVoted && <CheckCircle className="w-4 h-4 text-sky-500" />}
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{option.text}</span>
                     </div>
                     {localVoted && (
@@ -1339,108 +1339,162 @@ export default function PostCard({
           />
         )}
 
-        {/* Actions - with Reaction, Value, Comment, Share */}
+        {/* Mobile learning-bar type chip (native PostContent parity) */}
+        {post.postType !== 'ARTICLE' && (
+          <div className="sm:hidden flex items-center gap-2 mb-2 flex-wrap">
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${typeConfig.bgColor} ${typeConfig.textColor}`}>
+              <TypeIcon className="w-3 h-3" />
+              {typeConfig.label}
+            </span>
+            {typeMetaChips.slice(0, 2).map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Actions — native clusters: left react/comment/repost/share · right views/diamond */}
         <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
           <ReactionSummary
             likesCount={localLikesCount}
             reactionCounts={post.reactionCounts}
             className="px-1 pb-1.5"
           />
-          <div className="post-action-bar-mobile flex items-center justify-between -mx-1">
-          <ReactionButton
-            myReaction={localMyReaction}
-            count={localLikesCount}
-            onReact={handleReactPick}
-            variant="compact"
-            disabled={isLiking}
-            className="flex-1"
-          />
-          
-          {/* Value - Educational value (star) */}
-          <button
-            onClick={handleValue}
-            disabled={isValuing}
-            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-all duration-200 ${
-              localIsValued
-                ? 'text-amber-500 scale-105'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            <Star className={`w-4 h-4 transition-transform duration-200 ${localIsValued ? 'fill-current animate-pulse' : ''} ${isValuing ? 'scale-110' : ''}`} />
-            <span className="text-xs font-medium">
-              {tFeed('postCard.valuesLabel', { count: localValuesCount })}
-            </span>
-          </button>
-          
-          {/* Comment */}
-          <button
-            onClick={() => {
-              closeActionMenus();
-              const newState = !showComments;
-              setShowComments(newState);
-              if (newState && onToggleComments) {
-                onToggleComments(post.id);
-              }
-            }}
-            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-              showComments ? 'text-[#F9A825]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-xs font-medium">{post.commentsCount > 0 ? post.commentsCount : ''}</span>
-          </button>
-          
-          {/* Repost / Share */}
-          <div className="flex-1 relative" ref={repostMenuRef}>
-            <button 
-              onClick={() => {
-                setShowMenu(false);
-                setShowRepostMenu(!showRepostMenu);
-              }}
-              className={`w-full flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-                showRepostMenu ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <Repeat2 className="w-4 h-4" />
-              <span className="text-xs font-medium">{localSharesCount > 0 ? localSharesCount : ''}</span>
-            </button>
-            {showRepostMenu && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
-                {canRepost && (
-                  <button
-                    onClick={() => {
-                      setShowRepostMenu(false);
-                      setShowRepostComposer(true);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <Repeat2 className="w-4 h-4" />
-                    <span>{tFeed('postCard.repost')}</span>
-                  </button>
+          <div className="post-action-bar-mobile flex items-center justify-between gap-1 -mx-1">
+            <div className="flex items-center gap-0.5 min-w-0">
+              <ReactionButton
+                myReaction={localMyReaction}
+                count={localLikesCount}
+                onReact={handleReactPick}
+                variant="compact"
+                disabled={isLiking}
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeActionMenus();
+                  const newState = !showComments;
+                  setShowComments(newState);
+                  if (newState && onToggleComments) {
+                    onToggleComments(post.id);
+                  }
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-2 rounded-lg transition-colors ${
+                  showComments ? 'text-[#1D9BF0]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                aria-label={tFeed('actions.comment')}
+              >
+                <MessageCircle className="w-[18px] h-[18px]" />
+                {post.commentsCount > 0 && (
+                  <span className="text-xs font-medium">{post.commentsCount}</span>
                 )}
+              </button>
+
+              <div className="relative" ref={repostMenuRef}>
                 <button
+                  type="button"
                   onClick={() => {
-                    setShowRepostMenu(false);
-                    setShowShareModal(true);
+                    setShowMenu(false);
+                    setShowRepostMenu(!showRepostMenu);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`inline-flex items-center gap-1 px-2 py-2 rounded-lg transition-colors ${
+                    showRepostMenu
+                      ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  aria-label={tFeed('postCard.repost')}
                 >
-                  <Share2 className="w-4 h-4" />
-                  <span>{tFeed('postCard.shareLink')}</span>
+                  <Repeat2 className="w-[18px] h-[18px]" />
+                  {localSharesCount > 0 && (
+                    <span className="text-xs font-medium">{localSharesCount}</span>
+                  )}
                 </button>
+                {showRepostMenu && (
+                  <div className="absolute bottom-full left-0 mb-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
+                    {canRepost && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRepostMenu(false);
+                          setShowRepostComposer(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <Repeat2 className="w-4 h-4" />
+                        <span>{tFeed('postCard.repost')}</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowRepostMenu(false);
+                        setShowShareModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>{tFeed('postCard.shareLink')}</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          
-          {/* Save */}
-          <button
-            onClick={handleBookmark}
-            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-              localBookmarked ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current' : ''}`} />
-          </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeActionMenus();
+                  setShowShareModal(true);
+                }}
+                className="inline-flex items-center justify-center px-2 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label={tFeed('postDetail.share')}
+              >
+                <Send className="w-[17px] h-[17px]" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              {(post.viewsCount ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onViewAnalytics?.(post.id)}
+                  className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                  aria-label={tFeed('viewsCount', { count: post.viewsCount ?? 0 })}
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {post.viewsCount}
+                  </span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleValue}
+                disabled={isValuing}
+                className={`inline-flex items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 ${
+                  localIsValued
+                    ? 'text-violet-500'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                aria-label={tFeed('postCard.valuesLabel', { count: localValuesCount })}
+              >
+                <Diamond
+                  className={`w-[18px] h-[18px] transition-transform duration-200 ${
+                    localIsValued ? 'fill-current' : ''
+                  } ${isValuing ? 'scale-110' : ''}`}
+                />
+                {localValuesCount > 0 && (
+                  <span className={`text-xs font-medium ${localIsValued ? 'text-violet-500' : ''}`}>
+                    {localValuesCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1448,7 +1502,7 @@ export default function PostCard({
         {showComments && (
           <div className="mt-3 pt-3 border-t border-gray-100 animate-fadeIn">
             {replyToComment && (
-              <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">
+              <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-sky-50 dark:bg-sky-900/20 px-3 py-1.5 text-xs text-sky-800 dark:text-sky-200">
                 <span>
                   {tFeed('sections.replyingTo')}{' '}
                   <strong>
@@ -1466,13 +1520,13 @@ export default function PostCard({
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={replyToComment ? tFeed('sections.writeReply') : tFeed('postCard.addComment')}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-[#F9A825] focus:border-[#F9A825] transition-colors"
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 transition-colors"
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
               />
               <button
                 onClick={handleSubmitComment}
                 disabled={!commentText.trim()}
-                className="px-4 py-2 bg-[#F9A825] text-white rounded-full text-sm font-medium hover:bg-[#E89A1E] disabled:opacity-50 transition-colors flex items-center gap-1"
+                className="px-4 py-2 bg-sky-500 text-white rounded-full text-sm font-medium hover:bg-sky-600 disabled:opacity-50 transition-colors flex items-center gap-1"
               >
                 <Send className="w-3.5 h-3.5" />
                 {tFeed('createPost.post')}
@@ -1483,9 +1537,9 @@ export default function PostCard({
               <div className="space-y-3 animate-pulse">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex-shrink-0" />
-                    <div className="flex-1 bg-gradient-to-r from-gray-50 to-amber-50/30 rounded-2xl px-3 py-2 border border-gray-100">
-                      <div className="h-3 w-24 bg-amber-100/60 rounded mb-2" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-100 to-blue-100 flex-shrink-0" />
+                    <div className="flex-1 bg-gradient-to-r from-gray-50 to-sky-50/30 rounded-2xl px-3 py-2 border border-gray-100">
+                      <div className="h-3 w-24 bg-sky-100/60 rounded mb-2" />
                       <div className="h-3 w-full bg-gray-100 rounded" />
                     </div>
                   </div>
@@ -1502,7 +1556,7 @@ export default function PostCard({
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
                         {getInitials(comment.author.firstName, comment.author.lastName)}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -1569,7 +1623,7 @@ export default function PostCard({
                 {localComments.length > INITIAL_COMMENTS_SHOWN && (
                   <button
                     onClick={() => setShowAllComments(!showAllComments)}
-                    className="flex items-center gap-1 text-sm text-[#F9A825] hover:text-[#E89A1E] font-medium transition-colors ml-10"
+                    className="flex items-center gap-1 text-sm text-sky-500 hover:text-sky-600 font-medium transition-colors ml-10"
                   >
                     {showAllComments ? (
                       <span>{tFeed('postCard.viewLess')}</span>

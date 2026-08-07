@@ -3,3 +3,5 @@ export { default as ProfileSkeleton, ProfileContentSkeleton } from './ProfileSke
 export { default as ImageUploadModal } from './ImageUploadModal';
 export { default as PerformanceTab } from './PerformanceTab';
 export { default as ActivityTab } from './ActivityTab';
+export { default as SubjectMasteryTree } from './SubjectMasteryTree';
+export { default as StreakLeaderboard } from './StreakLeaderboard';
