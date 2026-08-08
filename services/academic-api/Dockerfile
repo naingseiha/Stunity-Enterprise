@@ -72,6 +72,9 @@ COPY --from=builder /app/dist ./dist/
 ENV NODE_ENV=production
 # Cloud Run sets PORT=8080 by default — our app reads process.env.PORT
 ENV PORT=8080
+# Shared helpers live at /lib (outside /app). Without NODE_PATH, require() from
+# /lib/*.js cannot see /app/node_modules and the container exits on boot.
+ENV NODE_PATH=/app/node_modules
 
 # Cloud Run ignores HEALTHCHECK but useful for local Docker testing
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
