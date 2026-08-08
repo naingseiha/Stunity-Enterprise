@@ -3,13 +3,15 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import {
   shouldRunDbStartupWarmup,
   withPrismaPoolParams,
 } from "../../lib/prisma-pool-url";
 import { canManageTargetSchool } from "../../lib/tenant-access";
+import { registerClassPlacementRoutes } from "../../lib/class-placement-routes";
+import { registerClassPlacementBatchRoutes } from "../../lib/class-placement-batch-routes";
 
 // Load environment variables from root .env
 dotenv.config({ path: "../../.env" });
@@ -346,6 +348,20 @@ const CLASS_WRITE_ROLES = new Set([
   "SUPER_ADMIN",
   "SCHOOL_ADMIN",
 ]);
+
+const requireClassAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (!CLASS_ADMIN_ROLES.has(req.user?.role || "")) {
+    return res.status(403).json({ success: false, message: "School administrator access required" });
+  }
+  next();
+};
+
+registerClassPlacementRoutes({ app, prisma, requireClassAdmin, cache, Prisma });
+registerClassPlacementBatchRoutes({ app, prisma, requireClassAdmin, cache, Prisma });
 
 type ScopedUserRecord = {
   id: string;
@@ -856,23 +872,38 @@ app.get("/classes/lightweight", async (req: AuthRequest, res: Response) => {
 
     const hydratedClasses = await hydrateHomeroomTeachers(classes, schoolId);
     const classIds = hydratedClasses.map((cls) => cls.id);
-    const activeEnrollmentCounts = classIds.length
-      ? await prisma.studentClass.groupBy({
-          by: ["classId"],
-          where: {
-            classId: { in: classIds },
-            status: "ACTIVE",
+    const enrollmentRows = classIds.length
+      ? await prisma.studentClass.findMany({
+          where: { classId: { in: classIds } },
+          select: {
+            classId: true,
+            studentId: true,
+            status: true,
+            endedAt: true,
           },
-          _count: { _all: true },
         })
       : [];
-    const activeEnrollmentMap = new Map<string, number>(
-      activeEnrollmentCounts.map((entry) => [entry.classId, entry._count._all]),
+    const currentClassIds = new Set(
+      hydratedClasses
+        .filter((cls) => cls.academicYear?.isCurrent)
+        .map((cls) => cls.id),
     );
+    const enrollmentStudentsByClass = new Map<string, Set<string>>();
+    for (const enrollment of enrollmentRows) {
+      // Current classes show the live roster. Historical classes show the
+      // durable cohort even after promotion closed those enrollments.
+      if (
+        currentClassIds.has(enrollment.classId) &&
+        (enrollment.status !== "ACTIVE" || enrollment.endedAt)
+      ) continue;
+      const students = enrollmentStudentsByClass.get(enrollment.classId) || new Set<string>();
+      students.add(enrollment.studentId);
+      enrollmentStudentsByClass.set(enrollment.classId, students);
+    }
     const classesWithCounts = hydratedClasses.map((cls) => ({
       ...cls,
       _count: {
-        studentClasses: activeEnrollmentMap.get(cls.id) || 0,
+        studentClasses: enrollmentStudentsByClass.get(cls.id)?.size || 0,
       },
     }));
 

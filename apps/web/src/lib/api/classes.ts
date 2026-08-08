@@ -55,6 +55,93 @@ export interface ClassesResponse {
   };
 }
 
+export type PlacementStrategy = 'RANDOM_BALANCED' | 'ACADEMIC_BALANCED' | 'MULTI_FACTOR_BALANCED';
+
+export interface PlacementCandidate {
+  id: string;
+  studentId: string | null;
+  firstName: string;
+  lastName: string;
+  englishFirstName?: string | null;
+  englishLastName?: string | null;
+  gender: string;
+  photoUrl?: string | null;
+  plannedGrade: string | null;
+  academicAverage: number | null;
+  attendanceRate: number | null;
+  academicRank: number;
+  previousClass: { id: string; name: string; grade: string; section: string | null };
+}
+
+export interface PlacementClass {
+  id: string;
+  name: string;
+  grade: string;
+  section: string | null;
+  capacity: number | null;
+  currentCount: number;
+}
+
+export interface PlacementWorkspace {
+  academicYear: { id: string; name: string; startDate: string; status: string };
+  grade: string;
+  classes: PlacementClass[];
+  candidates: PlacementCandidate[];
+}
+
+export interface PlacementPreview extends PlacementWorkspace {
+  strategy: PlacementStrategy;
+  seed: string;
+  assignments: Array<{ studentId: string; classId: string; pinned: boolean }>;
+  unassignedStudentIds: string[];
+  classSummaries: Array<PlacementClass & {
+    assignedCount: number;
+    projectedCount: number;
+    femaleCount: number;
+    maleCount: number;
+    averageScore: number | null;
+    assignments: Array<{ studentId: string; classId: string; pinned: boolean; student: PlacementCandidate }>;
+  }>;
+}
+
+export type PlacementBatchStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'APPLIED' | 'REVERSED' | 'CANCELLED';
+
+export interface PlacementBatchVersion {
+  id: string;
+  batchId: string;
+  version: number;
+  strategy: PlacementStrategy;
+  seed: string;
+  classIds: string[];
+  assignments: Array<{ studentId: string; classId: string; pinned: boolean }>;
+  summary?: Record<string, unknown> | null;
+  sourceFingerprint?: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface PlacementBatch {
+  id: string;
+  schoolId: string;
+  academicYearId: string;
+  grade: string;
+  status: PlacementBatchStatus;
+  currentVersion: number;
+  createdBy: string;
+  submittedBy?: string | null;
+  submittedAt?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  appliedBy?: string | null;
+  appliedAt?: string | null;
+  reversedBy?: string | null;
+  reversedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  latestVersion: PlacementBatchVersion | null;
+}
+
 async function getAuthHeaders(): Promise<HeadersInit> {
   const token = TokenManager.getAccessToken();
   return {
@@ -192,3 +279,63 @@ export async function assignStudentsToClass(classId: string, studentIds: string[
 
   return response.json();
 }
+
+async function placementRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${CLASS_SERVICE_URL}${path}`, { ...init, headers: await getAuthHeaders() });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.success === false) throw new Error(payload.message || 'Class placement request failed');
+  return payload.data as T;
+}
+
+export const classPlacementApi = {
+  getWorkspace(academicYearId: string, grade: string) {
+    return placementRequest<PlacementWorkspace>(`/classes/placement/${encodeURIComponent(academicYearId)}/${encodeURIComponent(grade)}`);
+  },
+  generateClasses(input: { academicYearId: string; grade: string; capacity: number; classCount?: number }) {
+    return placementRequest<PlacementWorkspace>('/classes/placement/generate-classes', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  preview(input: {
+    academicYearId: string;
+    grade: string;
+    classIds: string[];
+    strategy: PlacementStrategy;
+    seed: string;
+    pinned: Array<{ studentId: string; classId: string }>;
+  }) {
+    return placementRequest<PlacementPreview>('/classes/placement/preview', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  listBatches(academicYearId: string, grade: string) {
+    return placementRequest<PlacementBatch[]>(`/classes/placement/batches/${encodeURIComponent(academicYearId)}/${encodeURIComponent(grade)}`);
+  },
+  saveDraft(input: {
+    batchId?: string;
+    expectedVersion?: number;
+    academicYearId: string;
+    grade: string;
+    strategy: PlacementStrategy;
+    seed: string;
+    assignments: Array<{ studentId: string; classId: string; pinned: boolean }>;
+    summary?: Record<string, unknown>;
+    notes?: string;
+  }) {
+    return placementRequest<PlacementBatch>('/classes/placement/batches', { method: 'POST', body: JSON.stringify(input) });
+  },
+  submitBatch(batchId: string) {
+    return placementRequest<PlacementBatch>(`/classes/placement/batches/${encodeURIComponent(batchId)}/submit`, { method: 'POST' });
+  },
+  approveBatch(batchId: string) {
+    return placementRequest<PlacementBatch>(`/classes/placement/batches/${encodeURIComponent(batchId)}/approve`, { method: 'POST' });
+  },
+  applyBatch(batchId: string) {
+    return placementRequest<{ batchId: string; assigned: number; classCounts: Record<string, number> }>(`/classes/placement/batches/${encodeURIComponent(batchId)}/apply`, { method: 'POST' });
+  },
+  undoBatch(batchId: string, reason: string) {
+    return placementRequest<{ batchId: string; reversed: number }>(`/classes/placement/batches/${encodeURIComponent(batchId)}/undo`, { method: 'POST', body: JSON.stringify({ reason }) });
+  },
+};

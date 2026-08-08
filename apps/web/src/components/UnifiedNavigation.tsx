@@ -55,6 +55,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
 import AcademicYearSelector from "./AcademicYearSelector";
 import LanguageSwitcher from "./LanguageSwitcher";
 import {
@@ -163,6 +164,7 @@ export default function UnifiedNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { selectedYear } = useAcademicYear();
   const locale = pathname.split("/")[1] || "en";
   const [, startTransition] = useTransition();
 
@@ -758,10 +760,7 @@ export default function UnifiedNavigation({
     (prefetchType: SchoolPrefetchType) => {
       if (!prefetchType) return;
 
-      const selectedAcademicYearId =
-        typeof window !== "undefined"
-          ? localStorage.getItem("selectedAcademicYearId") || undefined
-          : undefined;
+      const selectedAcademicYearId = selectedYear?.id;
 
       switch (prefetchType) {
         case "students":
@@ -850,10 +849,7 @@ export default function UnifiedNavigation({
         case "dashboard": {
           const token = TokenManager.getAccessToken();
           const { school } = TokenManager.getUserData();
-          const selectedAcademicYearId =
-            typeof window !== "undefined"
-              ? localStorage.getItem("selectedAcademicYearId") || undefined
-              : undefined;
+          const selectedAcademicYearId = selectedYear?.id;
 
           if (!token || !school?.id || !selectedAcademicYearId) break;
 
@@ -878,7 +874,7 @@ export default function UnifiedNavigation({
         }
       }
     },
-    [canOpenAttendanceDashboard],
+    [canOpenAttendanceDashboard, selectedYear?.id],
   );
 
   const primeRoute = useCallback(
@@ -1139,7 +1135,7 @@ export default function UnifiedNavigation({
 
     const timeoutId = window.setTimeout(runWarmup, 800);
     return () => window.clearTimeout(timeoutId);
-  }, [isSchoolContext, normalizeWarmClub, user?.id, user?.role]);
+  }, [isSchoolContext, normalizeWarmClub, selectedYear?.id, user?.id, user?.role]);
 
   useEffect(() => {
     if (
@@ -1149,8 +1145,7 @@ export default function UnifiedNavigation({
     )
       return;
 
-    const selectedAcademicYearId =
-      localStorage.getItem("selectedAcademicYearId") || "all";
+    const selectedAcademicYearId = selectedYear?.id || "all";
     const warmKey = `${pathname}:${selectedAcademicYearId}`;
     if (warmedSchoolDataKeyRef.current === warmKey) return;
 
@@ -1175,6 +1170,7 @@ export default function UnifiedNavigation({
     isSchoolContext,
     pathname,
     router,
+    selectedYear?.id,
     schoolMenuItems,
     warmSchoolServices,
   ]);

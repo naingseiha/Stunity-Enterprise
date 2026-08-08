@@ -18,6 +18,7 @@ import {
   RefreshCw,
   School,
   Search,
+  Shuffle,
   Trash2,
   UserRound,
   Users,
@@ -589,6 +590,15 @@ export default function ClassesPage(props: {
                     className={`h-3.5 w-3.5 text-indigo-600 dark:text-indigo-300 ${isValidating ? "animate-spin" : ""}`}
                   />
                   {t("refresh")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/${locale}/classes/placement`)}
+                  disabled={!selectedYear?.id}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 text-xs font-black uppercase tracking-[0.08em] text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300"
+                >
+                  <Shuffle className="h-3.5 w-3.5" />
+                  {locale.toLowerCase().startsWith('km') ? 'បែងចែកសិស្ស' : 'Allocate students'}
                 </button>
                 <button
                   type="button"

@@ -1746,27 +1746,32 @@ async function getLightweightStudentsPayload({
       };
       const assignmentScope = buildAcademicYearAssignmentScope(yearClassIds);
 
+      const assignedDirectoryScope = { schoolId };
+      const unassignedDirectoryScope = buildStudentDirectoryBaseScope(schoolId);
       const yearWhere: any = {
-        ...buildStudentDirectoryBaseScope(schoolId),
+        ...assignedDirectoryScope,
         AND: [assignmentScope],
       };
-      const yearBaseWhere: any = buildStudentDirectoryBaseScope(schoolId);
+      const assignedBaseWhere: any = { ...assignedDirectoryScope };
+      const unassignedBaseWhere: any = { ...unassignedDirectoryScope };
       if (normalizedGender) {
         yearWhere.gender = normalizedGender;
-        yearBaseWhere.gender = normalizedGender;
+        assignedBaseWhere.gender = normalizedGender;
+        unassignedBaseWhere.gender = normalizedGender;
       }
       applyStudentSearchFilter(yearWhere, normalizedSearch);
 
       if (normalizedPlacement === "unassigned") {
+        Object.assign(yearWhere, unassignedDirectoryScope);
         yearWhere.AND = [{ NOT: assignmentScope }];
       }
 
       const assignedWhere = {
-        ...yearBaseWhere,
+        ...assignedBaseWhere,
         AND: [assignmentScope],
       };
       const unassignedWhere = {
-        ...yearBaseWhere,
+        ...unassignedBaseWhere,
         AND: [{ NOT: assignmentScope }],
       };
 
@@ -1824,7 +1829,9 @@ async function getLightweightStudentsPayload({
         const fuzzyIds = await findFuzzyStudentIds(schoolId, normalizedSearch);
         if (fuzzyIds.length > 0) {
           const fuzzyWhere: any = {
-            ...buildStudentDirectoryBaseScope(schoolId),
+            ...(normalizedPlacement === "unassigned"
+              ? buildStudentDirectoryBaseScope(schoolId)
+              : { schoolId }),
             AND: normalizedPlacement === "unassigned"
               ? [{ NOT: assignmentScope }]
               : [assignmentScope],

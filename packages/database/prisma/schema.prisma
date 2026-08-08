@@ -82,6 +82,7 @@ model School {
   disciplinePolicy      DisciplinePolicy?
   promotionPolicy       PromotionPolicy?
   yearEndCycles         YearEndCycle[]
+  classPlacementBatches ClassPlacementBatch[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -119,6 +120,8 @@ model AcademicYear {
   timetableEntries      TimetableEntry[]
   yearEndCyclesFrom     YearEndCycle[]              @relation("YearEndFromYear")
   yearEndCyclesTo       YearEndCycle[]              @relation("YearEndToYear")
+  subjectOfferings      AcademicYearSubject[]
+  classPlacementBatches ClassPlacementBatch[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
@@ -208,6 +211,59 @@ model YearEndCycle {
   @@index([fromAcademicYearId])
   @@index([toAcademicYearId])
   @@map("year_end_cycles")
+}
+
+/// Durable, reviewable section allocation for one grade in one academic year.
+/// Student-to-class assignments are immutable inside version snapshots until a
+/// new draft version is explicitly saved.
+model ClassPlacementBatch {
+  id                String                    @id @default(cuid())
+  schoolId          String
+  academicYearId    String
+  grade             String
+  status            ClassPlacementBatchStatus @default(DRAFT)
+  currentVersion    Int                       @default(1)
+  createdBy         String
+  submittedBy       String?
+  submittedAt       DateTime?
+  approvedBy        String?
+  approvedAt        DateTime?
+  appliedBy         String?
+  appliedAt         DateTime?
+  reversedBy        String?
+  reversedAt        DateTime?
+  appliedSnapshot   Json?
+  notes             String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  school            School                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear      AcademicYear              @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  versions          ClassPlacementBatchVersion[]
+
+  @@index([schoolId, academicYearId, grade])
+  @@index([schoolId, status])
+  @@map("class_placement_batches")
+}
+
+/// Append-only placement snapshot. This supports optimistic concurrency,
+/// reproducible allocation, approval review, CSV exchange, and audit replay.
+model ClassPlacementBatchVersion {
+  id                String              @id @default(cuid())
+  batchId           String
+  version           Int
+  strategy          String
+  seed              String
+  classIds          Json
+  assignments       Json
+  summary           Json?
+  sourceFingerprint String?
+  createdBy         String
+  createdAt         DateTime            @default(now())
+  batch             ClassPlacementBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, version])
+  @@index([batchId, createdAt])
+  @@map("class_placement_batch_versions")
 }
 
 /// A reviewable, explainable decision for one student. Evidence is snapshotted
@@ -811,10 +867,45 @@ model Subject {
   teacherSubjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
   timetableEntries          TimetableEntry[]
   topics                    Topic[]
+  academicYearOfferings     AcademicYearSubject[]
 
   @@index([grade, isActive])
   @@index([grade, track, isActive])
   @@map("subjects")
+}
+
+/// Enables a school to choose which master-catalogue subjects are offered in
+/// one academic year without duplicating or deleting the canonical Subject.
+/// Historical grades keep pointing at Subject, while curriculum availability
+/// can safely differ by school and year.
+model AcademicYearSubject {
+  id             String       @id @default(cuid())
+  academicYearId String
+  subjectId      String
+  isActive       Boolean      @default(true)
+  name           String?
+  nameKh         String?
+  nameEn         String?
+  nameKhShort    String?
+  nameEnShort    String?
+  code           String?
+  description    String?
+  grade          String?
+  track          String?
+  category       String?
+  weeklyHours    Float?
+  annualHours    Int?
+  maxScore       Int?
+  coefficient    Float?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@unique([academicYearId, subjectId])
+  @@index([academicYearId, isActive])
+  @@index([subjectId])
+  @@map("academic_year_subjects")
 }
 
 // ─────────────────────────────────────────────────────────
@@ -4327,6 +4418,15 @@ enum YearEndCycleStatus {
   IN_REVIEW
   APPROVED
   FINALIZED
+  CANCELLED
+}
+
+enum ClassPlacementBatchStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  APPLIED
+  REVERSED
   CANCELLED
 }
 

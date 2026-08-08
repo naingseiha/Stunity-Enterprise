@@ -15,6 +15,8 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -22,7 +24,6 @@ import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
 import { getClasses, Class } from '@/lib/api/classes';
 import { subjectAPI, Subject } from '@/lib/api/subjects';
-import { getAcademicYearsAuto, AcademicYear } from '@/lib/api/academic-years';
 import {
   timetableAPI,
   periodAPI,
@@ -379,6 +380,8 @@ export default function TimetablePage() {
   const router = useRouter();
   const locale = useLocale();
   const searchParams = useSearchParams();
+  const { selectedYear } = useAcademicYear();
+  const selectedYearId = selectedYear?.id || '';
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -388,7 +391,6 @@ export default function TimetablePage() {
   const [teachers, setTeachers] = useState<TeacherListItem[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [shifts, setShifts] = useState<SchoolShift[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<TeacherSubjectAssignment[]>([]);
 
@@ -397,7 +399,6 @@ export default function TimetablePage() {
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('HIGH_SCHOOL');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
-  const [selectedYearId, setSelectedYearId] = useState<string>('');
 
   // Timetable data
   const [timetableData, setTimetableData] = useState<ClassTimetable | TeacherSchedule | null>(null);
@@ -470,38 +471,29 @@ export default function TimetablePage() {
 
   // Initialize
   const loadInitialData = useCallback(async () => {
+    if (!selectedYearId) return;
     try {
       setLoading(true);
 
-      const [classesRes, periodsRes, yearsRes, shiftsRes] = await Promise.all([
-        getClasses({ limit: 100 }),
+      const [classesRes, periodsRes, shiftsRes] = await Promise.all([
+        getClasses({ limit: 100, academicYearId: selectedYearId }),
         periodAPI.list().catch(() => ({ data: { periods: [] } })),
-        getAcademicYearsAuto(),
         shiftAPI.list().catch(() => ({ data: { shifts: [] } })),
       ]);
 
       const classesData = classesRes.data.classes || [];
       const periodsData = periodsRes.data.periods || [];
-      const yearsData = yearsRes.data.academicYears || [];
       const shiftsData = shiftsRes.data.shifts || [];
 
       setClasses(classesData);
       setPeriods(periodsData);
-      setAcademicYears(yearsData);
       setShifts(shiftsData);
 
-      // Set default selections
-      const currentYear = yearsData.find((y: AcademicYear) => y.isCurrent);
-      if (currentYear) {
-        setSelectedYearId(currentYear.id);
-
-        // Check if classId is in URL params
-        const urlClassId = searchParams.get('classId');
+      // The menu-bar context is the single working-year source of truth.
+      const urlClassId = searchParams.get('classId');
+      const yearClasses = classesData.filter((c: Class) => c.academicYearId === selectedYearId);
         
-        // Filter classes by current year
-        const yearClasses = classesData.filter((c: Class) => c.academicYearId === currentYear.id);
-        
-        if (urlClassId && yearClasses.some((c: Class) => c.id === urlClassId)) {
+      if (urlClassId && yearClasses.some((c: Class) => c.id === urlClassId)) {
           // Use class from URL if valid
           setSelectedClassId(urlClassId);
           // Determine grade level from the class
@@ -510,9 +502,10 @@ export default function TimetablePage() {
             const grade = typeof urlClass.grade === 'string' ? parseInt(urlClass.grade) : urlClass.grade;
             setGradeLevel(grade >= 7 && grade <= 9 ? 'SECONDARY' : 'HIGH_SCHOOL');
           }
-        } else if (yearClasses.length > 0) {
-          setSelectedClassId(yearClasses[0].id);
-        }
+      } else if (yearClasses.length > 0) {
+        setSelectedClassId(yearClasses[0].id);
+      } else {
+        setSelectedClassId('');
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -520,7 +513,7 @@ export default function TimetablePage() {
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, selectedYearId]);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -544,7 +537,7 @@ export default function TimetablePage() {
     const loadStaticTimetableResources = async () => {
       try {
         const [subjectsRes, assignmentsRes] = await Promise.all([
-          subjectAPI.getAll(),
+          subjectAPI.getAll(selectedYearId),
           teacherSubjectAPI.list().catch(() => ({ data: { assignments: [] } })),
         ]);
 
@@ -562,7 +555,7 @@ export default function TimetablePage() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [selectedYearId]);
 
   useEffect(() => {
     if (!selectedYearId) return;
@@ -1398,7 +1391,7 @@ export default function TimetablePage() {
   const pulseLabel =
     viewMode === 'overview' ? 'Coverage' : viewMode === 'teacher' ? 'Utilization' : 'Scheduled';
   const currentYearLabel =
-    academicYears.find((year) => year.id === selectedYearId)?.name || 'No year selected';
+    selectedYear?.name || 'No year selected';
   const viewSummaryLabel =
     viewMode === 'overview'
       ? `${filteredClasses.length} classes in view`
@@ -2199,21 +2192,10 @@ export default function TimetablePage() {
                     })}
                   </div>
 
-                  <label className="space-y-2 w-[200px] flex-shrink-0">
+                  <div className="w-[250px] flex-shrink-0 space-y-2">
                     <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_845f2146" /></span>
-                    <select
-                      value={selectedYearId}
-                      onChange={(e) => setSelectedYearId(e.target.value)}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                    >
-                      <option value="">{autoT("auto.web.app_locale_timetable_page.k_6eda4c0d")}</option>
-                      {academicYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          {year.name} {year.isCurrent && '(Current)'}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <AcademicYearScopeNotice className="min-h-12" planningEditable />
+                  </div>
 
                   {viewMode === 'class' ? (
                     <label className="space-y-2 w-[220px] flex-shrink-0">

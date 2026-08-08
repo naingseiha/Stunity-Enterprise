@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
 import StudentReportCard from '@/components/reports/StudentReportCard';
 import ClassReportCard from '@/components/reports/ClassReportCard';
 import { TokenManager } from '@/lib/api/auth';
@@ -53,9 +54,9 @@ export default function ReportCardsPage() {
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string>('');
   const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
+  const selectedYear = contextSelectedYear?.id || '';
 
   // Selection state
-  const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
 
@@ -78,19 +79,6 @@ export default function ReportCardsPage() {
     setLoading(false);
   }, [locale, router]);
 
-  useEffect(() => {
-    if (selectedYear && allYears.some((year) => year.id === selectedYear)) {
-      return;
-    }
-
-    const preferredYearId =
-      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
-
-    if (preferredYearId) {
-      setSelectedYear(preferredYearId);
-    }
-  }, [allYears, contextSelectedYear, selectedYear]);
-
   const { classes } = useClasses({
     academicYearId: selectedYear || undefined,
     limit: 100,
@@ -109,8 +97,9 @@ export default function ReportCardsPage() {
     setError('');
     
     try {
-      const year = allYears.find(y => y.id === selectedYear);
-      const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
+      const yearNum = contextSelectedYear
+        ? parseInt(contextSelectedYear.name.split('-')[0])
+        : new Date().getFullYear();
       
       const report = await gradeAPI.getClassReport(selectedClass, selectedSemester, yearNum, { forceFresh });
       setClassReport(report);
@@ -128,8 +117,9 @@ export default function ReportCardsPage() {
     setSelectedStudentId(studentId);
     
     try {
-      const year = allYears.find(y => y.id === selectedYear);
-      const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
+      const yearNum = contextSelectedYear
+        ? parseInt(contextSelectedYear.name.split('-')[0])
+        : new Date().getFullYear();
       
       const reportCard = await gradeAPI.getStudentReportCard(studentId, selectedSemester, yearNum, { forceFresh });
       setStudentReportCard(reportCard);
@@ -160,7 +150,7 @@ export default function ReportCardsPage() {
   }
 
   const selectedClassData = classes.find((c) => c.id === selectedClass);
-  const selectedYearData = allYears.find((y) => y.id === selectedYear);
+  const selectedYearData = contextSelectedYear;
   const educationModelLabel = formatEducationModelLabel(school?.educationModel);
   const activeTerm = studentReportCard?.term || classReport?.term;
   const semesterLabel = activeTerm?.name || (selectedSemester === 1 ? 'Semester 1' : 'Semester 2');
@@ -367,21 +357,10 @@ export default function ReportCardsPage() {
                 </div>
 
                 <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
-                  <label className="space-y-2">
+                  <div className="space-y-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_5b00d6b0" /></span>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="">{autoT("auto.web.locale_grades_reports_page.k_40be63d4")}</option>
-                      {allYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          {year.name} {year.isCurrent && '(Current)'}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <AcademicYearScopeNotice className="min-h-10 py-1" />
+                  </div>
 
                   <label className="space-y-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_8108c6be" /></span>

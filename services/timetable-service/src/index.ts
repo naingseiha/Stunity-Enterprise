@@ -85,7 +85,30 @@ async function getPublishedTimetableLocks(db: PrismaClient, schoolId: string) {
   return Array.from(latestByYear.values()).filter((publish) => publish.status === 'PUBLISHED');
 }
 
+async function ensureTimetableYearMutable(db: PrismaClient, schoolId: string, academicYearId: string) {
+  const academicYear = await db.academicYear.findFirst({
+    where: { id: academicYearId, schoolId },
+    select: { id: true, name: true, status: true, isCurrent: true },
+  });
+  if (
+    !academicYear ||
+    academicYear.status === 'ENDED' ||
+    academicYear.status === 'ARCHIVED' ||
+    (academicYear.status === 'ACTIVE' && !academicYear.isCurrent)
+  ) {
+    const error = new Error(
+      academicYear
+        ? `Academic year ${academicYear.name} is historical and its timetable is read-only.`
+        : 'Academic year not found in your school.',
+    );
+    (error as any).statusCode = 423;
+    (error as any).code = academicYear ? 'ACADEMIC_YEAR_READ_ONLY' : 'ACADEMIC_YEAR_NOT_FOUND';
+    throw error;
+  }
+}
+
 async function ensureTimetableEditable(db: PrismaClient, schoolId: string, academicYearId: string) {
+  await ensureTimetableYearMutable(db, schoolId, academicYearId);
   const publishState = await getTimetablePublishState(db, schoolId, academicYearId);
   if (publishState.isPublished) {
     const error = new Error('This timetable is published and locked. Unpublish it before making changes.');
@@ -111,6 +134,7 @@ function sendLockError(res: express.Response, error: any) {
     error: error.message,
     publishState: error.publishState,
     publishedAcademicYearIds: error.publishedAcademicYearIds,
+    code: error.code,
   });
   return true;
 }
@@ -1985,6 +2009,8 @@ app.post('/timetable/publish', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'academicYearId is required' });
     }
 
+    await ensureTimetableYearMutable(db, schoolId, academicYearId);
+
     const validation = await buildTimetableValidationReport(db, schoolId, academicYearId);
     if (validation.status === 'BLOCKED') {
       return res.status(400).json({
@@ -2015,6 +2041,7 @@ app.post('/timetable/publish', authenticate, async (req, res) => {
 
     res.json({ data: publish, validation });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error publishing timetable:', error);
     res.status(500).json({ error: 'Failed to publish timetable' });
   }
@@ -2030,6 +2057,8 @@ app.post('/timetable/unpublish', authenticate, async (req, res) => {
     if (!academicYearId) {
       return res.status(400).json({ error: 'academicYearId is required' });
     }
+
+    await ensureTimetableYearMutable(db, schoolId, academicYearId);
 
     const currentState = await getTimetablePublishState(db, schoolId, academicYearId);
     if (!currentState.isPublished) {
@@ -2052,6 +2081,7 @@ app.post('/timetable/unpublish', authenticate, async (req, res) => {
 
     res.json({ data: unpublish });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error unpublishing timetable:', error);
     res.status(500).json({ error: 'Failed to unpublish timetable' });
   }

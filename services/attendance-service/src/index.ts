@@ -32,6 +32,7 @@ import {
 import { buildSessionMonitor, SESSION_MONITOR_LATE_GRACE_MINUTES } from './sessionMonitor';
 import { assertProductionEnv, getJwtSecret } from './env';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
+import { getAcademicYearWriteBlock } from '../../lib/academic-year-policy';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config();
@@ -107,6 +108,86 @@ function clearSchoolSummaryCache(schoolId?: string) {
       schoolSummaryCache.delete(key);
     }
   }
+}
+
+type AttendanceRosterStudent = {
+  id: string;
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  photoUrl: string | null;
+};
+
+/**
+ * Resolve the class roster as it existed during the requested period. The
+ * student's current class pointer must never be used as historical truth.
+ */
+async function getClassRosterForPeriod(
+  classId: string,
+  schoolId: string,
+  period: { start: Date; end: Date },
+): Promise<AttendanceRosterStudent[]> {
+  const enrollmentRows = await prisma.studentClass.findMany({
+    where: {
+      classId,
+      startedAt: { lte: period.end },
+      OR: [{ endedAt: null }, { endedAt: { gt: period.start } }],
+      // Current record status must not erase a learner from historical rosters.
+      student: { schoolId },
+    },
+    select: {
+      student: {
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          photoUrl: true,
+        },
+      },
+    },
+    orderBy: [
+      { student: { firstName: 'asc' } },
+      { student: { lastName: 'asc' } },
+    ],
+  });
+
+  if (enrollmentRows.length > 0) {
+    return Array.from(
+      new Map(enrollmentRows.map((row) => [row.student.id, row.student])).values(),
+    );
+  }
+
+  // Compatibility fallback for legacy rows that predate StudentClass history.
+  return prisma.student.findMany({
+    where: { classId, schoolId, recordStatus: 'ACTIVE' },
+    select: {
+      id: true,
+      studentId: true,
+      firstName: true,
+      lastName: true,
+      photoUrl: true,
+    },
+    orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+  });
+}
+
+function rejectReadOnlyAttendanceYear(
+  res: Response,
+  academicYear: {
+    id: string;
+    name: string;
+    status: string;
+    isCurrent: boolean;
+    startDate: Date;
+    endDate: Date;
+  },
+  recordDate: Date,
+): boolean {
+  const block = getAcademicYearWriteBlock(academicYear, recordDate);
+  if (!block) return false;
+  res.status(409).json({ success: false, ...block, academicYearId: academicYear.id });
+  return true;
 }
 
 function readSchoolLocationsCache(cacheKey: string) {
@@ -1068,6 +1149,18 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
         id: classId,
         schoolId: schoolId,
       },
+      include: {
+        academicYear: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            isCurrent: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
     });
 
     if (!classData) {
@@ -1082,60 +1175,10 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
     const startDate = startOfDay(targetDate);
     const endDate = endOfDay(targetDate);
 
-    // Get students via both direct classId and StudentClass junction table
-    const [directStudents, enrolledStudents] = await Promise.all([
-      prisma.student.findMany({
-        where: {
-          classId: classId,
-          schoolId: schoolId,
-        },
-        select: {
-          id: true,
-          studentId: true,
-          firstName: true,
-          lastName: true,
-          photoUrl: true,
-        },
-      }),
-      prisma.studentClass.findMany({
-        where: {
-          classId: classId,
-          status: 'ACTIVE',
-        },
-        include: {
-          student: {
-            select: {
-              id: true,
-              studentId: true,
-              firstName: true,
-              lastName: true,
-              photoUrl: true,
-              schoolId: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    // Merge and deduplicate students from both sources
-    const studentMap = new Map<string, typeof directStudents[0]>();
-    for (const s of directStudents) {
-      studentMap.set(s.id, s);
-    }
-    for (const sc of enrolledStudents) {
-      if (sc.student.schoolId === schoolId && !studentMap.has(sc.student.id)) {
-        studentMap.set(sc.student.id, {
-          id: sc.student.id,
-          studentId: sc.student.studentId,
-          firstName: sc.student.firstName,
-          lastName: sc.student.lastName,
-          photoUrl: sc.student.photoUrl,
-        });
-      }
-    }
-    const students = Array.from(studentMap.values()).sort((a, b) =>
-      a.firstName.localeCompare(b.firstName)
-    );
+    const students = await getClassRosterForPeriod(classId, schoolId, {
+      start: startDate,
+      end: endDate,
+    });
 
     // Get attendance records for the date
     const attendanceRecords = await prisma.attendance.findMany({
@@ -1258,6 +1301,18 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
         id: classId,
         schoolId: schoolId,
       },
+      include: {
+        academicYear: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            isCurrent: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
     });
 
     if (!classData) {
@@ -1293,6 +1348,8 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
       });
     }
 
+    if (rejectReadOnlyAttendanceYear(res, classData.academicYear, targetDate)) return;
+
     const access = await resolveDelegatedClassAttendanceAccess({
       req,
       classData: { id: classData.id, grade: classData.grade, homeroomTeacherId: classData.homeroomTeacherId },
@@ -1323,7 +1380,8 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
         where: {
           studentId: { in: studentIds },
           classId: classId,
-          status: 'ACTIVE',
+          startedAt: { lte: endOfDay(targetDate) },
+          OR: [{ endedAt: null }, { endedAt: { gt: startOfDay(targetDate) } }],
         },
         select: { studentId: true },
       }),
@@ -1479,7 +1537,21 @@ app.put('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Resp
     const classRow = existingAttendance.classId
       ? await prisma.class.findFirst({
           where: { id: existingAttendance.classId, schoolId },
-          select: { id: true, grade: true, homeroomTeacherId: true },
+          select: {
+            id: true,
+            grade: true,
+            homeroomTeacherId: true,
+            academicYear: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                isCurrent: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
         })
       : null;
     if (!classRow) {
@@ -1488,6 +1560,13 @@ app.put('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Resp
         message: 'Class not found for attendance record',
       });
     }
+    if (
+      rejectReadOnlyAttendanceYear(
+        res,
+        classRow.academicYear,
+        startOfDay(existingAttendance.date),
+      )
+    ) return;
     const access = await resolveDelegatedClassAttendanceAccess({
       req,
       classData: classRow,
@@ -1573,6 +1652,34 @@ app.delete('/attendance/:id', authenticateToken, async (req: AuthRequest, res: R
       });
     }
 
+    const classRow = existingAttendance.classId
+      ? await prisma.class.findFirst({
+          where: { id: existingAttendance.classId, schoolId },
+          select: {
+            academicYear: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                isCurrent: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
+        })
+      : null;
+    if (!classRow) {
+      return res.status(404).json({ success: false, message: 'Class not found for attendance record' });
+    }
+    if (
+      rejectReadOnlyAttendanceYear(
+        res,
+        classRow.academicYear,
+        startOfDay(existingAttendance.date),
+      )
+    ) return;
+
     // Delete attendance
     await prisma.attendance.delete({
       where: { id },
@@ -1639,37 +1746,10 @@ app.get('/attendance/class/:classId/month/:month/year/:year', authenticateToken,
     const startDate = startOfMonth(new Date(yearNum, monthNum - 1, 1));
     const endDate = endOfMonth(startDate);
 
-    // Get students via both direct classId and StudentClass junction table
-    const [directStu, enrolledStu] = await Promise.all([
-      prisma.student.findMany({
-        where: { classId: classId, schoolId: schoolId },
-        select: { id: true, studentId: true, firstName: true, lastName: true, photoUrl: true },
-      }),
-      prisma.studentClass.findMany({
-        where: { classId: classId, status: 'ACTIVE' },
-        include: {
-          student: {
-            select: { id: true, studentId: true, firstName: true, lastName: true, photoUrl: true, schoolId: true },
-          },
-        },
-      }),
-    ]);
-    const stuMap = new Map<string, typeof directStu[0]>();
-    for (const s of directStu) stuMap.set(s.id, s);
-    for (const sc of enrolledStu) {
-      if (sc.student.schoolId === schoolId && !stuMap.has(sc.student.id)) {
-        stuMap.set(sc.student.id, {
-          id: sc.student.id,
-          studentId: sc.student.studentId,
-          firstName: sc.student.firstName,
-          lastName: sc.student.lastName,
-          photoUrl: sc.student.photoUrl,
-        });
-      }
-    }
-    const students = Array.from(stuMap.values()).sort((a, b) =>
-      a.firstName.localeCompare(b.firstName)
-    );
+    const students = await getClassRosterForPeriod(classId, schoolId, {
+      start: startDate,
+      end: endDate,
+    });
 
     // Get all attendance records for the month
     const attendanceRecords = await prisma.attendance.findMany({

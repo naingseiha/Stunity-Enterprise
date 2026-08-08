@@ -2,7 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState, use, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, use, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
@@ -259,6 +259,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { years: existingYears } = useAcademicYearsList(school?.id);
+  const didChooseDefaultSource = useRef(false);
   const suggestedAcademicYear = useMemo(getSuggestedAcademicYear, []);
 
   const [yearName, setYearName] = useState(suggestedAcademicYear.name);
@@ -270,6 +271,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
     examTypes: true,
     gradingScales: true,
     classes: true,
+    subjects: true,
     holidays: true,
   });
 
@@ -305,6 +307,14 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
     if (!copyFromId) return;
     setCopyFromYearId(copyFromId);
   }, [copyFromId]);
+
+  useEffect(() => {
+    if (didChooseDefaultSource.current || copyFromId || !existingYears.length) return;
+    didChooseDefaultSource.current = true;
+    const defaultSource = existingYears.find((year) => year.isCurrent)
+      || [...existingYears].sort((left, right) => new Date(right.startDate).getTime() - new Date(left.startDate).getTime())[0];
+    if (defaultSource) setCopyFromYearId(defaultSource.id);
+  }, [copyFromId, existingYears]);
 
   useEffect(() => {
     if (!copyFromYearId || !sourceYearData?.suggested) return;
@@ -415,6 +425,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
         payload.copyExamTypes = copyOptions.examTypes;
         payload.copyGradingScales = copyOptions.gradingScales;
         payload.copyClasses = copyOptions.classes;
+        payload.copySubjects = copyOptions.subjects;
         payload.copyHolidays = copyOptions.holidays;
       } else {
         payload.terms = terms;
@@ -664,7 +675,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold text-slate-950">ចម្លងពីឆ្នាំសិក្សាដែលមានស្រាប់</p>
-                            <p className="mt-1 text-sm text-slate-500">ប្រើឆ្នាំមុនជាគំរូ ដើម្បីមិនចាំបាច់កំណត់ឆមាស ថ្នាក់រៀន និទ្ទេស និងថ្ងៃឈប់ឡើងវិញ។</p>
+                            <p className="mt-1 text-sm text-slate-500">ប្រើឆ្នាំមុនជាគំរូ ដើម្បីមិនចាំបាច់កំណត់ឆមាស មុខវិជ្ជា ថ្នាក់រៀន និទ្ទេស និងថ្ងៃឈប់ឡើងវិញ។</p>
                           </div>
                         </div>
                         <div className="mt-4">
@@ -691,6 +702,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 { key: 'terms', label: `ឆមាស (${sourceYearData.copyOptions.terms})` },
                                 { key: 'examTypes', label: `ប្រភេទប្រឡង (${sourceYearData.copyOptions.examTypes})` },
                                 { key: 'gradingScales', label: `និទ្ទេស (${sourceYearData.copyOptions.gradingScales})` },
+                                { key: 'subjects', label: `មុខវិជ្ជា (${sourceYearData.copyOptions.subjects ?? 0})` },
                                 { key: 'classes', label: `ថ្នាក់រៀន (${sourceYearData.copyOptions.classes})` },
                                 { key: 'holidays', label: `ថ្ងៃឈប់ (${sourceYearData.copyOptions.holidays})` },
                               ].map((option) => (
@@ -761,7 +773,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         </p>
                         <p className="mt-2 text-sm leading-6 text-amber-800">
                           {usingCopyMode
-                            ? 'ពេលរក្សាទុក ប្រព័ន្ធនឹងចម្លងតែទិន្នន័យដែលបានជ្រើសពីឆ្នាំសិក្សាមុន។'
+                            ? 'ប្រព័ន្ធនឹងចម្លងតែ configuration និង class shells ដែលបានជ្រើស។ សិស្ស ពិន្ទុ វត្តមាន timetable និងការចាត់គ្រូ មិនត្រូវបានចម្លងទេ។'
                             : 'ពេលរក្សាទុក ប្រព័ន្ធនឹងប្រើឆមាស ប្រភេទប្រឡង និទ្ទេស ថ្នាក់រៀន និងប្រតិទិនដែលអ្នកកំណត់នៅជំហានបន្ទាប់។'}
                         </p>
                       </div>

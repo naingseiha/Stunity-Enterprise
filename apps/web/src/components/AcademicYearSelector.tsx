@@ -2,7 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import { ChevronDown, Calendar, Check } from 'lucide-react';
+import { ChevronDown, Calendar, Check, LockKeyhole } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -11,7 +11,14 @@ interface AcademicYearSelectorProps {
 }
 
 export default function AcademicYearSelector({ variant = 'default' }: AcademicYearSelectorProps) {
-  const { currentYear, selectedYear, allYears, setSelectedYear, loading } = useAcademicYear();
+  const {
+    currentYear,
+    selectedYear,
+    selectedYearMode,
+    allYears,
+    setSelectedYear,
+    loading,
+  } = useAcademicYear();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -84,6 +91,15 @@ export default function AcademicYearSelector({ variant = 'default' }: AcademicYe
         {selectedYear.isCurrent && (
           <span className="hidden lg:inline px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded dark:bg-green-500/10 dark:text-green-400">
             <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_99838780" />
+          </span>
+        )}
+        {selectedYearMode !== 'operational' && (
+          <span
+            className="hidden items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 lg:inline-flex"
+            title={selectedYearMode === 'planning' ? 'Planning year' : 'Historical data is read-only'}
+          >
+            <LockKeyhole className="h-3 w-3" />
+            {selectedYearMode === 'planning' ? 'Planning' : 'Read only'}
           </span>
         )}
         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform dark:text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />

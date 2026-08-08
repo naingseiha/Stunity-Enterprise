@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
 import { TokenManager } from '@/lib/api/auth';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -20,6 +21,7 @@ import {
   BulkAttendanceItem,
 } from '@/lib/api/attendance';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { BEFORE_ACADEMIC_YEAR_CHANGE_EVENT, isDateInsideAcademicYear } from '@/lib/academic-year-scope';
 import { useClasses } from '@/hooks/useClasses';
 import { getClassStudents, StudentInClass } from '@/lib/api/class-students';
 import type { LucideIcon } from 'lucide-react';
@@ -129,7 +131,7 @@ export default function MarkAttendancePage() {
     const autoT = useTranslations();
   const router = useRouter();
   const locale = useLocale();
-  const { selectedYear, allYears, setSelectedYear } = useAcademicYear();
+  const { selectedYear, canWriteOperationalData } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
 
@@ -213,6 +215,19 @@ export default function MarkAttendancePage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
+  useEffect(() => {
+    const guardYearChange = (event: Event) => {
+      if (
+        hasUnsavedChanges &&
+        !window.confirm('Attendance changes are still being saved. Change academic year and discard them?')
+      ) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener(BEFORE_ACADEMIC_YEAR_CHANGE_EVENT, guardYearChange);
+    return () => window.removeEventListener(BEFORE_ACADEMIC_YEAR_CHANGE_EVENT, guardYearChange);
+  }, [hasUnsavedChanges]);
+
   const loadStudentsAndAttendance = async () => {
     if (!selectedClass || !selectedDate) return;
 
@@ -253,6 +268,7 @@ export default function MarkAttendancePage() {
   };
 
   const updateAttendanceStatus = (studentId: string, status: AttendanceStatus) => {
+    if (!canWriteOperationalData) return;
     setAttendanceRecords((prev) => {
       const updated = new Map(prev);
       const record = updated.get(studentId);
@@ -270,6 +286,7 @@ export default function MarkAttendancePage() {
   };
 
   const updateRemarks = (studentId: string, remarks: string) => {
+    if (!canWriteOperationalData) return;
     setAttendanceRecords((prev) => {
       const updated = new Map(prev);
       const record = updated.get(studentId);
@@ -297,7 +314,7 @@ export default function MarkAttendancePage() {
   };
 
   const saveAttendance = async () => {
-    if (!selectedClass || !selectedDate) return;
+    if (!canWriteOperationalData || !selectedClass || !selectedDate) return;
 
     try {
       setSaveStatus('saving');
@@ -349,6 +366,7 @@ export default function MarkAttendancePage() {
   };
 
   const markAllAs = (status: AttendanceStatus) => {
+    if (!canWriteOperationalData) return;
     const confirmMessage = `Are you sure you want to mark all students as ${status}?`;
     if (!confirm(confirmMessage)) return;
 
@@ -369,6 +387,7 @@ export default function MarkAttendancePage() {
   };
 
   const clearAll = () => {
+    if (!canWriteOperationalData) return;
     if (!confirm('Are you sure you want to clear all attendance records?')) return;
 
     setAttendanceRecords((prev) => {
@@ -471,15 +490,14 @@ export default function MarkAttendancePage() {
     const selected = new Date(selectedDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return selected <= today;
-  }, [selectedDate]);
+    return selected <= today && isDateInsideAcademicYear(selectedDate, selectedYear);
+  }, [selectedDate, selectedYear]);
 
   const canLoad =
     selectedAcademicYear && selectedClass && selectedDate && isDateValid;
 
   const selectedClassDetails = classes.find((cls) => cls.id === selectedClass);
-  const selectedYearLabel =
-    allYears.find((year) => year.id === selectedAcademicYear)?.name || 'No year selected';
+  const selectedYearLabel = selectedYear?.name || 'No year selected';
   const sessionLabel =
     selectedSession === AttendanceSession.MORNING
       ? autoT('auto.web.locale_attendance_mark_page.k_8357fdf2')
@@ -700,28 +718,10 @@ export default function MarkAttendancePage() {
               </div>
 
               <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_auto_auto] lg:items-end">
-                <label className="space-y-2">
+                <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_29bd03fa" /></span>
-                  <select
-                    value={selectedAcademicYear}
-                    onChange={(e) => {
-                      const year = allYears.find((item) => item.id === e.target.value);
-                      if (year) setSelectedYear(year);
-                      setSelectedClass('');
-                      setStudents([]);
-                      setAttendanceRecords(new Map());
-                      setHasLoadedRoster(false);
-                    }}
-                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
-                  >
-                    <option value="">{autoT("auto.web.locale_attendance_mark_page.k_d94009eb")}</option>
-                    {allYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent && '(Current)'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <AcademicYearScopeNotice className="min-h-12 rounded-full px-4" />
+                </div>
 
                 <label className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_69c69ff9" /></span>
@@ -825,29 +825,33 @@ export default function MarkAttendancePage() {
                     <div className="flex flex-col gap-4 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex flex-wrap items-center gap-3">
                         <button
+                          disabled={!canWriteOperationalData}
                           onClick={() => markAllAs(AttendanceStatus.PRESENT)}
-                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <CheckCircle className="h-4 w-4" />
                           <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fef7ef8b" />
                         </button>
                         <button
+                          disabled={!canWriteOperationalData}
                           onClick={() => markAllAs(AttendanceStatus.ABSENT)}
-                          className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                          className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                           <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_05060596" />
                         </button>
                         <button
+                          disabled={!canWriteOperationalData}
                           onClick={() => markAllAs(AttendanceStatus.LATE)}
-                          className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                          className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Clock className="h-4 w-4" />
                           <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_7e965695" />
                         </button>
                         <button
+                          disabled={!canWriteOperationalData}
                           onClick={clearAll}
-                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <XIcon className="h-4 w-4" />
                           <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_60f22496" />
@@ -927,8 +931,9 @@ export default function MarkAttendancePage() {
                                       return (
                                         <button
                                           key={status}
+                                          disabled={!canWriteOperationalData}
                                           onClick={() => updateAttendanceStatus(student.id, status)}
-                                          className={`flex h-9 min-w-9 items-center justify-center rounded-[0.85rem] border px-2 text-[11px] font-black transition ${
+                                          className={`flex h-9 min-w-9 items-center justify-center rounded-[0.85rem] border px-2 text-[11px] font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
                                             isActive
                                               ? activeTone
                                               : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-400 hover:border-slate-300 dark:border-gray-700 hover:text-slate-600'
@@ -944,6 +949,7 @@ export default function MarkAttendancePage() {
                                 <td className="px-4 py-4">
                                   <input
                                     type="text"
+                                    disabled={!canWriteOperationalData}
                                     value={record?.remarks || ''}
                                     onChange={(e) => updateRemarks(student.id, e.target.value)}
                                     placeholder={autoT("auto.web.locale_attendance_mark_page.k_f55a5c11")}

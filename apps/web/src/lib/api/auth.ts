@@ -459,6 +459,7 @@ export const TokenManager = {
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       localStorage.removeItem('school');
+      window.dispatchEvent(new Event('stunity:school-context-changed'));
     }
     _refreshPromise = null;
   },
@@ -497,6 +498,7 @@ export const TokenManager = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('school', JSON.stringify(school));
+      window.dispatchEvent(new Event('stunity:school-context-changed'));
     }
   },
 

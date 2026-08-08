@@ -16,6 +16,7 @@ import {
   invalidateSubjectsPersistentCache,
 } from "@/hooks/useSubjects";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
 import {
   BookOpen,
   Plus,
@@ -67,6 +68,8 @@ export default function SubjectsManagementPage(props: {
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
+  const { selectedYear } = useAcademicYear();
+  const selectedYearId = selectedYear?.id;
   const labels = useMemo(
     () => ({
       home: localLabel(locale, "Home", "ទំព័រដើម"),
@@ -197,12 +200,14 @@ export default function SubjectsManagementPage(props: {
 
   const subjectsQueryParams = useMemo(
     () => ({
+      enabled: Boolean(selectedYearId),
+      academicYearId: selectedYearId,
       grade: filterGrade || undefined,
       category: filterCategory || undefined,
       isActive: filterStatus === "all" ? undefined : filterStatus === "active",
       includeTeachers: true,
     }),
-    [filterGrade, filterCategory, filterStatus],
+    [selectedYearId, filterGrade, filterCategory, filterStatus],
   );
 
   // Use SWR hooks for data fetching
@@ -214,7 +219,7 @@ export default function SubjectsManagementPage(props: {
     error,
   } = useSubjects(subjectsQueryParams);
 
-  const { statistics, mutate: mutateStats } = useSubjectStatistics();
+  const { statistics, mutate: mutateStats } = useSubjectStatistics(selectedYearId);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -303,6 +308,7 @@ export default function SubjectsManagementPage(props: {
 
   const handleSubmitCreate = async () => {
     try {
+      if (!selectedYearId) return;
       if (
         !formData.name ||
         !formData.code ||
@@ -328,7 +334,7 @@ export default function SubjectsManagementPage(props: {
         maxScore: parseFloat(formData.maxScore) || 100,
         coefficient: parseFloat(formData.coefficient) || 1,
         isActive: formData.isActive,
-      });
+      }, selectedYearId);
 
       setShowCreateModal(false);
       resetForm();
@@ -341,7 +347,7 @@ export default function SubjectsManagementPage(props: {
   };
 
   const handleSubmitEdit = async () => {
-    if (!selectedSubject) return;
+    if (!selectedSubject || !selectedYearId) return;
 
     try {
       await subjectAPI.updateSubject(selectedSubject.id, {
@@ -360,7 +366,7 @@ export default function SubjectsManagementPage(props: {
         maxScore: parseFloat(formData.maxScore),
         coefficient: parseFloat(formData.coefficient),
         isActive: formData.isActive,
-      });
+      }, selectedYearId);
 
       setShowEditModal(false);
       setSelectedSubject(null);
@@ -374,10 +380,10 @@ export default function SubjectsManagementPage(props: {
   };
 
   const handleSubmitDelete = async () => {
-    if (!selectedSubject) return;
+    if (!selectedSubject || !selectedYearId) return;
 
     try {
-      await subjectAPI.deleteSubject(selectedSubject.id);
+      await subjectAPI.deleteSubject(selectedSubject.id, selectedYearId);
       setShowDeleteModal(false);
       setSelectedSubject(null);
       invalidateSubjectsPersistentCache(subjectsQueryParams);
@@ -390,7 +396,8 @@ export default function SubjectsManagementPage(props: {
 
   const handleToggleStatus = async (subject: Subject) => {
     try {
-      await subjectAPI.toggleStatus(subject.id);
+      if (!selectedYearId) return;
+      await subjectAPI.toggleStatus(subject.id, selectedYearId);
       invalidateSubjectsPersistentCache(subjectsQueryParams);
       await mutate();
       await mutateStats();

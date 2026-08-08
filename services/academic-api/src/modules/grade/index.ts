@@ -24,6 +24,7 @@ import {
   scheduleDbKeepalive,
   shouldRunDbStartupWarmup,
 } from "../../../../lib/prisma-pool-url";
+import { getAcademicYearWriteBlock } from "../../../../lib/academic-year-policy";
 import { getSharedPrisma } from "../../core/prisma";
 import { getJwtSecret } from "../../../../lib/jwt-secret";
 import { NOTIFICATION_SERVICE_AUTH_TOKEN } from "../../core/internalServiceAuth";
@@ -147,7 +148,19 @@ const getScopedUserRecord = async (
 type GradeAccessResult =
   | {
       allowed: true;
-      classData: { id: string; schoolId: string; academicYearId: string };
+      classData: {
+        id: string;
+        schoolId: string;
+        academicYearId: string;
+        academicYear: {
+          id: string;
+          name: string;
+          status: string;
+          isCurrent: boolean;
+          startDate: Date;
+          endDate: Date;
+        };
+      };
       teacherId?: string | null;
     }
   | { allowed: false; status: number; message: string };
@@ -172,6 +185,16 @@ const resolveGradeAccess = async (
       id: true,
       schoolId: true,
       academicYearId: true,
+      academicYear: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          isCurrent: true,
+          startDate: true,
+          endDate: true,
+        },
+      },
     },
   });
 
@@ -254,6 +277,16 @@ const resolveGradeAccess = async (
 
   return { allowed: true, classData, teacherId };
 };
+
+function rejectReadOnlyGradeYear(
+  res: Response,
+  access: Extract<GradeAccessResult, { allowed: true }>,
+): boolean {
+  const block = getAcademicYearWriteBlock(access.classData.academicYear);
+  if (!block) return false;
+  res.status(409).json({ ...block, academicYearId: access.classData.academicYearId });
+  return true;
+}
 
 const gradeGridCache = new Map<string, { data: any; timestamp: number }>();
 const GRADE_GRID_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -992,7 +1025,7 @@ async function getStudentsForClassGradeGrid(
           }
         : { status: "ACTIVE", endedAt: null }),
       student: {
-        recordStatus: "ACTIVE",
+        // A later withdrawal/archive must not erase a learner's historical grades.
         ...(schoolId ? { schoolId } : {}),
       },
     },
@@ -1687,6 +1720,8 @@ app.post(
         return res.status(access.status).json({ message: access.message });
       }
 
+      if (rejectReadOnlyGradeYear(res, access)) return;
+
       const existing = await prisma.gradeConfirmation.findUnique({
         where: {
           classId_subjectId_month_year: {
@@ -1805,6 +1840,8 @@ app.post(
         return res.status(access.status).json({ message: access.message });
       }
 
+      if (rejectReadOnlyGradeYear(res, access)) return;
+
       const now = new Date();
       await prisma.gradeConfirmation.upsert({
         where: {
@@ -1887,6 +1924,8 @@ app.post(
         }
         return res.status(access.status).json({ message: access.message });
       }
+
+      if (rejectReadOnlyGradeYear(res, access)) return;
 
       await prisma.gradeConfirmation.updateMany({
         where: {
@@ -1981,6 +2020,43 @@ app.post(
             subjectId: pair.subjectId,
           });
         }
+
+        if (rejectReadOnlyGradeYear(res, access)) return;
+      }
+
+      const studentIds = Array.from(
+        new Set(grades.map((grade: any) => String(grade.studentId || "")).filter(Boolean)),
+      );
+      const classIds = Array.from(classSubjectPairs.values()).map((pair) => pair.classId);
+      const [scopedStudents, enrollmentRows] = await Promise.all([
+        prisma.student.findMany({
+          where: { id: { in: studentIds }, ...(schoolId ? { schoolId } : {}) },
+          select: { id: true, classId: true },
+        }),
+        prisma.studentClass.findMany({
+          where: { studentId: { in: studentIds }, classId: { in: classIds } },
+          select: { studentId: true, classId: true },
+        }),
+      ]);
+      const scopedStudentIds = new Set(scopedStudents.map((student) => student.id));
+      const validStudentClassPairs = new Set(
+        enrollmentRows.map((row) => `${row.studentId}:${row.classId}`),
+      );
+      scopedStudents.forEach((student) => {
+        if (student.classId) validStudentClassPairs.add(`${student.id}:${student.classId}`);
+      });
+      const invalidAssignment = grades.find(
+        (grade: any) =>
+          !scopedStudentIds.has(String(grade.studentId)) ||
+          !validStudentClassPairs.has(`${grade.studentId}:${grade.classId}`),
+      );
+      if (invalidAssignment) {
+        return res.status(400).json({
+          message: "A grade student does not belong to the requested class and academic-year roster",
+          code: "GRADE_ROSTER_MISMATCH",
+          studentId: invalidAssignment.studentId,
+          classId: invalidAssignment.classId,
+        });
       }
 
       const comboContexts = new Map<
@@ -2056,47 +2132,89 @@ app.post(
         errors: [] as any[],
       };
 
-      // Process each grade sequentially
-      for (const gradeData of grades) {
+      // Grade entry can submit hundreds of cells at once (for example after an
+      // Excel paste). Prefetch subjects and existing rows once instead of
+      // issuing two reads for every individual cell.
+      const normalizedBatch = grades.map((gradeData: any) => ({
+        gradeData,
+        context: normalizeGradePayloadMonthContext(
+          gradeData.month,
+          gradeData.monthNumber,
+          gradeData.year,
+        ),
+      }));
+      const batchSubjectIds = Array.from(
+        new Set(grades.map((gradeData: any) => String(gradeData.subjectId))),
+      );
+      const batchYears = Array.from(
+        new Set(normalizedBatch.map((item: any) => item.context.normalizedYear)),
+      );
+      const batchMonths = Array.from(
+        new Set(normalizedBatch.map((item: any) => item.context.normalizedMonth)),
+      );
+      const batchMonthNumbers = Array.from(
+        new Set(normalizedBatch.map((item: any) => item.context.normalizedMonthNumber)),
+      );
+      const [batchSubjects, batchExistingGrades] = await Promise.all([
+        prisma.subject.findMany({
+          where: { id: { in: batchSubjectIds } },
+          select: { id: true, name: true, coefficient: true },
+        }),
+        prisma.grade.findMany({
+          where: {
+            studentId: { in: studentIds },
+            subjectId: { in: batchSubjectIds },
+            classId: { in: classIds },
+            year: { in: batchYears },
+            OR: [
+              { month: { in: batchMonths } },
+              { monthNumber: { in: batchMonthNumbers } },
+            ],
+          },
+          orderBy: { updatedAt: "desc" },
+        }),
+      ]);
+      const batchSubjectById = new Map(
+        batchSubjects.map((subject) => [subject.id, subject]),
+      );
+      const existingByCell = new Map<string, typeof batchExistingGrades>();
+      batchExistingGrades.forEach((grade) => {
+        const key = `${grade.studentId}:${grade.subjectId}:${grade.classId}:${grade.year}`;
+        const rows = existingByCell.get(key);
+        if (rows) rows.push(grade);
+        else existingByCell.set(key, [grade]);
+      });
+
+      // Keep writes sequential to avoid unique-key races when legacy month
+      // labels overlap; all per-cell reads have already been removed above.
+      for (const { gradeData, context } of normalizedBatch) {
         const {
           studentId,
           subjectId,
           classId,
           score,
-          month,
-          monthNumber,
-          year,
           maxScore = 100,
           remarks,
         } = gradeData;
 
         try {
           const { normalizedMonth, normalizedMonthNumber, normalizedYear } =
-            normalizeGradePayloadMonthContext(month, monthNumber, year);
+            context;
 
-          // Get subject to calculate weighted score
-          const subject = await prisma.subject.findUnique({
-            where: { id: subjectId },
-          });
+          const subject = batchSubjectById.get(subjectId);
 
           if (!subject) {
             results.errors.push({ studentId, error: "Subject not found" });
             continue;
           }
 
-          const existing = await prisma.grade.findFirst({
-            where: {
-              studentId,
-              subjectId,
-              classId,
-              year: normalizedYear,
-              OR: [
-                { month: normalizedMonth },
-                { monthNumber: normalizedMonthNumber },
-              ],
-            },
-            orderBy: { updatedAt: "desc" },
-          });
+          const existing = existingByCell
+            .get(`${studentId}:${subjectId}:${classId}:${normalizedYear}`)
+            ?.find(
+              (row) =>
+                row.month === normalizedMonth ||
+                row.monthNumber === normalizedMonthNumber,
+            );
 
           // A blank Excel-style cell removes an existing score. Sending a
           // blank for a cell that was already empty is a safe no-op.
@@ -2300,6 +2418,17 @@ app.put(
         return res.status(404).json({ message: "Grade not found" });
       }
 
+      const access = await resolveGradeAccess(
+        req,
+        existingGrade.classId,
+        existingGrade.subjectId,
+      );
+      if (!access.allowed) {
+        if (!("status" in access)) return res.status(403).json({ message: "Access denied" });
+        return res.status(access.status).json({ message: access.message });
+      }
+      if (rejectReadOnlyGradeYear(res, access)) return;
+
       const percentage = calculatePercentage(
         score,
         maxScore || existingGrade.maxScore,
@@ -2364,6 +2493,13 @@ app.delete(
       if (schoolId && existing.class?.schoolId !== schoolId) {
         return res.status(403).json({ message: "Access denied" });
       }
+
+      const access = await resolveGradeAccess(req, existing.classId, existing.subjectId);
+      if (!access.allowed) {
+        if (!("status" in access)) return res.status(403).json({ message: "Access denied" });
+        return res.status(access.status).json({ message: access.message });
+      }
+      if (rejectReadOnlyGradeYear(res, access)) return;
 
       const grade = await prisma.grade.delete({
         where: { id },

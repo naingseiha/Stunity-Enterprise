@@ -55,6 +55,7 @@ export interface SubjectStatistics {
 }
 
 export interface SubjectFilters {
+  academicYearId?: string;
   grade?: string;
   track?: string;
   category?: string;
@@ -83,7 +84,7 @@ class SubjectAPI {
   */
   async getSubjects(filters?: SubjectFilters): Promise<Subject[]> {
     const params = new URLSearchParams();
-    
+    if (filters?.academicYearId) params.append('academicYearId', filters.academicYearId);
     if (filters?.grade) params.append('grade', filters.grade);
     if (filters?.track) params.append('track', filters.track);
     if (filters?.category) params.append('category', filters.category);
@@ -109,8 +110,8 @@ class SubjectAPI {
   /**
    * Get all subjects (alias for getSubjects)
    */
-  async getAll(): Promise<{ data: { subjects: Subject[] } }> {
-    const subjects = await this.getSubjects({ isActive: true });
+  async getAll(academicYearId?: string): Promise<{ data: { subjects: Subject[] } }> {
+    const subjects = await this.getSubjects({ isActive: true, academicYearId });
     return { data: { subjects } };
   }
 
@@ -157,11 +158,11 @@ class SubjectAPI {
   /**
    * Create new subject
    */
-  async createSubject(data: Partial<Subject>): Promise<Subject> {
+  async createSubject(data: Partial<Subject>, academicYearId?: string): Promise<Subject> {
     const response = await fetch(`${API_BASE_URL}/subjects`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, ...(academicYearId ? { academicYearId } : {}) }),
     });
 
     if (!response.ok) {
@@ -175,11 +176,11 @@ class SubjectAPI {
   /**
    * Update subject
    */
-  async updateSubject(id: string, data: Partial<Subject>): Promise<Subject> {
+  async updateSubject(id: string, data: Partial<Subject>, academicYearId?: string): Promise<Subject> {
     const response = await fetch(`${API_BASE_URL}/subjects/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, ...(academicYearId ? { academicYearId } : {}) }),
     });
 
     if (!response.ok) {
@@ -193,8 +194,9 @@ class SubjectAPI {
   /**
    * Delete subject
    */
-  async deleteSubject(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/subjects/${id}`, {
+  async deleteSubject(id: string, academicYearId?: string): Promise<void> {
+    const query = academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/subjects/${id}${query}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -208,8 +210,9 @@ class SubjectAPI {
   /**
    * Toggle subject active status
    */
-  async toggleStatus(id: string): Promise<Subject> {
-    const response = await fetch(`${API_BASE_URL}/subjects/${id}/toggle-status`, {
+  async toggleStatus(id: string, academicYearId?: string): Promise<Subject> {
+    const query = academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/subjects/${id}/toggle-status${query}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
     });
@@ -314,8 +317,9 @@ class SubjectAPI {
   /**
    * Get subject statistics
    */
-  async getStatistics(): Promise<SubjectStatistics> {
-    const response = await fetch(`${API_BASE_URL}/subjects/statistics`, {
+  async getStatistics(academicYearId?: string): Promise<SubjectStatistics> {
+    const query = academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : '';
+    const response = await fetch(`${API_BASE_URL}/subjects/statistics${query}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });

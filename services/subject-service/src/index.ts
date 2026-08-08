@@ -120,6 +120,40 @@ const getSchoolId = (req: AuthRequest): string | null => {
   return req.user?.schoolId || req.user?.school?.id || null;
 };
 
+const academicYearOfferingFilter = (academicYearId: unknown, schoolId: string | null, isActive?: boolean) =>
+  typeof academicYearId === 'string' && academicYearId
+    ? { academicYearOfferings: { some: { academicYearId, ...(isActive === undefined ? {} : { isActive }), ...(schoolId ? { academicYear: { schoolId } } : {}) } } }
+    : {};
+
+const subjectOfferingOverrideData = (value: any) => ({
+  name: value.name,
+  nameKh: value.nameKh,
+  nameEn: value.nameEn ?? null,
+  nameKhShort: value.nameKhShort ?? null,
+  nameEnShort: value.nameEnShort ?? null,
+  code: value.code,
+  description: value.description ?? null,
+  grade: value.grade,
+  track: value.track ?? null,
+  category: value.category,
+  weeklyHours: value.weeklyHours === undefined ? null : parseFloat(value.weeklyHours),
+  annualHours: value.annualHours === undefined ? null : parseInt(value.annualHours),
+  maxScore: value.maxScore === undefined ? null : parseInt(value.maxScore),
+  coefficient: value.coefficient === undefined ? null : parseFloat(value.coefficient),
+});
+
+const mergeSubjectOffering = (subject: any) => {
+  const { academicYearOfferings, ...catalogueSubject } = subject;
+  const offering = academicYearOfferings?.[0];
+  if (!offering) return catalogueSubject;
+  const overrides = Object.fromEntries(
+    ['name', 'nameKh', 'nameEn', 'nameKhShort', 'nameEnShort', 'code', 'description', 'grade', 'track', 'category', 'weeklyHours', 'annualHours', 'maxScore', 'coefficient']
+      .filter((key) => offering[key] !== null && offering[key] !== undefined)
+      .map((key) => [key, offering[key]]),
+  );
+  return { ...catalogueSubject, ...overrides, isActive: offering.isActive };
+};
+
 // Apply authentication to all routes below this point
 app.use(authenticateToken);
 
@@ -149,10 +183,11 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
       isActive,
       search,
       includeTeachers = 'false',
+      academicYearId,
     } = req.query;
 
     // ✅ Check cache with stale-while-revalidate
-    const cacheKey = `subjects:${grade || 'all'}:${track || 'all'}:${category || 'all'}:${isActive || 'all'}:${search || ''}:${includeTeachers}:${schoolId || 'none'}`;
+    const cacheKey = `subjects:${academicYearId || 'catalogue'}:${grade || 'all'}:${track || 'all'}:${category || 'all'}:${isActive || 'all'}:${search || ''}:${includeTeachers}:${schoolId || 'none'}`;
     const cached = cache.get(cacheKey);
     const now = Date.now();
     const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
@@ -169,12 +204,13 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
     }
 
     // Build filter conditions - subjects are global, not school-specific
-    const where: any = {};
+    const requestedActive = isActive === undefined ? undefined : isActive === 'true';
+    const where: any = academicYearOfferingFilter(academicYearId, schoolId, requestedActive);
 
     if (grade) where.grade = grade as string;
     if (track) where.track = track as string;
     if (category) where.category = category as string;
-    if (isActive !== undefined) where.isActive = isActive === 'true';
+    if (!academicYearId && requestedActive !== undefined) where.isActive = requestedActive;
 
     if (search) {
       where.OR = [
@@ -217,6 +253,7 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
             subjectTeachers: true,
           },
         },
+        academicYearOfferings: typeof academicYearId === 'string' && academicYearId ? { where: { academicYearId } } : false,
       },
       orderBy: [
         { grade: 'asc' },
@@ -225,10 +262,11 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
     });
 
     // Cache the result
-    cache.set(cacheKey, { data: subjects, timestamp: Date.now() });
+    const responseSubjects = subjects.map(mergeSubjectOffering);
+    cache.set(cacheKey, { data: responseSubjects, timestamp: Date.now() });
     console.log(`✅ Found ${subjects.length} subjects`);
 
-    res.json(subjects);
+    res.json(responseSubjects);
   } catch (error: any) {
     console.error('❌ Error getting subjects:', error);
     const code = error?.code;
@@ -252,10 +290,12 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
  */
 app.get('/subjects/lightweight', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { grade, isActive = 'true' } = req.query;
+    const { grade, isActive = 'true', academicYearId } = req.query;
+    const schoolId = getSchoolId(req);
 
     const where: any = {
-      isActive: isActive === 'true',
+      ...(!academicYearId ? { isActive: isActive === 'true' } : {}),
+      ...academicYearOfferingFilter(academicYearId, schoolId, isActive === 'true'),
     };
 
     if (grade) where.grade = grade as string;
@@ -275,6 +315,7 @@ app.get('/subjects/lightweight', authenticateToken, async (req: AuthRequest, res
         category: true,
         coefficient: true,
         maxScore: true,
+        academicYearOfferings: typeof academicYearId === 'string' && academicYearId ? { where: { academicYearId } } : false,
       },
       orderBy: [
         { grade: 'asc' },
@@ -282,7 +323,7 @@ app.get('/subjects/lightweight', authenticateToken, async (req: AuthRequest, res
       ],
     });
 
-    res.json(subjects);
+    res.json(subjects.map(mergeSubjectOffering));
   } catch (error: any) {
     console.error('❌ Error getting lightweight subjects:', error);
     res.status(500).json({
@@ -376,12 +417,17 @@ app.get('/subjects/by-teacher/:teacherId', authenticateToken, async (req: AuthRe
  */
 app.get('/subjects/statistics', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const totalSubjects = await prisma.subject.count();
-    const activeSubjects = await prisma.subject.count({ where: { isActive: true } });
-    const inactiveSubjects = await prisma.subject.count({ where: { isActive: false } });
+    const schoolId = getSchoolId(req);
+    const scopedWhere = academicYearOfferingFilter(req.query.academicYearId, schoolId);
+    const activeWhere = academicYearOfferingFilter(req.query.academicYearId, schoolId, true);
+    const inactiveWhere = academicYearOfferingFilter(req.query.academicYearId, schoolId, false);
+    const totalSubjects = await prisma.subject.count({ where: scopedWhere });
+    const activeSubjects = await prisma.subject.count({ where: req.query.academicYearId ? activeWhere : { isActive: true } });
+    const inactiveSubjects = await prisma.subject.count({ where: req.query.academicYearId ? inactiveWhere : { isActive: false } });
 
     const byGrade = await prisma.subject.groupBy({
       by: ['grade'],
+      where: scopedWhere,
       _count: true,
       orderBy: {
         grade: 'asc',
@@ -390,11 +436,13 @@ app.get('/subjects/statistics', authenticateToken, async (req: AuthRequest, res:
 
     const byCategory = await prisma.subject.groupBy({
       by: ['category'],
+      where: scopedWhere,
       _count: true,
     });
 
     const byTrack = await prisma.subject.groupBy({
       by: ['track'],
+      where: scopedWhere,
       _count: true,
     });
 
@@ -491,7 +539,14 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
       maxScore = 100,
       coefficient = 1.0,
       isActive = true,
+      academicYearId,
     } = req.body;
+
+    const schoolId = getSchoolId(req);
+    if (academicYearId) {
+      const ownedYear = await prisma.academicYear.count({ where: { id: academicYearId, ...(schoolId ? { schoolId } : {}) } });
+      if (!ownedYear) return res.status(404).json({ message: 'Academic year not found in this school' });
+    }
 
     // Validation
     if (!name || !nameKh || !code || !grade || !category) {
@@ -506,13 +561,22 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
     });
 
     if (existing) {
+      if (academicYearId) {
+        await prisma.academicYearSubject.upsert({
+          where: { academicYearId_subjectId: { academicYearId, subjectId: existing.id } },
+          create: { academicYearId, subjectId: existing.id, isActive: true, ...subjectOfferingOverrideData(req.body) },
+          update: { isActive: true, ...subjectOfferingOverrideData(req.body) },
+        });
+        invalidateSubjectsListCache();
+        return res.status(200).json({ ...existing, ...subjectOfferingOverrideData(req.body), isActive: true });
+      }
       return res.status(409).json({
         message: 'Subject code already exists',
       });
     }
 
-    const subject = await prisma.subject.create({
-      data: {
+    const subject = await prisma.$transaction(async (tx) => {
+      const createdSubject = await tx.subject.create({ data: {
         name,
         nameKh,
         nameEn,
@@ -528,7 +592,11 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
         maxScore: parseInt(maxScore),
         coefficient: parseFloat(coefficient),
         isActive,
-      },
+      } });
+      if (academicYearId) {
+        await tx.academicYearSubject.create({ data: { academicYearId, subjectId: createdSubject.id, isActive: true } });
+      }
+      return createdSubject;
     });
 
     console.log(`✅ Created subject: ${subject.name} (${subject.code})`);
@@ -566,6 +634,7 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
       maxScore,
       coefficient,
       isActive,
+      academicYearId,
     } = req.body;
 
     // Check if subject exists
@@ -575,6 +644,20 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
 
     if (!existing) {
       return res.status(404).json({ message: 'Subject not found' });
+    }
+
+    if (academicYearId) {
+      const schoolId = getSchoolId(req);
+      const offering = await prisma.academicYearSubject.findFirst({
+        where: { academicYearId, subjectId: id, academicYear: { ...(schoolId ? { schoolId } : {}) } },
+      });
+      if (!offering) return res.status(404).json({ message: 'Subject offering not found in this academic year' });
+      const updatedOffering = await prisma.academicYearSubject.update({
+        where: { id: offering.id },
+        data: { ...subjectOfferingOverrideData({ ...existing, ...req.body }), ...(isActive !== undefined ? { isActive } : {}) },
+      });
+      invalidateSubjectsListCache();
+      return res.json(mergeSubjectOffering({ ...existing, academicYearOfferings: [updatedOffering] }));
     }
 
     // Check for duplicate code if code is being changed
@@ -634,6 +717,17 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
 app.delete('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const academicYearId = typeof req.query.academicYearId === 'string' ? req.query.academicYearId : '';
+    const schoolId = getSchoolId(req);
+
+    if (academicYearId) {
+      const removed = await prisma.academicYearSubject.deleteMany({
+        where: { academicYearId, subjectId: id, academicYear: { ...(schoolId ? { schoolId } : {}) } },
+      });
+      if (!removed.count) return res.status(404).json({ message: 'Subject offering not found in this academic year' });
+      invalidateSubjectsListCache();
+      return res.json({ message: 'Subject removed from this academic year' });
+    }
 
     // Check if subject exists
     const subject = await prisma.subject.findUnique({
@@ -687,6 +781,8 @@ app.delete('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Res
 app.patch('/subjects/:id/toggle-status', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const academicYearId = typeof req.query.academicYearId === 'string' ? req.query.academicYearId : '';
+    const schoolId = getSchoolId(req);
 
     const subject = await prisma.subject.findUnique({
       where: { id },
@@ -694,6 +790,19 @@ app.patch('/subjects/:id/toggle-status', authenticateToken, async (req: AuthRequ
 
     if (!subject) {
       return res.status(404).json({ message: 'Subject not found' });
+    }
+
+    if (academicYearId) {
+      const offering = await prisma.academicYearSubject.findFirst({
+        where: { academicYearId, subjectId: id, academicYear: { ...(schoolId ? { schoolId } : {}) } },
+      });
+      if (!offering) return res.status(404).json({ message: 'Subject offering not found in this academic year' });
+      const updatedOffering = await prisma.academicYearSubject.update({
+        where: { id: offering.id },
+        data: { isActive: !offering.isActive },
+      });
+      invalidateSubjectsListCache();
+      return res.json({ ...subject, isActive: updatedOffering.isActive });
     }
 
     const updated = await prisma.subject.update({

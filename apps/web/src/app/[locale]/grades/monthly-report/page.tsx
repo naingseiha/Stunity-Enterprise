@@ -36,6 +36,7 @@ import {
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
 import MonthlyReportPrint from '@/components/reports/MonthlyReportPrint';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
@@ -136,13 +137,11 @@ export default function KhmerMonthlyReportPage() {
   const [error, setError] = useState('');
   const [reports, setReports] = useState<KhmerMonthlyReportData[]>([]);
   const {
-    allYears,
     selectedYear: contextSelectedYear,
     terms: contextTerms,
-    setSelectedYear: setContextSelectedYear,
   } = useAcademicYear();
 
-  const [selectedYear, setSelectedYear] = useState(contextSelectedYear?.id || '');
+  const selectedYear = contextSelectedYear?.id || '';
   const [scope, setScope] = useState<ReportScope>('class');
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedCompatibilityKey, setSelectedCompatibilityKey] = useState('');
@@ -159,8 +158,7 @@ export default function KhmerMonthlyReportPage() {
   const [generatedSignature, setGeneratedSignature] = useState('');
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
-  const selectedYearDataForTerms =
-    allYears.find((year) => year.id === selectedYear) || contextSelectedYear;
+  const selectedYearDataForTerms = contextSelectedYear;
 
   /**
    * AcademicYear list endpoints often omit nested terms; terms are loaded
@@ -381,13 +379,6 @@ export default function KhmerMonthlyReportPage() {
     certPrincipalName,
   ]);
 
-  useEffect(() => {
-    if (selectedYear && allYears.some((year) => year.id === selectedYear)) return;
-    const preferredYearId =
-      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
-    if (preferredYearId) setSelectedYear(preferredYearId);
-  }, [allYears, contextSelectedYear, selectedYear]);
-
   const { classes, isLoading: loadingClasses } = useClasses({
     academicYearId: selectedYear || undefined,
     limit: 200,
@@ -554,15 +545,6 @@ export default function KhmerMonthlyReportPage() {
   }, [grades, selectedGrade]);
 
   useEffect(() => {
-    if (!selectedYear) return;
-    const matchedYearObj = allYears.find((y) => y.id === selectedYear);
-    // Keep context year in sync so contextTerms refetch for this page's year.
-    if (matchedYearObj && contextSelectedYear?.id !== selectedYear) {
-      setContextSelectedYear(matchedYearObj);
-    }
-  }, [selectedYear, allYears, contextSelectedYear, setContextSelectedYear]);
-
-  useEffect(() => {
     if (reportKind !== 'semester' && reportKind !== 'semester-exam') return;
     const gradeHint = gradesForMonthPicker[0] || selectedGrade || grades[0];
     const plan = resolveReportTermPlan(activeTerms, gradeHint || '7', selectedSemester);
@@ -592,7 +574,7 @@ export default function KhmerMonthlyReportPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const selectedYearData = allYears.find((year) => year.id === selectedYear);
+  const selectedYearData = contextSelectedYear;
   const selectedMonthLabel = getKhmerMonthLabel(selectedMonthNumber);
   const selectedMonthDisplay = getKhmerMonthDisplayName(selectedMonthNumber, selectedMonthLabel);
   const academicStartYear = selectedYearData ? Number.parseInt(selectedYearData.name, 10) : new Date().getFullYear();
@@ -1705,22 +1687,12 @@ export default function KhmerMonthlyReportPage() {
                     <>
                       {/* Filters */}
                       <div className={`mt-6 grid gap-4 ${scope === 'class' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-                        <label className="block">
+                        <div className="block">
                           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             {t('academicYear')}
                           </span>
-                          <select
-                            className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                            value={selectedYear}
-                            onChange={(event) => setSelectedYear(event.target.value)}
-                          >
-                            {allYears.map((year) => (
-                              <option key={year.id} value={year.id}>
-                                {year.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                          <AcademicYearScopeNotice className="mt-1.5 min-h-10 py-1" />
+                        </div>
 
                         {scope === 'grade' && (
                           <label className="block">

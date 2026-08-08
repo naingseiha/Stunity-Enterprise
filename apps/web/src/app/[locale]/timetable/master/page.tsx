@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
 import { schoolAPI } from '@/lib/api/school';
-import { AcademicYear, getAcademicYearsAuto } from '@/lib/api/academic-years';
 import {
   periodAPI,
   timetableAPI,
@@ -408,6 +409,8 @@ function TimetableCell({ entry }: { entry?: ApiTimetableEntry | null }) {
 export default function MasterTimetablePage() {
   const router = useRouter();
   const locale = useLocale();
+  const { selectedYear } = useAcademicYear();
+  const selectedYearId = selectedYear?.id || '';
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -415,9 +418,7 @@ export default function MasterTimetablePage() {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [entriesByClass, setEntriesByClass] = useState<Record<string, ApiTimetableEntry[]>>({});
   const [teacherWorkloads, setTeacherWorkloads] = useState<TeacherWorkloadTeacher[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [teacherCount, setTeacherCount] = useState(0);
-  const [selectedYearId, setSelectedYearId] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState<GradeLevel>('HIGH_SCHOOL');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
   const [selectedDay, setSelectedDay] = useState<DayFilter>('ALL');
@@ -576,25 +577,18 @@ export default function MasterTimetablePage() {
   );
 
   const loadInitialData = useCallback(async () => {
+    if (!selectedYearId) return;
     try {
       setLoading(true);
       setError('');
-      const yearsRes = await getAcademicYearsAuto();
-      const yearsData = yearsRes.data.academicYears || [];
-      setAcademicYears(yearsData);
-
-      const defaultYear = yearsData.find((year: AcademicYear) => year.isCurrent) || yearsData[0];
-      if (defaultYear) {
-        setSelectedYearId(defaultYear.id);
-        await loadClassStats(defaultYear.id);
-      }
+      await loadClassStats(selectedYearId);
     } catch (err) {
       console.error('Error loading initial timetable data:', err);
       setError('Unable to initialize the timetable workspace.');
     } finally {
       setLoading(false);
     }
-  }, [loadClassStats]);
+  }, [loadClassStats, selectedYearId]);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -639,7 +633,6 @@ export default function MasterTimetablePage() {
     router.push(`/${locale}/auth/login`);
   };
 
-  const selectedYear = academicYears.find((year) => year.id === selectedYearId);
   const visibleDays = useMemo(
     () => (selectedDay === 'ALL' ? DAYS : [selectedDay]),
     [selectedDay]
@@ -1161,22 +1154,7 @@ export default function MasterTimetablePage() {
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
                     <ControlShell>
                       <ControlLabel>Academic Year</ControlLabel>
-                      <select
-                        value={selectedYearId}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          setSelectedYearId(value);
-                          if (value) loadClassStats(value);
-                        }}
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200"
-                      >
-                        <option value="">Select year</option>
-                        {academicYears.map((year) => (
-                          <option key={year.id} value={year.id}>
-                            {year.name} {year.isCurrent ? '(Current)' : ''}
-                          </option>
-                        ))}
-                      </select>
+                      <AcademicYearScopeNotice className="min-h-10 py-1" planningEditable />
                     </ControlShell>
 
                     <ControlShell>

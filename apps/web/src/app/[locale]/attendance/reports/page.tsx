@@ -10,6 +10,8 @@ import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
+import { isDateInsideAcademicYear } from '@/lib/academic-year-scope';
 import { useClasses } from '@/hooks/useClasses';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -166,8 +168,8 @@ export default function AttendanceReportsPage() {
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
-  const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState('');
+  const { selectedYear: contextSelectedYear } = useAcademicYear();
+  const selectedAcademicYear = contextSelectedYear?.id || '';
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -187,17 +189,14 @@ export default function AttendanceReportsPage() {
   }, [locale, router]);
 
   useEffect(() => {
-    if (selectedAcademicYear && allYears.some((year) => year.id === selectedAcademicYear)) {
-      return;
-    }
-
-    const preferredYearId =
-      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
-
-    if (preferredYearId) {
-      setSelectedAcademicYear(preferredYearId);
-    }
-  }, [allYears, contextSelectedYear, selectedAcademicYear]);
+    if (!contextSelectedYear) return;
+    const start = new Date(contextSelectedYear.startDate);
+    const end = new Date(contextSelectedYear.endDate);
+    const calendarYear = selectedMonth >= start.getUTCMonth() + 1
+      ? start.getUTCFullYear()
+      : end.getUTCFullYear();
+    setSelectedYear(calendarYear);
+  }, [contextSelectedYear, selectedMonth]);
 
   const { classes } = useClasses({
     academicYearId: selectedAcademicYear || undefined,
@@ -256,21 +255,17 @@ export default function AttendanceReportsPage() {
   };
 
   const goToPreviousMonth = () => {
-    if (selectedMonth === 1) {
-      setSelectedMonth(12);
-      setSelectedYear((current) => current - 1);
-    } else {
-      setSelectedMonth((current) => current - 1);
-    }
+    const candidate = new Date(Date.UTC(selectedYear, selectedMonth - 2, 1));
+    if (!isDateInsideAcademicYear(candidate, contextSelectedYear)) return;
+    setSelectedMonth(candidate.getUTCMonth() + 1);
+    setSelectedYear(candidate.getUTCFullYear());
   };
 
   const goToNextMonth = () => {
-    if (selectedMonth === 12) {
-      setSelectedMonth(1);
-      setSelectedYear((current) => current + 1);
-    } else {
-      setSelectedMonth((current) => current + 1);
-    }
+    const candidate = new Date(Date.UTC(selectedYear, selectedMonth, 1));
+    if (!isDateInsideAcademicYear(candidate, contextSelectedYear)) return;
+    setSelectedMonth(candidate.getUTCMonth() + 1);
+    setSelectedYear(candidate.getUTCFullYear());
   };
 
   const statistics = useMemo(() => {
@@ -433,21 +428,10 @@ export default function AttendanceReportsPage() {
               </div>
 
               <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)] lg:items-end">
-                <label className="space-y-2">
+                <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_728e6b2c" /></span>
-                  <select
-                    value={selectedAcademicYear}
-                    onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
-                  >
-                    <option value="">{autoT("auto.web.locale_attendance_reports_page.k_dae04eb6")}</option>
-                    {allYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent ? '(Current)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <AcademicYearScopeNotice className="min-h-12 rounded-full px-4" />
+                </div>
 
                 <label className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_d44d2fc3" /></span>

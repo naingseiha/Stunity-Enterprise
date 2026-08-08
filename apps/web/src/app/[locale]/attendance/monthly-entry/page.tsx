@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { getAvailableMonthsForGrade, getKhmerMonthDisplayName } from '@/lib/reports/khmerMonthly';
 import { attendanceAPI, MonthlyEntryGridItem } from '@/lib/api/attendance';
@@ -13,6 +14,7 @@ import {
   getNextMonthlyEntryStatus,
 } from '@/lib/attendance/monthlyEntryStatus';
 import { TokenManager } from '@/lib/api/auth';
+import { BEFORE_ACADEMIC_YEAR_CHANGE_EVENT } from '@/lib/academic-year-scope';
 import { useClasses } from '@/hooks/useClasses';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -36,7 +38,7 @@ export default function MonthlyAttendanceEntryPage() {
   const autoT = useTranslations();
   const router = useRouter();
   const locale = useLocale();
-  const { selectedYear, allYears, setSelectedYear, terms } = useAcademicYear();
+  const { selectedYear, terms, canWriteOperationalData } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
 
   const selectedAcademicYear = selectedYear?.id || '';
@@ -48,6 +50,14 @@ export default function MonthlyAttendanceEntryPage() {
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [pendingUpdates, setPendingUpdates] = useState<Set<string>>(new Set()); // studentId-day
+
+  useEffect(() => {
+    const guardYearChange = (event: Event) => {
+      if (pendingUpdates.size > 0) event.preventDefault();
+    };
+    window.addEventListener(BEFORE_ACADEMIC_YEAR_CHANGE_EVENT, guardYearChange);
+    return () => window.removeEventListener(BEFORE_ACADEMIC_YEAR_CHANGE_EVENT, guardYearChange);
+  }, [pendingUpdates.size]);
 
   // Auth check
   useEffect(() => {
@@ -128,6 +138,7 @@ export default function MonthlyAttendanceEntryPage() {
   };
 
   const handleCellClick = useCallback(async (studentId: string, day: number) => {
+    if (!canWriteOperationalData) return;
     const student = gridData.find(s => s.studentId === studentId);
     if (!student) return;
 
@@ -193,7 +204,7 @@ export default function MonthlyAttendanceEntryPage() {
       });
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [gridData, selectedClass, selectedMonth, academicStartYear, monthLabel]);
+  }, [academicStartYear, canWriteOperationalData, gridData, monthLabel, selectedClass, selectedMonth]);
 
   // Derived stats
   const selectedYearLabel = selectedYear?.name || 'Choose academic year';
@@ -327,21 +338,7 @@ export default function MonthlyAttendanceEntryPage() {
                     <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Year
                     </label>
-                    <select
-                      value={selectedAcademicYear}
-                      onChange={(e) => {
-                        const year = allYears.find((item) => item.id === e.target.value);
-                        if (year) setSelectedYear(year);
-                      }}
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="">Choose year</option>
-                      {allYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          {year.name} {year.isCurrent && '(Current)'}
-                        </option>
-                      ))}
-                    </select>
+                    <AcademicYearScopeNotice className="min-h-10 py-1" />
                   </div>
 
                   {/* Class */}
@@ -581,10 +578,11 @@ export default function MonthlyAttendanceEntryPage() {
                                     <td key={day} className="px-1 py-2 text-center">
                                       <button
                                         type="button"
+                                        disabled={!canWriteOperationalData}
                                         onClick={() => handleCellClick(item.studentId, day)}
                                         title={statusMeta.label}
                                         aria-label={`Day ${day}: ${statusMeta.label}`}
-                                        className={`mx-auto flex h-8 w-8 select-none items-center justify-center rounded-lg border text-xs font-black transition-all ${statusMeta.tone} ${isPending ? 'animate-pulse opacity-50' : ''}`}
+                                        className={`mx-auto flex h-8 w-8 select-none items-center justify-center rounded-lg border text-xs font-black transition-all disabled:cursor-not-allowed disabled:opacity-60 ${statusMeta.tone} ${isPending ? 'animate-pulse opacity-50' : ''}`}
                                       >
                                         {statusMeta.code}
                                       </button>

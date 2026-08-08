@@ -13,6 +13,8 @@ const SUBJECT_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 export type { Subject, SubjectStatistics } from '@/lib/api/subjects';
 
 export interface SubjectsParams {
+  enabled?: boolean;
+  academicYearId?: string;
   grade?: string;
   track?: string;
   category?: string;
@@ -23,8 +25,10 @@ export interface SubjectsParams {
 
 function createSubjectsCacheKey(params?: SubjectsParams): string | null {
   if (typeof window === 'undefined') return null;
+  if (params?.enabled === false) return null;
   
   const queryParams = new URLSearchParams();
+  if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
   if (params?.grade) queryParams.append('grade', params.grade);
   if (params?.track) queryParams.append('track', params.track);
   if (params?.category) queryParams.append('category', params.category);
@@ -63,12 +67,10 @@ async function fetchSubjects(url: string) {
   return data;
 }
 
-const SUBJECT_STATS_KEY = `${SUBJECT_SERVICE_URL}/subjects/statistics`;
-
-async function fetchStatistics() {
+async function fetchStatistics(url: string) {
   const token = TokenManager.getAccessToken();
   
-  const response = await fetch(SUBJECT_STATS_KEY, {
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -81,7 +83,7 @@ async function fetchStatistics() {
   }
 
   const data = await response.json();
-  writePersistentCache(SUBJECT_STATS_KEY, data);
+  writePersistentCache(url, data);
   return data;
 }
 
@@ -125,10 +127,11 @@ export function useSubjects(params?: SubjectsParams) {
 /**
  * Hook for fetching subject statistics
  */
-export function useSubjectStatistics() {
-  const fallbackData = readPersistentCache<SubjectStatistics>(SUBJECT_STATS_KEY, SUBJECT_STATS_CACHE_TTL_MS);
+export function useSubjectStatistics(academicYearId?: string) {
+  const statsKey = `${SUBJECT_SERVICE_URL}/subjects/statistics${academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : ''}`;
+  const fallbackData = readPersistentCache<SubjectStatistics>(statsKey, SUBJECT_STATS_CACHE_TTL_MS);
   const { data, error, isLoading: swrLoading, mutate } = useSWR<SubjectStatistics>(
-    typeof window !== 'undefined' ? SUBJECT_STATS_KEY : null,
+    typeof window !== 'undefined' && academicYearId ? statsKey : null,
     fetchStatistics,
     {
       dedupingInterval: SUBJECT_STATS_CACHE_TTL_MS,

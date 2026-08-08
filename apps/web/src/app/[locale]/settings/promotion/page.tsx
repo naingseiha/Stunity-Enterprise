@@ -919,6 +919,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><BadgeCheck className="h-6 w-6" /></div>
                         <h3 className="mt-3 text-sm font-black">{tx('បានបញ្ចប់ដោយជោគជ័យ', 'Year-end cycle completed')}</h3>
                         <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('សិស្សត្រូវបានកត់ត្រាក្នុងឆ្នាំ/កម្រិតថ្មី ហើយបញ្ជីនេះត្រូវបានចាក់សោសម្រាប់ audit។', 'Students were advanced to the new year/grade and this register is locked for audit.')}</p>
+                        <button onClick={() => router.push(`/${locale}/classes/placement?yearId=${encodeURIComponent(cycle.toAcademicYearId)}`)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white hover:bg-indigo-700"><Users className="h-4 w-4" />{tx('បែងចែកសិស្សទៅថ្នាក់ ក/ខ/...', 'Allocate students to sections')}<ArrowRight className="h-4 w-4" /></button>
                       </div>
                     )}
                   </div>

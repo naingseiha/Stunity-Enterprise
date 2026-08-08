@@ -35,6 +35,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { gradeAPI, GradeAnalyticsData } from '@/lib/api/grades';
 import { TokenManager } from '@/lib/api/auth';
@@ -71,14 +72,14 @@ export default function GradeAnalyticsPage() {
   const router = useRouter();
   const locale = useLocale();
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
   const [analyticsData, setAnalyticsData] = useState<GradeAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
-  const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
+  const { selectedYear: contextSelectedYear } = useAcademicYear();
+  const selectedYear = contextSelectedYear?.id || '';
 
   useEffect(() => {
     setIsClient(true);
@@ -93,19 +94,6 @@ export default function GradeAnalyticsPage() {
       setSchool(userData.school);
     }
   }, [locale, router]);
-
-  useEffect(() => {
-    if (selectedYear && allYears.some((year) => year.id === selectedYear)) {
-      return;
-    }
-
-    const preferredYearId =
-      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
-
-    if (preferredYearId) {
-      setSelectedYear(preferredYearId);
-    }
-  }, [allYears, contextSelectedYear, selectedYear]);
 
   const { classes, isLoading: isLoadingClasses } = useClasses({
     academicYearId: selectedYear || undefined,
@@ -130,8 +118,9 @@ export default function GradeAnalyticsPage() {
 
       setLoading(true);
       try {
-        const year = allYears.find((y) => y.id === selectedYear);
-        const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
+        const yearNum = contextSelectedYear
+          ? parseInt(contextSelectedYear.name.split('-')[0])
+          : new Date().getFullYear();
 
         const report = await gradeAPI.getGradeAnalytics(selectedClass, selectedSemester, yearNum);
         setAnalyticsData(report);
@@ -148,7 +137,7 @@ export default function GradeAnalyticsPage() {
     } else if (isClient) {
       setLoading(isLoadingClasses);
     }
-  }, [selectedClass, selectedYear, selectedSemester, allYears, isClient, isLoadingClasses]);
+  }, [contextSelectedYear, isClient, isLoadingClasses, selectedClass, selectedSemester, selectedYear]);
 
   // Calculate monthly trend data
   const monthlyTrendData = useMemo(() => {
@@ -197,7 +186,7 @@ export default function GradeAnalyticsPage() {
 
   const selectedClassDetails = classes.find((c) => c.id === selectedClass);
   const selectedClassName = selectedClassDetails?.name || '';
-  const selectedYearLabel = allYears.find((year) => year.id === selectedYear)?.name || 'No year selected';
+  const selectedYearLabel = contextSelectedYear?.name || 'No year selected';
   const semesterLabel = analyticsData?.term?.name || (selectedSemester === 1 ? 'Semester 1' : 'Semester 2');
   const termDateRange = formatTermDateRange(analyticsData?.term);
   const pulseValue = classStats ? Math.round(classStats.passRate) : selectedClass ? 28 : 0;
@@ -249,8 +238,9 @@ export default function GradeAnalyticsPage() {
                   <button
                     onClick={() => {
                       if (selectedClass && selectedYear) {
-                        const year = allYears.find((y) => y.id === selectedYear);
-                        const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
+                        const yearNum = contextSelectedYear
+                          ? parseInt(contextSelectedYear.name.split('-')[0])
+                          : new Date().getFullYear();
                         setLoading(true);
                         gradeAPI
                           .getGradeAnalytics(selectedClass, selectedSemester, yearNum)
@@ -358,20 +348,10 @@ export default function GradeAnalyticsPage() {
                   </select>
                 </label>
 
-                <label className="space-y-2">
+                <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_4f1561c6" /></span>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                  >
-                    {allYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent && '(Current)'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <AcademicYearScopeNotice className="min-h-12" />
+                </div>
 
                 <label className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_f1f4a9d0" /></span>

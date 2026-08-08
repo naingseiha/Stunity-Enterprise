@@ -4710,7 +4710,8 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
         },
         calendars: {
           include: { events: { orderBy: { startDate: 'asc' } } }
-        }
+        },
+        subjectOfferings: { where: { isActive: true } }
       }
     });
 
@@ -4739,6 +4740,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
     suggestedStartDate.setFullYear(suggestedStartDate.getFullYear() + 1);
     suggestedEndDate.setFullYear(suggestedEndDate.getFullYear() + 1);
 
+    const inheritedSubjectCount = year.subjectOfferings.length;
     const responseBody = {
       success: true,
       data: {
@@ -4753,6 +4755,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
           examTypes: year.examTypes?.length || 0,
           gradingScales: year.gradingScales?.length || 0,
           classes: year.classes?.length || 0,
+          subjects: inheritedSubjectCount,
           holidays: year.calendars?.[0]?.events?.filter((e: any) => e.type === 'HOLIDAY').length || 0
         }
       }
@@ -4781,6 +4784,7 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
       copyExamTypes = true,
       copyGradingScales = true,
       copyClasses = true,
+      copySubjects = true,
       copyHolidays = true,
       // Custom config (if not copying)
       terms,
@@ -4794,6 +4798,24 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
       return res.status(400).json({ success: false, error: 'Name, start date, and end date are required' });
     }
 
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    if (Number.isNaN(parsedStartDate.getTime()) || Number.isNaN(parsedEndDate.getTime()) || parsedEndDate <= parsedStartDate) {
+      return res.status(400).json({ success: false, error: 'Academic year dates are invalid' });
+    }
+
+    if (copyFromYearId) {
+      const sourceBelongsToSchool = await prisma.academicYear.count({ where: { id: copyFromYearId, schoolId } });
+      if (!sourceBelongsToSchool) {
+        return res.status(404).json({ success: false, error: 'Source academic year not found in this school' });
+      }
+    }
+
+    const duplicateYear = await prisma.academicYear.count({ where: { schoolId, name: String(name).trim() } });
+    if (duplicateYear) {
+      return res.status(409).json({ success: false, error: 'An academic year with this name already exists in this school' });
+    }
+
     const normalizedTerms = copyFromYearId || terms === undefined
       ? null
       : normalizeAndValidateAcademicTerms(terms, startDate, endDate);
@@ -4804,7 +4826,7 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
       const newYear = await tx.academicYear.create({
         data: {
           schoolId,
-          name,
+          name: String(name).trim(),
           startDate: new Date(startDate),
           endDate: new Date(endDate),
           status: 'PLANNING',
@@ -4816,13 +4838,14 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
       let sourceYear: any = null;
       if (copyFromYearId) {
         sourceYear = await tx.academicYear.findUnique({
-          where: { id: copyFromYearId },
+          where: { id: copyFromYearId, schoolId },
           include: {
             terms: { orderBy: { termNumber: 'asc' } },
             examTypes: { orderBy: { order: 'asc' } },
             gradingScales: { include: { ranges: { orderBy: { order: 'asc' } } } },
             classes: { orderBy: [{ grade: 'asc' }, { section: 'asc' }] },
-            calendars: { include: { events: true } }
+            calendars: { include: { events: true } },
+            subjectOfferings: { where: { isActive: true } }
           }
         });
       }
@@ -4975,7 +4998,8 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
               name: cls.name,
               grade: cls.grade,
               section: cls.section,
-              capacity: cls.capacity
+              capacity: cls.capacity,
+              track: cls.track,
             }
           }));
         }
@@ -4994,7 +5018,41 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
         }
       }
 
-      // 6. Create calendar with holidays
+      // 6. Copy year-level curriculum availability. Subject definitions remain
+      // canonical, so this never duplicates or mutates historical subjects.
+      let createdSubjectOfferings = 0;
+      if (copySubjects) {
+        const sourceOfferings = sourceYear
+          ? sourceYear.subjectOfferings
+          : (await tx.subject.findMany({ where: { isActive: true }, select: { id: true } })).map((subject) => ({ subjectId: subject.id }));
+        if (sourceOfferings.length) {
+          const created = await tx.academicYearSubject.createMany({
+            data: sourceOfferings.map((offering: any) => ({
+              academicYearId: newYear.id,
+              subjectId: offering.subjectId,
+              isActive: true,
+              name: offering.name,
+              nameKh: offering.nameKh,
+              nameEn: offering.nameEn,
+              nameKhShort: offering.nameKhShort,
+              nameEnShort: offering.nameEnShort,
+              code: offering.code,
+              description: offering.description,
+              grade: offering.grade,
+              track: offering.track,
+              category: offering.category,
+              weeklyHours: offering.weeklyHours,
+              annualHours: offering.annualHours,
+              maxScore: offering.maxScore,
+              coefficient: offering.coefficient,
+            })),
+            skipDuplicates: true,
+          });
+          createdSubjectOfferings = created.count;
+        }
+      }
+
+      // 7. Create calendar with holidays
       const newCalendar = await tx.academicCalendar.create({
         data: {
           academicYearId: newYear.id,
@@ -5052,6 +5110,7 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
           examTypes: createdExamTypes.length,
           gradingScales: createdGradingScales.length,
           classes: createdClasses.length,
+          subjects: createdSubjectOfferings,
           holidays: createdHolidays.length
         }
       };

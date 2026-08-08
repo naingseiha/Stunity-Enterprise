@@ -1,9 +1,19 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { getCurrentAcademicYear, getAcademicYears, type AcademicYear } from '@/lib/api/academic-years';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 import { TokenManager } from '@/lib/api/auth';
+import {
+  SCHOOL_CONTEXT_CHANGED_EVENT,
+  BEFORE_ACADEMIC_YEAR_CHANGE_EVENT,
+  canWriteOperationalAcademicData,
+  getAcademicYearMode,
+  persistSelectedAcademicYearId,
+  readSelectedAcademicYearId,
+  selectedAcademicYearStorageKey,
+  type AcademicYearMode,
+} from '@/lib/academic-year-scope';
 
 interface AcademicYearContextType {
   currentYear: AcademicYear | null;
@@ -12,6 +22,10 @@ interface AcademicYearContextType {
   schoolId: string | null;
   terms: any[];
   setSelectedYear: (year: AcademicYear) => void;
+  selectedYearMode: AcademicYearMode;
+  isCurrentYearSelected: boolean;
+  isOperationalReadOnly: boolean;
+  canWriteOperationalData: boolean;
   loading: boolean;
   refreshYears: () => Promise<void>;
 }
@@ -26,15 +40,26 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const [terms, setTerms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadSequence = useRef(0);
 
-  const loadYears = async () => {
+  const resetContext = useCallback(() => {
+    setCurrentYear(null);
+    setSelectedYearState(null);
+    setAllYears([]);
+    setSchoolId(null);
+    setTerms([]);
+  }, []);
+
+  const loadYears = useCallback(async () => {
+    const sequence = ++loadSequence.current;
+    setLoading(true);
     try {
       const token = TokenManager.getAccessToken();
       const userDataStr = localStorage.getItem('user');
       const schoolDataStr = localStorage.getItem('school');
       
       if (!token || !userDataStr) {
-        setLoading(false);
+        resetContext();
         return;
       }
 
@@ -45,17 +70,20 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       const schoolIdFromData = userData?.schoolId || schoolData?.id || userData?.school?.id;
 
       if (!schoolIdFromData) {
-        setLoading(false);
+        resetContext();
         return;
       }
 
+      // Never retain another tenant's working-year data while a school switch
+      // is resolving.
+      setSelectedYearState((year) => year?.schoolId === schoolIdFromData ? year : null);
       setSchoolId(schoolIdFromData);
 
       const yearsCacheKey = `academic-years:${schoolIdFromData}`;
       const currentYearCacheKey = `academic-years:${schoolIdFromData}:current`;
       const cachedYears = readPersistentCache<AcademicYear[]>(yearsCacheKey, ACADEMIC_YEAR_CACHE_TTL_MS);
       const cachedCurrentYear = readPersistentCache<AcademicYear | null>(currentYearCacheKey, ACADEMIC_YEAR_CACHE_TTL_MS);
-      const savedYearId = localStorage.getItem('selectedAcademicYearId');
+      const savedYearId = readSelectedAcademicYearId(schoolIdFromData);
 
       if (cachedYears?.length) {
         setAllYears(cachedYears);
@@ -76,8 +104,10 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       }
 
       const years = await getAcademicYears(schoolIdFromData, token);
+      if (sequence !== loadSequence.current) return;
       const derivedCurrent = years.find((year) => year.isCurrent) ?? null;
       const current = derivedCurrent ?? await getCurrentAcademicYear(schoolIdFromData, token);
+      if (sequence !== loadSequence.current) return;
 
       setCurrentYear(current);
       setAllYears(years);
@@ -88,26 +118,47 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         const savedYear = years.find(y => y.id === savedYearId);
         if (savedYear) {
           setSelectedYearState(savedYear);
+          persistSelectedAcademicYearId(schoolIdFromData, savedYear.id);
         } else {
           // If saved year doesn't exist, use current
           setSelectedYearState(current);
+          if (current) persistSelectedAcademicYearId(schoolIdFromData, current.id);
         }
       } else {
         // Default to current year
         setSelectedYearState(current);
+        if (current) persistSelectedAcademicYearId(schoolIdFromData, current.id);
       }
     } catch (error) {
       console.error('Failed to load academic years:', error);
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
-  };
+  }, [resetContext]);
 
   useEffect(() => {
-    loadYears();
-  }, []);
+    void loadYears();
+
+    const handleSchoolContextChange = () => void loadYears();
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.key === 'user' ||
+        event.key === 'school' ||
+        (schoolId && event.key === selectedAcademicYearStorageKey(schoolId))
+      ) {
+        void loadYears();
+      }
+    };
+    window.addEventListener(SCHOOL_CONTEXT_CHANGED_EVENT, handleSchoolContextChange);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(SCHOOL_CONTEXT_CHANGED_EVENT, handleSchoolContextChange);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [loadYears, schoolId]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchTerms = async () => {
       if (!selectedYear?.id || !schoolId) {
         setTerms([]);
@@ -117,7 +168,8 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         const token = TokenManager.getAccessToken();
         if (token) {
           const res = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}/terms`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
           });
           if (res.ok) {
             const data = await res.json();
@@ -125,20 +177,41 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error('Failed to load terms:', err);
       }
     };
-    fetchTerms();
+    void fetchTerms();
+    return () => controller.abort();
   }, [selectedYear?.id, schoolId]);
 
   const setSelectedYear = (year: AcademicYear) => {
+    if (!schoolId || year.schoolId !== schoolId) {
+      console.error('Rejected academic year from a different school context');
+      return;
+    }
+    if (year.id === selectedYear?.id) return;
+    const canChange = window.dispatchEvent(
+      new CustomEvent(BEFORE_ACADEMIC_YEAR_CHANGE_EVENT, {
+        cancelable: true,
+        detail: { schoolId, fromAcademicYearId: selectedYear?.id || null, toAcademicYearId: year.id },
+      }),
+    );
+    if (!canChange) return;
     setSelectedYearState(year);
-    localStorage.setItem('selectedAcademicYearId', year.id);
+    persistSelectedAcademicYearId(schoolId, year.id);
   };
 
   const refreshYears = async () => {
     await loadYears();
   };
+
+  const selectedYearMode = useMemo(() => getAcademicYearMode(selectedYear), [selectedYear]);
+  const canWriteOperationalData = useMemo(
+    () => canWriteOperationalAcademicData(selectedYear),
+    [selectedYear],
+  );
+  const isCurrentYearSelected = Boolean(selectedYear && selectedYear.id === currentYear?.id);
 
   return (
     <AcademicYearContext.Provider
@@ -149,6 +222,10 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         schoolId,
         terms,
         setSelectedYear,
+        selectedYearMode,
+        isCurrentYearSelected,
+        isOperationalReadOnly: !canWriteOperationalData,
+        canWriteOperationalData,
         loading,
         refreshYears,
       }}

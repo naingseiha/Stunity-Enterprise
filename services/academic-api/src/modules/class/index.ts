@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { verifyAccessToken } from "../../../../lib/auth-tokens";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import {
   shouldRunDbStartupWarmup,
   withPrismaPoolParams,
@@ -11,6 +11,11 @@ import {
 import { getSharedPrisma } from "../../core/prisma";
 import { getJwtSecret } from "../../../../lib/jwt-secret";
 import { canManageTargetSchool } from "../../../../lib/tenant-access";
+import {
+  buildClassPlacement,
+  type PlacementStrategy,
+} from "../../../../lib/class-placement";
+import { registerClassPlacementBatchRoutes } from "../../../../lib/class-placement-batch-routes";
 
 // Load environment variables from root .env
 
@@ -1662,6 +1667,347 @@ app.get(
     }
   },
 );
+
+const normalizedGrade = (value: unknown) => String(value ?? "").replace(/\D/g, "");
+const sectionName = (index: number) => {
+  let value = index;
+  let label = "";
+  do {
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26) - 1;
+  } while (value >= 0);
+  return label;
+};
+
+async function loadPlacementContext(schoolId: string, academicYearId: string, grade: string) {
+  const academicYear = await prisma.academicYear.findFirst({
+    where: { id: academicYearId, schoolId },
+    select: { id: true, name: true, startDate: true, status: true },
+  });
+  if (!academicYear) return null;
+
+  const [yearClasses, progressions] = await Promise.all([
+    prisma.class.findMany({
+      where: { schoolId, academicYearId },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+        section: true,
+        capacity: true,
+        _count: { select: { studentClasses: { where: { status: "ACTIVE", endedAt: null } } } },
+      },
+      orderBy: [{ section: "asc" }, { name: "asc" }],
+    }),
+    prisma.studentProgression.findMany({
+      where: { toAcademicYearId: academicYearId, toClassId: null, student: { schoolId, recordStatus: "ACTIVE" } },
+      select: {
+        id: true,
+        studentId: true,
+        toGrade: true,
+        fromAcademicYearId: true,
+        fromClass: { select: { id: true, name: true, grade: true, section: true } },
+        student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
+            gender: true,
+            photoUrl: true,
+            customFields: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const classes = yearClasses.filter((item) => normalizedGrade(item.grade) === normalizedGrade(grade));
+  const gradeProgressions = progressions.filter((item) => normalizedGrade(item.toGrade) === normalizedGrade(grade));
+  const decisions = gradeProgressions.length
+    ? await prisma.yearEndDecision.findMany({
+        where: {
+          studentId: { in: gradeProgressions.map((item) => item.studentId) },
+          cycle: { schoolId, toAcademicYearId: academicYearId },
+        },
+        select: { studentId: true, academicAverage: true, attendanceRate: true },
+      })
+    : [];
+  const evidenceByStudent = new Map(decisions.map((item) => [item.studentId, item]));
+  const rankedProgressions = [...gradeProgressions].sort((left, right) => {
+    const leftScore = evidenceByStudent.get(left.studentId)?.academicAverage ?? -1;
+    const rightScore = evidenceByStudent.get(right.studentId)?.academicAverage ?? -1;
+    return rightScore - leftScore || left.studentId.localeCompare(right.studentId);
+  });
+
+  const candidates = rankedProgressions.map((item, index) => ({
+    ...item.student,
+    progressionId: item.id,
+    plannedGrade: item.toGrade,
+    previousClass: item.fromClass,
+    academicAverage: evidenceByStudent.get(item.studentId)?.academicAverage ?? null,
+    attendanceRate: evidenceByStudent.get(item.studentId)?.attendanceRate ?? null,
+    academicRank: index + 1,
+  }));
+
+  return {
+    academicYear,
+    grade: normalizedGrade(grade),
+    classes: classes.map((item) => ({
+      id: item.id,
+      name: item.name,
+      grade: item.grade,
+      section: item.section,
+      capacity: item.capacity,
+      currentCount: item._count.studentClasses,
+    })),
+    candidates,
+  };
+}
+
+// Grade-wide placement pool used after year-end promotion and before section enrollment.
+app.get(
+  "/classes/placement/:academicYearId/:grade",
+  requireClassAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const context = await loadPlacementContext(req.user!.schoolId, req.params.academicYearId, req.params.grade);
+      if (!context) return res.status(404).json({ success: false, message: "Academic year not found" });
+      return res.json({ success: true, data: context });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, message: "Failed to load class placement workspace", error: error.message });
+    }
+  },
+);
+
+app.post(
+  "/classes/placement/generate-classes",
+  requireClassAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.user!.schoolId;
+      const academicYearId = String(req.body.academicYearId || "");
+      const grade = normalizedGrade(req.body.grade);
+      const capacity = Math.min(200, Math.max(1, Number(req.body.capacity) || 50));
+      const initialContext = await loadPlacementContext(schoolId, academicYearId, grade);
+      if (!initialContext) return res.status(404).json({ success: false, message: "Academic year not found" });
+      if (["ENDED", "ARCHIVED"].includes(initialContext.academicYear.status)) {
+        return res.status(409).json({ success: false, message: "Historical academic years are read-only" });
+      }
+      const requestedCount = Number(req.body.classCount);
+      const classCount = Math.min(52, Math.max(1, Number.isFinite(requestedCount) && requestedCount > 0
+        ? Math.floor(requestedCount)
+        : Math.ceil(initialContext.candidates.length / capacity) || 1));
+
+      await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${schoolId}), hashtext(${`${academicYearId}:${grade}:class-shells`})) IS NULL AS "lockAcquired"`;
+        const existing = await tx.class.findMany({ where: { schoolId, academicYearId }, select: { section: true, grade: true } });
+        const existingSections = new Set(
+          existing.filter((item) => normalizedGrade(item.grade) === grade).map((item) => String(item.section || "").toUpperCase()),
+        );
+        const definitions = Array.from({ length: classCount }, (_, index) => sectionName(index))
+          .filter((section) => !existingSections.has(section))
+          .map((section) => ({
+            schoolId,
+            academicYearId,
+            name: `Grade ${grade}${section}`,
+            grade,
+            section,
+            capacity,
+          }));
+        if (definitions.length) await tx.class.createMany({ data: definitions });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+      const context = await loadPlacementContext(schoolId, academicYearId, grade);
+      cache.clear();
+      return res.status(201).json({ success: true, data: context, message: `Class structure is ready with ${classCount} requested sections` });
+    } catch (error: any) {
+      const status = error?.code === "P2034" ? 409 : 500;
+      return res.status(status).json({ success: false, message: status === 409 ? "Class structure changed concurrently. Reload and try again." : "Failed to generate class structure", error: error.message });
+    }
+  },
+);
+
+app.post(
+  "/classes/placement/preview",
+  requireClassAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.user!.schoolId;
+      const academicYearId = String(req.body.academicYearId || "");
+      const grade = normalizedGrade(req.body.grade);
+      const strategy: PlacementStrategy = req.body.strategy === "MULTI_FACTOR_BALANCED"
+        ? "MULTI_FACTOR_BALANCED"
+        : req.body.strategy === "ACADEMIC_BALANCED" ? "ACADEMIC_BALANCED" : "RANDOM_BALANCED";
+      const context = await loadPlacementContext(schoolId, academicYearId, grade);
+      if (!context) return res.status(404).json({ success: false, message: "Academic year not found" });
+      const requestedClassIds = Array.isArray(req.body.classIds) ? [...new Set(req.body.classIds.map(String))] : context.classes.map((item) => item.id);
+      const classes = context.classes.filter((item) => requestedClassIds.includes(item.id));
+      if (!classes.length || classes.length !== requestedClassIds.length) {
+        return res.status(400).json({ success: false, message: "One or more target classes are invalid for this year and grade" });
+      }
+      const pinned = Array.isArray(req.body.pinned) ? req.body.pinned.map((item: any) => ({ studentId: String(item.studentId), classId: String(item.classId) })) : [];
+      const candidateIds = new Set(context.candidates.map((item) => item.id));
+      const classIds = new Set(classes.map((item) => item.id));
+      if (pinned.some((item: any) => !candidateIds.has(item.studentId) || !classIds.has(item.classId)) || new Set(pinned.map((item: any) => item.studentId)).size !== pinned.length) {
+        return res.status(400).json({ success: false, message: "Pinned assignments contain an invalid or duplicate student" });
+      }
+      const seed = String(req.body.seed || `${academicYearId}:${grade}:default`);
+      const allocation = buildClassPlacement({
+        students: context.candidates.map((item) => ({ id: item.id, score: item.academicAverage, gender: item.gender })),
+        classes,
+        pinned,
+        strategy,
+        seed,
+      });
+      if (allocation.assignments.filter((item) => item.pinned).length !== pinned.length) {
+        return res.status(409).json({ success: false, message: "Pinned assignments exceed a target class capacity" });
+      }
+      const candidateById = new Map(context.candidates.map((item) => [item.id, item]));
+      const assignmentsByClass = new Map(classes.map((item) => [item.id, [] as any[]]));
+      for (const assignment of allocation.assignments) assignmentsByClass.get(assignment.classId)!.push({ ...assignment, student: candidateById.get(assignment.studentId) });
+      const classSummaries = classes.map((item) => {
+        const assignments = assignmentsByClass.get(item.id) || [];
+        const scored = assignments.map((row) => row.student.academicAverage).filter((value): value is number => typeof value === "number");
+        return {
+          ...item,
+          assignedCount: assignments.length,
+          projectedCount: allocation.projectedCounts[item.id] || item.currentCount,
+          femaleCount: assignments.filter((row) => row.student.gender === "FEMALE").length,
+          maleCount: assignments.filter((row) => row.student.gender === "MALE").length,
+          averageScore: scored.length ? Number((scored.reduce((sum, value) => sum + value, 0) / scored.length).toFixed(2)) : null,
+          assignments,
+        };
+      });
+      return res.json({ success: true, data: { ...context, strategy, seed, assignments: allocation.assignments, unassignedStudentIds: allocation.unassignedStudentIds, classSummaries } });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, message: "Failed to preview class placement", error: error.message });
+    }
+  },
+);
+
+// Governance guard: placement writes must come from an approved, versioned
+// server-side batch. The legacy handler remains below during rollout but is no
+// longer reachable through its former public path.
+app.post("/classes/placement/apply", requireClassAdmin, (_req: AuthRequest, res: Response) =>
+  res.status(409).json({ success: false, message: "Save, submit, and approve a placement batch before apply" }),
+);
+
+app.post(
+  "/classes/placement/legacy-apply-disabled",
+  requireClassAdmin,
+  async (req: AuthRequest, res: Response) => {
+    if (req.path.includes("legacy-apply-disabled")) {
+      return res.status(410).json({ success: false, message: "Legacy direct placement is disabled" });
+    }
+    try {
+      const schoolId = req.user!.schoolId;
+      const actorId = req.user!.userId;
+      const academicYearId = String(req.body.academicYearId || "");
+      const grade = normalizedGrade(req.body.grade);
+      const assignments = Array.isArray(req.body.assignments)
+        ? req.body.assignments.map((item: any) => ({ studentId: String(item.studentId), classId: String(item.classId) }))
+        : [];
+      if (!assignments.length || new Set(assignments.map((item: any) => item.studentId)).size !== assignments.length) {
+        return res.status(400).json({ success: false, message: "A non-duplicate assignment list is required" });
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${schoolId}), hashtext(${`${academicYearId}:${grade}:placement`})) IS NULL AS "lockAcquired"`;
+        const academicYear = await tx.academicYear.findFirst({ where: { id: academicYearId, schoolId }, select: { id: true, startDate: true, status: true } });
+        if (!academicYear) throw Object.assign(new Error("Academic year not found"), { statusCode: 404 });
+        if (["ENDED", "ARCHIVED"].includes(academicYear.status)) {
+          throw Object.assign(new Error("Historical academic years are read-only"), { statusCode: 409 });
+        }
+        const studentIds = assignments.map((item: any) => item.studentId);
+        const requestedClassIds = [...new Set(assignments.map((item: any) => item.classId))] as string[];
+        const [classes, progressions, existingEnrollments] = await Promise.all([
+          tx.class.findMany({
+            where: { id: { in: requestedClassIds }, schoolId, academicYearId },
+            select: { id: true, grade: true, capacity: true, _count: { select: { studentClasses: { where: { status: "ACTIVE", endedAt: null } } } } },
+          }),
+          tx.studentProgression.findMany({
+            where: { studentId: { in: studentIds }, toAcademicYearId: academicYearId, toClassId: null, student: { schoolId, recordStatus: "ACTIVE" } },
+            select: { id: true, studentId: true, toGrade: true },
+          }),
+          tx.studentClass.findMany({
+            where: { studentId: { in: studentIds }, status: "ACTIVE", endedAt: null, class: { schoolId, academicYearId } },
+            select: { studentId: true },
+          }),
+        ]);
+        if (classes.length !== requestedClassIds.length || classes.some((item) => normalizedGrade(item.grade) !== grade)) {
+          throw Object.assign(new Error("One or more target classes are invalid for this year and grade"), { statusCode: 400 });
+        }
+        const progressionByStudent = new Map(progressions.map((item) => [item.studentId, item]));
+        if (progressions.length !== studentIds.length || progressions.some((item) => normalizedGrade(item.toGrade) !== grade)) {
+          throw Object.assign(new Error("One or more students are no longer pending placement for this grade"), { statusCode: 409 });
+        }
+        if (existingEnrollments.length) throw Object.assign(new Error("One or more students were already placed. Reload the preview."), { statusCode: 409 });
+        const classById = new Map(classes.map((item) => [item.id, item]));
+        const newCounts = new Map<string, number>();
+        for (const assignment of assignments) newCounts.set(assignment.classId, (newCounts.get(assignment.classId) || 0) + 1);
+        for (const [classId, count] of newCounts) {
+          const target = classById.get(classId)!;
+          if (target.capacity != null && target._count.studentClasses + count > target.capacity) {
+            throw Object.assign(new Error("Placement would exceed one or more class capacities"), { statusCode: 409 });
+          }
+        }
+
+        const created = await tx.studentClass.createMany({
+          data: assignments.map((item: any) => ({
+            studentId: item.studentId,
+            classId: item.classId,
+            academicYearId,
+            enrolledAt: academicYear.startDate,
+            startedAt: academicYear.startDate,
+            entryReason: "ADMIN_PLACEMENT" as const,
+            status: "ACTIVE",
+            createdById: actorId,
+          })),
+        });
+        if (created.count !== assignments.length) throw Object.assign(new Error("Not every enrollment was created"), { statusCode: 409 });
+        for (const classId of requestedClassIds) {
+          const ids = assignments.filter((item: any) => item.classId === classId).map((item: any) => item.studentId);
+          if (!ids.length) continue;
+          const studentUpdate = await tx.student.updateMany({ where: { id: { in: ids }, schoolId }, data: { classId } });
+          const progressionUpdate = await tx.studentProgression.updateMany({
+            where: { id: { in: ids.map((id: string) => progressionByStudent.get(id)!.id) }, toClassId: null },
+            data: { toClassId: classId },
+          });
+          if (studentUpdate.count !== ids.length || progressionUpdate.count !== ids.length) {
+            throw Object.assign(new Error("Placement state changed concurrently"), { statusCode: 409 });
+          }
+        }
+        await tx.platformAuditLog.create({
+          data: {
+            actorId,
+            action: "CLASS_PLACEMENT_APPLIED",
+            resourceType: "ACADEMIC_YEAR",
+            resourceId: academicYearId,
+            details: {
+              schoolId,
+              grade,
+              assignedCount: created.count,
+              classCounts: Object.fromEntries(newCounts),
+            },
+          },
+        });
+        return { assigned: created.count, classCounts: Object.fromEntries(newCounts) };
+      }, { maxWait: 30_000, timeout: 120_000, isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+      cache.clear();
+      return res.status(201).json({ success: true, data: result, message: `Successfully placed ${result.assigned} students` });
+    } catch (error: any) {
+      const serializationConflict = error?.code === "P2034";
+      const status = serializationConflict ? 409 : error?.statusCode || 500;
+      return res.status(status).json({ success: false, message: serializationConflict ? "Another placement changed at the same time. Reload and try again." : error.message || "Failed to apply class placement" });
+    }
+  },
+);
+
+registerClassPlacementBatchRoutes({ app, prisma, requireClassAdmin, cache, Prisma });
 
 // ===========================
 // GET /classes/:id
