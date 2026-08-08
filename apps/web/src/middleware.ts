@@ -17,6 +17,7 @@ export const config = {
     // (e.g. `/pathnames` -> `/en/pathnames`)
     // `u/` is excluded so public profile URLs (stunity.app/u/{username}) stay
     // locale-free and render the SSR public profile route directly.
-    '/((?!_next|_vercel|privacy|data-deletion|u/|.*\\..*).*)'
+    // `api/` must stay locale-free so auth BFF cookie routes (/api/auth/*) work.
+    '/((?!_next|_vercel|api/|privacy|data-deletion|u/|.*\\..*).*)'
   ],
 };
